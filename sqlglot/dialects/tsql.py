@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import re
 import typing as t
+from pprint import pprint
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -53,7 +54,8 @@ DATE_DELTA_INTERVAL = {
 }
 
 
-DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
+DATE_FMT_RE = re.compile(
+    "([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
 
 # N = Numeric, C=Currency
 TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
@@ -98,7 +100,8 @@ OPTIONS: parser.OPTIONS_TYPE = {
     "USE": ("PLAN",),
 }
 
-OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
+OPTIONS_THAT_REQUIRE_EQUAL = (
+    "MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
 
 
 def _build_formatted_time(
@@ -129,7 +132,8 @@ def _build_format(args: t.List) -> exp.NumberToStr | exp.TimeToStr:
     fmt = seq_get(args, 1)
     culture = seq_get(args, 2)
 
-    number_fmt = fmt and (fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name))
+    number_fmt = fmt and (
+        fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name))
 
     if number_fmt:
         return exp.NumberToStr(this=this, format=fmt, culture=culture)
@@ -152,7 +156,8 @@ def _build_eomonth(args: t.List) -> exp.LastDay:
         this: exp.Expression = date
     else:
         unit = DATE_DELTA_INTERVAL.get("month")
-        this = exp.DateAdd(this=date, expression=month_lag, unit=unit and exp.var(unit))
+        this = exp.DateAdd(this=date, expression=month_lag,
+                           unit=unit and exp.var(unit))
 
     return exp.LastDay(this=this)
 
@@ -210,7 +215,8 @@ def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
     if isinstance(expression.this, exp.Order):
         if expression.this.this:
             this = expression.this.this.pop()
-        order = f" WITHIN GROUP ({self.sql(expression.this)[1:]})"  # Order has a leading space
+        # Order has a leading space
+        order = f" WITHIN GROUP ({self.sql(expression.this)[1:]})"
 
     separator = expression.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
@@ -228,7 +234,8 @@ def _build_date_delta(
         if start_date and start_date.is_number:
             # Numeric types are valid DATETIME values
             if start_date.is_int:
-                adds = DEFAULT_START_DATE + datetime.timedelta(days=int(start_date.this))
+                adds = DEFAULT_START_DATE + \
+                    datetime.timedelta(days=int(start_date.this))
                 start_date = exp.Literal.string(adds.strftime("%F"))
             else:
                 # We currently don't handle float values, i.e. they're not converted to equivalent DATETIMEs.
@@ -323,8 +330,10 @@ def _build_with_arg_as_text(
 def _json_extract_sql(
     self: TSQL.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
-    json_query = self.func("JSON_QUERY", expression.this, expression.expression)
-    json_value = self.func("JSON_VALUE", expression.this, expression.expression)
+    json_query = self.func("JSON_QUERY", expression.this,
+                           expression.expression)
+    json_value = self.func("JSON_VALUE", expression.this,
+                           expression.expression)
     return self.func("ISNULL", json_query, json_value)
 
 
@@ -450,7 +459,7 @@ class TSQL(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
-            "DECLARE": TokenType.COMMAND,
+            "DECLARE": TokenType.DECLARE,
             "EXEC": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
@@ -524,6 +533,7 @@ class TSQL(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.DECLARE: lambda self: self._parse_declare(),
             TokenType.END: lambda self: self._parse_command(),
         }
 
@@ -552,7 +562,8 @@ class TSQL(Dialect):
             """
             return [
                 (
-                    exp.alias_(projection.expression, projection.this.this, copy=False)
+                    exp.alias_(projection.expression,
+                               projection.this.this, copy=False)
                     if isinstance(projection, exp.EQ) and isinstance(projection.this, exp.Column)
                     else projection
                 )
@@ -600,7 +611,8 @@ class TSQL(Dialect):
             ]
             """
             if self._match_texts(("TRAN", "TRANSACTION")):
-                transaction = self.expression(exp.Transaction, this=self._parse_id_var())
+                transaction = self.expression(
+                    exp.Transaction, this=self._parse_id_var())
                 if self._match_text_seq("WITH", "MARK"):
                     transaction.set("mark", self._parse_string())
 
@@ -609,7 +621,8 @@ class TSQL(Dialect):
             return self._parse_as_command(self._prev)
 
         def _parse_returns(self) -> exp.ReturnsProperty:
-            table = self._parse_id_var(any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
+            table = self._parse_id_var(
+                any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
             returns = super()._parse_returns()
             returns.set("table", table)
             return returns
@@ -661,12 +674,15 @@ class TSQL(Dialect):
             create = super()._parse_create()
 
             if isinstance(create, exp.Create):
-                table = create.this.this if isinstance(create.this, exp.Schema) else create.this
+                table = create.this.this if isinstance(
+                    create.this, exp.Schema) else create.this
                 if isinstance(table, exp.Table) and table.this.args.get("temporary"):
                     if not create.args.get("properties"):
-                        create.set("properties", exp.Properties(expressions=[]))
+                        create.set(
+                            "properties", exp.Properties(expressions=[]))
 
-                    create.args["properties"].append("expressions", exp.TemporaryProperty())
+                    create.args["properties"].append(
+                        "expressions", exp.TemporaryProperty())
 
             return create
 
@@ -698,7 +714,8 @@ class TSQL(Dialect):
                 high = self._parse_bitwise() if self._match_text_seq("TO") else None
 
                 return (
-                    self.expression(exp.PartitionRange, this=low, expression=high) if high else low
+                    self.expression(exp.PartitionRange, this=low,
+                                    expression=high) if high else low
                 )
 
             partition = self.expression(
@@ -708,6 +725,50 @@ class TSQL(Dialect):
             self._match_r_paren()
 
             return partition
+
+        def _parse_declare(self) -> exp.Declare | exp.Command:
+
+            start = self._prev
+
+            expressions = []
+            while True:
+                if self._match(TokenType.PARAMETER, advance=False):
+                    var = self._parse_id_var()
+                    var_name = self._prev.text
+                    size = None
+                    value = None
+
+                    if self._match(TokenType.TABLE):
+                        # data_type = exp.DataType.Type[TokenType.TABLE.value]
+                        print(repr(var))
+                        # var = self.expression(exp.Var, this=var_name)
+                        table = self.expression(exp.Table, this=var)
+                        data_type = self._parse_schema(this=table)
+                    else:
+                        data_type = self._parse_types()  # Parse data type
+                        # Look for an optional size within parentheses
+                        if self._match(TokenType.L_PAREN):
+                            size = self._parse_bitwise()
+                            self._match(TokenType.R_PAREN)
+                    
+
+                        if self._match(TokenType.EQ):
+                            value = self._parse_bitwise()
+                            # print("Bitwise value: ", value)
+
+                    # value = self._parse_bitwise() if self._match(TokenType.EQ) else None  # Parse optional value
+                    expressions.append(self.expression(exp.DeclareItem, this=var, kind=data_type, default=value, size=size))  # Create DeclareItem node
+                else:
+                    break
+
+                if not self._match(TokenType.COMMA):
+                    break
+
+            # if not expressions:
+                # expressions = ['Nothing']
+            #     return self._parse_as_command(start)
+
+            return self.expression(exp.Declare, expressions=expressions)
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
@@ -788,12 +849,14 @@ class TSQL(Dialect):
                 ]
             ),
             exp.StrPosition: lambda self, e: self.func(
-                "CHARINDEX", e.args.get("substr"), e.this, e.args.get("position")
+                "CHARINDEX", e.args.get(
+                    "substr"), e.this, e.args.get("position")
             ),
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
-                "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
+                "HASHBYTES", exp.Literal.string(
+                    f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: timestrtotime_sql,
@@ -816,20 +879,23 @@ class TSQL(Dialect):
                     # ORDER BY is required in order to use OFFSET in a query, so we use
                     # a noop order by, since we don't really care about the order.
                     # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
-                    expression.order_by(exp.select(exp.null()).subquery(), copy=False)
+                    expression.order_by(exp.select(
+                        exp.null()).subquery(), copy=False)
 
                 limit = expression.args.get("limit")
                 if isinstance(limit, exp.Limit):
                     # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
                     # we replace here because otherwise TOP would be generated in select_sql
-                    limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
+                    limit.replace(
+                        exp.Fetch(direction="FIRST", count=limit.expression))
 
             return super().select_sql(expression)
 
         def convert_sql(self, expression: exp.Convert) -> str:
             name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"
             return self.func(
-                name, expression.this, expression.expression, expression.args.get("style")
+                name, expression.this, expression.expression, expression.args.get(
+                    "style")
             )
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:
@@ -855,7 +921,8 @@ class TSQL(Dialect):
             nano = expression.args.get("nano")
             if nano is not None:
                 nano.pop()
-                self.unsupported("Specifying nanoseconds is not supported in TIMEFROMPARTS.")
+                self.unsupported(
+                    "Specifying nanoseconds is not supported in TIMEFROMPARTS.")
 
             if expression.args.get("fractions") is None:
                 expression.set("fractions", exp.Literal.number(0))
@@ -868,12 +935,14 @@ class TSQL(Dialect):
             zone = expression.args.get("zone")
             if zone is not None:
                 zone.pop()
-                self.unsupported("Time zone is not supported in DATETIMEFROMPARTS.")
+                self.unsupported(
+                    "Time zone is not supported in DATETIMEFROMPARTS.")
 
             nano = expression.args.get("nano")
             if nano is not None:
                 nano.pop()
-                self.unsupported("Specifying nanoseconds is not supported in DATETIMEFROMPARTS.")
+                self.unsupported(
+                    "Specifying nanoseconds is not supported in DATETIMEFROMPARTS.")
 
             if expression.args.get("milli") is None:
                 expression.set("milli", exp.Literal.number(0))
@@ -940,7 +1009,8 @@ class TSQL(Dialect):
                 if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
                     ctas_expression = ctas_expression.subquery()
 
-                select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
+                select_into = exp.select(
+                    "*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
                 select_into.set("with", ctas_with)
 
@@ -950,7 +1020,8 @@ class TSQL(Dialect):
                 sql = self.sql(select_into)
 
             if exists:
-                identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
+                identifier = self.sql(exp.Literal.string(
+                    exp.table_name(table) if table else ""))
                 sql = self.sql(exp.Literal.string(sql))
                 if kind == "SCHEMA":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql})"""
@@ -958,12 +1029,15 @@ class TSQL(Dialect):
                     assert table
                     where = exp.and_(
                         exp.column("table_name").eq(table.name),
-                        exp.column("table_schema").eq(table.db) if table.db else None,
-                        exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
+                        exp.column("table_schema").eq(
+                            table.db) if table.db else None,
+                        exp.column("table_catalog").eq(
+                            table.catalog) if table.catalog else None,
                     )
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql})"""
                 elif kind == "INDEX":
-                    index = self.sql(exp.Literal.string(expression.this.text("this")))
+                    index = self.sql(exp.Literal.string(
+                        expression.this.text("this")))
                     sql = f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC({sql})"""
             elif expression.args.get("replace"):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)

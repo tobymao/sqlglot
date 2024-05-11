@@ -1336,14 +1336,11 @@ class Kill(Expression):
 class Pragma(Expression):
     pass
 
-
 class Declare(Expression):
     arg_types = {"expressions": True}
 
-
 class DeclareItem(Expression):
-    arg_types = {"this": True, "kind": True, "default": False, "size": False}
-
+    arg_types = {"this": True, "dtype": True, "default": False}
 
 class Set(Expression):
     arg_types = {"expressions": False, "unset": False, "tag": False}
@@ -3862,7 +3859,6 @@ class DataType(Expression):
         SMALLSERIAL = auto()
         STRUCT = auto()
         SUPER = auto()
-        TABLE = auto()
         TEXT = auto()
         TINYBLOB = auto()
         TINYTEXT = auto()
@@ -3901,7 +3897,6 @@ class DataType(Expression):
         Type.NESTED,
         Type.OBJECT,
         Type.STRUCT,
-        Type.TABLE,
     }
 
     NESTED_TYPES = {

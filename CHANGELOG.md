@@ -1,6 +1,19 @@
 Changelog
 =========
 
+## [v23.15.8] - 2024-05-11
+### :boom: BREAKING CHANGES
+- due to [`510f8b5`](https://github.com/tobymao/sqlglot/commit/510f8b5726c59a13284e9482dc47d488559e6c9e) - improve transpilation of TABLESAMPLE clause *(PR [#3457](https://github.com/tobymao/sqlglot/pull/3457) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve transpilation of TABLESAMPLE clause (#3457)
+
+
+### :sparkles: New Features
+- [`510f8b5`](https://github.com/tobymao/sqlglot/commit/510f8b5726c59a13284e9482dc47d488559e6c9e) - improve transpilation of TABLESAMPLE clause *(PR [#3457](https://github.com/tobymao/sqlglot/pull/3457) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3456](https://github.com/tobymao/sqlglot/issues/3456) opened by [@whummer](https://github.com/whummer)*
+- [`e28c959`](https://github.com/tobymao/sqlglot/commit/e28c959bf44208bdb3821b38c13fde59f1944fbb) - make create table cmd parsing less aggressive so that they can be used in sqlmesh @if macros *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.15.7] - 2024-05-11
 ### :wrench: Chores
 - [`c3bb3da`](https://github.com/tobymao/sqlglot/commit/c3bb3da670d06cb2eef545a909635224b6e7c205) - change python-version to 3.11 for build-rs *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3581,3 +3594,4 @@ Changelog
 [v23.15.3]: https://github.com/tobymao/sqlglot/compare/v23.15.2...v23.15.3
 [v23.15.6]: https://github.com/tobymao/sqlglot/compare/v23.15.5...v23.15.6
 [v23.15.7]: https://github.com/tobymao/sqlglot/compare/v23.15.6...v23.15.7
+[v23.15.8]: https://github.com/tobymao/sqlglot/compare/v23.15.7...v23.15.8

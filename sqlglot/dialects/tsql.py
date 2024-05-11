@@ -723,7 +723,7 @@ class TSQL(Dialect):
                     size = None
                     value = None
                     # moving past the AS keyword if it's there
-                    self._match(TokenType.AS)
+                    self._match_text_seq("AS")
 
                     if self._match(TokenType.TABLE):
                         table = self.expression(exp.Table, this=var)

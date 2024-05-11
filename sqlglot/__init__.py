@@ -45,7 +45,7 @@ from sqlglot.expressions import (
 from sqlglot.generator import Generator as Generator
 from sqlglot.parser import Parser as Parser
 from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
-from sqlglot.tokens import Tokenizer as Tokenizer, TokenType as TokenType
+from sqlglot.tokens import Token as Token, Tokenizer as Tokenizer, TokenType as TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -67,6 +67,21 @@ pretty = False
 
 schema = MappingSchema()
 """The default schema used by SQLGlot (e.g. in the optimizer)."""
+
+
+def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> t.List[Token]:
+    """
+    Tokenizes the given SQL string.
+
+    Args:
+        sql: the SQL code string to tokenize.
+        read: the SQL dialect to apply during tokenizing (eg. "spark", "hive", "presto", "mysql").
+        dialect: the SQL dialect (alias for read).
+
+    Returns:
+        The resulting list of tokens.
+    """
+    return Dialect.get_or_raise(read or dialect).tokenize(sql)
 
 
 def parse(

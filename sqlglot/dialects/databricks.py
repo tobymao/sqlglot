@@ -18,6 +18,7 @@ def _timestamp_diff(
 
 class Databricks(Spark):
     SAFE_DIVISION = False
+    COPY_PARAMS_ARE_CSV = False
 
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
@@ -38,6 +39,8 @@ class Databricks(Spark):
 
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
+        COPY_PARAMS_ARE_WRAPPED = False
+        COPY_PARAMS_EQ_REQUIRED = True
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,

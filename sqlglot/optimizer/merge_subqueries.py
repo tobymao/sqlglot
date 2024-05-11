@@ -214,6 +214,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         and not _outer_select_joins_on_inner_select_join()
         and not _is_a_window_expression_in_unmergable_operation()
         and not _is_recursive()
+        and not (inner_select.args.get("order") and outer_scope.is_union)
     )
 
 

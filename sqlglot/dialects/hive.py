@@ -319,7 +319,9 @@ class Hive(Dialect):
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "hive"),
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "UNBASE64": exp.FromBase64.from_arg_list,
-            "UNIX_TIMESTAMP": build_formatted_time(exp.StrToUnix, "hive", True),
+            "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
+                args or [exp.CurrentTimestamp()]
+            ),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
@@ -420,6 +422,15 @@ class Hive(Dialect):
                 super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
             )
 
+        def _parse_parameter(self) -> exp.Parameter:
+            self._match(TokenType.L_BRACE)
+            this = self._parse_identifier() or self._parse_primary_or_var()
+            expression = self._match(TokenType.COLON) and (
+                self._parse_identifier() or self._parse_primary_or_var()
+            )
+            self._match(TokenType.R_BRACE)
+            return self.expression(exp.Parameter, this=this, expression=expression)
+
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"
         TABLESAMPLE_WITH_METHOD = False
@@ -455,6 +466,7 @@ class Hive(Dialect):
             exp.DataType.Type.TIME: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "BINARY",
+            exp.DataType.Type.ROWVERSION: "BINARY",
         }
 
         TRANSFORMS = {

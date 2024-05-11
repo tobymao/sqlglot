@@ -336,8 +336,8 @@ SELECT * /* multi
    comment */;
 SELECT
   * /* multi
-     line
-     comment */;
+   line
+   comment */;
 WITH table_data AS (
     SELECT 'bob' AS name, ARRAY['banana', 'apple', 'orange'] AS fruit_basket
 )
@@ -384,3 +384,14 @@ JOIN b
 CROSS JOIN d
 JOIN e
   ON d.id = e.id;
+
+SELECT * FROM a JOIN b JOIN c USING (e) JOIN d USING (f) USING (g);
+SELECT
+  *
+FROM a
+JOIN b
+  JOIN c
+    USING (e)
+  JOIN d
+    USING (f)
+  USING (g);

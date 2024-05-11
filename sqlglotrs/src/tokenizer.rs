@@ -118,8 +118,27 @@ impl<'a> TokenizerState<'a> {
 
     fn scan(&mut self, until_peek_char: Option<char>) -> Result<(), TokenizerError> {
         while self.size > 0 && !self.is_end {
-            self.start = self.current;
-            self.advance(1)?;
+            let mut current = self.current;
+
+            // Skip spaces here rather than iteratively calling advance() for performance reasons
+            while current < self.size {
+                let ch = self.char_at(current)?;
+
+                if ch == ' ' || ch == '\t' {
+                    current += 1;
+                } else {
+                    break;
+                }
+            }
+
+            let offset = if current > self.current {
+                current - self.current
+            } else {
+                1
+            };
+
+            self.start = current;
+            self.advance(offset as isize)?;
 
             if self.current_char == '\0' {
                 break;
@@ -153,16 +172,12 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
-        let mut i = i;
         if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
-            if self.current_char == '\r' && self.peek_char == '\n' {
-                i = 2;
-                self.start += 1;
+            if !(self.current_char == '\r' && self.peek_char == '\n') {
+                self.column = 1;
+                self.line += 1;
             }
-
-            self.column = 1;
-            self.line += 1;
         } else {
             self.column = self.column.wrapping_add_signed(i);
         }
@@ -404,11 +419,19 @@ impl<'a> TokenizerState<'a> {
                 };
 
                 self.advance(1)?;
+
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")
                 } else {
-                    self.extract_string(end, false)?
+                    self.extract_string(end, false, false, !self.settings.heredoc_tag_is_identifier)?
                 };
+
+                if self.is_end && !tag.is_empty() && self.settings.heredoc_tag_is_identifier {
+                    self.advance(-(tag.len() as isize))?;
+                    self.add(self.token_types.heredoc_string_alternative, None)?;
+                    return Ok(true)
+                }
+
                 (None, *token_type, format!("{}{}{}", start, tag, end))
             } else {
                 (None, *token_type, end.clone())
@@ -418,7 +441,7 @@ impl<'a> TokenizerState<'a> {
         };
 
         self.advance(start.len() as isize)?;
-        let text = self.extract_string(&end, false)?;
+        let text = self.extract_string(&end, false, token_type != self.token_types.raw_string, true)?;
 
         if let Some(b) = base {
             if u64::from_str_radix(&text, b).is_err() {
@@ -460,6 +483,9 @@ impl<'a> TokenizerState<'a> {
             if self.peek_char.is_digit(10) {
                 self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
+                if self.tokens.last().map(|t| t.token_type) == Some(self.token_types.parameter) {
+                    return self.add(self.token_types.number, None);
+                }
                 decimal = true;
                 self.advance(1)?;
             } else if (self.peek_char == '-' || self.peek_char == '+') && scientific == 1 {
@@ -561,7 +587,7 @@ impl<'a> TokenizerState<'a> {
 
     fn scan_identifier(&mut self, identifier_end: &str) -> Result<(), TokenizerError> {
         self.advance(1)?;
-        let text = self.extract_string(identifier_end, true)?;
+        let text = self.extract_string(identifier_end, true, true, true)?;
         self.add(self.token_types.identifier, Some(text))
     }
 
@@ -569,6 +595,8 @@ impl<'a> TokenizerState<'a> {
         &mut self,
         delimiter: &str,
         use_identifier_escapes: bool,
+        unescape_sequences: bool,
+        raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
         let mut text = String::from("");
 
@@ -578,8 +606,23 @@ impl<'a> TokenizerState<'a> {
             } else {
                 &self.settings.string_escapes
             };
-
             let peek_char_str = self.peek_char.to_string();
+
+            if unescape_sequences
+                && !self.dialect_settings.unescaped_sequences.is_empty()
+                && !self.peek_char.is_whitespace()
+                && self.settings.string_escapes.contains(&self.current_char)
+            {
+                let sequence_key = format!("{}{}", self.current_char, self.peek_char);
+                if let Some(unescaped_sequence) =
+                    self.dialect_settings.unescaped_sequences.get(&sequence_key)
+                {
+                    self.advance(2)?;
+                    text.push_str(unescaped_sequence);
+                    continue;
+                }
+            }
+
             if escapes.contains(&self.current_char)
                 && (peek_char_str == delimiter || escapes.contains(&self.peek_char))
                 && (self.current_char == self.peek_char
@@ -610,24 +653,15 @@ impl<'a> TokenizerState<'a> {
                     break;
                 }
                 if self.is_end {
+                    if !raise_unmatched {
+                        text.push(self.current_char);
+                        return Ok(text)
+                    }
+
                     return self.error_result(format!(
                         "Missing {} from {}:{}",
                         delimiter, self.line, self.current
                     ));
-                }
-
-                if !self.dialect_settings.escape_sequences.is_empty()
-                    && !self.peek_char.is_whitespace()
-                    && self.settings.string_escapes.contains(&self.current_char)
-                {
-                    let sequence_key = format!("{}{}", self.current_char, self.peek_char);
-                    if let Some(escaped_sequence) =
-                        self.dialect_settings.escape_sequences.get(&sequence_key)
-                    {
-                        self.advance(2)?;
-                        text.push_str(escaped_sequence);
-                        continue;
-                    }
                 }
 
                 let current = self.current - 1;

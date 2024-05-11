@@ -20,6 +20,34 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity(
+            """CREATE TEMPORARY FUNCTION FOO()
+RETURNS STRING
+LANGUAGE js AS
+'return "Hello world!"'""",
+            pretty=True,
+        )
+        self.validate_identity(
+            "[a, a(1, 2,3,4444444444444444, tttttaoeunthaoentuhaoentuheoantu, toheuntaoheutnahoeunteoahuntaoeh), b(3, 4,5), c, d, tttttttttttttttteeeeeeeeeeeeeett, 12312312312]",
+            """[
+  a,
+  a(
+    1,
+    2,
+    3,
+    4444444444444444,
+    tttttaoeunthaoentuhaoentuheoantu,
+    toheuntaoheutnahoeunteoahuntaoeh
+  ),
+  b(3, 4, 5),
+  c,
+  d,
+  tttttttttttttttteeeeeeeeeeeeeett,
+  12312312312
+]""",
+            pretty=True,
+        )
+
         self.validate_all(
             "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 as a, 'abc' AS b), STRUCT(str_col AS abc)",
             write={
@@ -40,6 +68,10 @@ class TestBigQuery(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
+        self.validate_identity(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
+        )
 
         table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")
@@ -57,9 +89,13 @@ class TestBigQuery(Validator):
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
         self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
 
+        column = self.validate_identity("SELECT `db.t`.`c` FROM `db.t`").selects[0]
+        self.assertEqual(len(column.parts), 3)
+
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
+        self.validate_identity("assert.true(1 = 1)")
         self.validate_identity("SELECT ARRAY_TO_STRING(list, '--') AS text")
         self.validate_identity("SELECT jsondoc['some_key']")
         self.validate_identity("SELECT `p.d.UdF`(data).* FROM `p.d.t`")
@@ -185,6 +221,10 @@ class TestBigQuery(Validator):
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
+            "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=TIMESTAMP '2020-01-02T04:05:06.007Z') AS SELECT 1 AS c",
+            "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=CAST('2020-01-02T04:05:06.007Z' AS TIMESTAMP)) AS SELECT 1 AS c",
+        )
+        self.validate_identity(
             "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
             "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
         )
@@ -246,6 +286,13 @@ class TestBigQuery(Validator):
         )
 
         self.validate_all(
+            "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS h, UNNEST(h.t3) AS s",
+            write={
+                "bigquery": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS h, UNNEST(h.t3) AS s",
+                "duckdb": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS _t0(h), UNNEST(h.t3) AS _t1(s)",
+            },
+        )
+        self.validate_all(
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
                 "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
@@ -256,7 +303,7 @@ class TestBigQuery(Validator):
             "SELECT results FROM Coordinates, Coordinates.position AS results",
             write={
                 "bigquery": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results",
-                "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t(results)",
+                "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t0(results)",
             },
         )
         self.validate_all(
@@ -274,7 +321,7 @@ class TestBigQuery(Validator):
             },
             write={
                 "bigquery": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS results",
-                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t(results)",
+                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t0(results)",
                 "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
             },
         )
@@ -492,7 +539,7 @@ class TestBigQuery(Validator):
             "SELECT * FROM t WHERE EXISTS(SELECT * FROM unnest(nums) AS x WHERE x > 1)",
             write={
                 "bigquery": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS x WHERE x > 1)",
-                "duckdb": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS _t(x) WHERE x > 1)",
+                "duckdb": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS _t0(x) WHERE x > 1)",
             },
         )
         self.validate_all(
@@ -586,11 +633,19 @@ class TestBigQuery(Validator):
         )
         self.validate_all(
             "MD5(x)",
+            read={
+                "clickhouse": "MD5(x)",
+                "presto": "MD5(x)",
+                "trino": "MD5(x)",
+            },
             write={
                 "": "MD5_DIGEST(x)",
                 "bigquery": "MD5(x)",
                 "hive": "UNHEX(MD5(x))",
                 "spark": "UNHEX(MD5(x))",
+                "clickhouse": "MD5(x)",
+                "presto": "MD5(x)",
+                "trino": "MD5(x)",
             },
         )
         self.validate_all(
@@ -603,20 +658,61 @@ class TestBigQuery(Validator):
                 "": "SELECT MD5(some_string)",
                 "bigquery": "SELECT TO_HEX(MD5(some_string))",
                 "duckdb": "SELECT MD5(some_string)",
+                "clickhouse": "SELECT LOWER(HEX(MD5(some_string)))",
+                "presto": "SELECT LOWER(TO_HEX(MD5(some_string)))",
+                "trino": "SELECT LOWER(TO_HEX(MD5(some_string)))",
+            },
+        )
+        self.validate_all(
+            "SHA1(x)",
+            read={
+                "clickhouse": "SHA1(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+            write={
+                "clickhouse": "SHA1(x)",
+                "bigquery": "SHA1(x)",
+                "": "SHA(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+        )
+        self.validate_all(
+            "SHA1(x)",
+            write={
+                "bigquery": "SHA1(x)",
+                "": "SHA(x)",
             },
         )
         self.validate_all(
             "SHA256(x)",
+            read={
+                "clickhouse": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
+            },
             write={
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
+                "clickhouse": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
             },
         )
         self.validate_all(
             "SHA512(x)",
+            read={
+                "clickhouse": "SHA512(x)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
+            },
             write={
+                "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
             },
         )
         self.validate_all(
@@ -734,10 +830,10 @@ class TestBigQuery(Validator):
         self.validate_all(
             "'\\\\'",
             write={
-                "bigquery": r"'\\'",
-                "duckdb": r"'\\'",
-                "presto": r"'\\'",
-                "hive": r"'\\'",
+                "bigquery": "'\\\\'",
+                "duckdb": "'\\'",
+                "presto": "'\\'",
+                "hive": "'\\\\'",
             },
         )
         self.validate_all(
@@ -827,8 +923,8 @@ class TestBigQuery(Validator):
             },
             write={
                 "bigquery": "SELECT * FROM UNNEST(['7', '14']) AS x",
-                "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS _t(x)",
-                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS _t(x)",
+                "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS _t0(x)",
+                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS _t0(x)",
             },
         )
         self.validate_all(
@@ -1096,6 +1192,13 @@ WHERE
             write={
                 "bigquery": "SELECT MOD(x, 10)",
                 "postgres": "SELECT x % 10",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(x AS DATETIME)",
+            write={
+                "": "SELECT CAST(x AS TIMESTAMP)",
+                "bigquery": "SELECT CAST(x AS DATETIME)",
             },
         )
 
@@ -1424,3 +1527,14 @@ OPTIONS (
 
         with self.assertRaises(ParseError):
             transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")
+
+    def test_mod(self):
+        for sql in ("MOD(a, b)", "MOD('a', b)", "MOD(5, 2)", "MOD((a + 1) * 8, 5 - 1)"):
+            with self.subTest(f"Testing BigQuery roundtrip of modulo operation: {sql}"):
+                self.validate_identity(sql)
+
+        self.validate_identity("SELECT MOD((SELECT 1), 2)")
+        self.validate_identity(
+            "MOD((a + 1), b)",
+            "MOD(a + 1, b)",
+        )

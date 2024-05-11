@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import typing as t
 
 import sqlglot
@@ -85,7 +86,7 @@ def optimize(
     optimized = exp.maybe_parse(expression, dialect=dialect, copy=True)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
-        rule_params = rule.__code__.co_varnames
+        rule_params = inspect.getfullargspec(rule).args
         rule_kwargs = {
             param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }

@@ -145,6 +145,7 @@ class TokenType(AutoName):
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
     TIMESTAMPLTZ = auto()
+    TIMESTAMPNTZ = auto()
     TIMESTAMP_S = auto()
     TIMESTAMP_MS = auto()
     TIMESTAMP_NS = auto()
@@ -197,6 +198,7 @@ class TokenType(AutoName):
     NESTED = auto()
     AGGREGATEFUNCTION = auto()
     SIMPLEAGGREGATEFUNCTION = auto()
+    TDIGEST = auto()
     UNKNOWN = auto()
 
     # keywords
@@ -223,6 +225,7 @@ class TokenType(AutoName):
     COMMIT = auto()
     CONNECT_BY = auto()
     CONSTRAINT = auto()
+    COPY = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -292,6 +295,7 @@ class TokenType(AutoName):
     LOAD = auto()
     LOCK = auto()
     MAP = auto()
+    MATCH_CONDITION = auto()
     MATCH_RECOGNIZE = auto()
     MEMBER_OF = auto()
     MERGE = auto()
@@ -522,6 +526,7 @@ class _Tokenizer(type):
                 break_=_TOKEN_TYPE_TO_INDEX[TokenType.BREAK],
                 dcolon=_TOKEN_TYPE_TO_INDEX[TokenType.DCOLON],
                 heredoc_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEREDOC_STRING],
+                raw_string=_TOKEN_TYPE_TO_INDEX[TokenType.RAW_STRING],
                 hex_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEX_STRING],
                 identifier=_TOKEN_TYPE_TO_INDEX[TokenType.IDENTIFIER],
                 number=_TOKEN_TYPE_TO_INDEX[TokenType.NUMBER],
@@ -566,12 +571,11 @@ class Tokenizer(metaclass=_Tokenizer):
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
         "@": TokenType.PARAMETER,
-        # used for breaking a var like x'y' but nothing else
-        # the token type doesn't matter
-        "'": TokenType.QUOTE,
-        "`": TokenType.IDENTIFIER,
-        '"': TokenType.IDENTIFIER,
         "#": TokenType.HASH,
+        # Used for breaking a var like x'y' but nothing else the token type doesn't matter
+        "'": TokenType.UNKNOWN,
+        "`": TokenType.UNKNOWN,
+        '"': TokenType.UNKNOWN,
     }
 
     BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
@@ -647,6 +651,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMIT": TokenType.COMMIT,
         "CONNECT BY": TokenType.CONNECT_BY,
         "CONSTRAINT": TokenType.CONSTRAINT,
+        "COPY": TokenType.COPY,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
@@ -800,6 +805,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LONG": TokenType.BIGINT,
         "BIGINT": TokenType.BIGINT,
         "INT8": TokenType.TINYINT,
+        "UINT": TokenType.UINT,
         "DEC": TokenType.DECIMAL,
         "DECIMAL": TokenType.DECIMAL,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
@@ -844,6 +850,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
+        "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+        "TIMESTAMPNTZ": TokenType.TIMESTAMPNTZ,
+        "TIMESTAMP_NTZ": TokenType.TIMESTAMPNTZ,
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
         "INT4RANGE": TokenType.INT4RANGE,
@@ -866,7 +875,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "ANALYZE": TokenType.COMMAND,
         "CALL": TokenType.COMMAND,
         "COMMENT": TokenType.COMMENT,
-        "COPY": TokenType.COMMAND,
         "EXPLAIN": TokenType.COMMAND,
         "GRANT": TokenType.COMMAND,
         "OPTIMIZE": TokenType.COMMAND,
@@ -893,7 +901,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}
 
-    # handle numeric literals like in hive (3L = BIGINT)
+    # Handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
 
     COMMENTS = ["--", ("/*", "*/")]
@@ -922,7 +930,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if USE_RS_TOKENIZER:
             self._rs_dialect_settings = RsTokenizerDialectSettings(
-                escape_sequences=self.dialect.ESCAPE_SEQUENCES,
+                unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             )
 
@@ -966,8 +974,7 @@ class Tokenizer(metaclass=_Tokenizer):
         while self.size and not self._end:
             current = self._current
 
-            # skip spaces inline rather than iteratively call advance()
-            # for performance reasons
+            # Skip spaces here rather than iteratively calling advance() for performance reasons
             while current < self.size:
                 char = self.sql[current]
 
@@ -976,12 +983,10 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     break
 
-            n = current - self._current
-            self._start = current
-            self._advance(n if n > 1 else 1)
+            offset = current - self._current if current > self._current else 1
 
-            if self._char is None:
-                break
+            self._start = current
+            self._advance(offset)
 
             if not self._char.isspace():
                 if self._char.isdigit():
@@ -1009,12 +1014,9 @@ class Tokenizer(metaclass=_Tokenizer):
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             # Ensures we don't count an extra line if we get a \r\n line break sequence
-            if self._char == "\r" and self._peek == "\n":
-                i = 2
-                self._start += 1
-
-            self._col = 1
-            self._line += 1
+            if not (self._char == "\r" and self._peek == "\n"):
+                self._col = 1
+                self._line += 1
         else:
             self._col += i
 
@@ -1186,6 +1188,8 @@ class Tokenizer(metaclass=_Tokenizer):
             if self._peek.isdigit():
                 self._advance()
             elif self._peek == "." and not decimal:
+                if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER:
+                    return self._add(TokenType.NUMBER)
                 decimal = True
                 self._advance()
             elif self._peek in ("-", "+") and scientific == 1:
@@ -1273,13 +1277,27 @@ class Tokenizer(metaclass=_Tokenizer):
                     return True
 
                 self._advance()
-                tag = "" if self._char == end else self._extract_string(end)
+
+                if self._char == end:
+                    tag = ""
+                else:
+                    tag = self._extract_string(
+                        end,
+                        unescape_sequences=False,
+                        raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
+                    )
+
+                if self._end and tag and self.HEREDOC_TAG_IS_IDENTIFIER:
+                    self._advance(-len(tag))
+                    self._add(self.HEREDOC_STRING_ALTERNATIVE)
+                    return True
+
                 end = f"{start}{tag}{end}"
         else:
             return False
 
         self._advance(len(start))
-        text = self._extract_string(end)
+        text = self._extract_string(end, unescape_sequences=token_type != TokenType.RAW_STRING)
 
         if base:
             try:
@@ -1294,7 +1312,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_identifier(self, identifier_end: str) -> None:
         self._advance()
-        text = self._extract_string(identifier_end, self._IDENTIFIER_ESCAPES)
+        text = self._extract_string(identifier_end, escapes=self._IDENTIFIER_ESCAPES)
         self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:
@@ -1311,12 +1329,29 @@ class Tokenizer(metaclass=_Tokenizer):
             else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
         )
 
-    def _extract_string(self, delimiter: str, escapes=None) -> str:
+    def _extract_string(
+        self,
+        delimiter: str,
+        escapes: t.Optional[t.Set[str]] = None,
+        unescape_sequences: bool = True,
+        raise_unmatched: bool = True,
+    ) -> str:
         text = ""
         delim_size = len(delimiter)
         escapes = self._STRING_ESCAPES if escapes is None else escapes
 
         while True:
+            if (
+                unescape_sequences
+                and self.dialect.UNESCAPED_SEQUENCES
+                and self._peek
+                and self._char in self.STRING_ESCAPES
+            ):
+                unescaped_sequence = self.dialect.UNESCAPED_SEQUENCES.get(self._char + self._peek)
+                if unescaped_sequence:
+                    self._advance(2)
+                    text += unescaped_sequence
+                    continue
             if (
                 self._char in escapes
                 and (self._peek == delimiter or self._peek in escapes)
@@ -1338,18 +1373,10 @@ class Tokenizer(metaclass=_Tokenizer):
                     break
 
                 if self._end:
-                    raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
+                    if not raise_unmatched:
+                        return text + self._char
 
-                if (
-                    self.dialect.ESCAPE_SEQUENCES
-                    and self._peek
-                    and self._char in self.STRING_ESCAPES
-                ):
-                    escaped_sequence = self.dialect.ESCAPE_SEQUENCES.get(self._char + self._peek)
-                    if escaped_sequence:
-                        self._advance(2)
-                        text += escaped_sequence
-                        continue
+                    raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1
                 self._advance(alnum=True)

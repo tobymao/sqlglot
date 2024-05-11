@@ -1,5 +1,6 @@
 from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
+from sqlglot.errors import ErrorLevel
 
 
 class TestClickhouse(Validator):
@@ -92,6 +93,9 @@ class TestClickhouse(Validator):
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
+        self.validate_identity(
+            "SELECT id, quantileGK(100, 0.95)(reading) OVER (PARTITION BY id ORDER BY id RANGE BETWEEN 30000 PRECEDING AND CURRENT ROW) AS window FROM table"
+        )
 
         self.validate_identity(
             "SELECT $1$foo$1$",
@@ -153,7 +157,9 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
-
+        self.validate_identity(
+            "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
+        )
         self.validate_all(
             "SELECT arrayJoin([1,2,3])",
             write={
@@ -401,6 +407,39 @@ class TestClickhouse(Validator):
             """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
         )
 
+        self.validate_identity("SELECT 1 FORMAT TabSeparated")
+        self.validate_identity("SELECT * FROM t FORMAT TabSeparated")
+        self.validate_identity("SELECT FORMAT")
+        self.validate_identity("1 AS FORMAT").assert_is(exp.Alias)
+
+        self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d', '%T')")
+        self.validate_all(
+            "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+            read={
+                "clickhouse": "SELECT formatDateTime(NOW(), '%Y-%m-%d')",
+                "mysql": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+            },
+            write={
+                "clickhouse": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+                "mysql": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+            },
+        )
+
+        self.validate_identity("ALTER TABLE visits DROP PARTITION 201901")
+        self.validate_identity("ALTER TABLE visits DROP PARTITION ALL")
+        self.validate_identity(
+            "ALTER TABLE visits DROP PARTITION tuple(toYYYYMM(toDate('2019-01-25')))"
+        )
+        self.validate_identity("ALTER TABLE visits DROP PARTITION ID '201901'")
+
+        self.validate_identity("ALTER TABLE visits REPLACE PARTITION 201901 FROM visits_tmp")
+        self.validate_identity("ALTER TABLE visits REPLACE PARTITION ALL FROM visits_tmp")
+        self.validate_identity(
+            "ALTER TABLE visits REPLACE PARTITION tuple(toYYYYMM(toDate('2019-01-25'))) FROM visits_tmp"
+        )
+        self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
+        self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")
@@ -411,6 +450,13 @@ class TestClickhouse(Validator):
         query = parse_one("""WITH (SELECT 1) AS y SELECT * FROM y""", read="clickhouse")
         self.assertIsInstance(query.args["with"].expressions[0].this, exp.Subquery)
         self.assertEqual(query.args["with"].expressions[0].alias, "y")
+
+        query = "WITH 1 AS var SELECT var"
+        for error_level in [ErrorLevel.IGNORE, ErrorLevel.RAISE, ErrorLevel.IMMEDIATE]:
+            self.assertEqual(
+                self.parse_one(query, error_level=error_level).sql(dialect=self.dialect),
+                query,
+            )
 
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
@@ -795,3 +841,38 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
+        self.validate_identity(
+            "CREATE TABLE t1 (a String EPHEMERAL, b String EPHEMERAL func(), c String MATERIALIZED func(), d String ALIAS func()) ENGINE=TinyLog()"
+        )
+
+    def test_agg_functions(self):
+        def extract_agg_func(query):
+            return parse_one(query, read="clickhouse").selects[0].this
+
+        self.assertIsInstance(
+            extract_agg_func("select quantileGK(100, 0.95) OVER (PARTITION BY id) FROM table"),
+            exp.AnonymousAggFunc,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "select quantileGK(100, 0.95)(reading) OVER (PARTITION BY id) FROM table"
+            ),
+            exp.ParameterizedAgg,
+        )
+        self.assertIsInstance(
+            extract_agg_func("select quantileGKIf(100, 0.95) OVER (PARTITION BY id) FROM table"),
+            exp.CombinedAggFunc,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "select quantileGKIf(100, 0.95)(reading) OVER (PARTITION BY id) FROM table"
+            ),
+            exp.CombinedParameterizedAgg,
+        )
+
+        parse_one("foobar(x)").assert_is(exp.Anonymous)
+
+    def test_drop_on_cluster(self):
+        for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
+            with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
+                self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")

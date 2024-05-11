@@ -1,4 +1,4 @@
-![SQLGlot logo](sqlglot.svg)
+![SQLGlot logo](sqlglot.png)
 
 SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [21 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
 
@@ -6,7 +6,7 @@ It is a very comprehensive generic SQL parser with a robust [test suite](https:/
 
 You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
-Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that SQL validation is not SQLGlot’s goal, so some syntax errors may go unnoticed.
+Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, SQLGlot does not aim to be a SQL validator, so it may fail to detect certain syntax errors.
 
 Learn more about SQLGlot in the API [documentation](https://sqlglot.com/) and the expression tree [primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md).
 
@@ -73,15 +73,15 @@ We'd love to hear from you. Join our community [Slack channel](https://tobikodat
 ## FAQ
 
 I tried to parse SQL that should be valid but it failed, why did that happen?
-  
+
 * Most of the time, issues like this occur because the "source" dialect is omitted during parsing. For example, this is how to correctly parse a SQL query written in Spark SQL: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
 
 I tried to output SQL but it's not in the correct dialect!
-  
+
 * Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")` (alternatively: `transpile(sql, read="spark", write="duckdb")`).
 
 I tried to parse invalid SQL and it worked, even though it should raise an error! Why didn't it validate my SQL?
-  
+
 * SQLGlot does not aim to be a SQL validator - it is designed to be very forgiving. This makes the codebase more comprehensive and also gives more flexibility to its users, e.g. by allowing them to include trailing commas in their projection lists.
 
 ## Examples
@@ -110,12 +110,15 @@ sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read="duckdb", write="hive"
 "SELECT DATE_FORMAT(x, 'yy-M-ss')"
 ```
 
-As another example, let's suppose that we want to read in a SQL query that contains a CTE and a cast to `REAL`, and then transpile it to Spark, which uses backticks for identifiers and `FLOAT` instead of `REAL`:
+Identifier delimiters and data types can be translated as well:
 
 ```python
 import sqlglot
 
+# Spark SQL requires backticks (`) for delimited identifiers and uses `FLOAT` over `REAL`
 sql = """WITH baz AS (SELECT a, c FROM foo WHERE a = 1) SELECT f.a, b.b, baz.c, CAST("b"."a" AS REAL) d FROM foo f JOIN bar b ON f.a = b.a LEFT JOIN baz ON f.a = baz.a"""
+
+# Translates the query into Spark SQL, formats it, and delimits all of its identifiers
 print(sqlglot.transpile(sql, write="spark", identify=True, pretty=True)[0])
 ```
 
@@ -140,7 +143,7 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
-Comments are also preserved on a best-effort basis when transpiling SQL code:
+Comments are also preserved on a best-effort basis:
 
 ```python
 sql = """
@@ -157,6 +160,7 @@ FROM
   tbl #          comment 6
 """
 
+# Note: MySQL-specific comments (`#`) are converted into standard syntax
 print(sqlglot.transpile(sql, read='mysql', pretty=True)[0])
 ```
 
@@ -175,7 +179,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */
 
 ### Metadata
 
-You can explore SQL with expression helpers to do things like find columns and tables:
+You can explore SQL with expression helpers to do things like find columns and tables in a query:
 
 ```python
 from sqlglot import parse_one, exp
@@ -198,7 +202,7 @@ Read the [ast primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_pri
 
 ### Parser Errors
 
-When the parser detects an error in the syntax, it raises a ParseError:
+When the parser detects an error in the syntax, it raises a `ParseError`:
 
 ```python
 import sqlglot
@@ -235,7 +239,7 @@ except sqlglot.errors.ParseError as e:
 
 ### Unsupported Errors
 
-Presto `APPROX_DISTINCT` supports the accuracy argument which is not supported in Hive:
+It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and will proceed to do a best-effort translation by default:
 
 ```python
 import sqlglot
@@ -247,9 +251,24 @@ APPROX_COUNT_DISTINCT does not support accuracy
 'SELECT APPROX_COUNT_DISTINCT(a) FROM foo'
 ```
 
+This behavior can be changed by setting the [`unsupported_level`](https://github.com/tobymao/sqlglot/blob/b0e8dc96ba179edb1776647b5bde4e704238b44d/sqlglot/errors.py#L9) attribute. For example, we can set it to either `RAISE` or `IMMEDIATE` to ensure an exception is raised instead:
+
+```python
+import sqlglot
+sqlglot.transpile("SELECT APPROX_DISTINCT(a, 0.1) FROM foo", read="presto", write="hive", unsupported_level=sqlglot.ErrorLevel.RAISE)
+```
+
+```
+sqlglot.errors.UnsupportedError: APPROX_COUNT_DISTINCT does not support accuracy
+```
+
+There are queries that require additional information to be accurately transpiled, such as the schemas of the tables referenced in them. This is because certain transformations are type-sensitive, meaning that type inference is needed in order to understand their semantics. Even though the `qualify` and `annotate_types` optimizer [rules](https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer) can help with this, they are not used by default because they add significant overhead and complexity.
+
+Transpilation is generally a hard problem, so SQLGlot employs an "incremental" approach to solving it. This means that there may be dialect pairs that currently lack support for some inputs, but this is expected to improve over time. We highly appreciate well-documented and tested issues or PRs, so feel free to [reach out](#get-in-touch) if you need guidance!
+
 ### Build and Modify SQL
 
-SQLGlot supports incrementally building sql expressions:
+SQLGlot supports incrementally building SQL expressions:
 
 ```python
 from sqlglot import select, condition
@@ -262,7 +281,7 @@ select("*").from_("y").where(where).sql()
 'SELECT * FROM y WHERE x = 1 AND y = 1'
 ```
 
-You can also modify a parsed tree:
+It's possible to modify a parsed tree:
 
 ```python
 from sqlglot import parse_one
@@ -273,7 +292,7 @@ parse_one("SELECT x FROM y").from_("z").sql()
 'SELECT x FROM z'
 ```
 
-There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:
+Parsed expressions can also be transformed recursively by applying a mapping function to each node in the tree:
 
 ```python
 from sqlglot import exp, parse_one
@@ -328,7 +347,7 @@ WHERE
 
 ### AST Introspection
 
-You can see the AST version of the sql by calling `repr`:
+You can see the AST version of the parsed SQL by calling `repr`:
 
 ```python
 from sqlglot import parse_one
@@ -348,7 +367,7 @@ Select(
 
 ### AST Diff
 
-SQLGlot can calculate the difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:
+SQLGlot can calculate the semantic difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:
 
 ```python
 from sqlglot import diff, parse_one
@@ -422,7 +441,9 @@ print(Dialect["custom"])
 
 ### SQL Execution
 
-One can even interpret SQL queries using SQLGlot, where the tables are represented as Python dictionaries. Although the engine is not very fast (it's not supposed to be) and is in a relatively early stage of development, it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels (arrow, pandas). Below is an example showcasing the execution of a SELECT expression that involves aggregations and JOINs:
+SQLGlot is able to interpret SQL queries, where the tables are represented as Python dictionaries. The engine is not supposed to be fast, but it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels, such as [Arrow](https://arrow.apache.org/docs/index.html) and [Pandas](https://pandas.pydata.org/).
+
+The example below showcases the execution of a query that involves aggregations and joins:
 
 ```python
 from sqlglot.executor import execute
@@ -472,6 +493,8 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 ## Used By
 
 * [SQLMesh](https://github.com/TobikoData/sqlmesh)
+* [Apache Superset](https://github.com/apache/superset)
+* [Dagster](https://github.com/dagster-io/dagster)
 * [Fugue](https://github.com/fugue-project/fugue)
 * [ibis](https://github.com/ibis-project/ibis)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)
@@ -493,8 +516,8 @@ make docs-serve
 
 ```
 make style  # Only linter checks
-make unit   # Only unit tests
-make test   # Unit and integration tests
+make unit   # Only unit tests (or unit-rs, to use the Rust tokenizer)
+make test   # Unit and integration tests (or test-rs, to use the Rust tokenizer)
 make check  # Full test suite & linter checks
 ```
 

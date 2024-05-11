@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     encode_decode_sql,
     build_formatted_time,
-    inline_array_sql,
+    inline_array_unless_query,
     no_comment_column_constraint_sql,
     no_safe_divide_sql,
     no_timestamp_sql,
@@ -26,22 +26,24 @@ from sqlglot.dialects.dialect import (
     str_to_time_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
+    unit_to_var,
 )
-from sqlglot.helper import flatten, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
 def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
-    unit = self.sql(expression, "unit").strip("'") or "DAY"
-    interval = self.sql(exp.Interval(this=expression.expression, unit=unit))
+    interval = self.sql(exp.Interval(this=expression.expression, unit=unit_to_var(expression)))
     return f"CAST({this} AS {self.sql(expression.return_type)}) + {interval}"
 
 
-def _date_delta_sql(self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_delta_sql(
+    self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub | exp.TimeAdd
+) -> str:
     this = self.sql(expression, "this")
-    unit = self.sql(expression, "unit").strip("'") or "DAY"
-    op = "+" if isinstance(expression, exp.DateAdd) else "-"
+    unit = unit_to_var(expression)
+    op = "+" if isinstance(expression, (exp.DateAdd, exp.TimeAdd)) else "-"
     return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
 
@@ -153,16 +155,6 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
     return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
 
 
-def _rename_unless_within_group(
-    a: str, b: str
-) -> t.Callable[[DuckDB.Generator, exp.Expression], str]:
-    return lambda self, expression: (
-        self.func(a, *flatten(expression.args.values()))
-        if isinstance(expression.find_ancestor(exp.Select, exp.WithinGroup), exp.WithinGroup)
-        else self.func(b, *flatten(expression.args.values()))
-    )
-
-
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -186,6 +178,11 @@ class DuckDB(Dialect):
         return super().to_json_path(path)
 
     class Tokenizer(tokens.Tokenizer):
+        HEREDOC_STRINGS = ["$"]
+
+        HEREDOC_TAG_IS_IDENTIFIER = True
+        HEREDOC_STRING_ALTERNATIVE = TokenType.PARAMETER
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "//": TokenType.DIV,
@@ -283,8 +280,15 @@ class DuckDB(Dialect):
             "RANGE": _build_generate_series(end_exclusive=True),
         }
 
+        FUNCTIONS.pop("DATE_SUB")
+
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE")
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "MAP": lambda self: self._parse_map(),
+        }
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
@@ -299,6 +303,33 @@ class DuckDB(Dialect):
                 else None
             ),
         }
+
+        def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
+            # https://duckdb.org/docs/sql/samples.html
+            sample = super()._parse_table_sample(as_modifier=as_modifier)
+            if sample and not sample.args.get("method"):
+                if sample.args.get("size"):
+                    sample.set("method", exp.var("RESERVOIR"))
+                else:
+                    sample.set("method", exp.var("SYSTEM"))
+
+            return sample
+
+        def _parse_bracket(
+            self, this: t.Optional[exp.Expression] = None
+        ) -> t.Optional[exp.Expression]:
+            bracket = super()._parse_bracket(this)
+            if isinstance(bracket, exp.Bracket):
+                bracket.set("returns_list_for_maps", True)
+
+            return bracket
+
+        def _parse_map(self) -> exp.ToMap | exp.Map:
+            if self._match(TokenType.L_BRACE, advance=False):
+                return self.expression(exp.ToMap, this=self._parse_bracket())
+
+            args = self._parse_wrapped_csv(self._parse_conjunction)
+            return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
@@ -347,15 +378,12 @@ class DuckDB(Dialect):
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
+        COPY_HAS_INTO_KEYWORD = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: lambda self, e: (
-                self.func("ARRAY", e.expressions[0])
-                if e.expressions and e.expressions[0].find(exp.Select)
-                else inline_array_sql(self, e)
-            ),
+            exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
@@ -397,12 +425,12 @@ class DuckDB(Dialect):
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
                 "'month'",
-                exp.cast(e.expression, "timestamp", copy=True),
-                exp.cast(e.this, "timestamp", copy=True),
+                exp.cast(e.expression, exp.DataType.Type.TIMESTAMP, copy=True),
+                exp.cast(e.this, exp.DataType.Type.TIMESTAMP, copy=True),
             ),
             exp.ParseJSON: rename_func("JSON"),
-            exp.PercentileCont: _rename_unless_within_group("PERCENTILE_CONT", "QUANTILE_CONT"),
-            exp.PercentileDisc: _rename_unless_within_group("PERCENTILE_DISC", "QUANTILE_DISC"),
+            exp.PercentileCont: rename_func("QUANTILE_CONT"),
+            exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
@@ -427,14 +455,17 @@ class DuckDB(Dialect):
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),
             exp.Struct: _struct_sql,
+            exp.TimeAdd: _date_delta_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
             exp.TimestampTrunc: timestamptrunc_sql,
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, "date")),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeStrToUnix: lambda self, e: self.func("EPOCH", exp.cast(e.this, "timestamp")),
+            exp.TimeStrToUnix: lambda self, e: self.func(
+                "EPOCH", exp.cast(e.this, exp.DataType.Type.TIMESTAMP)
+            ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
@@ -443,8 +474,8 @@ class DuckDB(Dialect):
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",
-                exp.cast(e.expression, "TIMESTAMP"),
-                exp.cast(e.this, "TIMESTAMP"),
+                exp.cast(e.expression, exp.DataType.Type.TIMESTAMP),
+                exp.cast(e.this, exp.DataType.Type.TIMESTAMP),
             ),
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
@@ -472,6 +503,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.NVARCHAR: "TEXT",
             exp.DataType.Type.UINT: "UINTEGER",
             exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
@@ -480,7 +512,7 @@ class DuckDB(Dialect):
 
         STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}
 
-        UNWRAPPED_INTERVAL_VALUES = (exp.Column, exp.Literal, exp.Paren)
+        UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
 
         # DuckDB doesn't generally support CREATE TABLE .. properties
         # https://duckdb.org/docs/sql/statements/create_table.html
@@ -529,6 +561,15 @@ class DuckDB(Dialect):
                 # This sample clause only applies to a single source, not the entire resulting relation
                 tablesample_keyword = "TABLESAMPLE"
 
+            if expression.args.get("size"):
+                method = expression.args.get("method")
+                if method and method.name.upper() != "RESERVOIR":
+                    self.unsupported(
+                        f"Sampling method {method} is not supported with a discrete sample count, "
+                        "defaulting to reservoir sampling"
+                    )
+                    expression.set("method", exp.var("RESERVOIR"))
+
             return super().tablesample_sql(
                 expression, sep=sep, tablesample_keyword=tablesample_keyword
             )
@@ -573,7 +614,35 @@ class DuckDB(Dialect):
             return super().generateseries_sql(expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
-            if isinstance(expression.this, exp.Array):
-                expression.this.replace(exp.paren(expression.this))
+            this = expression.this
+            if isinstance(this, exp.Array):
+                this.replace(exp.paren(this))
 
-            return super().bracket_sql(expression)
+            bracket = super().bracket_sql(expression)
+
+            if not expression.args.get("returns_list_for_maps"):
+                if not this.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    this = annotate_types(this)
+
+                if this.is_type(exp.DataType.Type.MAP):
+                    bracket = f"({bracket})[1]"
+
+            return bracket
+
+        def withingroup_sql(self, expression: exp.WithinGroup) -> str:
+            expression_sql = self.sql(expression, "expression")
+
+            func = expression.this
+            if isinstance(func, exp.PERCENTILES):
+                # Make the order key the first arg and slide the fraction to the right
+                # https://duckdb.org/docs/sql/aggregates#ordered-set-aggregate-functions
+                order_col = expression.find(exp.Ordered)
+                if order_col:
+                    func.set("expression", func.this)
+                    func.set("this", order_col.this)
+
+            this = self.sql(expression, "this").rstrip(")")
+
+            return f"{this}{expression_sql})"

@@ -33,6 +33,14 @@ def _json_extract_sql(self: SQLite.Generator, expression: exp.JSONExtract) -> st
     return arrow_json_extract_sql(self, expression)
 
 
+def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
+    if len(args) == 1:
+        args.append(exp.CurrentTimestamp())
+    if len(args) == 2:
+        return exp.TimeToStr(this=exp.TsOrDsToTimestamp(this=args[1]), format=args[0])
+    return exp.Anonymous(this="STRFTIME", expressions=args)
+
+
 def _transform_create(expression: exp.Expression) -> exp.Expression:
     """Move primary key to a column and enforce auto_increment on primary keys."""
     schema = expression.this
@@ -82,6 +90,7 @@ class SQLite(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
+            "STRFTIME": _build_strftime,
         }
         STRING_ALIASES = True
 
@@ -152,7 +161,9 @@ class SQLite(Dialect):
             ),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
+            exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.args.get("format"), e.this),
             exp.TryCast: no_trycast_sql,
+            exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
         }
 
         # SQLite doesn't generally support CREATE TABLE .. properties

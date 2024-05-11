@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     any_value_to_max_sql,
     date_delta_sql,
+    datestrtodate_sql,
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
@@ -108,7 +109,7 @@ def _build_formatted_time(
         assert len(args) == 2
 
         return exp_class(
-            this=exp.cast(args[1], "datetime"),
+            this=exp.cast(args[1], exp.DataType.Type.DATETIME),
             format=exp.Literal.string(
                 format_time(
                     args[0].name.lower(),
@@ -463,6 +464,7 @@ class TSQL(Dialect):
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "TOP": TokenType.TOP,
+            "TIMESTAMP": TokenType.ROWVERSION,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
@@ -471,6 +473,8 @@ class TSQL(Dialect):
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "OPTION": TokenType.OPTION,
         }
+
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
 
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
@@ -520,11 +524,6 @@ class TSQL(Dialect):
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,
-        }
-
-        STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
-            TokenType.END: lambda self: self._parse_command(),
         }
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
@@ -725,6 +724,8 @@ class TSQL(Dialect):
         SUPPORTS_SELECT_INTO = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
+        OUTER_UNION_MODIFIERS = False
+        COPY_PARAMS_EQ_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
@@ -753,6 +754,7 @@ class TSQL(Dialect):
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)
@@ -768,6 +770,7 @@ class TSQL(Dialect):
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
+            exp.DateStrToDate: datestrtodate_sql,
             exp.Extract: rename_func("DATEPART"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.GroupConcat: _string_agg_sql,
@@ -880,13 +883,6 @@ class TSQL(Dialect):
 
             return rename_func("DATETIMEFROMPARTS")(self, expression)
 
-        def set_operations(self, expression: exp.Union) -> str:
-            limit = expression.args.get("limit")
-            if limit:
-                return self.sql(expression.limit(limit.pop(), copy=False))
-
-            return super().set_operations(expression)
-
         def setitem_sql(self, expression: exp.SetItem) -> str:
             this = expression.this
             if isinstance(this, exp.EQ) and not isinstance(this.left, exp.Parameter):
@@ -914,13 +910,17 @@ class TSQL(Dialect):
                 isinstance(prop, exp.TemporaryProperty)
                 for prop in (properties.expressions if properties else [])
             ):
-                sql = f"#{sql}"
+                sql = f"[#{sql[1:]}" if sql.startswith("[") else f"#{sql}"
 
             return sql
 
         def create_sql(self, expression: exp.Create) -> str:
             kind = expression.kind
             exists = expression.args.pop("exists", None)
+
+            if kind == "VIEW":
+                expression.this.set("catalog", None)
+
             sql = super().create_sql(expression)
 
             like_property = expression.find(exp.LikeProperty)
@@ -1056,3 +1056,14 @@ class TSQL(Dialect):
 
         def partition_sql(self, expression: exp.Partition) -> str:
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
+
+        def altertable_sql(self, expression: exp.AlterTable) -> str:
+            action = seq_get(expression.args.get("actions") or [], 0)
+            if isinstance(action, exp.RenameTable):
+                return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
+            return super().altertable_sql(expression)
+
+        def drop_sql(self, expression: exp.Drop) -> str:
+            if expression.args["kind"] == "VIEW":
+                expression.this.set("catalog", None)
+            return super().drop_sql(expression)

@@ -356,15 +356,15 @@ def coalesce(*cols: ColumnOrName) -> Column:
 
 
 def corr(col1: ColumnOrName, col2: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col1, "CORR", col2)
+    return Column.invoke_expression_over_column(col1, expression.Corr, expression=col2)
 
 
 def covar_pop(col1: ColumnOrName, col2: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col1, "COVAR_POP", col2)
+    return Column.invoke_expression_over_column(col1, expression.CovarPop, expression=col2)
 
 
 def covar_samp(col1: ColumnOrName, col2: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col1, "COVAR_SAMP", col2)
+    return Column.invoke_expression_over_column(col1, expression.CovarSamp, expression=col2)
 
 
 def first(col: ColumnOrName, ignorenulls: t.Optional[bool] = None) -> Column:
@@ -536,7 +536,7 @@ def year(col: ColumnOrName) -> Column:
 
 
 def quarter(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "QUARTER")
+    return Column.invoke_expression_over_column(col, expression.Quarter)
 
 
 def month(col: ColumnOrName) -> Column:

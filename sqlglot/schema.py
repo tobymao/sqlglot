@@ -6,7 +6,7 @@ import typing as t
 from sqlglot import expressions as exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import SchemaError
-from sqlglot.helper import dict_depth
+from sqlglot.helper import dict_depth, first
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
@@ -174,7 +174,7 @@ class AbstractMappingSchema:
             return None
 
         if value == TrieResult.PREFIX:
-            possibilities = flatten_schema(trie, depth=dict_depth(trie) - 1)
+            possibilities = flatten_schema(trie)
 
             if len(possibilities) == 1:
                 parts.extend(possibilities[0])
@@ -362,14 +362,19 @@ class MappingSchema(AbstractMappingSchema, Schema):
             The normalized schema mapping.
         """
         normalized_mapping: t.Dict = {}
-        flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
+        flattened_schema = flatten_schema(schema)
+        error_msg = "Table {} must match the schema's nesting level: {}."
 
         for keys in flattened_schema:
             columns = nested_get(schema, *zip(keys, keys))
 
             if not isinstance(columns, dict):
+                raise SchemaError(error_msg.format(".".join(keys[:-1]), len(flattened_schema[0])))
+            if isinstance(first(columns.values()), dict):
                 raise SchemaError(
-                    f"Table {'.'.join(keys[:-1])} must match the schema's nesting level: {len(flattened_schema[0])}."
+                    error_msg.format(
+                        ".".join(keys + flatten_schema(columns)[0]), len(flattened_schema[0])
+                    ),
                 )
 
             normalized_keys = [self._normalize_name(key, is_table=True) for key in keys]
@@ -494,16 +499,17 @@ def ensure_column_mapping(mapping: t.Optional[ColumnMapping]) -> t.Dict:
 
 
 def flatten_schema(
-    schema: t.Dict, depth: int, keys: t.Optional[t.List[str]] = None
+    schema: t.Dict, depth: t.Optional[int] = None, keys: t.Optional[t.List[str]] = None
 ) -> t.List[t.List[str]]:
     tables = []
     keys = keys or []
+    depth = dict_depth(schema) - 1 if depth is None else depth
 
     for k, v in schema.items():
-        if depth >= 2:
-            tables.extend(flatten_schema(v, depth - 1, keys + [k]))
-        elif depth == 1:
+        if depth == 1 or not isinstance(v, dict):
             tables.append(keys + [k])
+        elif depth >= 2:
+            tables.extend(flatten_schema(v, depth - 1, keys + [k]))
 
     return tables
 

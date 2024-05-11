@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     filter_array_using_unnest,
     if_sql,
-    inline_array_sql,
+    inline_array_unless_query,
     max_or_greatest,
     min_or_least,
     no_ilike_sql,
@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestrtotime_sql,
     ts_or_ds_add_cast,
+    unit_to_var,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -77,29 +78,6 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
             expression.set("expression", expression.expression.this)
 
     return self.create_sql(expression)
-
-
-def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
-    """Remove references to unnest table aliases since bigquery doesn't allow them.
-
-    These are added by the optimizer's qualify_column step.
-    """
-    from sqlglot.optimizer.scope import find_all_in_scope
-
-    if isinstance(expression, exp.Select):
-        unnest_aliases = {
-            unnest.alias
-            for unnest in find_all_in_scope(expression, exp.Unnest)
-            if isinstance(unnest.parent, (exp.From, exp.Join))
-        }
-        if unnest_aliases:
-            for column in expression.find_all(exp.Column):
-                if column.table in unnest_aliases:
-                    column.set("table", None)
-                elif column.db in unnest_aliases:
-                    column.set("db", None)
-
-    return expression
 
 
 # https://issuetracker.google.com/issues/162294746
@@ -196,9 +174,9 @@ def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> st
 
 
 def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
-    expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
-    expression.expression.replace(exp.cast(expression.expression, "TIMESTAMP", copy=True))
-    unit = expression.args.get("unit") or "DAY"
+    expression.this.replace(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
+    expression.expression.replace(exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP))
+    unit = unit_to_var(expression)
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
@@ -213,7 +191,9 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
     if scale == exp.UnixToTime.MICROS:
         return self.func("TIMESTAMP_MICROS", timestamp)
 
-    unix_seconds = exp.cast(exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), "int64")
+    unix_seconds = exp.cast(
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
+    )
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
 
@@ -242,18 +222,7 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIME_MAPPING = {
         "%D": "%m/%d/%y",
-        "%E*S": "%S.%f",
         "%E6S": "%S.%f",
-    }
-
-    ESCAPE_SEQUENCES = {
-        "\\a": "\a",
-        "\\b": "\b",
-        "\\f": "\f",
-        "\\n": "\n",
-        "\\r": "\r",
-        "\\t": "\t",
-        "\\v": "\v",
     }
 
     FORMAT_MAPPING = {
@@ -323,6 +292,7 @@ class BigQuery(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
+            "DATETIME": TokenType.TIMESTAMP,
             "DECLARE": TokenType.COMMAND,
             "ELSEIF": TokenType.COMMAND,
             "EXCEPTION": TokenType.COMMAND,
@@ -503,10 +473,30 @@ class BigQuery(Dialect):
                 if rest and this:
                     this = exp.Dot.build([this, *rest])  # type: ignore
 
-                table = exp.Table(this=this, db=db, catalog=catalog)
+                table = exp.Table(
+                    this=this, db=db, catalog=catalog, pivots=table.args.get("pivots")
+                )
                 table.meta["quoted_table"] = True
 
             return table
+
+        def _parse_column(self) -> t.Optional[exp.Expression]:
+            column = super()._parse_column()
+            if isinstance(column, exp.Column):
+                parts = column.parts
+                if any("." in p.name for p in parts):
+                    catalog, db, table, this, *rest = (
+                        exp.to_identifier(p, quoted=True)
+                        for p in split_num_words(".".join(p.name for p in parts), ".", 4)
+                    )
+
+                    if rest and this:
+                        this = exp.Dot.build([this, *rest])  # type: ignore
+
+                    column = exp.Column(this=this, table=table, db=db, catalog=catalog)
+                    column.meta["quoted_column"] = True
+
+            return column
 
         @t.overload
         def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
@@ -535,7 +525,9 @@ class BigQuery(Dialect):
 
             return json_object
 
-        def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        def _parse_bracket(
+            self, this: t.Optional[exp.Expression] = None
+        ) -> t.Optional[exp.Expression]:
             bracket = super()._parse_bracket(this)
 
             if this is bracket:
@@ -582,6 +574,7 @@ class BigQuery(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+            exp.Array: inline_array_unless_query,
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
@@ -597,7 +590,7 @@ class BigQuery(Dialect):
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", e.this, e.expression, e.unit or "DAY"
+                "DATE_DIFF", e.this, e.expression, unit_to_var(e)
             ),
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
@@ -616,7 +609,6 @@ class BigQuery(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Max: max_or_greatest,
-            exp.Mod: rename_func("MOD"),
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),
             exp.Min: min_or_least,
@@ -635,12 +627,13 @@ class BigQuery(Dialect):
             exp.Select: transforms.preprocess(
                 [
                     transforms.explode_to_unnest(),
-                    _unqualify_unnest,
+                    transforms.unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
+            exp.SHA: rename_func("SHA1"),
             exp.SHA2: lambda self, e: self.func(
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),
@@ -696,6 +689,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.VARBINARY: "BYTES",
+            exp.DataType.Type.ROWVERSION: "BYTES",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",
         }
@@ -807,6 +801,25 @@ class BigQuery(Dialect):
             "within",
         }
 
+        def mod_sql(self, expression: exp.Mod) -> str:
+            this = expression.this
+            expr = expression.expression
+            return self.func(
+                "MOD",
+                this.unnest() if isinstance(this, exp.Paren) else this,
+                expr.unnest() if isinstance(expr, exp.Paren) else expr,
+            )
+
+        def column_parts(self, expression: exp.Column) -> str:
+            if expression.meta.get("quoted_column"):
+                # If a column reference is of the form `dataset.table`.name, we need
+                # to preserve the quoted table path, otherwise the reference breaks
+                table_parts = ".".join(p.name for p in expression.parts[:-1])
+                table_path = self.sql(exp.Identifier(this=table_parts, quoted=True))
+                return f"{table_path}.{self.sql(expression, 'this')}"
+
+            return super().column_parts(expression)
+
         def table_parts(self, expression: exp.Table) -> str:
             # Depending on the context, `x.y` may not resolve to the same data source as `x`.`y`, so
             # we need to make sure the correct quoting is used in each case.
@@ -848,13 +861,6 @@ class BigQuery(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             return self.cast_sql(expression, safe_prefix="SAFE_")
-
-        def array_sql(self, expression: exp.Array) -> str:
-            first_arg = seq_get(expression.expressions, 0)
-            if isinstance(first_arg, exp.Query):
-                return f"ARRAY{self.wrap(self.sql(first_arg))}"
-
-            return inline_array_sql(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             this = expression.this

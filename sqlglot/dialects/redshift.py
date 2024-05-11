@@ -38,6 +38,7 @@ class Redshift(Postgres):
 
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0
+    COPY_PARAMS_ARE_CSV = False
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -79,6 +80,7 @@ class Redshift(Postgres):
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
             parse_bracket: bool = False,
             is_db_reference: bool = False,
+            parse_partition: bool = False,
         ) -> t.Optional[exp.Expression]:
             # Redshift supports UNPIVOTing SUPER objects, e.g. `UNPIVOT foo.obj[0] AS val AT attr`
             unpivot = self._match(TokenType.UNPIVOT)
@@ -91,23 +93,6 @@ class Redshift(Postgres):
             )
 
             return self.expression(exp.Pivot, this=table, unpivot=True) if unpivot else table
-
-        def _parse_types(
-            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-        ) -> t.Optional[exp.Expression]:
-            this = super()._parse_types(
-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
-            )
-
-            if (
-                isinstance(this, exp.DataType)
-                and this.is_type("varchar")
-                and this.expressions
-                and this.expressions[0].this == exp.column("MAX")
-            ):
-                this.set("expressions", [exp.var("MAX")])
-
-            return this
 
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None
@@ -154,6 +139,7 @@ class Redshift(Postgres):
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = False
         MULTI_ARG_DISTINCT = True
+        COPY_PARAMS_ARE_WRAPPED = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -162,6 +148,7 @@ class Redshift(Postgres):
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
+            exp.DataType.Type.ROWVERSION: "VARBYTE",
         }
 
         TRANSFORMS = {
@@ -184,13 +171,21 @@ class Redshift(Postgres):
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_semi_and_anti_joins,
+                    transforms.unqualify_unnest,
+                ]
             ),
             exp.SortKeyProperty: lambda self,
             e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.StartsWith: lambda self,
+            e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
+            exp.UnixToTime: lambda self,
+            e: f"(TIMESTAMP 'epoch' + {self.sql(e.this)} * INTERVAL '1 SECOND')",
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots
@@ -205,7 +200,165 @@ class Redshift(Postgres):
         # Redshift supports LAST_DAY(..)
         TRANSFORMS.pop(exp.LastDay)
 
-        RESERVED_KEYWORDS = {*Postgres.Generator.RESERVED_KEYWORDS, "snapshot", "type"}
+        RESERVED_KEYWORDS = {
+            "aes128",
+            "aes256",
+            "all",
+            "allowoverwrite",
+            "analyse",
+            "analyze",
+            "and",
+            "any",
+            "array",
+            "as",
+            "asc",
+            "authorization",
+            "az64",
+            "backup",
+            "between",
+            "binary",
+            "blanksasnull",
+            "both",
+            "bytedict",
+            "bzip2",
+            "case",
+            "cast",
+            "check",
+            "collate",
+            "column",
+            "constraint",
+            "create",
+            "credentials",
+            "cross",
+            "current_date",
+            "current_time",
+            "current_timestamp",
+            "current_user",
+            "current_user_id",
+            "default",
+            "deferrable",
+            "deflate",
+            "defrag",
+            "delta",
+            "delta32k",
+            "desc",
+            "disable",
+            "distinct",
+            "do",
+            "else",
+            "emptyasnull",
+            "enable",
+            "encode",
+            "encrypt     ",
+            "encryption",
+            "end",
+            "except",
+            "explicit",
+            "false",
+            "for",
+            "foreign",
+            "freeze",
+            "from",
+            "full",
+            "globaldict256",
+            "globaldict64k",
+            "grant",
+            "group",
+            "gzip",
+            "having",
+            "identity",
+            "ignore",
+            "ilike",
+            "in",
+            "initially",
+            "inner",
+            "intersect",
+            "interval",
+            "into",
+            "is",
+            "isnull",
+            "join",
+            "leading",
+            "left",
+            "like",
+            "limit",
+            "localtime",
+            "localtimestamp",
+            "lun",
+            "luns",
+            "lzo",
+            "lzop",
+            "minus",
+            "mostly16",
+            "mostly32",
+            "mostly8",
+            "natural",
+            "new",
+            "not",
+            "notnull",
+            "null",
+            "nulls",
+            "off",
+            "offline",
+            "offset",
+            "oid",
+            "old",
+            "on",
+            "only",
+            "open",
+            "or",
+            "order",
+            "outer",
+            "overlaps",
+            "parallel",
+            "partition",
+            "percent",
+            "permissions",
+            "pivot",
+            "placing",
+            "primary",
+            "raw",
+            "readratio",
+            "recover",
+            "references",
+            "rejectlog",
+            "resort",
+            "respect",
+            "restore",
+            "right",
+            "select",
+            "session_user",
+            "similar",
+            "snapshot",
+            "some",
+            "sysdate",
+            "system",
+            "table",
+            "tag",
+            "tdes",
+            "text255",
+            "text32k",
+            "then",
+            "timestamp",
+            "to",
+            "top",
+            "trailing",
+            "true",
+            "truncatecolumns",
+            "type",
+            "union",
+            "unique",
+            "unnest",
+            "unpivot",
+            "user",
+            "using",
+            "verbose",
+            "wallet",
+            "when",
+            "where",
+            "with",
+            "without",
+        }
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             args = expression.expressions
@@ -216,7 +369,7 @@ class Redshift(Postgres):
                 return ""
 
             arg = self.sql(seq_get(args, 0))
-            alias = self.expressions(expression.args.get("alias"), key="columns")
+            alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
             return f"{arg} AS {alias}" if alias else arg
 
         def with_properties(self, properties: exp.Properties) -> str:

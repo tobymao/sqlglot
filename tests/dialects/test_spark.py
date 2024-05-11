@@ -2,6 +2,7 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
+from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -223,18 +224,17 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
-        self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
-        self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
-        self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")
-        self.validate_identity("last(col, true)", "LAST(col) IGNORE NULLS")
-        self.validate_identity("last_value(col, true)", "LAST_VALUE(col) IGNORE NULLS")
-
         self.assertEqual(
             parse_one("REFRESH TABLE t", read="spark").assert_is(exp.Refresh).sql(dialect="spark"),
             "REFRESH TABLE t",
         )
 
-        self.validate_identity("DESCRIBE EXTENDED db.table")
+        self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
+        self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
+        self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")
+        self.validate_identity("last(col, true)", "LAST(col) IGNORE NULLS")
+        self.validate_identity("last_value(col, true)", "LAST_VALUE(col) IGNORE NULLS")
+        self.validate_identity("DESCRIBE EXTENDED db.tbl")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (50 PERCENT)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (5 ROWS)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10)")
@@ -246,12 +246,15 @@ TBLPROPERTIES (
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH TABLE a.b.c")
         self.validate_identity("INTERVAL -86 DAYS")
-        self.validate_identity("SELECT UNIX_TIMESTAMP()")
         self.validate_identity("TRIM('    SparkSQL   ')")
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
+        self.validate_identity(
+            "SELECT UNIX_TIMESTAMP()",
+            "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+        )
         self.validate_identity(
             "SELECT CAST('2023-01-01' AS TIMESTAMP) + INTERVAL 23 HOUR + 59 MINUTE + 59 SECONDS",
             "SELECT CAST('2023-01-01' AS TIMESTAMP) + INTERVAL '23' HOUR + INTERVAL '59' MINUTE + INTERVAL '59' SECONDS",
@@ -281,6 +284,42 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
 
+        with self.assertLogs(helper_logger):
+            self.validate_all(
+                "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                read={
+                    "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                },
+                write={
+                    "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                    "duckdb": "SELECT ([1, 2, 3])[3]",
+                    "spark": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                },
+            )
+
+        self.validate_all(
+            "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+            read={
+                "databricks": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+            },
+            write={
+                "databricks": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+                "duckdb": "SELECT (MAP([1, 2], ['a', 'b'])[2])[1]",
+                "spark": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT SPLIT('123|789', '\\\\|')",
+            read={
+                "duckdb": "SELECT STR_SPLIT_REGEX('123|789', '\\|')",
+                "presto": "SELECT REGEXP_SPLIT('123|789', '\\|')",
+            },
+            write={
+                "duckdb": "SELECT STR_SPLIT_REGEX('123|789', '\\|')",
+                "presto": "SELECT REGEXP_SPLIT('123|789', '\\|')",
+                "spark": "SELECT SPLIT('123|789', '\\\\|')",
+            },
+        )
         self.validate_all(
             "WITH tbl AS (SELECT 1 AS id, 'eggy' AS name UNION ALL SELECT NULL AS id, 'jake' AS name) SELECT COUNT(DISTINCT id, name) AS cnt FROM tbl",
             write={
@@ -304,7 +343,7 @@ TBLPROPERTIES (
                 "postgres": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
                 "presto": "SELECT WITH_TIMEZONE(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul') AT TIME ZONE 'UTC'",
                 "redshift": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
-                "snowflake": "SELECT CONVERT_TIMEZONE('Asia/Seoul', 'UTC', CAST('2016-08-31' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT CONVERT_TIMEZONE('Asia/Seoul', 'UTC', CAST('2016-08-31' AS TIMESTAMP))",
                 "spark": "SELECT TO_UTC_TIMESTAMP(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul')",
             },
         )
@@ -484,7 +523,14 @@ TBLPROPERTIES (
             },
         )
 
-        for data_type in ("BOOLEAN", "DATE", "DOUBLE", "FLOAT", "INT", "TIMESTAMP"):
+        for data_type in (
+            "BOOLEAN",
+            "DATE",
+            "DOUBLE",
+            "FLOAT",
+            "INT",
+            "TIMESTAMP",
+        ):
             self.validate_all(
                 f"{data_type}(x)",
                 write={
@@ -492,6 +538,16 @@ TBLPROPERTIES (
                     "spark": f"CAST(x AS {data_type})",
                 },
             )
+
+        for ts_suffix in ("NTZ", "LTZ"):
+            self.validate_all(
+                f"TIMESTAMP_{ts_suffix}(x)",
+                write={
+                    "": f"CAST(x AS TIMESTAMP{ts_suffix})",
+                    "spark": f"CAST(x AS TIMESTAMP_{ts_suffix})",
+                },
+            )
+
         self.validate_all(
             "STRING(x)",
             write={
@@ -527,7 +583,7 @@ TBLPROPERTIES (
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={
                 "duckdb": "ARRAY_SORT(x)",
-                "presto": "ARRAY_SORT(x, (left, right) -> -1)",
+                "presto": 'ARRAY_SORT(x, ("left", "right") -> -1)',
                 "hive": "SORT_ARRAY(x)",
                 "spark": "ARRAY_SORT(x, (left, right) -> -1)",
             },
@@ -645,10 +701,10 @@ TBLPROPERTIES (
             "SELECT TRANSFORM(zip_code, name, age) USING 'cat' AS (a STRING, b STRING, c STRING) FROM person WHERE zip_code > 94511"
         )
         self.validate_identity(
-            "SELECT TRANSFORM(name, age) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' NULL DEFINED AS 'NULL' USING 'cat' AS (name_age STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY '@' LINES TERMINATED BY '\n' NULL DEFINED AS 'NULL' FROM person"
+            "SELECT TRANSFORM(name, age) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' NULL DEFINED AS 'NULL' USING 'cat' AS (name_age STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY '@' LINES TERMINATED BY '\\n' NULL DEFINED AS 'NULL' FROM person"
         )
         self.validate_identity(
-            "SELECT TRANSFORM(zip_code, name, age) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'='\t') USING 'cat' AS (a STRING, b STRING, c STRING) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'='\t') FROM person WHERE zip_code > 94511"
+            "SELECT TRANSFORM(zip_code, name, age) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'='\\t') USING 'cat' AS (a STRING, b STRING, c STRING) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'='\\t') FROM person WHERE zip_code > 94511"
         )
         self.validate_identity(
             "SELECT TRANSFORM(zip_code, name, age) USING 'cat' FROM person WHERE zip_code > 94500"

@@ -94,6 +94,9 @@ class TestOracle(Validator):
             "SELECT * FROM t SAMPLE (0.25)",
         )
         self.validate_identity("SELECT TO_CHAR(-100, 'L99', 'NL_CURRENCY = '' AusDollars '' ')")
+        self.validate_identity(
+            "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
+        )
 
         self.validate_all(
             "CURRENT_TIMESTAMP BETWEEN TO_DATE(f.C_SDATE, 'yyyy/mm/dd') AND TO_DATE(f.C_EDATE, 'yyyy/mm/dd')",

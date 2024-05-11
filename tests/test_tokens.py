@@ -85,6 +85,18 @@ x"""
             ],
         )
 
+        for simple_query in ("SELECT 1\r\n", "\r\nSELECT 1"):
+            tokens = Tokenizer().tokenize(simple_query)
+            tokens = [(token.token_type, token.text) for token in tokens]
+
+            self.assertEqual(
+                tokens,
+                [
+                    (TokenType.SELECT, "SELECT"),
+                    (TokenType.NUMBER, "1"),
+                ],
+            )
+
     def test_command(self):
         tokens = Tokenizer().tokenize("SHOW;")
         self.assertEqual(tokens[0].token_type, TokenType.SHOW)

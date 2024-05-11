@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta_with_interval,
     rename_func,
     strposition_to_locate_sql,
+    unit_to_var,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -109,14 +110,14 @@ def _trim_sql(self: MySQL.Generator, expression: exp.Trim) -> str:
     return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 
-def _date_add_sql(
+def date_add_sql(
     kind: str,
-) -> t.Callable[[MySQL.Generator, exp.Expression], str]:
-    def func(self: MySQL.Generator, expression: exp.Expression) -> str:
-        this = self.sql(expression, "this")
-        unit = expression.text("unit").upper() or "DAY"
-        return (
-            f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
+) -> t.Callable[[generator.Generator, exp.Expression], str]:
+    def func(self: generator.Generator, expression: exp.Expression) -> str:
+        return self.func(
+            f"DATE_{kind}",
+            expression.this,
+            exp.Interval(this=expression.expression, unit=unit_to_var(expression)),
         )
 
     return func
@@ -250,7 +251,7 @@ class MySQL(Dialect):
             "@@": TokenType.SESSION_PARAMETER,
         }
 
-        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {TokenType.SHOW}
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {
@@ -291,6 +292,7 @@ class MySQL(Dialect):
             "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
+            "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "ISNULL": isnull_to_is_null,
             "LOCATE": locate_to_strposition,
             "MAKETIME": exp.TimeFromParts.from_arg_list,
@@ -408,6 +410,11 @@ class MySQL(Dialect):
             "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         }
 
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_alter(),
+        }
+
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "FULLTEXT",
@@ -436,6 +443,7 @@ class MySQL(Dialect):
         LOG_DEFAULTS_TO_LN = True
         STRING_ALIASES = True
         VALUES_FOLLOWED_BY_PAREN = False
+        SUPPORTS_PARTITION_SELECTION = True
 
         def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
             this = self._parse_id_var()
@@ -454,7 +462,7 @@ class MySQL(Dialect):
 
             this = self._parse_id_var(any_token=False)
             index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
-            schema = self._parse_schema()
+            expressions = self._parse_wrapped_csv(self._parse_ordered)
 
             options = []
             while True:
@@ -474,9 +482,6 @@ class MySQL(Dialect):
                 elif self._match_text_seq("ENGINE_ATTRIBUTE"):
                     self._match(TokenType.EQ)
                     opt = exp.IndexConstraintOption(engine_attr=self._parse_string())
-                elif self._match_text_seq("ENGINE_ATTRIBUTE"):
-                    self._match(TokenType.EQ)
-                    opt = exp.IndexConstraintOption(engine_attr=self._parse_string())
                 elif self._match_text_seq("SECONDARY_ENGINE_ATTRIBUTE"):
                     self._match(TokenType.EQ)
                     opt = exp.IndexConstraintOption(secondary_engine_attr=self._parse_string())
@@ -491,7 +496,7 @@ class MySQL(Dialect):
             return self.expression(
                 exp.IndexColumnConstraint,
                 this=this,
-                schema=schema,
+                expressions=expressions,
                 kind=kind,
                 index_type=index_type,
                 options=options,
@@ -663,13 +668,14 @@ class MySQL(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ArrayAgg: rename_func("GROUP_CONCAT"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
             ),
-            exp.DateAdd: _remove_ts_or_ds_to_date(_date_add_sql("ADD")),
+            exp.DateAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateSub: _remove_ts_or_ds_to_date(_date_add_sql("SUB")),
+            exp.DateSub: _remove_ts_or_ds_to_date(date_add_sql("SUB")),
             exp.DateTrunc: _date_trunc_sql,
             exp.Day: _remove_ts_or_ds_to_date(),
             exp.DayOfMonth: _remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),
@@ -702,19 +708,22 @@ class MySQL(Dialect):
             exp.TimeFromParts: rename_func("MAKETIME"),
             exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),
             exp.TimestampDiff: lambda self, e: self.func(
-                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
+                "TIMESTAMPDIFF", unit_to_var(e), e.expression, e.this
             ),
             exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime", copy=True)),
+            exp.TimeStrToTime: lambda self, e: self.sql(
+                exp.cast(e.this, exp.DataType.Type.DATETIME, copy=True)
+            ),
             exp.TimeToStr: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))
             ),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
-            exp.TsOrDsAdd: _date_add_sql("ADD"),
+            exp.TsOrDsAdd: date_add_sql("ADD"),
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
+            exp.UnixToTime: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
             exp.Week: _remove_ts_or_ds_to_date(),
             exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
             exp.Year: _remove_ts_or_ds_to_date(),
@@ -758,21 +767,50 @@ class MySQL(Dialect):
 
         LIMIT_ONLY_LITERALS = True
 
+        CHAR_CAST_MAPPING = dict.fromkeys(
+            (
+                exp.DataType.Type.LONGTEXT,
+                exp.DataType.Type.LONGBLOB,
+                exp.DataType.Type.MEDIUMBLOB,
+                exp.DataType.Type.MEDIUMTEXT,
+                exp.DataType.Type.TEXT,
+                exp.DataType.Type.TINYBLOB,
+                exp.DataType.Type.TINYTEXT,
+                exp.DataType.Type.VARCHAR,
+            ),
+            "CHAR",
+        )
+        SIGNED_CAST_MAPPING = dict.fromkeys(
+            (
+                exp.DataType.Type.BIGINT,
+                exp.DataType.Type.BOOLEAN,
+                exp.DataType.Type.INT,
+                exp.DataType.Type.SMALLINT,
+                exp.DataType.Type.TINYINT,
+                exp.DataType.Type.MEDIUMINT,
+            ),
+            "SIGNED",
+        )
+
         # MySQL doesn't support many datatypes in cast.
         # https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_cast
         CAST_MAPPING = {
-            exp.DataType.Type.BIGINT: "SIGNED",
-            exp.DataType.Type.BOOLEAN: "SIGNED",
-            exp.DataType.Type.INT: "SIGNED",
-            exp.DataType.Type.TEXT: "CHAR",
+            **CHAR_CAST_MAPPING,
+            **SIGNED_CAST_MAPPING,
             exp.DataType.Type.UBIGINT: "UNSIGNED",
-            exp.DataType.Type.VARCHAR: "CHAR",
         }
 
         TIMESTAMP_FUNC_TYPES = {
             exp.DataType.Type.TIMESTAMPTZ,
             exp.DataType.Type.TIMESTAMPLTZ,
         }
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            unit = expression.name
+            if unit and unit.lower() == "epoch":
+                return self.func("UNIX_TIMESTAMP", expression.expression)
+
+            return super().extract_sql(expression)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
@@ -859,3 +897,16 @@ class MySQL(Dialect):
             charset = expression.args.get("charset")
             using = f" USING {self.sql(charset)}" if charset else ""
             return f"CHAR({this}{using})"
+
+        def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+            unit = expression.args.get("unit")
+
+            # Pick an old-enough date to avoid negative timestamp diffs
+            start_ts = "'0000-01-01 00:00:00'"
+
+            # Source: https://stackoverflow.com/a/32955740
+            timestamp_diff = build_date_delta(exp.TimestampDiff)([unit, start_ts, expression.this])
+            interval = exp.Interval(this=timestamp_diff, unit=unit)
+            dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
+
+            return self.sql(dateadd)

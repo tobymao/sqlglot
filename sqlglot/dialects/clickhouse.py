@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arg_max_or_min_no_count,
+    build_formatted_time,
     date_delta_sql,
     inline_array_sql,
     json_extract_segments,
@@ -15,9 +16,18 @@ from sqlglot.dialects.dialect import (
     rename_func,
     var_map_sql,
 )
-from sqlglot.errors import ParseError
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
+
+
+def _build_date_format(args: t.List) -> exp.TimeToStr:
+    expr = build_formatted_time(exp.TimeToStr, "clickhouse")(args)
+
+    timezone = seq_get(args, 2)
+    if timezone:
+        expr.set("timezone", timezone)
+
+    return expr
 
 
 def _lower_func(sql: str) -> str:
@@ -51,7 +61,7 @@ class ClickHouse(Dialect):
     SAFE_DIVISION = True
     LOG_BASE_FIRST: t.Optional[bool] = None
 
-    ESCAPE_SEQUENCES = {
+    UNESCAPED_SEQUENCES = {
         "\\0": "\0",
     }
 
@@ -106,6 +116,7 @@ class ClickHouse(Dialect):
         # * select x from t1 union all select x from t2 limit 1;
         # * select x from t1 union all (select x from t2 limit 1);
         MODIFIERS_ATTACHED_TO_UNION = False
+        INTERVAL_SPANS = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -124,6 +135,8 @@ class ClickHouse(Dialect):
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "DATE_FORMAT": _build_date_format,
+            "FORMATDATETIME": _build_date_format,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
@@ -133,6 +146,9 @@ class ClickHouse(Dialect):
             "TUPLE": exp.Struct.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
+            "MD5": exp.MD5Digest.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         }
 
         AGG_FUNCTIONS = {
@@ -241,6 +257,14 @@ class ClickHouse(Dialect):
             "sparkBar",
             "sumCount",
             "largestTriangleThreeBuckets",
+            "histogram",
+            "sequenceMatch",
+            "sequenceCount",
+            "windowFunnel",
+            "retention",
+            "uniqUpTo",
+            "sequenceNextNode",
+            "exponentialTimeDecayedAvg",
         }
 
         AGG_FUNCTIONS_SUFFIXES = [
@@ -260,6 +284,11 @@ class ClickHouse(Dialect):
             "ArgMin",
             "ArgMax",
         ]
+
+        FUNC_TOKENS = {
+            *parser.Parser.FUNC_TOKENS,
+            TokenType.SET,
+        }
 
         AGG_FUNC_MAPPING = (
             lambda functions, suffixes: {
@@ -306,6 +335,10 @@ class ClickHouse(Dialect):
             TokenType.SETTINGS,
         }
 
+        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
+            TokenType.FORMAT,
+        }
+
         LOG_DEFAULTS_TO_LN = True
 
         QUERY_MODIFIER_PARSERS = {
@@ -315,6 +348,22 @@ class ClickHouse(Dialect):
                 self._advance() or self._parse_csv(self._parse_conjunction),
             ),
             TokenType.FORMAT: lambda self: ("format", self._advance() or self._parse_id_var()),
+        }
+
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "INDEX": lambda self: self._parse_index_constraint(),
+            "CODEC": lambda self: self._parse_compress(),
+        }
+
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "REPLACE": lambda self: self._parse_alter_table_replace(),
+        }
+
+        SCHEMA_UNNAMED_CONSTRAINTS = {
+            *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
+            "INDEX",
         }
 
         def _parse_conjunction(self) -> t.Optional[exp.Expression]:
@@ -363,6 +412,7 @@ class ClickHouse(Dialect):
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
             parse_bracket: bool = False,
             is_db_reference: bool = False,
+            parse_partition: bool = False,
         ) -> t.Optional[exp.Expression]:
             this = super()._parse_table(
                 schema=schema,
@@ -382,20 +432,19 @@ class ClickHouse(Dialect):
 
         # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
         def _parse_cte(self) -> exp.CTE:
-            index = self._index
-            try:
-                # WITH <identifier> AS <subquery expression>
-                return super()._parse_cte()
-            except ParseError:
-                # WITH <expression> AS <identifier>
-                self._retreat(index)
+            # WITH <identifier> AS <subquery expression>
+            cte: t.Optional[exp.CTE] = self._try_parse(super()._parse_cte)
 
-                return self.expression(
+            if not cte:
+                # WITH <expression> AS <identifier>
+                cte = self.expression(
                     exp.CTE,
                     this=self._parse_conjunction(),
                     alias=self._parse_table_alias(),
                     scalar=True,
                 )
+
+            return cte
 
         def _parse_join_parts(
             self,
@@ -428,46 +477,53 @@ class ClickHouse(Dialect):
             functions: t.Optional[t.Dict[str, t.Callable]] = None,
             anonymous: bool = False,
             optional_parens: bool = True,
+            any_token: bool = False,
         ) -> t.Optional[exp.Expression]:
-            func = super()._parse_function(
-                functions=functions, anonymous=anonymous, optional_parens=optional_parens
+            expr = super()._parse_function(
+                functions=functions,
+                anonymous=anonymous,
+                optional_parens=optional_parens,
+                any_token=any_token,
             )
 
-            if isinstance(func, exp.Anonymous):
-                parts = self.AGG_FUNC_MAPPING.get(func.this)
+            func = expr.this if isinstance(expr, exp.Window) else expr
+
+            # Aggregate functions can be split in 2 parts: <func_name><suffix>
+            parts = (
+                self.AGG_FUNC_MAPPING.get(func.this) if isinstance(func, exp.Anonymous) else None
+            )
+
+            if parts:
                 params = self._parse_func_params(func)
 
+                kwargs = {
+                    "this": func.this,
+                    "expressions": func.expressions,
+                }
+                if parts[1]:
+                    kwargs["parts"] = parts
+                    exp_class = exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
+                else:
+                    exp_class = exp.ParameterizedAgg if params else exp.AnonymousAggFunc
+
+                kwargs["exp_class"] = exp_class
                 if params:
-                    if parts and parts[1]:
-                        return self.expression(
-                            exp.CombinedParameterizedAgg,
-                            this=func.this,
-                            expressions=func.expressions,
-                            params=params,
-                            parts=parts,
-                        )
-                    return self.expression(
-                        exp.ParameterizedAgg,
-                        this=func.this,
-                        expressions=func.expressions,
-                        params=params,
-                    )
+                    kwargs["params"] = params
 
-                if parts:
-                    if parts[1]:
-                        return self.expression(
-                            exp.CombinedAggFunc,
-                            this=func.this,
-                            expressions=func.expressions,
-                            parts=parts,
-                        )
-                    return self.expression(
-                        exp.AnonymousAggFunc,
-                        this=func.this,
-                        expressions=func.expressions,
-                    )
+                func = self.expression(**kwargs)
 
-            return func
+                if isinstance(expr, exp.Window):
+                    # The window's func was parsed as Anonymous in base parser, fix its
+                    # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
+                    expr.set("this", func)
+                elif params:
+                    # Params have blocked super()._parse_function() from parsing the following window
+                    # (if that exists) as they're standing between the function call and the window spec
+                    expr = self._parse_window(func)
+                else:
+                    expr = func
+
+            return expr
 
         def _parse_func_params(
             self, this: t.Optional[exp.Func] = None
@@ -508,6 +564,52 @@ class ClickHouse(Dialect):
                 else:
                     self._retreat(index)
             return None
+
+        def _parse_index_constraint(
+            self, kind: t.Optional[str] = None
+        ) -> exp.IndexColumnConstraint:
+            # INDEX name1 expr TYPE type1(args) GRANULARITY value
+            this = self._parse_id_var()
+            expression = self._parse_conjunction()
+
+            index_type = self._match_text_seq("TYPE") and (
+                self._parse_function() or self._parse_var()
+            )
+
+            granularity = self._match_text_seq("GRANULARITY") and self._parse_term()
+
+            return self.expression(
+                exp.IndexColumnConstraint,
+                this=this,
+                expression=expression,
+                index_type=index_type,
+                granularity=granularity,
+            )
+
+        def _parse_partition(self) -> t.Optional[exp.Partition]:
+            # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression
+            if not self._match(TokenType.PARTITION):
+                return None
+
+            if self._match_text_seq("ID"):
+                # Corresponds to the PARTITION ID <string_value> syntax
+                expressions: t.List[exp.Expression] = [
+                    self.expression(exp.PartitionId, this=self._parse_string())
+                ]
+            else:
+                expressions = self._parse_expressions()
+
+            return self.expression(exp.Partition, expressions=expressions)
+
+        def _parse_alter_table_replace(self) -> t.Optional[exp.Expression]:
+            partition = self._parse_partition()
+
+            if not partition or not self._match(TokenType.FROM):
+                return None
+
+            return self.expression(
+                exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
+            )
 
     class Generator(generator.Generator):
         QUERY_HINTS = False
@@ -587,6 +689,10 @@ class ClickHouse(Dialect):
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
             exp.CountIf: rename_func("countIf"),
+            exp.CompressColumnConstraint: lambda self,
+            e: f"CODEC({self.expressions(e, key='this', flat=True)})",
+            exp.ComputedColumnConstraint: lambda self,
+            e: f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}",
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: date_delta_sql("DATE_ADD"),
             exp.DateDiff: date_delta_sql("DATE_DIFF"),
@@ -609,8 +715,17 @@ class ClickHouse(Dialect):
             exp.StrPosition: lambda self, e: self.func(
                 "position", e.this, e.args.get("substr"), e.args.get("position")
             ),
+            exp.TimeToStr: lambda self, e: self.func(
+                "DATE_FORMAT", e.this, self.format_time(e), e.args.get("timezone")
+            ),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
+            exp.MD5Digest: rename_func("MD5"),
+            exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
+            exp.SHA: rename_func("SHA1"),
+            exp.SHA2: lambda self, e: self.func(
+                "SHA256" if e.text("length") == "256" else "SHA512", e.this
+            ),
         }
 
         PROPERTIES_LOCATION = {
@@ -624,6 +739,7 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         EXPLICIT_UNION = True
         GROUPINGS_SEP = ""
+        OUTER_UNION_MODIFIERS = False
 
         # there's no list in docs, but it can be found in Clickhouse code
         # see `ClickHouse/src/Parsers/ParserCreate*.cpp`
@@ -739,3 +855,26 @@ class ClickHouse(Dialect):
         def prewhere_sql(self, expression: exp.PreWhere) -> str:
             this = self.indent(self.sql(expression, "this"))
             return f"{self.seg('PREWHERE')}{self.sep()}{this}"
+
+        def indexcolumnconstraint_sql(self, expression: exp.IndexColumnConstraint) -> str:
+            this = self.sql(expression, "this")
+            this = f" {this}" if this else ""
+            expr = self.sql(expression, "expression")
+            expr = f" {expr}" if expr else ""
+            index_type = self.sql(expression, "index_type")
+            index_type = f" TYPE {index_type}" if index_type else ""
+            granularity = self.sql(expression, "granularity")
+            granularity = f" GRANULARITY {granularity}" if granularity else ""
+
+            return f"INDEX{this}{expr}{index_type}{granularity}"
+
+        def partition_sql(self, expression: exp.Partition) -> str:
+            return f"PARTITION {self.expressions(expression, flat=True)}"
+
+        def partitionid_sql(self, expression: exp.PartitionId) -> str:
+            return f"ID {self.sql(expression.this)}"
+
+        def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
+            return (
+                f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
+            )

@@ -16,6 +16,24 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+                "mysql": "SELECT DATE '2020-01-01' + INTERVAL day_offset DAY FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
+            read={
+                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+                "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
+            },
+            write={
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+                "snowflake": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2 HOUR'",
+            },
+        )
+        self.validate_all(
             'STRUCT_PACK("a b" := 1)',
             write={
                 "duckdb": "{'a b': 1}",
@@ -220,6 +238,9 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
+        self.validate_identity("SELECT MAP {'x': 1}")
+        self.validate_identity("SELECT (MAP {'x': 1})['x']")
         self.validate_identity("SELECT df1.*, df2.* FROM df1 POSITIONAL JOIN df2")
         self.validate_identity("MAKE_TIMESTAMP(1992, 9, 20, 13, 34, 27.123456)")
         self.validate_identity("MAKE_TIMESTAMP(1667810584123456)")
@@ -253,6 +274,18 @@ class TestDuckDB(Validator):
         self.validate_identity(
             """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
             """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
+        )
+        self.validate_identity(
+            "SELECT ($$hello)'world$$)",
+            "SELECT ('hello)''world')",
+        )
+        self.validate_identity(
+            "SELECT $$foo$$",
+            "SELECT 'foo'",
+        )
+        self.validate_identity(
+            "SELECT $tag$foo$tag$",
+            "SELECT 'foo'",
         )
         self.validate_identity(
             "JSON_EXTRACT(x, '$.family')",
@@ -291,6 +324,8 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT * FROM (PIVOT Cities ON Year USING SUM(Population) GROUP BY Country) AS pivot_alias"
         )
+        self.validate_identity("DATE_SUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
+        self.validate_identity("DATESUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
@@ -619,8 +654,14 @@ class TestDuckDB(Validator):
             "SELECT CAST('2020-05-06' AS DATE) + INTERVAL 5 DAY",
             read={"bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
         )
-        self.validate_identity("SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t")
-        self.validate_identity("SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t")
+        self.validate_identity(
+            "SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t",
+            "SELECT QUANTILE_CONT(y, 0.25 ORDER BY y DESC) FROM t",
+        )
+        self.validate_identity(
+            "SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t",
+            "SELECT QUANTILE_DISC(y, 0.25 ORDER BY y DESC) FROM t",
+        )
         self.validate_all(
             "SELECT QUANTILE_CONT(x, q) FROM t",
             write={
@@ -685,6 +726,14 @@ class TestDuckDB(Validator):
             """SELECT i FROM GENERATE_SERIES(0, 12) AS _(i) ORDER BY i ASC""",
         )
 
+        self.validate_identity(
+            "COPY lineitem FROM 'lineitem.ndjson' WITH (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL(col1, col2))"
+        )
+        self.validate_identity(
+            "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' WITH (FORMAT JSON, ARRAY TRUE)"
+        )
+        self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
@@ -732,7 +781,7 @@ class TestDuckDB(Validator):
             "SELECT MAKE_DATE(2016, 12, 25)", read={"bigquery": "SELECT DATE(2016, 12, 25)"}
         )
         self.validate_all(
-            "SELECT CAST(CAST('2016-12-25 23:59:59' AS DATETIME) AS DATE)",
+            "SELECT CAST(CAST('2016-12-25 23:59:59' AS TIMESTAMP) AS DATE)",
             read={"bigquery": "SELECT DATE(DATETIME '2016-12-25 23:59:59')"},
         )
         self.validate_all(
@@ -754,7 +803,7 @@ class TestDuckDB(Validator):
             write={"duckdb": "SELECT (90 * INTERVAL '1' DAY)"},
         )
         self.validate_all(
-            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - (DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7 % 7) DAY) + (7 * INTERVAL (-5) DAY))) AS t1",
+            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - ((DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7) % 7) DAY) + (7 * INTERVAL (-5) DAY))) AS t1",
             read={
                 "presto": "SELECT ((DATE_ADD('week', -5, DATE_TRUNC('DAY', DATE_ADD('day', (0 - MOD((DAY_OF_WEEK(CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)), CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)))))) AS t1",
             },
@@ -843,11 +892,11 @@ class TestDuckDB(Validator):
     def test_sample(self):
         self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 5",
-            "SELECT * FROM tbl USING SAMPLE (5 ROWS)",
+            "SELECT * FROM tbl USING SAMPLE RESERVOIR (5 ROWS)",
         )
         self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10%",
-            "SELECT * FROM tbl USING SAMPLE (10 PERCENT)",
+            "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT)",
         )
         self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10 PERCENT (bernoulli)",
@@ -871,14 +920,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "SELECT * FROM example TABLESAMPLE (3 ROWS) REPEATABLE (82)",
+            "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
             read={
                 "duckdb": "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
                 "snowflake": "SELECT * FROM example SAMPLE (3 ROWS) SEED (82)",
             },
             write={
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 ROWS) REPEATABLE (82)",
-                "snowflake": "SELECT * FROM example TABLESAMPLE (3 ROWS) SEED (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
             },
         )
 
@@ -1042,6 +1090,15 @@ class TestDuckDB(Validator):
             write={
                 "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
                 "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
+                "tsql": "EXEC sp_rename 'db.t1', 't2'",
+            },
+        )
+        self.validate_all(
+            'ALTER TABLE "db"."t1" RENAME TO "db"."t2"',
+            write={
+                "snowflake": 'ALTER TABLE "db"."t1" RENAME TO "db"."t2"',
+                "duckdb": 'ALTER TABLE "db"."t1" RENAME TO "t2"',
+                "tsql": "EXEC sp_rename '[db].[t1]', 't2'",
             },
         )
 

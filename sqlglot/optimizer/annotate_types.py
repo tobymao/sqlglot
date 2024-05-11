@@ -212,6 +212,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.Month,
             exp.Week,
             exp.Year,
+            exp.Quarter,
         },
         exp.DataType.Type.VARCHAR: {
             exp.ArrayConcat,
@@ -264,26 +265,30 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Dot: lambda self, e: self._annotate_dot(e),
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<DATE>")
+        ),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
         exp.Interval: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
         exp.Least: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Literal: lambda self, e: self._annotate_literal(e),
-        exp.Map: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
+        exp.Map: lambda self, e: self._annotate_map(e),
         exp.Max: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Null: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.NULL),
         exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
         exp.PropertyEQ: lambda self, e: self._annotate_by_args(e, "expression"),
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
-        exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),
+        exp.Struct: lambda self, e: self._annotate_struct(e),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.Timestamp: lambda self, e: self._annotate_with_type(
             e,
             exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,
         ),
+        exp.ToMap: lambda self, e: self._annotate_to_map(e),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Unnest: lambda self, e: self._annotate_unnest(e),
-        exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
+        exp.VarMap: lambda self, e: self._annotate_map(e),
     }
 
     NESTED_TYPES = {
@@ -346,52 +351,56 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def annotate(self, expression: E) -> E:
         for scope in traverse_scope(expression):
-            selects = {}
-            for name, source in scope.sources.items():
-                if not isinstance(source, Scope):
-                    continue
-                if isinstance(source.expression, exp.UDTF):
-                    values = []
-
-                    if isinstance(source.expression, exp.Lateral):
-                        if isinstance(source.expression.this, exp.Explode):
-                            values = [source.expression.this.this]
-                    else:
-                        values = source.expression.expressions[0].expressions
-
-                    if not values:
-                        continue
-
-                    selects[name] = {
-                        alias: column
-                        for alias, column in zip(
-                            source.expression.alias_column_names,
-                            values,
-                        )
-                    }
-                else:
-                    selects[name] = {
-                        select.alias_or_name: select for select in source.expression.selects
-                    }
-
-            # First annotate the current scope's column references
-            for col in scope.columns:
-                if not col.table:
-                    continue
-
-                source = scope.sources.get(col.table)
-                if isinstance(source, exp.Table):
-                    self._set_type(col, self.schema.get_column_type(source, col))
-                elif source:
-                    if col.table in selects and col.name in selects[col.table]:
-                        self._set_type(col, selects[col.table][col.name].type)
-                    elif isinstance(source.expression, exp.Unnest):
-                        self._set_type(col, source.expression.type)
-
-            # Then (possibly) annotate the remaining expressions in the scope
-            self._maybe_annotate(scope.expression)
-
+            self.annotate_scope(scope)
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
+
+    def annotate_scope(self, scope: Scope) -> None:
+        selects = {}
+        for name, source in scope.sources.items():
+            if not isinstance(source, Scope):
+                continue
+            if isinstance(source.expression, exp.UDTF):
+                values = []
+
+                if isinstance(source.expression, exp.Lateral):
+                    if isinstance(source.expression.this, exp.Explode):
+                        values = [source.expression.this.this]
+                elif isinstance(source.expression, exp.Unnest):
+                    values = [source.expression]
+                else:
+                    values = source.expression.expressions[0].expressions
+
+                if not values:
+                    continue
+
+                selects[name] = {
+                    alias: column
+                    for alias, column in zip(
+                        source.expression.alias_column_names,
+                        values,
+                    )
+                }
+            else:
+                selects[name] = {
+                    select.alias_or_name: select for select in source.expression.selects
+                }
+
+        # First annotate the current scope's column references
+        for col in scope.columns:
+            if not col.table:
+                continue
+
+            source = scope.sources.get(col.table)
+            if isinstance(source, exp.Table):
+                self._set_type(col, self.schema.get_column_type(source, col))
+            elif source:
+                if col.table in selects and col.name in selects[col.table]:
+                    self._set_type(col, selects[col.table][col.name].type)
+                elif isinstance(source.expression, exp.Unnest):
+                    self._set_type(col, source.expression.type)
+
+        # Then (possibly) annotate the remaining expressions in the scope
+        self._maybe_annotate(scope.expression)
 
     def _maybe_annotate(self, expression: E) -> E:
         if id(expression) in self._visited:
@@ -423,23 +432,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
-        if type1_value in self.NESTED_TYPES:
-            return type1
-        if type2_value in self.NESTED_TYPES:
-            return type2
+        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
-        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value  # type: ignore
-
-    # Note: the following "no_type_check" decorators were added because mypy was yelling due
-    # to assigning Type values to expression.type (since its getter returns Optional[DataType]).
-    # This is a known mypy issue: https://github.com/python/mypy/issues/3004
-
-    @t.no_type_check
     def _annotate_binary(self, expression: B) -> B:
         self._annotate_args(expression)
 
         left, right = expression.left, expression.right
-        left_type, right_type = left.type.this, right.type.this
+        left_type, right_type = left.type.this, right.type.this  # type: ignore
 
         if isinstance(expression, exp.Connector):
             if left_type == exp.DataType.Type.NULL and right_type == exp.DataType.Type.NULL:
@@ -460,7 +459,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    @t.no_type_check
     def _annotate_unary(self, expression: E) -> E:
         self._annotate_args(expression)
 
@@ -471,7 +469,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    @t.no_type_check
     def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
         if expression.is_string:
             self._set_type(expression, exp.DataType.Type.VARCHAR)
@@ -482,24 +479,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    @t.no_type_check
     def _annotate_with_type(self, expression: E, target_type: exp.DataType.Type) -> E:
         self._set_type(expression, target_type)
         return self._annotate_args(expression)
-
-    @t.no_type_check
-    def _annotate_struct_value(
-        self, expression: exp.Expression
-    ) -> t.Optional[exp.DataType] | exp.ColumnDef:
-        alias = expression.args.get("alias")
-        if alias:
-            return exp.ColumnDef(this=alias.copy(), kind=expression.type)
-
-        # Case: key = value or key := value
-        if expression.expression:
-            return exp.ColumnDef(this=expression.this.copy(), kind=expression.expression.type)
-
-        return expression.type
 
     @t.no_type_check
     def _annotate_by_args(
@@ -508,7 +490,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         *args: str,
         promote: bool = False,
         array: bool = False,
-        struct: bool = False,
     ) -> E:
         self._annotate_args(expression)
 
@@ -526,7 +507,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 last_datatype = expr_type
                 break
 
-            last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
+            if not expr_type.is_type(exp.DataType.Type.NULL, exp.DataType.Type.UNKNOWN):
+                last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
 
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 
@@ -541,16 +523,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 expression,
                 exp.DataType(
                     this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
-                ),
-            )
-
-        if struct:
-            self._set_type(
-                expression,
-                exp.DataType(
-                    this=exp.DataType.Type.STRUCT,
-                    expressions=[self._annotate_struct_value(expr) for expr in expressions],
-                    nested=True,
                 ),
             )
 
@@ -631,5 +603,76 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:
         self._annotate_args(expression)
         child = seq_get(expression.expressions, 0)
-        self._set_type(expression, child and seq_get(child.type.expressions, 0))
+
+        if child and child.is_type(exp.DataType.Type.ARRAY):
+            expr_type = seq_get(child.type.expressions, 0)
+        else:
+            expr_type = None
+
+        self._set_type(expression, expr_type)
+        return expression
+
+    def _annotate_struct_value(
+        self, expression: exp.Expression
+    ) -> t.Optional[exp.DataType] | exp.ColumnDef:
+        alias = expression.args.get("alias")
+        if alias:
+            return exp.ColumnDef(this=alias.copy(), kind=expression.type)
+
+        # Case: key = value or key := value
+        if expression.expression:
+            return exp.ColumnDef(this=expression.this.copy(), kind=expression.expression.type)
+
+        return expression.type
+
+    def _annotate_struct(self, expression: exp.Struct) -> exp.Struct:
+        self._annotate_args(expression)
+        self._set_type(
+            expression,
+            exp.DataType(
+                this=exp.DataType.Type.STRUCT,
+                expressions=[self._annotate_struct_value(expr) for expr in expression.expressions],
+                nested=True,
+            ),
+        )
+        return expression
+
+    @t.overload
+    def _annotate_map(self, expression: exp.Map) -> exp.Map: ...
+
+    @t.overload
+    def _annotate_map(self, expression: exp.VarMap) -> exp.VarMap: ...
+
+    def _annotate_map(self, expression):
+        self._annotate_args(expression)
+
+        keys = expression.args.get("keys")
+        values = expression.args.get("values")
+
+        map_type = exp.DataType(this=exp.DataType.Type.MAP)
+        if isinstance(keys, exp.Array) and isinstance(values, exp.Array):
+            key_type = seq_get(keys.type.expressions, 0) or exp.DataType.Type.UNKNOWN
+            value_type = seq_get(values.type.expressions, 0) or exp.DataType.Type.UNKNOWN
+
+            if key_type != exp.DataType.Type.UNKNOWN and value_type != exp.DataType.Type.UNKNOWN:
+                map_type.set("expressions", [key_type, value_type])
+                map_type.set("nested", True)
+
+        self._set_type(expression, map_type)
+        return expression
+
+    def _annotate_to_map(self, expression: exp.ToMap) -> exp.ToMap:
+        self._annotate_args(expression)
+
+        map_type = exp.DataType(this=exp.DataType.Type.MAP)
+        arg = expression.this
+        if arg.is_type(exp.DataType.Type.STRUCT):
+            for coldef in arg.type.expressions:
+                kind = coldef.kind
+                if kind != exp.DataType.Type.UNKNOWN:
+                    map_type.set("expressions", [exp.DataType.build("varchar"), kind])
+                    map_type.set("nested", True)
+                    break
+
+        self._set_type(expression, map_type)
         return expression

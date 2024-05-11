@@ -58,6 +58,7 @@ class _Expression(type):
 
 SQLGLOT_META = "sqlglot.meta"
 TABLE_PARTS = ("this", "db", "catalog")
+COLUMN_PARTS = ("this", "table", "db", "catalog")
 
 
 class Expression(metaclass=_Expression):
@@ -74,7 +75,7 @@ class Expression(metaclass=_Expression):
         parent: a reference to the parent expression (or None, in case of root expressions).
         arg_key: the arg key an expression is associated with, i.e. the name its parent expression
             uses to refer to it.
-        index: the index of an expression if it is inside of a list argument in its parent
+        index: the index of an expression if it is inside of a list argument in its parent.
         comments: a list of comments that are associated with a given expression. This is used in
             order to preserve comments when transpiling SQL code.
         type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
@@ -174,6 +175,15 @@ class Expression(metaclass=_Expression):
         Checks whether a Literal expression is a number.
         """
         return isinstance(self, Literal) and not self.args["is_string"]
+
+    @property
+    def is_negative(self) -> bool:
+        """
+        Checks whether an expression is negative.
+
+        Handles both exp.Neg and Literal numbers with "-" which come from optimizer.simplify.
+        """
+        return isinstance(self, Neg) or (self.is_number and self.this.startswith("-"))
 
     @property
     def is_int(self) -> bool:
@@ -291,9 +301,10 @@ class Expression(metaclass=_Expression):
         """
         return deepcopy(self)
 
-    def add_comments(self, comments: t.Optional[t.List[str]]) -> None:
+    def add_comments(self, comments: t.Optional[t.List[str]] = None) -> None:
         if self.comments is None:
             self.comments = []
+
         if comments:
             for comment in comments:
                 _, *meta = comment.split(SQLGLOT_META)
@@ -303,6 +314,11 @@ class Expression(metaclass=_Expression):
                         value = v[0].strip() if v else True
                         self.meta[k.strip()] = value
                 self.comments.append(comment)
+
+    def pop_comments(self) -> t.List[str]:
+        comments = self.comments or []
+        self.comments = None
+        return comments
 
     def append(self, arg_key: str, value: t.Any) -> None:
         """
@@ -320,19 +336,39 @@ class Expression(metaclass=_Expression):
             value.index = len(values)
         values.append(value)
 
-    def set(self, arg_key: str, value: t.Any) -> None:
+    def set(self, arg_key: str, value: t.Any, index: t.Optional[int] = None) -> None:
         """
         Sets arg_key to value.
 
         Args:
             arg_key: name of the expression arg.
             value: value to set the arg to.
+            index: if the arg is a list, this specifies what position to add the value in it.
         """
-        if value is None:
+        if index is not None:
+            expressions = self.args.get(arg_key) or []
+
+            if seq_get(expressions, index) is None:
+                return
+            if value is None:
+                expressions.pop(index)
+                for v in expressions[index:]:
+                    v.index = v.index - 1
+                return
+
+            if isinstance(value, list):
+                expressions.pop(index)
+                expressions[index:index] = value
+            else:
+                expressions[index] = value
+
+            value = expressions
+        elif value is None:
             self.args.pop(arg_key, None)
-        else:
-            self.args[arg_key] = value
-            self._set_parent(arg_key, value)
+            return
+
+        self.args[arg_key] = value
+        self._set_parent(arg_key, value, index)
 
     def _set_parent(self, arg_key: str, value: t.Any, index: t.Optional[int] = None) -> None:
         if hasattr(value, "parent"):
@@ -440,10 +476,10 @@ class Expression(metaclass=_Expression):
         Returns a generator object which visits all nodes in this tree.
 
         Args:
-            bfs (bool): if set to True the BFS traversal order will be applied,
+            bfs: if set to True the BFS traversal order will be applied,
                 otherwise the DFS traversal will be used instead.
-            prune ((node, parent, arg_key) -> bool): callable that returns True if
-                the generator should stop traversing this branch of the tree.
+            prune: callable that returns True if the generator should stop traversing
+                this branch of the tree.
 
         Returns:
             the generator object.
@@ -566,10 +602,10 @@ class Expression(metaclass=_Expression):
         and applies the given transformation function to each node.
 
         Args:
-            fun (function): a function which takes a node as an argument and returns a
+            fun: a function which takes a node as an argument and returns a
                 new transformed node or the same node without modifications. If the function
                 returns None, then the corresponding node will be removed from the syntax tree.
-            copy (bool): if set to True a new tree instance is constructed, otherwise the tree is
+            copy: if set to True a new tree instance is constructed, otherwise the tree is
                 modified in place.
 
         Returns:
@@ -579,13 +615,13 @@ class Expression(metaclass=_Expression):
         new_node = None
 
         for node in (self.copy() if copy else self).dfs(prune=lambda n: n is not new_node):
+            parent, arg_key, index = node.parent, node.arg_key, node.index
             new_node = fun(node, *args, **kwargs)
 
-            if root:
-                if new_node is not node:
-                    node.replace(new_node)
-            else:
+            if not root:
                 root = new_node
+            elif new_node is not node:
+                parent.set(arg_key, new_node, index)
 
         assert root
         return root.assert_is(Expression)
@@ -617,33 +653,18 @@ class Expression(metaclass=_Expression):
         """
         parent = self.parent
 
-        if not parent:
+        if not parent or parent is expression:
             return expression
 
         key = self.arg_key
         value = parent.args.get(key)
 
-        if isinstance(value, list):
-            index = self.index
-
-            if isinstance(expression, list):
-                value.pop(index)
-                value[index:index] = expression
-                parent._set_parent(key, value)
-            else:
-                if expression is None:
-                    value.pop(index)
-
-                    for v in value[index:]:
-                        v.index = v.index - 1
-                else:
-                    value[index] = expression
-                    parent._set_parent(key, expression, index=index)
-        elif value is not None:
-            if expression is None:
-                parent.args.pop(key)
-            else:
-                parent.set(key, expression)
+        if type(expression) is list and isinstance(value, Expression):
+            # We are trying to replace an Expression with a list, so it's assumed that
+            # the intention was to really replace the parent of this expression.
+            value.parent.replace(expression)
+        else:
+            parent.set(key, expression, self.index)
 
         if expression is not self:
             self.parent = None
@@ -840,10 +861,14 @@ class Expression(metaclass=_Expression):
         copy: bool = True,
         **opts,
     ) -> In:
+        subquery = maybe_parse(query, copy=copy, **opts) if query else None
+        if subquery and not isinstance(subquery, Subquery):
+            subquery = subquery.subquery(copy=False)
+
         return In(
             this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
-            query=maybe_parse(query, copy=copy, **opts) if query else None,
+            query=subquery,
             unnest=(
                 Unnest(
                     expressions=[
@@ -886,6 +911,9 @@ class Expression(metaclass=_Expression):
         div.args["typed"] = typed
         div.args["safe"] = safe
         return div
+
+    def asc(self, nulls_first: bool = True) -> Ordered:
+        return Ordered(this=self.copy(), nulls_first=nulls_first)
 
     def desc(self, nulls_first: bool = False) -> Ordered:
         return Ordered(this=self.copy(), desc=True, nulls_first=nulls_first)
@@ -1010,14 +1038,14 @@ class Query(Expression):
         return Subquery(this=instance, alias=alias)
 
     def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
+        self: Q, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Q:
         """
         Adds a LIMIT clause to this query.
 
         Example:
             >>> select("1").union(select("1")).limit(1).sql()
-            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS _l_0 LIMIT 1'
+            'SELECT 1 UNION SELECT 1 LIMIT 1'
 
         Args:
             expression: the SQL code string to parse.
@@ -1031,10 +1059,90 @@ class Query(Expression):
         Returns:
             A limited Select expression.
         """
-        return (
-            select("*")
-            .from_(self.subquery(alias="_l_0", copy=copy))
-            .limit(expression, dialect=dialect, copy=False, **opts)
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="limit",
+            into=Limit,
+            prefix="LIMIT",
+            dialect=dialect,
+            copy=copy,
+            into_arg="expression",
+            **opts,
+        )
+
+    def offset(
+        self: Q, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Q:
+        """
+        Set the OFFSET expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").offset(10).sql()
+            'SELECT x FROM tbl OFFSET 10'
+
+        Args:
+            expression: the SQL code string to parse.
+                This can also be an integer.
+                If a `Offset` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Offset`.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified Select expression.
+        """
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="offset",
+            into=Offset,
+            prefix="OFFSET",
+            dialect=dialect,
+            copy=copy,
+            into_arg="expression",
+            **opts,
+        )
+
+    def order_by(
+        self: Q,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Q:
+        """
+        Set the ORDER BY expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").order_by("x DESC").sql()
+            'SELECT x FROM tbl ORDER BY x DESC'
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If a `Group` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Order`.
+            append: if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Order` expression into a single expression.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified Select expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="order",
+            append=append,
+            copy=copy,
+            prefix="ORDER BY",
+            into=Order,
+            dialect=dialect,
+            **opts,
         )
 
     @property
@@ -1326,7 +1434,7 @@ class Clone(Expression):
 
 
 class Describe(Expression):
-    arg_types = {"this": True, "extended": False, "kind": False, "expressions": False}
+    arg_types = {"this": True, "style": False, "kind": False, "expressions": False}
 
 
 class Kill(Expression):
@@ -1412,7 +1520,12 @@ class WithinGroup(Expression):
 # clickhouse supports scalar ctes
 # https://clickhouse.com/docs/en/sql-reference/statements/select/with
 class CTE(DerivedTable):
-    arg_types = {"this": True, "alias": True, "scalar": False}
+    arg_types = {
+        "this": True,
+        "alias": True,
+        "scalar": False,
+        "materialized": False,
+    }
 
 
 class TableAlias(Expression):
@@ -1518,6 +1631,15 @@ class AlterColumn(Expression):
     }
 
 
+# https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TABLE.html
+class AlterDistStyle(Expression):
+    pass
+
+
+class AlterSortKey(Expression):
+    arg_types = {"this": False, "expressions": False, "compound": False}
+
+
 class RenameColumn(Expression):
     arg_types = {"this": True, "to": True, "exists": False}
 
@@ -1531,7 +1653,13 @@ class SwapTable(Expression):
 
 
 class Comment(Expression):
-    arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "expression": True,
+        "exists": False,
+        "materialized": False,
+    }
 
 
 class Comprehension(Expression):
@@ -1637,6 +1765,10 @@ class ExcludeColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class EphemeralColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": False}
+
+
 class WithOperator(Expression):
     arg_types = {"this": True, "op": True}
 
@@ -1660,13 +1792,16 @@ class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+# https://github.com/ClickHouse/ClickHouse/blob/master/src/Parsers/ParserCreateQuery.h#L646
 class IndexColumnConstraint(ColumnConstraintKind):
     arg_types = {
         "this": False,
-        "schema": True,
+        "expressions": False,
         "kind": False,
         "index_type": False,
         "options": False,
+        "expression": False,  # Clickhouse
+        "granularity": False,
     }
 
 
@@ -1821,6 +1956,7 @@ class Drop(Expression):
         "cascade": False,
         "constraints": False,
         "purge": False,
+        "cluster": False,
     }
 
 
@@ -1834,7 +1970,32 @@ class Check(Expression):
 
 # https://docs.snowflake.com/en/sql-reference/constructs/connect-by
 class Connect(Expression):
-    arg_types = {"start": False, "connect": True}
+    arg_types = {"start": False, "connect": True, "nocycle": False}
+
+
+class CopyParameter(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
+class Copy(Expression):
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "files": True,
+        "credentials": False,
+        "format": False,
+        "params": False,
+    }
+
+
+class Credentials(Expression):
+    arg_types = {
+        "credentials": False,
+        "encryption": False,
+        "storage": False,
+        "iam_role": False,
+        "region": False,
+    }
 
 
 class Prior(Expression):
@@ -1940,17 +2101,17 @@ class Insert(DDL, DML):
         "hint": False,
         "with": False,
         "is_function": False,
-        "this": True,
+        "this": False,
         "expression": False,
         "conflict": False,
         "returning": False,
         "overwrite": False,
         "exists": False,
-        "partition": False,
         "alternative": False,
         "where": False,
         "ignore": False,
         "by_name": False,
+        "stored": False,
     }
 
     def with_(
@@ -2034,6 +2195,11 @@ class PartitionRange(Expression):
     arg_types = {"this": True, "expression": True}
 
 
+# https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression
+class PartitionId(Expression):
+    pass
+
+
 class Fetch(Expression):
     arg_types = {
         "direction": False,
@@ -2092,6 +2258,7 @@ class Join(Expression):
         "method": False,
         "global": False,
         "hint": False,
+        "match_condition": False,  # Snowflake
     }
 
     @property
@@ -2209,6 +2376,13 @@ class Lateral(UDTF):
         "outer": False,
         "alias": False,
         "cross_apply": False,  # True -> CROSS APPLY, False -> OUTER APPLY
+    }
+
+
+class MatchRecognizeMeasure(Expression):
+    arg_types = {
+        "this": True,
+        "window_frame": False,
     }
 
 
@@ -2389,13 +2563,7 @@ class OutputModelProperty(Property):
 
 
 class IsolatedLoadingProperty(Property):
-    arg_types = {
-        "no": False,
-        "concurrent": False,
-        "for_all": False,
-        "for_insert": False,
-        "for_none": False,
-    }
+    arg_types = {"no": False, "concurrent": False, "target": False}
 
 
 class JournalProperty(Property):
@@ -2603,6 +2771,11 @@ class UnloggedProperty(Property):
     arg_types = {}
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql?view=sql-server-ver16
+class ViewAttributeProperty(Property):
+    arg_types = {"this": True}
+
+
 class VolatileProperty(Property):
     arg_types = {"this": False}
 
@@ -2792,6 +2965,7 @@ class Table(Expression):
         "ordinality": False,
         "when": False,
         "only": False,
+        "partition": False,
     }
 
     @property
@@ -3043,46 +3217,6 @@ class Select(Query):
             **opts,
         )
 
-    def order_by(
-        self,
-        *expressions: t.Optional[ExpOrStr],
-        append: bool = True,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Select:
-        """
-        Set the ORDER BY expression.
-
-        Example:
-            >>> Select().from_("tbl").select("x").order_by("x DESC").sql()
-            'SELECT x FROM tbl ORDER BY x DESC'
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Order`.
-            append: if `True`, add to any existing expressions.
-                Otherwise, this flattens all the `Order` expression into a single expression.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The modified Select expression.
-        """
-        return _apply_child_list_builder(
-            *expressions,
-            instance=self,
-            arg="order",
-            append=append,
-            copy=copy,
-            prefix="ORDER BY",
-            into=Order,
-            dialect=dialect,
-            **opts,
-        )
-
     def sort_by(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -3160,55 +3294,6 @@ class Select(Query):
             prefix="CLUSTER BY",
             into=Cluster,
             dialect=dialect,
-            **opts,
-        )
-
-    def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
-        return _apply_builder(
-            expression=expression,
-            instance=self,
-            arg="limit",
-            into=Limit,
-            prefix="LIMIT",
-            dialect=dialect,
-            copy=copy,
-            into_arg="expression",
-            **opts,
-        )
-
-    def offset(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
-        """
-        Set the OFFSET expression.
-
-        Example:
-            >>> Select().from_("tbl").select("x").offset(10).sql()
-            'SELECT x FROM tbl OFFSET 10'
-
-        Args:
-            expression: the SQL code string to parse.
-                This can also be an integer.
-                If a `Offset` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Offset`.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The modified Select expression.
-        """
-        return _apply_builder(
-            expression=expression,
-            instance=self,
-            arg="offset",
-            into=Offset,
-            prefix="OFFSET",
-            dialect=dialect,
-            copy=copy,
-            into_arg="expression",
             **opts,
         )
 
@@ -3761,6 +3846,10 @@ class SessionParameter(Condition):
 class Placeholder(Condition):
     arg_types = {"this": False, "kind": False}
 
+    @property
+    def name(self) -> str:
+        return self.this or "?"
+
 
 class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
@@ -3869,6 +3958,7 @@ class DataType(Expression):
         TIME = auto()
         TIMETZ = auto()
         TIMESTAMP = auto()
+        TIMESTAMPNTZ = auto()
         TIMESTAMPLTZ = auto()
         TIMESTAMPTZ = auto()
         TIMESTAMP_S = auto()
@@ -3896,6 +3986,7 @@ class DataType(Expression):
         VARIANT = auto()
         XML = auto()
         YEAR = auto()
+        TDIGEST = auto()
 
     STRUCT_TYPES = {
         Type.NESTED,
@@ -3919,15 +4010,17 @@ class DataType(Expression):
         Type.NAME,
     }
 
-    INTEGER_TYPES = {
+    SIGNED_INTEGER_TYPES = {
         Type.BIGINT,
-        Type.BIT,
         Type.INT,
         Type.INT128,
         Type.INT256,
         Type.MEDIUMINT,
         Type.SMALLINT,
         Type.TINYINT,
+    }
+
+    UNSIGNED_INTEGER_TYPES = {
         Type.UBIGINT,
         Type.UINT,
         Type.UINT128,
@@ -3935,6 +4028,12 @@ class DataType(Expression):
         Type.UMEDIUMINT,
         Type.USMALLINT,
         Type.UTINYINT,
+    }
+
+    INTEGER_TYPES = {
+        *SIGNED_INTEGER_TYPES,
+        *UNSIGNED_INTEGER_TYPES,
+        Type.BIT,
     }
 
     FLOAT_TYPES = {
@@ -3963,6 +4062,7 @@ class DataType(Expression):
         Type.DATETIME64,
         Type.TIME,
         Type.TIMESTAMP,
+        Type.TIMESTAMPNTZ,
         Type.TIMESTAMPLTZ,
         Type.TIMESTAMPTZ,
         Type.TIMESTAMP_MS,
@@ -4100,6 +4200,7 @@ class AlterTable(Expression):
         "exists": False,
         "only": False,
         "options": False,
+        "cluster": False,
     }
 
 
@@ -4109,6 +4210,11 @@ class AddConstraint(Expression):
 
 class DropPartition(Expression):
     arg_types = {"expressions": True, "exists": False}
+
+
+# https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#replace-partition
+class ReplacePartition(Expression):
+    arg_types = {"expression": True, "source": True}
 
 
 # Binary expressions like (ADD a b)
@@ -4196,7 +4302,7 @@ class Dot(Binary):
 
         parts.reverse()
 
-        for arg in ("this", "table", "db", "catalog"):
+        for arg in COLUMN_PARTS:
             part = this.args.get(arg)
 
             if isinstance(part, Expression):
@@ -4377,7 +4483,13 @@ class Between(Predicate):
 
 class Bracket(Condition):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
-    arg_types = {"this": True, "expressions": True, "offset": False, "safe": False}
+    arg_types = {
+        "this": True,
+        "expressions": True,
+        "offset": False,
+        "safe": False,
+        "returns_list_for_maps": False,
+    }
 
     @property
     def output_name(self) -> str:
@@ -4439,7 +4551,7 @@ class TimeUnit(Expression):
         super().__init__(**args)
 
     @property
-    def unit(self) -> t.Optional[Var]:
+    def unit(self) -> t.Optional[Var | IntervalSpan]:
         return self.args.get("unit")
 
 
@@ -4794,6 +4906,10 @@ class TryCast(Cast):
     pass
 
 
+class Try(Func):
+    pass
+
+
 class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
@@ -5068,6 +5184,10 @@ class FromBase64(Func):
 
 class ToBase64(Func):
     pass
+
+
+class GenerateDateArray(Func):
+    arg_types = {"start": True, "end": True, "interval": False}
 
 
 class Greatest(Func):
@@ -5349,6 +5469,11 @@ class Map(Func):
         return values.expressions if values else []
 
 
+# Represents the MAP {...} syntax in DuckDB - basically convert a struct to a MAP
+class ToMap(Func):
+    pass
+
+
 class MapFromEntries(Func):
     pass
 
@@ -5431,6 +5556,10 @@ class ApproxQuantile(Quantile):
     arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 
 
+class Quarter(Func):
+    pass
+
+
 class Rand(Func):
     _sql_names = ["RAND", "RANDOM"]
     arg_types = {"this": False}
@@ -5472,7 +5601,6 @@ class RegexpReplace(Func):
         "replacement": False,
         "position": False,
         "occurrence": False,
-        "parameters": False,
         "modifiers": False,
     }
 
@@ -5624,7 +5752,7 @@ class StddevSamp(AggFunc):
 
 
 class TimeToStr(Func):
-    arg_types = {"this": True, "format": True, "culture": False}
+    arg_types = {"this": True, "format": True, "culture": False, "timezone": False}
 
 
 class TimeToTimeStr(Func):
@@ -5681,6 +5809,10 @@ class TsOrDsToTime(Func):
     pass
 
 
+class TsOrDsToTimestamp(Func):
+    pass
+
+
 class TsOrDiToDi(Func):
     pass
 
@@ -5701,7 +5833,14 @@ class UnixToStr(Func):
 # https://prestodb.io/docs/current/functions/datetime.html
 # presto has weird zone/hours/minutes
 class UnixToTime(Func):
-    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
+    arg_types = {
+        "this": True,
+        "scale": False,
+        "zone": False,
+        "hours": False,
+        "minutes": False,
+        "format": False,
+    }
 
     SECONDS = Literal.number(0)
     DECIS = Literal.number(1)
@@ -5738,12 +5877,24 @@ class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
+class Corr(Binary, AggFunc):
+    pass
+
+
 class Variance(AggFunc):
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 
 class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
+
+
+class CovarSamp(Binary, AggFunc):
+    pass
+
+
+class CovarPop(Binary, AggFunc):
+    pass
 
 
 class Week(Func):
@@ -5782,6 +5933,12 @@ class NextValueFor(Func):
     arg_types = {"this": True, "order": False}
 
 
+# Refers to a trailing semi-colon. This is only used to preserve trailing comments
+# select 1; -- my comment
+class Semicolon(Expression):
+    arg_types = {}
+
+
 def _norm_arg(arg):
     return arg.lower() if type(arg) is str else arg
 
@@ -5790,6 +5947,8 @@ ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 
 JSON_PATH_PARTS = subclasses(__name__, JSONPathPart, (JSONPathPart,))
+
+PERCENTILES = (PercentileCont, PercentileDisc)
 
 
 # Helpers
@@ -6415,7 +6574,7 @@ def and_(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        And: the new condition
+        The new condition
     """
     return t.cast(Condition, _combine(expressions, And, dialect, copy=copy, **opts))
 
@@ -6438,9 +6597,32 @@ def or_(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        Or: the new condition
+        The new condition
     """
     return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, **opts))
+
+
+def xor(
+    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+) -> Condition:
+    """
+    Combine multiple conditions with an XOR logical operator.
+
+    Example:
+        >>> xor("x=1", xor("y=1", "z=1")).sql()
+        'x = 1 XOR (y = 1 XOR z = 1)'
+
+    Args:
+        *expressions: the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect: the dialect used to parse the input expression.
+        copy: whether to copy `expressions` (only applies to Expressions).
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        The new condition
+    """
+    return t.cast(Condition, _combine(expressions, Xor, dialect, copy=copy, **opts))
 
 
 def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Not:
@@ -6570,17 +6752,9 @@ def to_interval(interval: str | Literal) -> Interval:
     )
 
 
-@t.overload
-def to_table(sql_path: str | Table, **kwargs) -> Table: ...
-
-
-@t.overload
-def to_table(sql_path: None, **kwargs) -> None: ...
-
-
 def to_table(
-    sql_path: t.Optional[str | Table], dialect: DialectType = None, copy: bool = True, **kwargs
-) -> t.Optional[Table]:
+    sql_path: str | Table, dialect: DialectType = None, copy: bool = True, **kwargs
+) -> Table:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
     If a table is passed in then that table is returned.
@@ -6594,35 +6768,54 @@ def to_table(
     Returns:
         A table expression.
     """
-    if sql_path is None or isinstance(sql_path, Table):
+    if isinstance(sql_path, Table):
         return maybe_copy(sql_path, copy=copy)
-    if not isinstance(sql_path, str):
-        raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
 
     table = maybe_parse(sql_path, into=Table, dialect=dialect)
-    if table:
-        for k, v in kwargs.items():
-            table.set(k, v)
+
+    for k, v in kwargs.items():
+        table.set(k, v)
 
     return table
 
 
-def to_column(sql_path: str | Column, **kwargs) -> Column:
+def to_column(
+    sql_path: str | Column,
+    quoted: t.Optional[bool] = None,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **kwargs,
+) -> Column:
     """
-    Create a column from a `[table].[column]` sql path. Schema is optional.
-
+    Create a column from a `[table].[column]` sql path. Table is optional.
     If a column is passed in then that column is returned.
 
     Args:
-        sql_path: `[table].[column]` string
+        sql_path: a `[table].[column]` string.
+        quoted: Whether or not to force quote identifiers.
+        dialect: the source dialect according to which the column name will be parsed.
+        copy: Whether to copy a column if it is passed in.
+        kwargs: the kwargs to instantiate the resulting `Column` expression with.
+
     Returns:
-        Table: A column expression
+        A column expression.
     """
-    if sql_path is None or isinstance(sql_path, Column):
-        return sql_path
-    if not isinstance(sql_path, str):
-        raise ValueError(f"Invalid type provided for column: {type(sql_path)}")
-    return column(*reversed(sql_path.split(".")), **kwargs)  # type: ignore
+    if isinstance(sql_path, Column):
+        return maybe_copy(sql_path, copy=copy)
+
+    try:
+        col = maybe_parse(sql_path, into=Column, dialect=dialect)
+    except ParseError:
+        return column(*reversed(sql_path.split(".")), quoted=quoted, **kwargs)
+
+    for k, v in kwargs.items():
+        col.set(k, v)
+
+    if quoted:
+        for i in col.find_all(Identifier):
+            i.set("quoted", True)
+
+    return col
 
 
 def alias_(
@@ -6706,7 +6899,7 @@ def subquery(
         A new Select instance with the subquery expression included.
     """
 
-    expression = maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
+    expression = maybe_parse(expression, dialect=dialect, **opts).subquery(alias, **opts)
     return Select().from_(expression, dialect=dialect, **opts)
 
 
@@ -6771,7 +6964,9 @@ def column(
     )
 
     if fields:
-        this = Dot.build((this, *(to_identifier(field, copy=copy) for field in fields)))
+        this = Dot.build(
+            (this, *(to_identifier(field, quoted=quoted, copy=copy) for field in fields))
+        )
     return this
 
 
@@ -6790,11 +6985,16 @@ def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast
     Returns:
         The new Cast instance.
     """
-    expression = maybe_parse(expression, copy=copy, **opts)
+    expr = maybe_parse(expression, copy=copy, **opts)
     data_type = DataType.build(to, copy=copy, **opts)
-    expression = Cast(this=expression, to=data_type)
-    expression.type = data_type
-    return expression
+
+    if expr.is_type(data_type):
+        return expr
+
+    expr = Cast(this=expr, to=data_type)
+    expr.type = data_type
+
+    return expr
 
 
 def table_(
@@ -6881,18 +7081,23 @@ def var(name: t.Optional[ExpOrStr]) -> Var:
     return Var(this=name)
 
 
-def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
+def rename_table(
+    old_name: str | Table,
+    new_name: str | Table,
+    dialect: DialectType = None,
+) -> AlterTable:
     """Build ALTER TABLE... RENAME... expression
 
     Args:
         old_name: The old name of the table
         new_name: The new name of the table
+        dialect: The dialect to parse the table.
 
     Returns:
         Alter table expression
     """
-    old_table = to_table(old_name)
-    new_table = to_table(new_name)
+    old_table = to_table(old_name, dialect=dialect)
+    new_table = to_table(new_name, dialect=dialect)
     return AlterTable(
         this=old_table,
         actions=[
@@ -6906,6 +7111,7 @@ def rename_column(
     old_column_name: str | Column,
     new_column_name: str | Column,
     exists: t.Optional[bool] = None,
+    dialect: DialectType = None,
 ) -> AlterTable:
     """Build ALTER TABLE... RENAME COLUMN... expression
 
@@ -6914,13 +7120,14 @@ def rename_column(
         old_column: The old name of the column
         new_column: The new name of the column
         exists: Whether to add the `IF EXISTS` clause
+        dialect: The dialect to parse the table/column.
 
     Returns:
         Alter table expression
     """
-    table = to_table(table_name)
-    old_column = to_column(old_column_name)
-    new_column = to_column(new_column_name)
+    table = to_table(table_name, dialect=dialect)
+    old_column = to_column(old_column_name, dialect=dialect)
+    new_column = to_column(new_column_name, dialect=dialect)
     return AlterTable(
         this=table,
         actions=[
@@ -6939,7 +7146,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         copy: Whether to copy `value` (only applies to Expressions and collections).
 
     Returns:
-        Expression: the equivalent expression object.
+        The equivalent expression object.
     """
     if isinstance(value, Expression):
         return maybe_copy(value, copy)
@@ -6951,15 +7158,28 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return null()
     if isinstance(value, numbers.Number):
         return Literal.number(value)
+    if isinstance(value, bytes):
+        return HexString(this=value.hex())
     if isinstance(value, datetime.datetime):
         datetime_literal = Literal.string(
-            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat()
+            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat(
+                sep=" "
+            )
         )
         return TimeStrToTime(this=datetime_literal)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)
     if isinstance(value, tuple):
+        if hasattr(value, "_fields"):
+            return Struct(
+                expressions=[
+                    PropertyEQ(
+                        this=to_identifier(k), expression=convert(getattr(value, k), copy=copy)
+                    )
+                    for k in value._fields
+                ]
+            )
         return Tuple(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, list):
         return Array(expressions=[convert(v, copy=copy) for v in value])
@@ -6967,6 +7187,13 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return Map(
             keys=Array(expressions=[convert(k, copy=copy) for k in value]),
             values=Array(expressions=[convert(v, copy=copy) for v in value.values()]),
+        )
+    if hasattr(value, "__dict__"):
+        return Struct(
+            expressions=[
+                PropertyEQ(this=to_identifier(k), expression=convert(v, copy=copy))
+                for k, v in value.__dict__.items()
+            ]
         )
     raise ValueError(f"Cannot convert {value}")
 
@@ -7158,8 +7385,8 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
     def _replace_placeholders(node: Expression, args, **kwargs) -> Expression:
         if isinstance(node, Placeholder):
-            if node.name:
-                new_name = kwargs.get(node.name)
+            if node.this:
+                new_name = kwargs.get(node.this)
                 if new_name is not None:
                     return convert(new_name)
             else:
@@ -7294,27 +7521,6 @@ def case(
     else:
         this = None
     return Case(this=this, ifs=[])
-
-
-def cast_unless(
-    expression: ExpOrStr,
-    to: DATA_TYPE,
-    *types: DATA_TYPE,
-    **opts: t.Any,
-) -> Expression | Cast:
-    """
-    Cast an expression to a data type unless it is a specified type.
-
-    Args:
-        expression: The expression to cast.
-        to: The data type to cast to.
-        **types: The types to exclude from casting.
-        **opts: Extra keyword arguments for parsing `expression`
-    """
-    expr = maybe_parse(expression, **opts)
-    if expr.is_type(*types):
-        return expr
-    return cast(expr, to, **opts)
 
 
 def array(

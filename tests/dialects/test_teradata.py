@@ -210,3 +210,92 @@ class TestTeradata(Validator):
                 "teradata": "TRYCAST('-2.5' AS DECIMAL(5, 2))",
             },
         )
+
+    def test_time(self):
+        self.validate_all(
+            "CURRENT_TIMESTAMP",
+            read={
+                "teradata": "CURRENT_TIMESTAMP",
+                "snowflake": "CURRENT_TIMESTAMP()",
+            },
+        )
+
+        self.validate_all(
+            "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+                "snowflake": "SELECT DATEADD(YEAR, 5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+                "snowflake": "SELECT DATEADD(YEAR, -5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+                "sqlite": "SELECT DATE_SUB('2023-01-01', 5, YEAR)",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+                "sqlite": "SELECT DATE_SUB('2023-01-01', -5, YEAR)",
+            },
+        )
+        self.validate_all(
+            "SELECT (90 * INTERVAL '1' DAY)",
+            read={
+                "teradata": "SELECT (90 * INTERVAL '1' DAY)",
+                "snowflake": "SELECT INTERVAL '1' QUARTER",
+            },
+        )
+        self.validate_all(
+            "SELECT (7 * INTERVAL '1' DAY)",
+            read={
+                "teradata": "SELECT (7 * INTERVAL '1' DAY)",
+                "snowflake": "SELECT INTERVAL '1' WEEK",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' + (90 * INTERVAL '5' DAY)",
+            read={
+                "teradata": "SELECT '2023-01-01' + (90 * INTERVAL '5' DAY)",
+                "snowflake": "SELECT DATEADD(QUARTER, 5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' + (7 * INTERVAL '5' DAY)",
+            read={
+                "teradata": "SELECT '2023-01-01' + (7 * INTERVAL '5' DAY)",
+                "snowflake": "SELECT DATEADD(WEEK, 5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "CAST(TO_CHAR(x, 'Q') AS INT)",
+            read={
+                "teradata": "CAST(TO_CHAR(x, 'Q') AS INT)",
+                "snowflake": "DATE_PART(QUARTER, x)",
+                "bigquery": "EXTRACT(QUARTER FROM x)",
+            },
+        )
+        self.validate_all(
+            "EXTRACT(MONTH FROM x)",
+            read={
+                "teradata": "EXTRACT(MONTH FROM x)",
+                "snowflake": "DATE_PART(MONTH, x)",
+                "bigquery": "EXTRACT(MONTH FROM x)",
+            },
+        )
+        self.validate_all(
+            "CAST(TO_CHAR(x, 'Q') AS INT)",
+            read={
+                "snowflake": "quarter(x)",
+                "teradata": "CAST(TO_CHAR(x, 'Q') AS INT)",
+            },
+        )

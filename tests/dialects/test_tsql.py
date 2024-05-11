@@ -8,6 +8,8 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
+        self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
         self.validate_identity("EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True)
         # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
@@ -29,6 +31,9 @@ class TestTSQL(Validator):
         self.validate_identity("1 AND true", "1 <> 0 AND (1 = 1)")
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
+        self.validate_identity(
+            "COPY INTO test_1 FROM 'path' WITH (FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY = 'Shared Access Signature', SECRET = 'token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
+        )
 
         self.validate_all(
             "SELECT IIF(cond <> 0, 'True', 'False')",
@@ -455,7 +460,6 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS SMALLMONEY)")
-        self.validate_identity("CAST(x AS ROWVERSION)")
         self.validate_identity("CAST(x AS IMAGE)")
         self.validate_identity("CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS BIT)")
@@ -473,6 +477,16 @@ class TestTSQL(Validator):
             "CAST(x AS DATETIME2(6))",
             write={
                 "hive": "CAST(x AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS ROWVERSION)",
+            read={
+                "tsql": "CAST(x AS TIMESTAMP)",
+            },
+            write={
+                "tsql": "CAST(x AS ROWVERSION)",
+                "hive": "CAST(x AS BINARY)",
             },
         )
 
@@ -742,6 +756,9 @@ class TestTSQL(Validator):
         )
 
     def test_ddl(self):
+        for view_attr in ("ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"):
+            self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
+
         expression = parse_one("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B", dialect="tsql")
         self.assertIsInstance(expression, exp.AlterTable)
         self.assertIsInstance(expression.args["actions"][0], exp.Drop)
@@ -764,6 +781,14 @@ class TestTSQL(Validator):
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",
+        )
+
+        self.validate_all(
+            "CREATE TABLE [#temptest] (name VARCHAR)",
+            read={
+                "duckdb": "CREATE TEMPORARY TABLE 'temptest' (name VARCHAR)",
+                "tsql": "CREATE TABLE [#temptest] (name VARCHAR)",
+            },
         )
         self.validate_all(
             "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",

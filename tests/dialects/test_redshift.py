@@ -139,6 +139,15 @@ class TestRedshift(Validator):
                 "presto": "LENGTH(x)",
             },
         )
+        self.validate_all(
+            "x LIKE 'abc' || '%'",
+            read={
+                "duckdb": "STARTS_WITH(x, 'abc')",
+            },
+            write={
+                "redshift": "x LIKE 'abc' || '%'",
+            },
+        )
 
         self.validate_all(
             "SELECT SYSDATE",
@@ -153,7 +162,7 @@ class TestRedshift(Validator):
             write={
                 "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
                 "redshift": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
-                "snowflake": "SELECT DATE_PART(minute, CAST('2023-01-04 04:05:06.789' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DATE_PART(minute, CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -201,18 +210,6 @@ class TestRedshift(Validator):
             "SELECT 'abc'::CHARACTER",
             write={
                 "redshift": "SELECT CAST('abc' AS CHAR)",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid",
-            write={
-                "redshift": "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid",
-            },
-        )
-        self.validate_all(
-            'SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE \'%start\\_%\' LIMIT 5',
-            write={
-                "redshift": 'SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE \'%start\\_%\' LIMIT 5'
             },
         )
         self.validate_all(
@@ -274,7 +271,7 @@ class TestRedshift(Validator):
                 "postgres": "SELECT CAST('2008-02-28' AS TIMESTAMP) + INTERVAL '18 MONTH'",
                 "presto": "SELECT DATE_ADD('MONTH', 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "redshift": "SELECT DATEADD(MONTH, 18, '2008-02-28')",
-                "snowflake": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "tsql": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS DATETIME2))",
             },
         )
@@ -306,6 +303,12 @@ class TestRedshift(Validator):
         self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
+        self.validate_identity(
+            "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid"
+        )
+        self.validate_identity(
+            """SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE '%start\\\\_%' LIMIT 5"""
+        )
         self.validate_identity(
             """SELECT JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}', 'f4', 'f6', TRUE)"""
         )
@@ -359,8 +362,10 @@ class TestRedshift(Validator):
             "CREATE TABLE sales (salesid INTEGER NOT NULL) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE AUTO"
         )
         self.validate_identity(
-            "COPY customer FROM 's3://mybucket/customer' IAM_ROLE 'arn:aws:iam::0123456789012:role/MyRedshiftRole'",
-            check_command_warning=True,
+            "COPY customer FROM 's3://mybucket/customer' IAM_ROLE 'arn:aws:iam::0123456789012:role/MyRedshiftRole' REGION 'us-east-1' FORMAT orc",
+        )
+        self.validate_identity(
+            "COPY customer FROM 's3://mybucket/mydata' CREDENTIALS 'aws_iam_role=arn:aws:iam::<aws-account-id>:role/<role-name>;master_symmetric_key=<root-key>' emptyasnull blanksasnull timeformat 'YYYY-MM-DD HH:MI:SS'"
         )
         self.validate_identity(
             "UNLOAD ('select * from venue') TO 's3://mybucket/unload/' IAM_ROLE 'arn:aws:iam::0123456789012:role/MyRedshiftRole'",
@@ -493,7 +498,22 @@ FROM (
             },
         )
 
-    def test_rename_table(self):
+    def test_alter_table(self):
+        self.validate_identity("ALTER TABLE s.t ALTER SORTKEY (c)")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY AUTO")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY NONE")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY (c1, c2)")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY (c1, c2)")
+        self.validate_identity("ALTER TABLE t ALTER COMPOUND SORTKEY (c1, c2)")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE ALL")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE EVEN")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE AUTO")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c")
+        self.validate_identity(
+            "ALTER TABLE t ALTER DISTKEY c",
+            "ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c",
+        )
+
         self.validate_all(
             "ALTER TABLE db.t1 RENAME TO db.t2",
             write={
@@ -504,7 +524,11 @@ FROM (
 
     def test_varchar_max(self):
         self.validate_all(
-            "CREATE TABLE TEST (cola VARCHAR(MAX))",
+            'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
+            read={
+                "redshift": "CREATE TABLE TEST (cola VARCHAR(max))",
+                "tsql": "CREATE TABLE TEST (cola VARCHAR(max))",
+            },
             write={
                 "redshift": 'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
             },

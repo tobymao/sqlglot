@@ -10,6 +10,7 @@ pub struct TokenTypeSettings {
     pub break_: TokenType,
     pub dcolon: TokenType,
     pub heredoc_string: TokenType,
+    pub raw_string: TokenType,
     pub hex_string: TokenType,
     pub identifier: TokenType,
     pub number: TokenType,
@@ -28,6 +29,7 @@ impl TokenTypeSettings {
         break_: TokenType,
         dcolon: TokenType,
         heredoc_string: TokenType,
+        raw_string: TokenType,
         hex_string: TokenType,
         identifier: TokenType,
         number: TokenType,
@@ -42,6 +44,7 @@ impl TokenTypeSettings {
             break_,
             dcolon,
             heredoc_string,
+            raw_string,
             hex_string,
             identifier,
             number,
@@ -151,7 +154,7 @@ impl TokenizerSettings {
 #[derive(Clone, Debug)]
 #[pyclass]
 pub struct TokenizerDialectSettings {
-    pub escape_sequences: HashMap<String, String>,
+    pub unescaped_sequences: HashMap<String, String>,
     pub identifiers_can_start_with_digit: bool,
 }
 
@@ -159,11 +162,11 @@ pub struct TokenizerDialectSettings {
 impl TokenizerDialectSettings {
     #[new]
     pub fn new(
-        escape_sequences: HashMap<String, String>,
+        unescaped_sequences: HashMap<String, String>,
         identifiers_can_start_with_digit: bool,
     ) -> Self {
         TokenizerDialectSettings {
-            escape_sequences,
+            unescaped_sequences,
             identifiers_can_start_with_digit,
         }
     }

@@ -7,8 +7,11 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
+        self.validate_identity("SELECT * FROM x qualify", "SELECT * FROM x AS qualify")
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
+        self.validate_identity("CAST(TDIGEST_AGG(1) AS TDIGEST)")
+        self.validate_identity("CAST(x AS HYPERLOGLOG)")
 
         self.validate_all(
             "CAST(x AS INTERVAL YEAR TO MONTH)",
@@ -175,6 +178,17 @@ class TestPresto(Validator):
             write={
                 "hive": "CONCAT_WS('-', x)",
                 "spark": "ARRAY_JOIN(x, '-', 'a')",
+            },
+        )
+        self.validate_all(
+            "STRPOS('ABC', 'A', 3)",
+            read={
+                "trino": "STRPOS('ABC', 'A', 3)",
+            },
+            write={
+                "presto": "STRPOS('ABC', 'A', 3)",
+                "trino": "STRPOS('ABC', 'A', 3)",
+                "snowflake": "POSITION('A', 'ABC')",
             },
         )
 
@@ -600,6 +614,15 @@ class TestPresto(Validator):
         self.validate_identity(
             "SELECT * FROM example.testdb.customer_orders FOR TIMESTAMP AS OF CAST('2022-03-23 09:59:29.803 Europe/Vienna' AS TIMESTAMP)"
         )
+        self.validate_identity(
+            "SELECT origin_state, destination_state, origin_zip, SUM(package_weight) FROM shipping GROUP BY ALL CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip)"
+        )
+        self.validate_identity(
+            "SELECT origin_state, destination_state, origin_zip, SUM(package_weight) FROM shipping GROUP BY DISTINCT CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip)"
+        )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT_SCALAR(CAST(extra AS JSON), '$.value_b'), COUNT(*) FROM table_a GROUP BY DISTINCT (JSON_EXTRACT_SCALAR(CAST(extra AS JSON), '$.value_b'))"
+        )
 
         self.validate_all(
             "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
@@ -850,7 +873,7 @@ class TestPresto(Validator):
             "SELECT ARRAY_SORT(x, (left, right) -> -1)",
             write={
                 "duckdb": "SELECT ARRAY_SORT(x)",
-                "presto": "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+                "presto": 'SELECT ARRAY_SORT(x, ("left", "right") -> -1)',
                 "hive": "SELECT SORT_ARRAY(x)",
                 "spark": "SELECT ARRAY_SORT(x, (left, right) -> -1)",
             },
@@ -1038,6 +1061,15 @@ class TestPresto(Validator):
         )
 
     def test_json(self):
+        with self.assertLogs(helper_logger):
+            self.validate_all(
+                """SELECT JSON_EXTRACT_SCALAR(TRY(FILTER(CAST(JSON_EXTRACT('{"k1": [{"k2": "{\\"k3\\": 1}", "k4": "v"}]}', '$.k1') AS ARRAY(MAP(VARCHAR, VARCHAR))), x -> x['k4'] = 'v')[1]['k2']), '$.k3')""",
+                write={
+                    "presto": """SELECT JSON_EXTRACT_SCALAR(TRY(FILTER(CAST(JSON_EXTRACT('{"k1": [{"k2": "{\\"k3\\": 1}", "k4": "v"}]}', '$.k1') AS ARRAY(MAP(VARCHAR, VARCHAR))), x -> x['k4'] = 'v')[1]['k2']), '$.k3')""",
+                    "spark": """SELECT GET_JSON_OBJECT(FILTER(FROM_JSON(GET_JSON_OBJECT('{"k1": [{"k2": "{\\\\"k3\\\\": 1}", "k4": "v"}]}', '$.k1'), 'ARRAY<MAP<STRING, STRING>>'), x -> x['k4'] = 'v')[0]['k2'], '$.k3')""",
+                },
+            )
+
         self.validate_all(
             "SELECT CAST(JSON '[1,23,456]' AS ARRAY(INTEGER))",
             write={
@@ -1052,7 +1084,6 @@ class TestPresto(Validator):
                 "presto": 'SELECT CAST(JSON_PARSE(\'{"k1":1,"k2":23,"k3":456}\') AS MAP(VARCHAR, INTEGER))',
             },
         )
-
         self.validate_all(
             "SELECT CAST(ARRAY [1, 23, 456] AS JSON)",
             write={

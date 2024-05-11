@@ -235,15 +235,18 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "'\\\\a'",
+            "'\\\\\\\\a'",
             read={
+                "drill": "'\\\\\\\\a'",
+                "duckdb": "'\\\\a'",
                 "presto": "'\\\\a'",
             },
             write={
+                "drill": "'\\\\\\\\a'",
                 "duckdb": "'\\\\a'",
+                "hive": "'\\\\\\\\a'",
                 "presto": "'\\\\a'",
-                "hive": "'\\\\a'",
-                "spark": "'\\\\a'",
+                "spark": "'\\\\\\\\a'",
             },
         )
 
@@ -331,7 +334,7 @@ class TestHive(Validator):
                 "hive": "DATE_ADD('2020-01-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "redshift": "DATEADD(DAY, 1, '2020-01-01')",
-                "snowflake": "DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS TIMESTAMPNTZ) AS DATE))",
+                "snowflake": "DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "spark": "DATE_ADD('2020-01-01', 1)",
                 "tsql": "DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
@@ -345,7 +348,7 @@ class TestHive(Validator):
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
                 "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "redshift": "DATEADD(DAY, 1 * -1, '2020-01-01')",
-                "snowflake": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMPNTZ) AS DATE))",
+                "snowflake": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
                 "tsql": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
@@ -369,7 +372,7 @@ class TestHive(Validator):
             "UNIX_TIMESTAMP(x)",
             write={
                 "duckdb": "EPOCH(STRPTIME(x, '%Y-%m-%d %H:%M:%S'))",
-                "presto": "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %T'))",
+                "presto": "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST(x AS VARCHAR), '%Y-%m-%d %T')), PARSE_DATETIME(CAST(x AS VARCHAR), 'yyyy-MM-dd HH:mm:ss')))",
                 "hive": "UNIX_TIMESTAMP(x)",
                 "spark": "UNIX_TIMESTAMP(x)",
                 "": "STR_TO_UNIX(x, '%Y-%m-%d %H:%M:%S')",
@@ -424,6 +427,9 @@ class TestHive(Validator):
         )
         self.validate_identity(
             "INSERT OVERWRITE TABLE zipcodes PARTITION(state = 0) VALUES (896, 'US', 'TAMPA', 33607)"
+        )
+        self.validate_identity(
+            "INSERT OVERWRITE DIRECTORY 'x' ROW FORMAT DELIMITED FIELDS TERMINATED BY '\001' COLLECTION ITEMS TERMINATED BY ',' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '' STORED AS TEXTFILE SELECT * FROM `a`.`b`"
         )
         self.validate_identity(
             "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, b, GROUPING SETS ((a, b), a)"
@@ -521,9 +527,11 @@ class TestHive(Validator):
         self.validate_all(
             "APPROX_COUNT_DISTINCT(a)",
             write={
+                "bigquery": "APPROX_COUNT_DISTINCT(a)",
                 "duckdb": "APPROX_COUNT_DISTINCT(a)",
                 "presto": "APPROX_DISTINCT(a)",
                 "hive": "APPROX_COUNT_DISTINCT(a)",
+                "snowflake": "APPROX_COUNT_DISTINCT(a)",
                 "spark": "APPROX_COUNT_DISTINCT(a)",
             },
         )
@@ -563,7 +571,7 @@ class TestHive(Validator):
             "LOCATE('a', x, 3)",
             write={
                 "duckdb": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-                "presto": "STRPOS(x, 'a', 3)",
+                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
                 "hive": "LOCATE('a', x, 3)",
                 "spark": "LOCATE('a', x, 3)",
             },
@@ -736,13 +744,12 @@ class TestHive(Validator):
         )
 
     def test_escapes(self) -> None:
-        self.validate_identity("'\n'")
+        self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")
-        self.validate_identity("'\\\n'")
+        self.validate_identity("'\\\n'", "'\\\\\\n'")
         self.validate_identity("'\\\\n'")
         self.validate_identity("''")
         self.validate_identity("'\\\\'")
-        self.validate_identity("'\\z'")
         self.validate_identity("'\\\\z'")
 
     def test_data_type(self):

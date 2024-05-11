@@ -17,8 +17,8 @@ from sqlglot.parser import logger as parser_logger
 class Validator(unittest.TestCase):
     dialect = None
 
-    def parse_one(self, sql):
-        return parse_one(sql, read=self.dialect)
+    def parse_one(self, sql, **kwargs):
+        return parse_one(sql, read=self.dialect, **kwargs)
 
     def validate_identity(self, sql, write_sql=None, pretty=False, check_command_warning=False):
         if check_command_warning:
@@ -293,7 +293,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS INT64)",
                 "drill": "CAST(a AS INTEGER)",
                 "duckdb": "CAST(a AS SMALLINT)",
-                "mysql": "CAST(a AS SMALLINT)",
+                "mysql": "CAST(a AS SIGNED)",
                 "hive": "CAST(a AS SMALLINT)",
                 "oracle": "CAST(a AS NUMBER)",
                 "postgres": "CAST(a AS SMALLINT)",
@@ -611,7 +611,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "EPOCH(STRPTIME('2020-01-01', '%Y-%m-%d'))",
                 "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
-                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+                "presto": "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('2020-01-01' AS VARCHAR), '%Y-%m-%d')), PARSE_DATETIME(CAST('2020-01-01' AS VARCHAR), 'yyyy-MM-dd')))",
                 "starrocks": "UNIX_TIMESTAMP('2020-01-01', '%Y-%m-%d')",
                 "doris": "UNIX_TIMESTAMP('2020-01-01', '%Y-%m-%d')",
             },
@@ -961,6 +961,7 @@ class TestDialect(Validator):
                 "presto": "CAST(x AS DATE)",
                 "spark": "CAST(x AS DATE)",
                 "sqlite": "x",
+                "tsql": "CAST(x AS DATE)",
             },
         )
         self.validate_all(
@@ -1332,6 +1333,15 @@ class TestDialect(Validator):
 
     def test_set_operators(self):
         self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 ORDER BY x NULLS FIRST LIMIT 1",
+                "tsql": "SELECT TOP 1 * FROM (SELECT * FROM a UNION SELECT * FROM b) AS _l_0 ORDER BY x",
+            },
+        )
+
+        self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
@@ -1509,7 +1519,7 @@ class TestDialect(Validator):
             "POSITION(needle, haystack, pos)",
             write={
                 "drill": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
-                "presto": "STRPOS(haystack, needle, pos)",
+                "presto": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
                 "spark": "LOCATE(needle, haystack, pos)",
                 "clickhouse": "position(haystack, needle, pos)",
                 "snowflake": "POSITION(needle, haystack, pos)",
@@ -1666,9 +1676,29 @@ class TestDialect(Validator):
                 "presto": "CAST(a AS DOUBLE) / b",
                 "redshift": "CAST(a AS DOUBLE PRECISION) / b",
                 "sqlite": "CAST(a AS REAL) / b",
-                "teradata": "CAST(a AS DOUBLE) / b",
+                "teradata": "CAST(a AS DOUBLE PRECISION) / b",
                 "trino": "CAST(a AS DOUBLE) / b",
                 "tsql": "CAST(a AS FLOAT) / b",
+            },
+        )
+        self.validate_all(
+            "MOD(8 - 1 + 7, 7)",
+            write={
+                "": "(8 - 1 + 7) % 7",
+                "hive": "(8 - 1 + 7) % 7",
+                "presto": "(8 - 1 + 7) % 7",
+                "snowflake": "(8 - 1 + 7) % 7",
+                "bigquery": "MOD(8 - 1 + 7, 7)",
+            },
+        )
+        self.validate_all(
+            "MOD(a, b + 1)",
+            write={
+                "": "a % (b + 1)",
+                "hive": "a % (b + 1)",
+                "presto": "a % (b + 1)",
+                "snowflake": "a % (b + 1)",
+                "bigquery": "MOD(a, b + 1)",
             },
         )
 
@@ -2239,7 +2269,28 @@ SELECT
             "WITH t1(x) AS (SELECT 1) SELECT * FROM (WITH t2(y) AS (SELECT 2) SELECT y FROM t2) AS subq",
             write={
                 "duckdb": "WITH t1(x) AS (SELECT 1) SELECT * FROM (WITH t2(y) AS (SELECT 2) SELECT y FROM t2) AS subq",
-                "tsql": "WITH t1(x) AS (SELECT 1), t2(y) AS (SELECT 2) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
+                "tsql": "WITH t2(y) AS (SELECT 2), t1(x) AS (SELECT 1) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
+            },
+        )
+        self.validate_all(
+            """
+WITH c AS (
+  WITH b AS (
+    WITH a1 AS (
+      SELECT 1
+    ), a2 AS (
+      SELECT 2
+    )
+    SELECT * FROM a1, a2
+  )
+  SELECT *
+  FROM b
+)
+SELECT *
+FROM c""",
+            write={
+                "duckdb": "WITH c AS (WITH b AS (WITH a1 AS (SELECT 1), a2 AS (SELECT 2) SELECT * FROM a1, a2) SELECT * FROM b) SELECT * FROM c",
+                "hive": "WITH a1 AS (SELECT 1), a2 AS (SELECT 2), b AS (SELECT * FROM a1, a2), c AS (SELECT * FROM b) SELECT * FROM c",
             },
         )
 
@@ -2341,7 +2392,7 @@ SELECT
                 "hive": UnsupportedError,
                 "mysql": UnsupportedError,
                 "oracle": UnsupportedError,
-                "postgres": "(ARRAY_LENGTH(arr, 1) = 0 OR ARRAY_LENGTH(ARRAY(SELECT x FROM UNNEST(arr) AS _t(x) WHERE pred), 1) <> 0)",
+                "postgres": "(ARRAY_LENGTH(arr, 1) = 0 OR ARRAY_LENGTH(ARRAY(SELECT x FROM UNNEST(arr) AS _t0(x) WHERE pred), 1) <> 0)",
                 "presto": "ANY_MATCH(arr, x -> pred)",
                 "redshift": UnsupportedError,
                 "snowflake": UnsupportedError,
@@ -2394,4 +2445,19 @@ SELECT
         self.validate_identity(
             """CREATE TEMPORARY SEQUENCE seq START WITH = 1 INCREMENT BY = 2""",
             """CREATE TEMPORARY SEQUENCE seq START WITH 1 INCREMENT BY 2""",
+        )
+
+    def test_reserved_keywords(self):
+        order = exp.select("*").from_("order")
+
+        for dialect in ("presto", "redshift"):
+            dialect = Dialect.get_or_raise(dialect)
+            self.assertEqual(
+                order.sql(dialect=dialect),
+                f"SELECT * FROM {dialect.IDENTIFIER_START}order{dialect.IDENTIFIER_END}",
+            )
+
+        self.validate_identity(
+            """SELECT partition.d FROM t PARTITION (d)""",
+            """SELECT partition.d FROM t AS PARTITION(d)""",
         )

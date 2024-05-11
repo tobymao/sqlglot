@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_sql,
     build_timestamp_trunc,
     rename_func,
+    unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
@@ -39,15 +40,13 @@ class StarRocks(MySQL):
             **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.this, e.expression
+                "DATE_DIFF", unit_to_str(e), e.this, e.expression
             ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimestampTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
-            ),
+            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),

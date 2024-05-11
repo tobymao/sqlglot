@@ -79,6 +79,9 @@ WITH y AS (SELECT MAX(1) AS _ FROM x AS x) SELECT 1 AS "1" FROM y AS y;
 WITH y AS (SELECT a FROM x GROUP BY a) SELECT 1 FROM y;
 WITH y AS (SELECT 1 AS _ FROM x AS x GROUP BY x.a) SELECT 1 AS "1" FROM y AS y;
 
+WITH cte AS (SELECT col FROM t) SELECT IF(1 IN UNNEST(col), 1, 0) AS col FROM cte;
+WITH cte AS (SELECT t.col AS col FROM t AS t) SELECT CASE WHEN 1 IN (SELECT UNNEST(cte.col)) THEN 1 ELSE 0 END AS col FROM cte AS cte;
+
 --------------------------------------
 -- Unknown Star Expansion
 --------------------------------------
@@ -106,3 +109,6 @@ WITH cte1 AS (SELECT tb.cola AS cola FROM tb AS tb UNION ALL SELECT tb2.colc AS 
 
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
 SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _q_0, t2 AS t2);
+
+SELECT a, d FROM (SELECT 1 a, 2 c, 3 d, 4 e UNION ALL BY NAME SELECT 5 b, 6 c, 7 d, 8 a, 9 e)
+SELECT a, d FROM (SELECT 1 a, 3 d, UNION ALL BY NAME SELECT 7 d, 8 a)

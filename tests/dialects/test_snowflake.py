@@ -10,11 +10,6 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
-        self.validate_identity(
-            "INSERT OVERWRITE TABLE t SELECT 1", "INSERT OVERWRITE INTO t SELECT 1"
-        )
-        self.validate_identity("SELECT rename, replace")
         expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
@@ -40,6 +35,10 @@ WHERE
   )""",
         )
 
+        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
+        self.validate_identity("SELECT rename, replace")
+        self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
+        self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
         self.validate_identity("SELECT CAST([1, 2, 3] AS ARRAY(INT))")
@@ -65,6 +64,7 @@ WHERE
         self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("LISTAGG(data['some_field'], ',')")
         self.validate_identity("WEEKOFYEAR(tstamp)")
+        self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
@@ -88,13 +88,23 @@ WHERE
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
-        self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
+        self.validate_identity("SELECT MATCH_CONDITION")
+        self.validate_identity(
+            "MERGE INTO my_db AS ids USING (SELECT new_id FROM my_model WHERE NOT col IS NULL) AS new_ids ON ids.type = new_ids.type AND ids.source = new_ids.source WHEN NOT MATCHED THEN INSERT VALUES (new_ids.new_id)"
+        )
+        self.validate_identity(
+            "INSERT OVERWRITE TABLE t SELECT 1", "INSERT OVERWRITE INTO t SELECT 1"
+        )
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
-            "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
+            "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
+        )
+        self.validate_identity(
+            "REGEXP_REPLACE('target', 'pattern', '\n')",
+            "REGEXP_REPLACE('target', 'pattern', '\\n')",
         )
         self.validate_identity(
             "SELECT a:from::STRING, a:from || ' test' ",
@@ -132,10 +142,6 @@ WHERE
         self.validate_identity(
             "SELECT TIMESTAMPFROMPARTS(d, t)",
             "SELECT TIMESTAMP_FROM_PARTS(d, t)",
-        )
-        self.validate_identity(
-            "SELECT user_id, value FROM table_name SAMPLE ($s) SEED (0)",
-            "SELECT user_id, value FROM table_name TABLESAMPLE ($s) SEED (0)",
         )
         self.validate_identity(
             "SELECT v:attr[0].name FROM vartab",
@@ -235,18 +241,6 @@ WHERE
                 "bigquery": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
                 "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
                 "snowflake": "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
-            read={
-                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-            },
-            write={
-                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             },
         )
         self.validate_all(
@@ -379,7 +373,7 @@ WHERE
             "SELECT DATE_PART('year', TIMESTAMP '2020-01-01')",
             write={
                 "hive": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",
-                "snowflake": "SELECT DATE_PART('year', CAST('2020-01-01' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DATE_PART('year', CAST('2020-01-01' AS TIMESTAMP))",
                 "spark": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",
             },
         )
@@ -395,6 +389,7 @@ WHERE
             write={
                 "duckdb": "{'a': b, 'c': d}",
                 "snowflake": "OBJECT_CONSTRUCT('a', b, 'c', d)",
+                "": "STRUCT(b AS a, d AS c)",
             },
         )
         self.validate_identity("OBJECT_CONSTRUCT(a, b, c, d)")
@@ -434,6 +429,46 @@ WHERE
                 "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
             },
         )
+        for suffix in (
+            "",
+            " OVER ()",
+        ):
+            self.validate_all(
+                f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                read={
+                    "snowflake": f"SELECT MEDIAN(x){suffix}",
+                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                },
+                write={
+                    "": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x NULLS LAST){suffix}",
+                    "duckdb": f"SELECT QUANTILE_CONT(x, 0.5 ORDER BY x){suffix}",
+                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                    "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                },
+            )
+            self.validate_all(
+                f"SELECT MEDIAN(x){suffix}",
+                write={
+                    "": f"SELECT PERCENTILE_CONT(x, 0.5){suffix}",
+                    "duckdb": f"SELECT QUANTILE_CONT(x, 0.5){suffix}",
+                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                    "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                },
+            )
+            for func in (
+                "CORR",
+                "COVAR_POP",
+                "COVAR_SAMP",
+            ):
+                self.validate_all(
+                    f"SELECT {func}(y, x){suffix}",
+                    write={
+                        "": f"SELECT {func}(y, x){suffix}",
+                        "duckdb": f"SELECT {func}(y, x){suffix}",
+                        "postgres": f"SELECT {func}(y, x){suffix}",
+                        "snowflake": f"SELECT {func}(y, x){suffix}",
+                    },
+                )
         self.validate_all(
             "TO_CHAR(x, y)",
             read={
@@ -541,7 +576,7 @@ WHERE
         self.validate_all(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
             write={
-                "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -639,7 +674,7 @@ WHERE
             "SELECT TO_TIMESTAMP('2013-04-05 01:02:03')",
             write={
                 "bigquery": "SELECT CAST('2013-04-05 01:02:03' AS DATETIME)",
-                "snowflake": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMPNTZ)",
+                "snowflake": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMP)",
                 "spark": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMP)",
             },
         )
@@ -771,6 +806,25 @@ WHERE
                 "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
             },
         )
+        self.validate_all(
+            "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
+            write={
+                "duckdb": "SELECT GROUP_CONCAT(col1, ', ' ORDER BY col2) FROM t",
+                "snowflake": "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+            read={
+                "trino": "SELECT APPROX_PERCENTILE(a, 1, 0.5, 0.001) FROM t",
+                "presto": "SELECT APPROX_PERCENTILE(a, 1, 0.5, 0.001) FROM t",
+            },
+            write={
+                "trino": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+                "presto": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+                "snowflake": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(
@@ -821,9 +875,9 @@ WHERE
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
         self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
+        self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
-            'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)',
-            check_command_warning=True,
+            "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
         )
         self.validate_identity(
             "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla"
@@ -846,18 +900,27 @@ WHERE
 
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")
-        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (100)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
-        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
         self.validate_identity(
-            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
+            "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE BERNOULLI (0.1)"
         )
         self.validate_identity(
-            "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)"
+            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE BERNOULLI (50) WHERE t2.j = t1.i"
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE BERNOULLI (1)"
+        )
+        self.validate_identity(
+            "SELECT * FROM testtable TABLESAMPLE (10 ROWS)",
+            "SELECT * FROM testtable TABLESAMPLE BERNOULLI (10 ROWS)",
+        )
+        self.validate_identity(
+            "SELECT * FROM testtable TABLESAMPLE (100)",
+            "SELECT * FROM testtable TABLESAMPLE BERNOULLI (100)",
         )
         self.validate_identity(
             "SELECT * FROM testtable SAMPLE (10)",
-            "SELECT * FROM testtable TABLESAMPLE (10)",
+            "SELECT * FROM testtable TABLESAMPLE BERNOULLI (10)",
         )
         self.validate_identity(
             "SELECT * FROM testtable SAMPLE ROW (0)",
@@ -867,7 +930,29 @@ WHERE
             "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
             "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
         )
+        self.validate_identity(
+            "SELECT user_id, value FROM table_name SAMPLE BERNOULLI ($s) SEED (0)",
+            "SELECT user_id, value FROM table_name TABLESAMPLE BERNOULLI ($s) SEED (0)",
+        )
 
+        self.validate_all(
+            "SELECT * FROM example TABLESAMPLE BERNOULLI (3) SEED (82)",
+            read={
+                "duckdb": "SELECT * FROM example TABLESAMPLE BERNOULLI (3 PERCENT) REPEATABLE (82)",
+            },
+            write={
+                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE BERNOULLI (3 PERCENT) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example TABLESAMPLE BERNOULLI (3) SEED (82)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM test AS _tmp TABLESAMPLE (5)",
+            write={
+                "postgres": "SELECT * FROM test AS _tmp TABLESAMPLE BERNOULLI (5)",
+                "snowflake": "SELECT * FROM test AS _tmp TABLESAMPLE BERNOULLI (5)",
+            },
+        )
         self.validate_all(
             """
             SELECT i, j
@@ -877,7 +962,7 @@ WHERE
                      table2 AS t2 SAMPLE (50)     -- 50% of rows in table2
                 WHERE t2.j = t1.i""",
             write={
-                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
+                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE BERNOULLI (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE BERNOULLI (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
             },
         )
         self.validate_all(
@@ -889,7 +974,7 @@ WHERE
         self.validate_all(
             "SELECT * FROM (SELECT * FROM t1 join t2 on t1.a = t2.c) SAMPLE (1)",
             write={
-                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)",
+                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE BERNOULLI (1)",
                 "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1 PERCENT)",
             },
         )
@@ -898,12 +983,16 @@ WHERE
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")
 
-        self.validate_all(
-            "SELECT CAST(a AS TIMESTAMP)",
-            write={
-                "snowflake": "SELECT CAST(a AS TIMESTAMPNTZ)",
-            },
-        )
+        for data_type in (
+            "TIMESTAMP",
+            "TIMESTAMPLTZ",
+            "TIMESTAMPNTZ",
+        ):
+            self.validate_identity(f"CAST(a AS {data_type})")
+
+        self.validate_identity("CAST(a AS TIMESTAMP_NTZ)", "CAST(a AS TIMESTAMPNTZ)")
+        self.validate_identity("CAST(a AS TIMESTAMP_LTZ)", "CAST(a AS TIMESTAMPLTZ)")
+
         self.validate_all(
             "SELECT a::TIMESTAMP_LTZ(9)",
             write={
@@ -943,19 +1032,22 @@ WHERE
         self.validate_all(
             "SELECT DATE_PART(epoch_second, foo) as ddate from table_name",
             write={
-                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) AS ddate FROM table_name",
+                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMP)) AS ddate FROM table_name",
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) AS ddate FROM table_name",
             },
         )
         self.validate_all(
             "SELECT DATE_PART(epoch_milliseconds, foo) as ddate from table_name",
             write={
-                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) * 1000 AS ddate FROM table_name",
+                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
             },
         )
         self.validate_all(
             "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            read={
+                "snowflake": "TIMESTAMPADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            },
             write={
                 "bigquery": "DATE_ADD(CAST('2008-12-25' AS DATE), INTERVAL 5 DAY)",
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
@@ -985,6 +1077,23 @@ WHERE
             "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
         )
 
+        self.validate_identity("TO_DATE(x)").assert_is(exp.TsOrDsToDate)
+        self.validate_identity("TRY_TO_DATE(x)").assert_is(exp.TsOrDsToDate)
+
+        self.validate_all(
+            "DATE(x)",
+            write={
+                "duckdb": "CAST(x AS DATE)",
+                "snowflake": "TO_DATE(x)",
+            },
+        )
+        self.validate_all(
+            "TO_DATE(x, 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TO_DATE(x, 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME(x, '%m-%d-%Y') AS DATE)",
+            },
+        )
         self.validate_all(
             "DATE('01-01-2000', 'MM-DD-YYYY')",
             write={
@@ -1061,7 +1170,7 @@ WHERE
         )
         self.validate_identity(
             "SELECT * FROM my_table AT (TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp)",
-            "SELECT * FROM my_table AT (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMPNTZ))",
+            "SELECT * FROM my_table AT (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMP))",
         )
         self.validate_identity(
             "SELECT * FROM my_table AT(TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp_tz)",
@@ -1102,7 +1211,7 @@ WHERE
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity(
-            "DROP function my_udf (OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN)))"
+            "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN)))"
         )
         self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"
@@ -1129,6 +1238,14 @@ WHERE
         self.validate_identity(
             "CREATE OR REPLACE FUNCTION my_udtf(foo BOOLEAN) RETURNS TABLE(col1 ARRAY(INT)) AS $$ WITH t AS (SELECT CAST([1, 2, 3] AS ARRAY(INT)) AS c) SELECT c FROM t $$",
             "CREATE OR REPLACE FUNCTION my_udtf(foo BOOLEAN) RETURNS TABLE (col1 ARRAY(INT)) AS ' WITH t AS (SELECT CAST([1, 2, 3] AS ARRAY(INT)) AS c) SELECT c FROM t '",
+        )
+        self.validate_identity(
+            "CREATE SEQUENCE seq1 WITH START=1, INCREMENT=1 ORDER",
+            "CREATE SEQUENCE seq1 START=1 INCREMENT BY 1 ORDER",
+        )
+        self.validate_identity(
+            "CREATE SEQUENCE seq1 WITH START=1 INCREMENT=1 ORDER",
+            "CREATE SEQUENCE seq1 START=1 INCREMENT=1 ORDER",
         )
 
         self.validate_all(
@@ -1355,18 +1472,32 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_values(self):
+        select = exp.select("*").from_("values (map(['a'], [1]))")
+        self.assertEqual(select.sql("snowflake"), "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1))")
+
         self.validate_all(
             'SELECT "c0", "c1" FROM (VALUES (1, 2), (3, 4)) AS "t0"("c0", "c1")',
             read={
                 "spark": "SELECT `c0`, `c1` FROM (VALUES (1, 2), (3, 4)) AS `t0`(`c0`, `c1`)",
             },
         )
-
         self.validate_all(
             """SELECT $1 AS "_1" FROM VALUES ('a'), ('b')""",
             write={
                 "snowflake": """SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
                 "spark": """SELECT ${1} AS `_1` FROM VALUES ('a'), ('b')""",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1) AS x) AS t",
+            read={
+                "duckdb": "SELECT * FROM (VALUES ({'a': 1})) AS t(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1) AS x UNION ALL SELECT OBJECT_CONSTRUCT('a', 2)) AS t",
+            read={
+                "duckdb": "SELECT * FROM (VALUES ({'a': 1}), ({'a': 2})) AS t(x)",
             },
         )
 
@@ -1415,7 +1546,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             write={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern, pos, occ)",
                 "hive": "REGEXP_EXTRACT(subject, pattern, group)",
-                "presto": "REGEXP_EXTRACT(subject, pattern, group)",
+                "presto": 'REGEXP_EXTRACT(subject, pattern, "group")',
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
                 "spark": "REGEXP_EXTRACT(subject, pattern, group)",
             },
@@ -1493,7 +1624,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
             write={
                 "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
-                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, parameters)",
                 "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
                 "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
                 "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
@@ -1501,22 +1632,26 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_match_recognize(self):
-        for row in (
-            "ONE ROW PER MATCH",
-            "ALL ROWS PER MATCH",
-            "ALL ROWS PER MATCH SHOW EMPTY MATCHES",
-            "ALL ROWS PER MATCH OMIT EMPTY MATCHES",
-            "ALL ROWS PER MATCH WITH UNMATCHED ROWS",
-        ):
-            for after in (
-                "AFTER MATCH SKIP",
-                "AFTER MATCH SKIP PAST LAST ROW",
-                "AFTER MATCH SKIP TO NEXT ROW",
-                "AFTER MATCH SKIP TO FIRST x",
-                "AFTER MATCH SKIP TO LAST x",
+        for window_frame in ("", "FINAL ", "RUNNING "):
+            for row in (
+                "ONE ROW PER MATCH",
+                "ALL ROWS PER MATCH",
+                "ALL ROWS PER MATCH SHOW EMPTY MATCHES",
+                "ALL ROWS PER MATCH OMIT EMPTY MATCHES",
+                "ALL ROWS PER MATCH WITH UNMATCHED ROWS",
             ):
-                self.validate_identity(
-                    f"""SELECT
+                for after in (
+                    "AFTER MATCH SKIP",
+                    "AFTER MATCH SKIP PAST LAST ROW",
+                    "AFTER MATCH SKIP TO NEXT ROW",
+                    "AFTER MATCH SKIP TO FIRST x",
+                    "AFTER MATCH SKIP TO LAST x",
+                ):
+                    with self.subTest(
+                        f"MATCH_RECOGNIZE with window frame {window_frame}, rows {row}, after {after}: "
+                    ):
+                        self.validate_identity(
+                            f"""SELECT
   *
 FROM x
 MATCH_RECOGNIZE (
@@ -1524,15 +1659,15 @@ MATCH_RECOGNIZE (
   ORDER BY
     x DESC
   MEASURES
-    y AS b
+    {window_frame}y AS b
   {row}
   {after}
   PATTERN (^ S1 S2*? ( {{- S3 -}} S4 )+ | PERMUTE(S1, S2){{1,2}} $)
   DEFINE
     x AS y
 )""",
-                    pretty=True,
-                )
+                            pretty=True,
+                        )
 
     def test_show_users(self):
         self.validate_identity("SHOW USERS")
@@ -1735,3 +1870,26 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
         expression = annotate_types(expression)
         self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(FOO() AS TEXT)")
+
+    def test_copy(self):
+        self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")
+        self.validate_identity(
+            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' NULL_IF = () FIELD_OPTIONALLY_ENCLOSED_BY = '"' TIMESTAMP_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT = BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'"""
+        )
+        self.validate_identity(
+            """COPY INTO load1 FROM @%load1/data1/ FILES = ('test1.csv', 'test2.csv') FORCE = TRUE"""
+        )
+        self.validate_identity(
+            """COPY INTO mytable FROM 'azure://myaccount.blob.core.windows.net/mycontainer/data/files' CREDENTIALS = (AZURE_SAS_TOKEN = 'token') ENCRYPTION = (TYPE = 'AZURE_CSE' MASTER_KEY = 'kPx...') FILE_FORMAT = (FORMAT_NAME = my_csv_format)"""
+        )
+        self.validate_identity(
+            """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME = my_csv_format NULL_IF = ('str1', 'str2')) PARSE_HEADER = TRUE"""
+        )
+
+    def test_querying_semi_structured_data(self):
+        self.validate_identity("SELECT $1")
+        self.validate_identity("SELECT $1.elem")
+
+        self.validate_identity("SELECT $1:a.b", "SELECT GET_PATH($1, 'a.b')")
+        self.validate_identity("SELECT t.$23:a.b", "SELECT GET_PATH(t.$23, 'a.b')")
+        self.validate_identity("SELECT t.$17:a[0].b[0].c", "SELECT GET_PATH(t.$17, 'a[0].b[0].c')")

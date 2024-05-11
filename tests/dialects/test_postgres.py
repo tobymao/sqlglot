@@ -40,13 +40,6 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(x AS DATEMULTIRANGE)")
         self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
         self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
-        self.validate_all(
-            "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
-            write={
-                "": "SELECT ARRAY_OVERLAPS(ARRAY(1, 2, 3), ARRAY(1, 2))",
-                "postgres": "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
-            },
-        )
         self.validate_identity("x$")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
@@ -57,6 +50,7 @@ class TestPostgres(Validator):
         self.validate_identity("STRING_AGG(DISTINCT x, ',' ORDER BY y DESC)")
         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+        self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
@@ -70,6 +64,12 @@ class TestPostgres(Validator):
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
+        self.validate_identity(
+            """UPDATE "x" SET "y" = CAST('0 days 60.000000 seconds' AS INTERVAL) WHERE "x"."id" IN (2, 3)"""
+        )
+        self.validate_identity(
+            "WITH t1 AS MATERIALIZED (SELECT 1), t2 AS NOT MATERIALIZED (SELECT 2) SELECT * FROM t1, t2"
+        )
         self.validate_identity(
             """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 DAY' PRECEDING AND '1 month' FOLLOWING)"""
         )
@@ -147,6 +147,10 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT $$Dianne's horse$$",
             "SELECT 'Dianne''s horse'",
+        )
+        self.validate_identity(
+            "SELECT $$The price is $9.95$$ AS msg",
+            "SELECT 'The price is $9.95' AS msg",
         )
         self.validate_identity(
             "COMMENT ON TABLE mytable IS $$doc this$$", "COMMENT ON TABLE mytable IS 'doc this'"
@@ -308,8 +312,62 @@ class TestPostgres(Validator):
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
         )
-        self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
+        self.validate_identity(
+            "SELECT * FROM t1*",
+            "SELECT * FROM t1",
+        )
+        self.validate_identity(
+            "SELECT SUBSTRING('afafa' for 1)",
+            "SELECT SUBSTRING('afafa' FROM 1 FOR 1)",
+        )
+        self.validate_identity(
+            "CAST(x AS INT8)",
+            "CAST(x AS BIGINT)",
+        )
 
+        self.validate_all(
+            "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
+            write={
+                "duckdb": "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
+                "postgres": "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (c INT)",
+            read={
+                "mysql": "CREATE TABLE t (c INT COMMENT 'comment 1') COMMENT = 'comment 2'",
+            },
+        )
+        self.validate_all(
+            'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
+            write={
+                "bigquery": "SELECT * FROM `test_table` ORDER BY RAND() NULLS LAST LIMIT 5",
+                "duckdb": 'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
+                "postgres": 'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
+                "tsql": "SELECT TOP 5 * FROM [test_table] ORDER BY RAND()",
+            },
+        )
+        self.validate_all(
+            "SELECT (data -> 'en-US') AS acat FROM my_table",
+            write={
+                "duckdb": """SELECT (data -> '$."en-US"') AS acat FROM my_table""",
+                "postgres": "SELECT (data -> 'en-US') AS acat FROM my_table",
+            },
+        )
+        self.validate_all(
+            "SELECT (data ->> 'en-US') AS acat FROM my_table",
+            write={
+                "duckdb": """SELECT (data ->> '$."en-US"') AS acat FROM my_table""",
+                "postgres": "SELECT (data ->> 'en-US') AS acat FROM my_table",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            write={
+                "": "SELECT ARRAY_OVERLAPS(ARRAY(1, 2, 3), ARRAY(1, 2))",
+                "postgres": "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            },
+        )
         self.validate_all(
             "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
             read={
@@ -415,7 +473,7 @@ class TestPostgres(Validator):
             write={
                 "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
                 "redshift": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
-                "snowflake": "SELECT DATE_PART(minute, CAST('2023-01-04 04:05:06.789' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DATE_PART(minute, CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -431,6 +489,12 @@ class TestPostgres(Validator):
             write={
                 "postgres": "SELECT (CAST('2016-01-10' AS DATE), CAST('2016-02-01' AS DATE)) OVERLAPS (CAST('2016-01-20' AS DATE), CAST('2016-02-10' AS DATE))",
                 "tsql": "SELECT (CAST('2016-01-10' AS DATE), CAST('2016-02-01' AS DATE)) OVERLAPS (CAST('2016-01-20' AS DATE), CAST('2016-02-10' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_PART('epoch', CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+            read={
+                "": "SELECT TIME_TO_UNIX(TIMESTAMP '2023-01-04 04:05:06.789')",
             },
         )
         self.validate_all(
@@ -620,6 +684,16 @@ class TestPostgres(Validator):
         )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
 
+        self.validate_identity(
+            "COPY tbl (col1, col2) FROM 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+        self.validate_identity(
+            "COPY tbl (col1, col2) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+        self.validate_identity(
+            "COPY (SELECT * FROM t) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
@@ -636,6 +710,7 @@ class TestPostgres(Validator):
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
+        self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")
         self.validate_identity("CREATE INDEX et_vid_idx ON et(vid) INCLUDE (fid)")
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
         self.validate_identity("CREATE TABLE test (elems JSONB[])")

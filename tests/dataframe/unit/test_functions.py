@@ -29,7 +29,7 @@ class TestFunctions(unittest.TestCase):
         test_date = SF.lit(datetime.date(2022, 1, 1))
         self.assertEqual("CAST('2022-01-01' AS DATE)", test_date.sql())
         test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))
-        self.assertEqual("CAST('2022-01-01T01:01:01+00:00' AS TIMESTAMP)", test_datetime.sql())
+        self.assertEqual("CAST('2022-01-01 01:01:01+00:00' AS TIMESTAMP)", test_datetime.sql())
         test_dict = SF.lit({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS cola, 'test' AS colb)", test_dict.sql())
 
@@ -51,7 +51,7 @@ class TestFunctions(unittest.TestCase):
         test_date = SF.col(datetime.date(2022, 1, 1))
         self.assertEqual("CAST('2022-01-01' AS DATE)", test_date.sql())
         test_datetime = SF.col(datetime.datetime(2022, 1, 1, 1, 1, 1))
-        self.assertEqual("CAST('2022-01-01T01:01:01+00:00' AS TIMESTAMP)", test_datetime.sql())
+        self.assertEqual("CAST('2022-01-01 01:01:01+00:00' AS TIMESTAMP)", test_datetime.sql())
         test_dict = SF.col({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS cola, 'test' AS colb)", test_dict.sql())
 
@@ -1156,17 +1156,17 @@ class TestFunctions(unittest.TestCase):
 
     def test_regexp_extract(self):
         col_str = SF.regexp_extract("cola", r"(\d+)-(\d+)", 1)
-        self.assertEqual("REGEXP_EXTRACT(cola, '(\\d+)-(\\d+)', 1)", col_str.sql())
+        self.assertEqual("REGEXP_EXTRACT(cola, '(\\\\d+)-(\\\\d+)', 1)", col_str.sql())
         col = SF.regexp_extract(SF.col("cola"), r"(\d+)-(\d+)", 1)
-        self.assertEqual("REGEXP_EXTRACT(cola, '(\\d+)-(\\d+)', 1)", col.sql())
+        self.assertEqual("REGEXP_EXTRACT(cola, '(\\\\d+)-(\\\\d+)', 1)", col.sql())
         col_no_idx = SF.regexp_extract(SF.col("cola"), r"(\d+)-(\d+)")
-        self.assertEqual("REGEXP_EXTRACT(cola, '(\\d+)-(\\d+)')", col_no_idx.sql())
+        self.assertEqual("REGEXP_EXTRACT(cola, '(\\\\d+)-(\\\\d+)')", col_no_idx.sql())
 
     def test_regexp_replace(self):
         col_str = SF.regexp_replace("cola", r"(\d+)", "--")
-        self.assertEqual("REGEXP_REPLACE(cola, '(\\d+)', '--')", col_str.sql())
+        self.assertEqual("REGEXP_REPLACE(cola, '(\\\\d+)', '--')", col_str.sql())
         col = SF.regexp_replace(SF.col("cola"), r"(\d+)", "--")
-        self.assertEqual("REGEXP_REPLACE(cola, '(\\d+)', '--')", col.sql())
+        self.assertEqual("REGEXP_REPLACE(cola, '(\\\\d+)', '--')", col.sql())
 
     def test_initcap(self):
         col_str = SF.initcap("cola")

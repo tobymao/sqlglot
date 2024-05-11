@@ -7,6 +7,7 @@ from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get, SingleValuedMapping
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
 from sqlglot.schema import Schema, ensure_schema
@@ -48,8 +49,10 @@ def qualify_columns(
         - Currently only handles a single PIVOT or UNPIVOT operator
     """
     schema = ensure_schema(schema)
+    annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    pseudocolumns = Dialect.get_or_raise(schema.dialect).PSEUDOCOLUMNS
+    dialect = Dialect.get_or_raise(schema.dialect)
+    pseudocolumns = dialect.PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
@@ -72,6 +75,9 @@ def qualify_columns(
 
         _expand_group_by(scope)
         _expand_order_by(scope, resolver)
+
+        if dialect == "bigquery":
+            annotator.annotate_scope(scope)
 
     return expression
 
@@ -652,8 +658,16 @@ class Resolver:
 
         if isinstance(source, exp.Table):
             columns = self.schema.column_names(source, only_visible)
-        elif isinstance(source, Scope) and isinstance(source.expression, exp.Values):
-            columns = source.expression.alias_column_names
+        elif isinstance(source, Scope) and isinstance(source.expression, (exp.Values, exp.Unnest)):
+            columns = source.expression.named_selects
+
+            # in bigquery, unnest structs are automatically scoped as tables, so you can
+            # directly select a struct field in a query.
+            # this handles the case where the unnest is statically defined.
+            if self.schema.dialect == "bigquery":
+                if source.expression.is_type(exp.DataType.Type.STRUCT):
+                    for k in source.expression.type.expressions:  # type: ignore
+                        columns.append(k.name)
         else:
             columns = source.expression.named_selects
 

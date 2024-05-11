@@ -67,14 +67,32 @@ class TestTranspile(unittest.TestCase):
 
     def test_leading_comma(self):
         self.validate(
+            "SELECT a, b, c FROM (SELECT a, b, c FROM t)",
+            "SELECT\n"
+            "    a\n"
+            "    , b\n"
+            "    , c\n"
+            "FROM (\n"
+            "    SELECT\n"
+            "        a\n"
+            "        , b\n"
+            "        , c\n"
+            "    FROM t\n"
+            ")",
+            leading_comma=True,
+            pretty=True,
+            pad=4,
+            indent=4,
+        )
+        self.validate(
             "SELECT FOO, BAR, BAZ",
-            "SELECT\n    FOO\n  , BAR\n  , BAZ",
+            "SELECT\n  FOO\n  , BAR\n  , BAZ",
             leading_comma=True,
             pretty=True,
         )
         self.validate(
             "SELECT FOO, /*x*/\nBAR, /*y*/\nBAZ",
-            "SELECT\n    FOO /* x */\n  , BAR /* y */\n  , BAZ",
+            "SELECT\n  FOO /* x */\n  , BAR /* y */\n  , BAZ",
             leading_comma=True,
             pretty=True,
         )
@@ -104,6 +122,10 @@ class TestTranspile(unittest.TestCase):
         self.validate(
             "SELECT * FROM t1\n/*x*/\nUNION ALL SELECT * FROM t2",
             "SELECT * FROM t1 /* x */ UNION ALL SELECT * FROM t2",
+        )
+        self.validate(
+            "/* comment */ SELECT * FROM a UNION SELECT * FROM b",
+            "/* comment */ SELECT * FROM a UNION SELECT * FROM b",
         )
         self.validate(
             "SELECT * FROM t1\n/*x*/\nINTERSECT ALL SELECT * FROM t2",
@@ -480,6 +502,61 @@ SELECT
 FROM base""",
             pretty=True,
         )
+        self.validate(
+            """-- comment
+SOME_FUNC(arg IGNORE NULLS)
+  OVER (PARTITION BY foo ORDER BY bla) AS col""",
+            "SOME_FUNC(arg IGNORE NULLS) OVER (PARTITION BY foo ORDER BY bla) AS col /* comment */",
+            pretty=True,
+        )
+        self.validate(
+            """
+            SELECT *
+            FROM x
+            INNER JOIN y
+            -- inner join z
+            LEFT JOIN z using (id)
+            using (id)
+            """,
+            """SELECT
+  *
+FROM x
+INNER JOIN y
+  /* inner join z */
+  LEFT JOIN z
+    USING (id)
+  USING (id)""",
+            pretty=True,
+        )
+        self.validate(
+            """with x as (
+  SELECT *
+  /*
+NOTE: LEFT JOIN because blah blah blah
+  */
+  FROM a
+)
+select * from x""",
+            """WITH x AS (
+  SELECT
+    *
+  /*
+NOTE: LEFT JOIN because blah blah blah
+  */
+  FROM a
+)
+SELECT
+  *
+FROM x""",
+            pretty=True,
+        )
+
+        self.validate(
+            """SELECT X FROM  catalog.db.table WHERE Y 
+        --
+        AND Z""",
+            """SELECT X FROM catalog.db.table WHERE Y AND Z""",
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")
@@ -677,7 +754,11 @@ FROM base""",
         )
 
         self.validate("STR_TO_TIME('x', 'y')", "DATE_PARSE('x', 'y')", write="presto")
-        self.validate("STR_TO_UNIX('x', 'y')", "TO_UNIXTIME(DATE_PARSE('x', 'y'))", write="presto")
+        self.validate(
+            "STR_TO_UNIX('x', 'y')",
+            "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('x' AS VARCHAR), 'y')), PARSE_DATETIME(CAST('x' AS VARCHAR), 'y')))",
+            write="presto",
+        )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="presto")
         self.validate("TIME_TO_UNIX(x)", "TO_UNIXTIME(x)", write="presto")
         self.validate(

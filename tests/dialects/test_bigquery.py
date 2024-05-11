@@ -635,6 +635,8 @@ LANGUAGE js AS
             "MD5(x)",
             read={
                 "clickhouse": "MD5(x)",
+                "presto": "MD5(x)",
+                "trino": "MD5(x)",
             },
             write={
                 "": "MD5_DIGEST(x)",
@@ -642,6 +644,8 @@ LANGUAGE js AS
                 "hive": "UNHEX(MD5(x))",
                 "spark": "UNHEX(MD5(x))",
                 "clickhouse": "MD5(x)",
+                "presto": "MD5(x)",
+                "trino": "MD5(x)",
             },
         )
         self.validate_all(
@@ -655,17 +659,23 @@ LANGUAGE js AS
                 "bigquery": "SELECT TO_HEX(MD5(some_string))",
                 "duckdb": "SELECT MD5(some_string)",
                 "clickhouse": "SELECT LOWER(HEX(MD5(some_string)))",
+                "presto": "SELECT LOWER(TO_HEX(MD5(some_string)))",
+                "trino": "SELECT LOWER(TO_HEX(MD5(some_string)))",
             },
         )
         self.validate_all(
             "SHA1(x)",
             read={
                 "clickhouse": "SHA1(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
             },
             write={
                 "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
                 "": "SHA(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
             },
         )
         self.validate_all(
@@ -679,22 +689,30 @@ LANGUAGE js AS
             "SHA256(x)",
             read={
                 "clickhouse": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
             },
             write={
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
                 "clickhouse": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
             },
         )
         self.validate_all(
             "SHA512(x)",
             read={
                 "clickhouse": "SHA512(x)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
             },
             write={
                 "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
             },
         )
         self.validate_all(

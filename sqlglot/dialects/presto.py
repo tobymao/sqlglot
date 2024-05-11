@@ -281,6 +281,9 @@ class Presto(Dialect):
             "TO_UTF8": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
+            "MD5": exp.MD5Digest.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
@@ -444,6 +447,14 @@ class Presto(Dialect):
                 [transforms.remove_within_group_for_percentiles]
             ),
             exp.Xor: bool_xor_sql,
+            exp.MD5: lambda self, e: self.func(
+                "LOWER", self.func("TO_HEX", self.func("MD5", self.sql(e, "this")))
+            ),
+            exp.MD5Digest: rename_func("MD5"),
+            exp.SHA: rename_func("SHA1"),
+            exp.SHA2: lambda self, e: self.func(
+                "SHA256" if e.text("length") == "256" else "SHA512", e.this
+            ),
         }
 
         RESERVED_KEYWORDS = {

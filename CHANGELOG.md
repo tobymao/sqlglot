@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.15.7] - 2024-05-11
+### :wrench: Chores
+- [`c3bb3da`](https://github.com/tobymao/sqlglot/commit/c3bb3da670d06cb2eef545a909635224b6e7c205) - change python-version to 3.11 for build-rs *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.15.6] - 2024-05-11
 ### :wrench: Chores
 - [`cd8f568`](https://github.com/tobymao/sqlglot/commit/cd8f568dba53efe6b9883035c48a67134016e612) - fix rust deployment workflow bug *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3575,3 +3580,4 @@ Changelog
 [v23.15.2]: https://github.com/tobymao/sqlglot/compare/v23.15.1...v23.15.2
 [v23.15.3]: https://github.com/tobymao/sqlglot/compare/v23.15.2...v23.15.3
 [v23.15.6]: https://github.com/tobymao/sqlglot/compare/v23.15.5...v23.15.6
+[v23.15.7]: https://github.com/tobymao/sqlglot/compare/v23.15.6...v23.15.7

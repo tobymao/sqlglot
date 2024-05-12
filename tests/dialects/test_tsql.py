@@ -1,5 +1,4 @@
 from sqlglot import exp, parse, parse_one
-from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ParseError
 
@@ -261,7 +260,8 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT * FROM ##foo")
         self.validate_identity("SELECT a = 1", "SELECT 1 AS a")
         self.validate_identity(
-            "DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'", check_command_warning=True
+            "DECLARE @TestVariable AS VARCHAR(100) = 'Save Our Planet'",
+            # check_command_warning=True
         )
         self.validate_identity(
             "SELECT a = 1 UNION ALL SELECT a = b", "SELECT 1 AS a UNION ALL SELECT b AS a"
@@ -902,8 +902,8 @@ class TestTSQL(Validator):
 
     def test_udf(self):
         self.validate_identity(
-            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)",
-            check_command_warning=True,
+            "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            # check_command_warning=True,
         )
         self.validate_identity(
             "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
@@ -975,9 +975,9 @@ WHERE
             BEGIN
                 SET XACT_ABORT ON;
 
-                DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104);
-                DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104);
-                DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER);
+                DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, getdate(), 104);
+                DECLARE @DWH_DateModified DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104);
+                DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (CURRENT_USER());
                 DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER);
 
                 DECLARE @SalesAmountBefore float;
@@ -987,18 +987,18 @@ WHERE
 
         expected_sqls = [
             "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON",
-            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)",
-            "DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104)",
-            "DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER)",
-            "DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER)",
-            "DECLARE @SalesAmountBefore float",
+            "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
+            "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
+            "DECLARE @SalesAmountBefore AS FLOAT",
             "SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S",
             "END",
         ]
 
-        with self.assertLogs(parser_logger):
-            for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
-                self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+        # with self.assertLogs(parser_logger):
+        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
         sql = """
             CREATE PROC [dbo].[transform_proc] AS
@@ -1012,14 +1012,14 @@ WHERE
         """
 
         expected_sqls = [
-            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate VARCHAR(20)",
+            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate AS VARCHAR(20)",
             "SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120)",
             "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]
 
-        with self.assertLogs(parser_logger):
-            for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
-                self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+        # with self.assertLogs(parser_logger):
+        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
     def test_charindex(self):
         self.validate_identity(
@@ -1824,4 +1824,32 @@ FROM OPENJSON(@json) WITH (
             read={
                 "duckdb": "WITH t1(c) AS (SELECT 1), t2 AS (SELECT CAST(c AS INTEGER) FROM t1) SELECT * FROM t2",
             },
+        )
+
+    def test_declare(self):
+        # supported cases
+        self.validate_identity("DECLARE @X INT", "DECLARE @X AS INTEGER")
+        self.validate_identity("DECLARE @X INT = 1", "DECLARE @X AS INTEGER = 1")
+        self.validate_identity(
+            "DECLARE @X INT, @Y VARCHAR(10)", "DECLARE @X AS INTEGER, @Y AS VARCHAR(10)"
+        )
+        self.validate_identity(
+            "declare @X int = (select col from table where id = 1)",
+            "DECLARE @X AS INTEGER = (SELECT col FROM table WHERE id = 1)",
+        )
+        self.validate_identity(
+            "declare @X TABLE (Id INT NOT NULL, Name VARCHAR(100) NOT NULL)",
+            "DECLARE @X AS TABLE (Id INTEGER NOT NULL, Name VARCHAR(100) NOT NULL)",
+        )
+        self.validate_identity(
+            "declare @X TABLE (Id INT NOT NULL, constraint PK_Id primary key (Id))",
+            "DECLARE @X AS TABLE (Id INTEGER NOT NULL, CONSTRAINT PK_Id PRIMARY KEY (Id))",
+        )
+
+        # current unsupported cases
+        # inline constraints without the constrain keyword, and inline indexes are not supported by DECLARE parsing or CREATE TABLE parsing
+        self.assertRaises(
+            ParseError,
+            parse_one,
+            "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));",
         )

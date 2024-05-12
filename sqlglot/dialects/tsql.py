@@ -716,6 +716,7 @@ class TSQL(Dialect):
             return partition
 
         def _parse_declare(self) -> exp.Declare | exp.Command:
+            index = self._index
             expressions = []
             while True:
                 if self._match(TokenType.PARAMETER, advance=False):
@@ -751,6 +752,9 @@ class TSQL(Dialect):
                 ):  # Get comma separated variable declarations here
                     break
 
+            if self._curr:
+                self._retreat(index)
+                return self._parse_as_command(self._prev)
             return self.expression(exp.Declare, expressions=expressions)
 
     class Generator(generator.Generator):
@@ -795,6 +799,7 @@ class TSQL(Dialect):
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.TABLE: "TABLE",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
@@ -1112,3 +1117,21 @@ class TSQL(Dialect):
             if expression.args["kind"] == "VIEW":
                 expression.this.set("catalog", None)
             return super().drop_sql(expression)
+
+        def declare_sql(self, expression: exp.Declare) -> str:
+            declare_items = []
+            for declare_item in expression.expressions:
+                declare_item_sql = self.sql(declare_item)
+                declare_items.append(declare_item_sql)
+            declare_items_str = ", ".join(declare_items)
+
+            return f"DECLARE {declare_items_str}"
+
+        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
+            variable = self.sql(expression, "this")
+            type = self.sql(expression, "kind")
+            # generating sql from a table looks like "TableName (Schema)",
+            # but since we already have the table name (as variable), replace the "name" with the type "TABLE"
+            type = type.replace(variable, "TABLE")
+            default = self.sql(expression, "default")
+            return f"{variable} AS {type}{' = '+default if default else ''}"

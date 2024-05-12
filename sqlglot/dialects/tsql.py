@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
+from sqlglot.errors import ParseError
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -717,45 +718,51 @@ class TSQL(Dialect):
 
         def _parse_declare(self) -> exp.Declare | exp.Command:
             index = self._index
-            expressions = []
-            while True:
-                if self._match(TokenType.PARAMETER, advance=False):
-                    var = self._parse_id_var()
-                    size = None
-                    value = None
-                    # moving past the AS keyword if it's there
-                    self._match_text_seq("AS")
+            try:
+                expressions = []
+                while True:
+                    if self._match(TokenType.PARAMETER, advance=False):
+                        var = self._parse_id_var()
+                        size = None
+                        value = None
+                        # moving past the AS keyword if it's there
+                        self._match_text_seq("AS")
 
-                    if self._match(TokenType.TABLE):
-                        table = self.expression(exp.Table, this=var)
-                        data_type = self._parse_schema(this=table)
+                        if self._match(TokenType.TABLE):
+                            table = self.expression(exp.Table, this=var)
+                            data_type = self._parse_schema(this=table)
+                        else:
+                            data_type = self._parse_types()  # Parse data type
+                            # Look for an optional size within parentheses
+                            if self._match(TokenType.L_PAREN):
+                                size = self._parse_bitwise()
+                                self._match(TokenType.R_PAREN)
+
+                            if self._match(TokenType.EQ):
+                                value = self._parse_bitwise()
+
+                        expressions.append(
+                            self.expression(
+                                exp.DeclareItem, this=var, kind=data_type, default=value, size=size
+                            )
+                        )  # Create DeclareItem node
                     else:
-                        data_type = self._parse_types()  # Parse data type
-                        # Look for an optional size within parentheses
-                        if self._match(TokenType.L_PAREN):
-                            size = self._parse_bitwise()
-                            self._match(TokenType.R_PAREN)
+                        break
 
-                        if self._match(TokenType.EQ):
-                            value = self._parse_bitwise()
+                    if not self._match(
+                        TokenType.COMMA
+                    ):  # Get comma separated variable declarations here
+                        break
 
-                    expressions.append(
-                        self.expression(
-                            exp.DeclareItem, this=var, kind=data_type, default=value, size=size
-                        )
-                    )  # Create DeclareItem node
-                else:
-                    break
+                if self._curr:
+                    self._retreat(index)
+                    return self._parse_as_command(self._prev)
+                return self.expression(exp.Declare, expressions=expressions)
 
-                if not self._match(
-                    TokenType.COMMA
-                ):  # Get comma separated variable declarations here
-                    break
-
-            if self._curr:
+            except ParseError as e:
                 self._retreat(index)
                 return self._parse_as_command(self._prev)
-            return self.expression(exp.Declare, expressions=expressions)
+
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

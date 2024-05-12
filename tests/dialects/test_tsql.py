@@ -1848,8 +1848,9 @@ FROM OPENJSON(@json) WITH (
 
         # current unsupported cases
         # inline constraints without the constrain keyword, and inline indexes are not supported by DECLARE parsing or CREATE TABLE parsing
-        self.assertRaises(
-            ParseError,
-            parse_one,
-            "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));",
-        )
+        # self.assertRaises(
+        #     ParseError,
+        #     parse_one,
+        #     "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));",
+        # )
+        self.validate_identity("DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))", check_command_warning=True),

@@ -1409,31 +1409,11 @@ WITH "_u_0" AS (
     "store_sales"."ss_quantity" <= 80 AND "store_sales"."ss_quantity" >= 61
 )
 SELECT
-  CASE
-    WHEN MAX("_u_0"."_col_0") > 3672
-    THEN MAX("_u_1"."_col_0")
-    ELSE MAX("_u_2"."_col_0")
-  END AS "bucket1",
-  CASE
-    WHEN MAX("_u_3"."_col_0") > 3392
-    THEN MAX("_u_4"."_col_0")
-    ELSE MAX("_u_5"."_col_0")
-  END AS "bucket2",
-  CASE
-    WHEN MAX("_u_6"."_col_0") > 32784
-    THEN MAX("_u_7"."_col_0")
-    ELSE MAX("_u_8"."_col_0")
-  END AS "bucket3",
-  CASE
-    WHEN MAX("_u_9"."_col_0") > 26032
-    THEN MAX("_u_10"."_col_0")
-    ELSE MAX("_u_11"."_col_0")
-  END AS "bucket4",
-  CASE
-    WHEN MAX("_u_12"."_col_0") > 23982
-    THEN MAX("_u_13"."_col_0")
-    ELSE MAX("_u_14"."_col_0")
-  END AS "bucket5"
+  CASE WHEN "_u_0"."_col_0" > 3672 THEN "_u_1"."_col_0" ELSE "_u_2"."_col_0" END AS "bucket1",
+  CASE WHEN "_u_3"."_col_0" > 3392 THEN "_u_4"."_col_0" ELSE "_u_5"."_col_0" END AS "bucket2",
+  CASE WHEN "_u_6"."_col_0" > 32784 THEN "_u_7"."_col_0" ELSE "_u_8"."_col_0" END AS "bucket3",
+  CASE WHEN "_u_9"."_col_0" > 26032 THEN "_u_10"."_col_0" ELSE "_u_11"."_col_0" END AS "bucket4",
+  CASE WHEN "_u_12"."_col_0" > 23982 THEN "_u_13"."_col_0" ELSE "_u_14"."_col_0" END AS "bucket5"
 FROM "reason" AS "reason"
 CROSS JOIN "_u_0" AS "_u_0"
 CROSS JOIN "_u_1" AS "_u_1"

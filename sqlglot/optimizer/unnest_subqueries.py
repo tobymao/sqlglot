@@ -1,6 +1,6 @@
 from sqlglot import exp
 from sqlglot.helper import name_sequence
-from sqlglot.optimizer.scope import ScopeType, traverse_scope
+from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 
 
 def unnest_subqueries(expression):
@@ -64,7 +64,7 @@ def unnest(select, parent_select, next_alias_name):
             (not clause or clause_parent_select is not parent_select)
             and (
                 parent_select.args.get("group")
-                or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
+                or any(find_in_scope(select, exp.AggFunc) for select in parent_select.selects)
             )
         ):
             column = exp.Max(this=column)
@@ -101,7 +101,7 @@ def unnest(select, parent_select, next_alias_name):
     if group:
         if {value.this} != set(group.expressions):
             select = (
-                exp.select(exp.column(value.alias, "_q"))
+                exp.select(exp.alias_(exp.column(value.alias, "_q"), value.alias))
                 .from_(select.subquery("_q", copy=False), copy=False)
                 .group_by(exp.column(value.alias, "_q"), copy=False)
             )
@@ -152,7 +152,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         return
 
     is_subquery_projection = any(
-        node is select.parent for node in parent_select.selects if isinstance(node, exp.Subquery)
+        node is select.parent
+        for node in map(lambda s: s.unalias(), parent_select.selects)
+        if isinstance(node, exp.Subquery)
     )
 
     value = select.selects[0]
@@ -200,19 +202,25 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     alias = exp.column(value.alias, table_alias)
     other = _other_operand(parent_predicate)
+    op_type = type(parent_predicate.parent)
 
     if isinstance(parent_predicate, exp.Exists):
         alias = exp.column(list(key_aliases.values())[0], table_alias)
         parent_predicate = _replace(parent_predicate, f"NOT {alias} IS NULL")
     elif isinstance(parent_predicate, exp.All):
+        assert issubclass(op_type, exp.Binary)
+        predicate = op_type(this=other, expression=exp.column("_x"))
         parent_predicate = _replace(
-            parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> _x = {other})"
+            parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> {predicate})"
         )
     elif isinstance(parent_predicate, exp.Any):
+        assert issubclass(op_type, exp.Binary)
         if value.this in group_by:
-            parent_predicate = _replace(parent_predicate.parent, f"{other} = {alias}")
+            predicate = op_type(this=other, expression=alias)
+            parent_predicate = _replace(parent_predicate.parent, predicate)
         else:
-            parent_predicate = _replace(parent_predicate, f"ARRAY_ANY({alias}, _x -> _x = {other})")
+            predicate = op_type(this=other, expression=exp.column("_x"))
+            parent_predicate = _replace(parent_predicate, f"ARRAY_ANY({alias}, _x -> {predicate})")
     elif isinstance(parent_predicate, exp.In):
         if value.this in group_by:
             parent_predicate = _replace(parent_predicate, f"{other} = {alias}")
@@ -222,7 +230,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
             )
     else:
-        if is_subquery_projection:
+        if is_subquery_projection and select.parent.alias:
             alias = exp.alias_(alias, select.parent.alias)
 
         # COUNT always returns 0 on empty datasets, so we need take that into consideration here
@@ -236,10 +244,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                     return exp.null()
                 return node
 
-            alias = exp.Coalesce(
-                this=alias,
-                expressions=[value.this.transform(remove_aggs)],
-            )
+            alias = exp.Coalesce(this=alias, expressions=[value.this.transform(remove_aggs)])
 
         select.parent.replace(alias)
 

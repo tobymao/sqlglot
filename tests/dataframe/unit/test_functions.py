@@ -1188,8 +1188,14 @@ class TestFunctions(unittest.TestCase):
 
     def test_hex(self):
         col_str = SF.hex("cola")
-        self.assertEqual("HEX(cola)", col_str.sql())
+        self.assertEqual("LOWER(HEX(cola))", col_str.sql())
         col = SF.hex(SF.col("cola"))
+        self.assertEqual("LOWER(HEX(cola))", col.sql())
+
+    def test_upperhex(self):
+        col_str = SF.upperhex("cola")
+        self.assertEqual("HEX(cola)", col_str.sql())
+        col = SF.upperhex(SF.col("cola"))
         self.assertEqual("HEX(cola)", col.sql())
 
     def test_unhex(self):

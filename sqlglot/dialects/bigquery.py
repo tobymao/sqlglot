@@ -245,6 +245,8 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
+    HEX_LOWERCASE: t.Optional[bool] = True
+
     def normalize_identifier(self, expression: E) -> E:
         if isinstance(expression, exp.Identifier):
             parent = expression.parent
@@ -604,6 +606,9 @@ class BigQuery(Dialect):
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: rename_func("TO_HEX"),
+            exp.UpperHex: lambda self, e: self.func(
+                "UPPER", self.func("TO_HEX", self.sql(e, "this"))
+            ),
             exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),

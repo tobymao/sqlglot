@@ -276,7 +276,7 @@ class Presto(Dialect):
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
             ),
             "TO_CHAR": _build_to_char,
-            "TO_HEX": exp.Hex.from_arg_list,
+            "TO_HEX": exp.UpperHex.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
@@ -384,7 +384,8 @@ class Presto(Dialect):
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
             ),
-            exp.Hex: rename_func("TO_HEX"),
+            exp.Hex: lambda self, e: self.func("LOWER", self.func("TO_HEX", self.sql(e, "this"))),
+            exp.UpperHex: rename_func("TO_HEX"),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,

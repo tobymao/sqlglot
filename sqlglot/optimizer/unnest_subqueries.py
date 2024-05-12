@@ -202,7 +202,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     alias = exp.column(value.alias, table_alias)
     other = _other_operand(parent_predicate)
-    op_type = type(parent_predicate.parent)
+    op_type = type(parent_predicate.parent) if parent_predicate else None
 
     if isinstance(parent_predicate, exp.Exists):
         alias = exp.column(list(key_aliases.values())[0], table_alias)

@@ -759,10 +759,9 @@ class TSQL(Dialect):
                     return self._parse_as_command(self._prev)
                 return self.expression(exp.Declare, expressions=expressions)
 
-            except ParseError as e:
+            except ParseError:
                 self._retreat(index)
                 return self._parse_as_command(self._prev)
-
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

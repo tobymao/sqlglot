@@ -1845,6 +1845,10 @@ FROM OPENJSON(@json) WITH (
             "declare @X TABLE (Id INT NOT NULL, constraint PK_Id primary key (Id))",
             "DECLARE @X AS TABLE (Id INTEGER NOT NULL, CONSTRAINT PK_Id PRIMARY KEY (Id))",
         )
+        self.validate_identity(
+            "declare @X UserDefinedTableType",
+            "DECLARE @X AS UserDefinedTableType",
+        )
 
         # current unsupported cases
         # inline constraints without the constrain keyword, and inline indexes are not supported by DECLARE parsing or CREATE TABLE parsing
@@ -1853,4 +1857,9 @@ FROM OPENJSON(@json) WITH (
         #     parse_one,
         #     "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));",
         # )
-        self.validate_identity("DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))", check_command_warning=True),
+        (
+            self.validate_identity(
+                "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))",
+                check_command_warning=True,
+            ),
+        )

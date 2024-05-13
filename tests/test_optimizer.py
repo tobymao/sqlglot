@@ -428,11 +428,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         )
 
     def test_unnest_subqueries(self):
-        self.check_file(
-            "unnest_subqueries",
-            optimizer.unnest_subqueries.unnest_subqueries,
-            pretty=True,
-        )
+        self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)

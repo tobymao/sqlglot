@@ -626,3 +626,27 @@ class Presto(Dialect):
             if kind == "VIEW" and schema.expressions:
                 expression.this.set("expressions", None)
             return super().create_sql(expression)
+
+        def delete_sql(self, expression: exp.Delete) -> str:
+            """
+            Presto only support DELETE FROM a table, without alias, so we need to remove the unnecessary parts.
+            If the original DELETE statement contains more than one table to be deleted, just pick the first one.
+            """
+
+            tables = expression.args.get("tables")
+            if tables:
+                target_table = tables[0]
+                expression = expression.copy()
+                del expression.args["tables"]
+                expression.set("this", target_table)
+
+            table = expression.args.get("this")
+            if isinstance(table, exp.Table):
+                table_alias = table.alias
+                if table_alias:
+                    del table.args["alias"]
+                    for column in expression.find_all(exp.Column):
+                        if column.table == table_alias:
+                            del column.args["table"]
+
+            return super().delete_sql(expression)

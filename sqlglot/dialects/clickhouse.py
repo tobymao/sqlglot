@@ -90,6 +90,7 @@ class ClickHouse(Dialect):
             "LOWCARDINALITY": TokenType.LOWCARDINALITY,
             "MAP": TokenType.MAP,
             "NESTED": TokenType.NESTED,
+            "PROJECTION": TokenType.PROJECTION,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "TUPLE": TokenType.STRUCT,
             "UINT128": TokenType.UINT128,
@@ -611,6 +612,21 @@ class ClickHouse(Dialect):
                 exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
             )
 
+        def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
+            if not self._match(TokenType.PROJECTION):
+                return None
+
+            return self.expression(
+                exp.ProjectionDef,
+                this=self._parse_id_var(),
+                expression=self._parse_wrapped(self._parse_statement),
+            )
+
+        def _parse_schema_item(self) -> t.Optional[exp.Expression]:
+            return (
+                self._parse_constraint() or self._parse_projection_def() or self._parse_field_def()
+            )
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
@@ -878,3 +894,6 @@ class ClickHouse(Dialect):
             return (
                 f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
             )
+
+        def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
+            return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"

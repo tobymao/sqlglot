@@ -245,7 +245,7 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
-    HEX_LOWERCASE: t.Optional[bool] = True
+    HEX_LOWERCASE: bool = True
 
     def normalize_identifier(self, expression: E) -> E:
         if isinstance(expression, exp.Identifier):

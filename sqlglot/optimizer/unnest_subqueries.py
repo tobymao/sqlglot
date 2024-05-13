@@ -254,6 +254,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         if is_subquery_projection:
             key.replace(nested)
+            if not isinstance(predicate, exp.EQ):
+                parent_select.where(predicate, copy=False)
             continue
 
         if key in group_by:

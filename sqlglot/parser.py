@@ -2701,9 +2701,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
-        from sqlglot.optimizer.normalize_identifiers import (
-            normalize_identifiers as _norm,
-        )
+        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
 
         refs = {_norm(this.args["from"].this.copy(), dialect=self.dialect).alias_or_name}
         for i, join in enumerate(this.args.get("joins") or []):

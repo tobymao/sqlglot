@@ -4095,6 +4095,7 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         index = self._index
 
+        this: t.Optional[exp.Expression] = None
         prefix = self._match_text_seq("SYSUDTLIB", ".")
 
         if not self._match_set(self.TYPE_TOKENS):
@@ -4115,7 +4116,7 @@ class Parser(metaclass=_Parser):
                     while self._match(TokenType.DOT):
                         type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
 
-                    return exp.DataType.build(type_name, udt=True)
+                    this = exp.DataType.build(type_name, udt=True)
                 else:
                     self._retreat(self._index - 1)
                     return None
@@ -4168,7 +4169,6 @@ class Parser(metaclass=_Parser):
 
             maybe_func = True
 
-        this: t.Optional[exp.Expression] = None
         values: t.Optional[t.List[exp.Expression]] = None
 
         if nested and self._match(TokenType.LT):
@@ -4237,6 +4237,8 @@ class Parser(metaclass=_Parser):
                 values=values,
                 prefix=prefix,
             )
+        elif expressions:
+            this.set("expressions", expressions)
 
         while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)

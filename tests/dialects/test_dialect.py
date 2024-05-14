@@ -2206,6 +2206,8 @@ SELECT
         )
 
     def test_cast_to_user_defined_type(self):
+        self.validate_identity("CAST(x AS some_udt(1234))")
+
         self.validate_all(
             "CAST(x AS some_udt)",
             write={

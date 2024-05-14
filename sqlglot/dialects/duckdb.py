@@ -305,7 +305,7 @@ class DuckDB(Dialect):
             ),
         }
 
-        TYPE_MAPPING = {
+        TYPE_CONVERTER = {
             # https://duckdb.org/docs/sql/data_types/numeric
             exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=18, scale=3),
         }

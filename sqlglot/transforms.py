@@ -105,8 +105,15 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                 select.replace(exp.alias_(select, alias))
                 taken.add(alias)
 
+        def _is_quoted(select):
+            ident = select.args.get("alias", select.args.get("this"))
+            return isinstance(ident, exp.Identifier) and ident.quoted
+
         outer_selects = exp.select(
-            *[exp.column(select.alias_or_name, quoted=True) for select in expression.selects]
+            *[
+                exp.column(select.alias_or_name, quoted=_is_quoted(select))
+                for select in expression.selects
+            ]
         )
         qualify_filters = expression.args["qualify"].pop().this
         expression_by_alias = {

@@ -2237,15 +2237,15 @@ SELECT
 
     def test_qualify_spaces(self):
         self.validate_all(
-            'SELECT "user id" FROM t QUALIFY COUNT(*) OVER () > 1',
+            'SELECT "user id", some_id, 1 as other_id, 2 as "2 nd id" FROM t QUALIFY COUNT(*) OVER () > 1',
             write={
-                "duckdb": 'SELECT "user id" FROM t QUALIFY COUNT(*) OVER () > 1',
-                "snowflake": 'SELECT "user id" FROM t QUALIFY COUNT(*) OVER () > 1',
-                "clickhouse": 'SELECT "user id" FROM (SELECT "user id", COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1',
-                "mysql": "SELECT `user id` FROM (SELECT `user id`, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
-                "oracle": 'SELECT "user id" FROM (SELECT "user id", COUNT(*) OVER () AS _w FROM t) _t WHERE _w > 1',
-                "postgres": 'SELECT "user id" FROM (SELECT "user id", COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1',
-                "tsql": "SELECT [user id] FROM (SELECT [user id] AS [user id], COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+                "duckdb": 'SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id" FROM t QUALIFY COUNT(*) OVER () > 1',
+                "snowflake": 'SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id" FROM t QUALIFY COUNT(*) OVER () > 1',
+                "clickhouse": 'SELECT "user id", some_id, other_id, "2 nd id" FROM (SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id", COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1',
+                "mysql": "SELECT `user id`, some_id, other_id, `2 nd id` FROM (SELECT `user id`, some_id, 1 AS other_id, 2 AS `2 nd id`, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+                "oracle": 'SELECT "user id", some_id, other_id, "2 nd id" FROM (SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id", COUNT(*) OVER () AS _w FROM t) _t WHERE _w > 1',
+                "postgres": 'SELECT "user id", some_id, other_id, "2 nd id" FROM (SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id", COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1',
+                "tsql": "SELECT [user id], some_id, other_id, [2 nd id] FROM (SELECT [user id] AS [user id], some_id AS some_id, 1 AS other_id, 2 AS [2 nd id], COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
             },
         )
 

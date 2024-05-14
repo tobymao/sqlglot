@@ -3820,7 +3820,7 @@ class Where(Expression):
 
 
 class Star(Expression):
-    arg_types = {"except": False, "replace": False}
+    arg_types = {"except": False, "replace": False, "rename": False}
 
     @property
     def name(self) -> str:

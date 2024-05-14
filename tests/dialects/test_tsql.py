@@ -1845,9 +1845,11 @@ FROM OPENJSON(@json) WITH (
             "declare @X UserDefinedTableType",
             "DECLARE @X AS UserDefinedTableType",
         )
-        (
-            self.validate_identity(
-                "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))",
-                check_command_warning=True,
-            ),
+        self.validate_identity(
+            "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))",
+            check_command_warning=True,
+        )
+        self.validate_identity(
+            "DECLARE vendor_cursor CURSOR FOR SELECT VendorID, Name FROM Purchasing.Vendor WHERE PreferredVendorStatus = 1 ORDER BY VendorID",
+            check_command_warning=True,
         )

@@ -61,31 +61,21 @@ def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
 
 
-def build_hex(args: t.List, dialect: Dialect) -> exp.Hex | exp.UpperHex:
+def build_hex(args: t.List, dialect: Dialect) -> exp.Hex | exp.LowerHex:
     arg = seq_get(args, 0)
-    return exp.Hex(this=arg) if dialect.HEX_LOWERCASE else exp.UpperHex(this=arg)
+    return exp.LowerHex(this=arg) if dialect.HEX_LOWERCASE else exp.Hex(this=arg)
 
 
 def build_lower(args: t.List, dialect: Dialect) -> exp.Lower | exp.Hex:
-    # if the dialect provides HEX_UPPERCASE, LOWER(HEX(..)) can be simplified to Hex to simplify its transpilation
+    # LOWER(HEX(..)) can be simplified to LowerHex to simplify its transpilation
     arg = seq_get(args, 0)
-    return (
-        exp.Hex(this=arg.this)
-        if (not dialect.HEX_LOWERCASE and isinstance(arg, exp.UpperHex))
-        or (dialect.HEX_LOWERCASE and isinstance(arg, exp.Hex))
-        else exp.Lower(this=arg)
-    )
+    return exp.LowerHex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Lower(this=arg)
 
 
-def build_upper(args: t.List, dialect: Dialect) -> exp.Upper | exp.UpperHex:
-    # if the dialect provides HEX_UPPERCASE, UPPER(HEX(..)) can be simplified to UpperHex to simplify its transpilation
+def build_upper(args: t.List, dialect: Dialect) -> exp.Upper | exp.Hex:
+    # UPPER(HEX(..)) can be simplified to Hex to simplify its transpilation
     arg = seq_get(args, 0)
-    return (
-        exp.UpperHex(this=arg.this)
-        if (not dialect.HEX_LOWERCASE and isinstance(arg, exp.UpperHex))
-        or (dialect.HEX_LOWERCASE and isinstance(arg, exp.Hex))
-        else exp.Upper(this=arg)
-    )
+    return exp.Hex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Upper(this=arg)
 
 
 def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:

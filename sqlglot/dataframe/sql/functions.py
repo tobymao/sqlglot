@@ -908,10 +908,6 @@ def hex(col: ColumnOrName) -> Column:
     return Column.invoke_expression_over_column(col, expression.Hex)
 
 
-def upperhex(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, expression.UpperHex)
-
-
 def unhex(col: ColumnOrName) -> Column:
     return Column.invoke_expression_over_column(col, expression.Unhex)
 

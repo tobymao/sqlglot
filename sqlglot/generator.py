@@ -1303,15 +1303,15 @@ class Generator(metaclass=_Generator):
 
     def hex_sql(self, expression: exp.Hex) -> str:
         text = self.func("HEX", self.sql(expression, "this"))
-        if not self.dialect.HEX_LOWERCASE:
+        if self.dialect.HEX_LOWERCASE:
             text = self.func("LOWER", text)
 
         return text
 
-    def upperhex_sql(self, expression: exp.UpperHex) -> str:
+    def lowerhex_sql(self, expression: exp.LowerHex) -> str:
         text = self.func("HEX", self.sql(expression, "this"))
-        if self.dialect.HEX_LOWERCASE:
-            text = self.func("UPPER", text)
+        if not self.dialect.HEX_LOWERCASE:
+            text = self.func("LOWER", text)
         return text
 
     def inputoutputformat_sql(self, expression: exp.InputOutputFormat) -> str:

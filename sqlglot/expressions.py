@@ -5193,7 +5193,7 @@ class Hex(Func):
     pass
 
 
-class UpperHex(Func):
+class LowerHex(Hex):
     pass
 
 

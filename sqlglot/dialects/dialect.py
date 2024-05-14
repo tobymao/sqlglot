@@ -290,13 +290,12 @@ class Dialect(metaclass=_Dialect):
         ) SELECT c FROM y;
     """
 
-    HEX_LOWERCASE: t.Optional[bool] = False
+    HEX_LOWERCASE = False
     """
     Different dialect, `HEX` function will producing a different string, some are in
-    lowercase, other are in uppercase. To prevent this mismatch behavior, we can use
-    HEX_LOWERCASE property to determine the case which current dialect use. In that
-    case, `HEX` can be wrapped by an additional lower or upper function to convert
-    the output to exact dialect.
+    lowercase, other are in uppercase. HEX_LOWERCASE property can determine the case
+    of the string which current dialect use. `HEX` can be wrapped by an additional
+    lower or upper function to convert the output to exact dialect.
     For example,
         `SELECT TO_HEX(x)`;
         in Bigquery will be rewritten as the following one in Presto and Trino

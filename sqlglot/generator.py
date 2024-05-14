@@ -74,6 +74,8 @@ class Generator(metaclass=_Generator):
 
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
         **JSON_PATH_PART_TRANSFORMS,
+        exp.AllowedValuesProperty: lambda self,
+        e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda _,
@@ -401,6 +403,7 @@ class Generator(metaclass=_Generator):
     NAMED_PLACEHOLDER_TOKEN = ":"
 
     PROPERTIES_LOCATION = {
+        exp.AllowedValuesProperty: exp.Properties.Location.POST_SCHEMA,
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA,
         exp.AutoRefreshProperty: exp.Properties.Location.POST_SCHEMA,

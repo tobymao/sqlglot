@@ -477,6 +477,14 @@ class Snowflake(Dialect):
 
         SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
 
+        def _parse_create(self) -> exp.Create | exp.Command:
+            expression = super()._parse_create()
+            if isinstance(expression, exp.Create) and expression.kind == "TAG":
+                # Replace the Table node with the enclosed Identifier
+                expression.this.replace(expression.this.this)
+
+            return expression
+
         def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             this = super()._parse_column_ops(this)
 
@@ -729,6 +737,7 @@ class Snowflake(Dialect):
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
             "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,
+            "TAG": TokenType.TAG,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
         }

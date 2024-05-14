@@ -105,9 +105,8 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                 select.replace(exp.alias_(select, alias))
                 taken.add(alias)
 
-        def _is_quoted(select):
-           return (select.args.get("alias") or select.this).args.get("quoted")
-            return isinstance(ident, exp.Identifier) and ident.quoted
+        def _is_quoted(select: exp.Expression) -> bool:
+            return (select.args.get("alias") or select.this).args.get("quoted")
 
         outer_selects = exp.select(
             *[

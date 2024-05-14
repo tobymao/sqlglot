@@ -3951,7 +3951,6 @@ class DataType(Expression):
         SMALLSERIAL = auto()
         STRUCT = auto()
         SUPER = auto()
-        TABLE = auto()
         TEXT = auto()
         TINYBLOB = auto()
         TINYTEXT = auto()
@@ -3992,7 +3991,6 @@ class DataType(Expression):
         Type.NESTED,
         Type.OBJECT,
         Type.STRUCT,
-        Type.TABLE,
     }
 
     NESTED_TYPES = {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import re
 import typing as t
+from functools import partial
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -22,7 +23,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
-from sqlglot.errors import ParseError
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -531,7 +531,6 @@ class TSQL(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
-            TokenType.END: lambda self: self._parse_command(),
         }
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
@@ -717,51 +716,31 @@ class TSQL(Dialect):
             return partition
 
         def _parse_declare(self) -> exp.Declare | exp.Command:
-            index = self._index
-            try:
-                expressions = []
-                while True:
-                    if self._match(TokenType.PARAMETER, advance=False):
-                        var = self._parse_id_var()
-                        size = None
-                        value = None
-                        # moving past the AS keyword if it's there
-                        self._match_text_seq("AS")
-
-                        if self._match(TokenType.TABLE):
-                            table = self.expression(exp.Table, this=var)
-                            data_type = self._parse_schema(this=table)
-                        else:
-                            data_type = self._parse_types()  # Parse data type
-                            # Look for an optional size within parentheses
-                            if self._match(TokenType.L_PAREN):
-                                size = self._parse_bitwise()
-                                self._match(TokenType.R_PAREN)
-
-                            if self._match(TokenType.EQ):
-                                value = self._parse_bitwise()
-
-                        expressions.append(
-                            self.expression(
-                                exp.DeclareItem, this=var, kind=data_type, default=value, size=size
-                            )
-                        )  # Create DeclareItem node
-                    else:
-                        break
-
-                    if not self._match(
-                        TokenType.COMMA
-                    ):  # Get comma separated variable declarations here
-                        break
-
-                if self._curr:
-                    self._retreat(index)
-                    return self._parse_as_command(self._prev)
-                return self.expression(exp.Declare, expressions=expressions)
-
-            except ParseError:
-                self._retreat(index)
+            expressions = self._try_parse(partial(self._parse_csv, self._parse_declareitem))
+            if not expressions:
                 return self._parse_as_command(self._prev)
+            return self.expression(exp.Declare, expressions=expressions)
+
+        def _parse_declareitem(self) -> exp.DeclareItem:
+            var = self._parse_id_var(any_token=False, tokens=[TokenType.PARAMETER])
+            if not var:
+                return None
+            size = None
+            value = None
+            # moving past the AS keyword if it's there
+            self._match_text_seq("AS")
+
+            if self._match(TokenType.TABLE):
+                table = self.expression(exp.Table, this=var)
+                data_type = self._parse_schema(this=table)
+            else:
+                data_type = self._parse_types()
+                if self._match(TokenType.EQ):
+                    value = self._parse_bitwise()
+
+            return self.expression(
+                exp.DeclareItem, this=var, kind=data_type, default=value, size=size
+            )
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
@@ -805,7 +784,6 @@ class TSQL(Dialect):
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.TABLE: "TABLE",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
@@ -1125,13 +1103,7 @@ class TSQL(Dialect):
             return super().drop_sql(expression)
 
         def declare_sql(self, expression: exp.Declare) -> str:
-            declare_items = []
-            for declare_item in expression.expressions:
-                declare_item_sql = self.sql(declare_item)
-                declare_items.append(declare_item_sql)
-            declare_items_str = ", ".join(declare_items)
-
-            return f"DECLARE {declare_items_str}"
+            return f"DECLARE {self.expressions(expression, flat=True)}"
 
         def declareitem_sql(self, expression: exp.DeclareItem) -> str:
             variable = self.sql(expression, "this")
@@ -1140,4 +1112,5 @@ class TSQL(Dialect):
             # but since we already have the table name (as variable), replace the "name" with the type "TABLE"
             type = type.replace(variable, "TABLE")
             default = self.sql(expression, "default")
-            return f"{variable} AS {type}{' = '+default if default else ''}"
+            default = f" = {default}" if default else ""
+            return f"{variable} AS {type}{default}"

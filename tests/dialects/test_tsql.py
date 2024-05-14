@@ -261,7 +261,6 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT a = 1", "SELECT 1 AS a")
         self.validate_identity(
             "DECLARE @TestVariable AS VARCHAR(100) = 'Save Our Planet'",
-            # check_command_warning=True
         )
         self.validate_identity(
             "SELECT a = 1 UNION ALL SELECT a = b", "SELECT 1 AS a UNION ALL SELECT b AS a"
@@ -903,7 +902,6 @@ class TestTSQL(Validator):
     def test_udf(self):
         self.validate_identity(
             "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
-            # check_command_warning=True,
         )
         self.validate_identity(
             "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
@@ -996,7 +994,6 @@ WHERE
             "END",
         ]
 
-        # with self.assertLogs(parser_logger):
         for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
             self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
@@ -1017,7 +1014,6 @@ WHERE
             "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]
 
-        # with self.assertLogs(parser_logger):
         for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
             self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
@@ -1849,14 +1845,6 @@ FROM OPENJSON(@json) WITH (
             "declare @X UserDefinedTableType",
             "DECLARE @X AS UserDefinedTableType",
         )
-
-        # current unsupported cases
-        # inline constraints without the constrain keyword, and inline indexes are not supported by DECLARE parsing or CREATE TABLE parsing
-        # self.assertRaises(
-        #     ParseError,
-        #     parse_one,
-        #     "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));",
-        # )
         (
             self.validate_identity(
                 "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))",

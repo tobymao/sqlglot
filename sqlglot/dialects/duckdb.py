@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    JSON_EXTRACT_TYPE,
     NormalizationStrategy,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
@@ -154,6 +155,13 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
         return self.func("MAKE_TIMESTAMP", timestamp)
 
     return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
+
+
+def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYPE) -> str:
+    arrow_sql = arrow_json_extract_sql(self, expression)
+    if not expression.same_parent and isinstance(expression.parent, exp.Binary):
+        arrow_sql = self.wrap(arrow_sql)
+    return arrow_sql
 
 
 class DuckDB(Dialect):
@@ -405,8 +413,8 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
-            exp.JSONExtract: arrow_json_extract_sql,
-            exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.JSONExtract: _arrow_json_extract_sql,
+            exp.JSONExtractScalar: _arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),

@@ -272,6 +272,14 @@ class TestDuckDB(Validator):
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )
         self.validate_identity(
+            "SELECT JSON_EXTRACT_STRING(c, '$.k1') = 'v1'",
+            "SELECT (c ->> '$.k1') = 'v1'",
+        )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT(c, '$.k1') = 'v1'",
+            "SELECT (c -> '$.k1') = 'v1'",
+        )
+        self.validate_identity(
             """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
             """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
         )

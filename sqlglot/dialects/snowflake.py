@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     binary_from_function,
+    build_default_decimal_type,
     date_delta_sql,
     date_trunc_to_time,
     datestrtodate_sql,
@@ -443,6 +444,11 @@ class Snowflake(Dialect):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "LOCATION": lambda self: self._parse_location_property(),
+        }
+
+        TYPE_CONVERTER = {
+            # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
+            exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=38, scale=0),
         }
 
         SHOW_PARSERS = {

@@ -306,22 +306,23 @@ class Parser(metaclass=_Parser):
 
     DB_CREATABLES = {
         TokenType.DATABASE,
-        TokenType.SCHEMA,
-        TokenType.TABLE,
-        TokenType.VIEW,
-        TokenType.MODEL,
         TokenType.DICTIONARY,
+        TokenType.MODEL,
+        TokenType.SCHEMA,
         TokenType.SEQUENCE,
         TokenType.STORAGE_INTEGRATION,
+        TokenType.TABLE,
+        TokenType.TAG,
+        TokenType.VIEW,
     }
 
     CREATABLES = {
         TokenType.COLUMN,
         TokenType.CONSTRAINT,
+        TokenType.FOREIGN_KEY,
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
-        TokenType.FOREIGN_KEY,
         *DB_CREATABLES,
     }
 
@@ -741,6 +742,9 @@ class Parser(metaclass=_Parser):
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
+        "ALLOWED_VALUES": lambda self: self.expression(
+            exp.AllowedValuesProperty, expressions=self._parse_csv(self._parse_primary)
+        ),
         "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
         "AUTO": lambda self: self._parse_auto_property(),
         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
@@ -2701,9 +2705,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
-        from sqlglot.optimizer.normalize_identifiers import (
-            normalize_identifiers as _norm,
-        )
+        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
 
         refs = {_norm(this.args["from"].this.copy(), dialect=self.dialect).alias_or_name}
         for i, join in enumerate(this.args.get("joins") or []):

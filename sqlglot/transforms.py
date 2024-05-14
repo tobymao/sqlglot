@@ -105,7 +105,14 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                 select.replace(exp.alias_(select, alias))
                 taken.add(alias)
 
-        outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
+        def _select_alias_or_name(select: exp.Expression) -> str | exp.Column:
+            alias_or_name = select.alias_or_name
+            identifier = select.args.get("alias") or select.this
+            if isinstance(identifier, exp.Identifier):
+                return exp.column(alias_or_name, quoted=identifier.args.get("quoted"))
+            return alias_or_name
+
+        outer_selects = exp.select(*list(map(_select_alias_or_name, expression.selects)))
         qualify_filters = expression.args["qualify"].pop().this
         expression_by_alias = {
             select.alias: select.this

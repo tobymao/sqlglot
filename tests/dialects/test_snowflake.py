@@ -1210,6 +1210,10 @@ WHERE
         self.validate_identity("CREATE SCHEMA mytestschema_clone CLONE testschema")
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
+        self.validate_identity("CREATE TAG cost_center ALLOWED_VALUES 'a', 'b'")
+        self.validate_identity(
+            "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
+        ).this.assert_is(exp.Identifier)
         self.validate_identity(
             "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN)))"
         )

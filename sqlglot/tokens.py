@@ -358,6 +358,7 @@ class TokenType(AutoName):
     STORAGE_INTEGRATION = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
+    TAG = auto()
     TEMPORARY = auto()
     TOP = auto()
     THEN = auto()

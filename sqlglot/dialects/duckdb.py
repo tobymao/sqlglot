@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
+    build_default_decimal_type,
     date_trunc_to_time,
     datestrtodate_sql,
     encode_decode_sql,
@@ -304,6 +305,11 @@ class DuckDB(Dialect):
             ),
         }
 
+        TYPE_MAPPING = {
+            # https://duckdb.org/docs/sql/data_types/numeric
+            exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=18, scale=3),
+        }
+
         def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
             # https://duckdb.org/docs/sql/samples.html
             sample = super()._parse_table_sample(as_modifier=as_modifier)
@@ -330,24 +336,6 @@ class DuckDB(Dialect):
 
             args = self._parse_wrapped_csv(self._parse_conjunction)
             return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
-
-        def _parse_types(
-            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-        ) -> t.Optional[exp.Expression]:
-            this = super()._parse_types(
-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
-            )
-
-            # DuckDB treats NUMERIC and DECIMAL without precision as DECIMAL(18, 3)
-            # See: https://duckdb.org/docs/sql/data_types/numeric
-            if (
-                isinstance(this, exp.DataType)
-                and this.is_type("numeric", "decimal")
-                and not this.expressions
-            ):
-                return exp.DataType.build("DECIMAL(18, 3)")
-
-            return this
 
         def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
             return self._parse_field_def()

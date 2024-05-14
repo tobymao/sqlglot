@@ -1148,3 +1148,16 @@ def to_number_with_nls_param(self, expression: exp.ToNumber) -> str:
         expression.args.get("format"),
         expression.args.get("nlsparam"),
     )
+
+
+def build_default_decimal_type(
+    precision: t.Optional[int] = None, scale: t.Optional[int] = None
+) -> t.Callable[[exp.DataType], exp.DataType]:
+    def _builder(dtype: exp.DataType) -> exp.DataType:
+        if dtype.expressions or precision is None:
+            return dtype
+
+        params = f"{precision}{f', {scale}' if scale is not None else ''}"
+        return exp.DataType.build(f"DECIMAL({params})")
+
+    return _builder

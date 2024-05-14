@@ -1009,6 +1009,8 @@ class Parser(metaclass=_Parser):
         exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
     }
 
+    TYPE_MAPPING: t.Dict[exp.DataType.Type, t.Callable[[exp.DataType], exp.DataType]] = {}
+
     DDL_SELECT_TOKENS = {TokenType.SELECT, TokenType.WITH, TokenType.L_PAREN}
 
     PRE_VOLATILE_TOKENS = {TokenType.CREATE, TokenType.REPLACE, TokenType.UNIQUE}
@@ -4236,6 +4238,9 @@ class Parser(metaclass=_Parser):
 
         while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)
+
+        if self.TYPE_MAPPING and isinstance(this.this, exp.DataType.Type):
+            this = self.TYPE_MAPPING.get(this.this, lambda x: x)(this)
 
         return this
 

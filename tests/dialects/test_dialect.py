@@ -2234,8 +2234,6 @@ SELECT
                 "tsql": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
             },
         )
-
-    def test_qualify_spaces(self):
         self.validate_all(
             'SELECT "user id", some_id, 1 as other_id, 2 as "2 nd id" FROM t QUALIFY COUNT(*) OVER () > 1',
             write={

@@ -945,10 +945,6 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS DOUBLE)")
         self.validate_identity("CAST(x AS DECIMAL(15, 4))")
         self.validate_identity("CAST(x AS STRUCT(number BIGINT))")
-        self.validate_identity(
-            "CAST(ROW(1, ROW(1)) AS STRUCT(number BIGINT, row STRUCT(number BIGINT)))"
-        )
-
         self.validate_identity("CAST(x AS INT64)", "CAST(x AS BIGINT)")
         self.validate_identity("CAST(x AS INT32)", "CAST(x AS INT)")
         self.validate_identity("CAST(x AS INT16)", "CAST(x AS SMALLINT)")
@@ -968,6 +964,32 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS BINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS LOGICAL)", "CAST(x AS BOOLEAN)")
+        self.validate_identity(
+            "CAST(ROW(1, ROW(1)) AS STRUCT(number BIGINT, row STRUCT(number BIGINT)))"
+        )
+        self.validate_identity(
+            "123::CHARACTER VARYING",
+            "CAST(123 AS TEXT)",
+        )
+        self.validate_identity(
+            "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
+            "CAST([[{'a': 1}]] AS STRUCT(a BIGINT)[][])",
+        )
+        self.validate_identity(
+            "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
+            "CAST([{'a': 1}] AS STRUCT(a BIGINT)[])",
+        )
+
+        self.validate_all(
+            "CAST(x AS DECIMAL(38, 0))",
+            read={
+                "snowflake": "CAST(x AS NUMBER)",
+                "duckdb": "CAST(x AS DECIMAL(38, 0))",
+            },
+            write={
+                "snowflake": "CAST(x AS DECIMAL(38, 0))",
+            },
+        )
         self.validate_all(
             "CAST(x AS NUMERIC)",
             write={
@@ -993,12 +1015,6 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "123::CHARACTER VARYING",
-            write={
-                "duckdb": "CAST(123 AS TEXT)",
-            },
-        )
-        self.validate_all(
             "cast([[1]] as int[][])",
             write={
                 "duckdb": "CAST([[1]] AS INT[][])",
@@ -1006,7 +1022,10 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "CAST(x AS DATE) + INTERVAL (7 * -1) DAY", read={"spark": "DATE_SUB(x, 7)"}
+            "CAST(x AS DATE) + INTERVAL (7 * -1) DAY",
+            read={
+                "spark": "DATE_SUB(x, 7)",
+            },
         )
         self.validate_all(
             "TRY_CAST(1 AS DOUBLE)",
@@ -1031,18 +1050,6 @@ class TestDuckDB(Validator):
                 "spark": "CAST(COL AS ARRAY<BIGINT>)",
                 "postgres": "CAST(COL AS BIGINT[])",
                 "snowflake": "CAST(COL AS ARRAY(BIGINT))",
-            },
-        )
-        self.validate_all(
-            "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
-            write={
-                "duckdb": "CAST([{'a': 1}] AS STRUCT(a BIGINT)[])",
-            },
-        )
-        self.validate_all(
-            "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
-            write={
-                "duckdb": "CAST([[{'a': 1}]] AS STRUCT(a BIGINT)[][])",
             },
         )
 

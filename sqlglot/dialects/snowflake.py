@@ -737,7 +737,6 @@ class Snowflake(Dialect):
             "NCHAR VARYING": TokenType.VARCHAR,
             "PUT": TokenType.COMMAND,
             "REMOVE": TokenType.COMMAND,
-            "RENAME": TokenType.REPLACE,
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "SQL_DOUBLE": TokenType.DOUBLE,
@@ -773,6 +772,7 @@ class Snowflake(Dialect):
         STRUCT_DELIMITER = ("(", ")")
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
+        STAR_EXCEPT = "EXCLUDE"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -873,11 +873,6 @@ class Snowflake(Dialect):
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.NESTED: "OBJECT",
             exp.DataType.Type.STRUCT: "OBJECT",
-        }
-
-        STAR_MAPPING = {
-            "except": "EXCLUDE",
-            "replace": "RENAME",
         }
 
         PROPERTIES_LOCATION = {

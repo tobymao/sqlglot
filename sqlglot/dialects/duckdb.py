@@ -375,6 +375,7 @@ class DuckDB(Dialect):
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
         COPY_HAS_INTO_KEYWORD = False
+        STAR_EXCEPT = "EXCLUDE"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -505,8 +506,6 @@ class DuckDB(Dialect):
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
             exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP_NS",
         }
-
-        STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}
 
         UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
 

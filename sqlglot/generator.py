@@ -353,6 +353,9 @@ class Generator(metaclass=_Generator):
     # Whether the conditional TRY(expression) function is supported
     TRY_SUPPORTED = True
 
+    # The keyword to use when generating a star projection with excluded columns
+    STAR_EXCEPT = "EXCEPT"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -364,11 +367,6 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
         exp.DataType.Type.ROWVERSION: "VARBINARY",
-    }
-
-    STAR_MAPPING = {
-        "except": "EXCEPT",
-        "replace": "REPLACE",
     }
 
     TIME_PART_SINGULARS = {
@@ -2308,10 +2306,12 @@ class Generator(metaclass=_Generator):
 
     def star_sql(self, expression: exp.Star) -> str:
         except_ = self.expressions(expression, key="except", flat=True)
-        except_ = f"{self.seg(self.STAR_MAPPING['except'])} ({except_})" if except_ else ""
+        except_ = f"{self.seg(self.STAR_EXCEPT)} ({except_})" if except_ else ""
         replace = self.expressions(expression, key="replace", flat=True)
-        replace = f"{self.seg(self.STAR_MAPPING['replace'])} ({replace})" if replace else ""
-        return f"*{except_}{replace}"
+        replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
+        rename = self.expressions(expression, key="rename", flat=True)
+        rename = f"{self.seg('RENAME')} ({rename})" if rename else ""
+        return f"*{except_}{replace}{rename}"
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
         this = self.sql(expression, "this")

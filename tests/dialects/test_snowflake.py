@@ -90,6 +90,7 @@ WHERE
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity("SELECT MATCH_CONDITION")
+        self.validate_identity("SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t")
         self.validate_identity(
             "MERGE INTO my_db AS ids USING (SELECT new_id FROM my_model WHERE NOT col IS NULL) AS new_ids ON ids.type = new_ids.type AND ids.source = new_ids.source WHEN NOT MATCHED THEN INSERT VALUES (new_ids.new_id)"
         )
@@ -229,6 +230,38 @@ WHERE
         self.validate_identity(
             "CAST(x AS NCHAR VARYING)",
             "CAST(x AS VARCHAR)",
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",
+            "CREATE OR REPLACE TEMPORARY TABLE x (y DECIMAL(38, 0) AUTOINCREMENT START 0 INCREMENT 1)",
+        )
+        self.validate_identity(
+            "CREATE TEMPORARY TABLE x (y NUMBER AUTOINCREMENT(0, 1))",
+            "CREATE TEMPORARY TABLE x (y DECIMAL(38, 0) AUTOINCREMENT START 0 INCREMENT 1)",
+        )
+        self.validate_identity(
+            "CREATE TABLE x (y NUMBER IDENTITY START 0 INCREMENT 1)",
+            "CREATE TABLE x (y DECIMAL(38, 0) AUTOINCREMENT START 0 INCREMENT 1)",
+        )
+        self.validate_identity(
+            "ALTER TABLE foo ADD COLUMN id INT identity(1, 1)",
+            "ALTER TABLE foo ADD COLUMN id INT AUTOINCREMENT START 1 INCREMENT 1",
+        )
+        self.validate_identity(
+            "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
+            "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMP))",
+        )
+        self.validate_identity(
+            "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
+            "SELECT * FROM xxx WHERE col ILIKE '%Don\\'t%'",
+        )
+        self.validate_identity(
+            "SELECT * EXCLUDE a, b FROM xxx",
+            "SELECT * EXCLUDE (a), b FROM xxx",
+        )
+        self.validate_identity(
+            "SELECT * RENAME a AS b, c AS d FROM xxx",
+            "SELECT * RENAME (a AS b), c AS d FROM xxx",
         )
 
         self.validate_all(
@@ -550,60 +583,12 @@ WHERE
             },
         )
         self.validate_all(
-            "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",
-            write={
-                "snowflake": "CREATE OR REPLACE TEMPORARY TABLE x (y DECIMAL(38, 0) AUTOINCREMENT START 0 INCREMENT 1)",
-            },
-        )
-        self.validate_all(
-            "CREATE TEMPORARY TABLE x (y NUMBER AUTOINCREMENT(0, 1))",
-            write={
-                "snowflake": "CREATE TEMPORARY TABLE x (y DECIMAL(38, 0) AUTOINCREMENT START 0 INCREMENT 1)",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE x (y NUMBER IDENTITY START 0 INCREMENT 1)",
-            write={
-                "snowflake": "CREATE TABLE x (y DECIMAL(38, 0) AUTOINCREMENT START 0 INCREMENT 1)",
-            },
-        )
-        self.validate_all(
-            "ALTER TABLE foo ADD COLUMN id INT identity(1, 1)",
-            write={
-                "snowflake": "ALTER TABLE foo ADD COLUMN id INT AUTOINCREMENT START 1 INCREMENT 1",
-            },
-        )
-        self.validate_all(
-            "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
-            write={
-                "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMP))",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
-            write={
-                "snowflake": "SELECT * FROM xxx WHERE col ILIKE '%Don\\'t%'",
-            },
-        )
-        self.validate_all(
-            "SELECT * EXCLUDE a, b FROM xxx",
-            write={
-                "snowflake": "SELECT * EXCLUDE (a), b FROM xxx",
-            },
-        )
-        self.validate_all(
-            "SELECT * RENAME a AS b, c AS d FROM xxx",
-            write={
-                "snowflake": "SELECT * RENAME (a AS b), c AS d FROM xxx",
-            },
-        )
-        self.validate_all(
-            "SELECT * EXCLUDE (a, b) RENAME (c AS d, E AS F) FROM xxx",
+            "SELECT * EXCLUDE (a, b) REPLACE (c AS d, E AS F) FROM xxx",
             read={
                 "duckdb": "SELECT * EXCLUDE (a, b) REPLACE (c AS d, E AS F) FROM xxx",
             },
             write={
-                "snowflake": "SELECT * EXCLUDE (a, b) RENAME (c AS d, E AS F) FROM xxx",
+                "snowflake": "SELECT * EXCLUDE (a, b) REPLACE (c AS d, E AS F) FROM xxx",
                 "duckdb": "SELECT * EXCLUDE (a, b) REPLACE (c AS d, E AS F) FROM xxx",
             },
         )

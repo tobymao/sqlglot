@@ -2445,6 +2445,10 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
+class AllowedValuesProperty(Expression):
+    arg_types = {"expressions": True}
+
+
 class AlgorithmProperty(Property):
     arg_types = {"this": True}
 

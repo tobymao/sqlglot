@@ -721,7 +721,7 @@ class TSQL(Dialect):
                 return self._parse_as_command(self._prev)
             return self.expression(exp.Declare, expressions=expressions)
 
-        def _parse_declareitem(self) -> exp.DeclareItem:
+        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
             var = self._parse_id_var(any_token=False, tokens=[TokenType.PARAMETER])
             if not var:
                 return None

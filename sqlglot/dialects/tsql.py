@@ -729,7 +729,6 @@ class TSQL(Dialect):
                 return None
             value = None
             self._match(TokenType.ALIAS)
-            # self._match_text_seq("AS")
             if self._match(TokenType.TABLE):
                 table = self.expression(exp.Table, this=var)
                 data_type = self._parse_schema(this=table)

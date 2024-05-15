@@ -30,6 +30,27 @@ def _build_date_format(args: t.List) -> exp.TimeToStr:
     return expr
 
 
+def _unix_to_time_sql(self: ClickHouse.Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = expression.this
+
+    if scale in (None, exp.UnixToTime.SECONDS):
+        return self.func("fromUnixTimestamp", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+    if scale == exp.UnixToTime.MILLIS:
+        return self.func("fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+    if scale == exp.UnixToTime.MICROS:
+        return self.func("fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+    if scale == exp.UnixToTime.NANOS:
+        return self.func("fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+
+    return self.func(
+        "fromUnixTimestamp",
+        exp.cast(
+            exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
+        ),
+    )
+
+
 def _lower_func(sql: str) -> str:
     index = sql.index("(")
     return sql[:index].lower() + sql[index:]
@@ -726,6 +747,7 @@ class ClickHouse(Dialect):
             exp.SHA2: lambda self, e: self.func(
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),
+            exp.UnixToTime: _unix_to_time_sql,
         }
 
         PROPERTIES_LOCATION = {

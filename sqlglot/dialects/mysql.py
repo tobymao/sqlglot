@@ -110,6 +110,20 @@ def _trim_sql(self: MySQL.Generator, expression: exp.Trim) -> str:
     return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 
+def _unix_to_time_sql(self: MySQL.Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = expression.this
+
+    if scale in (None, exp.UnixToTime.SECONDS):
+        return self.func("FROM_UNIXTIME", timestamp, self.format_time(expression))
+
+    return self.func(
+        "FROM_UNIXTIME",
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)),
+        self.format_time(expression),
+    )
+
+
 def date_add_sql(
     kind: str,
 ) -> t.Callable[[generator.Generator, exp.Expression], str]:
@@ -723,7 +737,7 @@ class MySQL(Dialect):
             exp.TsOrDsAdd: date_add_sql("ADD"),
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
-            exp.UnixToTime: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
+            exp.UnixToTime: _unix_to_time_sql,
             exp.Week: _remove_ts_or_ds_to_date(),
             exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
             exp.Year: _remove_ts_or_ds_to_date(),

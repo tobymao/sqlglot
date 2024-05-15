@@ -638,10 +638,9 @@ class Presto(Dialect):
             if tables:
                 if len(tables) > 1:
                     return super().delete_sql(expression)
-                else:
-                    target_table = tables[0]
-                    del expression.args["tables"]
-                    expression.set("this", target_table)
+                target_table = tables[0]
+                del expression.args["tables"]
+                expression.set("this", target_table)
 
             table = expression.this
             if isinstance(table, exp.Table):

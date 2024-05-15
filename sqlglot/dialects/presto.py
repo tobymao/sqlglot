@@ -629,26 +629,22 @@ class Presto(Dialect):
 
         def delete_sql(self, expression: exp.Delete) -> str:
             """
-            Presto only support DELETE FROM a table, without alias, so we need to remove the unnecessary parts.
-            If the original DELETE statement contains more than one table to be deleted, we can't do anything.
+            Presto only supports DELETE FROM for a single table without an alias, so we need
+            to remove the unnecessary parts. If the original DELETE statement contains more
+            than one table to be deleted, we can't safely map it 1-1 to a Presto statement.
             """
+            tables = expression.args.get("tables") or [expression.this]
+            if len(tables) > 1:
+                return super().delete_sql(expression)
 
-            tables = expression.args.get("tables")
-            if tables:
-                if len(tables) > 1:
-                    return super().delete_sql(expression)
-                target_table = tables[0]
-                del expression.args["tables"]
-                expression.set("this", target_table)
+            table = tables[0]
+            expression.set("this", table)
+            expression.set("tables", None)
 
-            table = expression.this
             if isinstance(table, exp.Table):
-                table_alias = table.find(exp.TableAlias)
+                table_alias = table.args.get("alias")
                 if table_alias:
                     table_alias.pop()
-
-            qualified_expression = expression.transform(unqualify_columns)
-            if isinstance(qualified_expression, exp.Delete):
-                return super().delete_sql(qualified_expression)
+                    expression = t.cast(exp.Delete, expression.transform(unqualify_columns))
 
             return super().delete_sql(expression)

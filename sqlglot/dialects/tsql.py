@@ -738,9 +738,7 @@ class TSQL(Dialect):
                 if self._match(TokenType.EQ):
                     value = self._parse_bitwise()
 
-            return self.expression(
-                exp.DeclareItem, this=var, kind=data_type, default=value, size=size
-            )
+            return self.expression(exp.DeclareItem, this=var, kind=data_type, default=value)
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

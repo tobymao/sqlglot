@@ -1115,6 +1115,62 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "DELETE db.example_table WHERE x = 1",
+            write={
+                "bigquery": "DELETE db.example_table WHERE x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE db.example_table tb WHERE tb.x = 1",
+            write={
+                "bigquery": "DELETE db.example_table AS tb WHERE tb.x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE db.example_table AS tb WHERE tb.x = 1",
+            write={
+                "bigquery": "DELETE db.example_table AS tb WHERE tb.x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM db.example_table WHERE x = 1",
+            write={
+                "bigquery": "DELETE FROM db.example_table WHERE x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM db.example_table tb WHERE tb.x = 1",
+            write={
+                "bigquery": "DELETE FROM db.example_table AS tb WHERE tb.x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM db.example_table AS tb WHERE tb.x = 1",
+            write={
+                "bigquery": "DELETE FROM db.example_table AS tb WHERE tb.x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM db.example_table AS tb WHERE example_table.x = 1",
+            write={
+                "bigquery": "DELETE FROM db.example_table AS tb WHERE example_table.x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM db.example_table WHERE example_table.x = 1",
+            write={
+                "bigquery": "DELETE FROM db.example_table WHERE example_table.x = 1",
+                "presto": "DELETE FROM db.example_table WHERE x = 1",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
             write={
                 "bigquery": "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",

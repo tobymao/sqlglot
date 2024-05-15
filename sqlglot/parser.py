@@ -61,6 +61,23 @@ def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
 
 
+def build_hex(args: t.List, dialect: Dialect) -> exp.Hex | exp.LowerHex:
+    arg = seq_get(args, 0)
+    return exp.LowerHex(this=arg) if dialect.HEX_LOWERCASE else exp.Hex(this=arg)
+
+
+def build_lower(args: t.List) -> exp.Lower | exp.Hex:
+    # LOWER(HEX(..)) can be simplified to LowerHex to simplify its transpilation
+    arg = seq_get(args, 0)
+    return exp.LowerHex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Lower(this=arg)
+
+
+def build_upper(args: t.List) -> exp.Upper | exp.Hex:
+    # UPPER(HEX(..)) can be simplified to Hex to simplify its transpilation
+    arg = seq_get(args, 0)
+    return exp.Hex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Upper(this=arg)
+
+
 def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
     def _builder(args: t.List, dialect: Dialect) -> E:
         expression = expr_type(
@@ -148,6 +165,9 @@ class Parser(metaclass=_Parser):
             length=exp.Literal.number(10),
         ),
         "VAR_MAP": build_var_map,
+        "LOWER": build_lower,
+        "UPPER": build_upper,
+        "HEX": build_hex,
     }
 
     NO_PAREN_FUNCTIONS = {

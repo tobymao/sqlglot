@@ -632,6 +632,58 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "LOWER(TO_HEX(x))",
+            write={
+                "": "LOWER(HEX(x))",
+                "bigquery": "TO_HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+                "hive": "LOWER(HEX(x))",
+                "spark": "LOWER(HEX(x))",
+            },
+        )
+        self.validate_all(
+            "TO_HEX(x)",
+            read={
+                "": "LOWER(HEX(x))",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+                "hive": "LOWER(HEX(x))",
+                "spark": "LOWER(HEX(x))",
+            },
+            write={
+                "": "LOWER(HEX(x))",
+                "bigquery": "TO_HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+                "hive": "LOWER(HEX(x))",
+                "spark": "LOWER(HEX(x))",
+            },
+        )
+        self.validate_all(
+            "UPPER(TO_HEX(x))",
+            read={
+                "": "HEX(x)",
+                "presto": "TO_HEX(x)",
+                "trino": "TO_HEX(x)",
+                "clickhouse": "HEX(x)",
+                "hive": "HEX(x)",
+                "spark": "HEX(x)",
+            },
+            write={
+                "": "HEX(x)",
+                "bigquery": "UPPER(TO_HEX(x))",
+                "presto": "TO_HEX(x)",
+                "trino": "TO_HEX(x)",
+                "clickhouse": "HEX(x)",
+                "hive": "HEX(x)",
+                "spark": "HEX(x)",
+            },
+        )
+        self.validate_all(
             "MD5(x)",
             read={
                 "clickhouse": "MD5(x)",
@@ -653,6 +705,9 @@ LANGUAGE js AS
             read={
                 "duckdb": "SELECT MD5(some_string)",
                 "spark": "SELECT MD5(some_string)",
+                "clickhouse": "SELECT LOWER(HEX(MD5(some_string)))",
+                "presto": "SELECT LOWER(TO_HEX(MD5(some_string)))",
+                "trino": "SELECT LOWER(TO_HEX(MD5(some_string)))",
             },
             write={
                 "": "SELECT MD5(some_string)",

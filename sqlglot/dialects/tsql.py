@@ -719,20 +719,22 @@ class TSQL(Dialect):
         def _parse_declare(self) -> exp.Declare | exp.Command:
             index = self._index
             expressions = self._try_parse(partial(self._parse_csv, self._parse_declareitem))
+
             if not expressions or self._curr:
                 self._retreat(index)
                 return self._parse_as_command(self._prev)
+
             return self.expression(exp.Declare, expressions=expressions)
 
         def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
             var = self._parse_id_var()
             if not var:
                 return None
+
             value = None
             self._match(TokenType.ALIAS)
             if self._match(TokenType.TABLE):
-                table = self.expression(exp.Table, this=var)
-                data_type = self._parse_schema(this=table)
+                data_type = self._parse_schema()
             else:
                 data_type = self._parse_types()
                 if self._match(TokenType.EQ):
@@ -1106,10 +1108,11 @@ class TSQL(Dialect):
 
         def declareitem_sql(self, expression: exp.DeclareItem) -> str:
             variable = self.sql(expression, "this")
-            type = self.sql(expression, "kind")
-            # generating sql from a table looks like "TableName (Schema)",
-            # but since we already have the table name (as variable), replace the "name" with the type "TABLE"
-            type = type.replace(variable, "TABLE")
             default = self.sql(expression, "default")
             default = f" = {default}" if default else ""
-            return f"{variable} AS {type}{default}"
+
+            kind = self.sql(expression, "kind")
+            if isinstance(expression.args.get("kind"), exp.Schema):
+                kind = f"TABLE {kind}"
+
+            return f"{variable} AS {kind}{default}"

@@ -453,9 +453,12 @@ class TSQL(Dialect):
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
             "EXEC": TokenType.COMMAND,
+            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,
+            "OPTION": TokenType.OPTION,
+            "OUTPUT": TokenType.RETURNING,
             "PRINT": TokenType.COMMAND,
             "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
@@ -463,15 +466,13 @@ class TSQL(Dialect):
             "SMALLDATETIME": TokenType.DATETIME,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
+            "SYSTEM_USER": TokenType.CURRENT_USER,
             "TOP": TokenType.TOP,
             "TIMESTAMP": TokenType.ROWVERSION,
+            "TINYINT": TokenType.UTINYINT,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
-            "OUTPUT": TokenType.RETURNING,
-            "SYSTEM_USER": TokenType.CURRENT_USER,
-            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
-            "OPTION": TokenType.OPTION,
         }
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
@@ -750,11 +751,12 @@ class TSQL(Dialect):
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
-            exp.DataType.Type.ROWVERSION: "ROWVERSION",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)

@@ -463,6 +463,7 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS IMAGE)")
         self.validate_identity("CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS BIT)")
+
         self.validate_all(
             "CAST(x AS DATETIME2)",
             read={
@@ -490,7 +491,7 @@ class TestTSQL(Validator):
             },
         )
 
-    def test__types_ints(self):
+    def test_types_ints(self):
         self.validate_all(
             "CAST(X AS INT)",
             write={
@@ -523,10 +524,14 @@ class TestTSQL(Validator):
 
         self.validate_all(
             "CAST(X AS TINYINT)",
+            read={
+                "duckdb": "CAST(X AS UTINYINT)",
+            },
             write={
-                "hive": "CAST(X AS TINYINT)",
-                "spark2": "CAST(X AS TINYINT)",
-                "spark": "CAST(X AS TINYINT)",
+                "duckdb": "CAST(X AS UTINYINT)",
+                "hive": "CAST(X AS SMALLINT)",
+                "spark2": "CAST(X AS SMALLINT)",
+                "spark": "CAST(X AS SMALLINT)",
                 "tsql": "CAST(X AS TINYINT)",
             },
         )

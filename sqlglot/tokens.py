@@ -327,7 +327,6 @@ class TokenType(AutoName):
     PREWHERE = auto()
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
-    PROJECTION = auto()
     PROPERTIES = auto()
     PSEUDO_TYPE = auto()
     QUALIFY = auto()

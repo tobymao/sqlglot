@@ -90,7 +90,6 @@ class ClickHouse(Dialect):
             "LOWCARDINALITY": TokenType.LOWCARDINALITY,
             "MAP": TokenType.MAP,
             "NESTED": TokenType.NESTED,
-            "PROJECTION": TokenType.PROJECTION,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "TUPLE": TokenType.STRUCT,
             "UINT128": TokenType.UINT128,
@@ -613,7 +612,7 @@ class ClickHouse(Dialect):
             )
 
         def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
-            if not self._match(TokenType.PROJECTION):
+            if not self._match_text_seq("PROJECTION"):
                 return None
 
             return self.expression(
@@ -622,10 +621,8 @@ class ClickHouse(Dialect):
                 expression=self._parse_wrapped(self._parse_statement),
             )
 
-        def _parse_schema_item(self) -> t.Optional[exp.Expression]:
-            return (
-                self._parse_constraint() or self._parse_projection_def() or self._parse_field_def()
-            )
+        def _parse_constraint(self) -> t.Optional[exp.Expression]:
+            return super()._parse_constraint() or self._parse_projection_def()
 
     class Generator(generator.Generator):
         QUERY_HINTS = False

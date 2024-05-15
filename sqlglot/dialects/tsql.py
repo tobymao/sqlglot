@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import re
 import typing as t
+from functools import partial
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -211,7 +212,8 @@ def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
     if isinstance(expression.this, exp.Order):
         if expression.this.this:
             this = expression.this.this.pop()
-        order = f" WITHIN GROUP ({self.sql(expression.this)[1:]})"  # Order has a leading space
+        # Order has a leading space
+        order = f" WITHIN GROUP ({self.sql(expression.this)[1:]})"
 
     separator = expression.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
@@ -451,7 +453,7 @@ class TSQL(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
-            "DECLARE": TokenType.COMMAND,
+            "DECLARE": TokenType.DECLARE,
             "EXEC": TokenType.COMMAND,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "IMAGE": TokenType.IMAGE,
@@ -525,6 +527,11 @@ class TSQL(Dialect):
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,
+        }
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
@@ -708,6 +715,30 @@ class TSQL(Dialect):
             self._match_r_paren()
 
             return partition
+
+        def _parse_declare(self) -> exp.Declare | exp.Command:
+            index = self._index
+            expressions = self._try_parse(partial(self._parse_csv, self._parse_declareitem))
+            if not expressions or self._curr:
+                self._retreat(index)
+                return self._parse_as_command(self._prev)
+            return self.expression(exp.Declare, expressions=expressions)
+
+        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
+            var = self._parse_id_var()
+            if not var:
+                return None
+            value = None
+            self._match(TokenType.ALIAS)
+            if self._match(TokenType.TABLE):
+                table = self.expression(exp.Table, this=var)
+                data_type = self._parse_schema(this=table)
+            else:
+                data_type = self._parse_types()
+                if self._match(TokenType.EQ):
+                    value = self._parse_bitwise()
+
+            return self.expression(exp.DeclareItem, this=var, kind=data_type, default=value)
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
@@ -1069,3 +1100,16 @@ class TSQL(Dialect):
             if expression.args["kind"] == "VIEW":
                 expression.this.set("catalog", None)
             return super().drop_sql(expression)
+
+        def declare_sql(self, expression: exp.Declare) -> str:
+            return f"DECLARE {self.expressions(expression, flat=True)}"
+
+        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
+            variable = self.sql(expression, "this")
+            type = self.sql(expression, "kind")
+            # generating sql from a table looks like "TableName (Schema)",
+            # but since we already have the table name (as variable), replace the "name" with the type "TABLE"
+            type = type.replace(variable, "TABLE")
+            default = self.sql(expression, "default")
+            default = f" = {default}" if default else ""
+            return f"{variable} AS {type}{default}"

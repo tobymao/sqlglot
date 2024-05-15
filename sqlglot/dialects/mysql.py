@@ -805,6 +805,9 @@ class MySQL(Dialect):
             exp.DataType.Type.TIMESTAMPLTZ,
         }
 
+        def dpipe_sql(self, expression: exp.DPipe) -> str:
+            return self.func("CONCAT", *expression.flatten())
+
         def extract_sql(self, expression: exp.Extract) -> str:
             unit = expression.name
             if unit and unit.lower() == "epoch":

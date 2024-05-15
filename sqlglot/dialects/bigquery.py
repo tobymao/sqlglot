@@ -156,7 +156,7 @@ def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:
 def _build_to_hex(args: t.List) -> exp.Hex | exp.MD5:
     # TO_HEX(MD5(..)) is common in BigQuery, so it's parsed into MD5 to simplify its transpilation
     arg = seq_get(args, 0)
-    return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.Hex(this=arg)
+    return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.LowerHex(this=arg)
 
 
 def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains) -> str:
@@ -244,6 +244,8 @@ class BigQuery(Dialect):
     # The _PARTITIONTIME and _PARTITIONDATE pseudo-columns are not returned by a SELECT * statement
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
+
+    HEX_LOWERCASE = True
 
     def normalize_identifier(self, expression: E) -> E:
         if isinstance(expression, exp.Identifier):
@@ -603,7 +605,8 @@ class BigQuery(Dialect):
             ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
-            exp.Hex: rename_func("TO_HEX"),
+            exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
+            exp.LowerHex: rename_func("TO_HEX"),
             exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),

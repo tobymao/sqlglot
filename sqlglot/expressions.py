@@ -5197,6 +5197,10 @@ class Hex(Func):
     pass
 
 
+class LowerHex(Hex):
+    pass
+
+
 class Xor(Connector, Func):
     arg_types = {"this": False, "expression": False, "expressions": False}
 

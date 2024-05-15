@@ -385,6 +385,9 @@ class Presto(Dialect):
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
             ),
             exp.Hex: rename_func("TO_HEX"),
+            exp.LowerHex: lambda self, e: self.func(
+                "LOWER", self.func("TO_HEX", self.sql(e, "this"))
+            ),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,

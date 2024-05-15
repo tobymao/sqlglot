@@ -716,8 +716,10 @@ class TSQL(Dialect):
             return partition
 
         def _parse_declare(self) -> exp.Declare | exp.Command:
+            index = self._index
             expressions = self._try_parse(partial(self._parse_csv, self._parse_declareitem))
             if not expressions or self._curr:
+                self._retreat(index)
                 return self._parse_as_command(self._prev)
             return self.expression(exp.Declare, expressions=expressions)
 
@@ -727,6 +729,7 @@ class TSQL(Dialect):
                 return None
             value = None
             self._match(TokenType.ALIAS)
+            # self._match_text_seq("AS")
             if self._match(TokenType.TABLE):
                 table = self.expression(exp.Table, this=var)
                 data_type = self._parse_schema(this=table)

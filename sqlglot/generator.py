@@ -356,6 +356,9 @@ class Generator(metaclass=_Generator):
     # The keyword to use when generating a star projection with excluded columns
     STAR_EXCEPT = "EXCEPT"
 
+    # The HEX function name
+    HEX_FUNC = "HEX"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1303,14 +1306,14 @@ class Generator(metaclass=_Generator):
         return text
 
     def hex_sql(self, expression: exp.Hex) -> str:
-        text = self.func("HEX", self.sql(expression, "this"))
+        text = self.func(self.HEX_FUNC, self.sql(expression, "this"))
         if self.dialect.HEX_LOWERCASE:
             text = self.func("LOWER", text)
 
         return text
 
     def lowerhex_sql(self, expression: exp.LowerHex) -> str:
-        text = self.func("HEX", self.sql(expression, "this"))
+        text = self.func(self.HEX_FUNC, self.sql(expression, "this"))
         if not self.dialect.HEX_LOWERCASE:
             text = self.func("LOWER", text)
         return text

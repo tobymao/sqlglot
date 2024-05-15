@@ -168,6 +168,7 @@ class Parser(metaclass=_Parser):
         "LOWER": build_lower,
         "UPPER": build_upper,
         "HEX": build_hex,
+        "TO_HEX": build_hex,
     }
 
     NO_PAREN_FUNCTIONS = {

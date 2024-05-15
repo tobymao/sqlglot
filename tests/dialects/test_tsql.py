@@ -465,13 +465,6 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS BIT)")
 
         self.validate_all(
-            "CAST(255 AS TINYINT)",
-            write={
-                "spark": "CAST(255 AS SMALLINT)",
-                "tsql": "CAST(255 AS TINYINT)",
-            },
-        )
-        self.validate_all(
             "CAST(x AS DATETIME2)",
             read={
                 "": "CAST(x AS DATETIME)",
@@ -531,7 +524,11 @@ class TestTSQL(Validator):
 
         self.validate_all(
             "CAST(X AS TINYINT)",
+            read={
+                "duckdb": "CAST(X AS UTINYINT)",
+            },
             write={
+                "duckdb": "CAST(X AS UTINYINT)",
                 "hive": "CAST(X AS SMALLINT)",
                 "spark2": "CAST(X AS SMALLINT)",
                 "spark": "CAST(X AS SMALLINT)",

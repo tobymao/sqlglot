@@ -453,9 +453,12 @@ class TSQL(Dialect):
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
             "EXEC": TokenType.COMMAND,
+            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,
+            "OPTION": TokenType.OPTION,
+            "OUTPUT": TokenType.RETURNING,
             "PRINT": TokenType.COMMAND,
             "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
@@ -463,15 +466,13 @@ class TSQL(Dialect):
             "SMALLDATETIME": TokenType.DATETIME,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
+            "SYSTEM_USER": TokenType.CURRENT_USER,
             "TOP": TokenType.TOP,
             "TIMESTAMP": TokenType.ROWVERSION,
+            "TINYINT": TokenType.UTINYINT,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
-            "OUTPUT": TokenType.RETURNING,
-            "SYSTEM_USER": TokenType.CURRENT_USER,
-            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
-            "OPTION": TokenType.OPTION,
         }
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
@@ -524,12 +525,6 @@ class TSQL(Dialect):
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,
-        }
-
-        TYPE_CONVERTER = {
-            # TINYINT is a 1-byte unsigned integer
-            # https://learn.microsoft.com/en-us/sql/t-sql/data-types/int-bigint-smallint-and-tinyint-transact-sql?view=sql-server-ver16
-            exp.DataType.Type.TINYINT: lambda _: exp.DataType(this=exp.DataType.Type.UTINYINT),
         }
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:

@@ -611,6 +611,16 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT CONCAT('11', '22')",
+            read={
+                "postgres": "SELECT '11' || '22'",
+            },
+            write={
+                "mysql": "SELECT CONCAT('11', '22')",
+                "postgres": "SELECT CONCAT('11', '22')",
+            },
+        )
+        self.validate_all(
             "SELECT department, GROUP_CONCAT(name) AS employee_names FROM data GROUP BY department",
             read={
                 "postgres": "SELECT department, array_agg(name) AS employee_names FROM data GROUP BY department",

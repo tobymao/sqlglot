@@ -1445,6 +1445,14 @@ class Pragma(Expression):
     pass
 
 
+class Declare(Expression):
+    arg_types = {"expressions": True}
+
+
+class DeclareItem(Expression):
+    arg_types = {"this": True, "kind": True, "default": False}
+
+
 class Set(Expression):
     arg_types = {"expressions": False, "unset": False, "tag": False}
 

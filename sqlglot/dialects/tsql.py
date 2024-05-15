@@ -727,9 +727,7 @@ class TSQL(Dialect):
                 return None
             size = None
             value = None
-            # moving past the AS keyword if it's there
-            self._match_text_seq("AS")
-
+            self._match(TokenType.ALIAS)
             if self._match(TokenType.TABLE):
                 table = self.expression(exp.Table, this=var)
                 data_type = self._parse_schema(this=table)

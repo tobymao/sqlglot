@@ -667,7 +667,6 @@ LANGUAGE js AS
             "UPPER(TO_HEX(x))",
             read={
                 "": "HEX(x)",
-                "bigquery": "UPPER(TO_HEX(x))",
                 "presto": "TO_HEX(x)",
                 "trino": "TO_HEX(x)",
                 "clickhouse": "HEX(x)",

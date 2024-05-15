@@ -66,13 +66,13 @@ def build_hex(args: t.List, dialect: Dialect) -> exp.Hex | exp.LowerHex:
     return exp.LowerHex(this=arg) if dialect.HEX_LOWERCASE else exp.Hex(this=arg)
 
 
-def build_lower(args: t.List, dialect: Dialect) -> exp.Lower | exp.Hex:
+def build_lower(args: t.List) -> exp.Lower | exp.Hex:
     # LOWER(HEX(..)) can be simplified to LowerHex to simplify its transpilation
     arg = seq_get(args, 0)
     return exp.LowerHex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Lower(this=arg)
 
 
-def build_upper(args: t.List, dialect: Dialect) -> exp.Upper | exp.Hex:
+def build_upper(args: t.List) -> exp.Upper | exp.Hex:
     # UPPER(HEX(..)) can be simplified to Hex to simplify its transpilation
     arg = seq_get(args, 0)
     return exp.Hex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Upper(this=arg)

@@ -32,6 +32,7 @@ from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.transforms import unqualify_columns
 
 
 def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
@@ -625,3 +626,29 @@ class Presto(Dialect):
             if kind == "VIEW" and schema.expressions:
                 expression.this.set("expressions", None)
             return super().create_sql(expression)
+
+        def delete_sql(self, expression: exp.Delete) -> str:
+            """
+            Presto only support DELETE FROM a table, without alias, so we need to remove the unnecessary parts.
+            If the original DELETE statement contains more than one table to be deleted, we can't do anything.
+            """
+
+            tables = expression.args.get("tables")
+            if tables:
+                if len(tables) > 1:
+                    return super().delete_sql(expression)
+                target_table = tables[0]
+                del expression.args["tables"]
+                expression.set("this", target_table)
+
+            table = expression.this
+            if isinstance(table, exp.Table):
+                table_alias = table.find(exp.TableAlias)
+                if table_alias:
+                    table_alias.pop()
+
+            qualified_expression = expression.transform(unqualify_columns)
+            if isinstance(qualified_expression, exp.Delete):
+                return super().delete_sql(qualified_expression)
+
+            return super().delete_sql(expression)

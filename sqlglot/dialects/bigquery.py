@@ -212,6 +212,7 @@ class BigQuery(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
+    HEX_LOWERCASE = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -244,8 +245,6 @@ class BigQuery(Dialect):
     # The _PARTITIONTIME and _PARTITIONDATE pseudo-columns are not returned by a SELECT * statement
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
-
-    HEX_LOWERCASE = True
 
     def normalize_identifier(self, expression: E) -> E:
         if isinstance(expression, exp.Identifier):
@@ -570,6 +569,7 @@ class BigQuery(Dialect):
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
         NAMED_PLACEHOLDER_TOKEN = "@"
+        HEX_FUNC = "TO_HEX"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -606,7 +606,6 @@ class BigQuery(Dialect):
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
-            exp.LowerHex: rename_func("TO_HEX"),
             exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),

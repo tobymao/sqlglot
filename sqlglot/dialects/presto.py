@@ -276,7 +276,6 @@ class Presto(Dialect):
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
             ),
             "TO_CHAR": _build_to_char,
-            "TO_HEX": exp.Hex.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
@@ -303,6 +302,7 @@ class Presto(Dialect):
         LIKE_PROPERTY_INSIDE_SCHEMA = True
         MULTI_ARG_DISTINCT = False
         SUPPORTS_TO_NUMBER = False
+        HEX_FUNC = "TO_HEX"
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -383,10 +383,6 @@ class Presto(Dialect):
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
-            ),
-            exp.Hex: rename_func("TO_HEX"),
-            exp.LowerHex: lambda self, e: self.func(
-                "LOWER", self.func("TO_HEX", self.sql(e, "this"))
             ),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,

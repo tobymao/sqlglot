@@ -248,6 +248,9 @@ class Dialect(metaclass=_Dialect):
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
 
+    HEX_LOWERCASE = False
+    """Whether the `HEX` function returns a lowercase hexadecimal string."""
+
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
@@ -288,22 +291,6 @@ class Dialect(metaclass=_Dialect):
         WITH y(c) AS (
             SELECT SUM(a) AS c FROM (SELECT 1 AS a) AS x HAVING c > 0
         ) SELECT c FROM y;
-    """
-
-    HEX_LOWERCASE = False
-    """
-    Different dialect, `HEX` function will producing a different string, some are in
-    lowercase, other are in uppercase. HEX_LOWERCASE property can determine the case
-    of the string which current dialect use. `HEX` can be wrapped by an additional
-    lower or upper function to convert the output to exact dialect.
-    For example,
-        `SELECT TO_HEX(x)`;
-        in Bigquery will be rewritten as the following one in Presto and Trino
-        `SELECT LOWER(TO_HEX(x))`;
-    In another example,
-        `SELECT TO_HEX(x)`;
-        in Presto will be rewritten as the following one in Bigquery
-        `SELECT UPPER(TO_HEX(x))`;
     """
 
     # --- Autofilled ---
@@ -1157,7 +1144,7 @@ def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> s
     return self.sql(exp.Array(expressions=[filtered]))
 
 
-def to_number_with_nls_param(self, expression: exp.ToNumber) -> str:
+def to_number_with_nls_param(self: Generator, expression: exp.ToNumber) -> str:
     return self.func(
         "TO_NUMBER",
         expression.this,

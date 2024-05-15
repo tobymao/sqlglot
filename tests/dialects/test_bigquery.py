@@ -1167,7 +1167,14 @@ LANGUAGE js AS
             "DELETE FROM db.example_table WHERE example_table.x = 1",
             write={
                 "bigquery": "DELETE FROM db.example_table WHERE example_table.x = 1",
-                "presto": "DELETE FROM db.example_table WHERE x = 1",
+                "presto": "DELETE FROM db.example_table WHERE example_table.x = 1",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM db.t1 AS t1 WHERE NOT t1.c IN (SELECT db.t2.c FROM db.t2)",
+            write={
+                "bigquery": "DELETE FROM db.t1 AS t1 WHERE NOT t1.c IN (SELECT db.t2.c FROM db.t2)",
+                "presto": "DELETE FROM db.t1 WHERE NOT c IN (SELECT c FROM db.t2)",
             },
         )
         self.validate_all(

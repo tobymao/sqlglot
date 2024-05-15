@@ -725,7 +725,6 @@ class TSQL(Dialect):
             var = self._parse_id_var()
             if not var:
                 return None
-            size = None
             value = None
             self._match(TokenType.ALIAS)
             if self._match(TokenType.TABLE):

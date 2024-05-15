@@ -632,6 +632,19 @@ class ClickHouse(Dialect):
                 exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
             )
 
+        def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
+            if not self._match_text_seq("PROJECTION"):
+                return None
+
+            return self.expression(
+                exp.ProjectionDef,
+                this=self._parse_id_var(),
+                expression=self._parse_wrapped(self._parse_statement),
+            )
+
+        def _parse_constraint(self) -> t.Optional[exp.Expression]:
+            return super()._parse_constraint() or self._parse_projection_def()
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
@@ -900,3 +913,6 @@ class ClickHouse(Dialect):
             return (
                 f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
             )
+
+        def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
+            return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"

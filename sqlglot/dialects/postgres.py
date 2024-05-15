@@ -227,6 +227,20 @@ def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
     return exp.RegexpReplace.from_arg_list(args)
 
 
+def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = expression.this
+
+    if scale in (None, exp.UnixToTime.SECONDS):
+        return self.func("TO_TIMESTAMP", timestamp, self.format_time(expression))
+
+    return self.func(
+        "TO_TIMESTAMP",
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)),
+        self.format_time(expression),
+    )
+
+
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
@@ -544,6 +558,7 @@ class Postgres(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
+            exp.UnixToTime: _unix_to_time_sql,
         }
         TRANSFORMS.pop(exp.CommentColumnConstraint)
 

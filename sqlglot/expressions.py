@@ -1520,6 +1520,10 @@ class CTE(DerivedTable):
     }
 
 
+class ProjectionDef(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class TableAlias(Expression):
     arg_types = {"this": False, "columns": False}
 

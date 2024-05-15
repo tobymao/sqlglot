@@ -844,6 +844,9 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "CREATE TABLE t1 (a String EPHEMERAL, b String EPHEMERAL func(), c String MATERIALIZED func(), d String ALIAS func()) ENGINE=TinyLog()"
         )
+        self.validate_identity(
+            "CREATE TABLE t (a String, b String, c UInt64, PROJECTION p1 (SELECT a, sum(c) GROUP BY a, b), PROJECTION p2 (SELECT b, sum(c) GROUP BY b)) ENGINE=MergeTree()"
+        )
 
     def test_agg_functions(self):
         def extract_agg_func(query):

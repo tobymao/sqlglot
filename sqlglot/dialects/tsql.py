@@ -526,6 +526,12 @@ class TSQL(Dialect):
             *parser.Parser.TYPE_TOKENS,
         }
 
+        TYPE_CONVERTER = {
+            # TINYINT is a 1-byte unsigned integer
+            # https://learn.microsoft.com/en-us/sql/t-sql/data-types/int-bigint-smallint-and-tinyint-transact-sql?view=sql-server-ver16
+            exp.DataType.Type.TINYINT: lambda _: exp.DataType(this=exp.DataType.Type.UTINYINT),
+        }
+
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
             if not self._match(TokenType.OPTION):
                 return None
@@ -750,11 +756,12 @@ class TSQL(Dialect):
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
-            exp.DataType.Type.ROWVERSION: "ROWVERSION",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)

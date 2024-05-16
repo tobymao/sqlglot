@@ -2283,7 +2283,7 @@ SELECT
             "WITH t1(x) AS (SELECT 1) SELECT * FROM (WITH t2(y) AS (SELECT 2) SELECT y FROM t2) AS subq",
             write={
                 "duckdb": "WITH t1(x) AS (SELECT 1) SELECT * FROM (WITH t2(y) AS (SELECT 2) SELECT y FROM t2) AS subq",
-                "tsql": "WITH t2(y) AS (SELECT 2), t1(x) AS (SELECT 1) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
+                "tsql": "WITH t1(x) AS (SELECT 1), t2(y) AS (SELECT 2) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
             },
         )
         self.validate_all(
@@ -2306,6 +2306,59 @@ FROM c""",
                 "duckdb": "WITH c AS (WITH b AS (WITH a1 AS (SELECT 1), a2 AS (SELECT 2) SELECT * FROM a1, a2) SELECT * FROM b) SELECT * FROM c",
                 "hive": "WITH a1 AS (SELECT 1), a2 AS (SELECT 2), b AS (SELECT * FROM a1, a2), c AS (SELECT * FROM b) SELECT * FROM c",
             },
+        )
+        self.validate_all(
+            """
+WITH subquery1 AS (
+  WITH tmp AS (
+    SELECT
+      *
+    FROM table0
+  )
+  SELECT
+    *
+  FROM tmp
+), subquery2 AS (
+  WITH tmp2 AS (
+    SELECT
+      *
+    FROM table1
+    WHERE
+      a IN subquery1
+  )
+  SELECT
+    *
+  FROM tmp2
+)
+SELECT
+  *
+FROM subquery2
+""",
+            write={
+                "hive": """WITH tmp AS (
+  SELECT
+    *
+  FROM table0
+), subquery1 AS (
+  SELECT
+    *
+  FROM tmp
+), tmp2 AS (
+  SELECT
+    *
+  FROM table1
+  WHERE
+    a IN subquery1
+), subquery2 AS (
+  SELECT
+    *
+  FROM tmp2
+)
+SELECT
+  *
+FROM subquery2""",
+            },
+            pretty=True,
         )
 
     def test_unsupported_null_ordering(self):

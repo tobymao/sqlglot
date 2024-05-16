@@ -472,19 +472,28 @@ def move_ctes_to_top_level(expression: exp.Expression) -> exp.Expression:
     TODO: handle name clashes whilst moving CTEs (it can get quite tricky & costly).
     """
     top_level_with = expression.args.get("with")
-    for node in expression.find_all(exp.With):
-        if node.parent is expression:
+    for inner_with in expression.find_all(exp.With):
+        if inner_with.parent is expression:
             continue
 
-        inner_with = node.pop()
         if not top_level_with:
-            top_level_with = inner_with
+            top_level_with = inner_with.pop()
             expression.set("with", top_level_with)
         else:
             if inner_with.recursive:
                 top_level_with.set("recursive", True)
 
-            top_level_with.set("expressions", inner_with.expressions + top_level_with.expressions)
+            parent_cte = inner_with.find_ancestor(exp.CTE)
+            inner_with.pop()
+
+            if parent_cte:
+                i = top_level_with.expressions.index(parent_cte)
+                top_level_with.expressions[i:i] = inner_with.expressions
+                top_level_with.set("expressions", top_level_with.expressions)
+            else:
+                top_level_with.set(
+                    "expressions", top_level_with.expressions + inner_with.expressions
+                )
 
     return expression
 

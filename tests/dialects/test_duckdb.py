@@ -742,6 +742,25 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')")
 
+        self.validate_all(
+            "VARIANCE(a)",
+            write={
+                "clickhouse": "varSamp(a)",
+            },
+        )
+        self.validate_all(
+            "STDDEV(a)",
+            write={
+                "clickhouse": "stddevSamp(a)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC('DAY', x)",
+            write={
+                "clickhouse": "DATE_TRUNC('DAY', x)",
+            },
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

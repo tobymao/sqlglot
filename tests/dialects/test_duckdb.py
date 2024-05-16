@@ -745,18 +745,21 @@ class TestDuckDB(Validator):
         self.validate_all(
             "VARIANCE(a)",
             write={
+                "duckdb": "VARIANCE(a)",
                 "clickhouse": "varSamp(a)",
             },
         )
         self.validate_all(
             "STDDEV(a)",
             write={
+                "duckdb": "STDDEV(a)",
                 "clickhouse": "stddevSamp(a)",
             },
         )
         self.validate_all(
             "DATE_TRUNC('DAY', x)",
             write={
+                "duckdb": "DATE_TRUNC('DAY', x)",
                 "clickhouse": "DATE_TRUNC('DAY', x)",
             },
         )

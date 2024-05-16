@@ -790,6 +790,11 @@ class TestTSQL(Validator):
         )
         self.validate_identity("ALTER TABLE tbl SET SYSTEM_VERSIONING=OFF")
         self.validate_identity("ALTER TABLE tbl SET FILESTREAM_ON = 'test'")
+        self.validate_identity(
+            "ALTER TABLE tbl SET DATA_DELETION=ON(FILTER_COLUMN=col, RETENTION_PERIOD=5 MONTHS)"
+        )
+        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=ON")
+        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=OFF")
 
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",

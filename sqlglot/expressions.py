@@ -2816,7 +2816,7 @@ class WithJournalTableProperty(Property):
 
 class WithSystemVersioningProperty(Property):
     arg_types = {
-        "on": True,
+        "on": False,
         "this": False,
         "data_consistency": False,
         "retention_period": False,

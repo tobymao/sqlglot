@@ -1893,25 +1893,33 @@ class Parser(metaclass=_Parser):
         unit = self._parse_var(any_token=True)
         return exp.var(f"{number_str}{unit}")
 
-    def _parse_system_versioning_property(self, with_=False) -> exp.WithSystemVersioningProperty:
+    def _parse_system_versioning_property(
+        self, with_: bool = False
+    ) -> exp.WithSystemVersioningProperty:
         self._match(TokenType.EQ)
-        prop = self.expression(exp.WithSystemVersioningProperty, **{"on": True, "with": with_})
+        prop = self.expression(
+            exp.WithSystemVersioningProperty,
+            **{  # type: ignore
+                "on": True,
+                "with": with_,
+            },
+        )
 
         if self._match_text_seq("OFF"):
             prop.set("on", False)
             return prop
 
         self._match(TokenType.ON)
-        wrapped = self._match(TokenType.L_PAREN)
-        while wrapped and self._curr and not self._match(TokenType.R_PAREN):
-            if self._match_text_seq("HISTORY_TABLE", "="):
-                prop.set("this", self._parse_table_parts())
-            elif self._match_text_seq("DATA_CONSISTENCY_CHECK", "="):
-                prop.set("data_consistency", self._advance_any() and self._prev.text.upper())
-            elif self._match_text_seq("HISTORY_RETENTION_PERIOD", "="):
-                prop.set("retention_period", self._parse_retention_period())
+        if self._match(TokenType.L_PAREN):
+            while self._curr and not self._match(TokenType.R_PAREN):
+                if self._match_text_seq("HISTORY_TABLE", "="):
+                    prop.set("this", self._parse_table_parts())
+                elif self._match_text_seq("DATA_CONSISTENCY_CHECK", "="):
+                    prop.set("data_consistency", self._advance_any() and self._prev.text.upper())
+                elif self._match_text_seq("HISTORY_RETENTION_PERIOD", "="):
+                    prop.set("retention_period", self._parse_retention_period())
 
-            self._match(TokenType.COMMA)
+                self._match(TokenType.COMMA)
 
         return prop
 
@@ -1920,15 +1928,14 @@ class Parser(metaclass=_Parser):
         on = self._match_text_seq("ON") or not self._match_text_seq("OFF")
         prop = self.expression(exp.DataDeletionProperty, on=on)
 
-        wrapped = self._match(TokenType.L_PAREN)
-        print(f"curr {self._curr}")
-        while wrapped and self._curr and not self._match(TokenType.R_PAREN):
-            if self._match_text_seq("FILTER_COLUMN", "="):
-                prop.set("filter_column", self._parse_column())
-            elif self._match_text_seq("RETENTION_PERIOD", "="):
-                prop.set("retention_period", self._parse_retention_period())
+        if self._match(TokenType.L_PAREN):
+            while self._curr and not self._match(TokenType.R_PAREN):
+                if self._match_text_seq("FILTER_COLUMN", "="):
+                    prop.set("filter_column", self._parse_column())
+                elif self._match_text_seq("RETENTION_PERIOD", "="):
+                    prop.set("retention_period", self._parse_retention_period())
 
-            self._match(TokenType.COMMA)
+                self._match(TokenType.COMMA)
 
         return prop
 
@@ -2442,12 +2449,19 @@ class Parser(metaclass=_Parser):
             return None
         return self._parse_row_format()
 
-    def _parse_serde_properties(self, with_=None) -> t.Optional[exp.SerdeProperties]:
-        with_ = self._match_text_seq("WITH") or with_
+    def _parse_serde_properties(self, with_: bool = False) -> t.Optional[exp.SerdeProperties]:
+        index = self._index
+        with_ = with_ or self._match_text_seq("WITH")
+
         if not self._match(TokenType.SERDE_PROPERTIES):
+            self._retreat(index)
             return None
         return self.expression(
-            exp.SerdeProperties, **{"expressions": self._parse_wrapped_properties(), "with": with_}
+            exp.SerdeProperties,
+            **{  # type: ignore
+                "expressions": self._parse_wrapped_properties(),
+                "with": with_,
+            },
         )
 
     def _parse_row_format(

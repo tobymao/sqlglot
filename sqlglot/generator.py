@@ -3038,9 +3038,9 @@ class Generator(metaclass=_Generator):
 
     def alterset_sql(self, expression: exp.AlterSet) -> str:
         exprs = self.expressions(expression, flat=True)
-        exprs = exprs.lstrip(" ")
-
-        return f"SET {exprs}"
+        if not expression.find(exp.Properties):
+            exprs = f" {exprs}"
+        return f"SET{exprs}"
 
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]

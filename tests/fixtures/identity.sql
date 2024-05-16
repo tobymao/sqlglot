@@ -870,3 +870,4 @@ SELECT enum
 SELECT unlogged
 SELECT name
 SELECT copy
+SELECT rollup

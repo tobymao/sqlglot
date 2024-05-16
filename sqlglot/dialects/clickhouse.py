@@ -762,7 +762,7 @@ class ClickHouse(Dialect):
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),
             exp.UnixToTime: _unix_to_time_sql,
-            exp.TimestampTrunc: timestamptrunc_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.Variance: rename_func("varSamp"),
             exp.Stddev: rename_func("stddevSamp"),
         }

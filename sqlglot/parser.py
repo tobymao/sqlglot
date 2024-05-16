@@ -406,6 +406,7 @@ class Parser(metaclass=_Parser):
         TokenType.REFRESH,
         TokenType.REPLACE,
         TokenType.RIGHT,
+        TokenType.ROLLUP,
         TokenType.ROW,
         TokenType.ROWS,
         TokenType.SEMI,
@@ -3581,7 +3582,11 @@ class Parser(metaclass=_Parser):
             elements["all"] = False
 
         while True:
-            expressions = self._parse_csv(self._parse_conjunction)
+            expressions = self._parse_csv(
+                lambda: None
+                if self._match(TokenType.ROLLUP, advance=False)
+                else self._parse_conjunction()
+            )
             if expressions:
                 elements["expressions"].extend(expressions)
 

@@ -1025,7 +1025,7 @@ class TestDialect(Validator):
                 "": "TIMESTAMP_TRUNC(x, DAY, 'UTC')",
                 "duckdb": "DATE_TRUNC('DAY', x)",
                 "presto": "DATE_TRUNC('DAY', x)",
-                "postgres": "DATE_TRUNC('DAY', x)",
+                "postgres": "DATE_TRUNC('DAY', x, 'UTC')",
                 "snowflake": "DATE_TRUNC('DAY', x)",
                 "databricks": "DATE_TRUNC('DAY', x)",
                 "clickhouse": "DATE_TRUNC('DAY', x, 'UTC')",

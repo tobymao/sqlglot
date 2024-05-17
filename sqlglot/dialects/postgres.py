@@ -543,7 +543,7 @@ class Postgres(Dialect):
             exp.Substring: _substring_sql,
             exp.TimeFromParts: rename_func("MAKE_TIME"),
             exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
-            exp.TimestampTrunc: timestamptrunc_sql(),
+            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),

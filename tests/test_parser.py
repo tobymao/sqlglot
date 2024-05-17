@@ -870,4 +870,4 @@ class TestParser(unittest.TestCase):
         )
 
     def test_parse_prop_eq(self):
-         self.assertIsInstance(parse_one("x(a := b and c)").expressions[0], exp.PropertyEQ)
+        self.assertIsInstance(parse_one("x(a := b and c)").expressions[0], exp.PropertyEQ)

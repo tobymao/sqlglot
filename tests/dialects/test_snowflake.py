@@ -10,6 +10,14 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT(1, null, 2)",
+            write={
+                "spark": "ARRAY_COMPACT(ARRAY(1, NULL, 2))",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, NULL, 2)",
+            },
+        )
+
         expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")

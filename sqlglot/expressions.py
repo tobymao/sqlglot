@@ -4775,6 +4775,11 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
+class ArrayConstructCompact(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class ArrayContains(Binary, Func):
     pass
 

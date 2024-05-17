@@ -1064,14 +1064,6 @@ class Snowflake(Dialect):
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
 
-        def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
-            option = self.sql(expression, "this").upper()
-            if option == "FILE_FORMAT":
-                values = self.expressions(expression, key="expression", flat=True, sep=" ")
-                return f"{option} = ({values})"
-
-            return super().copyparameter_sql(expression)
-
         def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
             if expression.args.get("weight") or expression.args.get("accuracy"):
                 self.unsupported(

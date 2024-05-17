@@ -1882,6 +1882,56 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         self.validate_identity(
             """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME = my_csv_format NULL_IF = ('str1', 'str2')) PARSE_HEADER = TRUE"""
         )
+        self.validate_all(
+            """COPY INTO 's3://example/data.csv'
+    FROM EXTRA.EXAMPLE.TABLE
+    credentials = (x)
+    STORAGE_INTEGRATION = S3_INTEGRATION
+    FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+    HEADER = TRUE
+    OVERWRITE = TRUE
+    SINGLE = TRUE
+            """,
+            write={
+                "": """COPY INTO 's3://example/data.csv'
+FROM EXTRA.EXAMPLE.TABLE
+CREDENTIALS = (x) WITH (
+  STORAGE_INTEGRATION S3_INTEGRATION,
+  FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = (
+    ''
+  ) FIELD_OPTIONALLY_ENCLOSED_BY = '"'),
+  HEADER TRUE,
+  OVERWRITE TRUE,
+  SINGLE TRUE
+)""",
+                "snowflake": """COPY INTO 's3://example/data.csv'
+FROM EXTRA.EXAMPLE.TABLE
+CREDENTIALS = (x)
+STORAGE_INTEGRATION = S3_INTEGRATION
+FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = (
+  ''
+) FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+HEADER = TRUE
+OVERWRITE = TRUE
+SINGLE = TRUE""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """COPY INTO 's3://example/data.csv'
+    FROM EXTRA.EXAMPLE.TABLE
+    credentials = (x)
+    STORAGE_INTEGRATION = S3_INTEGRATION
+    FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+    HEADER = TRUE
+    OVERWRITE = TRUE
+    SINGLE = TRUE
+            """,
+            write={
+                "": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE CREDENTIALS = (x) WITH (STORAGE_INTEGRATION S3_INTEGRATION, FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"'), HEADER TRUE, OVERWRITE TRUE, SINGLE TRUE)""",
+                "snowflake": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE CREDENTIALS = (x) STORAGE_INTEGRATION = S3_INTEGRATION FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"') HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE""",
+            },
+        )
 
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")

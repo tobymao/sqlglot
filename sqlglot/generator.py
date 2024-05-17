@@ -727,7 +727,7 @@ class Generator(metaclass=_Generator):
         skip_first: bool = False,
         skip_last: bool = False,
     ) -> str:
-        if not self.pretty:
+        if not self.pretty or not sql:
             return sql
 
         pad = self.pad if pad is None else pad
@@ -3821,6 +3821,11 @@ class Generator(metaclass=_Generator):
 
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
+
+        if option.upper() == "FILE_FORMAT":
+            values = self.expressions(expression, key="expression", flat=True, sep=" ")
+            return f"{option} = ({values})"
+
         value = self.sql(expression, "expression")
 
         if not value:
@@ -3842,7 +3847,6 @@ class Generator(metaclass=_Generator):
             credentials = f"CREDENTIALS = ({credentials})" if credentials else ""
 
         storage = self.sql(expression, "storage")
-        storage = f" {storage}" if storage else ""
 
         encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
         encryption = f" ENCRYPTION = ({encryption})" if encryption else ""
@@ -3860,16 +3864,28 @@ class Generator(metaclass=_Generator):
         this = f" INTO {this}" if self.COPY_HAS_INTO_KEYWORD else f" {this}"
 
         credentials = self.sql(expression, "credentials")
-        credentials = f" {credentials}" if credentials else ""
-        kind = " FROM " if expression.args.get("kind") else " TO "
+        credentials = self.seg(credentials) if credentials else ""
+        kind = self.seg("FROM" if expression.args.get("kind") else "TO")
         files = self.expressions(expression, key="files", flat=True)
 
         sep = ", " if self.dialect.COPY_PARAMS_ARE_CSV else " "
-        params = self.expressions(expression, key="params", flat=True, sep=sep)
-        if params:
-            params = f" WITH ({params})" if self.COPY_PARAMS_ARE_WRAPPED else f" {params}"
+        params = self.expressions(
+            expression,
+            key="params",
+            sep=sep,
+            new_line=True,
+            skip_last=True,
+            skip_first=True,
+            indent=self.COPY_PARAMS_ARE_WRAPPED,
+        )
 
-        return f"COPY{this}{kind}{files}{credentials}{params}"
+        if params:
+            if self.COPY_PARAMS_ARE_WRAPPED:
+                params = f" WITH ({params})"
+            elif not self.pretty:
+                params = f" {params}"
+
+        return f"COPY{this}{kind} {files}{credentials}{params}"
 
     def semicolon_sql(self, expression: exp.Semicolon) -> str:
         return ""

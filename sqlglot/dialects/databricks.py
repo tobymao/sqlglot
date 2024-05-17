@@ -57,7 +57,7 @@ class Databricks(Spark):
             ),
             exp.DatetimeDiff: _timestamp_diff,
             exp.TimestampDiff: _timestamp_diff,
-            exp.DatetimeTrunc: timestamptrunc_sql,
+            exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.JSONExtract: lambda self, e: self.binary(e, ":"),
             exp.Select: transforms.preprocess(
                 [

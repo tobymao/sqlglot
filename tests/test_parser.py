@@ -868,3 +868,6 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             ";\n".join(e.sql() for e in expressions), "SELECT * FROM x;\n/* my comment */"
         )
+
+    def test_parse_prop_eq(self):
+         self.assertIsInstance(parse_one("x(a := b and c)").expressions[0], exp.PropertyEQ)

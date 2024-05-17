@@ -501,7 +501,6 @@ class Parser(metaclass=_Parser):
     }
 
     EQUALITY = {
-        TokenType.COLON_EQ: exp.PropertyEQ,
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
         TokenType.NULLSAFE_EQ: exp.NullSafeEQ,
@@ -3884,7 +3883,24 @@ class Parser(metaclass=_Parser):
         return self._parse_alias(self._parse_conjunction())
 
     def _parse_conjunction(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
+        this = self._parse_equality()
+
+        if self._match(TokenType.COLON_EQ):
+            this = self.expression(
+                exp.PropertyEQ,
+                this=this,
+                comments=self._prev_comments,
+                expression=self._parse_conjunction(),
+            )
+
+        while self._match_set(self.CONJUNCTION):
+            this = self.expression(
+                self.CONJUNCTION[self._prev.token_type],
+                this=this,
+                comments=self._prev_comments,
+                expression=self._parse_equality(),
+            )
+        return this
 
     def _parse_equality(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_comparison, self.EQUALITY)

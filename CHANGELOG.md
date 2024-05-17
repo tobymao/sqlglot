@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v23.15.10] - 2024-05-17
+### :sparkles: New Features
+- [`89c1d3a`](https://github.com/tobymao/sqlglot/commit/89c1d3a4dd3387576c384413b3a8991a2dd030de) - **clickhouse**: support generate TimestampTrunc, Variance, Stddev *(PR [#3489](https://github.com/tobymao/sqlglot/pull/3489) by [@longxiaofei](https://github.com/longxiaofei))*
+
+### :bug: Bug Fixes
+- [`03879bb`](https://github.com/tobymao/sqlglot/commit/03879bb3249ee83cce34d629f1016575d3b932e3) - **postgres**: date_trunc supports time zone *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6e7f37a`](https://github.com/tobymao/sqlglot/commit/6e7f37af86a4f36ec47ea4ef3519e5c97376e090) - copy into pretty printing and default dialect *(PR [#3496](https://github.com/tobymao/sqlglot/pull/3496) by [@tobymao](https://github.com/tobymao))*
+- [`e8600e2`](https://github.com/tobymao/sqlglot/commit/e8600e24370a131a0b375a1a9943fdf590968198) - property eq needs highest precedence *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.15.9] - 2024-05-17
 ### :boom: BREAKING CHANGES
 - due to [`846d5cd`](https://github.com/tobymao/sqlglot/commit/846d5cd2fe85f836f5ad888e783fedfa2108d579) - set default precision / width for DECIMAL type *(PR [#3472](https://github.com/tobymao/sqlglot/pull/3472) by [@georgesittas](https://github.com/georgesittas))*:
@@ -3657,3 +3667,4 @@ Changelog
 [v23.15.7]: https://github.com/tobymao/sqlglot/compare/v23.15.6...v23.15.7
 [v23.15.8]: https://github.com/tobymao/sqlglot/compare/v23.15.7...v23.15.8
 [v23.15.9]: https://github.com/tobymao/sqlglot/compare/v23.15.8...v23.15.9
+[v23.15.10]: https://github.com/tobymao/sqlglot/compare/v23.15.9...v23.15.10

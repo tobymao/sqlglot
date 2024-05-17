@@ -950,7 +950,7 @@ class Generator(metaclass=_Generator):
         if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
             exp.Properties.Location.POST_WITH
         ):
-            properties_sql = self.sql(
+            properties_sql = self.sep() + self.sql(
                 exp.Properties(
                     expressions=[
                         *properties_locs[exp.Properties.Location.POST_SCHEMA],
@@ -1344,13 +1344,17 @@ class Generator(metaclass=_Generator):
             elif p_loc == exp.Properties.Location.POST_SCHEMA:
                 root_properties.append(p)
 
-        return self.root_properties(
-            exp.Properties(expressions=root_properties)
-        ) + self.with_properties(exp.Properties(expressions=with_properties))
+        root_props = self.root_properties(exp.Properties(expressions=root_properties))
+        with_props = self.with_properties(exp.Properties(expressions=with_properties))
+
+        if root_props and with_props and not self.pretty:
+            with_props = " " + with_props
+
+        return root_props + with_props
 
     def root_properties(self, properties: exp.Properties) -> str:
         if properties.expressions:
-            return self.sep() + self.expressions(properties, indent=False, sep=" ")
+            return self.expressions(properties, indent=False, sep=" ")
         return ""
 
     def properties(
@@ -1369,7 +1373,7 @@ class Generator(metaclass=_Generator):
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
-        return self.properties(properties, prefix=self.seg("WITH"))
+        return self.properties(properties, prefix=self.seg("WITH", sep=""))
 
     def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
         properties_locs = defaultdict(list)
@@ -1539,15 +1543,17 @@ class Generator(metaclass=_Generator):
     def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
         this = self.sql(expression, "this")
         this = f"HISTORY_TABLE={this}" if this else ""
-        data_consistency = self.sql(expression, "data_consistency")
-        data_consistency = f"DATA_CONSISTENCY_CHECK={data_consistency}" if data_consistency else ""
-        retention_period = self.sql(expression, "retention_period")
+        data_consistency: t.Optional[str] = self.sql(expression, "data_consistency")
+        data_consistency = (
+            f"DATA_CONSISTENCY_CHECK={data_consistency}" if data_consistency else None
+        )
+        retention_period: t.Optional[str] = self.sql(expression, "retention_period")
         retention_period = (
-            f"HISTORY_RETENTION_PERIOD={retention_period}" if retention_period else ""
+            f"HISTORY_RETENTION_PERIOD={retention_period}" if retention_period else None
         )
 
         if this:
-            on_sql = self.func("ON", this, data_consistency or None, retention_period or None)
+            on_sql = self.func("ON", this, data_consistency, retention_period)
         else:
             on_sql = "ON" if expression.args.get("on") else "OFF"
 
@@ -3038,9 +3044,7 @@ class Generator(metaclass=_Generator):
 
     def alterset_sql(self, expression: exp.AlterSet) -> str:
         exprs = self.expressions(expression, flat=True)
-        if not expression.find(exp.Properties):
-            exprs = f" {exprs}"
-        return f"SET{exprs}"
+        return f"SET {exprs}"
 
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]
@@ -3903,12 +3907,12 @@ class Generator(metaclass=_Generator):
 
     def datadeletionproperty_sql(self, expression: exp.DataDeletionProperty) -> str:
         on_sql = "ON" if expression.args.get("on") else "OFF"
-        filter_col = self.sql(expression, "filter_column")
-        filter_col = f"FILTER_COLUMN={filter_col}" if filter_col else ""
-        retention_period = self.sql(expression, "retention_period")
-        retention_period = f"RETENTION_PERIOD={retention_period}" if retention_period else ""
+        filter_col: t.Optional[str] = self.sql(expression, "filter_column")
+        filter_col = f"FILTER_COLUMN={filter_col}" if filter_col else None
+        retention_period: t.Optional[str] = self.sql(expression, "retention_period")
+        retention_period = f"RETENTION_PERIOD={retention_period}" if retention_period else None
 
         if filter_col or retention_period:
-            on_sql = self.func("ON", filter_col or None, retention_period or None)
+            on_sql = self.func("ON", filter_col, retention_period)
 
         return f"DATA_DELETION={on_sql}"

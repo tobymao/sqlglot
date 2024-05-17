@@ -908,7 +908,7 @@ class BigQuery(Dialect):
             return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
         def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("OPTIONS"))
+            return self.properties(properties, prefix=self.seg("OPTIONS", sep=""))
 
         def version_sql(self, expression: exp.Version) -> str:
             if expression.name == "TIMESTAMP":

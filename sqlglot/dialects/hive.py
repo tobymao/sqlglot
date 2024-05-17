@@ -628,7 +628,7 @@ class Hive(Dialect):
             )
 
         def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))
+            return self.properties(properties, prefix=self.seg("TBLPROPERTIES", sep=""))
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
@@ -667,6 +667,7 @@ class Hive(Dialect):
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)
+            exprs = f" {exprs}" if exprs else ""
             location = self.sql(expression, "location")
             location = f" LOCATION {location}" if location else ""
             file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
@@ -680,6 +681,6 @@ class Hive(Dialect):
 
         def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
             prefix = "WITH " if expression.args.get("with") else ""
-            exprs = self.expressions(expression, flat=True, sep=", ")
+            exprs = self.expressions(expression, flat=True)
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"

@@ -34,4 +34,4 @@ class Athena(Trino):
             )
 
         def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))
+            return self.properties(properties, prefix=self.seg("TBLPROPERTIES", sep=""))

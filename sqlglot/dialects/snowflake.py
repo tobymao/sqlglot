@@ -1042,7 +1042,7 @@ class Snowflake(Dialect):
             return f"SWAP WITH {this}"
 
         def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, wrapped=False, prefix=self.seg(""), sep=" ")
+            return self.properties(properties, wrapped=False, sep=" ")
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
@@ -1073,6 +1073,7 @@ class Snowflake(Dialect):
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)
+            exprs = f" {exprs}" if exprs else ""
             file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
             file_format = f" STAGE_FILE_FORMAT = ({file_format})" if file_format else ""
             copy_options = self.expressions(expression, key="copy_options", flat=True, sep=" ")

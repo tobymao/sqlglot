@@ -967,7 +967,7 @@ class Generator(metaclass=_Generator):
             if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
                 properties_sql = self.sep() + properties_sql
             elif not self.pretty:
-                # Standalone POST_WITH properties already have newline through self.seg
+                # Standalone POST_WITH properties need a leading whitespace in non-pretty mode
                 properties_sql = f" {properties_sql}"
 
         begin = " BEGIN" if expression.args.get("begin") else ""

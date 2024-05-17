@@ -142,6 +142,8 @@ class Redshift(Postgres):
         MULTI_ARG_DISTINCT = True
         COPY_PARAMS_ARE_WRAPPED = False
         HEX_FUNC = "TO_HEX"
+        # Redshift doesn't have `WITH` as part of their with_properties so we remove it
+        WITH_PROPERTIES_PREFIX = " "
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -374,10 +376,6 @@ class Redshift(Postgres):
             arg = self.sql(seq_get(args, 0))
             alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
             return f"{arg} AS {alias}" if alias else arg
-
-        def with_properties(self, properties: exp.Properties) -> str:
-            """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""
-            return self.properties(properties, prefix=" ", suffix="")
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type(exp.DataType.Type.JSON):

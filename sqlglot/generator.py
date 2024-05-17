@@ -359,6 +359,11 @@ class Generator(metaclass=_Generator):
     # The HEX function name
     HEX_FUNC = "HEX"
 
+    # The keywords to use when prefixing & separating WITH based properties
+    WITH_PROPERTIES_PREFIX = "WITH"
+    WITH_PROPERTIES_SEP = ", "
+    WITH_PROPERTIES_WRAPPED = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -950,7 +955,7 @@ class Generator(metaclass=_Generator):
         if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
             exp.Properties.Location.POST_WITH
         ):
-            properties_sql = self.sep() + self.sql(
+            properties_sql = self.sql(
                 exp.Properties(
                     expressions=[
                         *properties_locs[exp.Properties.Location.POST_SCHEMA],
@@ -958,6 +963,12 @@ class Generator(metaclass=_Generator):
                     ]
                 )
             )
+
+            if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
+                properties_sql = self.sep() + properties_sql
+            elif not self.pretty:
+                # Standalone POST_WITH properties already have newline through self.seg
+                properties_sql = f" {properties_sql}"
 
         begin = " BEGIN" if expression.args.get("begin") else ""
         end = " END" if expression.args.get("end") else ""
@@ -1373,7 +1384,12 @@ class Generator(metaclass=_Generator):
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
-        return self.properties(properties, prefix=self.seg("WITH", sep=""))
+        return self.properties(
+            properties,
+            wrapped=self.WITH_PROPERTIES_WRAPPED,
+            prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep=""),
+            sep=self.WITH_PROPERTIES_SEP,
+        )
 
     def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
         properties_locs = defaultdict(list)

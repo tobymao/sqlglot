@@ -772,6 +772,9 @@ class Snowflake(Dialect):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         STAR_EXCEPT = "EXCLUDE"
+        WITH_PROPERTIES_PREFIX = ""
+        WITH_PROPERTIES_SEP = " "
+        WITH_PROPERTIES_WRAPPED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1040,9 +1043,6 @@ class Snowflake(Dialect):
         def swaptable_sql(self, expression: exp.SwapTable) -> str:
             this = self.sql(expression, "this")
             return f"SWAP WITH {this}"
-
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, wrapped=False, sep=" ")
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"

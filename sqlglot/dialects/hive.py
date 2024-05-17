@@ -443,6 +443,7 @@ class Hive(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
         SUPPORTS_TO_NUMBER = False
+        WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -626,9 +627,6 @@ class Hive(Dialect):
                 "COLLECT_LIST",
                 expression.this.this if isinstance(expression.this, exp.Order) else expression.this,
             )
-
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("TBLPROPERTIES", sep=""))
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (

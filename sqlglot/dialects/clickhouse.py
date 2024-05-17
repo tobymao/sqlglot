@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     rename_func,
     var_map_sql,
+    timestamptrunc_sql,
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
@@ -761,6 +762,9 @@ class ClickHouse(Dialect):
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),
             exp.UnixToTime: _unix_to_time_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
+            exp.Variance: rename_func("varSamp"),
+            exp.Stddev: rename_func("stddevSamp"),
         }
 
         PROPERTIES_LOCATION = {

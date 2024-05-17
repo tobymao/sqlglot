@@ -420,7 +420,7 @@ class Presto(Dialect):
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
             exp.Timestamp: no_timestamp_sql,
-            exp.TimestampTrunc: timestamptrunc_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToDate: timestrtotime_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: self.func(

@@ -772,8 +772,14 @@ def date_add_interval_sql(
     return func
 
 
-def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
-    return self.func("DATE_TRUNC", unit_to_str(expression), expression.this)
+def timestamptrunc_sql(zone: bool = False) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
+    def _timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
+        args = [unit_to_str(expression), expression.this]
+        if zone:
+            args.append(expression.args.get("zone"))
+        return self.func("DATE_TRUNC", *args)
+
+    return _timestamptrunc_sql
 
 
 def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:

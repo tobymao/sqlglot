@@ -1019,6 +1019,19 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "TIMESTAMP_TRUNC(x, DAY, 'UTC')",
+            write={
+                "": "TIMESTAMP_TRUNC(x, DAY, 'UTC')",
+                "duckdb": "DATE_TRUNC('DAY', x)",
+                "presto": "DATE_TRUNC('DAY', x)",
+                "postgres": "DATE_TRUNC('DAY', x)",
+                "snowflake": "DATE_TRUNC('DAY', x)",
+                "databricks": "DATE_TRUNC('DAY', x)",
+                "clickhouse": "DATE_TRUNC('DAY', x, 'UTC')",
+            },
+        )
+
         for unit in ("DAY", "MONTH", "YEAR"):
             self.validate_all(
                 f"{unit}(x)",

@@ -1,6 +1,67 @@
 Changelog
 =========
 
+## [v23.15.9] - 2024-05-17
+### :boom: BREAKING CHANGES
+- due to [`846d5cd`](https://github.com/tobymao/sqlglot/commit/846d5cd2fe85f836f5ad888e783fedfa2108d579) - set default precision / width for DECIMAL type *(PR [#3472](https://github.com/tobymao/sqlglot/pull/3472) by [@georgesittas](https://github.com/georgesittas))*:
+
+  set default precision / width for DECIMAL type (#3472)
+
+- due to [`e3ff67b`](https://github.com/tobymao/sqlglot/commit/e3ff67b0327a217a0523f82e6a11940feab1a8ac) - preserve star clauses (EXCLUDE, RENAME, REPLACE) *(PR [#3477](https://github.com/tobymao/sqlglot/pull/3477) by [@georgesittas](https://github.com/georgesittas))*:
+
+  preserve star clauses (EXCLUDE, RENAME, REPLACE) (#3477)
+
+- due to [`b417c80`](https://github.com/tobymao/sqlglot/commit/b417c80b4208df1b97363db53af42158aa97bbd6) - parse TININT into UTINYINT to improve transpilation *(PR [#3486](https://github.com/tobymao/sqlglot/pull/3486) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse TININT into UTINYINT to improve transpilation (#3486)
+
+- due to [`54e31af`](https://github.com/tobymao/sqlglot/commit/54e31af7d86138662c9619d50b4ae2e68e04942b) - add DECLARE statement parsing *(PR [#3462](https://github.com/tobymao/sqlglot/pull/3462) by [@jlucas-fsp](https://github.com/jlucas-fsp))*:
+
+  add DECLARE statement parsing (#3462)
+
+- due to [`7287bb9`](https://github.com/tobymao/sqlglot/commit/7287bb9bf578b2b3afaf25647f505b9d73040dc7) - nested cte ordering closes [#3488](https://github.com/tobymao/sqlglot/pull/3488) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  nested cte ordering closes #3488
+
+
+### :sparkles: New Features
+- [`2c29bf3`](https://github.com/tobymao/sqlglot/commit/2c29bf3b7a163b88754c4593996bbba9b3c791b6) - **snowflake**: add support for CREATE TAG DDL statement *(PR [#3473](https://github.com/tobymao/sqlglot/pull/3473) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3468](https://github.com/tobymao/sqlglot/issues/3468) opened by [@tekumara](https://github.com/tekumara)*
+- [`2433993`](https://github.com/tobymao/sqlglot/commit/24339934167e651f2afd6966024e4d96ef55c677) - **transpiler**: handle different hex behavior for dialects *(PR [#3463](https://github.com/tobymao/sqlglot/pull/3463) by [@viplazylmht](https://github.com/viplazylmht))*
+  - :arrow_lower_right: *addresses issue [#3460](https://github.com/tobymao/sqlglot/issues/3460) opened by [@viplazylmht](https://github.com/viplazylmht)*
+- [`0009e09`](https://github.com/tobymao/sqlglot/commit/0009e09b1a7f94f85985670a09bb0be92c673b46) - add epoch_ms of duckdb to other dialects *(PR [#3471](https://github.com/tobymao/sqlglot/pull/3471) by [@longxiaofei](https://github.com/longxiaofei))*
+- [`461215b`](https://github.com/tobymao/sqlglot/commit/461215b259de98125ea6b09d7bd875edb3ccce75) - **clickhouse**: add support for PROJECTION in CREATE TABLE statement *(PR [#3465](https://github.com/tobymao/sqlglot/pull/3465) by [@GaliFFun](https://github.com/GaliFFun))*
+- [`54e31af`](https://github.com/tobymao/sqlglot/commit/54e31af7d86138662c9619d50b4ae2e68e04942b) - **tsql**: add DECLARE statement parsing *(PR [#3462](https://github.com/tobymao/sqlglot/pull/3462) by [@jlucas-fsp](https://github.com/jlucas-fsp))*
+- [`c811adb`](https://github.com/tobymao/sqlglot/commit/c811adb73e6f83265fedc26274c7d4b40f8a1c85) - snowflake array_construct_compact to spark *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`58d5f2b`](https://github.com/tobymao/sqlglot/commit/58d5f2bece42acdda5f8c08d30e6f61a5e538d4c) - **presto**: fix parsing and generating hash functions presto/trino *(PR [#3459](https://github.com/tobymao/sqlglot/pull/3459) by [@viplazylmht](https://github.com/viplazylmht))*
+  - :arrow_lower_right: *fixes issue [#3458](https://github.com/tobymao/sqlglot/issues/3458) opened by [@viplazylmht](https://github.com/viplazylmht)*
+- [`065281e`](https://github.com/tobymao/sqlglot/commit/065281e28be75597f3f97cee22995423ed483660) - **optimizer**: fix multiple bugs in unnest_subqueries, clean up test suite *(PR [#3464](https://github.com/tobymao/sqlglot/pull/3464) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3448](https://github.com/tobymao/sqlglot/issues/3448) opened by [@yesemsanthoshkumar](https://github.com/yesemsanthoshkumar)*
+- [`80ba1e8`](https://github.com/tobymao/sqlglot/commit/80ba1e8786a6347b8f20f340c185a0b41d017c73) - preserve quotes for projections produced by the eliminate_qualify rule *(PR [#3470](https://github.com/tobymao/sqlglot/pull/3470) by [@aersam](https://github.com/aersam))*
+  - :arrow_lower_right: *fixes issue [#3467](https://github.com/tobymao/sqlglot/issues/3467) opened by [@aersam](https://github.com/aersam)*
+- [`3bc1fbe`](https://github.com/tobymao/sqlglot/commit/3bc1fbed40d9d0d05f189ca60fdc7af19b815e8b) - make quoting of alias_or_name in eliminate_qualify more robust *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`1843e9b`](https://github.com/tobymao/sqlglot/commit/1843e9b825da6e97bda8c7b4fffce40baf199af1) - allow parameters in user-defined types *(PR [#3474](https://github.com/tobymao/sqlglot/pull/3474) by [@georgesittas](https://github.com/georgesittas))*
+- [`e004d2a`](https://github.com/tobymao/sqlglot/commit/e004d2a3d88ea77d34ecdb8290df1e73511e6b6c) - **duckdb**: preserve precedence of json extraction when converting to arrow syntax *(PR [#3478](https://github.com/tobymao/sqlglot/pull/3478) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3476](https://github.com/tobymao/sqlglot/issues/3476) opened by [@asiunov](https://github.com/asiunov)*
+- [`e3ff67b`](https://github.com/tobymao/sqlglot/commit/e3ff67b0327a217a0523f82e6a11940feab1a8ac) - **snowflake**: preserve star clauses (EXCLUDE, RENAME, REPLACE) *(PR [#3477](https://github.com/tobymao/sqlglot/pull/3477) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3475](https://github.com/tobymao/sqlglot/issues/3475) opened by [@asiunov](https://github.com/asiunov)*
+- [`428fd61`](https://github.com/tobymao/sqlglot/commit/428fd61574e10be9afab23ac711758b229cc174f) - **mysql**: generate CONCAT for DPipe *(PR [#3482](https://github.com/tobymao/sqlglot/pull/3482) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3481](https://github.com/tobymao/sqlglot/issues/3481) opened by [@Toms1999](https://github.com/Toms1999)*
+- [`b417c80`](https://github.com/tobymao/sqlglot/commit/b417c80b4208df1b97363db53af42158aa97bbd6) - **tsql**: parse TININT into UTINYINT to improve transpilation *(PR [#3486](https://github.com/tobymao/sqlglot/pull/3486) by [@georgesittas](https://github.com/georgesittas))*
+- [`a3ff49e`](https://github.com/tobymao/sqlglot/commit/a3ff49e93f2c6752f512192ca8b6b6ad18fc925a) - **presto**: fix DELETE DML statement for presto/trino *(PR [#3466](https://github.com/tobymao/sqlglot/pull/3466) by [@viplazylmht](https://github.com/viplazylmht))*
+- [`7287bb9`](https://github.com/tobymao/sqlglot/commit/7287bb9bf578b2b3afaf25647f505b9d73040dc7) - nested cte ordering closes [#3488](https://github.com/tobymao/sqlglot/pull/3488) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5b64475`](https://github.com/tobymao/sqlglot/commit/5b64475bfd2d6a0ddcb3d0adb60d06dca62421a0) - allow rollup to be used as an identifier *(PR [#3495](https://github.com/tobymao/sqlglot/pull/3495) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3494](https://github.com/tobymao/sqlglot/issues/3494) opened by [@dangoldin](https://github.com/dangoldin)*
+
+### :recycle: Refactors
+- [`846d5cd`](https://github.com/tobymao/sqlglot/commit/846d5cd2fe85f836f5ad888e783fedfa2108d579) - **snowflake**: set default precision / width for DECIMAL type *(PR [#3472](https://github.com/tobymao/sqlglot/pull/3472) by [@georgesittas](https://github.com/georgesittas))*
+- [`930f923`](https://github.com/tobymao/sqlglot/commit/930f923c6da182be33ad4c912b64ec052a63af30) - clean up Hex / LowerHex implementation *(PR [#3483](https://github.com/tobymao/sqlglot/pull/3483) by [@georgesittas](https://github.com/georgesittas))*
+- [`883fcd7`](https://github.com/tobymao/sqlglot/commit/883fcd78645539a275b66472f0bd1dfe1d3d4401) - **presto**: make DELETE transpilation more robust *(PR [#3487](https://github.com/tobymao/sqlglot/pull/3487) by [@georgesittas](https://github.com/georgesittas))*
+- [`49f7f85`](https://github.com/tobymao/sqlglot/commit/49f7f857634ae85547c805ac53911895407dd7cb) - **tsql**: handle TABLE <schema> more gracefully for DeclareItem *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.15.8] - 2024-05-11
 ### :boom: BREAKING CHANGES
 - due to [`510f8b5`](https://github.com/tobymao/sqlglot/commit/510f8b5726c59a13284e9482dc47d488559e6c9e) - improve transpilation of TABLESAMPLE clause *(PR [#3457](https://github.com/tobymao/sqlglot/pull/3457) by [@georgesittas](https://github.com/georgesittas))*:
@@ -3595,3 +3656,4 @@ Changelog
 [v23.15.6]: https://github.com/tobymao/sqlglot/compare/v23.15.5...v23.15.6
 [v23.15.7]: https://github.com/tobymao/sqlglot/compare/v23.15.6...v23.15.7
 [v23.15.8]: https://github.com/tobymao/sqlglot/compare/v23.15.7...v23.15.8
+[v23.15.9]: https://github.com/tobymao/sqlglot/compare/v23.15.8...v23.15.9

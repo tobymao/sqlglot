@@ -580,7 +580,7 @@ class Parser(metaclass=_Parser):
             exp.Lambda,
             this=self._replace_lambda(
                 self._parse_conjunction(),
-                {node.name for node in expressions},
+                expressions,
             ),
             expressions=expressions,
         ),
@@ -4680,18 +4680,21 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.SessionParameter, this=this, kind=kind)
 
+    def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
+        return self._parse_id_var()
+
     def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
 
         if self._match(TokenType.L_PAREN):
             expressions = t.cast(
-                t.List[t.Optional[exp.Expression]], self._parse_csv(self._parse_id_var)
+                t.List[t.Optional[exp.Expression]], self._parse_csv(self._parse_lambda_arg)
             )
 
             if not self._match(TokenType.R_PAREN):
                 self._retreat(index)
         else:
-            expressions = [self._parse_id_var()]
+            expressions = [self._parse_lambda_arg()]
 
         if self._match_set(self.LAMBDAS):
             return self.LAMBDAS[self._prev.token_type](self, expressions)
@@ -6433,14 +6436,36 @@ class Parser(metaclass=_Parser):
         return True
 
     def _replace_lambda(
-        self, node: t.Optional[exp.Expression], lambda_variables: t.Set[str]
+        self, node: t.Optional[exp.Expression], expressions: t.List[exp.Expression]
     ) -> t.Optional[exp.Expression]:
         if not node:
             return node
 
+        lambda_types = {}
+
+        for this in expressions:
+            if isinstance(this, exp.Cast):
+                typ = this.to
+                this = this.this
+            else:
+                typ = None
+
+            lambda_types[this.name] = typ
+
         for column in node.find_all(exp.Column):
-            if column.parts[0].name in lambda_variables:
+            name = column.parts[0].name
+            if name in lambda_types:
                 dot_or_id = column.to_dot() if column.table else column.this
+
+                typ = lambda_types.get(name)
+
+                if typ:
+                    dot_or_id = self.expression(
+                        exp.Cast,
+                        this=dot_or_id,
+                        to=typ,
+                    )
+
                 parent = column.parent
 
                 while isinstance(parent, exp.Dot):

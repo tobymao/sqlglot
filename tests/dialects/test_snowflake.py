@@ -11,8 +11,8 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_identity(
-            "transform(x, a int -> a)",
-            "TRANSFORM(x, a -> CAST(a AS INT))",
+            "transform(x, a int -> a + a + 1)",
+            "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",
         )
 
         self.validate_all(

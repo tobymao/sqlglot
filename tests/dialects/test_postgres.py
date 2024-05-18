@@ -805,6 +805,12 @@ class TestPostgres(Validator):
             "CREATE TABLE test (x TIMESTAMP[][])",
         )
         self.validate_identity(
+            "CREATE FUNCTION add(integer, integer) RETURNS INT LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT AS 'select $1 + $2;'",
+        )
+        self.validate_identity(
+            "CREATE FUNCTION add(integer, integer) RETURNS INT LANGUAGE SQL IMMUTABLE STRICT AS 'select $1 + $2;'"
+        )
+        self.validate_identity(
             "CREATE FUNCTION add(INT, INT) RETURNS INT SET search_path TO 'public' AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE",
             check_command_warning=True,
         )
@@ -813,15 +819,7 @@ class TestPostgres(Validator):
             check_command_warning=True,
         )
         self.validate_identity(
-            "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT",
-            check_command_warning=True,
-        )
-        self.validate_identity(
             "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE CALLED ON NULL INPUT",
-            check_command_warning=True,
-        )
-        self.validate_identity(
-            "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE STRICT",
             check_command_warning=True,
         )
         self.validate_identity(

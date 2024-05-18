@@ -359,6 +359,11 @@ class Generator(metaclass=_Generator):
     # The HEX function name
     HEX_FUNC = "HEX"
 
+    # The keywords to use when prefixing & separating WITH based properties
+    WITH_PROPERTIES_PREFIX = "WITH"
+    WITH_PROPERTIES_SEP = ", "
+    WITH_PROPERTIES_WRAPPED = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -417,6 +422,7 @@ class Generator(metaclass=_Generator):
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
+        exp.DataDeletionProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DictRange: exp.Properties.Location.POST_SCHEMA,
         exp.DictProperty: exp.Properties.Location.POST_SCHEMA,
@@ -958,6 +964,12 @@ class Generator(metaclass=_Generator):
                 )
             )
 
+            if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
+                properties_sql = self.sep() + properties_sql
+            elif not self.pretty:
+                # Standalone POST_WITH properties need a leading whitespace in non-pretty mode
+                properties_sql = f" {properties_sql}"
+
         begin = " BEGIN" if expression.args.get("begin") else ""
         end = " END" if expression.args.get("end") else ""
 
@@ -1343,13 +1355,17 @@ class Generator(metaclass=_Generator):
             elif p_loc == exp.Properties.Location.POST_SCHEMA:
                 root_properties.append(p)
 
-        return self.root_properties(
-            exp.Properties(expressions=root_properties)
-        ) + self.with_properties(exp.Properties(expressions=with_properties))
+        root_props = self.root_properties(exp.Properties(expressions=root_properties))
+        with_props = self.with_properties(exp.Properties(expressions=with_properties))
+
+        if root_props and with_props and not self.pretty:
+            with_props = " " + with_props
+
+        return root_props + with_props
 
     def root_properties(self, properties: exp.Properties) -> str:
         if properties.expressions:
-            return self.sep() + self.expressions(properties, indent=False, sep=" ")
+            return self.expressions(properties, indent=False, sep=" ")
         return ""
 
     def properties(
@@ -1368,7 +1384,12 @@ class Generator(metaclass=_Generator):
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
-        return self.properties(properties, prefix=self.seg("WITH"))
+        return self.properties(
+            properties,
+            wrapped=self.WITH_PROPERTIES_WRAPPED,
+            prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep=""),
+            sep=self.WITH_PROPERTIES_SEP,
+        )
 
     def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
         properties_locs = defaultdict(list)
@@ -1536,19 +1557,25 @@ class Generator(metaclass=_Generator):
         return f"{data_sql}{statistics_sql}"
 
     def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
-        sql = "WITH(SYSTEM_VERSIONING=ON"
+        this = self.sql(expression, "this")
+        this = f"HISTORY_TABLE={this}" if this else ""
+        data_consistency: t.Optional[str] = self.sql(expression, "data_consistency")
+        data_consistency = (
+            f"DATA_CONSISTENCY_CHECK={data_consistency}" if data_consistency else None
+        )
+        retention_period: t.Optional[str] = self.sql(expression, "retention_period")
+        retention_period = (
+            f"HISTORY_RETENTION_PERIOD={retention_period}" if retention_period else None
+        )
 
-        if expression.this:
-            history_table = self.sql(expression, "this")
-            sql = f"{sql}(HISTORY_TABLE={history_table}"
+        if this:
+            on_sql = self.func("ON", this, data_consistency, retention_period)
+        else:
+            on_sql = "ON" if expression.args.get("on") else "OFF"
 
-            if expression.expression:
-                data_consistency_check = self.sql(expression, "expression")
-                sql = f"{sql}, DATA_CONSISTENCY_CHECK={data_consistency_check}"
+        sql = f"SYSTEM_VERSIONING={on_sql}"
 
-            sql = f"{sql})"
-
-        return f"{sql})"
+        return f"WITH({sql})" if expression.args.get("with") else sql
 
     def insert_sql(self, expression: exp.Insert) -> str:
         hint = self.sql(expression, "hint")
@@ -3031,6 +3058,10 @@ class Generator(metaclass=_Generator):
         new_column = self.sql(expression, "to")
         return f"RENAME COLUMN{exists} {old_column} TO {new_column}"
 
+    def alterset_sql(self, expression: exp.AlterSet) -> str:
+        exprs = self.expressions(expression, flat=True)
+        return f"SET {exprs}"
+
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]
 
@@ -3889,3 +3920,15 @@ class Generator(metaclass=_Generator):
 
     def semicolon_sql(self, expression: exp.Semicolon) -> str:
         return ""
+
+    def datadeletionproperty_sql(self, expression: exp.DataDeletionProperty) -> str:
+        on_sql = "ON" if expression.args.get("on") else "OFF"
+        filter_col: t.Optional[str] = self.sql(expression, "filter_column")
+        filter_col = f"FILTER_COLUMN={filter_col}" if filter_col else None
+        retention_period: t.Optional[str] = self.sql(expression, "retention_period")
+        retention_period = f"RETENTION_PERIOD={retention_period}" if retention_period else None
+
+        if filter_col or retention_period:
+            on_sql = self.func("ON", filter_col, retention_period)
+
+        return f"DATA_DELETION={on_sql}"

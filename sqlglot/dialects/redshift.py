@@ -142,6 +142,8 @@ class Redshift(Postgres):
         MULTI_ARG_DISTINCT = True
         COPY_PARAMS_ARE_WRAPPED = False
         HEX_FUNC = "TO_HEX"
+        # Redshift doesn't have `WITH` as part of their with_properties so we remove it
+        WITH_PROPERTIES_PREFIX = " "
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -375,10 +377,6 @@ class Redshift(Postgres):
             alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
             return f"{arg} AS {alias}" if alias else arg
 
-        def with_properties(self, properties: exp.Properties) -> str:
-            """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""
-            return self.properties(properties, prefix=" ", suffix="")
-
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type(exp.DataType.Type.JSON):
                 # Redshift doesn't support a JSON type, so casting to it is treated as a noop
@@ -401,3 +399,13 @@ class Redshift(Postgres):
                     expression.append("expressions", exp.var("MAX"))
 
             return super().datatype_sql(expression)
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f" TABLE PROPERTIES ({exprs})" if exprs else ""
+            location = self.sql(expression, "location")
+            location = f" LOCATION {location}" if location else ""
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" FILE FORMAT {file_format}" if file_format else ""
+
+            return f"SET{exprs}{location}{file_format}"

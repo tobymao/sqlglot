@@ -856,6 +856,26 @@ class TestParser(unittest.TestCase):
             with self.subTest(dialect):
                 self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
 
+    def test_alter_set(self):
+        sqls = [
+            "ALTER TABLE tbl SET TBLPROPERTIES ('x'='1', 'Z'='2')",
+            "ALTER TABLE tbl SET SERDE 'test' WITH SERDEPROPERTIES ('k'='v', 'kay'='vee')",
+            "ALTER TABLE tbl SET SERDEPROPERTIES ('k'='v', 'kay'='vee')",
+            "ALTER TABLE tbl SET LOCATION 'new_location'",
+            "ALTER TABLE tbl SET FILEFORMAT file_format",
+            "ALTER TABLE tbl SET TAGS ('tag1' = 't1', 'tag2' = 't2')",
+        ]
+
+        for dialect in (
+            "hive",
+            "spark2",
+            "spark",
+            "databricks",
+        ):
+            for sql in sqls:
+                with self.subTest(f"Testing query '{sql}' for dialect {dialect}"):
+                    self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
+
     def test_distinct_from(self):
         self.assertIsInstance(parse_one("a IS DISTINCT FROM b OR c IS DISTINCT FROM d"), exp.Or)
 

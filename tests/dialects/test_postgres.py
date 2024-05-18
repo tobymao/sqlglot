@@ -733,6 +733,13 @@ class TestPostgres(Validator):
         self.validate_identity("TRUNCATE TABLE t1 RESTRICT")
         self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY CASCADE")
         self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY RESTRICT")
+        self.validate_identity("ALTER TABLE t1 SET LOGGED")
+        self.validate_identity("ALTER TABLE t1 SET UNLOGGED")
+        self.validate_identity("ALTER TABLE t1 SET WITHOUT CLUSTER")
+        self.validate_identity("ALTER TABLE t1 SET WITHOUT OIDS")
+        self.validate_identity("ALTER TABLE t1 SET ACCESS METHOD method")
+        self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
+        self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
         self.validate_identity(
             "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
         )

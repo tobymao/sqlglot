@@ -13,6 +13,8 @@ class Athena(Trino):
         }
 
     class Generator(Trino.Generator):
+        WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
+
         PROPERTIES_LOCATION = {
             **Trino.Generator.PROPERTIES_LOCATION,
             exp.LocationProperty: exp.Properties.Location.POST_SCHEMA,
@@ -32,6 +34,3 @@ class Athena(Trino):
             return (
                 f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
             )
-
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))

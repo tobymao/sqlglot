@@ -609,3 +609,15 @@ class Postgres(Dialect):
             expressions = [f"{self.sql(e)} @@ {this}" for e in expression.expressions]
             sql = " OR ".join(expressions)
             return f"({sql})" if len(expressions) > 1 else sql
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f"({exprs})" if exprs else ""
+
+            access_method = self.sql(expression, "access_method")
+            access_method = f"ACCESS METHOD {access_method}" if access_method else ""
+            tablespace = self.sql(expression, "tablespace")
+            tablespace = f"TABLESPACE {tablespace}" if tablespace else ""
+            option = self.sql(expression, "option")
+
+            return f"SET {exprs}{access_method}{tablespace}{option}"

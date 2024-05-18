@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v23.16.0] - 2024-05-18
+### :boom: BREAKING CHANGES
+- due to [`e281db8`](https://github.com/tobymao/sqlglot/commit/e281db8784682649be305e9a05c45211402f107c) - Add ALTER TABLE SET *(PR [#3485](https://github.com/tobymao/sqlglot/pull/3485) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Add ALTER TABLE SET (#3485)
+
+
+### :sparkles: New Features
+- [`e281db8`](https://github.com/tobymao/sqlglot/commit/e281db8784682649be305e9a05c45211402f107c) - Add ALTER TABLE SET *(PR [#3485](https://github.com/tobymao/sqlglot/pull/3485) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`9aee21b`](https://github.com/tobymao/sqlglot/commit/9aee21b88e73809e2cdc4e48f04e16edcf1141d7) - add RETURNS NULL ON NULL and STRICT properties *(PR [#3504](https://github.com/tobymao/sqlglot/pull/3504) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3503](https://github.com/tobymao/sqlglot/issues/3503) opened by [@krzysztof-kwitt](https://github.com/krzysztof-kwitt)*
+
+### :wrench: Chores
+- [`0896d11`](https://github.com/tobymao/sqlglot/commit/0896d113b94aaea82e90dd04cdf917dfa546d08e) - lint *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.15.10] - 2024-05-17
 ### :sparkles: New Features
 - [`89c1d3a`](https://github.com/tobymao/sqlglot/commit/89c1d3a4dd3387576c384413b3a8991a2dd030de) - **clickhouse**: support generate TimestampTrunc, Variance, Stddev *(PR [#3489](https://github.com/tobymao/sqlglot/pull/3489) by [@longxiaofei](https://github.com/longxiaofei))*
@@ -3668,3 +3684,4 @@ Changelog
 [v23.15.8]: https://github.com/tobymao/sqlglot/compare/v23.15.7...v23.15.8
 [v23.15.9]: https://github.com/tobymao/sqlglot/compare/v23.15.8...v23.15.9
 [v23.15.10]: https://github.com/tobymao/sqlglot/compare/v23.15.9...v23.15.10
+[v23.16.0]: https://github.com/tobymao/sqlglot/compare/v23.15.10...v23.16.0

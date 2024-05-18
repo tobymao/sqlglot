@@ -772,9 +772,6 @@ class Snowflake(Dialect):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         STAR_EXCEPT = "EXCLUDE"
-        WITH_PROPERTIES_PREFIX = ""
-        WITH_PROPERTIES_SEP = " "
-        WITH_PROPERTIES_WRAPPED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -889,6 +886,9 @@ class Snowflake(Dialect):
             exp.Struct,
             exp.VarMap,
         }
+
+        def with_properties(self, properties: exp.Properties) -> str:
+            return self.properties(properties, wrapped=False, prefix=self.seg("", sep=""), sep=" ")
 
         def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
             if expression.find(*self.UNSUPPORTED_VALUES_EXPRESSIONS):

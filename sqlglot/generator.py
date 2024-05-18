@@ -364,8 +364,6 @@ class Generator(metaclass=_Generator):
 
     # The keywords to use when prefixing & separating WITH based properties
     WITH_PROPERTIES_PREFIX = "WITH"
-    WITH_PROPERTIES_SEP = ", "
-    WITH_PROPERTIES_WRAPPED = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -1388,12 +1386,7 @@ class Generator(metaclass=_Generator):
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
-        return self.properties(
-            properties,
-            wrapped=self.WITH_PROPERTIES_WRAPPED,
-            prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep=""),
-            sep=self.WITH_PROPERTIES_SEP,
-        )
+        return self.properties(properties, prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep=""))
 
     def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
         properties_locs = defaultdict(list)

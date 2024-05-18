@@ -263,7 +263,7 @@ class Spark2(Hive):
             is_json_extract = isinstance(arg, (exp.JSONExtract, exp.JSONExtractScalar))
 
             # We can't use a non-nested type (eg. STRING) as a schema
-            if (is_parse_json(arg) or is_json_extract) and expression.to.args.get("nested"):
+            if expression.to.args.get("nested") and (is_parse_json(arg) or is_json_extract):
                 schema = f"'{self.sql(expression, 'to')}'"
                 return self.func("FROM_JSON", arg if is_json_extract else arg.this, schema)
 

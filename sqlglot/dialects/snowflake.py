@@ -336,6 +336,7 @@ class Snowflake(Dialect):
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
         DEFAULT_SAMPLING_METHOD = "BERNOULLI"
+        COLON_IS_JSON_EXTRACT = True
 
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,
@@ -489,36 +490,6 @@ class Snowflake(Dialect):
                 expression.this.replace(expression.this.this)
 
             return expression
-
-        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-            this = super()._parse_column_ops(this)
-
-            casts = []
-            json_path = []
-
-            while self._match(TokenType.COLON):
-                path = super()._parse_column_ops(self._parse_field(any_token=True))
-
-                # The cast :: operator has a lower precedence than the extraction operator :, so
-                # we rearrange the AST appropriately to avoid casting the 2nd argument of GET_PATH
-                while isinstance(path, exp.Cast):
-                    casts.append(path.to)
-                    path = path.this
-
-                if path:
-                    json_path.append(path.sql(dialect="snowflake", copy=False))
-
-            if json_path:
-                this = self.expression(
-                    exp.JSONExtract,
-                    this=this,
-                    expression=self.dialect.to_json_path(exp.Literal.string(".".join(json_path))),
-                )
-
-                while casts:
-                    this = self.expression(exp.Cast, this=this, to=casts.pop())
-
-            return this
 
         # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
         # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts

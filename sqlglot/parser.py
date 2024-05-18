@@ -1160,6 +1160,9 @@ class Parser(metaclass=_Parser):
     # Whether the -> and ->> operators expect documents of type JSON (e.g. Postgres)
     JSON_ARROWS_REQUIRE_JSON_TYPE = False
 
+    # Whether the `:` operator is used to extract a value from a JSON document
+    COLON_IS_JSON_EXTRACT = False
+
     # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
     # If this is True and '(' is not found, the keyword will be treated as an identifier
     VALUES_FOLLOWED_BY_PAREN = True
@@ -4155,7 +4158,9 @@ class Parser(metaclass=_Parser):
             return self.UNARY_PARSERS[self._prev.token_type](self)
         return self._parse_at_time_zone(self._parse_type())
 
-    def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
+    def _parse_type(
+        self, parse_interval: bool = True, fallback_to_identifier: bool = False
+    ) -> t.Optional[exp.Expression]:
         interval = parse_interval and self._parse_interval()
         if interval:
             # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
@@ -4183,9 +4188,11 @@ class Parser(metaclass=_Parser):
                 if parser:
                     return parser(self, this, data_type)
                 return self.expression(exp.Cast, this=this, to=data_type)
+
             if not data_type.expressions:
                 self._retreat(index)
-                return self._parse_column()
+                return self._parse_id_var() if fallback_to_identifier else self._parse_column()
+
             return self._parse_column_ops(data_type)
 
         return this and self._parse_column_ops(this)
@@ -4364,7 +4371,10 @@ class Parser(metaclass=_Parser):
 
     def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
-        this = self._parse_type(parse_interval=False) or self._parse_id_var()
+        this = (
+            self._parse_type(parse_interval=False, fallback_to_identifier=True)
+            or self._parse_id_var()
+        )
         self._match(TokenType.COLON)
         column_def = self._parse_column_def(this)
 
@@ -4398,6 +4408,47 @@ class Parser(metaclass=_Parser):
         if isinstance(this, exp.Identifier):
             # We bubble up comments from the Identifier to the Column
             this = self.expression(exp.Column, comments=this.pop_comments(), this=this)
+
+        return this
+
+    def _parse_colon_as_json_extract(
+        self, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Expression]:
+        casts = []
+        json_path = []
+
+        while self._match(TokenType.COLON):
+            start_index = self._index
+            path = self._parse_column_ops(self._parse_field(any_token=True))
+
+            # The cast :: operator has a lower precedence than the extraction operator :, so
+            # we rearrange the AST appropriately to avoid casting the JSON path
+            while isinstance(path, exp.Cast):
+                casts.append(path.to)
+                path = path.this
+
+            if casts:
+                dcolon_offset = next(
+                    i
+                    for i, t in enumerate(self._tokens[start_index:])
+                    if t.token_type == TokenType.DCOLON
+                )
+                end_token = self._tokens[start_index + dcolon_offset - 1]
+            else:
+                end_token = self._prev
+
+            if path:
+                json_path.append(self._find_sql(self._tokens[start_index], end_token))
+
+        if json_path:
+            this = self.expression(
+                exp.JSONExtract,
+                this=this,
+                expression=self.dialect.to_json_path(exp.Literal.string(".".join(json_path))),
+            )
+
+            while casts:
+                this = self.expression(exp.Cast, this=this, to=casts.pop())
 
         return this
 
@@ -4444,8 +4495,10 @@ class Parser(metaclass=_Parser):
                 )
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
+
             this = self._parse_bracket(this)
-        return this
+
+        return self._parse_colon_as_json_extract(this) if self.COLON_IS_JSON_EXTRACT else this
 
     def _parse_primary(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.PRIMARY_PARSERS):

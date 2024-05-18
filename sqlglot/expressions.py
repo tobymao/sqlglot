@@ -2682,7 +2682,11 @@ class RemoteWithConnectionModelProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "is_table": False, "table": False}
+    arg_types = {"this": False, "is_table": False, "table": False, "null": False}
+
+
+class StrictProperty(Property):
+    arg_types = {}
 
 
 class RowFormatProperty(Property):

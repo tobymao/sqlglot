@@ -888,7 +888,7 @@ class Snowflake(Dialect):
         }
 
         def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, wrapped=False, prefix=self.seg("", sep=""), sep=" ")
+            return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
         def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
             if expression.find(*self.UNSUPPORTED_VALUES_EXPRESSIONS):

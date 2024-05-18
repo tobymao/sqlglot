@@ -790,6 +790,7 @@ class Parser(metaclass=_Parser):
         "CONTAINS": lambda self: self._parse_contains_property(),
         "COPY": lambda self: self._parse_copy_property(),
         "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
+        "DATA_DELETION": lambda self: self._parse_data_deletion_property(),
         "DEFINER": lambda self: self._parse_definer(),
         "DETERMINISTIC": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
@@ -942,6 +943,7 @@ class Parser(metaclass=_Parser):
         "DELETE": lambda self: self.expression(exp.Delete, where=self._parse_where()),
         "DROP": lambda self: self._parse_alter_table_drop(),
         "RENAME": lambda self: self._parse_alter_table_rename(),
+        "SET": lambda self: self._parse_alter_table_set(),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -1883,23 +1885,65 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.StabilityProperty, this=exp.Literal.string("VOLATILE"))
 
-    def _parse_system_versioning_property(self) -> exp.WithSystemVersioningProperty:
-        self._match_pair(TokenType.EQ, TokenType.ON)
+    def _parse_retention_period(self) -> exp.Var:
+        # Parse TSQL's HISTORY_RETENTION_PERIOD: {INFINITE | <number> DAY | DAYS | MONTH ...}
+        number = self._parse_number()
+        number_str = f"{number} " if number else ""
+        unit = self._parse_var(any_token=True)
+        return exp.var(f"{number_str}{unit}")
 
-        prop = self.expression(exp.WithSystemVersioningProperty)
+    def _parse_system_versioning_property(
+        self, with_: bool = False
+    ) -> exp.WithSystemVersioningProperty:
+        self._match(TokenType.EQ)
+        prop = self.expression(
+            exp.WithSystemVersioningProperty,
+            **{  # type: ignore
+                "on": True,
+                "with": with_,
+            },
+        )
+
+        if self._match_text_seq("OFF"):
+            prop.set("on", False)
+            return prop
+
+        self._match(TokenType.ON)
         if self._match(TokenType.L_PAREN):
-            self._match_text_seq("HISTORY_TABLE", "=")
-            prop.set("this", self._parse_table_parts())
+            while self._curr and not self._match(TokenType.R_PAREN):
+                if self._match_text_seq("HISTORY_TABLE", "="):
+                    prop.set("this", self._parse_table_parts())
+                elif self._match_text_seq("DATA_CONSISTENCY_CHECK", "="):
+                    prop.set("data_consistency", self._advance_any() and self._prev.text.upper())
+                elif self._match_text_seq("HISTORY_RETENTION_PERIOD", "="):
+                    prop.set("retention_period", self._parse_retention_period())
 
-            if self._match(TokenType.COMMA):
-                self._match_text_seq("DATA_CONSISTENCY_CHECK", "=")
-                prop.set("expression", self._advance_any() and self._prev.text.upper())
+                self._match(TokenType.COMMA)
 
-            self._match_r_paren()
+        return prop
+
+    def _parse_data_deletion_property(self) -> exp.DataDeletionProperty:
+        self._match(TokenType.EQ)
+        on = self._match_text_seq("ON") or not self._match_text_seq("OFF")
+        prop = self.expression(exp.DataDeletionProperty, on=on)
+
+        if self._match(TokenType.L_PAREN):
+            while self._curr and not self._match(TokenType.R_PAREN):
+                if self._match_text_seq("FILTER_COLUMN", "="):
+                    prop.set("filter_column", self._parse_column())
+                elif self._match_text_seq("RETENTION_PERIOD", "="):
+                    prop.set("retention_period", self._parse_retention_period())
+
+                self._match(TokenType.COMMA)
 
         return prop
 
     def _parse_with_property(self) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+        if self._match_text_seq("(", "SYSTEM_VERSIONING"):
+            prop = self._parse_system_versioning_property(with_=True)
+            self._match_r_paren()
+            return prop
+
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_properties()
 
@@ -1913,6 +1957,9 @@ class Parser(metaclass=_Parser):
             return self._parse_withdata(no=False)
         elif self._match_text_seq("NO", "DATA"):
             return self._parse_withdata(no=True)
+
+        if self._match(TokenType.SERDE_PROPERTIES, advance=False):
+            return self._parse_serde_properties(with_=True)
 
         if not self._next:
             return None
@@ -2401,6 +2448,21 @@ class Parser(metaclass=_Parser):
             return None
         return self._parse_row_format()
 
+    def _parse_serde_properties(self, with_: bool = False) -> t.Optional[exp.SerdeProperties]:
+        index = self._index
+        with_ = with_ or self._match_text_seq("WITH")
+
+        if not self._match(TokenType.SERDE_PROPERTIES):
+            self._retreat(index)
+            return None
+        return self.expression(
+            exp.SerdeProperties,
+            **{  # type: ignore
+                "expressions": self._parse_wrapped_properties(),
+                "with": with_,
+            },
+        )
+
     def _parse_row_format(
         self, match_row: bool = False
     ) -> t.Optional[exp.RowFormatSerdeProperty | exp.RowFormatDelimitedProperty]:
@@ -2410,11 +2472,7 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("SERDE"):
             this = self._parse_string()
 
-            serde_properties = None
-            if self._match(TokenType.SERDE_PROPERTIES):
-                serde_properties = self.expression(
-                    exp.SerdeProperties, expressions=self._parse_wrapped_properties()
-                )
+            serde_properties = self._parse_serde_properties()
 
             return self.expression(
                 exp.RowFormatSerdeProperty, this=this, serde_properties=serde_properties
@@ -5957,6 +6015,41 @@ class Parser(metaclass=_Parser):
 
         self._match_text_seq("TO")
         return self.expression(exp.RenameTable, this=self._parse_table(schema=True))
+
+    def _parse_alter_table_set(self) -> exp.AlterSet:
+        alter_set = self.expression(exp.AlterSet)
+
+        if self._match(TokenType.L_PAREN, advance=False) or self._match_text_seq(
+            "TABLE", "PROPERTIES"
+        ):
+            alter_set.set("expressions", self._parse_wrapped_csv(self._parse_conjunction))
+        elif self._match_text_seq("FILESTREAM_ON", advance=False):
+            alter_set.set("expressions", [self._parse_conjunction()])
+        elif self._match_texts(("LOGGED", "UNLOGGED")):
+            alter_set.set("option", exp.var(self._prev.text.upper()))
+        elif self._match_text_seq("WITHOUT") and self._match_texts(("CLUSTER", "OIDS")):
+            alter_set.set("option", exp.var(f"WITHOUT {self._prev.text.upper()}"))
+        elif self._match_text_seq("LOCATION"):
+            alter_set.set("location", self._parse_field())
+        elif self._match_text_seq("ACCESS", "METHOD"):
+            alter_set.set("access_method", self._parse_field())
+        elif self._match_text_seq("TABLESPACE"):
+            alter_set.set("tablespace", self._parse_field())
+        elif self._match_text_seq("FILE", "FORMAT") or self._match_text_seq("FILEFORMAT"):
+            alter_set.set("file_format", [self._parse_field()])
+        elif self._match_text_seq("STAGE_FILE_FORMAT"):
+            alter_set.set("file_format", self._parse_wrapped_options())
+        elif self._match_text_seq("STAGE_COPY_OPTIONS"):
+            alter_set.set("copy_options", self._parse_wrapped_options())
+        elif self._match_text_seq("TAG") or self._match_text_seq("TAGS"):
+            alter_set.set("tag", self._parse_csv(self._parse_conjunction))
+        else:
+            if self._match_text_seq("SERDE"):
+                alter_set.set("serde", self._parse_field())
+
+            alter_set.set("expressions", [self._parse_properties()])
+
+        return alter_set
 
     def _parse_alter(self) -> exp.AlterTable | exp.Command:
         start = self._prev

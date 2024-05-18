@@ -45,7 +45,6 @@ WHERE
 
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")
-        self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
@@ -89,11 +88,6 @@ WHERE
         self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
-        self.validate_identity("ALTER TABLE IF EXISTS foo SET TAG a = 'a', b = 'b', c = 'c'")
-        self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
-        self.validate_identity("ALTER TABLE foo SET COMMENT = 'bar'")
-        self.validate_identity("ALTER TABLE foo SET CHANGE_TRACKING = FALSE")
-        self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
@@ -1940,3 +1934,20 @@ SINGLE = TRUE""",
         self.validate_identity("SELECT $1:a.b", "SELECT GET_PATH($1, 'a.b')")
         self.validate_identity("SELECT t.$23:a.b", "SELECT GET_PATH(t.$23, 'a.b')")
         self.validate_identity("SELECT t.$17:a[0].b[0].c", "SELECT GET_PATH(t.$17, 'a[0].b[0].c')")
+
+    def test_alter_set_unset(self):
+        self.validate_identity("ALTER TABLE tbl SET DATA_RETENTION_TIME_IN_DAYS=1")
+        self.validate_identity("ALTER TABLE tbl SET DEFAULT_DDL_COLLATION='test'")
+        self.validate_identity("ALTER TABLE foo SET COMMENT='bar'")
+        self.validate_identity("ALTER TABLE foo SET CHANGE_TRACKING=FALSE")
+        self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
+        self.validate_identity("ALTER TABLE IF EXISTS foo SET TAG a = 'a', b = 'b', c = 'c'")
+        self.validate_identity(
+            """ALTER TABLE tbl SET STAGE_FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' NULL_IF = () FIELD_OPTIONALLY_ENCLOSED_BY = '"' TIMESTAMP_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT = BASE64)""",
+        )
+        self.validate_identity(
+            """ALTER TABLE tbl SET STAGE_COPY_OPTIONS = (ON_ERROR = SKIP_FILE SIZE_LIMIT = 5 PURGE = TRUE MATCH_BY_COLUMN_NAME = CASE_SENSITIVE)"""
+        )
+
+        self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
+        self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")

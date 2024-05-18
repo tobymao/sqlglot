@@ -426,7 +426,6 @@ class Snowflake(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
-            "SET": lambda self: self._parse_set(tag=self._match_text_seq("TAG")),
             "UNSET": lambda self: self.expression(
                 exp.Set,
                 tag=self._match_text_seq("TAG"),
@@ -773,6 +772,9 @@ class Snowflake(Dialect):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         STAR_EXCEPT = "EXCLUDE"
+        WITH_PROPERTIES_PREFIX = ""
+        WITH_PROPERTIES_SEP = " "
+        WITH_PROPERTIES_WRAPPED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1042,9 +1044,6 @@ class Snowflake(Dialect):
             this = self.sql(expression, "this")
             return f"SWAP WITH {this}"
 
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, wrapped=False, prefix=self.seg(""), sep=" ")
-
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
 
@@ -1071,3 +1070,15 @@ class Snowflake(Dialect):
                 )
 
             return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f" {exprs}" if exprs else ""
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" STAGE_FILE_FORMAT = ({file_format})" if file_format else ""
+            copy_options = self.expressions(expression, key="copy_options", flat=True, sep=" ")
+            copy_options = f" STAGE_COPY_OPTIONS = ({copy_options})" if copy_options else ""
+            tag = self.expressions(expression, key="tag", flat=True)
+            tag = f" TAG {tag}" if tag else ""
+
+            return f"SET{exprs}{file_format}{copy_options}{tag}"

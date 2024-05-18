@@ -1644,6 +1644,20 @@ class AlterSortKey(Expression):
     arg_types = {"this": False, "expressions": False, "compound": False}
 
 
+class AlterSet(Expression):
+    arg_types = {
+        "expressions": False,
+        "option": False,
+        "tablespace": False,
+        "access_method": False,
+        "file_format": False,
+        "copy_options": False,
+        "tag": False,
+        "location": False,
+        "serde": False,
+    }
+
+
 class RenameColumn(Expression):
     arg_types = {"this": True, "to": True, "exists": False}
 
@@ -2506,6 +2520,10 @@ class DataBlocksizeProperty(Property):
     }
 
 
+class DataDeletionProperty(Property):
+    arg_types = {"on": True, "filter_col": False, "retention_period": False}
+
+
 class DefinerProperty(Property):
     arg_types = {"this": True}
 
@@ -2728,7 +2746,7 @@ class SchemaCommentProperty(Property):
 
 
 class SerdeProperties(Property):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "with": False}
 
 
 class SetProperty(Property):
@@ -2797,8 +2815,13 @@ class WithJournalTableProperty(Property):
 
 
 class WithSystemVersioningProperty(Property):
-    # this -> history table name, expression -> data consistency check
-    arg_types = {"this": False, "expression": False}
+    arg_types = {
+        "on": False,
+        "this": False,
+        "data_consistency": False,
+        "retention_period": False,
+        "with": True,
+    }
 
 
 class Properties(Expression):

@@ -192,16 +192,9 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            """
-            CREATE TABLE x(
-                [zip_cd] [varchar](5) NULL NOT FOR REPLICATION,
-                [zip_cd_mkey] [varchar](5) NOT NULL,
-                CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC)
-                WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF) ON [INDEX]
-            ) ON [SECONDARY]
-            """,
+            """CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC) WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]""",
             write={
-                "tsql": "CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC)  WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]",
+                "tsql": "CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC) WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]",
                 "spark2": "CREATE TABLE x (`zip_cd` VARCHAR(5), `zip_cd_mkey` VARCHAR(5) NOT NULL, CONSTRAINT `pk_mytable` PRIMARY KEY (`zip_cd_mkey`))",
             },
         )
@@ -770,17 +763,31 @@ class TestTSQL(Validator):
             expression.sql(dialect="tsql"), "ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B"
         )
 
-        for clusterd_keyword in ("CLUSTERED", "NONCLUSTERED"):
+        for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(
                 'CREATE TABLE "dbo"."benchmark" ('
                 '"name" CHAR(7) NOT NULL, '
                 '"internal_id" VARCHAR(10) NOT NULL, '
-                f'UNIQUE {clusterd_keyword} ("internal_id" ASC))',
+                f'UNIQUE {clustered_keyword} ("internal_id" ASC))',
                 "CREATE TABLE [dbo].[benchmark] ("
                 "[name] CHAR(7) NOT NULL, "
                 "[internal_id] VARCHAR(10) NOT NULL, "
-                f"UNIQUE {clusterd_keyword} ([internal_id] ASC))",
+                f"UNIQUE {clustered_keyword} ([internal_id] ASC))",
             )
+
+        self.validate_identity(
+            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS)"
+        )
+        self.validate_identity(
+            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, HISTORY_RETENTION_PERIOD=INFINITE)"
+        )
+        self.validate_identity("ALTER TABLE tbl SET SYSTEM_VERSIONING=OFF")
+        self.validate_identity("ALTER TABLE tbl SET FILESTREAM_ON = 'test'")
+        self.validate_identity(
+            "ALTER TABLE tbl SET DATA_DELETION=ON(FILTER_COLUMN=col, RETENTION_PERIOD=5 MONTHS)"
+        )
+        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=ON")
+        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=OFF")
 
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",

@@ -509,6 +509,9 @@ FROM (
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE EVEN")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE AUTO")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c")
+        self.validate_identity("ALTER TABLE t SET TABLE PROPERTIES ('a' = '5', 'b' = 'c')")
+        self.validate_identity("ALTER TABLE t SET LOCATION 's3://bucket/folder/'")
+        self.validate_identity("ALTER TABLE t SET FILE FORMAT AVRO")
         self.validate_identity(
             "ALTER TABLE t ALTER DISTKEY c",
             "ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c",

@@ -4721,10 +4721,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_warehouse(self, identifier) -> t.Optional[exp.Expression]:
-        return self.expression(
-            exp.Warehouse,
-            this=identifier
-        )
+        return self.expression(exp.Warehouse, this=identifier)
 
     def _parse_introducer(self, token: Token) -> exp.Introducer | exp.Identifier:
         literal = self._parse_primary()

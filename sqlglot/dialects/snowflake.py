@@ -855,6 +855,7 @@ class Snowflake(Dialect):
             ),
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.Warehouse: lambda self, e: e.this,
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: rename_func("BOOLXOR"),
         }

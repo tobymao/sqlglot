@@ -740,6 +740,7 @@ class Snowflake(Dialect):
             "TAG": TokenType.TAG,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
+            "WAREHOUSE": TokenType.WAREHOUSE,
         }
 
         SINGLE_TOKENS = {

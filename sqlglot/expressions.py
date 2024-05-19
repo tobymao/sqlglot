@@ -3049,6 +3049,9 @@ class Table(Expression):
         return col
 
 
+class Warehouse(Expression):
+    pass
+
 class Union(Query):
     arg_types = {
         "with": False,

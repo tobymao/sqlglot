@@ -3050,7 +3050,10 @@ class Table(Expression):
 
 
 class Warehouse(Expression):
-    pass
+    arg_types = {
+        "this": False,
+    }
+
 
 class Union(Query):
     arg_types = {

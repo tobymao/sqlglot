@@ -1710,7 +1710,8 @@ class Parser(metaclass=_Parser):
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
             elif create_token.token_type == TokenType.WAREHOUSE:
-                this = exp.Warehouse(**this.args)
+                this = self._parse_warehouse(identifier=table_parts.this)
+                extend_props(self._parse_properties())
 
             shallow = self._match_text_seq("SHALLOW")
 
@@ -4717,6 +4718,12 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return self.expression(
             exp.UserDefinedFunction, this=this, expressions=expressions, wrapped=True
+        )
+
+    def _parse_warehouse(self, identifier) -> t.Optional[exp.Expression]:
+        return self.expression(
+            exp.Warehouse,
+            this=identifier
         )
 
     def _parse_introducer(self, token: Token) -> exp.Introducer | exp.Identifier:

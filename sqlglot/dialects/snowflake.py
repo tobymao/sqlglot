@@ -482,6 +482,18 @@ class Snowflake(Dialect):
 
         SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
 
+        LAMBDAS = {
+            **parser.Parser.LAMBDAS,
+            TokenType.ARROW: lambda self, expressions: self.expression(
+                exp.Lambda,
+                this=self._replace_lambda(
+                    self._parse_conjunction(),
+                    expressions,
+                ),
+                expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
+            ),
+        }
+
         def _parse_create(self) -> exp.Create | exp.Command:
             expression = super()._parse_create()
             if isinstance(expression, exp.Create) and expression.kind == "TAG":
@@ -715,6 +727,19 @@ class Snowflake(Dialect):
                 parts.append(self._advance_any(ignore_reserved=True))
 
             return exp.var("".join(part.text for part in parts if part))
+
+        def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
+            this = super()._parse_lambda_arg()
+
+            if not this:
+                return this
+
+            typ = self._parse_types()
+
+            if typ:
+                return self.expression(exp.Cast, this=this, to=typ)
+
+            return this
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]

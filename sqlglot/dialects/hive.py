@@ -572,6 +572,7 @@ class Hive(Dialect):
             exp.NotForReplicationColumnConstraint: lambda *_: "",
             exp.OnProperty: lambda *_: "",
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
+            exp.ParseJSON: lambda self, e: self.sql(e.this),
         }
 
         PROPERTIES_LOCATION = {

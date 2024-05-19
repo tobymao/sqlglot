@@ -6444,11 +6444,9 @@ class Parser(metaclass=_Parser):
         lambda_types = {e.name: e.args.get("to") or False for e in expressions}
 
         for column in node.find_all(exp.Column):
-            name = column.parts[0].name
-            if name in lambda_types:
+            typ = lambda_types.get(column.parts[0].name)
+            if typ is not None:
                 dot_or_id = column.to_dot() if column.table else column.this
-
-                typ = lambda_types.get(name)
 
                 if typ:
                     dot_or_id = self.expression(

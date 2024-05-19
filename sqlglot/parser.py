@@ -6441,16 +6441,7 @@ class Parser(metaclass=_Parser):
         if not node:
             return node
 
-        lambda_types = {}
-
-        for this in expressions:
-            if isinstance(this, exp.Cast):
-                typ = this.to
-                this = this.this
-            else:
-                typ = None
-
-            lambda_types[this.name] = typ
+        lambda_types = {e.name: e.args.get("to") or False for e in expressions}
 
         for column in node.find_all(exp.Column):
             name = column.parts[0].name

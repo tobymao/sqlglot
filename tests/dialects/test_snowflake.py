@@ -256,8 +256,6 @@ WHERE
         )
         self.validate_identity(
             "CREATE WAREHOUSE x",
-            "CREATE OR REPLACE WAREHOUSE x",
-            "CREATE WAREHOUSE IF NOT EXISTS x",
         )
         self.validate_identity(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",

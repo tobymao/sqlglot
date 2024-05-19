@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v23.17.0] - 2024-05-19
+### :boom: BREAKING CHANGES
+- due to [`77d21d9`](https://github.com/tobymao/sqlglot/commit/77d21d9379c3f130b803ea651ec3d36256bb84a4) - parse : operator as JSONExtract (similar to Snowflake) *(PR [#3508](https://github.com/tobymao/sqlglot/pull/3508) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse : operator as JSONExtract (similar to Snowflake) (#3508)
+
+
+### :sparkles: New Features
+- [`1125662`](https://github.com/tobymao/sqlglot/commit/11256629d74c4721ed13ed534509d266e260dde6) - add support for snowflake lambdas with type annotations closes … *(PR [#3506](https://github.com/tobymao/sqlglot/pull/3506) by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`77d21d9`](https://github.com/tobymao/sqlglot/commit/77d21d9379c3f130b803ea651ec3d36256bb84a4) - **databricks**: parse : operator as JSONExtract (similar to Snowflake) *(PR [#3508](https://github.com/tobymao/sqlglot/pull/3508) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.16.0] - 2024-05-18
 ### :boom: BREAKING CHANGES
 - due to [`e281db8`](https://github.com/tobymao/sqlglot/commit/e281db8784682649be305e9a05c45211402f107c) - Add ALTER TABLE SET *(PR [#3485](https://github.com/tobymao/sqlglot/pull/3485) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3685,3 +3699,4 @@ Changelog
 [v23.15.9]: https://github.com/tobymao/sqlglot/compare/v23.15.8...v23.15.9
 [v23.15.10]: https://github.com/tobymao/sqlglot/compare/v23.15.9...v23.15.10
 [v23.16.0]: https://github.com/tobymao/sqlglot/compare/v23.15.10...v23.16.0
+[v23.17.0]: https://github.com/tobymao/sqlglot/compare/v23.16.0...v23.17.0

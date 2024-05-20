@@ -823,6 +823,14 @@ class MySQL(Dialect):
             exp.DataType.Type.TIMESTAMPLTZ,
         }
 
+        def array_sql(self, expression: exp.Array) -> str:
+            self.unsupported("Arrays are not supported by MySQL")
+            return self.function_fallback_sql(expression)
+
+        def arraycontainsall_sql(self, expression: exp.ArrayContainsAll) -> str:
+            self.unsupported("Array operations are not supported by MySQL")
+            return self.function_fallback_sql(expression)
+
         def dpipe_sql(self, expression: exp.DPipe) -> str:
             return self.func("CONCAT", *expression.flatten())
 

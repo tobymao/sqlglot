@@ -41,11 +41,17 @@ def build_like(args: t.List) -> exp.Escape | exp.Like:
 
 
 def binary_range_parser(
-    expr_type: t.Type[exp.Expression],
+    expr_type: t.Type[exp.Expression], reverse_args: bool = False
 ) -> t.Callable[[Parser, t.Optional[exp.Expression]], t.Optional[exp.Expression]]:
-    return lambda self, this: self._parse_escape(
-        self.expression(expr_type, this=this, expression=self._parse_bitwise())
-    )
+    def _parse_binary_range(
+        self: Parser, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Expression]:
+        expression = self._parse_bitwise()
+        if reverse_args:
+            this, expression = expression, this
+        return self._parse_escape(self.expression(expr_type, this=this, expression=expression))
+
+    return _parse_binary_range
 
 
 def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:

@@ -483,6 +483,8 @@ class Snowflake(Dialect):
 
         SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
 
+        NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE"}
+
         LAMBDAS = {
             **parser.Parser.LAMBDAS,
             TokenType.ARROW: lambda self, expressions: self.expression(
@@ -497,7 +499,7 @@ class Snowflake(Dialect):
 
         def _parse_create(self) -> exp.Create | exp.Command:
             expression = super()._parse_create()
-            if isinstance(expression, exp.Create) and expression.kind == "TAG":
+            if isinstance(expression, exp.Create) and expression.kind in self.NON_TABLE_CREATABLES:
                 # Replace the Table node with the enclosed Identifier
                 expression.this.replace(expression.this.this)
 

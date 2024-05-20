@@ -92,6 +92,7 @@ class TokenType(AutoName):
     COLUMN_DEF = auto()
     SCHEMA = auto()
     TABLE = auto()
+    WAREHOUSE = auto()
     VAR = auto()
     BIT_STRING = auto()
     HEX_STRING = auto()

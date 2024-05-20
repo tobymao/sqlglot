@@ -335,6 +335,7 @@ class Parser(metaclass=_Parser):
         TokenType.TABLE,
         TokenType.TAG,
         TokenType.VIEW,
+        TokenType.WAREHOUSE,
     }
 
     CREATABLES = {

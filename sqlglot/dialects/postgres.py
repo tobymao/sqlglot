@@ -310,7 +310,6 @@ class Postgres(Dialect):
             "EXEC": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "INT8": TokenType.BIGINT,
-            "JSONB": TokenType.JSONB,
             "MONEY": TokenType.MONEY,
             "NAME": TokenType.NAME,
             "OID": TokenType.OBJECT_IDENTIFIER,

@@ -418,6 +418,7 @@ class Parser(metaclass=_Parser):
         TokenType.TRUE,
         TokenType.TRUNCATE,
         TokenType.UNIQUE,
+        TokenType.UNNEST,
         TokenType.UNPIVOT,
         TokenType.UPDATE,
         TokenType.USE,

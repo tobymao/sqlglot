@@ -824,6 +824,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DOUBLE": TokenType.DOUBLE,
         "DOUBLE PRECISION": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
+        "JSONB": TokenType.JSONB,
         "CHAR": TokenType.CHAR,
         "CHARACTER": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,

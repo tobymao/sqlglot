@@ -3048,6 +3048,7 @@ class Table(Expression):
             col = alias_(col, alias.this, copy=copy)
         return col
 
+
 class Union(Query):
     arg_types = {
         "with": False,

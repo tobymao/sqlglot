@@ -255,6 +255,9 @@ WHERE
             "ALTER TABLE foo ADD COLUMN id INT AUTOINCREMENT START 1 INCREMENT 1",
         )
         self.validate_identity(
+            "CREATE WAREHOUSE x",
+        )
+        self.validate_identity(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
             "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMP))",
         )

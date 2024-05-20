@@ -3048,13 +3048,6 @@ class Table(Expression):
             col = alias_(col, alias.this, copy=copy)
         return col
 
-
-class Warehouse(Expression):
-    arg_types = {
-        "this": False,
-    }
-
-
 class Union(Query):
     arg_types = {
         "with": False,

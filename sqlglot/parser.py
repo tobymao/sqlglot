@@ -1709,9 +1709,6 @@ class Parser(metaclass=_Parser):
             elif create_token.token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
-            elif create_token.token_type == TokenType.WAREHOUSE:
-                this = self._parse_warehouse(identifier=table_parts.this)
-                extend_props(self._parse_properties())
 
             shallow = self._match_text_seq("SHALLOW")
 

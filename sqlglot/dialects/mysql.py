@@ -823,6 +823,7 @@ class MySQL(Dialect):
             exp.DataType.Type.TIMESTAMPLTZ,
         }
 
+        # https://dev.mysql.com/doc/refman/8.0/en/keywords.html
         RESERVED_KEYWORDS = {
             "accessible",
             "add",

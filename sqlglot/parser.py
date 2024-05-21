@@ -6246,8 +6246,10 @@ class Parser(metaclass=_Parser):
             return None
 
         right = self._parse_statement() or self._parse_id_var()
-        this = self.expression(exp.EQ, this=left, expression=right)
+        if isinstance(right, (exp.Column, exp.Identifier)):
+            right = exp.var(right.name)
 
+        this = self.expression(exp.EQ, this=left, expression=right)
         return self.expression(exp.SetItem, this=this, kind=kind)
 
     def _parse_set_transaction(self, global_: bool = False) -> exp.Expression:

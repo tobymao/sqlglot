@@ -155,6 +155,10 @@ class TestMySQL(Validator):
             """SELECT * FROM foo WHERE 3 MEMBER OF(info->'$.value')""",
             """SELECT * FROM foo WHERE 3 MEMBER OF(JSON_EXTRACT(info, '$.value'))""",
         )
+        self.validate_identity(
+            "SELECT 1 AS row",
+            "SELECT 1 AS `row`",
+        )
 
         # Index hints
         self.validate_identity(

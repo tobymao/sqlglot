@@ -33,7 +33,6 @@ setup(
             "mypy",
             "pandas",
             "pandas-stubs",
-            "pyspark",
             "python-dateutil",
             "pdoc",
             "pre-commit",

@@ -88,6 +88,3 @@ class Databricks(Spark):
         ) -> str:
             expression.set("this", True)  # trigger ALWAYS in super class
             return super().generatedasidentitycolumnconstraint_sql(expression)
-
-    class Tokenizer(Spark.Tokenizer):
-        HEX_STRINGS = []

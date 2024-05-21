@@ -284,4 +284,4 @@ class Spark2(Hive):
             )
 
     class Tokenizer(Hive.Tokenizer):
-        HEX_STRINGS = [("X'", "'")]
+        HEX_STRINGS = [("X'", "'"), ("x'", "'")]

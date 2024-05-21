@@ -67,6 +67,20 @@ class TestDatabricks(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT X'1A2B'",
+            read={
+                "spark2": "SELECT X'1A2B'",
+                "spark": "SELECT X'1A2B'",
+                "databricks": "SELECT x'1A2B'",
+            },
+            write={
+                "spark2": "SELECT X'1A2B'",
+                "spark": "SELECT X'1A2B'",
+                "databricks": "SELECT X'1A2B'",
+            },
+        )
+
         with self.assertRaises(ParseError):
             transpile(
                 "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $foo$def add_one(x):\n  return x+1$$",

@@ -1206,6 +1206,7 @@ WHERE
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity("CREATE TAG cost_center ALLOWED_VALUES 'a', 'b'")
         self.validate_identity("CREATE WAREHOUSE x").this.assert_is(exp.Identifier)
+        self.validate_identity("CREATE STREAMLIT x").this.assert_is(exp.Identifier)
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)

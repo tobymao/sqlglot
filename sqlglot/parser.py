@@ -342,6 +342,7 @@ class Parser(metaclass=_Parser):
         TokenType.TAG,
         TokenType.VIEW,
         TokenType.WAREHOUSE,
+        TokenType.STREAMLIT,
     }
 
     CREATABLES = {

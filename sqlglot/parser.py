@@ -1642,6 +1642,7 @@ class Parser(metaclass=_Parser):
             extend_props(self._parse_properties())
 
             expression = self._match(TokenType.ALIAS) and self._parse_heredoc()
+            extend_props(self._parse_properties())
 
             if not expression:
                 if self._match(TokenType.COMMAND):

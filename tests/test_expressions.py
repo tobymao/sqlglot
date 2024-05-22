@@ -653,6 +653,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("STDDEV(a)"), exp.Stddev)
         self.assertIsInstance(parse_one("STDDEV_POP(a)"), exp.StddevPop)
         self.assertIsInstance(parse_one("STDDEV_SAMP(a)"), exp.StddevSamp)
+        self.assertIsInstance(parse_one("STRING_TO_ARRAY"), exp.StringToArray)
         self.assertIsInstance(parse_one("TIME_TO_STR(a, 'format')"), exp.TimeToStr)
         self.assertIsInstance(parse_one("TIME_TO_TIME_STR(a)"), exp.Cast)
         self.assertIsInstance(parse_one("TIME_TO_UNIX(a)"), exp.TimeToUnix)

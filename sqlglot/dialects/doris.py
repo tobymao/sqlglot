@@ -55,6 +55,7 @@ class Doris(MySQL):
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.Split: rename_func("SPLIT_BY_STRING"),
+            exp.StringToArray: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),

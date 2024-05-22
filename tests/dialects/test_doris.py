@@ -39,6 +39,12 @@ class TestDoris(Validator):
             },
         )
         self.validate_all(
+            "SELECT SPLIT_BY_STRING('a,b,c', ',')",
+            read={
+                "postgres": "SELECT STRING_TO_ARRAY('a,b,c', ',')",
+            }
+        )
+        self.validate_all(
             """SELECT JSON_EXTRACT(CAST('{"key": 1}' AS JSONB), '$.key')""",
             read={
                 "postgres": """SELECT '{"key": 1}'::jsonb ->> 'key'""",

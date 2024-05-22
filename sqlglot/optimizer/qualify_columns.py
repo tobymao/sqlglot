@@ -483,14 +483,14 @@ def _expand_stars(
             table_name = struct_col.table if isinstance(struct_col, exp.Column) else None
             struct_fields: t.List[str] = []
 
-            queue = [
+            stack = [
                 (col, "")
                 for col in scope_cols
                 if col.is_type(exp.DataType.Type.STRUCT) and col.table == table_name
             ]
 
-            while queue:
-                col, path_name = queue.pop()
+            while stack:
+                col, path_name = stack.pop()
                 if not col or not isinstance(col.this, exp.Identifier):
                     struct_fields = []
                     break
@@ -498,33 +498,21 @@ def _expand_stars(
                 path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
                 datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
 
-                if not datatype or not datatype.expressions:
+                if not datatype:
                     struct_fields = []
                     break
 
-                error = False
+                if datatype.this != exp.DataType.Type.STRUCT:
+                    full_name = f"{table_name}.{path_name}"
+                    if not starting_struct or starting_struct in full_name:
+                        # Collect the non-struct columns
+                        if not isinstance(col.this, exp.Identifier):
+                            struct_fields = []
+                            break
+                        struct_fields.append(path_name)
 
-                for expr in datatype.expressions:
-                    if error:
-                        break
-
-                    expr_type = expr.find(exp.DataType)
-                    if expr_type.this == exp.DataType.Type.STRUCT:
-                        annotator._maybe_annotate(expr)
-                        queue.append((expr, path_name))
-
-                    else:
-                        full_name = f"{table_name}.{path_name}"
-                        if not starting_struct or starting_struct in full_name:
-                            # Collect the non-struct columns
-                            if not isinstance(expr.this, exp.Identifier):
-                                error = True
-                                break
-                            struct_fields.append(f"{path_name}.{expr.this.this}")
-
-                if error:
-                    struct_fields = []
-                    break
+                for expr in reversed(datatype.expressions):
+                    stack.append((expr, path_name))
 
             for name in struct_fields:
                 alias_ = next_alias_name()

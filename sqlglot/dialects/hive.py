@@ -573,6 +573,9 @@ class Hive(Dialect):
             exp.OnProperty: lambda *_: "",
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
             exp.ParseJSON: lambda self, e: self.sql(e.this),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
         }
 
         PROPERTIES_LOCATION = {

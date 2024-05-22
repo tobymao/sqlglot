@@ -3,7 +3,6 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
-    arrow_json_extract_sql,
     build_timestamp_trunc,
     rename_func,
     time_format,

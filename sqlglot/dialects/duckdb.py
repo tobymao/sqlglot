@@ -233,7 +233,6 @@ class DuckDB(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ARRAY_HAS": exp.ArrayContains.from_arg_list,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "DATEDIFF": _build_date_diff,
@@ -381,6 +380,7 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
+            exp.ArrayContainsAll: rename_func("ARRAY_HAS_ALL"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),

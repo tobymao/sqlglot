@@ -310,7 +310,6 @@ class Postgres(Dialect):
             "EXEC": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "INT8": TokenType.BIGINT,
-            "JSONB": TokenType.JSONB,
             "MONEY": TokenType.MONEY,
             "NAME": TokenType.NAME,
             "OID": TokenType.OBJECT_IDENTIFIER,
@@ -381,12 +380,12 @@ class Postgres(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
-            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
+            TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),
-            TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
+            TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
             TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         }
 
@@ -485,8 +484,7 @@ class Postgres(Dialect):
                 else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]"
             ),
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
-            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
-            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
+            exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: lambda self, e: self.func("ARRAY_LENGTH", e.this, e.expression or "1"),

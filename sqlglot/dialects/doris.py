@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
+    arrow_json_extract_sql,
     build_timestamp_trunc,
     rename_func,
     time_format,
@@ -49,10 +50,8 @@ class Doris(MySQL):
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
-            exp.JSONExtract: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
-            exp.JSONExtractScalar: lambda self, e: self.func(
-                "JSON_EXTRACT", e.this, e.expression
-            ),
+            exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.JSONExtract: arrow_json_extract_sql,
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),

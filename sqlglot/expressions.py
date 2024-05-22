@@ -4808,11 +4808,11 @@ class ArrayConstructCompact(Func):
 
 
 class ArrayContains(Binary, Func):
-    pass
+    _sql_names = ["ARRAY_CONTAINS", "ARRAY_HAS"]
 
 
-class ArrayContained(Binary):
-    pass
+class ArrayContainsAll(Binary, Func):
+    _sql_names = ["ARRAY_CONTAINS_ALL", "ARRAY_HAS_ALL"]
 
 
 class ArrayFilter(Func):

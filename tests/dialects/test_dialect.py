@@ -1163,7 +1163,7 @@ class TestDialect(Validator):
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
                 "duckdb": "x -> 'y'",
-                "doris": "x -> '$.y'",
+                "doris": "JSON_EXTRACT(x, '$.y')",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, '$.y')",
@@ -1174,7 +1174,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
                 "clickhouse": "JSONExtractString(x, 'y')",
-                "doris": "x -> '$.y'",
+                "doris": "JSON_EXTRACT(x, '$.y')",
                 "duckdb": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "oracle": "JSON_EXTRACT(x, '$.y')",
@@ -1218,7 +1218,7 @@ class TestDialect(Validator):
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
                 "duckdb": "x -> '$.y[0].z'",
-                "doris": "x -> '$.y[0].z'",
+                "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
                 "presto": "JSON_EXTRACT(x, '$.y[0].z')",
                 "snowflake": "GET_PATH(x, 'y[0].z')",
@@ -1228,7 +1228,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
                 "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
-                "doris": "x -> '$.y[0].z'",
+                "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "duckdb": "x -> '$.y[0].z'",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
                 "oracle": "JSON_EXTRACT(x, '$.y[0].z')",

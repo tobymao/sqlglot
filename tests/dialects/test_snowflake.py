@@ -1205,6 +1205,8 @@ WHERE
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity("CREATE TAG cost_center ALLOWED_VALUES 'a', 'b'")
+        self.validate_identity("CREATE WAREHOUSE x").this.assert_is(exp.Identifier)
+        self.validate_identity("CREATE STREAMLIT x").this.assert_is(exp.Identifier)
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)
@@ -1832,7 +1834,7 @@ STORAGE_AWS_ROLE_ARN='arn:aws:iam::001234567890:role/myrole'
 ENABLED=TRUE
 STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             pretty=True,
-        )
+        ).this.assert_is(exp.Identifier)
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")

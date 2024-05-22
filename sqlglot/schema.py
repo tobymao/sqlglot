@@ -10,10 +10,9 @@ from sqlglot.helper import dict_depth, first
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql.types import StructType
     from sqlglot.dialects.dialect import DialectType
 
-    ColumnMapping = t.Union[t.Dict, str, StructType, t.List]
+    ColumnMapping = t.Union[t.Dict, str, t.List]
 
 
 class Schema(abc.ABC):
@@ -489,9 +488,6 @@ def ensure_column_mapping(mapping: t.Optional[ColumnMapping]) -> t.Dict:
             name_type_str.split(":")[0].strip(): name_type_str.split(":")[1].strip()
             for name_type_str in col_name_type_strs
         }
-    # Check if mapping looks like a DataFrame StructType
-    elif hasattr(mapping, "simpleString"):
-        return {struct_field.name: struct_field.dataType.simpleString() for struct_field in mapping}
     elif isinstance(mapping, list):
         return {x.strip(): None for x in mapping}
 

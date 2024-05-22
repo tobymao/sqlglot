@@ -41,11 +41,17 @@ def build_like(args: t.List) -> exp.Escape | exp.Like:
 
 
 def binary_range_parser(
-    expr_type: t.Type[exp.Expression],
+    expr_type: t.Type[exp.Expression], reverse_args: bool = False
 ) -> t.Callable[[Parser, t.Optional[exp.Expression]], t.Optional[exp.Expression]]:
-    return lambda self, this: self._parse_escape(
-        self.expression(expr_type, this=this, expression=self._parse_bitwise())
-    )
+    def _parse_binary_range(
+        self: Parser, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Expression]:
+        expression = self._parse_bitwise()
+        if reverse_args:
+            this, expression = expression, this
+        return self._parse_escape(self.expression(expr_type, this=this, expression=expression))
+
+    return _parse_binary_range
 
 
 def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
@@ -335,6 +341,8 @@ class Parser(metaclass=_Parser):
         TokenType.TABLE,
         TokenType.TAG,
         TokenType.VIEW,
+        TokenType.WAREHOUSE,
+        TokenType.STREAMLIT,
     }
 
     CREATABLES = {
@@ -1635,6 +1643,7 @@ class Parser(metaclass=_Parser):
             extend_props(self._parse_properties())
 
             expression = self._match(TokenType.ALIAS) and self._parse_heredoc()
+            extend_props(self._parse_properties())
 
             if not expression:
                 if self._match(TokenType.COMMAND):
@@ -6239,8 +6248,10 @@ class Parser(metaclass=_Parser):
             return None
 
         right = self._parse_statement() or self._parse_id_var()
-        this = self.expression(exp.EQ, this=left, expression=right)
+        if isinstance(right, (exp.Column, exp.Identifier)):
+            right = exp.var(right.name)
 
+        this = self.expression(exp.EQ, this=left, expression=right)
         return self.expression(exp.SetItem, this=this, kind=kind)
 
     def _parse_set_transaction(self, global_: bool = False) -> exp.Expression:

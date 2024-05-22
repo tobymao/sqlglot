@@ -38,8 +38,6 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(x AS TSTZMULTIRANGE)")
         self.validate_identity("CAST(x AS DATERANGE)")
         self.validate_identity("CAST(x AS DATEMULTIRANGE)")
-        self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
-        self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
         self.validate_identity("x$")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
@@ -64,6 +62,10 @@ class TestPostgres(Validator):
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
+        self.validate_identity(
+            "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
+            "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
+        )
         self.validate_identity(
             """UPDATE "x" SET "y" = CAST('0 days 60.000000 seconds' AS INTERVAL) WHERE "x"."id" IN (2, 3)"""
         )
@@ -325,6 +327,17 @@ class TestPostgres(Validator):
             "CAST(x AS BIGINT)",
         )
 
+        self.validate_all(
+            "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
+            read={
+                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2, 3], [1, 2])",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2, 3], [1, 2])",
+                "mysql": UnsupportedError,
+                "postgres": "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
+            },
+        )
         self.validate_all(
             "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
             write={
@@ -740,6 +753,9 @@ class TestPostgres(Validator):
         self.validate_identity("ALTER TABLE t1 SET ACCESS METHOD method")
         self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
         self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
+        self.validate_identity(
+            "CREATE FUNCTION pymax(a INT, b INT) RETURNS INT LANGUAGE plpython3u AS $$\n  if a > b:\n    return a\n  return b\n$$",
+        )
         self.validate_identity(
             "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
         )

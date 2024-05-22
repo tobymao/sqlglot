@@ -342,6 +342,18 @@ class TestOptimizer(unittest.TestCase):
                     )
                     optimizer.qualify_columns.validate_qualify_columns(expression)
 
+        # Cannot expand star as not all nested structs are aliased
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.col.* FROM tbl1",
+                    read="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `tbl1` AS (SELECT STRUCT(1 AS `col1`, Struct(5 AS `col1`)) AS `col`) SELECT `tbl1`.`col`.* FROM `tbl1` AS `tbl1`",
+        )
+
     def test_normalize_identifiers(self):
         self.check_file(
             "normalize_identifiers",

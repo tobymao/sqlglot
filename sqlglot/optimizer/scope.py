@@ -86,6 +86,7 @@ class Scope:
     def clear_cache(self):
         self._collected = False
         self._raw_columns = None
+        self._stars = None
         self._derived_tables = None
         self._udtfs = None
         self._tables = None
@@ -119,14 +120,18 @@ class Scope:
         self._derived_tables = []
         self._udtfs = []
         self._raw_columns = []
+        self._stars = []
         self._join_hints = []
 
         for node in self.walk(bfs=False):
             if node is self.expression:
                 continue
 
-            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
-                self._raw_columns.append(node)
+            if isinstance(node, exp.Column):
+                if isinstance(node.this, exp.Star):
+                    self._stars.append(node)
+                else:
+                    self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
                 self._tables.append(node)
             elif isinstance(node, exp.JoinHint):
@@ -230,6 +235,17 @@ class Scope:
         """
         self._ensure_collected()
         return self._subqueries
+
+    @property
+    def stars(self):
+        """
+        List of star columns in this scope.
+
+        Returns:
+            list[exp.Column]: Column instances in this scope that are a star.
+        """
+        self._ensure_collected()
+        return self._stars
 
     @property
     def columns(self):

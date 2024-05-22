@@ -6,7 +6,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import seq_get, SingleValuedMapping
+from sqlglot.helper import seq_get, SingleValuedMapping, name_sequence
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
@@ -22,6 +22,7 @@ def qualify_columns(
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
+    dialect: t.Optional[DialectType] = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have fully qualified columns.
@@ -51,8 +52,9 @@ def qualify_columns(
     schema = ensure_schema(schema)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = Dialect.get_or_raise(schema.dialect)
+    dialect = Dialect.get_or_raise(dialect or schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
+    next_alias_name = name_sequence("_field_")
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
@@ -63,6 +65,7 @@ def qualify_columns(
         if schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver)
 
+        _convert_columns_to_dots(scope, resolver)
         _qualify_columns(scope, resolver)
 
         if not schema.empty and expand_alias_refs:
@@ -70,7 +73,15 @@ def qualify_columns(
 
         if not isinstance(scope.expression, exp.UDTF):
             if expand_stars:
-                _expand_stars(scope, resolver, using_column_tables, pseudocolumns)
+                _expand_stars(
+                    scope,
+                    resolver,
+                    using_column_tables,
+                    pseudocolumns,
+                    annotator,
+                    next_alias_name,
+                    dialect,
+                )
             qualify_outputs(scope)
 
         _expand_group_by(scope)
@@ -329,6 +340,44 @@ def _select_by_pos(scope: Scope, node: exp.Literal) -> exp.Alias:
         raise OptimizeError(f"Unknown output column: {node.name}")
 
 
+def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+    """
+    Converts `Column` instances that represent struct field lookup into chained `Dots`.
+
+    Structs field lookups look like columns (e.g. "struct"."field"), but they need to be
+    qualified separately and represented as Dot(Dot(...(<table>.<column>, field1), field2, ...)).
+    """
+    converted = False
+    for column in itertools.chain(scope.columns, scope.stars):
+        column_table = column.table
+        if (
+            column_table
+            and column_table not in scope.sources
+            and (
+                not scope.parent
+                or column_table not in scope.parent.sources
+                or not scope.is_correlated_subquery
+            )
+        ):
+            root, *parts = column.parts
+
+            if root.name in scope.sources:
+                # The struct is already qualified, but we still need to change the AST
+                column_table = root
+                root, *parts = parts
+            else:
+                column_table = resolver.get_table(root.name)
+
+            if column_table:
+                converted = True
+                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
+
+    if converted:
+        # We want to re-aggregate the converted columns, otherwise they'd be skipped in
+        # a `for column in scope.columns` iteration, even though they shouldn't be
+        scope.clear_cache()
+
+
 def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
@@ -347,30 +396,10 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
                 column.set("table", exp.to_identifier(scope.pivots[0].alias))
                 continue
 
-            column_table = resolver.get_table(column_name)
-
             # column_table can be a '' because bigquery unnest has no table alias
+            column_table = resolver.get_table(column_name)
             if column_table:
                 column.set("table", column_table)
-        elif column_table not in scope.sources and (
-            not scope.parent
-            or column_table not in scope.parent.sources
-            or not scope.is_correlated_subquery
-        ):
-            # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
-            # separately and represented as dot(dot(...(<table>.<column>, field1), field2, ...))
-
-            root, *parts = column.parts
-
-            if root.name in scope.sources:
-                # struct is already qualified, but we still need to change the AST representation
-                column_table = root
-                root, *parts = parts
-            else:
-                column_table = resolver.get_table(root.name)
-
-            if column_table:
-                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
 
     for pivot in scope.pivots:
         for column in pivot.find_all(exp.Column):
@@ -385,6 +414,9 @@ def _expand_stars(
     resolver: Resolver,
     using_column_tables: t.Dict[str, t.Any],
     pseudocolumns: t.Set[str],
+    annotator: TypeAnnotator,
+    next_alias_name: t.Callable[[], str],
+    dialect: t.Optional[Dialect],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -413,7 +445,12 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
+    scope_annotated = False
+    scope_cols = scope.columns
+
     for expression in scope.expression.selects:
+        tables = []
+        structs = []
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
@@ -422,9 +459,85 @@ def _expand_stars(
             tables = [expression.table]
             _add_except_columns(expression.this, tables, except_columns)
             _add_replace_columns(expression.this, tables, replace_columns)
+
+        elif expression.is_star and (
+            isinstance(expression, exp.Dot)
+            or (isinstance(expression, exp.Column) and expression.table in scope.sources)
+        ):
+            col = expression.find(exp.Column) if isinstance(expression, exp.Dot) else expression
+            starting_struct = str(expression.this) if isinstance(expression.this, exp.Dot) else None
+            structs.append((col, starting_struct))
+
+            # Annotate scope ahead of the struct flattening
+            if not scope_annotated and dialect == "bigquery":
+                annotator.annotate_scope(scope)
+                scope_annotated = True
+
         else:
             new_selections.append(expression)
             continue
+
+        while structs:
+            # [BigQuery] Expand/Flatten foo.bar.* where bar is a struct column
+            struct_col, starting_struct = structs.pop()
+            table_name = struct_col.table if isinstance(struct_col, exp.Column) else None
+            struct_fields: t.List[str] = []
+
+            queue = [
+                (col, "")
+                for col in scope_cols
+                if col.is_type(exp.DataType.Type.STRUCT) and col.table == table_name
+            ]
+
+            while queue:
+                col, path_name = queue.pop()
+                if not col or not isinstance(col.this, exp.Identifier):
+                    struct_fields = []
+                    break
+
+                path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
+                datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
+
+                if not datatype or not datatype.expressions:
+                    struct_fields = []
+                    break
+
+                error = False
+
+                for expr in datatype.expressions:
+                    if error:
+                        break
+
+                    expr_type = expr.find(exp.DataType)
+                    if expr_type.this == exp.DataType.Type.STRUCT:
+                        annotator._maybe_annotate(expr)
+                        queue.append((expr, path_name))
+
+                    else:
+                        full_name = f"{table_name}.{path_name}"
+                        if not starting_struct or starting_struct in full_name:
+                            # Collect the non-struct columns
+                            if not isinstance(expr.this, exp.Identifier):
+                                error = True
+                                break
+                            struct_fields.append(f"{path_name}.{expr.this.this}")
+
+                if error:
+                    struct_fields = []
+                    break
+
+            for name in struct_fields:
+                alias_ = next_alias_name()
+                root, *parts = name.split(".")
+
+                new_column: exp.Column | exp.Dot = exp.column(root, table=table_name)
+
+                if parts:
+                    new_column = exp.Dot.build(
+                        [new_column, *[exp.Identifier(this=part) for part in parts]]
+                    )
+
+                new_selections.append(alias(new_column, alias_, copy=False))
 
         for table in tables:
             if table not in scope.sources:

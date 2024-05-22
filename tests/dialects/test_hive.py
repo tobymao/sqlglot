@@ -406,7 +406,9 @@ class TestHive(Validator):
         self.validate_identity("(VALUES (1 AS a, 2 AS b, 3))")
         self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
         self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
-
+        self.validate_identity(
+            "SELECT WEEKOFYEAR('2024-05-22'), DAYOFMONTH('2024-05-22'), DAYOFWEEK('2024-05-22')"
+        )
         self.validate_identity(
             "SELECT ROW() OVER (DISTRIBUTE BY x SORT BY y)",
             "SELECT ROW() OVER (PARTITION BY x ORDER BY y)",

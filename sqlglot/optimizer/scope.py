@@ -127,7 +127,9 @@ class Scope:
             if node is self.expression:
                 continue
 
-            if isinstance(node, exp.Column):
+            if isinstance(node, exp.Dot) and node.is_star:
+                self._stars.append(node)
+            elif isinstance(node, exp.Column):
                 if isinstance(node.this, exp.Star):
                     self._stars.append(node)
                 else:

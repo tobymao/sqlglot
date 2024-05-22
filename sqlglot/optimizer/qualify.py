@@ -81,7 +81,6 @@ def qualify(
             expand_alias_refs=expand_alias_refs,
             expand_stars=expand_stars,
             infer_schema=infer_schema,
-            dialect=dialect,
         )
 
     if quote_identifiers:

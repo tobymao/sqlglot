@@ -22,7 +22,6 @@ def qualify_columns(
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
-    dialect: t.Optional[DialectType] = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have fully qualified columns.
@@ -52,7 +51,7 @@ def qualify_columns(
     schema = ensure_schema(schema)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = Dialect.get_or_raise(dialect or schema.dialect)
+    dialect = Dialect.get_or_raise(schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
     next_alias_name = name_sequence("_field_")
 
@@ -349,7 +348,10 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     """
     converted = False
     for column in itertools.chain(scope.columns, scope.stars):
-        column_table = column.table
+        if isinstance(column, exp.Dot):
+            continue
+
+        column_table: t.Optional[str | exp.Identifier] = column.table
         if (
             column_table
             and column_table not in scope.sources
@@ -409,6 +411,47 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
                     column.set("table", column_table)
 
 
+def _expand_struct_stars(
+    scope: Scope, structs: t.List[t.Tuple[t.Optional[exp.Column], str]]
+) -> t.Optional[t.List[str]]:
+    struct_fields: t.List[str] = []
+
+    while structs:
+        # [BigQuery] Expand/Flatten foo.bar.* where bar is a struct column
+        struct_col, starting_struct = structs.pop()
+        table_name = struct_col.table if isinstance(struct_col, exp.Column) else None
+
+        stack = [
+            (col, "")
+            for col in scope.columns
+            if col.is_type(exp.DataType.Type.STRUCT) and col.table == table_name
+        ]
+
+        while stack:
+            col, path_name = stack.pop()
+            if not col or not isinstance(col.this, exp.Identifier):
+                return []
+
+            path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
+            datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
+
+            if not datatype:
+                return None
+
+            # Collect the non-struct columns
+            if datatype.this != exp.DataType.Type.STRUCT:
+                full_name = f"{table_name}.{path_name}"
+                if not starting_struct or starting_struct in full_name:
+                    if not isinstance(col.this, exp.Identifier):
+                        return None
+                    struct_fields.append(path_name)
+
+            for expr in reversed(datatype.expressions):
+                stack.append((expr, path_name))
+
+    return struct_fields
+
+
 def _expand_stars(
     scope: Scope,
     resolver: Resolver,
@@ -416,7 +459,7 @@ def _expand_stars(
     pseudocolumns: t.Set[str],
     annotator: TypeAnnotator,
     next_alias_name: t.Callable[[], str],
-    dialect: t.Optional[Dialect],
+    dialect: t.Optional[DialectType],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -445,8 +488,9 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
-    scope_annotated = False
-    scope_cols = scope.columns
+    if dialect == "bigquery" and any(isinstance(col, exp.Dot) for col in scope.stars):
+        # Found struct expansion, annotate scope ahead of time
+        annotator.annotate_scope(scope)
 
     for expression in scope.expression.selects:
         tables = []
@@ -455,69 +499,26 @@ def _expand_stars(
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
-        elif expression.is_star and not isinstance(expression, exp.Dot):
-            tables = [expression.table]
-            _add_except_columns(expression.this, tables, except_columns)
-            _add_replace_columns(expression.this, tables, replace_columns)
-
-        elif expression.is_star and (
-            isinstance(expression, exp.Dot)
-            or (isinstance(expression, exp.Column) and expression.table in scope.sources)
-        ):
-            col = expression.find(exp.Column) if isinstance(expression, exp.Dot) else expression
-            starting_struct = str(expression.this) if isinstance(expression.this, exp.Dot) else None
-            structs.append((col, starting_struct))
-
-            # Annotate scope ahead of the struct flattening
-            if not scope_annotated and dialect == "bigquery":
-                annotator.annotate_scope(scope)
-                scope_annotated = True
-
+        elif expression.is_star:
+            if not isinstance(expression, exp.Dot):
+                tables = [expression.table]
+                _add_except_columns(expression.this, tables, except_columns)
+                _add_replace_columns(expression.this, tables, replace_columns)
+            elif dialect == "bigquery":
+                col = expression.find(exp.Column)
+                table_name = col.table if col else None
+                starting_struct = str(expression.this)
+                structs.append((col, starting_struct))
         else:
             new_selections.append(expression)
             continue
 
-        while structs:
-            # [BigQuery] Expand/Flatten foo.bar.* where bar is a struct column
-            struct_col, starting_struct = structs.pop()
-            table_name = struct_col.table if isinstance(struct_col, exp.Column) else None
-            struct_fields: t.List[str] = []
+        if structs:
+            struct_fields = _expand_struct_stars(scope, structs) or []
 
-            stack = [
-                (col, "")
-                for col in scope_cols
-                if col.is_type(exp.DataType.Type.STRUCT) and col.table == table_name
-            ]
-
-            while stack:
-                col, path_name = stack.pop()
-                if not col or not isinstance(col.this, exp.Identifier):
-                    struct_fields = []
-                    break
-
-                path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
-                datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
-
-                if not datatype:
-                    struct_fields = []
-                    break
-
-                if datatype.this != exp.DataType.Type.STRUCT:
-                    full_name = f"{table_name}.{path_name}"
-                    if not starting_struct or starting_struct in full_name:
-                        # Collect the non-struct columns
-                        if not isinstance(col.this, exp.Identifier):
-                            struct_fields = []
-                            break
-                        struct_fields.append(path_name)
-
-                for expr in reversed(datatype.expressions):
-                    stack.append((expr, path_name))
-
-            for name in struct_fields:
+            for struct_name in struct_fields:
+                root, *parts = struct_name.split(".")
                 alias_ = next_alias_name()
-                root, *parts = name.split(".")
-
                 new_column: exp.Column | exp.Dot = exp.column(root, table=table_name)
 
                 if parts:

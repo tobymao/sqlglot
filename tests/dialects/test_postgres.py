@@ -22,6 +22,7 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")
@@ -327,6 +328,16 @@ class TestPostgres(Validator):
             "CAST(x AS BIGINT)",
         )
 
+        self.validate_all(
+            "STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')",
+            read={
+                "doris": "SPLIT_BY_STRING('xx~^~yy~^~zz', '~^~', 'yy')",
+            },
+            write={
+                "doris": "SPLIT_BY_STRING('xx~^~yy~^~zz', '~^~', 'yy')",
+                "postgres": "STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')",
+            },
+        )
         self.validate_all(
             "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
             read={

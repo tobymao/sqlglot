@@ -4825,6 +4825,11 @@ class ArrayToString(Func):
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
+class StringToArray(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
+    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]
+
+
 class ArrayOverlaps(Binary, Func):
     pass
 

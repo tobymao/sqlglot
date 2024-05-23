@@ -1093,7 +1093,13 @@ WHERE
         self.validate_all("LEN('x')", write={"tsql": "LEN('x')", "spark": "LENGTH('x')"})
 
     def test_replicate(self):
-        self.validate_all("REPLICATE('x', 2)", write={"spark": "REPEAT('x', 2)"})
+        self.validate_all(
+            "REPLICATE('x', 2)",
+            write={
+                "spark": "REPEAT('x', 2)",
+                "tsql": "REPLICATE('x', 2)",
+            },
+        )
 
     def test_isnull(self):
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})

@@ -63,6 +63,9 @@ class Redshift(Postgres):
             "DATE_DIFF": _build_date_delta(exp.TsOrDsDiff),
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "LISTAGG": exp.GroupConcat.from_arg_list,
+            "SPLIT_TO_ARRAY": lambda args: exp.StringToArray(
+                this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string(",")
+            ),
             "STRTOL": exp.FromBase.from_arg_list,
         }
 
@@ -186,6 +189,7 @@ class Redshift(Postgres):
             e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.StartsWith: lambda self,
             e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
+            exp.StringToArray: rename_func("SPLIT_TO_ARRAY"),
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),

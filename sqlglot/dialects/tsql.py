@@ -818,6 +818,7 @@ class TSQL(Dialect):
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.ParseJSON: lambda self, e: self.sql(e, "this"),
+            exp.Repeat: rename_func("REPLICATE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

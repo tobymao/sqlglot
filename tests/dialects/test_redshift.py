@@ -7,6 +7,13 @@ class TestRedshift(Validator):
 
     def test_redshift(self):
         self.validate_all(
+            "SELECT SPLIT_TO_ARRAY('12,345,6789')",
+            write={
+                "postgres": "SELECT STRING_TO_ARRAY('12,345,6789', ',')",
+                "redshift": "SELECT SPLIT_TO_ARRAY('12,345,6789', ',')",
+            },
+        )
+        self.validate_all(
             "GETDATE()",
             read={
                 "duckdb": "CURRENT_TIMESTAMP",

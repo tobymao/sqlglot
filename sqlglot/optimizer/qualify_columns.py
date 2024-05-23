@@ -79,7 +79,6 @@ def qualify_columns(
                     pseudocolumns,
                     annotator,
                     next_alias_name,
-                    dialect,
                 )
             qualify_outputs(scope)
 
@@ -412,44 +411,71 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_struct_stars(
-    scope: Scope, structs: t.List[t.Tuple[t.Optional[exp.Column], str]]
-) -> t.Optional[t.List[str]]:
+    expression: exp.Dot,
+    next_alias_name: t.Callable[[], str],
+) -> t.List[exp.Alias]:
     struct_fields: t.List[str] = []
 
-    while structs:
-        # [BigQuery] Expand/Flatten foo.bar.* where bar is a struct column
-        struct_col, starting_struct = structs.pop()
-        table_name = struct_col.table if isinstance(struct_col, exp.Column) else None
+    # [BigQuery] Expand/Flatten foo.bar.* where bar is a struct column
+    starting_col = expression.find(exp.Column)
+    assert starting_col
 
-        stack = [
-            (col, "")
-            for col in scope.columns
-            if col.is_type(exp.DataType.Type.STRUCT) and col.table == table_name
-        ]
+    dot_parts = expression.parts
+    table_name = starting_col.table
 
-        while stack:
-            col, path_name = stack.pop()
-            if not col or not isinstance(col.this, exp.Identifier):
+    # If there's more nested levels specified, start the DFS traversal from the nested struct first
+    for part in dot_parts[2:-1]:
+        datatype = starting_col.find(exp.DataType) or (
+            starting_col.type and starting_col.type.find(exp.DataType)
+        )
+        assert datatype
+
+        for expr in datatype.expressions:
+            if not isinstance(expr.this, exp.Identifier):
                 return []
 
-            path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
-            datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
+            if expr.this.this == part.this:
+                starting_col = expr
+                assert starting_col
 
-            if not datatype:
-                return None
+    if not starting_col or starting_col.this.this != dot_parts[-2].this:
+        raise OptimizeError(f"Unknown struct: {part.this}")
 
-            # Collect the non-struct columns
-            if datatype.this != exp.DataType.Type.STRUCT:
-                full_name = f"{table_name}.{path_name}"
-                if not starting_struct or starting_struct in full_name:
-                    if not isinstance(col.this, exp.Identifier):
-                        return None
-                    struct_fields.append(path_name)
+    starting_name = ".".join([part.this for part in dot_parts[1:-2]])
+    stack = [(starting_col, starting_name)]
 
+    # Traverse & flatten the starting_col struct
+    while stack:
+        col, path_name = stack.pop()
+        assert col
+
+        if not isinstance(col.this, exp.Identifier):
+            return []
+
+        path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
+        datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
+        assert datatype
+
+        # Collect the non-struct columns
+        if datatype.this != exp.DataType.Type.STRUCT:
+            struct_fields.append(path_name)
+        else:
             for expr in reversed(datatype.expressions):
                 stack.append((expr, path_name))
 
-    return struct_fields
+    new_selections = []
+
+    for struct_field in struct_fields:
+        root, *parts = struct_field.split(".")
+        alias_ = next_alias_name()
+        new_column: exp.Column | exp.Dot = exp.column(root, table=table_name)
+
+        if parts:
+            new_column = exp.Dot.build([new_column, *[exp.Identifier(this=part) for part in parts]])
+
+        new_selections.append(alias(new_column, alias_, copy=False))
+
+    return new_selections
 
 
 def _expand_stars(
@@ -459,7 +485,6 @@ def _expand_stars(
     pseudocolumns: t.Set[str],
     annotator: TypeAnnotator,
     next_alias_name: t.Callable[[], str],
-    dialect: t.Optional[DialectType],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -467,6 +492,7 @@ def _expand_stars(
     except_columns: t.Dict[int, t.Set[str]] = {}
     replace_columns: t.Dict[int, t.Dict[str, str]] = {}
     coalesced_columns = set()
+    dialect = resolver.schema.dialect
 
     pivot_output_columns = None
     pivot_exclude_columns = None
@@ -494,7 +520,6 @@ def _expand_stars(
 
     for expression in scope.expression.selects:
         tables = []
-        structs = []
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
@@ -505,28 +530,14 @@ def _expand_stars(
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
             elif dialect == "bigquery":
-                col = expression.find(exp.Column)
-                table_name = col.table if col else None
-                starting_struct = str(expression.this)
-                structs.append((col, starting_struct))
-        else:
+                struct_fields = _expand_struct_stars(expression, next_alias_name)
+                if struct_fields:
+                    new_selections.extend(struct_fields)
+                    continue
+
+        if not tables:
             new_selections.append(expression)
             continue
-
-        if structs:
-            struct_fields = _expand_struct_stars(scope, structs) or []
-
-            for struct_name in struct_fields:
-                root, *parts = struct_name.split(".")
-                alias_ = next_alias_name()
-                new_column: exp.Column | exp.Dot = exp.column(root, table=table_name)
-
-                if parts:
-                    new_column = exp.Dot.build(
-                        [new_column, *[exp.Identifier(this=part) for part in parts]]
-                    )
-
-                new_selections.append(alias(new_column, alias_, copy=False))
 
         for table in tables:
             if table not in scope.sources:

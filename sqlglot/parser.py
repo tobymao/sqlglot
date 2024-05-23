@@ -4060,7 +4060,7 @@ class Parser(metaclass=_Parser):
             return this
         return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
-    def _parse_interval(self, match_interval: bool = True) -> t.Optional[exp.Interval]:
+    def _parse_interval(self, match_interval: bool = True) -> t.Optional[exp.Add | exp.Interval]:
         index = self._index
 
         if not self._match(TokenType.INTERVAL) and match_interval:
@@ -4106,7 +4106,19 @@ class Parser(metaclass=_Parser):
                 exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)
             )
 
-        return self.expression(exp.Interval, this=this, unit=unit)
+        interval = self.expression(exp.Interval, this=this, unit=unit)
+
+        index = self._index
+        self._match(TokenType.PLUS)
+
+        # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
+        if self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False):
+            return self.expression(
+                exp.Add, this=interval, expression=self._parse_interval(match_interval=False)
+            )
+
+        self._retreat(index)
+        return interval
 
     def _parse_bitwise(self) -> t.Optional[exp.Expression]:
         this = self._parse_term()
@@ -4173,38 +4185,32 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         interval = parse_interval and self._parse_interval()
         if interval:
-            # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
-            while True:
-                index = self._index
-                self._match(TokenType.PLUS)
-
-                if not self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False):
-                    self._retreat(index)
-                    break
-
-                interval = self.expression(  # type: ignore
-                    exp.Add, this=interval, expression=self._parse_interval(match_interval=False)
-                )
-
             return interval
 
         index = self._index
         data_type = self._parse_types(check_func=True, allow_identifiers=False)
-        this = self._parse_column()
 
         if data_type:
+            index2 = self._index
+            this = self._parse_primary()
+
             if isinstance(this, exp.Literal):
                 parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
                 if parser:
                     return parser(self, this, data_type)
+
                 return self.expression(exp.Cast, this=this, to=data_type)
 
-            if not data_type.expressions:
-                self._retreat(index)
-                return self._parse_id_var() if fallback_to_identifier else self._parse_column()
+            if data_type.expressions:
+                self._retreat(index2)
+                return self._parse_column_ops(data_type)
 
-            return self._parse_column_ops(data_type)
+            self._retreat(index)
 
+        if fallback_to_identifier:
+            return self._parse_id_var()
+
+        this = self._parse_column()
         return this and self._parse_column_ops(this)
 
     def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:

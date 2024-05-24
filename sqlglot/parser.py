@@ -4376,7 +4376,16 @@ class Parser(metaclass=_Parser):
             this.set("expressions", expressions)
 
         index = self._index
-        while self._match(TokenType.L_BRACKET):
+
+        # Postgres supports the INT ARRAY[3] syntax as a synonym for INT[3]
+        matched_array = self._match(TokenType.ARRAY)
+
+        while self._curr:
+            matched_l_bracket = self._match(TokenType.L_BRACKET)
+            if not matched_l_bracket and not matched_array:
+                break
+
+            matched_array = False
             values = self._parse_csv(self._parse_conjunction) or None
             if values and not schema:
                 self._retreat(index)

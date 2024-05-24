@@ -859,6 +859,14 @@ class TestPostgres(Validator):
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
         )
         self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY[3])",
+            "CREATE TABLE t (col INT[3])",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY)",
+            "CREATE TABLE t (col INT[])",
+        )
+        self.validate_identity(
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path TO 'public'",
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'",
         )

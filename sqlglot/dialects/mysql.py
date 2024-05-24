@@ -670,6 +670,7 @@ class MySQL(Dialect):
             return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
+        INTERVAL_ALLOWS_PLURAL_FORM = False
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = None
         JOIN_HINTS = False

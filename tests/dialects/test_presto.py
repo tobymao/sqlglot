@@ -211,6 +211,7 @@ class TestPresto(Validator):
                     "presto": f"SELECT INTERVAL '1' {expected}",
                     "trino": f"SELECT INTERVAL '1' {expected}",
                     "mysql": f"SELECT INTERVAL '1' {expected}",
+                    "doris": f"SELECT INTERVAL '1' {expected}",
                 },
             )
 

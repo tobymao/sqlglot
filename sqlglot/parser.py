@@ -4375,8 +4375,17 @@ class Parser(metaclass=_Parser):
         elif expressions:
             this.set("expressions", expressions)
 
-        while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-            this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)
+        index = self._index
+        while self._match(TokenType.L_BRACKET):
+            values = self._parse_csv(self._parse_conjunction) or None
+            if values and not schema:
+                self._retreat(index)
+                break
+
+            this = exp.DataType(
+                this=exp.DataType.Type.ARRAY, expressions=[this], values=values, nested=True
+            )
+            self._match(TokenType.R_BRACKET)
 
         if self.TYPE_CONVERTER and isinstance(this.this, exp.DataType.Type):
             converter = self.TYPE_CONVERTER.get(this.this)

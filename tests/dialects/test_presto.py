@@ -210,6 +210,7 @@ class TestPresto(Validator):
                     "bigquery": f"SELECT INTERVAL '1' {expected}",
                     "presto": f"SELECT INTERVAL '1' {expected}",
                     "trino": f"SELECT INTERVAL '1' {expected}",
+                    "mysql": f"SELECT INTERVAL '1' {expected}",
                 },
             )
 

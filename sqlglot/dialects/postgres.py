@@ -116,8 +116,8 @@ def _string_agg_sql(self: Postgres.Generator, expression: exp.GroupConcat) -> st
 
 def _datatype_sql(self: Postgres.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
-        values = self.expressions(expression, key="values", flat=True)
         if expression.expressions:
+            values = self.expressions(expression, key="values", flat=True)
             return f"{self.expressions(expression, flat=True)}[{values}]"
         return "ARRAY"
     return self.datatype_sql(expression)

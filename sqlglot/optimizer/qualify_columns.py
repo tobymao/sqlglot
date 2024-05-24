@@ -342,7 +342,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     """
     Converts `Column` instances that represent struct field lookup into chained `Dots`.
 
-    Structs field lookups look like columns (e.g. "struct"."field"), but they need to be
+    Struct field lookups look like columns (e.g. "struct"."field"), but they need to be
     qualified separately and represented as Dot(Dot(...(<table>.<column>, field1), field2, ...)).
     """
     converted = False
@@ -414,66 +414,77 @@ def _expand_struct_stars(
     expression: exp.Dot,
     next_alias_name: t.Callable[[], str],
 ) -> t.List[exp.Alias]:
-    struct_fields: t.List[str] = []
+    """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
-    # [BigQuery] Expand/Flatten foo.bar.* where bar is a struct column
-    starting_col = expression.find(exp.Column)
-    assert starting_col
+    dot_column = t.cast(exp.Column, expression.find(exp.Column))
+    if not dot_column or not dot_column.type:
+        return []
 
     dot_parts = expression.parts
-    table_name = starting_col.table
 
-    # If there's more nested levels specified, start the DFS traversal from the nested struct first
+    # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
+    starting_col = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
+
+    # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
     for part in dot_parts[2:-1]:
-        datatype = starting_col.find(exp.DataType) or (
-            starting_col.type and starting_col.type.find(exp.DataType)
-        )
-        assert datatype
-
-        for expr in datatype.expressions:
+        for expr in t.cast(exp.DataType, starting_col.kind).expressions:
+            # Unable to expand star unless all struct fields are named
             if not isinstance(expr.this, exp.Identifier):
                 return []
 
-            if expr.this.this == part.this:
+            if expr.name == part.name and expr.kind.this == exp.DataType.Type.STRUCT:
                 starting_col = expr
-                assert starting_col
 
-    if not starting_col or starting_col.this.this != dot_parts[-2].this:
-        raise OptimizeError(f"Unknown struct: {part.this}")
+    if starting_col.name != dot_parts[-2].name:
+        raise OptimizeError(f"Unknown struct: {part.name}")
 
-    starting_name = ".".join([part.this for part in dot_parts[1:-2]])
-    stack = [(starting_col, starting_name)]
+    # Each nested field caches it's path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
+    nested_fields: t.Dict[int, t.List[exp.Identifier]] = {id(starting_col): []}
+
+    # The keys to non-struct field entries in `nested_fields`
+    nested_field_keys = []
+
+    stack = [(starting_col, id(starting_col))]
 
     # Traverse & flatten the starting_col struct
     while stack:
-        col, path_name = stack.pop()
-        assert col
+        col, parent_struct_id = stack.pop()
+        id_col = id(col)
 
-        if not isinstance(col.this, exp.Identifier):
+        # Unable to expand star unless all struct fields are named and annotated
+        if not isinstance(col.this, exp.Identifier) or not col.kind:
             return []
 
-        path_name = col.this.this if not path_name else f"{path_name}.{col.this.this}"
-        datatype = col.find(exp.DataType) or (col.type and col.type.find(exp.DataType))
-        assert datatype
+        nested_fields[id_col] = list(
+            itertools.chain(
+                [part.copy() for part in nested_fields[parent_struct_id]], [col.this.copy()]
+            )
+        )
 
         # Collect the non-struct columns
-        if datatype.this != exp.DataType.Type.STRUCT:
-            struct_fields.append(path_name)
+        if col.kind.this != exp.DataType.Type.STRUCT:
+            nested_field_keys.append(id_col)
         else:
-            for expr in reversed(datatype.expressions):
-                stack.append((expr, path_name))
+            stack.extend((expr, id(col)) for expr in reversed(col.kind.expressions))
 
     new_selections = []
-
-    for struct_field in struct_fields:
-        root, *parts = struct_field.split(".")
-        alias_ = next_alias_name()
-        new_column: exp.Column | exp.Dot = exp.column(root, table=table_name)
+    for nested_fields_key in nested_field_keys:
+        # The fully qualified path of each field is created by:
+        # - The path until the starting_col, if any (dot_parts)
+        # - The path from the starting_col until the nested field (nested_structs[key])
+        root, *parts = list(
+            itertools.chain(
+                [part.copy() for part in dot_parts[1:-2]], nested_fields[nested_fields_key]
+            )
+        )
+        new_column: exp.Column | exp.Dot = exp.column(
+            t.cast(exp.Identifier, root), table=dot_column.table
+        )
 
         if parts:
-            new_column = exp.Dot.build([new_column, *[exp.Identifier(this=part) for part in parts]])
+            new_column = exp.Dot.build([new_column, *parts])
 
-        new_selections.append(alias(new_column, alias_, copy=False))
+        new_selections.append(alias(new_column, next_alias_name(), copy=False))
 
     return new_selections
 

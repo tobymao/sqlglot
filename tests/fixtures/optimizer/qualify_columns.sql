@@ -329,6 +329,12 @@ WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) as lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.* from tbl1;
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.col1 AS _field_0, tbl1.col.col2 AS _field_1, tbl1.col.lvl1.col1 AS _field_2, tbl1.col.lvl1.lvl2.col2 AS _field_3, tbl1.col.col3 AS _field_4 FROM tbl1 AS tbl1;
 
+# dialect: bigquery
+# execute: false
+# title: Cannot expand struct star with unnamed fields
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.col.* FROM tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.col.* FROM tbl1 AS tbl1;
+
 --------------------------------------
 -- CTEs
 --------------------------------------

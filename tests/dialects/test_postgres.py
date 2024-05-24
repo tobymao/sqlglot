@@ -734,6 +734,8 @@ class TestPostgres(Validator):
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
+        self.validate_identity("CREATE TABLE t (col INT[3][5])")
+        self.validate_identity("CREATE TABLE t (col INT[3])")
         self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")
         self.validate_identity("CREATE INDEX et_vid_idx ON et(vid) INCLUDE (fid)")
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
@@ -855,6 +857,14 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY[3])",
+            "CREATE TABLE t (col INT[3])",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY)",
+            "CREATE TABLE t (col INT[])",
         )
         self.validate_identity(
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path TO 'public'",

@@ -420,33 +420,34 @@ def _expand_struct_stars(
     if not dot_column or not dot_column.type:
         return []
 
-    dot_parts = expression.parts
+    # First part is the table name and last part is the star so they can be dropped
+    dot_parts = expression.parts[1:-1]
 
     # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
-    starting_col = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
+    starting_struct = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
 
     # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
-    for part in dot_parts[2:-1]:
-        for expr in t.cast(exp.DataType, starting_col.kind).expressions:
+    for part in dot_parts[1:]:
+        for expr in t.cast(exp.DataType, starting_struct.kind).expressions:
             # Unable to expand star unless all struct fields are named
             if not isinstance(expr.this, exp.Identifier):
                 return []
 
             if expr.name == part.name and expr.kind.this == exp.DataType.Type.STRUCT:
-                starting_col = expr
+                starting_struct = expr
 
-    if starting_col.name != dot_parts[-2].name:
-        raise OptimizeError(f"Unknown struct: {part.name}")
+    if starting_struct.name != dot_parts[-1].name:
+        raise OptimizeError(f"Unknown struct: {starting_struct.name}")
 
     # Each nested field caches it's path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
-    nested_fields: t.Dict[int, t.List[exp.Identifier]] = {id(starting_col): []}
+    nested_fields: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
 
     # The keys to non-struct field entries in `nested_fields`
     nested_field_keys = []
 
-    stack = [(starting_col, id(starting_col))]
+    stack = [(starting_struct, id(starting_struct))]
 
-    # Traverse & flatten the starting_col struct
+    # Traverse & flatten the starting struct
     while stack:
         col, parent_struct_id = stack.pop()
         id_col = id(col)
@@ -455,6 +456,7 @@ def _expand_struct_stars(
         if not isinstance(col.this, exp.Identifier) or not col.kind:
             return []
 
+        # Preserve the qualified path for this field
         nested_fields[id_col] = list(
             itertools.chain(
                 [part.copy() for part in nested_fields[parent_struct_id]], [col.this.copy()]
@@ -470,11 +472,11 @@ def _expand_struct_stars(
     new_selections = []
     for nested_fields_key in nested_field_keys:
         # The fully qualified path of each field is created by:
-        # - The path until the starting_col, if any (dot_parts)
-        # - The path from the starting_col until the nested field (nested_structs[key])
+        # - The path until the starting struct, if any (dot_parts)
+        # - The path from the starting struct until the nested field (nested_structs[key])
         root, *parts = list(
             itertools.chain(
-                [part.copy() for part in dot_parts[1:-2]], nested_fields[nested_fields_key]
+                [part.copy() for part in dot_parts[:-1]], nested_fields[nested_fields_key]
             )
         )
         new_column: exp.Column | exp.Dot = exp.column(

@@ -4274,7 +4274,7 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.L_PAREN):
             if is_struct:
-                expressions = self._parse_csv(self._parse_struct_types)
+                expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
             elif nested:
                 expressions = self._parse_csv(
                     lambda: self._parse_types(
@@ -4375,8 +4375,26 @@ class Parser(metaclass=_Parser):
         elif expressions:
             this.set("expressions", expressions)
 
-        while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-            this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)
+        index = self._index
+
+        # Postgres supports the INT ARRAY[3] syntax as a synonym for INT[3]
+        matched_array = self._match(TokenType.ARRAY)
+
+        while self._curr:
+            matched_l_bracket = self._match(TokenType.L_BRACKET)
+            if not matched_l_bracket and not matched_array:
+                break
+
+            matched_array = False
+            values = self._parse_csv(self._parse_conjunction) or None
+            if values and not schema:
+                self._retreat(index)
+                break
+
+            this = exp.DataType(
+                this=exp.DataType.Type.ARRAY, expressions=[this], values=values, nested=True
+            )
+            self._match(TokenType.R_BRACKET)
 
         if self.TYPE_CONVERTER and isinstance(this.this, exp.DataType.Type):
             converter = self.TYPE_CONVERTER.get(this.this)
@@ -4392,15 +4410,16 @@ class Parser(metaclass=_Parser):
             or self._parse_id_var()
         )
         self._match(TokenType.COLON)
-        column_def = self._parse_column_def(this)
 
-        if type_required and (
-            (isinstance(this, exp.Column) and this.this is column_def) or this is column_def
+        if (
+            type_required
+            and not isinstance(this, exp.DataType)
+            and not self._match_set(self.TYPE_TOKENS, advance=False)
         ):
             self._retreat(index)
             return self._parse_types()
 
-        return column_def
+        return self._parse_column_def(this)
 
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("AT", "TIME", "ZONE"):

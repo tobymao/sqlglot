@@ -1186,6 +1186,25 @@ WHERE
         )
 
     def test_ddl(self):
+        for constraint_prefix in ("WITH ", ""):
+            with self.subTest(f"Constraint prefix: {constraint_prefix}"):
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p)",
+                    "CREATE TABLE t (id INT MASKING POLICY p)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p USING (c1, c2, c3))",
+                    "CREATE TABLE t (id INT MASKING POLICY p USING (c1, c2, c3))",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p)",
+                    "CREATE TABLE t (id INT PROJECTION POLICY p)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
+                    "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
+                )
+
         self.validate_identity(
             """create external table et2(
   col1 date as (parse_json(metadata$external_table_partition):COL1::date),
@@ -1210,6 +1229,9 @@ WHERE
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)
+        self.validate_identity(
+            "ALTER TABLE db_name.schmaName.tblName ADD COLUMN COLUMN_1 VARCHAR NOT NULL TAG (key1='value_1')"
+        )
         self.validate_identity(
             "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN)))"
         )

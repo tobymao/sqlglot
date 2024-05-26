@@ -123,6 +123,8 @@ class Generator(metaclass=_Generator):
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
+        exp.ProjectionPolicyColumnConstraint: lambda self,
+        e: f"PROJECTION POLICY {self.sql(e, 'this')}",
         exp.RemoteWithConnectionModelProperty: lambda self,
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
         exp.ReturnsProperty: lambda self, e: (
@@ -139,6 +141,7 @@ class Generator(metaclass=_Generator):
         exp.StabilityProperty: lambda _, e: e.name,
         exp.StrictProperty: lambda *_: "STRICT",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
+        exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
         exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.expression),
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
@@ -3929,3 +3932,11 @@ class Generator(metaclass=_Generator):
             on_sql = self.func("ON", filter_col, retention_period)
 
         return f"DATA_DELETION={on_sql}"
+
+    def maskingpolicycolumnconstraint_sql(
+        self, expression: exp.MaskingPolicyColumnConstraint
+    ) -> str:
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" USING ({expressions})" if expressions else ""
+        return f"MASKING POLICY {this}{expressions}"

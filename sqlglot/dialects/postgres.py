@@ -336,6 +336,7 @@ class Postgres(Dialect):
             "REGPROCEDURE": TokenType.OBJECT_IDENTIFIER,
             "REGROLE": TokenType.OBJECT_IDENTIFIER,
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
+            "FLOAT": TokenType.DOUBLE,
         }
 
         SINGLE_TOKENS = {

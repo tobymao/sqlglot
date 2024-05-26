@@ -473,6 +473,14 @@ class Snowflake(Dialect):
             "TERSE USERS": _show_parser("USERS"),
         }
 
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "WITH": lambda self: self._parse_with_constraint(),
+            "MASKING": lambda self: self._parse_with_constraint(),
+            "PROJECTION": lambda self: self._parse_with_constraint(),
+            "TAG": lambda self: self._parse_with_constraint(),
+        }
+
         STAGED_FILE_SINGLE_TOKENS = {
             TokenType.DOT,
             TokenType.MOD,
@@ -496,6 +504,29 @@ class Snowflake(Dialect):
                 expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
             ),
         }
+
+        def _parse_with_constraint(self) -> t.Optional[exp.Expression]:
+            if self._prev.token_type != TokenType.WITH:
+                self._retreat(self._index - 1)
+
+            if self._match_text_seq("MASKING", "POLICY"):
+                return self.expression(
+                    exp.MaskingPolicyColumnConstraint,
+                    this=self._parse_id_var(),
+                    expressions=self._match(TokenType.USING)
+                    and self._parse_wrapped_csv(self._parse_id_var),
+                )
+            if self._match_text_seq("PROJECTION", "POLICY"):
+                return self.expression(
+                    exp.ProjectionPolicyColumnConstraint, this=self._parse_id_var()
+                )
+            if self._match(TokenType.TAG):
+                return self.expression(
+                    exp.TagColumnConstraint,
+                    expressions=self._parse_wrapped_csv(self._parse_property),
+                )
+
+            return None
 
         def _parse_create(self) -> exp.Create | exp.Command:
             expression = super()._parse_create()

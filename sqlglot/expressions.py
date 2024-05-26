@@ -1835,6 +1835,11 @@ class NotForReplicationColumnConstraint(ColumnConstraintKind):
     arg_types = {}
 
 
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class MaskingPolicyColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True, "expressions": False}
+
+
 class NotNullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 
@@ -1842,6 +1847,11 @@ class NotNullColumnConstraint(ColumnConstraintKind):
 # https://dev.mysql.com/doc/refman/5.7/en/timestamp-initialization.html
 class OnUpdateColumnConstraint(ColumnConstraintKind):
     pass
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class TagColumnConstraint(ColumnConstraintKind):
+    arg_types = {"expressions": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-external-table#optional-parameters
@@ -1866,6 +1876,11 @@ class UppercaseColumnConstraint(ColumnConstraintKind):
 
 
 class PathColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class ProjectionPolicyColumnConstraint(ColumnConstraintKind):
     pass
 
 

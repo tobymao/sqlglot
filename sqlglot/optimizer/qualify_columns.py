@@ -550,7 +550,7 @@ def _expand_stars(
                 tables = [expression.table]
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
-            elif dialect == "bigquery":
+            elif is_bigquery:
                 struct_fields = _expand_struct_stars(expression, next_alias_name)
                 if struct_fields:
                     new_selections.extend(struct_fields)

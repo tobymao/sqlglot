@@ -439,7 +439,7 @@ def _expand_struct_stars(
             if not isinstance(fld.this, exp.Identifier):
                 return []
 
-            if fld.name == part.name and fld.kind.this == exp.DataType.Type.STRUCT:
+            if fld.name == part.name and fld.kind.is_type(exp.DataType.Type.STRUCT):
                 starting_struct = fld
 
     if starting_struct.name != dot_parts[-1].name:
@@ -486,12 +486,8 @@ def _expand_struct_stars(
                 [part.copy() for part in dot_parts[:-1]], nested_fields[nested_fields_key]
             )
         )
-        new_column: exp.Column | exp.Dot = exp.column(
-            t.cast(exp.Identifier, root), table=dot_column.table
-        )
 
-        if parts:
-            new_column = exp.Dot.build([new_column, *parts])
+        new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
 
         new_selections.append(alias(new_column, next_alias_name(), copy=False))
 

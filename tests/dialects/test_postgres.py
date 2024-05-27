@@ -717,6 +717,9 @@ class TestPostgres(Validator):
         self.validate_identity(
             "COPY (SELECT * FROM t) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
         )
+        self.validate_identity("cast(a as FLOAT)", "CAST(a AS DOUBLE PRECISION)")
+        self.validate_identity("cast(a as FLOAT8)", "CAST(a AS DOUBLE PRECISION)")
+        self.validate_identity("cast(a as FLOAT4)", "CAST(a AS REAL)")
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

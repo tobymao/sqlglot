@@ -480,6 +480,10 @@ FROM (
         self.validate_identity("CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event")
         self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP NO")
         self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP YES")
+        self.validate_identity(
+            "select foo, bar from table_1 minus select foo, bar from table_2",
+            "SELECT foo, bar FROM table_1 EXCEPT SELECT foo, bar FROM table_2",
+        )
 
     def test_create_table_like(self):
         self.validate_identity(

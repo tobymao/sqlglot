@@ -417,29 +417,35 @@ def _expand_struct_stars(
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
     dot_column = t.cast(exp.Column, expression.find(exp.Column))
-    if not dot_column or not dot_column.type:
+    if not dot_column.is_type(exp.DataType.Type.STRUCT):
         return []
+
+    # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
+    dot_column = dot_column.copy()
+    starting_struct = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
 
     # First part is the table name and last part is the star so they can be dropped
     dot_parts = expression.parts[1:-1]
 
-    # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
-    starting_struct = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
-
     # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
     for part in dot_parts[1:]:
-        for expr in t.cast(exp.DataType, starting_struct.kind).expressions:
+        struct_fields = t.cast(exp.DataType, starting_struct.kind).expressions
+
+        if not struct_fields:
+            return []
+
+        for fld in struct_fields:
             # Unable to expand star unless all struct fields are named
-            if not isinstance(expr.this, exp.Identifier):
+            if not isinstance(fld.this, exp.Identifier):
                 return []
 
-            if expr.name == part.name and expr.kind.this == exp.DataType.Type.STRUCT:
-                starting_struct = expr
+            if fld.name == part.name and fld.kind.this == exp.DataType.Type.STRUCT:
+                starting_struct = fld
 
     if starting_struct.name != dot_parts[-1].name:
-        raise OptimizeError(f"Unknown struct: {starting_struct.name}")
+        return []
 
-    # Each nested field caches it's path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
+    # Each nested field caches its path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
     nested_fields: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
 
     # The keys to non-struct field entries in `nested_fields`
@@ -449,25 +455,26 @@ def _expand_struct_stars(
 
     # Traverse & flatten the starting struct
     while stack:
-        col, parent_struct_id = stack.pop()
-        id_col = id(col)
+        fld, parent_struct_id = stack.pop()
 
         # Unable to expand star unless all struct fields are named and annotated
-        if not isinstance(col.this, exp.Identifier) or not col.kind:
+        if not isinstance(fld.this, exp.Identifier) or not fld.kind:
             return []
 
+        id_fld = id(fld)
+
         # Preserve the qualified path for this field
-        nested_fields[id_col] = list(
+        nested_fields[id_fld] = list(
             itertools.chain(
-                [part.copy() for part in nested_fields[parent_struct_id]], [col.this.copy()]
+                [part.copy() for part in nested_fields[parent_struct_id]], [fld.this.copy()]
             )
         )
 
-        # Collect the non-struct columns
-        if col.kind.this != exp.DataType.Type.STRUCT:
-            nested_field_keys.append(id_col)
+        if not fld.kind.is_type(exp.DataType.Type.STRUCT):
+            # Collect the non-struct columns
+            nested_field_keys.append(id_fld)
         else:
-            stack.extend((expr, id(col)) for expr in reversed(col.kind.expressions))
+            stack.extend((expr, id_fld) for expr in reversed(fld.kind.expressions))
 
     new_selections = []
     for nested_fields_key in nested_field_keys:
@@ -527,7 +534,8 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
-    if dialect == "bigquery" and any(isinstance(col, exp.Dot) for col in scope.stars):
+    is_bigquery = dialect == "bigquery"
+    if is_bigquery and any(isinstance(col, exp.Dot) for col in scope.stars):
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 

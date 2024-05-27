@@ -3022,12 +3022,15 @@ class Generator(metaclass=_Generator):
         if comment:
             return f"ALTER COLUMN {this} COMMENT {comment}"
 
-        allow_null = self.sql(expression, "allow_null")
-        if allow_null:
-            nullability = "SET" if allow_null == "NOT NULL" else "DROP"
-            return f"ALTER COLUMN {this} {nullability} NOT NULL"
-        if not expression.args.get("drop"):
+        allow_null = expression.args.get("allow_null")
+        drop = expression.args.get("drop")
+
+        if not drop and not allow_null:
             self.unsupported("Unsupported ALTER COLUMN syntax")
+
+        if allow_null:
+            keyword = "DROP" if drop else "SET"
+            return f"ALTER COLUMN {this} {keyword} NOT NULL"
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 

@@ -6059,13 +6059,14 @@ class Parser(metaclass=_Parser):
             return self.expression(
                 exp.AlterColumn,
                 this=column,
-                allow_null=exp.NotNullColumnConstraint(allow_null=True),
+                drop=True,
+                allow_null=True,
             )
         if self._match_text_seq("SET", "NOT", "NULL"):
             return self.expression(
                 exp.AlterColumn,
                 this=column,
-                allow_null=exp.NotNullColumnConstraint(allow_null=False),
+                allow_null=False,
             )
         self._match_text_seq("SET", "DATA")
         self._match_text_seq("TYPE")

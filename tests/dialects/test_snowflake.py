@@ -48,6 +48,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")

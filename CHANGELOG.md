@@ -1,6 +1,36 @@
 Changelog
 =========
 
+## [v24.0.2] - 2024-05-28
+### :sparkles: New Features
+- [`078471d`](https://github.com/tobymao/sqlglot/commit/078471d3643da418c91b71dc7bfce5453b924028) - **mysql,doris**: improve transpilation of INTERVAL (plural to singular) *(PR [#3543](https://github.com/tobymao/sqlglot/pull/3543) by [@Toms1999](https://github.com/Toms1999))*
+- [`fe56e64`](https://github.com/tobymao/sqlglot/commit/fe56e64aff775002c52843b6b9df973d96349400) - **postgres**: add support for col int[size] column def syntax *(PR [#3548](https://github.com/tobymao/sqlglot/pull/3548) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3544](https://github.com/tobymao/sqlglot/issues/3544) opened by [@judahrand](https://github.com/judahrand)*
+  - :arrow_lower_right: *addresses issue [#3545](https://github.com/tobymao/sqlglot/issues/3545) opened by [@judahrand](https://github.com/judahrand)*
+- [`188dce8`](https://github.com/tobymao/sqlglot/commit/188dce8ae98f23b5741882c698109563445f11f6) - **snowflake**: add support for WITH-prefixed column constraints *(PR [#3549](https://github.com/tobymao/sqlglot/pull/3549) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3537](https://github.com/tobymao/sqlglot/issues/3537) opened by [@barino86](https://github.com/barino86)*
+- [`712d247`](https://github.com/tobymao/sqlglot/commit/712d24704f1be9e54fd6385d6fdbd05173b007aa) - add support for ALTER COLUMN DROP NOT NULL *(PR [#3550](https://github.com/tobymao/sqlglot/pull/3550) by [@noklam](https://github.com/noklam))*
+  - :arrow_lower_right: *addresses issue [#3534](https://github.com/tobymao/sqlglot/issues/3534) opened by [@barino86](https://github.com/barino86)*
+- [`7c323bd`](https://github.com/tobymao/sqlglot/commit/7c323bde83f1804d7a1e98fcf94e6832385a03d6) - add option in schema's find method to ensure types are DataTypes *(PR [#3560](https://github.com/tobymao/sqlglot/pull/3560) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`1a8a16b`](https://github.com/tobymao/sqlglot/commit/1a8a16b459c7fe20fc2c689ad601b5beac57a206) - **clickhouse**: improve struct type parsing *(PR [#3547](https://github.com/tobymao/sqlglot/pull/3547) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3546](https://github.com/tobymao/sqlglot/issues/3546) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`970d3b0`](https://github.com/tobymao/sqlglot/commit/970d3b03750d58ec236ce205bc250616e1fb1349) - **postgres**: setting un-suffixed FLOAT as DOUBLE ([#3551](https://github.com/tobymao/sqlglot/pull/3551)) *(PR [#3552](https://github.com/tobymao/sqlglot/pull/3552) by [@sandband](https://github.com/sandband))*
+  - :arrow_lower_right: *fixes issue [#3551](https://github.com/tobymao/sqlglot/issues/3551) opened by [@sandband](https://github.com/sandband)*
+- [`e1a9a8b`](https://github.com/tobymao/sqlglot/commit/e1a9a8b6b7fbd44e62cee626540f90425d22d50c) - **redshift**: add support for MINUS operator [#3553](https://github.com/tobymao/sqlglot/pull/3553) *(PR [#3555](https://github.com/tobymao/sqlglot/pull/3555) by [@sandband](https://github.com/sandband))*
+- [`beb0269`](https://github.com/tobymao/sqlglot/commit/beb0269b39e848897eaf56e1966d342db72e5c7c) - **tsql**: adapt TimeStrToTime to avoid superfluous casts *(PR [#3558](https://github.com/tobymao/sqlglot/pull/3558) by [@Themiscodes](https://github.com/Themiscodes))*
+- [`eae3c51`](https://github.com/tobymao/sqlglot/commit/eae3c5165c16b61c7b524a55776bdb1127005c7d) - use regex to split interval strings *(PR [#3556](https://github.com/tobymao/sqlglot/pull/3556) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3554](https://github.com/tobymao/sqlglot/issues/3554) opened by [@kevinjqiu](https://github.com/kevinjqiu)*
+
+### :recycle: Refactors
+- [`a67de5f`](https://github.com/tobymao/sqlglot/commit/a67de5faaa88c1fb5d9857a69c9df06506520cbc) - get rid of redundant dict_depth check in schema find *(PR [#3561](https://github.com/tobymao/sqlglot/pull/3561) by [@georgesittas](https://github.com/georgesittas))*
+- [`89a8984`](https://github.com/tobymao/sqlglot/commit/89a8984b8db3817d934b4395e190f3848b1ee77a) - move UNESCAPED_SEQUENCES out of the _Dialect metaclass *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`893addf`](https://github.com/tobymao/sqlglot/commit/893addf9d07602ec3a77097f38d696b6760c6038) - add SET NOT NULL test *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v24.0.1] - 2024-05-23
 ### :boom: BREAKING CHANGES
 - due to [`80c622e`](https://github.com/tobymao/sqlglot/commit/80c622e0c252ef3be9e469c1cf116c1cd4eaef94) - add reserved keywords fixes [#3526](https://github.com/tobymao/sqlglot/pull/3526) *(commit by [@georgesittas](https://github.com/georgesittas))*:
@@ -3753,3 +3783,4 @@ Changelog
 [v23.17.0]: https://github.com/tobymao/sqlglot/compare/v23.16.0...v23.17.0
 [v24.0.0]: https://github.com/tobymao/sqlglot/compare/v23.17.0...v24.0.0
 [v24.0.1]: https://github.com/tobymao/sqlglot/compare/v24.0.0...v24.0.1
+[v24.0.2]: https://github.com/tobymao/sqlglot/compare/v24.0.1...v24.0.2

@@ -1304,6 +1304,17 @@ WHERE
             read={"teradata": "CREATE MULTISET TABLE a (b INT)"},
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
+        self.validate_all(
+            """
+                ALTER TABLE a
+                ALTER COLUMN my_column DROP NOT NULL;
+            """,
+            write={
+                "snowflake": "ALTER TABLE a ALTER COLUMN my_column DROP NOT NULL",
+                "duckdb": "ALTER TABLE a ALTER COLUMN my_column DROP NOT NULL",
+                "postgres": "ALTER TABLE a ALTER COLUMN my_column DROP NOT NULL",
+            },
+        )
 
     def test_user_defined_functions(self):
         self.validate_all(

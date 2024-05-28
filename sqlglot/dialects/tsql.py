@@ -835,7 +835,7 @@ class TSQL(Dialect):
                 "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
-            exp.TimeStrToTime: timestrtotime_sql,
+            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATETIME)),
             exp.TimeToStr: _format_sql,
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),

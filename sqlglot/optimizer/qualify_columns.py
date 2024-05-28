@@ -430,7 +430,6 @@ def _expand_struct_stars(
     # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
     for part in dot_parts[1:]:
         struct_fields = t.cast(exp.DataType, starting_struct.kind).expressions
-        part_found = False
 
         if not struct_fields:
             return []
@@ -442,10 +441,9 @@ def _expand_struct_stars(
 
             if fld.name == part.name and fld.kind.is_type(exp.DataType.Type.STRUCT):
                 starting_struct = fld
-                part_found = True
                 break
-
-        if not part_found:
+        else:
+            # There is no matching field in the struct
             return []
 
     # Each nested field caches its path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]

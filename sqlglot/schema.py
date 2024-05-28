@@ -155,13 +155,16 @@ class AbstractMappingSchema:
             return [table.this.name]
         return [table.text(part) for part in exp.TABLE_PARTS if table.text(part)]
 
-    def find(self, table: exp.Table, raise_on_missing: bool = True) -> t.Optional[t.Any]:
+    def find(
+        self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+    ) -> t.Optional[t.Any]:
         """
         Returns the schema of a given table.
 
         Args:
             table: the target table.
             raise_on_missing: whether to raise in case the schema is not found.
+            ensure_data_types: whether to convert `str` types to their `DataType` equivalents.
 
         Returns:
             The schema of the target table.
@@ -238,6 +241,20 @@ class MappingSchema(AbstractMappingSchema, Schema):
             dialect=mapping_schema.dialect,
             normalize=mapping_schema.normalize,
         )
+
+    def find(
+        self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+    ) -> t.Optional[t.Any]:
+        schema = super().find(
+            table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
+        )
+        if ensure_data_types and isinstance(schema, dict) and dict_depth(schema) == 1:
+            schema = {
+                col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
+                for col, dtype in schema.items()
+            }
+
+        return schema
 
     def copy(self, **kwargs) -> MappingSchema:
         return MappingSchema(

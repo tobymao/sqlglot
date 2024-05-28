@@ -248,7 +248,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         schema = super().find(
             table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
         )
-        if ensure_data_types and isinstance(schema, dict) and dict_depth(schema) == 1:
+        if ensure_data_types and isinstance(schema, dict):
             schema = {
                 col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
                 for col, dtype in schema.items()

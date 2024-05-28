@@ -48,6 +48,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
@@ -109,6 +110,10 @@ WHERE
         )
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
+        )
+        self.validate_identity(
+            "CURRENT_TIMESTAMP - INTERVAL '1 w' AND (1 = 1)",
+            "CURRENT_TIMESTAMP() - INTERVAL '1 WEEK' AND (1 = 1)",
         )
         self.validate_identity(
             "REGEXP_REPLACE('target', 'pattern', '\n')",

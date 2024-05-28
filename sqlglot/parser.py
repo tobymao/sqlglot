@@ -4090,16 +4090,14 @@ class Parser(metaclass=_Parser):
         if this and this.is_number:
             this = exp.Literal.string(this.name)
         elif this and this.is_string:
-            parts = this.name.split()
-
-            if len(parts) == 2:
+            parts = exp.INTERVAL_STRING_RE.findall(this.name)
+            if len(parts) == 1:
                 if unit:
-                    # This is not actually a unit, it's something else (e.g. a "window side")
-                    unit = None
+                    # Unconsume the eagerly-parsed unit, since the real unit was part of the string
                     self._retreat(self._index - 1)
 
-                this = exp.Literal.string(parts[0])
-                unit = self.expression(exp.Var, this=parts[1].upper())
+                this = exp.Literal.string(parts[0][0])
+                unit = self.expression(exp.Var, this=parts[0][1].upper())
 
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(

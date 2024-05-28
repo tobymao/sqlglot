@@ -3028,7 +3028,7 @@ class Generator(metaclass=_Generator):
         if not drop and not allow_null:
             self.unsupported("Unsupported ALTER COLUMN syntax")
 
-        if allow_null:
+        if allow_null is not None:
             keyword = "DROP" if drop else "SET"
             return f"ALTER COLUMN {this} {keyword} NOT NULL"
 

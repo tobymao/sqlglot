@@ -317,17 +317,17 @@ SELECT s.b AS b FROM (SELECT t1.b AS b FROM t1 AS t1 UNION ALL SELECT t2.b AS b 
 # dialect: bigquery
 # execute: false
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) as lvl2) as lvl1) as col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) as lvl2) as lvl1) as col) SELECT tbl1.col.*, tbl2.col.* FROM tbl1, tbl2;
-WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.col1 AS _field_0, tbl1.col.col2 AS _field_1, tbl1.col.lvl1.col1 AS _field_2, tbl1.col.lvl1.lvl2.col2 AS _field_3, tbl2.col.col1 AS _field_4, tbl2.col.col2 AS _field_5, tbl2.col.lvl1.col1 AS _field_6, tbl2.col.lvl1.lvl2.col2 AS _field_7 FROM tbl1 AS tbl1, tbl2 AS tbl2;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.col1 AS _f_0, tbl1.col.col2 AS _f_1, tbl1.col.lvl1.col1 AS _f_2, tbl1.col.lvl1.lvl2.col2 AS _f_3, tbl2.col.col1 AS _f_4, tbl2.col.col2 AS _f_5, tbl2.col.lvl1.col1 AS _f_6, tbl2.col.lvl1.lvl2.col2 AS _f_7 FROM tbl1 AS tbl1, tbl2 AS tbl2;
 
 # dialect: bigquery
 # execute: false
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) as lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.lvl1.* from tbl1;
-WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.lvl1.col1 AS _field_0, tbl1.col.lvl1.lvl2.col2 AS _field_1 FROM tbl1 AS tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.lvl1.col1 AS _f_0, tbl1.col.lvl1.lvl2.col2 AS _f_1 FROM tbl1 AS tbl1;
 
 # dialect: bigquery
 # execute: false
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) as lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.* from tbl1;
-WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.col1 AS _field_0, tbl1.col.col2 AS _field_1, tbl1.col.lvl1.col1 AS _field_2, tbl1.col.lvl1.lvl2.col2 AS _field_3, tbl1.col.col3 AS _field_4 FROM tbl1 AS tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.col1 AS _f_0, tbl1.col.col2 AS _f_1, tbl1.col.lvl1.col1 AS _f_2, tbl1.col.lvl1.lvl2.col2 AS _f_3, tbl1.col.col3 AS _f_4 FROM tbl1 AS tbl1;
 
 # dialect: bigquery
 # execute: false

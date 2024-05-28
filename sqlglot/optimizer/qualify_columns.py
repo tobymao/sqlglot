@@ -53,7 +53,7 @@ def qualify_columns(
     infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = Dialect.get_or_raise(schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
-    next_alias_name = name_sequence("_field_")
+    next_alias_name = name_sequence("_f_")
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
@@ -472,7 +472,7 @@ def _expand_struct_stars(
         ]
 
         if not fld.kind.is_type(exp.DataType.Type.STRUCT):
-            # Collect the non-struct columns
+            # Collect the nested non-struct fields
             fld_keys.append(fld_id)
         else:
             stack.extend((expr, fld_id) for expr in reversed(fld.kind.expressions))

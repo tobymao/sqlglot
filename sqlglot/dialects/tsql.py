@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     build_date_delta,
     rename_func,
-    timestrtotime_sql,
     trim_sql,
 )
 from sqlglot.helper import seq_get
@@ -835,7 +834,9 @@ class TSQL(Dialect):
                 "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
-            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATETIME)),
+            exp.TimeStrToTime: lambda self, e: self.sql(
+                exp.cast(e.this, exp.DataType.Type.DATETIME)
+            ),
             exp.TimeToStr: _format_sql,
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),

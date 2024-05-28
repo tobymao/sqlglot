@@ -430,6 +430,7 @@ def _expand_struct_stars(
     # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
     for part in dot_parts[1:]:
         struct_fields = t.cast(exp.DataType, starting_struct.kind).expressions
+        part_found = False
 
         if not struct_fields:
             return []
@@ -441,15 +442,17 @@ def _expand_struct_stars(
 
             if fld.name == part.name and fld.kind.is_type(exp.DataType.Type.STRUCT):
                 starting_struct = fld
+                part_found = True
+                break
 
-    if starting_struct.name != dot_parts[-1].name:
-        return []
+        if not part_found:
+            return []
 
     # Each nested field caches its path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
-    nested_fields: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
+    fld_path: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
 
     # The keys to non-struct field entries in `nested_fields`
-    nested_field_keys = []
+    fld_keys = []
 
     stack = [(starting_struct, id(starting_struct))]
 
@@ -461,31 +464,25 @@ def _expand_struct_stars(
         if not isinstance(fld.this, exp.Identifier) or not fld.kind:
             return []
 
-        id_fld = id(fld)
+        fld_id = id(fld)
 
         # Preserve the qualified path for this field
-        nested_fields[id_fld] = list(
-            itertools.chain(
-                [part.copy() for part in nested_fields[parent_struct_id]], [fld.this.copy()]
-            )
-        )
+        fld_path[fld_id] = [
+            part.copy() for part in itertools.chain(fld_path[parent_struct_id], [fld.this])
+        ]
 
         if not fld.kind.is_type(exp.DataType.Type.STRUCT):
             # Collect the non-struct columns
-            nested_field_keys.append(id_fld)
+            fld_keys.append(fld_id)
         else:
-            stack.extend((expr, id_fld) for expr in reversed(fld.kind.expressions))
+            stack.extend((expr, fld_id) for expr in reversed(fld.kind.expressions))
 
     new_selections = []
-    for nested_fields_key in nested_field_keys:
+    for fld_key in fld_keys:
         # The fully qualified path of each field is created by:
         # - The path until the starting struct, if any (dot_parts)
-        # - The path from the starting struct until the nested field (nested_structs[key])
-        root, *parts = list(
-            itertools.chain(
-                [part.copy() for part in dot_parts[:-1]], nested_fields[nested_fields_key]
-            )
-        )
+        # - The path from the starting struct until the nested field (fld_path[fld_key])
+        root, *parts = [part.copy() for part in itertools.chain(dot_parts[:-1], fld_path[fld_key])]
 
         new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
 

@@ -4094,7 +4094,6 @@ class Parser(metaclass=_Parser):
             if len(parts) == 1:
                 if unit:
                     # Unconsume the eagerly-parsed unit, since the real unit was part of the string
-                    unit = None
                     self._retreat(self._index - 1)
 
                 this = exp.Literal.string(parts[0][0])

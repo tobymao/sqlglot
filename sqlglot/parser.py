@@ -1810,7 +1810,7 @@ class Parser(metaclass=_Parser):
     def _parse_wrapped_properties(self) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_property)
 
-    def _parse_property(self, parse_as_var: bool = False) -> t.Optional[exp.Expression]:
+    def _parse_property(self) -> t.Optional[exp.Expression]:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -1824,21 +1824,25 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
         index = self._index
-        key = self._parse_var(any_token=True) if parse_as_var else self._parse_column()
+        key = self._parse_column()
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
             return self._parse_sequence_properties()
 
+        # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
+        if isinstance(key, exp.Column):
+            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.this.name)
+
         value = self._parse_bitwise() or self._parse_var(any_token=True)
 
-        if parse_as_var and isinstance(value, exp.Column) and not value.this.quoted:
-            # Transform unquoted columns/identifiers from _parse_bitwise to vars
+        # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
+        if isinstance(value, exp.Column):
             value = exp.var(value.this.name)
 
         return self.expression(
             exp.Property,
-            this=key.to_dot() if isinstance(key, exp.Column) else key,
+            this=key,
             value=value,
         )
 
@@ -6640,7 +6644,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
         while self._curr and not self._match(TokenType.R_PAREN):
-            opts.append(self._parse_property(parse_as_var=True))
+            opts.append(self._parse_property())
             self._match(TokenType.COMMA)
         return opts
 

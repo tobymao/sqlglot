@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## [v24.0.3] - 2024-05-29
+### :bug: Bug Fixes
+- [`fb8db9f`](https://github.com/tobymao/sqlglot/commit/fb8db9f2219cfd578fda5c3f51737c180d5aecc6) - **parser**: edge case where TYPE_CONVERTERS leads to type instead of column *(PR [#3566](https://github.com/tobymao/sqlglot/pull/3566) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3565](https://github.com/tobymao/sqlglot/issues/3565) opened by [@galunto](https://github.com/galunto)*
+- [`aac8570`](https://github.com/tobymao/sqlglot/commit/aac85705c43edfcd1ebb552573f496c14dce519b) - use index2 instead of self._index in _parse_type index difference *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v24.0.2] - 2024-05-28
 ### :sparkles: New Features
 - [`078471d`](https://github.com/tobymao/sqlglot/commit/078471d3643da418c91b71dc7bfce5453b924028) - **mysql,doris**: improve transpilation of INTERVAL (plural to singular) *(PR [#3543](https://github.com/tobymao/sqlglot/pull/3543) by [@Toms1999](https://github.com/Toms1999))*
@@ -3784,3 +3791,4 @@ Changelog
 [v24.0.0]: https://github.com/tobymao/sqlglot/compare/v23.17.0...v24.0.0
 [v24.0.1]: https://github.com/tobymao/sqlglot/compare/v24.0.0...v24.0.1
 [v24.0.2]: https://github.com/tobymao/sqlglot/compare/v24.0.1...v24.0.2
+[v24.0.3]: https://github.com/tobymao/sqlglot/compare/v24.0.2...v24.0.3

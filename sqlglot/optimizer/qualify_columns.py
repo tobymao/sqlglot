@@ -6,7 +6,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import seq_get, SingleValuedMapping
+from sqlglot.helper import seq_get, SingleValuedMapping, name_sequence
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
@@ -53,6 +53,7 @@ def qualify_columns(
     infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = Dialect.get_or_raise(schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
+    next_alias_name = name_sequence("_f_")
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
@@ -63,6 +64,7 @@ def qualify_columns(
         if schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver)
 
+        _convert_columns_to_dots(scope, resolver)
         _qualify_columns(scope, resolver)
 
         if not schema.empty and expand_alias_refs:
@@ -70,7 +72,14 @@ def qualify_columns(
 
         if not isinstance(scope.expression, exp.UDTF):
             if expand_stars:
-                _expand_stars(scope, resolver, using_column_tables, pseudocolumns)
+                _expand_stars(
+                    scope,
+                    resolver,
+                    using_column_tables,
+                    pseudocolumns,
+                    annotator,
+                    next_alias_name,
+                )
             qualify_outputs(scope)
 
         _expand_group_by(scope)
@@ -329,6 +338,47 @@ def _select_by_pos(scope: Scope, node: exp.Literal) -> exp.Alias:
         raise OptimizeError(f"Unknown output column: {node.name}")
 
 
+def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+    """
+    Converts `Column` instances that represent struct field lookup into chained `Dots`.
+
+    Struct field lookups look like columns (e.g. "struct"."field"), but they need to be
+    qualified separately and represented as Dot(Dot(...(<table>.<column>, field1), field2, ...)).
+    """
+    converted = False
+    for column in itertools.chain(scope.columns, scope.stars):
+        if isinstance(column, exp.Dot):
+            continue
+
+        column_table: t.Optional[str | exp.Identifier] = column.table
+        if (
+            column_table
+            and column_table not in scope.sources
+            and (
+                not scope.parent
+                or column_table not in scope.parent.sources
+                or not scope.is_correlated_subquery
+            )
+        ):
+            root, *parts = column.parts
+
+            if root.name in scope.sources:
+                # The struct is already qualified, but we still need to change the AST
+                column_table = root
+                root, *parts = parts
+            else:
+                column_table = resolver.get_table(root.name)
+
+            if column_table:
+                converted = True
+                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
+
+    if converted:
+        # We want to re-aggregate the converted columns, otherwise they'd be skipped in
+        # a `for column in scope.columns` iteration, even though they shouldn't be
+        scope.clear_cache()
+
+
 def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
@@ -347,30 +397,10 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
                 column.set("table", exp.to_identifier(scope.pivots[0].alias))
                 continue
 
-            column_table = resolver.get_table(column_name)
-
             # column_table can be a '' because bigquery unnest has no table alias
+            column_table = resolver.get_table(column_name)
             if column_table:
                 column.set("table", column_table)
-        elif column_table not in scope.sources and (
-            not scope.parent
-            or column_table not in scope.parent.sources
-            or not scope.is_correlated_subquery
-        ):
-            # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
-            # separately and represented as dot(dot(...(<table>.<column>, field1), field2, ...))
-
-            root, *parts = column.parts
-
-            if root.name in scope.sources:
-                # struct is already qualified, but we still need to change the AST representation
-                column_table = root
-                root, *parts = parts
-            else:
-                column_table = resolver.get_table(root.name)
-
-            if column_table:
-                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
 
     for pivot in scope.pivots:
         for column in pivot.find_all(exp.Column):
@@ -380,11 +410,94 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
                     column.set("table", column_table)
 
 
+def _expand_struct_stars(
+    expression: exp.Dot,
+    next_alias_name: t.Callable[[], str],
+) -> t.List[exp.Alias]:
+    """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
+
+    dot_column = t.cast(exp.Column, expression.find(exp.Column))
+    if not dot_column.is_type(exp.DataType.Type.STRUCT):
+        return []
+
+    # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
+    dot_column = dot_column.copy()
+    starting_struct = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
+
+    # First part is the table name and last part is the star so they can be dropped
+    dot_parts = expression.parts[1:-1]
+
+    # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
+    for part in dot_parts[1:]:
+        struct_fields = t.cast(exp.DataType, starting_struct.kind).expressions
+
+        if not struct_fields:
+            return []
+
+        for field in struct_fields:
+            # Unable to expand star unless all struct fields are named
+            if not isinstance(field.this, exp.Identifier):
+                return []
+
+            if field.name == part.name and field.kind.is_type(exp.DataType.Type.STRUCT):
+                starting_struct = field
+                break
+        else:
+            # There is no matching field in the struct
+            return []
+
+    # Each nested field caches its path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
+    field_path: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
+
+    # The keys to non-struct field entries in `nested_fields`
+    field_keys = []
+
+    stack = [(starting_struct, id(starting_struct))]
+
+    # Traverse & flatten the starting struct
+    while stack:
+        field, parent_struct_id = stack.pop()
+
+        # Unable to expand star unless all struct fields are named and annotated
+        if not isinstance(field.this, exp.Identifier) or not field.kind:
+            return []
+
+        field_id = id(field)
+
+        # Preserve the qualified path for this field
+        field_path[field_id] = [
+            part.copy() for part in itertools.chain(field_path[parent_struct_id], [field.this])
+        ]
+
+        if not field.kind.is_type(exp.DataType.Type.STRUCT):
+            # Collect the nested non-struct fields
+            field_keys.append(field_id)
+        else:
+            stack.extend((expr, field_id) for expr in reversed(field.kind.expressions))
+
+    new_selections = []
+    for field_key in field_keys:
+        # The fully qualified path of each field is created by:
+        # - The path until the starting struct, if any (dot_parts)
+        # - The path from the starting struct until the nested field (field_path[field_key])
+        root, *parts = [
+            part.copy() for part in itertools.chain(dot_parts[:-1], field_path[field_key])
+        ]
+
+        new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
+
+        new_selections.append(alias(new_column, next_alias_name(), copy=False))
+
+    return new_selections
+
+
 def _expand_stars(
     scope: Scope,
     resolver: Resolver,
     using_column_tables: t.Dict[str, t.Any],
     pseudocolumns: t.Set[str],
+    annotator: TypeAnnotator,
+    next_alias_name: t.Callable[[], str],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -392,6 +505,7 @@ def _expand_stars(
     except_columns: t.Dict[int, t.Set[str]] = {}
     replace_columns: t.Dict[int, t.Dict[str, str]] = {}
     coalesced_columns = set()
+    dialect = resolver.schema.dialect
 
     pivot_output_columns = None
     pivot_exclude_columns = None
@@ -413,16 +527,29 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
+    is_bigquery = dialect == "bigquery"
+    if is_bigquery and any(isinstance(col, exp.Dot) for col in scope.stars):
+        # Found struct expansion, annotate scope ahead of time
+        annotator.annotate_scope(scope)
+
     for expression in scope.expression.selects:
+        tables = []
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
-        elif expression.is_star and not isinstance(expression, exp.Dot):
-            tables = [expression.table]
-            _add_except_columns(expression.this, tables, except_columns)
-            _add_replace_columns(expression.this, tables, replace_columns)
-        else:
+        elif expression.is_star:
+            if not isinstance(expression, exp.Dot):
+                tables = [expression.table]
+                _add_except_columns(expression.this, tables, except_columns)
+                _add_replace_columns(expression.this, tables, replace_columns)
+            elif is_bigquery:
+                struct_fields = _expand_struct_stars(expression, next_alias_name)
+                if struct_fields:
+                    new_selections.extend(struct_fields)
+                    continue
+
+        if not tables:
             new_selections.append(expression)
             continue
 

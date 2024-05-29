@@ -3,7 +3,6 @@ from __future__ import annotations
 import inspect
 import typing as t
 
-import sqlglot
 from sqlglot import Schema, exp
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -72,7 +71,7 @@ def optimize(
     Returns:
         The optimized expression.
     """
-    schema = ensure_schema(schema or sqlglot.schema, dialect=dialect)
+    schema = ensure_schema(schema, dialect=dialect)
     possible_kwargs = {
         "db": db,
         "catalog": catalog,

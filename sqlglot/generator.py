@@ -3882,7 +3882,7 @@ class Generator(metaclass=_Generator):
         else:
             # Snowflake case: CREDENTIALS = (...)
             credentials = self.expressions(expression, key="credentials", flat=True, sep=" ")
-            credentials = f"CREDENTIALS = ({credentials})" if cred_expr else ""
+            credentials = f"CREDENTIALS = ({credentials})" if cred_expr is not None else ""
 
         storage = self.sql(expression, "storage")
 

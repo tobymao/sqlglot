@@ -1810,7 +1810,7 @@ class Parser(metaclass=_Parser):
     def _parse_wrapped_properties(self) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_property)
 
-    def _parse_property(self) -> t.Optional[exp.Expression]:
+    def _parse_property(self, parse_as_var: bool = False) -> t.Optional[exp.Expression]:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -1824,16 +1824,22 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
         index = self._index
-        key = self._parse_column()
+        key = self._parse_var(any_token=True) if parse_as_var else self._parse_column()
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
             return self._parse_sequence_properties()
 
+        value = self._parse_bitwise() or self._parse_var(any_token=True)
+
+        if parse_as_var and isinstance(value, exp.Column) and not value.this.quoted:
+            # Transform unquoted columns/identifiers from _parse_bitwise to vars
+            value = exp.var(value.this.name)
+
         return self.expression(
             exp.Property,
             this=key.to_dot() if isinstance(key, exp.Column) else key,
-            value=self._parse_bitwise() or self._parse_var(any_token=True),
+            value=value,
         )
 
     def _parse_stored(self) -> exp.FileFormatProperty:
@@ -6634,7 +6640,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
         while self._curr and not self._match(TokenType.R_PAREN):
-            opts.append(self._parse_var_property())
+            opts.append(self._parse_property(parse_as_var=True))
             self._match(TokenType.COMMA)
         return opts
 
@@ -6667,33 +6673,16 @@ class Parser(metaclass=_Parser):
 
         return options
 
-    def _parse_var_property(self) -> t.Optional[exp.Expression]:
-        prop = self._parse_property()
-
-        if not isinstance(prop, exp.Property):
-            return prop
-
-        # Replace the unquoted identifiers with vars
-        this = prop.this.find(exp.Identifier)
-        value = prop.args.get("value")
-        value = value.find(exp.Identifier) if value else None
-        if this and not this.quoted:
-            this.replace(exp.var(this.name))
-        if value and not value.quoted:
-            value.replace(exp.var(value.name))
-
-        return prop
-
     def _parse_credentials(self) -> t.Optional[exp.Credentials]:
         expr = self.expression(exp.Credentials)
 
         if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
-            expr.set("storage", self._parse_var_property())
+            expr.set("storage", self._parse_property(parse_as_var=True))
         if self._match_text_seq("CREDENTIALS"):
             creds: t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]] = None
             if self._match(TokenType.EQ):
                 # Snowflake case: CREDENTIALS = (...) . Note that empty parens are allowed too, thus the var fallback
-                creds = self._parse_wrapped_options() or [exp.Var(this=None)]
+                creds = self._parse_wrapped_options()
             else:
                 # Redshift case: CREDENTIALS <string>
                 creds = self._parse_field()

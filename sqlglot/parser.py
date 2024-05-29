@@ -6679,13 +6679,10 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("STORAGE_INTEGRATION", "="):
             expr.set("storage", self._parse_field())
         if self._match_text_seq("CREDENTIALS"):
-            creds: t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]] = None
-            if self._match(TokenType.EQ):
-                # Snowflake case: CREDENTIALS = (...) . Note that empty parens are allowed too, thus the var fallback
-                creds = self._parse_wrapped_options()
-            else:
-                # Redshift case: CREDENTIALS <string>
-                creds = self._parse_field()
+            # Snowflake case: CREDENTIALS = (...), Redshift case: CREDENTIALS <string>
+            creds = (
+                self._parse_wrapped_options() if self._match(TokenType.EQ) else self._parse_field()
+            )
             expr.set("credentials", creds)
         if self._match_text_seq("ENCRYPTION"):
             expr.set("encryption", self._parse_wrapped_options())

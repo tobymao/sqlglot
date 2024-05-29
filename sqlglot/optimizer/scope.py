@@ -239,12 +239,9 @@ class Scope:
         return self._subqueries
 
     @property
-    def stars(self):
+    def stars(self) -> t.List[exp.Column | exp.Dot]:
         """
-        List of star columns in this scope.
-
-        Returns:
-            list[exp.Column]: Column instances in this scope that are a star.
+        List of star expressions (columns or dots) in this scope.
         """
         self._ensure_collected()
         return self._stars

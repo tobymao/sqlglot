@@ -429,12 +429,7 @@ def _expand_struct_stars(
 
     # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
     for part in dot_parts[1:]:
-        struct_fields = t.cast(exp.DataType, starting_struct.kind).expressions
-
-        if not struct_fields:
-            return []
-
-        for field in struct_fields:
+        for field in t.cast(exp.DataType, starting_struct.kind).expressions:
             # Unable to expand star unless all struct fields are named
             if not isinstance(field.this, exp.Identifier):
                 return []
@@ -535,12 +530,12 @@ def _expand_stars(
     for expression in scope.expression.selects:
         tables = []
         if isinstance(expression, exp.Star):
-            tables = list(scope.selected_sources)
+            tables.extend(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
         elif expression.is_star:
             if not isinstance(expression, exp.Dot):
-                tables = [expression.table]
+                tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
             elif is_bigquery:

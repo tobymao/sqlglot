@@ -4212,7 +4212,7 @@ class Parser(metaclass=_Parser):
             #
             # In these cases, we don't really want to return the converted type, but instead retreat
             # and try to parse a Column or Identifier in the section below.
-            if data_type.expressions and self._index - index > 1:
+            if data_type.expressions and index2 - index > 1:
                 self._retreat(index2)
                 return self._parse_column_ops(data_type)
 

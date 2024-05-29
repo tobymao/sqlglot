@@ -4199,7 +4199,20 @@ class Parser(metaclass=_Parser):
 
                 return self.expression(exp.Cast, this=this, to=data_type)
 
-            if data_type.expressions:
+            # The expressions arg gets set by the parser when we have something like DECIMAL(38, 0)
+            # in the input SQL. In that case, we'll produce these tokens: DECIMAL ( 38 , 0 )
+            #
+            # If the index difference here is greater than 1, that means the parser itself must have
+            # consumed additional tokens such as the DECIMAL scale and precision in the above example.
+            #
+            # If it's not greater than 1, then it must be 1, because we've consumed at least the type
+            # keyword, meaning that the expressions arg of the DataType must have gotten set by a
+            # callable in the TYPE_CONVERTERS mapping. For example, Snowflake converts DECIMAL to
+            # DECIMAL(38, 0)) in order to facilitate the data type's transpilation.
+            #
+            # In these cases, we don't really want to return the converted type, but instead retreat
+            # and try to parse a Column or Identifier in the section below.
+            if data_type.expressions and self._index - index > 1:
                 self._retreat(index2)
                 return self._parse_column_ops(data_type)
 

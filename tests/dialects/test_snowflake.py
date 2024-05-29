@@ -48,6 +48,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")

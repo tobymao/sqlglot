@@ -4199,7 +4199,10 @@ class Parser(metaclass=_Parser):
 
                 return self.expression(exp.Cast, this=this, to=data_type)
 
-            if data_type.expressions:
+            # We may have set `expressions` using the `TYPE_CONVERTERS` mapping, in which
+            # case we shouldn't really move on with the data type, but instead retreat to
+            # parse a column reference; the index difference is used as a proxy to detect this
+            if data_type.expressions and self._index - index > 1:
                 self._retreat(index2)
                 return self._parse_column_ops(data_type)
 

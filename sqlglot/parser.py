@@ -6676,8 +6676,8 @@ class Parser(metaclass=_Parser):
     def _parse_credentials(self) -> t.Optional[exp.Credentials]:
         expr = self.expression(exp.Credentials)
 
-        if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
-            expr.set("storage", self._parse_property(parse_as_var=True))
+        if self._match_text_seq("STORAGE_INTEGRATION", "="):
+            expr.set("storage", self._parse_field())
         if self._match_text_seq("CREDENTIALS"):
             creds: t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]] = None
             if self._match(TokenType.EQ):

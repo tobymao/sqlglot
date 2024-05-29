@@ -3885,6 +3885,7 @@ class Generator(metaclass=_Generator):
             credentials = f"CREDENTIALS = ({credentials})" if cred_expr is not None else ""
 
         storage = self.sql(expression, "storage")
+        storage = f"STORAGE_INTEGRATION = {storage}" if storage else ""
 
         encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
         encryption = f" ENCRYPTION = ({encryption})" if encryption else ""

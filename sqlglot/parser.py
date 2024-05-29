@@ -6634,7 +6634,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
         while self._curr and not self._match(TokenType.R_PAREN):
-            opts.append(self._parse_conjunction())
+            opts.append(self._parse_var_property())
             self._match(TokenType.COMMA)
         return opts
 
@@ -6667,16 +6667,36 @@ class Parser(metaclass=_Parser):
 
         return options
 
+    def _parse_var_property(self) -> t.Optional[exp.Expression]:
+        prop = self._parse_property()
+
+        if not isinstance(prop, exp.Property):
+            return prop
+
+        # Replace the unquoted identifiers with vars
+        this = prop.this.find(exp.Identifier)
+        value = prop.args.get("value")
+        value = value.find(exp.Identifier) if value else None
+        if this and not this.quoted:
+            this.replace(exp.var(this.name))
+        if value and not value.quoted:
+            value.replace(exp.var(value.name))
+
+        return prop
+
     def _parse_credentials(self) -> t.Optional[exp.Credentials]:
         expr = self.expression(exp.Credentials)
 
         if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
-            expr.set("storage", self._parse_conjunction())
+            expr.set("storage", self._parse_var_property())
         if self._match_text_seq("CREDENTIALS"):
-            # Snowflake supports CREDENTIALS = (...), while Redshift CREDENTIALS <string>
-            creds = (
-                self._parse_wrapped_options() if self._match(TokenType.EQ) else self._parse_field()
-            )
+            creds: t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]] = None
+            if self._match(TokenType.EQ):
+                # Snowflake case: CREDENTIALS = (...) . Note that empty parens are allowed too, thus the var fallback
+                creds = self._parse_wrapped_options() or [exp.Var(this=None)]
+            else:
+                # Redshift case: CREDENTIALS <string>
+                creds = self._parse_field()
             expr.set("credentials", creds)
         if self._match_text_seq("ENCRYPTION"):
             expr.set("encryption", self._parse_wrapped_options())
@@ -6696,7 +6716,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.INTO)
 
         this = (
-            self._parse_conjunction()
+            self._parse_select(nested=True, parse_subquery_alias=False)
             if self._match(TokenType.L_PAREN, advance=False)
             else self._parse_table(schema=True)
         )

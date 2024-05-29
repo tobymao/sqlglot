@@ -441,7 +441,8 @@ def _expand_struct_stars(
             # There is no matching field in the struct
             return []
 
-    # Each nested field caches its path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
+    # Each nested field caches its path in exp.Identifier parts,
+    # e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
     field_path: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
 
     # The keys to non-struct field entries in `nested_fields`
@@ -478,9 +479,7 @@ def _expand_struct_stars(
         root, *parts = [
             part.copy() for part in itertools.chain(dot_parts[:-1], field_path[field_key])
         ]
-
         new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
-
         new_selections.append(alias(new_column, next_alias_name(), copy=False))
 
     return new_selections

@@ -326,7 +326,7 @@ class TestOptimizer(unittest.TestCase):
                 schema=MappingSchema(schema=None, dialect="bigquery"),
                 infer_schema=False,
             ).sql(dialect="bigquery"),
-            "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS _f_0, tbl1.col.f1 AS _f_1 FROM tbl1",
+            "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
         )
 
         self.check_file(

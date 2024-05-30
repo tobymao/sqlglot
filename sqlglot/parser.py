@@ -1134,7 +1134,7 @@ class Parser(metaclass=_Parser):
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
 
-    COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS"}
+    COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS", "CREDENTIAL"}
 
     STRICT_CAST = True
 
@@ -1865,7 +1865,7 @@ class Parser(metaclass=_Parser):
             ),
         )
 
-    def _parse_unquoted_field(self):
+    def _parse_unquoted_field(self) -> t.Optional[exp.Expression]:
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
             field = exp.var(field)
@@ -6646,8 +6646,16 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
         while self._curr and not self._match(TokenType.R_PAREN):
-            opts.append(self._parse_property())
+            option: t.Optional[exp.Expression] = None
+            if self._match_text_seq("FORMAT_NAME", "="):
+                # Snowflake FORMAT_NAME can include an identifier from a created format
+                option = exp.Property(this=exp.var("FORMAT_NAME"), value=self._parse_field())
+            else:
+                option = self._parse_property()
+
+            opts.append(option)
             self._match(TokenType.COMMA)
+
         return opts
 
     def _parse_copy_parameters(self) -> t.List[exp.CopyParameter]:
@@ -6657,6 +6665,7 @@ class Parser(metaclass=_Parser):
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
             option = self._parse_var(any_token=True)
             prev = self._prev.text.upper()
+            value: t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]] = None
 
             # Different dialects might separate options and values by white space, "=" and "AS"
             self._match(TokenType.EQ)
@@ -6667,6 +6676,9 @@ class Parser(metaclass=_Parser):
             ):
                 # Snowflake FILE_FORMAT case, Databricks COPY & FORMAT options
                 value = self._parse_wrapped_options()
+            elif prev == "FILE_FORMAT":
+                # T-SQL's external file format case
+                value = self._parse_field()
             else:
                 value = self._parse_unquoted_field()
 

@@ -3860,15 +3860,16 @@ class Generator(metaclass=_Generator):
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
 
-        upper = option.upper()
-        if upper == "FILE_FORMAT":
+        if isinstance(expression.expression, list):
+            upper = option.upper()
+
             # Snowflake FILE_FORMAT
-            values = self.expressions(expression, key="expression", flat=True, sep=" ")
-            return f"{option} = ({values})"
-        elif upper in ("COPY_OPTIONS", "FORMAT_OPTIONS"):
-            # Databricks options
-            values = self.expressions(expression, key="expression", flat=True)
-            return f"{option} ({values})"
+            sep = " " if upper == "FILE_FORMAT" else ", "
+
+            # Databricks copy/format options do not set their list of values with EQ
+            op = " " if upper in ("COPY_OPTIONS", "FORMAT_OPTIONS") else " = "
+            values = self.expressions(expression, key="expression", flat=True, sep=sep)
+            return f"{option}{op}({values})"
 
         value = self.sql(expression, "expression")
 

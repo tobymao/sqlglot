@@ -1134,6 +1134,8 @@ class Parser(metaclass=_Parser):
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
 
+    COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -6660,10 +6662,10 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.EQ)
             self._match(TokenType.ALIAS)
 
-            if prev in ["FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS"] and self._match(
-                TokenType.L_PAREN
+            if prev in self.COPY_INTO_VARLEN_OPTIONS and self._match(
+                TokenType.L_PAREN, advance=False
             ):
-                # Snowflake FILE_FORMAT case, Databricks COPY_OPTIONS & FORMAT options
+                # Snowflake FILE_FORMAT case, Databricks COPY & FORMAT options
                 value = self._parse_wrapped_options()
             else:
                 value = self._parse_unquoted_field()

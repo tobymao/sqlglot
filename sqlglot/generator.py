@@ -3865,9 +3865,9 @@ class Generator(metaclass=_Generator):
             # Snowflake FILE_FORMAT
             values = self.expressions(expression, key="expression", flat=True, sep=" ")
             return f"{option} = ({values})"
-        elif upper == "COPY_OPTIONS" or upper == "FORMAT_OPTIONS":
+        elif upper in ("COPY_OPTIONS", "FORMAT_OPTIONS"):
             # Databricks options
-            values = self.expressions(expression, key="expression", flat=True, sep=", ")
+            values = self.expressions(expression, key="expression", flat=True)
             return f"{option} ({values})"
 
         value = self.sql(expression, "expression")

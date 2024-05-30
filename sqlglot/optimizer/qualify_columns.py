@@ -429,12 +429,7 @@ def _expand_struct_stars(
 
     # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
     for part in dot_parts[1:]:
-        struct_fields = t.cast(exp.DataType, starting_struct.kind).expressions
-
-        if not struct_fields:
-            return []
-
-        for field in struct_fields:
+        for field in t.cast(exp.DataType, starting_struct.kind).expressions:
             # Unable to expand star unless all struct fields are named
             if not isinstance(field.this, exp.Identifier):
                 return []
@@ -446,7 +441,8 @@ def _expand_struct_stars(
             # There is no matching field in the struct
             return []
 
-    # Each nested field caches its path in exp.Identifier parts e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
+    # Each nested field caches its path in exp.Identifier parts,
+    # e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
     field_path: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
 
     # The keys to non-struct field entries in `nested_fields`
@@ -483,9 +479,7 @@ def _expand_struct_stars(
         root, *parts = [
             part.copy() for part in itertools.chain(dot_parts[:-1], field_path[field_key])
         ]
-
         new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
-
         new_selections.append(alias(new_column, next_alias_name(), copy=False))
 
     return new_selections
@@ -535,12 +529,12 @@ def _expand_stars(
     for expression in scope.expression.selects:
         tables = []
         if isinstance(expression, exp.Star):
-            tables = list(scope.selected_sources)
+            tables.extend(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
         elif expression.is_star:
             if not isinstance(expression, exp.Dot):
-                tables = [expression.table]
+                tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
             elif is_bigquery:

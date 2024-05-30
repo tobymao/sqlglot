@@ -1842,11 +1842,7 @@ class Parser(metaclass=_Parser):
         if isinstance(value, exp.Column):
             value = exp.var(value.name)
 
-        return self.expression(
-            exp.Property,
-            this=key,
-            value=value,
-        )
+        return self.expression(exp.Property, this=key, value=value)
 
     def _parse_stored(self) -> exp.FileFormatProperty:
         self._match(TokenType.ALIAS)
@@ -6661,18 +6657,21 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.WithOperator, this=this, op=op)
 
     def _parse_wrapped_options(self) -> t.List[t.Optional[exp.Expression]]:
-        opts = []
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
-        while self._curr and not self._match(TokenType.R_PAREN):
-            option: t.Optional[exp.Expression] = None
-            if self._match_text_seq("FORMAT_NAME", "="):
-                # Snowflake FORMAT_NAME can include an identifier from a created format
-                option = exp.Property(this=exp.var("FORMAT_NAME"), value=self._parse_field())
-            else:
-                option = self._parse_property()
 
-            opts.append(option)
+        opts: t.List[t.Optional[exp.Expression]] = []
+        while self._curr and not self._match(TokenType.R_PAREN):
+            if self._match_text_seq("FORMAT_NAME", "="):
+                # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL,
+                # so we parse it separately to use _parse_field()
+                prop = self.expression(
+                    exp.Property, this=exp.var("FORMAT_NAME"), value=self._parse_field()
+                )
+                opts.append(prop)
+            else:
+                opts.append(self._parse_property())
+
             self._match(TokenType.COMMA)
 
         return opts

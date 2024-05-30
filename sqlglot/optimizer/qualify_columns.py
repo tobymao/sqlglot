@@ -424,7 +424,6 @@ def _expand_struct_stars(
     # First part is the table name and last part is the star so they can be dropped
     dot_parts = expression.parts[1:-1]
 
-
     # If we're expanding a nested struct eg. t.c.f1.f2.* find the last struct (f2 in this case)
     for part in dot_parts[1:]:
         for field in t.cast(exp.DataType, starting_struct.kind).expressions:

@@ -3860,7 +3860,7 @@ class Generator(metaclass=_Generator):
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
 
-        if expression.args.get("expressions"):
+        if expression.expressions:
             upper = option.upper()
 
             # Snowflake FILE_FORMAT options are separated by whitespace

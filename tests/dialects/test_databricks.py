@@ -51,7 +51,7 @@ class TestDatabricks(Validator):
             "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', city LIKE 'LA')"
         )
         self.validate_identity(
-            "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS(opt1 = TRUE, opt2 = 'test') COPY_OPTIONS(opt3 = 5)"
+            "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
         )
 
         self.validate_all(

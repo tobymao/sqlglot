@@ -2,6 +2,7 @@ from unittest import mock
 
 from sqlglot import UnsupportedError, exp, parse_one
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
 
 
@@ -1922,22 +1923,21 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")
         self.validate_identity(
-            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' NULL_IF = () FIELD_OPTIONALLY_ENCLOSED_BY = '"' TIMESTAMP_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT = BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'"""
+            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('str1', 'str2') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'"""
         )
         self.validate_identity(
-            """COPY INTO load1 FROM @%load1/data1/ FILES = ('test1.csv', 'test2.csv') FORCE = TRUE"""
+            """COPY INTO load1 FROM @%load1/data1/ CREDENTIALS = (AWS_KEY_ID='id' AWS_SECRET_KEY='key' AWS_TOKEN='token') FILES = ('test1.csv', 'test2.csv') FORCE = TRUE"""
         )
         self.validate_identity(
-            """COPY INTO mytable FROM 'azure://myaccount.blob.core.windows.net/mycontainer/data/files' CREDENTIALS = (AZURE_SAS_TOKEN = 'token') ENCRYPTION = (TYPE = 'AZURE_CSE' MASTER_KEY = 'kPx...') FILE_FORMAT = (FORMAT_NAME = my_csv_format)"""
+            """COPY INTO mytable FROM 'azure://myaccount.blob.core.windows.net/mycontainer/data/files' CREDENTIALS = (AZURE_SAS_TOKEN='token') ENCRYPTION = (TYPE='AZURE_CSE' MASTER_KEY='kPx...') FILE_FORMAT = (FORMAT_NAME=my_csv_format)"""
         )
         self.validate_identity(
-            """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME = my_csv_format NULL_IF = ('str1', 'str2')) PARSE_HEADER = TRUE"""
+            """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' STORAGE_INTEGRATION = "storage" ENCRYPTION = (TYPE='NONE' MASTER_KEY='key') FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME=my_csv_format NULL_IF=('')) PARSE_HEADER = TRUE"""
         )
         self.validate_all(
             """COPY INTO 's3://example/data.csv'
     FROM EXTRA.EXAMPLE.TABLE
-    credentials = (x)
-    STORAGE_INTEGRATION = S3_INTEGRATION
+    CREDENTIALS = ()
     FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"')
     HEADER = TRUE
     OVERWRITE = TRUE
@@ -1946,22 +1946,20 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             write={
                 "": """COPY INTO 's3://example/data.csv'
 FROM EXTRA.EXAMPLE.TABLE
-CREDENTIALS = (x) WITH (
-  STORAGE_INTEGRATION S3_INTEGRATION,
-  FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = (
+CREDENTIALS = () WITH (
+  FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=(
     ''
-  ) FIELD_OPTIONALLY_ENCLOSED_BY = '"'),
+  ) FIELD_OPTIONALLY_ENCLOSED_BY='"'),
   HEADER TRUE,
   OVERWRITE TRUE,
   SINGLE TRUE
 )""",
                 "snowflake": """COPY INTO 's3://example/data.csv'
 FROM EXTRA.EXAMPLE.TABLE
-CREDENTIALS = (x)
-STORAGE_INTEGRATION = S3_INTEGRATION
-FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = (
+CREDENTIALS = ()
+FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=(
   ''
-) FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+) FIELD_OPTIONALLY_ENCLOSED_BY='"')
 HEADER = TRUE
 OVERWRITE = TRUE
 SINGLE = TRUE""",
@@ -1971,17 +1969,25 @@ SINGLE = TRUE""",
         self.validate_all(
             """COPY INTO 's3://example/data.csv'
     FROM EXTRA.EXAMPLE.TABLE
-    credentials = (x)
     STORAGE_INTEGRATION = S3_INTEGRATION
-    FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+    FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"')
     HEADER = TRUE
     OVERWRITE = TRUE
     SINGLE = TRUE
             """,
             write={
-                "": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE CREDENTIALS = (x) WITH (STORAGE_INTEGRATION S3_INTEGRATION, FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"'), HEADER TRUE, OVERWRITE TRUE, SINGLE TRUE)""",
-                "snowflake": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE CREDENTIALS = (x) STORAGE_INTEGRATION = S3_INTEGRATION FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"') HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE""",
+                "": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE STORAGE_INTEGRATION = S3_INTEGRATION WITH (FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"'), HEADER TRUE, OVERWRITE TRUE, SINGLE TRUE)""",
+                "snowflake": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE STORAGE_INTEGRATION = S3_INTEGRATION FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE""",
             },
+        )
+
+        copy_ast = parse_one(
+            """COPY INTO 's3://example/contacts.csv' FROM db.tbl STORAGE_INTEGRATION = PROD_S3_SIDETRADE_INTEGRATION FILE_FORMAT = (FORMAT_NAME=my_csv_format TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') MATCH_BY_COLUMN_NAME = CASE_SENSITIVE OVERWRITE = TRUE SINGLE = TRUE INCLUDE_METADATA = (col1 = METADATA$START_SCAN_TIME)""",
+            read="snowflake",
+        )
+        self.assertEqual(
+            quote_identifiers(copy_ast, dialect="snowflake").sql(dialect="snowflake"),
+            """COPY INTO 's3://example/contacts.csv' FROM "db"."tbl" STORAGE_INTEGRATION = "PROD_S3_SIDETRADE_INTEGRATION" FILE_FORMAT = (FORMAT_NAME="my_csv_format" TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') MATCH_BY_COLUMN_NAME = CASE_SENSITIVE OVERWRITE = TRUE SINGLE = TRUE INCLUDE_METADATA = ("col1" = "METADATA$START_SCAN_TIME")""",
         )
 
     def test_querying_semi_structured_data(self):
@@ -2000,10 +2006,10 @@ SINGLE = TRUE""",
         self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
         self.validate_identity("ALTER TABLE IF EXISTS foo SET TAG a = 'a', b = 'b', c = 'c'")
         self.validate_identity(
-            """ALTER TABLE tbl SET STAGE_FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' NULL_IF = () FIELD_OPTIONALLY_ENCLOSED_BY = '"' TIMESTAMP_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT = BASE64)""",
+            """ALTER TABLE tbl SET STAGE_FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64)""",
         )
         self.validate_identity(
-            """ALTER TABLE tbl SET STAGE_COPY_OPTIONS = (ON_ERROR = SKIP_FILE SIZE_LIMIT = 5 PURGE = TRUE MATCH_BY_COLUMN_NAME = CASE_SENSITIVE)"""
+            """ALTER TABLE tbl SET STAGE_COPY_OPTIONS = (ON_ERROR=SKIP_FILE SIZE_LIMIT=5 PURGE=TRUE MATCH_BY_COLUMN_NAME=CASE_SENSITIVE)"""
         )
 
         self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")

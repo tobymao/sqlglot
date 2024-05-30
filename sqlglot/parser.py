@@ -1134,6 +1134,8 @@ class Parser(metaclass=_Parser):
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
 
+    COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS", "CREDENTIAL"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -1830,10 +1832,20 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return self._parse_sequence_properties()
 
+        # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
+        if isinstance(key, exp.Column):
+            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
+
+        value = self._parse_bitwise() or self._parse_var(any_token=True)
+
+        # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
+        if isinstance(value, exp.Column):
+            value = exp.var(value.name)
+
         return self.expression(
             exp.Property,
-            this=key.to_dot() if isinstance(key, exp.Column) else key,
-            value=self._parse_bitwise() or self._parse_var(any_token=True),
+            this=key,
+            value=value,
         )
 
     def _parse_stored(self) -> exp.FileFormatProperty:
@@ -1853,7 +1865,7 @@ class Parser(metaclass=_Parser):
             ),
         )
 
-    def _parse_unquoted_field(self):
+    def _parse_unquoted_field(self) -> t.Optional[exp.Expression]:
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
             field = exp.var(field)
@@ -6653,8 +6665,16 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
         while self._curr and not self._match(TokenType.R_PAREN):
-            opts.append(self._parse_conjunction())
+            option: t.Optional[exp.Expression] = None
+            if self._match_text_seq("FORMAT_NAME", "="):
+                # Snowflake FORMAT_NAME can include an identifier from a created format
+                option = exp.Property(this=exp.var("FORMAT_NAME"), value=self._parse_field())
+            else:
+                option = self._parse_property()
+
+            opts.append(option)
             self._match(TokenType.COMMA)
+
         return opts
 
     def _parse_copy_parameters(self) -> t.List[exp.CopyParameter]:
@@ -6662,37 +6682,38 @@ class Parser(metaclass=_Parser):
 
         options = []
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
-            option = self._parse_unquoted_field()
-            value = None
+            option = self._parse_var(any_token=True)
+            prev = self._prev.text.upper()
 
-            # Some options are defined as functions with the values as params
-            if not isinstance(option, exp.Func):
-                prev = self._prev.text.upper()
-                # Different dialects might separate options and values by white space, "=" and "AS"
-                self._match(TokenType.EQ)
-                self._match(TokenType.ALIAS)
+            # Different dialects might separate options and values by white space, "=" and "AS"
+            self._match(TokenType.EQ)
+            self._match(TokenType.ALIAS)
 
-                if prev == "FILE_FORMAT" and self._match(TokenType.L_PAREN):
-                    # Snowflake FILE_FORMAT case
-                    value = self._parse_wrapped_options()
-                else:
-                    value = self._parse_unquoted_field()
+            param = self.expression(exp.CopyParameter, this=option)
 
-            param = self.expression(exp.CopyParameter, this=option, expression=value)
+            if prev in self.COPY_INTO_VARLEN_OPTIONS and self._match(
+                TokenType.L_PAREN, advance=False
+            ):
+                # Snowflake FILE_FORMAT case, Databricks COPY & FORMAT options
+                param.set("expressions", self._parse_wrapped_options())
+            elif prev == "FILE_FORMAT":
+                # T-SQL's external file format case
+                param.set("expression", self._parse_field())
+            else:
+                param.set("expression", self._parse_unquoted_field())
+
             options.append(param)
-
-            if sep:
-                self._match(sep)
+            self._match(sep)
 
         return options
 
     def _parse_credentials(self) -> t.Optional[exp.Credentials]:
         expr = self.expression(exp.Credentials)
 
-        if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
-            expr.set("storage", self._parse_conjunction())
+        if self._match_text_seq("STORAGE_INTEGRATION", "="):
+            expr.set("storage", self._parse_field())
         if self._match_text_seq("CREDENTIALS"):
-            # Snowflake supports CREDENTIALS = (...), while Redshift CREDENTIALS <string>
+            # Snowflake case: CREDENTIALS = (...), Redshift case: CREDENTIALS <string>
             creds = (
                 self._parse_wrapped_options() if self._match(TokenType.EQ) else self._parse_field()
             )
@@ -6715,7 +6736,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.INTO)
 
         this = (
-            self._parse_conjunction()
+            self._parse_select(nested=True, parse_subquery_alias=False)
             if self._match(TokenType.L_PAREN, advance=False)
             else self._parse_table(schema=True)
         )

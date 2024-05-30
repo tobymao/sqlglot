@@ -549,6 +549,7 @@ class Postgres(Dialect):
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.Top: _top_sql, 
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("+"),
@@ -570,6 +571,11 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+        def select_sql(self, expression: exp.Select) -> str:
+            sql = super().select_sql(expression)
+            if expression.args.get("top"):
+                sql = f"{sql} {self.sql(expression, 'top')}"  # Add TOP clause if present
+            return sql
 
         def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
             self.unsupported("Table comments are not supported in the CREATE statement")

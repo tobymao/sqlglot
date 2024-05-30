@@ -1832,13 +1832,13 @@ class Parser(metaclass=_Parser):
 
         # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
         if isinstance(key, exp.Column):
-            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.this.name)
+            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
 
         value = self._parse_bitwise() or self._parse_var(any_token=True)
 
         # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
         if isinstance(value, exp.Column):
-            value = exp.var(value.this.name)
+            value = exp.var(value.name)
 
         return self.expression(
             exp.Property,
@@ -6653,21 +6653,20 @@ class Parser(metaclass=_Parser):
 
         options = []
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
-            option = self._parse_unquoted_field()
-            value = None
+            option = self._parse_var(any_token=True)
+            prev = self._prev.text.upper()
 
-            # Some options are defined as functions with the values as params
-            if not isinstance(option, exp.Func):
-                prev = self._prev.text.upper()
-                # Different dialects might separate options and values by white space, "=" and "AS"
-                self._match(TokenType.EQ)
-                self._match(TokenType.ALIAS)
+            # Different dialects might separate options and values by white space, "=" and "AS"
+            self._match(TokenType.EQ)
+            self._match(TokenType.ALIAS)
 
-                if prev == "FILE_FORMAT" and self._match(TokenType.L_PAREN):
-                    # Snowflake FILE_FORMAT case
-                    value = self._parse_wrapped_options()
-                else:
-                    value = self._parse_unquoted_field()
+            if prev in ["FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS"] and self._match(
+                TokenType.L_PAREN
+            ):
+                # Snowflake FILE_FORMAT case, Databricks COPY_OPTIONS & FORMAT options
+                value = self._parse_wrapped_options()
+            else:
+                value = self._parse_unquoted_field()
 
             param = self.expression(exp.CopyParameter, this=option, expression=value)
             options.append(param)

@@ -1,6 +1,34 @@
 Changelog
 =========
 
+## [v24.1.0] - 2024-05-30
+### :boom: BREAKING CHANGES
+- due to [`0788c94`](https://github.com/tobymao/sqlglot/commit/0788c944a85d7323b61109ee1ccb5859e3d08404) - Expand stars on BigQuery's tbl.struct_col.* selections *(PR [#3531](https://github.com/tobymao/sqlglot/pull/3531) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Expand stars on BigQuery's tbl.struct_col.* selections (#3531)
+
+- due to [`3e71393`](https://github.com/tobymao/sqlglot/commit/3e71393cb8e201a75321fbc179289eb15b1dc6ce) - Refactor struct star expansion in BQ *(PR [#3576](https://github.com/tobymao/sqlglot/pull/3576) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Refactor struct star expansion in BQ (#3576)
+
+
+### :sparkles: New Features
+- [`0788c94`](https://github.com/tobymao/sqlglot/commit/0788c944a85d7323b61109ee1ccb5859e3d08404) - **optimizer**: Expand stars on BigQuery's tbl.struct_col.* selections *(PR [#3531](https://github.com/tobymao/sqlglot/pull/3531) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3484](https://github.com/tobymao/sqlglot/issues/3484) opened by [@Bladieblah](https://github.com/Bladieblah)*
+
+### :bug: Bug Fixes
+- [`14d63ee`](https://github.com/tobymao/sqlglot/commit/14d63ee8172ddc972d6677071cae3880c748c3aa) - bubble up Identifier comments to TableAliases *(PR [#3571](https://github.com/tobymao/sqlglot/pull/3571) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3570](https://github.com/tobymao/sqlglot/issues/3570) opened by [@fangxingli](https://github.com/fangxingli)*
+- [`ba90c22`](https://github.com/tobymao/sqlglot/commit/ba90c22921448ef6b5a0497a9a48918d0e8a9654) - **snowflake**: COPY Postfix *(PR [#3564](https://github.com/tobymao/sqlglot/pull/3564) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3e71393`](https://github.com/tobymao/sqlglot/commit/3e71393cb8e201a75321fbc179289eb15b1dc6ce) - **optimizer**: Refactor struct star expansion in BQ *(PR [#3576](https://github.com/tobymao/sqlglot/pull/3576) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :recycle: Refactors
+- [`1e1dc3f`](https://github.com/tobymao/sqlglot/commit/1e1dc3fea8c5fc1f86fefe6af384e38c8531f2d2) - **optimizer**: minor improvements in the struct star expansion *(PR [#3568](https://github.com/tobymao/sqlglot/pull/3568) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`b12ea8c`](https://github.com/tobymao/sqlglot/commit/b12ea8c126d5debef59e9d9bcbbc6fd5ecf56682) - minor style changes related to COPY INTO *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v24.0.3] - 2024-05-29
 ### :bug: Bug Fixes
 - [`fb8db9f`](https://github.com/tobymao/sqlglot/commit/fb8db9f2219cfd578fda5c3f51737c180d5aecc6) - **parser**: edge case where TYPE_CONVERTERS leads to type instead of column *(PR [#3566](https://github.com/tobymao/sqlglot/pull/3566) by [@georgesittas](https://github.com/georgesittas))*
@@ -3792,3 +3820,4 @@ Changelog
 [v24.0.1]: https://github.com/tobymao/sqlglot/compare/v24.0.0...v24.0.1
 [v24.0.2]: https://github.com/tobymao/sqlglot/compare/v24.0.1...v24.0.2
 [v24.0.3]: https://github.com/tobymao/sqlglot/compare/v24.0.2...v24.0.3
+[v24.1.0]: https://github.com/tobymao/sqlglot/compare/v24.0.3...v24.1.0

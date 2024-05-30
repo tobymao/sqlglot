@@ -210,6 +210,9 @@ SELECT _q_1.a AS a FROM (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) A
 SELECT x.a FROM x AS x JOIN (SELECT * FROM x) AS y ON x.a = y.a;
 SELECT x.a AS a FROM x AS x JOIN (SELECT x.a AS a, x.b AS b FROM x AS x) AS y ON x.a = y.a;
 
+SELECT a FROM x as t1 /* there is comment */;
+SELECT t1.a AS a FROM x AS t1 /* there is comment */;
+
 --------------------------------------
 -- Joins
 --------------------------------------

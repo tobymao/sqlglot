@@ -6,7 +6,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import seq_get, SingleValuedMapping, name_sequence
+from sqlglot.helper import seq_get, SingleValuedMapping
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
@@ -53,7 +53,6 @@ def qualify_columns(
     infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = Dialect.get_or_raise(schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
-    next_alias_name = name_sequence("_f_")
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
@@ -78,7 +77,6 @@ def qualify_columns(
                     using_column_tables,
                     pseudocolumns,
                     annotator,
-                    next_alias_name,
                 )
             qualify_outputs(scope)
 
@@ -412,7 +410,6 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
 
 def _expand_struct_stars(
     expression: exp.Dot,
-    next_alias_name: t.Callable[[], str],
 ) -> t.List[exp.Alias]:
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
@@ -427,10 +424,11 @@ def _expand_struct_stars(
     # First part is the table name and last part is the star so they can be dropped
     dot_parts = expression.parts[1:-1]
 
-    # If we're expanding a nested struct (eg. t.c.f1.f2.*), start the DFS traversal from that struct
+
+    # If we're expanding a nested struct eg. t.c.f1.f2.* find the last struct (f2 in this case)
     for part in dot_parts[1:]:
         for field in t.cast(exp.DataType, starting_struct.kind).expressions:
-            # Unable to expand star unless all struct fields are named
+            # Unable to expand star unless all fields are named
             if not isinstance(field.this, exp.Identifier):
                 return []
 
@@ -441,46 +439,22 @@ def _expand_struct_stars(
             # There is no matching field in the struct
             return []
 
-    # Each nested field caches its path in exp.Identifier parts,
-    # e.g. tbl.f0.f1.item -> [exp.Identifier(tbl), ..., exp.Identifier(item)]
-    field_path: t.Dict[int, t.List[exp.Identifier]] = {id(starting_struct): []}
+    name_set = set()
+    new_selections = []
 
-    # The keys to non-struct field entries in `nested_fields`
-    field_keys = []
+    for field in t.cast(exp.DataType, starting_struct.kind).expressions:
+        name = field.name
 
-    stack = [(starting_struct, id(starting_struct))]
-
-    # Traverse & flatten the starting struct
-    while stack:
-        field, parent_struct_id = stack.pop()
-
-        # Unable to expand star unless all struct fields are named and annotated
-        if not isinstance(field.this, exp.Identifier) or not field.kind:
+        # Ambiguous or anonymous fields can't be expanded
+        if name in name_set or not isinstance(field.this, exp.Identifier):
             return []
 
-        field_id = id(field)
+        name_set.add(name)
 
-        # Preserve the qualified path for this field
-        field_path[field_id] = [
-            part.copy() for part in itertools.chain(field_path[parent_struct_id], [field.this])
-        ]
-
-        if not field.kind.is_type(exp.DataType.Type.STRUCT):
-            # Collect the nested non-struct fields
-            field_keys.append(field_id)
-        else:
-            stack.extend((expr, field_id) for expr in reversed(field.kind.expressions))
-
-    new_selections = []
-    for field_key in field_keys:
-        # The fully qualified path of each field is created by:
-        # - The path until the starting struct, if any (dot_parts)
-        # - The path from the starting struct until the nested field (field_path[field_key])
-        root, *parts = [
-            part.copy() for part in itertools.chain(dot_parts[:-1], field_path[field_key])
-        ]
+        this = field.this.copy()
+        root, *parts = [part.copy() for part in itertools.chain(dot_parts, [this])]
         new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
-        new_selections.append(alias(new_column, next_alias_name(), copy=False))
+        new_selections.append(alias(new_column, this, copy=False))
 
     return new_selections
 
@@ -491,7 +465,6 @@ def _expand_stars(
     using_column_tables: t.Dict[str, t.Any],
     pseudocolumns: t.Set[str],
     annotator: TypeAnnotator,
-    next_alias_name: t.Callable[[], str],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -538,7 +511,7 @@ def _expand_stars(
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
             elif is_bigquery:
-                struct_fields = _expand_struct_stars(expression, next_alias_name)
+                struct_fields = _expand_struct_stars(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue

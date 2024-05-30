@@ -438,21 +438,23 @@ def _expand_struct_stars(
             # There is no matching field in the struct
             return []
 
-    name_set = set()
+    taken_names = set()
     new_selections = []
 
     for field in t.cast(exp.DataType, starting_struct.kind).expressions:
         name = field.name
 
         # Ambiguous or anonymous fields can't be expanded
-        if name in name_set or not isinstance(field.this, exp.Identifier):
+        if name in taken_names or not isinstance(field.this, exp.Identifier):
             return []
 
-        name_set.add(name)
+        taken_names.add(name)
 
         this = field.this.copy()
         root, *parts = [part.copy() for part in itertools.chain(dot_parts, [this])]
-        new_column = exp.column(t.cast(exp.Identifier, root), table=dot_column.table, fields=parts)
+        new_column = exp.column(
+            t.cast(exp.Identifier, root), table=dot_column.args.get("table"), fields=parts
+        )
         new_selections.append(alias(new_column, this, copy=False))
 
     return new_selections

@@ -2793,7 +2793,13 @@ class Parser(metaclass=_Parser):
         if not alias and not columns:
             return None
 
-        return self.expression(exp.TableAlias, this=alias, columns=columns)
+        table_alias = self.expression(exp.TableAlias, this=alias, columns=columns)
+
+        # We bubble up comments from the Identifier to the TableAlias
+        if isinstance(alias, exp.Identifier):
+            table_alias.add_comments(alias.pop_comments())
+
+        return table_alias
 
     def _parse_subquery(
         self, this: t.Optional[exp.Expression], parse_alias: bool = True

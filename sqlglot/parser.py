@@ -6665,28 +6665,26 @@ class Parser(metaclass=_Parser):
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
             option = self._parse_var(any_token=True)
             prev = self._prev.text.upper()
-            value: t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]] = None
 
             # Different dialects might separate options and values by white space, "=" and "AS"
             self._match(TokenType.EQ)
             self._match(TokenType.ALIAS)
 
+            param = self.expression(exp.CopyParameter, this=option)
+
             if prev in self.COPY_INTO_VARLEN_OPTIONS and self._match(
                 TokenType.L_PAREN, advance=False
             ):
                 # Snowflake FILE_FORMAT case, Databricks COPY & FORMAT options
-                value = self._parse_wrapped_options()
+                param.set("expressions", self._parse_wrapped_options())
             elif prev == "FILE_FORMAT":
                 # T-SQL's external file format case
-                value = self._parse_field()
+                param.set("expression", self._parse_field())
             else:
-                value = self._parse_unquoted_field()
+                param.set("expression", self._parse_unquoted_field())
 
-            param = self.expression(exp.CopyParameter, this=option, expression=value)
             options.append(param)
-
-            if sep:
-                self._match(sep)
+            self._match(sep)
 
         return options
 

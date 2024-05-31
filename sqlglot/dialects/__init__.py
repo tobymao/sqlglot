@@ -70,6 +70,7 @@ from sqlglot.dialects.doris import Doris
 from sqlglot.dialects.drill import Drill
 from sqlglot.dialects.duckdb import DuckDB
 from sqlglot.dialects.hive import Hive
+from sqlglot.dialects.materialize import Materialize
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.dialects.oracle import Oracle
 from sqlglot.dialects.postgres import Postgres

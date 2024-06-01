@@ -18,7 +18,7 @@ def _update_from(
         old_join_dict (Dict[str, exp.Join]): The dictionary of old joins
     """
     old_from = select.args["from"]
-    if not old_from.alias_or_name in new_join_dict.keys():
+    if old_from.alias_or_name not in new_join_dict.keys():
         return
     in_old_not_new = old_join_dict.keys() - new_join_dict.keys()
     if len(in_old_not_new) >= 1:
@@ -31,9 +31,7 @@ def _update_from(
         raise ValueError("Cannot determine which table to use as the new from")
 
 
-def _update_join_dict(
-    join: exp.Join, join_dict: t.Dict[str, exp.Join]
-) -> t.Dict[str, exp.Join]:
+def _update_join_dict(join: exp.Join, join_dict: t.Dict[str, exp.Join]) -> t.Dict[str, exp.Join]:
     """Update the join dictionary with the new join.
     If the join already exists, update the on clause.
 
@@ -141,15 +139,11 @@ def _eliminate_join_marks_from_select(select: exp.Select) -> exp.Select:
                 continue
             predicate_parent = predicate.parent
             join_on = predicate.pop()
-            new_join = _equality_to_join(
-                join_on, old_joins=old_joins, old_from=select.args["from"]
-            )
+            new_join = _equality_to_join(join_on, old_joins=old_joins, old_from=select.args["from"])
             new_joins = _update_join_dict(new_join, new_joins)
             _clean_binary_node(predicate_parent)
     _update_from(select, new_joins, old_joins)
-    replacement_joins = [
-        new_joins.get(join.alias_or_name, join) for join in old_joins.values()
-    ]
+    replacement_joins = [new_joins.get(join.alias_or_name, join) for join in old_joins.values()]
     select.set("joins", replacement_joins)
     where = select.args["where"]
     if where:

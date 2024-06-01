@@ -8,6 +8,9 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
+        self.validate_identity(
+            'CREATE TABLE x (a TEXT COLLATE "de_DE")', "CREATE TABLE x (a TEXT COLLATE de_DE)"
+        )
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")

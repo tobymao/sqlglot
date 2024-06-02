@@ -497,7 +497,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
     def test_eliminate_join_marks(self):
         self.check_file(
             "eliminate_join_marks",
-            optimizer.eliminate_join_marks.eliminate_join_marks,
+            optimizer.eliminate_join_marks,
             pretty=False,
         )
 

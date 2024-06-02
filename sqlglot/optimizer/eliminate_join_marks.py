@@ -2,6 +2,7 @@ import typing as t
 import copy
 
 from sqlglot import expressions as exp
+from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 
 
 def _update_from(
@@ -124,31 +125,40 @@ def _eliminate_join_marks_from_select(select: exp.Select) -> exp.Select:
     Returns:
         exp.Select: The AST with join marks removed
     """
-    if not select.args.get("where"):
+    scope = build_scope(select)
+    if not scope:
         return select
-    if not select.args.get("joins"):
+    select_scope = scope.expression
+    if not select_scope.args.get("where"):
+        return select
+    if not select_scope.args.get("joins"):
         return select
     old_joins: t.Dict[str, exp.Join] = {
-        join.alias_or_name: join for join in list(select.args.get("joins", []))
+        join.alias_or_name: join for join in list(select_scope.args.get("joins", []))
     }
     new_joins: t.Dict[str, exp.Join] = {}
-    for node in select.find_all(exp.Column):
+    for node in find_all_in_scope(scope.expression, exp.Column):
+        #    for node in select.find_all(exp.Column):
         if _has_join_mark(node):
             predicate = node.find_ancestor(exp.Predicate)
             if not isinstance(predicate, exp.Binary):
                 continue
             predicate_parent = predicate.parent
             join_on = predicate.pop()
-            new_join = _equality_to_join(join_on, old_joins=old_joins, old_from=select.args["from"])
-            new_joins = _update_join_dict(new_join, new_joins)
-            _clean_binary_node(predicate_parent)
-    _update_from(select, new_joins, old_joins)
+            new_join = _equality_to_join(
+                join_on, old_joins=old_joins, old_from=select_scope.args["from"]
+            )
+            if new_join:
+                new_joins = _update_join_dict(new_join, new_joins)
+            if predicate_parent:
+                _clean_binary_node(predicate_parent)
+    _update_from(select_scope, new_joins, old_joins)
     replacement_joins = [new_joins.get(join.alias_or_name, join) for join in old_joins.values()]
-    select.set("joins", replacement_joins)
-    where = select.args["where"]
+    select_scope.set("joins", replacement_joins)
+    where = select_scope.args["where"]
     if where:
         if not where.this:
-            select.set("where", None)
+            select_scope.set("where", None)
     return select
 
 

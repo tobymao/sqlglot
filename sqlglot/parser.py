@@ -4172,12 +4172,16 @@ class Parser(metaclass=_Parser):
         this = parse_method()
 
         while self._match_set(self.FACTOR):
-            this = self.expression(
-                self.FACTOR[self._prev.token_type],
-                this=this,
-                comments=self._prev_comments,
-                expression=parse_method(),
-            )
+            klass = self.FACTOR[self._prev.token_type]
+            comments = self._prev_comments
+            expression = parse_method()
+
+            if not expression and klass is exp.IntDiv and self._prev.text.isalpha():
+                self._retreat(self._index - 1)
+                return this
+
+            this = self.expression(klass, this=this, comments=comments, expression=expression)
+
             if isinstance(this, exp.Div):
                 this.args["typed"] = self.dialect.TYPED_DIVISION
                 this.args["safe"] = self.dialect.SAFE_DIVISION

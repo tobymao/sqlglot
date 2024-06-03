@@ -367,7 +367,7 @@ class ClickHouse(Dialect):
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.SETTINGS: lambda self: (
                 "settings",
-                self._advance() or self._parse_csv(self._parse_conjunction),
+                self._advance() or self._parse_csv(self._parse_connector),
             ),
             TokenType.FORMAT: lambda self: ("format", self._advance() or self._parse_id_var()),
         }
@@ -388,15 +388,15 @@ class ClickHouse(Dialect):
             "INDEX",
         }
 
-        def _parse_conjunction(self) -> t.Optional[exp.Expression]:
-            this = super()._parse_conjunction()
+        def _parse_connector(self) -> t.Optional[exp.Expression]:
+            this = super()._parse_connector()
 
             if self._match(TokenType.PLACEHOLDER):
                 return self.expression(
                     exp.If,
                     this=this,
-                    true=self._parse_conjunction(),
-                    false=self._match(TokenType.COLON) and self._parse_conjunction(),
+                    true=self._parse_connector(),
+                    false=self._match(TokenType.COLON) and self._parse_connector(),
                 )
 
             return this
@@ -461,7 +461,7 @@ class ClickHouse(Dialect):
                 # WITH <expression> AS <identifier>
                 cte = self.expression(
                     exp.CTE,
-                    this=self._parse_conjunction(),
+                    this=self._parse_connector(),
                     alias=self._parse_table_alias(),
                     scalar=True,
                 )
@@ -592,7 +592,7 @@ class ClickHouse(Dialect):
         ) -> exp.IndexColumnConstraint:
             # INDEX name1 expr TYPE type1(args) GRANULARITY value
             this = self._parse_id_var()
-            expression = self._parse_conjunction()
+            expression = self._parse_connector()
 
             index_type = self._match_text_seq("TYPE") and (
                 self._parse_function() or self._parse_var()

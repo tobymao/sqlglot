@@ -625,7 +625,7 @@ class TSQL(Dialect):
         ) -> t.Optional[exp.Expression]:
             this = self._parse_types()
             self._match(TokenType.COMMA)
-            args = [this, *self._parse_csv(self._parse_conjunction)]
+            args = [this, *self._parse_csv(self._parse_connector)]
             convert = exp.Convert.from_arg_list(args)
             convert.set("safe", safe)
             convert.set("strict", strict)

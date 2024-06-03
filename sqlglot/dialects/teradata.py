@@ -164,7 +164,7 @@ class Teradata(Dialect):
         }
 
         def _parse_translate(self, strict: bool) -> exp.Expression:
-            this = self._parse_conjunction()
+            this = self._parse_connector()
 
             if not self._match(TokenType.USING):
                 self.raise_error("Expected USING in TRANSLATE")
@@ -195,8 +195,8 @@ class Teradata(Dialect):
             this = self._parse_id_var()
             self._match(TokenType.BETWEEN)
 
-            expressions = self._parse_csv(self._parse_conjunction)
-            each = self._match_text_seq("EACH") and self._parse_conjunction()
+            expressions = self._parse_csv(self._parse_connector)
+            each = self._match_text_seq("EACH") and self._parse_connector()
 
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 

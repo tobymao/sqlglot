@@ -341,7 +341,7 @@ class DuckDB(Dialect):
             if self._match(TokenType.L_BRACE, advance=False):
                 return self.expression(exp.ToMap, this=self._parse_bracket())
 
-            args = self._parse_wrapped_csv(self._parse_connector)
+            args = self._parse_wrapped_csv(self._parse_assignment)
             return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
 
         def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:

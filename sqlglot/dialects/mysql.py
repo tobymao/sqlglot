@@ -629,7 +629,7 @@ class MySQL(Dialect):
             )
 
         def _parse_chr(self) -> t.Optional[exp.Expression]:
-            expressions = self._parse_csv(self._parse_connector)
+            expressions = self._parse_csv(self._parse_assignment)
             kwargs: t.Dict[str, t.Any] = {"this": seq_get(expressions, 0)}
 
             if len(expressions) > 1:

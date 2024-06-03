@@ -415,7 +415,7 @@ class Hive(Dialect):
         ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
             return (
                 (
-                    self._parse_csv(self._parse_connector)
+                    self._parse_csv(self._parse_assignment)
                     if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
                     else []
                 ),

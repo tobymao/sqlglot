@@ -6,6 +6,7 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity("1 div", "1 AS div")
         self.validate_all(
             "SELECT SPLIT_TO_ARRAY('12,345,6789')",
             write={

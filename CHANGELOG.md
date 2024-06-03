@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## [v24.1.1] - 2024-06-03
+### :bug: Bug Fixes
+- [`60d9085`](https://github.com/tobymao/sqlglot/commit/60d9085a4ec2d0c39aa904bf81b7e15b5bac8ea5) - **postgres**: collate with identifier closes [#3578](https://github.com/tobymao/sqlglot/pull/3578) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`317e3a9`](https://github.com/tobymao/sqlglot/commit/317e3a96a49f439aa06af31abb06990f9a1b0d63) - **bigquery**: expanding positional refs with ambiguous references *(PR [#3585](https://github.com/tobymao/sqlglot/pull/3585) by [@tobymao](https://github.com/tobymao))*
+- [`5e321f1`](https://github.com/tobymao/sqlglot/commit/5e321f15ac4e54c78b9f90475e1bac4a94eaa48d) - div aliases closes [#3583](https://github.com/tobymao/sqlglot/pull/3583) *(PR [#3586](https://github.com/tobymao/sqlglot/pull/3586) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v24.1.0] - 2024-05-30
 ### :boom: BREAKING CHANGES
 - due to [`0788c94`](https://github.com/tobymao/sqlglot/commit/0788c944a85d7323b61109ee1ccb5859e3d08404) - Expand stars on BigQuery's tbl.struct_col.* selections *(PR [#3531](https://github.com/tobymao/sqlglot/pull/3531) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3821,3 +3828,4 @@ Changelog
 [v24.0.2]: https://github.com/tobymao/sqlglot/compare/v24.0.1...v24.0.2
 [v24.0.3]: https://github.com/tobymao/sqlglot/compare/v24.0.2...v24.0.3
 [v24.1.0]: https://github.com/tobymao/sqlglot/compare/v24.0.3...v24.1.0
+[v24.1.1]: https://github.com/tobymao/sqlglot/compare/v24.1.0...v24.1.1

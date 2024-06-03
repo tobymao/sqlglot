@@ -294,6 +294,7 @@ class TokenType(AutoName):
     LIKE = auto()
     LIKE_ANY = auto()
     LIMIT = auto()
+    LIST = auto()
     LOAD = auto()
     LOCK = auto()
     MAP = auto()

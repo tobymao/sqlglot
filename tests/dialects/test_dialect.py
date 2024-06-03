@@ -195,7 +195,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS BYTES)",
                 "clickhouse": "CAST(a AS String)",
                 "duckdb": "CAST(a AS BLOB(4))",
-                "materialize": "CAST(a AS BYTES(4))",
+                "materialize": "CAST(a AS BYTEA(4))",
                 "mysql": "CAST(a AS VARBINARY(4))",
                 "hive": "CAST(a AS BINARY(4))",
                 "oracle": "CAST(a AS BLOB(4))",

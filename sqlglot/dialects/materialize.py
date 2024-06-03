@@ -1,5 +1,4 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.tokens import TokenType
 
@@ -11,30 +10,23 @@ from sqlglot.transforms import (
 
 
 class Materialize(Postgres):
-    # Define any specific normalization strategies or settings here
-    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
-
     class Parser(Postgres.Parser):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
-            # Materialize-specific functions
             "MZ_NOW": exp.CurrentTimestamp.from_arg_list,
         }
 
     class Tokenizer(Postgres.Tokenizer):
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,
-            # Materialize-specific keywords
-            "MAP": TokenType.MAP,
-            "LIST": TokenType.ARRAY,
+            "LIST": TokenType.LIST,
         }
 
     class Generator(Postgres.Generator):
-        LIKE_PROPERTY_INSIDE_SCHEMA = False
+        SUPPORTS_CREATE_TABLE_LIKE = False
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
-            # Materialize-specific SQL generation rules
             exp.Create: preprocess(
                 [
                     remove_unique_constraints,
@@ -50,9 +42,6 @@ class Materialize(Postgres):
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
-            # Materialize-specific type mappings
             exp.DataType.Type.TIMESTAMP: "MZ_TIMESTAMP",
-            exp.DataType.Type.MAP: "MAP",
-            exp.DataType.Type.ARRAY: "LIST",
-            exp.DataType.Type.VARBINARY: "BYTES",
+            exp.DataType.Type.VARBINARY: "BYTEA",
         }

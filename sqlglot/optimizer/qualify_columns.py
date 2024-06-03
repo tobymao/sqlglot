@@ -80,7 +80,7 @@ def qualify_columns(
                 )
             qualify_outputs(scope)
 
-        _expand_group_by(scope)
+        _expand_group_by(scope, dialect)
         _expand_order_by(scope, resolver)
 
         if dialect == "bigquery":
@@ -266,13 +266,13 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
     scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope) -> None:
+def _expand_group_by(scope: Scope, dialect: DialectType) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
         return
 
-    group.set("expressions", _expand_positional_references(scope, group.expressions))
+    group.set("expressions", _expand_positional_references(scope, group.expressions, dialect))
     expression.set("group", group)
 
 
@@ -284,7 +284,9 @@ def _expand_order_by(scope: Scope, resolver: Resolver) -> None:
     ordereds = order.expressions
     for ordered, new_expression in zip(
         ordereds,
-        _expand_positional_references(scope, (o.this for o in ordereds), alias=True),
+        _expand_positional_references(
+            scope, (o.this for o in ordereds), resolver.schema.dialect, alias=True
+        ),
     ):
         for agg in ordered.find_all(exp.AggFunc):
             for col in agg.find_all(exp.Column):
@@ -307,9 +309,11 @@ def _expand_order_by(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: t.Iterable[exp.Expression], alias: bool = False
+    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: DialectType, alias: bool = False
 ) -> t.List[exp.Expression]:
     new_nodes: t.List[exp.Expression] = []
+    projections = None
+
     for node in expressions:
         if node.is_int:
             select = _select_by_pos(scope, t.cast(exp.Literal, node))
@@ -319,7 +323,22 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if isinstance(select, exp.CONSTANTS) or select.find(exp.Explode, exp.Unnest):
+                if dialect == "bigquery":
+                    if projections is None:
+                        projections = {s.alias_or_name for s in scope.expression.selects}
+
+                    ambiguous = any(
+                        column.parts[0].name in projections
+                        for column in select.find_all(exp.Column)
+                    )
+                else:
+                    ambiguous = False
+
+                if (
+                    isinstance(select, exp.CONSTANTS)
+                    or select.find(exp.Explode, exp.Unnest)
+                    or ambiguous
+                ):
                     new_nodes.append(node)
                 else:
                     new_nodes.append(select.copy())

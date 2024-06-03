@@ -3979,10 +3979,24 @@ class Parser(metaclass=_Parser):
         return self._parse_alias(self._parse_connector())
 
     def _parse_connector(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_disjunction, self.ASSIGNMENT)
+        this = self._parse_conjunction()
 
-    def _parse_disjunction(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_conjunction, self.DISJUNCTION)
+        if self._match(TokenType.COLON_EQ):
+            this = self.expression(
+                exp.PropertyEQ,
+                this=this,
+                comments=self._prev_comments,
+                expression=self._parse_connector(),
+            )
+
+        while self._match_set(self.DISJUNCTION):
+            this = self.expression(
+                self.DISJUNCTION[self._prev.token_type],
+                this=this,
+                comments=self._prev_comments,
+                expression=self._parse_conjunction(),
+            )
+        return this
 
     def _parse_conjunction(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_equality, self.CONJUNCTION)

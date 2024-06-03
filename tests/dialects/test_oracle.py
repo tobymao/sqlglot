@@ -1,10 +1,15 @@
 from sqlglot import exp
 from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
+from sqlglot.dialects.oracle import eliminate_join_marks
 
 
 class TestOracle(Validator):
     dialect = "oracle"
+
+    def validate(self, transform, sql, target):
+        with self.subTest(sql):
+            self.assertEqual(transform(self.parse_one(sql)).sql(dialect=self.dialect), target)
 
     def test_oracle(self):
         self.validate_all(
@@ -249,7 +254,8 @@ class TestOracle(Validator):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
 
         self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)", write={"": UnsupportedError}
+            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+            write={"": UnsupportedError},
         )
         self.validate_all(
             "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
@@ -413,3 +419,52 @@ WHERE
 
         for query in (f"{body}{start}{connect}", f"{body}{connect}{start}"):
             self.validate_identity(query, pretty, pretty=True)
+
+    def test_eliminate_join_marks(self):
+        self.validate(
+            eliminate_join_marks,
+            "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) > 5",
+            "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x AND T2.y > 5",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) IS NULL",
+            "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x AND T2.y IS NULL",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y IS NULL",
+            "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x WHERE T2.y IS NULL",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T1.Z > 4",
+            "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x WHERE T1.Z > 4",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT * FROM table1, table2 WHERE table1.column = table2.column(+)",
+            "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT * FROM table1, table2, table3, table4 WHERE table1.column = table2.column(+) and table2.column >= table3.column(+) and table1.column = table4.column(+)",
+            "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column LEFT JOIN table3 ON table2.column >= table3.column LEFT JOIN table4 ON table1.column = table4.column",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT * FROM table1, table2, table3 WHERE table1.column = table2.column(+) and table2.column >= table3.column(+)",
+            "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column LEFT JOIN table3 ON table2.column >= table3.column",
+        )
+
+        self.validate(
+            eliminate_join_marks,
+            "SELECT table1.id, table2.cloumn1, table3.id FROM table1, table2, (SELECT tableInner1.id FROM tableInner1, tableInner2 WHERE tableInner1.id = tableInner2.id(+)) AS table3 WHERE table1.id = table2.id(+) and table1.id = table3.id(+)",
+            "SELECT table1.id, table2.cloumn1, table3.id FROM table1 LEFT JOIN table2 ON table1.id = table2.id LEFT JOIN (SELECT tableInner1.id FROM tableInner1 LEFT JOIN tableInner2 ON tableInner1.id = tableInner2.id) table3 ON table1.id = table3.id",
+        )

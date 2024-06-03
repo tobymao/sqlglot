@@ -282,3 +282,181 @@ class Oracle(Dialect):
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"
             return f"ADD {actions}"
+
+
+def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
+    from sqlglot.optimizer.scope import build_scope
+
+    """Remove join marks from an expression
+    
+    SELECT * FROM a, b WHERE a.id = b.id(+)   
+    becomes:
+    SELECT * FROM a LEFT JOIN b ON a.id = b.id
+
+    - for each scope
+        - for each column with a join mark
+            - find the predicate it belongs to
+            - remove the predicate from the where clause
+            - convert the predicate to a join with the (+) side as the left join table
+            - replace the existing join with the new join
+
+    Args:
+        ast: The AST to remove join marks from
+
+    Returns:
+       The AST with join marks removed"""
+    ast_new = ast.copy()
+    scopes = build_scope(ast_new)
+    if not scopes:
+        return ast_new
+    for scope in scopes.traverse():
+        _eliminate_join_marks_from_scope(scope)
+    return ast_new
+
+
+def _update_from(
+    select: exp.Select,
+    new_join_dict: t.Dict[str, exp.Join],
+    old_join_dict: t.Dict[str, exp.Join],
+) -> None:
+    """If the from clause needs to become a new join, find an appropriate table to use as the new from.
+    updates select in place
+
+    Args:
+        select: The select statement to update
+        new_join_dict: The dictionary of new joins
+        old_join_dict: The dictionary of old joins
+    """
+    old_from = select.args["from"]
+    if old_from.alias_or_name not in new_join_dict:
+        return
+    in_old_not_new = old_join_dict.keys() - new_join_dict.keys()
+    if len(in_old_not_new) >= 1:
+        new_from_name = list(old_join_dict.keys() - new_join_dict.keys())[0]
+        new_from_this = old_join_dict[new_from_name].this
+        new_from = exp.From(this=new_from_this)
+        del old_join_dict[new_from_name]
+        select.set("from", new_from)
+    else:
+        raise ValueError("Cannot determine which table to use as the new from")
+
+
+def _update_join_dict(join: exp.Join, join_dict: t.Dict[str, exp.Join]) -> t.Dict[str, exp.Join]:
+    """Update the join dictionary with the new join.
+    If the join already exists, update the on clause.
+
+    Args:
+        join: The join to add to the dictionary
+        join_dict: dictionary of joins where str is join.alias_or_name
+
+    Returns:
+        The updated dictionary of joins
+    """
+    if join.alias_or_name in join_dict:
+        join_dict[join.alias_or_name].set(
+            "on",
+            exp.and_(join_dict[join.alias_or_name].args["on"], join.args["on"]),
+        )
+    else:
+        join_dict[join.alias_or_name] = join
+    return join_dict
+
+
+def _clean_binary_node(node: exp.Expression) -> None:
+    """if the node is left with only one child, promote the child to the parent node.
+    transformation is done in place.
+
+    Args:
+        node: The node to clean"""
+    if isinstance(node, exp.Binary):
+        if node.left is None:
+            node.replace(node.right)
+        elif node.right is None:
+            node.replace(node.left)
+
+
+def _has_join_mark(col: exp.Expression) -> bool:
+    """Check if the column has a join mark
+
+    Args:
+        The column to check
+    """
+    if not isinstance(col, exp.Column):
+        return False
+    result = col.args.get("join_mark", False)
+    return result
+
+
+def _equality_to_join(
+    eq: exp.Binary, old_joins: t.Dict[str, exp.Join], old_from: exp.From
+) -> t.Optional[exp.Join]:
+    """Convert an equality predicate to a join if it contains a join mark
+
+    Args:
+        eq: The equality expression to convert to a join
+
+    Returns:
+        The join expression if the equality contains a join mark (otherwise None)
+    """
+    if not (isinstance(eq.left, exp.Column) or isinstance(eq.right, exp.Column)):
+        return None
+    new_eq = eq.copy()
+    left_has_join_mark = _has_join_mark(eq.left)
+    right_has_join_mark = _has_join_mark(eq.right)
+
+    if left_has_join_mark:
+        new_eq.left.set("join_mark", False)
+        join_on = new_eq.left.table
+    elif right_has_join_mark:
+        new_eq.right.set("join_mark", False)
+        join_on = new_eq.right.table
+    else:
+        return None
+
+    join_this = old_joins.get(join_on, old_from).this
+    return exp.Join(this=join_this, on=new_eq, kind="LEFT")
+
+
+def _eliminate_join_marks_from_scope(scope) -> None:
+    """Remove join marks columns in scope's where clause.
+    Converts them to left joins and replaces any existing joins.
+    Updates scope in place.
+
+    Args:
+        scope: The scope to remove join marks from
+    """
+    select_scope = scope.expression
+    if not select_scope.args.get("where"):
+        return
+    if not select_scope.args.get("joins"):
+        return
+
+    # dictionaries used to keep track of joins to be replaced
+    old_joins: t.Dict[str, exp.Join] = {
+        join.alias_or_name: join for join in list(select_scope.args.get("joins", []))
+    }
+    new_joins: t.Dict[str, exp.Join] = {}
+
+    for node in scope.find_all(exp.Column):
+        if _has_join_mark(node):
+            # find the predicate that contains the join mark
+            predicate = node.find_ancestor(exp.Predicate)
+            if not isinstance(predicate, exp.Binary):
+                continue
+            predicate_parent = predicate.parent
+
+            join_on = predicate.pop()
+            new_join = _equality_to_join(
+                join_on, old_joins=old_joins, old_from=select_scope.args["from"]
+            )
+            if new_join:
+                new_joins = _update_join_dict(new_join, new_joins)
+            if predicate_parent:
+                _clean_binary_node(predicate_parent)
+    _update_from(select_scope, new_joins, old_joins)
+    replacement_joins = [new_joins.get(join.alias_or_name, join) for join in old_joins.values()]
+    select_scope.set("joins", replacement_joins)
+    where = select_scope.args["where"]
+    if where:
+        if not where.this:
+            select_scope.set("where", None)

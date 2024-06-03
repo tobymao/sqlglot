@@ -154,7 +154,8 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     """
     for node in expression.find_all(exp.DataType):
         node.set(
-            "expressions", [e for e in node.expressions if not isinstance(e, exp.DataTypeParam)]
+            "expressions",
+            [e for e in node.expressions if not isinstance(e, exp.DataTypeParam)],
         )
 
     return expression
@@ -205,7 +206,9 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp.Expression]:
+def explode_to_unnest(
+    index_offset: int = 0,
+) -> t.Callable[[exp.Expression], exp.Expression]:
     """Convert explode/posexplode into unnest."""
 
     def _explode_to_unnest(expression: exp.Expression) -> exp.Expression:
@@ -260,7 +263,8 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                         explode_arg = exp.func(
                             "IF",
                             exp.func(
-                                "ARRAY_SIZE", exp.func("COALESCE", explode_arg, exp.Array())
+                                "ARRAY_SIZE",
+                                exp.func("COALESCE", explode_arg, exp.Array()),
                             ).eq(0),
                             exp.array(bracket, copy=False),
                             explode_arg,

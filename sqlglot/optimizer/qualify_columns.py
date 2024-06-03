@@ -312,7 +312,7 @@ def _expand_positional_references(
     scope: Scope, expressions: t.Iterable[exp.Expression], dialect: DialectType, alias: bool = False
 ) -> t.List[exp.Expression]:
     new_nodes: t.List[exp.Expression] = []
-    projections = None
+    ambiguous_projections = None
 
     for node in expressions:
         if node.is_int:
@@ -324,11 +324,17 @@ def _expand_positional_references(
                 select = select.this
 
                 if dialect == "bigquery":
-                    if projections is None:
-                        projections = {s.alias_or_name for s in scope.expression.selects}
+                    if ambiguous_projections is None:
+                        # When a projection name is also a source name and it is referenced in the
+                        # GROUP BY clause, BQ can't understand what the identifier corresponds to
+                        ambiguous_projections = {
+                            s.alias_or_name
+                            for s in scope.expression.selects
+                            if s.alias_or_name in scope.selected_sources
+                        }
 
                     ambiguous = any(
-                        column.parts[0].name in projections
+                        column.parts[0].name in ambiguous_projections
                         for column in select.find_all(exp.Column)
                     )
                 else:

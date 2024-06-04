@@ -113,6 +113,9 @@ a AND b;
 A XOR A;
 FALSE;
 
+TRUE AND TRUE OR TRUE AND FALSE;
+TRUE;
+
 --------------------------------------
 -- Absorption
 --------------------------------------

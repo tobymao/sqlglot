@@ -498,7 +498,7 @@ class Snowflake(Dialect):
             TokenType.ARROW: lambda self, expressions: self.expression(
                 exp.Lambda,
                 this=self._replace_lambda(
-                    self._parse_conjunction(),
+                    self._parse_assignment(),
                     expressions,
                 ),
                 expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
@@ -576,7 +576,7 @@ class Snowflake(Dialect):
                 # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
                 return self._parse_slice(self._parse_string())
 
-            return self._parse_slice(self._parse_alias(self._parse_conjunction(), explicit=True))
+            return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
 
         def _parse_lateral(self) -> t.Optional[exp.Lateral]:
             lateral = super()._parse_lateral()

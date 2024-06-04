@@ -222,6 +222,9 @@ class TestMySQL(Validator):
         self.validate_identity("CHAR(77, 121, 83, 81, '76')")
         self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
         self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
+        self.validate_identity("SELECT @var1 := 1, @var2")
+        self.validate_identity("SELECT @var1, @var2 := @var1")
+        self.validate_identity("SELECT @var1 := COUNT(*) FROM t1")
 
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:

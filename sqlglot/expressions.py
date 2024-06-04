@@ -6175,6 +6175,8 @@ def _apply_child_list_builder(
 ):
     instance = maybe_copy(instance, copy)
     parsed = []
+    properties = {} if properties is None else properties
+
     for expression in expressions:
         if expression is not None:
             if _is_wrong_expression(expression, into):
@@ -6187,14 +6189,18 @@ def _apply_child_list_builder(
                 prefix=prefix,
                 **opts,
             )
-            parsed.extend(expression.expressions)
+            for k, v in expression.args.items():
+                if k == "expressions":
+                    parsed.extend(v)
+                else:
+                    properties[k] = v
 
     existing = instance.args.get(arg)
     if append and existing:
         parsed = existing.expressions + parsed
 
     child = into(expressions=parsed)
-    for k, v in (properties or {}).items():
+    for k, v in properties.items():
         child.set(k, v)
     instance.set(arg, child)
 

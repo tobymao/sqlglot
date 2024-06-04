@@ -161,6 +161,10 @@ class TestBuild(unittest.TestCase):
                 "SELECT x, y, z, a FROM tbl GROUP BY x, y, z, a",
             ),
             (
+                lambda: select(1).from_("tbl").group_by("x with cube"),
+                "SELECT 1 FROM tbl GROUP BY x WITH CUBE",
+            ),
+            (
                 lambda: select("x").distinct("a", "b").from_("tbl"),
                 "SELECT DISTINCT ON (a, b) x FROM tbl",
             ),

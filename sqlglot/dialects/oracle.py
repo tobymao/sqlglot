@@ -305,13 +305,12 @@ def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
 
     Returns:
        The AST with join marks removed"""
-    ast_new = ast.copy()
-    scopes = build_scope(ast_new)
+    scopes = build_scope(ast)
     if not scopes:
-        return ast_new
+        return ast
     for scope in scopes.traverse():
         _eliminate_join_marks_from_scope(scope)
-    return ast_new
+    return ast
 
 
 def _update_from(

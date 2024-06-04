@@ -257,7 +257,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT EPOCH_MS(10) AS t")
         self.validate_identity("SELECT MAKE_TIMESTAMP(10) AS t")
         self.validate_identity("SELECT TO_TIMESTAMP(10) AS t")
-        self.validate_identity("SELECT UNNEST(column, recursive := TRUE) FROM table")
+        self.validate_identity("SELECT UNNEST(col, recursive := TRUE) FROM t")
         self.validate_identity("VAR_POP(a)")
         self.validate_identity("SELECT * FROM foo ASOF LEFT JOIN bar ON a = b")
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
@@ -280,6 +280,10 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
+        )
+        self.validate_identity(
+            "SELECT a, LOGICAL_OR(b) FROM foo GROUP BY a",
+            "SELECT a, BOOL_OR(b) FROM foo GROUP BY a",
         )
         self.validate_identity(
             "SELECT JSON_EXTRACT_STRING(c, '$.k1') = 'v1'",
@@ -434,15 +438,15 @@ class TestDuckDB(Validator):
             write={"duckdb": 'WITH "x" AS (SELECT 1) SELECT * FROM x'},
         )
         self.validate_all(
-            "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            "CREATE TABLE IF NOT EXISTS t (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
-                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+                "duckdb": "CREATE TABLE IF NOT EXISTS t (cola INT, colb TEXT)",
             },
         )
         self.validate_all(
-            "CREATE TABLE IF NOT EXISTS table (cola INT COMMENT 'cola', colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            "CREATE TABLE IF NOT EXISTS t (cola INT COMMENT 'cola', colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
-                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+                "duckdb": "CREATE TABLE IF NOT EXISTS t (cola INT, colb TEXT)",
             },
         )
         self.validate_all(
@@ -1094,12 +1098,6 @@ class TestDuckDB(Validator):
                 "postgres": "CAST(COL AS BIGINT[])",
                 "snowflake": "CAST(COL AS ARRAY(BIGINT))",
             },
-        )
-
-    def test_bool_or(self):
-        self.validate_all(
-            "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
-            write={"duckdb": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
 
     def test_encode_decode(self):

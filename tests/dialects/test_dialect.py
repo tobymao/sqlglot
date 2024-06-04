@@ -2530,7 +2530,7 @@ FROM subquery2""",
     def test_reserved_keywords(self):
         order = exp.select("*").from_("order")
 
-        for dialect in ("presto", "redshift"):
+        for dialect in ("duckdb", "presto", "redshift"):
             dialect = Dialect.get_or_raise(dialect)
             self.assertEqual(
                 order.sql(dialect=dialect),

@@ -19,6 +19,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+                "snowflake": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMPNTZ)",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
             read={
                 "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",

@@ -50,7 +50,7 @@ class Doris(MySQL):
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(
-                "GROUP_CONCAT", e.this, e.args.get("seprator") or exp.Literal.string(",")
+                "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
             exp.Map: rename_func("ARRAY_MAP"),

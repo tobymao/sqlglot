@@ -26,6 +26,9 @@ class Doris(MySQL):
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
         }
 
+        FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("GROUP_CONCAT")
+
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
 
@@ -49,6 +52,9 @@ class Doris(MySQL):
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
+            exp.GroupConcat: lambda self, e: self.func(
+                "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
+            ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),

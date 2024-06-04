@@ -705,7 +705,6 @@ class BigQuery(Dialect):
 
         # from: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
         RESERVED_KEYWORDS = {
-            *generator.Generator.RESERVED_KEYWORDS,
             "all",
             "and",
             "any",

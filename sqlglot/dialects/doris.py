@@ -49,6 +49,8 @@ class Doris(MySQL):
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
+            exp.GroupConcat: lambda self,
+                                    e: f"""GROUP_CONCAT({self.sql(e, "this")} , {self.sql(e, "separator") or "','"})""",
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),

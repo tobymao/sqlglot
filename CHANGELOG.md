@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v24.1.2] - 2024-06-04
+### :sparkles: New Features
+- [`158ca97`](https://github.com/tobymao/sqlglot/commit/158ca9724c23e7a58f6782719b477f2adb57acae) - **duckdb**: transpile TIMESTAMPNTZ into TIMESTAMP *(PR [#3587](https://github.com/tobymao/sqlglot/pull/3587) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v24.1.1] - 2024-06-03
 ### :bug: Bug Fixes
 - [`60d9085`](https://github.com/tobymao/sqlglot/commit/60d9085a4ec2d0c39aa904bf81b7e15b5bac8ea5) - **postgres**: collate with identifier closes [#3578](https://github.com/tobymao/sqlglot/pull/3578) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3829,3 +3834,4 @@ Changelog
 [v24.0.3]: https://github.com/tobymao/sqlglot/compare/v24.0.2...v24.0.3
 [v24.1.0]: https://github.com/tobymao/sqlglot/compare/v24.0.3...v24.1.0
 [v24.1.1]: https://github.com/tobymao/sqlglot/compare/v24.1.0...v24.1.1
+[v24.1.2]: https://github.com/tobymao/sqlglot/compare/v24.1.1...v24.1.2

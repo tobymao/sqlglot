@@ -105,7 +105,7 @@ def simplify(
         node = simplify_not(node)
         node = flatten(node)
         node = simplify_connectors(node, root, max_operands)
-        node = remove_complements(node, root, max_operands)
+        node = remove_complements(node, root)
         node = simplify_coalesce(node)
         node.parent = expression.parent
         node = simplify_literals(node, root, max_operands)
@@ -350,7 +350,7 @@ def _simplify_comparison(expression, left, right, or_=False):
     return None
 
 
-def remove_complements(expression, root=True, max_operands=float("inf")):
+def remove_complements(expression, root=True):
     """
     Removing complements.
 
@@ -358,15 +358,11 @@ def remove_complements(expression, root=True, max_operands=float("inf")):
     A OR NOT A -> TRUE
     """
     if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
-        operands = tuple(expression.flatten())
-        if len(operands) > max_operands:
-            return expression
+        ops = set(expression.flatten())
+        for op in ops:
+            if isinstance(op, exp.Not) and op.this in ops:
+                return exp.false() if isinstance(expression, exp.And) else exp.true()
 
-        complement = exp.false() if isinstance(expression, exp.And) else exp.true()
-
-        for a, b in itertools.permutations(operands, 2):
-            if is_complement(a, b):
-                return complement
     return expression
 
 

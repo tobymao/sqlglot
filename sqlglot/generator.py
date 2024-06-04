@@ -123,6 +123,8 @@ class Generator(metaclass=_Generator):
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
+        exp.ProjectionPolicyColumnConstraint: lambda self,
+        e: f"PROJECTION POLICY {self.sql(e, 'this')}",
         exp.RemoteWithConnectionModelProperty: lambda self,
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
         exp.ReturnsProperty: lambda self, e: (
@@ -139,6 +141,7 @@ class Generator(metaclass=_Generator):
         exp.StabilityProperty: lambda _, e: e.name,
         exp.StrictProperty: lambda *_: "STRICT",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
+        exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
         exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.expression),
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
@@ -3022,8 +3025,15 @@ class Generator(metaclass=_Generator):
         if comment:
             return f"ALTER COLUMN {this} COMMENT {comment}"
 
-        if not expression.args.get("drop"):
+        allow_null = expression.args.get("allow_null")
+        drop = expression.args.get("drop")
+
+        if not drop and not allow_null:
             self.unsupported("Unsupported ALTER COLUMN syntax")
+
+        if allow_null is not None:
+            keyword = "DROP" if drop else "SET"
+            return f"ALTER COLUMN {this} {keyword} NOT NULL"
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
@@ -3850,9 +3860,16 @@ class Generator(metaclass=_Generator):
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
 
-        if option.upper() == "FILE_FORMAT":
-            values = self.expressions(expression, key="expression", flat=True, sep=" ")
-            return f"{option} = ({values})"
+        if expression.expressions:
+            upper = option.upper()
+
+            # Snowflake FILE_FORMAT options are separated by whitespace
+            sep = " " if upper == "FILE_FORMAT" else ", "
+
+            # Databricks copy/format options do not set their list of values with EQ
+            op = " " if upper in ("COPY_OPTIONS", "FORMAT_OPTIONS") else " = "
+            values = self.expressions(expression, flat=True, sep=sep)
+            return f"{option}{op}({values})"
 
         value = self.sql(expression, "expression")
 
@@ -3872,9 +3889,10 @@ class Generator(metaclass=_Generator):
         else:
             # Snowflake case: CREDENTIALS = (...)
             credentials = self.expressions(expression, key="credentials", flat=True, sep=" ")
-            credentials = f"CREDENTIALS = ({credentials})" if credentials else ""
+            credentials = f"CREDENTIALS = ({credentials})" if cred_expr is not None else ""
 
         storage = self.sql(expression, "storage")
+        storage = f"STORAGE_INTEGRATION = {storage}" if storage else ""
 
         encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
         encryption = f" ENCRYPTION = ({encryption})" if encryption else ""
@@ -3929,3 +3947,11 @@ class Generator(metaclass=_Generator):
             on_sql = self.func("ON", filter_col, retention_period)
 
         return f"DATA_DELETION={on_sql}"
+
+    def maskingpolicycolumnconstraint_sql(
+        self, expression: exp.MaskingPolicyColumnConstraint
+    ) -> str:
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" USING ({expressions})" if expressions else ""
+        return f"MASKING POLICY {this}{expressions}"

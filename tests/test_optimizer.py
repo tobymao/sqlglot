@@ -317,6 +317,18 @@ class TestOptimizer(unittest.TestCase):
             'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
         )
 
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 as f1) AS col) SELECT tbl1.col.* from tbl1",
+                    dialect="bigquery",
+                ),
+                schema=MappingSchema(schema=None, dialect="bigquery"),
+                infer_schema=False,
+            ).sql(dialect="bigquery"),
+            "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
+        )
+
         self.check_file(
             "qualify_columns", qualify_columns, execute=True, schema=self.schema, set_dialect=True
         )

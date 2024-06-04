@@ -131,6 +131,10 @@ SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(
 SELECT (SELECT MIN(a) FROM UNNEST([1, 2])) AS f FROM x GROUP BY 1;
 SELECT (SELECT MIN(_q_0.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS _q_0) AS f FROM x AS x GROUP BY 1;
 
+# dialect: bigquery
+WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
+WITH x AS (SELECT 'a' AS a, 1 AS b) SELECT x.a AS c, y.a AS d, SUM(x.b) AS y FROM x AS x JOIN x AS y ON x.a = y.a GROUP BY x.a, 2;
+
 SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY c;
 SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
 
@@ -209,6 +213,9 @@ SELECT _q_1.a AS a FROM (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) A
 
 SELECT x.a FROM x AS x JOIN (SELECT * FROM x) AS y ON x.a = y.a;
 SELECT x.a AS a FROM x AS x JOIN (SELECT x.a AS a, x.b AS b FROM x AS x) AS y ON x.a = y.a;
+
+SELECT a FROM x as t1 /* there is comment */;
+SELECT t1.a AS a FROM x AS t1 /* there is comment */;
 
 --------------------------------------
 -- Joins
@@ -313,6 +320,28 @@ SELECT s.a AS a, s.b AS b FROM (SELECT t.a AS a, t.b AS b FROM t AS t) AS s;
 # execute: false
 SELECT * FROM (SELECT * FROM t1 UNION ALL SELECT * FROM t2) AS s(b);
 SELECT s.b AS b FROM (SELECT t1.b AS b FROM t1 AS t1 UNION ALL SELECT t2.b AS b FROM t2 AS t2) AS s;
+
+# dialect: bigquery
+# execute: false
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.*, tbl2.col.* FROM tbl1, tbl2;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.col1 AS col1, tbl1.col.col2 AS col2, tbl1.col.lvl1 AS lvl1, tbl2.col.col1 AS col1, tbl2.col.col2 AS col2, tbl2.col.lvl1 AS lvl1 FROM tbl1 AS tbl1, tbl2 AS tbl2;
+
+# dialect: bigquery
+# execute: false
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.lvl1.* FROM tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1, 3 AS col3) AS col) SELECT tbl1.col.lvl1.col1 AS col1, tbl1.col.lvl1.lvl2 AS lvl2 FROM tbl1 AS tbl1;
+
+# dialect: bigquery
+# execute: false
+# title: Cannot expand struct star with unnamed fields
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.col.* FROM tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.col.* FROM tbl1 AS tbl1;
+
+# dialect: bigquery
+# execute: false
+# title: Cannot expand struct star with ambiguous fields
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1 AS tbl1;
 
 --------------------------------------
 -- CTEs

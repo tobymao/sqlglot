@@ -503,6 +503,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
             exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP_NS",

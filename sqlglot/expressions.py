@@ -1632,6 +1632,7 @@ class AlterColumn(Expression):
         "default": False,
         "drop": False,
         "comment": False,
+        "allow_null": False,
     }
 
 
@@ -1835,6 +1836,11 @@ class NotForReplicationColumnConstraint(ColumnConstraintKind):
     arg_types = {}
 
 
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class MaskingPolicyColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True, "expressions": False}
+
+
 class NotNullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 
@@ -1842,6 +1848,11 @@ class NotNullColumnConstraint(ColumnConstraintKind):
 # https://dev.mysql.com/doc/refman/5.7/en/timestamp-initialization.html
 class OnUpdateColumnConstraint(ColumnConstraintKind):
     pass
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class TagColumnConstraint(ColumnConstraintKind):
+    arg_types = {"expressions": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-external-table#optional-parameters
@@ -1866,6 +1877,11 @@ class UppercaseColumnConstraint(ColumnConstraintKind):
 
 
 class PathColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class ProjectionPolicyColumnConstraint(ColumnConstraintKind):
     pass
 
 
@@ -1992,7 +2008,7 @@ class Connect(Expression):
 
 
 class CopyParameter(Expression):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expression": False, "expressions": False}
 
 
 class Copy(Expression):
@@ -6159,6 +6175,8 @@ def _apply_child_list_builder(
 ):
     instance = maybe_copy(instance, copy)
     parsed = []
+    properties = {} if properties is None else properties
+
     for expression in expressions:
         if expression is not None:
             if _is_wrong_expression(expression, into):
@@ -6171,14 +6189,18 @@ def _apply_child_list_builder(
                 prefix=prefix,
                 **opts,
             )
-            parsed.extend(expression.expressions)
+            for k, v in expression.args.items():
+                if k == "expressions":
+                    parsed.extend(v)
+                else:
+                    properties[k] = v
 
     existing = instance.args.get(arg)
     if append and existing:
         parsed = existing.expressions + parsed
 
     child = into(expressions=parsed)
-    for k, v in (properties or {}).items():
+    for k, v in properties.items():
         child.set(k, v)
     instance.set(arg, child)
 

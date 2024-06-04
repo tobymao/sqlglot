@@ -25,6 +25,17 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
+UNESCAPED_SEQUENCES = {
+    "\\a": "\a",
+    "\\b": "\b",
+    "\\f": "\f",
+    "\\n": "\n",
+    "\\r": "\r",
+    "\\t": "\t",
+    "\\v": "\v",
+    "\\\\": "\\",
+}
+
 
 class Dialects(str, Enum):
     """Dialects supported by SQLGLot."""
@@ -145,14 +156,7 @@ class _Dialect(type):
 
         if "\\" in klass.tokenizer_class.STRING_ESCAPES:
             klass.UNESCAPED_SEQUENCES = {
-                "\\a": "\a",
-                "\\b": "\b",
-                "\\f": "\f",
-                "\\n": "\n",
-                "\\r": "\r",
-                "\\t": "\t",
-                "\\v": "\v",
-                "\\\\": "\\",
+                **UNESCAPED_SEQUENCES,
                 **klass.UNESCAPED_SEQUENCES,
             }
 

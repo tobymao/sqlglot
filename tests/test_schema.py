@@ -303,3 +303,10 @@ class TestSchema(unittest.TestCase):
         schema = MappingSchema({"x": {"c": "int"}})
         self.assertTrue(schema.has_column("x", exp.column("c")))
         self.assertFalse(schema.has_column("x", exp.column("k")))
+
+    def test_find(self):
+        schema = MappingSchema({"x": {"c": "int"}})
+        found = schema.find(exp.to_table("x"))
+        self.assertEqual(found, {"c": "int"})
+        found = schema.find(exp.to_table("x"), ensure_data_types=True)
+        self.assertEqual(found, {"c": exp.DataType.build("int")})

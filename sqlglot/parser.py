@@ -894,7 +894,7 @@ class Parser(metaclass=_Parser):
             enforced=self._match_text_seq("ENFORCED"),
         ),
         "COLLATE": lambda self: self.expression(
-            exp.CollateColumnConstraint, this=self._parse_var()
+            exp.CollateColumnConstraint, this=self._parse_var(any_token=True)
         ),
         "COMMENT": lambda self: self.expression(
             exp.CommentColumnConstraint, this=self._parse_string()
@@ -1133,6 +1133,8 @@ class Parser(metaclass=_Parser):
     UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
+
+    COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS", "CREDENTIAL"}
 
     STRICT_CAST = True
 
@@ -1830,11 +1832,17 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return self._parse_sequence_properties()
 
-        return self.expression(
-            exp.Property,
-            this=key.to_dot() if isinstance(key, exp.Column) else key,
-            value=self._parse_bitwise() or self._parse_var(any_token=True),
-        )
+        # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
+        if isinstance(key, exp.Column):
+            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
+
+        value = self._parse_bitwise() or self._parse_var(any_token=True)
+
+        # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
+        if isinstance(value, exp.Column):
+            value = exp.var(value.name)
+
+        return self.expression(exp.Property, this=key, value=value)
 
     def _parse_stored(self) -> exp.FileFormatProperty:
         self._match(TokenType.ALIAS)
@@ -1853,7 +1861,7 @@ class Parser(metaclass=_Parser):
             ),
         )
 
-    def _parse_unquoted_field(self):
+    def _parse_unquoted_field(self) -> t.Optional[exp.Expression]:
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
             field = exp.var(field)
@@ -2793,7 +2801,13 @@ class Parser(metaclass=_Parser):
         if not alias and not columns:
             return None
 
-        return self.expression(exp.TableAlias, this=alias, columns=columns)
+        table_alias = self.expression(exp.TableAlias, this=alias, columns=columns)
+
+        # We bubble up comments from the Identifier to the TableAlias
+        if isinstance(alias, exp.Identifier):
+            table_alias.add_comments(alias.pop_comments())
+
+        return table_alias
 
     def _parse_subquery(
         self, this: t.Optional[exp.Expression], parse_alias: bool = True
@@ -4090,16 +4104,14 @@ class Parser(metaclass=_Parser):
         if this and this.is_number:
             this = exp.Literal.string(this.name)
         elif this and this.is_string:
-            parts = this.name.split()
-
-            if len(parts) == 2:
+            parts = exp.INTERVAL_STRING_RE.findall(this.name)
+            if len(parts) == 1:
                 if unit:
-                    # This is not actually a unit, it's something else (e.g. a "window side")
-                    unit = None
+                    # Unconsume the eagerly-parsed unit, since the real unit was part of the string
                     self._retreat(self._index - 1)
 
-                this = exp.Literal.string(parts[0])
-                unit = self.expression(exp.Var, this=parts[1].upper())
+                this = exp.Literal.string(parts[0][0])
+                unit = self.expression(exp.Var, this=parts[0][1].upper())
 
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(
@@ -4160,12 +4172,16 @@ class Parser(metaclass=_Parser):
         this = parse_method()
 
         while self._match_set(self.FACTOR):
-            this = self.expression(
-                self.FACTOR[self._prev.token_type],
-                this=this,
-                comments=self._prev_comments,
-                expression=parse_method(),
-            )
+            klass = self.FACTOR[self._prev.token_type]
+            comments = self._prev_comments
+            expression = parse_method()
+
+            if not expression and klass is exp.IntDiv and self._prev.text.isalpha():
+                self._retreat(self._index - 1)
+                return this
+
+            this = self.expression(klass, this=this, comments=comments, expression=expression)
+
             if isinstance(this, exp.Div):
                 this.args["typed"] = self.dialect.TYPED_DIVISION
                 this.args["safe"] = self.dialect.SAFE_DIVISION
@@ -4201,7 +4217,20 @@ class Parser(metaclass=_Parser):
 
                 return self.expression(exp.Cast, this=this, to=data_type)
 
-            if data_type.expressions:
+            # The expressions arg gets set by the parser when we have something like DECIMAL(38, 0)
+            # in the input SQL. In that case, we'll produce these tokens: DECIMAL ( 38 , 0 )
+            #
+            # If the index difference here is greater than 1, that means the parser itself must have
+            # consumed additional tokens such as the DECIMAL scale and precision in the above example.
+            #
+            # If it's not greater than 1, then it must be 1, because we've consumed at least the type
+            # keyword, meaning that the expressions arg of the DataType must have gotten set by a
+            # callable in the TYPE_CONVERTERS mapping. For example, Snowflake converts DECIMAL to
+            # DECIMAL(38, 0)) in order to facilitate the data type's transpilation.
+            #
+            # In these cases, we don't really want to return the converted type, but instead retreat
+            # and try to parse a Column or Identifier in the section below.
+            if data_type.expressions and index2 - index > 1:
                 self._retreat(index2)
                 return self._parse_column_ops(data_type)
 
@@ -4274,7 +4303,7 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.L_PAREN):
             if is_struct:
-                expressions = self._parse_csv(self._parse_struct_types)
+                expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
             elif nested:
                 expressions = self._parse_csv(
                     lambda: self._parse_types(
@@ -4375,8 +4404,26 @@ class Parser(metaclass=_Parser):
         elif expressions:
             this.set("expressions", expressions)
 
-        while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-            this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)
+        index = self._index
+
+        # Postgres supports the INT ARRAY[3] syntax as a synonym for INT[3]
+        matched_array = self._match(TokenType.ARRAY)
+
+        while self._curr:
+            matched_l_bracket = self._match(TokenType.L_BRACKET)
+            if not matched_l_bracket and not matched_array:
+                break
+
+            matched_array = False
+            values = self._parse_csv(self._parse_conjunction) or None
+            if values and not schema:
+                self._retreat(index)
+                break
+
+            this = exp.DataType(
+                this=exp.DataType.Type.ARRAY, expressions=[this], values=values, nested=True
+            )
+            self._match(TokenType.R_BRACKET)
 
         if self.TYPE_CONVERTER and isinstance(this.this, exp.DataType.Type):
             converter = self.TYPE_CONVERTER.get(this.this)
@@ -4392,15 +4439,16 @@ class Parser(metaclass=_Parser):
             or self._parse_id_var()
         )
         self._match(TokenType.COLON)
-        column_def = self._parse_column_def(this)
 
-        if type_required and (
-            (isinstance(this, exp.Column) and this.this is column_def) or this is column_def
+        if (
+            type_required
+            and not isinstance(this, exp.DataType)
+            and not self._match_set(self.TYPE_TOKENS, advance=False)
         ):
             self._retreat(index)
             return self._parse_types()
 
-        return column_def
+        return self._parse_column_def(this)
 
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("AT", "TIME", "ZONE"):
@@ -6036,7 +6084,19 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.AlterColumn, this=column, default=self._parse_conjunction())
         if self._match(TokenType.COMMENT):
             return self.expression(exp.AlterColumn, this=column, comment=self._parse_string())
-
+        if self._match_text_seq("DROP", "NOT", "NULL"):
+            return self.expression(
+                exp.AlterColumn,
+                this=column,
+                drop=True,
+                allow_null=True,
+            )
+        if self._match_text_seq("SET", "NOT", "NULL"):
+            return self.expression(
+                exp.AlterColumn,
+                this=column,
+                allow_null=False,
+            )
         self._match_text_seq("SET", "DATA")
         self._match_text_seq("TYPE")
         return self.expression(
@@ -6601,12 +6661,23 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.WithOperator, this=this, op=op)
 
     def _parse_wrapped_options(self) -> t.List[t.Optional[exp.Expression]]:
-        opts = []
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
+
+        opts: t.List[t.Optional[exp.Expression]] = []
         while self._curr and not self._match(TokenType.R_PAREN):
-            opts.append(self._parse_conjunction())
+            if self._match_text_seq("FORMAT_NAME", "="):
+                # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL,
+                # so we parse it separately to use _parse_field()
+                prop = self.expression(
+                    exp.Property, this=exp.var("FORMAT_NAME"), value=self._parse_field()
+                )
+                opts.append(prop)
+            else:
+                opts.append(self._parse_property())
+
             self._match(TokenType.COMMA)
+
         return opts
 
     def _parse_copy_parameters(self) -> t.List[exp.CopyParameter]:
@@ -6614,37 +6685,38 @@ class Parser(metaclass=_Parser):
 
         options = []
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
-            option = self._parse_unquoted_field()
-            value = None
+            option = self._parse_var(any_token=True)
+            prev = self._prev.text.upper()
 
-            # Some options are defined as functions with the values as params
-            if not isinstance(option, exp.Func):
-                prev = self._prev.text.upper()
-                # Different dialects might separate options and values by white space, "=" and "AS"
-                self._match(TokenType.EQ)
-                self._match(TokenType.ALIAS)
+            # Different dialects might separate options and values by white space, "=" and "AS"
+            self._match(TokenType.EQ)
+            self._match(TokenType.ALIAS)
 
-                if prev == "FILE_FORMAT" and self._match(TokenType.L_PAREN):
-                    # Snowflake FILE_FORMAT case
-                    value = self._parse_wrapped_options()
-                else:
-                    value = self._parse_unquoted_field()
+            param = self.expression(exp.CopyParameter, this=option)
 
-            param = self.expression(exp.CopyParameter, this=option, expression=value)
+            if prev in self.COPY_INTO_VARLEN_OPTIONS and self._match(
+                TokenType.L_PAREN, advance=False
+            ):
+                # Snowflake FILE_FORMAT case, Databricks COPY & FORMAT options
+                param.set("expressions", self._parse_wrapped_options())
+            elif prev == "FILE_FORMAT":
+                # T-SQL's external file format case
+                param.set("expression", self._parse_field())
+            else:
+                param.set("expression", self._parse_unquoted_field())
+
             options.append(param)
-
-            if sep:
-                self._match(sep)
+            self._match(sep)
 
         return options
 
     def _parse_credentials(self) -> t.Optional[exp.Credentials]:
         expr = self.expression(exp.Credentials)
 
-        if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
-            expr.set("storage", self._parse_conjunction())
+        if self._match_text_seq("STORAGE_INTEGRATION", "="):
+            expr.set("storage", self._parse_field())
         if self._match_text_seq("CREDENTIALS"):
-            # Snowflake supports CREDENTIALS = (...), while Redshift CREDENTIALS <string>
+            # Snowflake case: CREDENTIALS = (...), Redshift case: CREDENTIALS <string>
             creds = (
                 self._parse_wrapped_options() if self._match(TokenType.EQ) else self._parse_field()
             )
@@ -6667,7 +6739,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.INTO)
 
         this = (
-            self._parse_conjunction()
+            self._parse_select(nested=True, parse_subquery_alias=False)
             if self._match(TokenType.L_PAREN, advance=False)
             else self._parse_table(schema=True)
         )

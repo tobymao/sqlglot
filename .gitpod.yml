@@ -1,0 +1,13 @@
+image: gitpod/workspace-python-3.11
+tasks:
+  - name: sqlglot
+    init: |
+      python -m venv .venv
+      source .venv/bin/activate
+      make install-dev
+
+    command: |
+      clear
+      source .venv/bin/activate
+
+

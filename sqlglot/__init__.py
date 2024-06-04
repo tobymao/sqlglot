@@ -65,9 +65,6 @@ except ImportError:
 pretty = False
 """Whether to format generated SQL by default."""
 
-schema = MappingSchema()
-"""The default schema used by SQLGlot (e.g. in the optimizer)."""
-
 
 def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> t.List[Token]:
     """

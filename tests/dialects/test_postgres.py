@@ -8,6 +8,9 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
+        self.validate_identity(
+            'CREATE TABLE x (a TEXT COLLATE "de_DE")', "CREATE TABLE x (a TEXT COLLATE de_DE)"
+        )
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
@@ -717,6 +720,9 @@ class TestPostgres(Validator):
         self.validate_identity(
             "COPY (SELECT * FROM t) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
         )
+        self.validate_identity("cast(a as FLOAT)", "CAST(a AS DOUBLE PRECISION)")
+        self.validate_identity("cast(a as FLOAT8)", "CAST(a AS DOUBLE PRECISION)")
+        self.validate_identity("cast(a as FLOAT4)", "CAST(a AS REAL)")
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
@@ -734,6 +740,8 @@ class TestPostgres(Validator):
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
+        self.validate_identity("CREATE TABLE t (col INT[3][5])")
+        self.validate_identity("CREATE TABLE t (col INT[3])")
         self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")
         self.validate_identity("CREATE INDEX et_vid_idx ON et(vid) INCLUDE (fid)")
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
@@ -855,6 +863,14 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY[3])",
+            "CREATE TABLE t (col INT[3])",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY)",
+            "CREATE TABLE t (col INT[])",
         )
         self.validate_identity(
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path TO 'public'",

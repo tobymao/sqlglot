@@ -48,6 +48,14 @@ class TestDoris(Validator):
                 "postgres": """SELECT JSON_EXTRACT_PATH(CAST('{"key": 1}' AS JSONB), 'key')""",
             },
         )
+        self.validate_all(
+            "SELECT GROUP_CONCAT('aa', ',')",
+            read={
+                "doris": "SELECT GROUP_CONCAT('aa', ',')",
+                "mysql": "SELECT GROUP_CONCAT('aa' SEPARATOR ',')",
+                "postgres": "SELECT STRING_AGG('aa', ',')",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("COALECSE(a, b, c, d)")

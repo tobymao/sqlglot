@@ -3977,6 +3977,7 @@ class DataType(Expression):
         IPV6 = auto()
         JSON = auto()
         JSONB = auto()
+        LIST = auto()
         LONGBLOB = auto()
         LONGTEXT = auto()
         LOWCARDINALITY = auto()

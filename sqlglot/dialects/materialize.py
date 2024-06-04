@@ -44,4 +44,5 @@ class Materialize(Postgres):
             **Postgres.Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "MZ_TIMESTAMP",
             exp.DataType.Type.VARBINARY: "BYTEA",
+            exp.DataType.Type.LIST: "TEXT",
         }

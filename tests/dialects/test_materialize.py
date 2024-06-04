@@ -47,3 +47,10 @@ class TestMaterialize(Validator):
                 "postgres": 'SELECT JSON_EXTRACT_PATH_TEXT(\'{ "farm": {"barn": { "color": "red", "feed stocked": true }}}\', \'farm\', \'barn\', \'color\')',
             },
         )
+        self.validate_all(
+            "CREATE TABLE example (id INT, name LIST)",
+            write={
+                "materialize": "CREATE TABLE example (id INT, name TEXT)",
+            },
+        )
+        self.validate_all("SELECT LIST[1, 2, 3]", read={"materialize": "SELECT LIST[1, 2, 3]"})

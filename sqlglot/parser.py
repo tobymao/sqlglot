@@ -193,6 +193,7 @@ class Parser(metaclass=_Parser):
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
+        TokenType.LIST,
         TokenType.LOWCARDINALITY,
         TokenType.MAP,
         TokenType.NULLABLE,

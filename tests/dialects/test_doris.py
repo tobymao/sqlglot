@@ -49,9 +49,10 @@ class TestDoris(Validator):
             },
         )
         self.validate_all(
-            """SELECT GROUP_CONCAT(ID, ',') FROM EMPLOYEES""",
+            """SELECT GROUP_CONCAT('aa', ',')""",
             read={
-                "postgres": """SELECT STRING_AGG(ID , ',' ) FROM EMPLOYEES""",
+                "postgres": """SELECT STRING_AGG('aa', ',')""",
+                "mysql": """SELECT GROUP_CONCAT('aa' SEPARATOR ',')""",
             }
         )
 

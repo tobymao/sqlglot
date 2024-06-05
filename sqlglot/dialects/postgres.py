@@ -310,7 +310,6 @@ class Postgres(Dialect):
             "CSTRING": TokenType.PSEUDO_TYPE,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
-            "DIV": TokenType.COMMAND,
             "EXEC": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "INT8": TokenType.BIGINT,

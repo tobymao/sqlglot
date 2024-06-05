@@ -814,6 +814,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DECIMAL": TokenType.DECIMAL,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
         "BIGNUMERIC": TokenType.BIGDECIMAL,
+        "LIST": TokenType.LIST,
         "MAP": TokenType.MAP,
         "NULLABLE": TokenType.NULLABLE,
         "NUMBER": TokenType.DECIMAL,

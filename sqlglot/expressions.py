@@ -4769,6 +4769,12 @@ class ToArray(Func):
     pass
 
 
+# https://materialize.com/docs/sql/types/list/
+class List(Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):

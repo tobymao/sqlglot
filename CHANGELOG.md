@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v25.0.0] - 2024-06-05
+### :bug: Bug Fixes
+- [`f7081c4`](https://github.com/tobymao/sqlglot/commit/f7081c455cf2f61af61dcfd0859a1bf272b84258) - builder other props closes [#3588](https://github.com/tobymao/sqlglot/pull/3588) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`13009ca`](https://github.com/tobymao/sqlglot/commit/13009ca5c14d81b7a07311a38f329b967f909926) - **doris**: use CSV syntax for GROUP_CONCAT *(PR [#3592](https://github.com/tobymao/sqlglot/pull/3592) by [@Toms1999](https://github.com/Toms1999))*
+- [`bf7fd12`](https://github.com/tobymao/sqlglot/commit/bf7fd12f9a19bf91dd89f76cf376bf6004d83dc0) - no_ilike_sql to lower both sides *(PR [#3593](https://github.com/tobymao/sqlglot/pull/3593) by [@barakalon](https://github.com/barakalon))*
+- [`8d87568`](https://github.com/tobymao/sqlglot/commit/8d875681403a43282e1f414ca90f3cf955f26027) - stop normalization_distance early *(PR [#3594](https://github.com/tobymao/sqlglot/pull/3594) by [@barakalon](https://github.com/barakalon))*
+- [`3e38912`](https://github.com/tobymao/sqlglot/commit/3e38912cd0de2e3939221b6ad8ae194e68cfe288) - **duckdb**: add reserved keywords *(PR [#3597](https://github.com/tobymao/sqlglot/pull/3597) by [@georgesittas](https://github.com/georgesittas))*
+- [`5683d5f`](https://github.com/tobymao/sqlglot/commit/5683d5fe7eeae8f70751de962644c0981c21c7fc) - **hive**: generate TRUNC for TimestampTrunc *(PR [#3600](https://github.com/tobymao/sqlglot/pull/3600) by [@Toms1999](https://github.com/Toms1999))*
+- [`ff55ec1`](https://github.com/tobymao/sqlglot/commit/ff55ec1ca8c259f3c304aa7f6039c033f1fe728c) - **hive**: generate string unit for TRUNC, parse it into TimestampTrunc too *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`12b6aa7`](https://github.com/tobymao/sqlglot/commit/12b6aa7006bbf005c750070d9e266153057ff281) - **snowflake**: Fix COPY INTO with subquery *(PR [#3605](https://github.com/tobymao/sqlglot/pull/3605) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3604](https://github.com/tobymao/sqlglot/issues/3604) opened by [@ajuszczak](https://github.com/ajuszczak)*
+- [`061be9b`](https://github.com/tobymao/sqlglot/commit/061be9bda9e03b17590a0ac58fa2fec0540e2e77) - optimize absorb_and_eliminate and remove_complements *(PR [#3595](https://github.com/tobymao/sqlglot/pull/3595) by [@barakalon](https://github.com/barakalon))*
+
+### :wrench: Chores
+- [`7dd244b`](https://github.com/tobymao/sqlglot/commit/7dd244b6a57e4e8cc9d07cbaf3e89c60fa665a69) - **hive**: test TRUNC roundtrip *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v24.1.2] - 2024-06-04
 ### :sparkles: New Features
 - [`158ca97`](https://github.com/tobymao/sqlglot/commit/158ca9724c23e7a58f6782719b477f2adb57acae) - **duckdb**: transpile TIMESTAMPNTZ into TIMESTAMP *(PR [#3587](https://github.com/tobymao/sqlglot/pull/3587) by [@georgesittas](https://github.com/georgesittas))*
@@ -3835,3 +3852,4 @@ Changelog
 [v24.1.0]: https://github.com/tobymao/sqlglot/compare/v24.0.3...v24.1.0
 [v24.1.1]: https://github.com/tobymao/sqlglot/compare/v24.1.0...v24.1.1
 [v24.1.2]: https://github.com/tobymao/sqlglot/compare/v24.1.1...v24.1.2
+[v25.0.0]: https://github.com/tobymao/sqlglot/compare/v24.1.2...v25.0.0

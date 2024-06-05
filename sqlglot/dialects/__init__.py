@@ -76,6 +76,7 @@ from sqlglot.dialects.postgres import Postgres
 from sqlglot.dialects.presto import Presto
 from sqlglot.dialects.prql import PRQL
 from sqlglot.dialects.redshift import Redshift
+from sqlglot.dialects.risingwave import RisingWave
 from sqlglot.dialects.snowflake import Snowflake
 from sqlglot.dialects.spark import Spark
 from sqlglot.dialects.spark2 import Spark2
@@ -85,4 +86,3 @@ from sqlglot.dialects.tableau import Tableau
 from sqlglot.dialects.teradata import Teradata
 from sqlglot.dialects.trino import Trino
 from sqlglot.dialects.tsql import TSQL
-from sqlglot.dialects.risingwave import RisingWave

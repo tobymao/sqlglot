@@ -56,6 +56,7 @@ class Dialects(str, Enum):
     PRESTO = "presto"
     PRQL = "prql"
     REDSHIFT = "redshift"
+    RISINGWAVE = "risingwave"
     SNOWFLAKE = "snowflake"
     SPARK = "spark"
     SPARK2 = "spark2"
@@ -65,7 +66,6 @@ class Dialects(str, Enum):
     TERADATA = "teradata"
     TRINO = "trino"
     TSQL = "tsql"
-    RISINGWAVE = "risingwave"
 
 
 class NormalizationStrategy(str, AutoName):

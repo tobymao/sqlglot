@@ -432,7 +432,6 @@ def absorb_and_eliminate(expression, root=True):
             else:
                 subops[op].append({op})
 
-
         for op in ops:
             if isinstance(op, kind):
                 a, b = op.unnest_operands()
@@ -445,7 +444,7 @@ def absorb_and_eliminate(expression, root=True):
                     b.replace(exp.true() if kind == exp.And else exp.false())
                     continue
                 superset = set(op.flatten())
-                if any(any(subset < superset for subset in  subops[i]) for i in superset):
+                if any(any(subset < superset for subset in subops[i]) for i in superset):
                     op.replace(exp.false() if kind == exp.And else exp.true())
                     continue
 

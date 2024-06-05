@@ -1485,21 +1485,21 @@ class TestDialect(Validator):
                 "snowflake": "x ILIKE '%y'",
             },
             write={
-                "bigquery": "LOWER(x) LIKE '%y'",
+                "bigquery": "LOWER(x) LIKE LOWER('%y')",
                 "clickhouse": "x ILIKE '%y'",
                 "drill": "x `ILIKE` '%y'",
                 "duckdb": "x ILIKE '%y'",
-                "hive": "LOWER(x) LIKE '%y'",
-                "mysql": "LOWER(x) LIKE '%y'",
-                "oracle": "LOWER(x) LIKE '%y'",
+                "hive": "LOWER(x) LIKE LOWER('%y')",
+                "mysql": "LOWER(x) LIKE LOWER('%y')",
+                "oracle": "LOWER(x) LIKE LOWER('%y')",
                 "postgres": "x ILIKE '%y'",
-                "presto": "LOWER(x) LIKE '%y'",
+                "presto": "LOWER(x) LIKE LOWER('%y')",
                 "snowflake": "x ILIKE '%y'",
                 "spark": "x ILIKE '%y'",
-                "sqlite": "LOWER(x) LIKE '%y'",
-                "starrocks": "LOWER(x) LIKE '%y'",
-                "trino": "LOWER(x) LIKE '%y'",
-                "doris": "LOWER(x) LIKE '%y'",
+                "sqlite": "LOWER(x) LIKE LOWER('%y')",
+                "starrocks": "LOWER(x) LIKE LOWER('%y')",
+                "trino": "LOWER(x) LIKE LOWER('%y')",
+                "doris": "LOWER(x) LIKE LOWER('%y')",
             },
         )
         self.validate_all(
@@ -2530,7 +2530,7 @@ FROM subquery2""",
     def test_reserved_keywords(self):
         order = exp.select("*").from_("order")
 
-        for dialect in ("presto", "redshift"):
+        for dialect in ("duckdb", "presto", "redshift"):
             dialect = Dialect.get_or_raise(dialect)
             self.assertEqual(
                 order.sql(dialect=dialect),

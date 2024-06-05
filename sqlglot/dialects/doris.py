@@ -26,6 +26,9 @@ class Doris(MySQL):
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
         }
 
+        FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("GROUP_CONCAT")
+
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
 

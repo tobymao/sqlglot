@@ -36,7 +36,7 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
             original = node.copy()
 
             node.transform(rewrite_between, copy=False)
-            distance = normalization_distance(node, dnf=dnf)
+            distance = normalization_distance(node, dnf=dnf, max_=max_distance)
 
             if distance > max_distance:
                 logger.info(
@@ -85,7 +85,9 @@ def normalized(expression: exp.Expression, dnf: bool = False) -> bool:
     )
 
 
-def normalization_distance(expression: exp.Expression, dnf: bool = False) -> int:
+def normalization_distance(
+    expression: exp.Expression, dnf: bool = False, max_: float = float("inf")
+) -> int:
     """
     The difference in the number of predicates between a given expression and its normalized form.
 
@@ -101,13 +103,19 @@ def normalization_distance(expression: exp.Expression, dnf: bool = False) -> int
         expression: The expression to compute the normalization distance for.
         dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).
             Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).
+        max_: stop early if count exceeds this.
 
     Returns:
         The normalization distance.
     """
-    return sum(_predicate_lengths(expression, dnf)) - (
-        sum(1 for _ in expression.find_all(exp.Connector)) + 1
-    )
+    total = -(sum(1 for _ in expression.find_all(exp.Connector)) + 1)
+
+    for length in _predicate_lengths(expression, dnf):
+        total += length
+        if total > max_:
+            return total
+
+    return total
 
 
 def _predicate_lengths(expression, dnf):
@@ -119,15 +127,18 @@ def _predicate_lengths(expression, dnf):
     expression = expression.unnest()
 
     if not isinstance(expression, exp.Connector):
-        return (1,)
+        yield 1
+        return
 
     left, right = expression.args.values()
 
     if isinstance(expression, exp.And if dnf else exp.Or):
-        return tuple(
-            a + b for a in _predicate_lengths(left, dnf) for b in _predicate_lengths(right, dnf)
-        )
-    return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
+        for a in _predicate_lengths(left, dnf):
+            for b in _predicate_lengths(right, dnf):
+                yield a + b
+    else:
+        yield from _predicate_lengths(left, dnf)
+        yield from _predicate_lengths(right, dnf)
 
 
 def distributive_law(expression, dnf, max_distance):
@@ -138,7 +149,7 @@ def distributive_law(expression, dnf, max_distance):
     if normalized(expression, dnf=dnf):
         return expression
 
-    distance = normalization_distance(expression, dnf=dnf)
+    distance = normalization_distance(expression, dnf=dnf, max_=max_distance)
 
     if distance > max_distance:
         raise OptimizeError(f"Normalization distance {distance} exceeds max {max_distance}")

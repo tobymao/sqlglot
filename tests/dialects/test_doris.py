@@ -54,7 +54,7 @@ class TestDoris(Validator):
                 "doris": "SELECT GROUP_CONCAT('aa', ',')",
                 "mysql": "SELECT GROUP_CONCAT('aa' SEPARATOR ',')",
                 "postgres": "SELECT STRING_AGG('aa', ',')",
-            }
+            },
         )
 
     def test_identity(self):

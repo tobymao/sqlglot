@@ -1,5 +1,7 @@
 import collections.abc
 
+from benchmarks.helpers import ascii_table
+
 # moz_sql_parser 3.10 compatibility
 collections.Iterable = collections.abc.Iterable
 import timeit
@@ -188,11 +190,6 @@ def sqlfluff_parse(sql):
     sqlfluff.parse(sql)
 
 
-def border(columns):
-    columns = " | ".join(columns)
-    return f"| {columns} |"
-
-
 def diff(row, column):
     if column == "Query":
         return ""
@@ -223,19 +220,11 @@ for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.it
             print(e)
             row[lib] = "error"
 
-columns = ["Query"] + libs
-widths = {column: max(len(column), 15) for column in columns}
-
-lines = [border(column.rjust(width) for column, width in widths.items())]
-lines.append(border(str("-" * width) for width in widths.values()))
-
-for i, row in enumerate(table):
-    lines.append(
-        border(
-            (str(row[column])[0:7] + diff(row, column)).rjust(width)[0:width]
-            for column, width in widths.items()
-        )
+print(
+    ascii_table(
+        [
+            {k: v if v == "Query" else str(row[k])[0:7] + diff(row, k) for k, v in row.items()}
+            for row in table
+        ]
     )
-
-for line in lines:
-    print(line)
+)

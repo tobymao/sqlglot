@@ -623,3 +623,11 @@ class Postgres(Dialect):
             option = self.sql(expression, "option")
 
             return f"SET {exprs}{access_method}{tablespace}{option}"
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.is_type("array"):
+                if expression.expressions:
+                    values = self.expressions(expression, key="values", flat=True)
+                    return f"{self.expressions(expression, flat=True)}[{values}]"
+                return "ARRAY"
+            return super().datatype_sql(expression)

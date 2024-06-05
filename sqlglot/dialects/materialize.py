@@ -54,7 +54,6 @@ class Materialize(Postgres):
                     ctas_with_tmp_tables_to_create_tmp_view,
                 ]
             ),
-            exp.DataType: lambda self, e: self._datatype_sql(e),
             exp.GeneratedAsIdentityColumnConstraint: lambda self, e: "",
             exp.OnConflict: lambda self, e: "",
             exp.PrimaryKeyColumnConstraint: lambda self, e: "",
@@ -62,7 +61,7 @@ class Materialize(Postgres):
             exp.ToMap: lambda self, e: self._to_map_sql(e),
         }
 
-        def _datatype_sql(self, expression: exp.DataType) -> str:
+        def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.is_type(exp.DataType.Type.LIST):
                 if expression.expressions:
                     return f"{self.expressions(expression, flat=True)} LIST"
@@ -70,7 +69,7 @@ class Materialize(Postgres):
             if expression.is_type(exp.DataType.Type.MAP) and len(expression.expressions) == 2:
                 key, value = expression.expressions
                 return f"MAP[{self.sql(key)} => {self.sql(value)}]"
-            return Postgres.Generator.TRANSFORMS[exp.DataType](self, expression)
+            return super().datatype_sql(expression)
 
         def _list_sql(self, expression: exp.List) -> str:
             if isinstance(seq_get(expression.expressions, 0), exp.Select):

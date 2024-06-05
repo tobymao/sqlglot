@@ -994,13 +994,9 @@ class TSQL(Dialect):
                 elif kind == "TABLE":
                     assert table
                     where = exp.and_(
-                        exp.column("table_name").eq(exp.Literal.string(table.name)),
-                        exp.column("table_schema").eq(exp.Literal.string(table.db))
-                        if table.db
-                        else None,
-                        exp.column("table_catalog").eq(exp.Literal.string(table.catalog))
-                        if table.catalog
-                        else None,
+                        exp.column("table_name").eq(table.name),
+                        exp.column("table_schema").eq(table.db) if table.db else None,
+                        exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
                     )
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql})"""
                 elif kind == "INDEX":

@@ -832,7 +832,7 @@ class Expression(metaclass=_Expression):
 
     def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
         this = self.copy()
-        other = maybe_parse(other, copy=True)
+        other = convert(other, copy=True)
         if not isinstance(this, klass) and not isinstance(other, klass):
             this = _wrap(this, Binary)
             other = _wrap(other, Binary)

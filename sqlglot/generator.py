@@ -123,9 +123,13 @@ class Generator(metaclass=_Generator):
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
+        exp.ProjectionPolicyColumnConstraint: lambda self,
+        e: f"PROJECTION POLICY {self.sql(e, 'this')}",
         exp.RemoteWithConnectionModelProperty: lambda self,
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
-        exp.ReturnsProperty: lambda self, e: self.naked_property(e),
+        exp.ReturnsProperty: lambda self, e: (
+            "RETURNS NULL ON NULL INPUT" if e.args.get("null") else self.naked_property(e)
+        ),
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
         exp.SetConfigProperty: lambda self, e: self.sql(e, "this"),
         exp.SetProperty: lambda _, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
@@ -135,7 +139,9 @@ class Generator(metaclass=_Generator):
         exp.SqlSecurityProperty: lambda _,
         e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.StabilityProperty: lambda _, e: e.name,
+        exp.StrictProperty: lambda *_: "STRICT",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
+        exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
         exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.expression),
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
@@ -359,6 +365,9 @@ class Generator(metaclass=_Generator):
     # The HEX function name
     HEX_FUNC = "HEX"
 
+    # The keywords to use when prefixing & separating WITH based properties
+    WITH_PROPERTIES_PREFIX = "WITH"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -417,6 +426,7 @@ class Generator(metaclass=_Generator):
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
+        exp.DataDeletionProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DictRange: exp.Properties.Location.POST_SCHEMA,
         exp.DictProperty: exp.Properties.Location.POST_SCHEMA,
@@ -470,6 +480,7 @@ class Generator(metaclass=_Generator):
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.StrictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ToTableProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
@@ -727,7 +738,7 @@ class Generator(metaclass=_Generator):
         skip_first: bool = False,
         skip_last: bool = False,
     ) -> str:
-        if not self.pretty:
+        if not self.pretty or not sql:
             return sql
 
         pad = self.pad if pad is None else pad
@@ -957,6 +968,12 @@ class Generator(metaclass=_Generator):
                     ]
                 )
             )
+
+            if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
+                properties_sql = self.sep() + properties_sql
+            elif not self.pretty:
+                # Standalone POST_WITH properties need a leading whitespace in non-pretty mode
+                properties_sql = f" {properties_sql}"
 
         begin = " BEGIN" if expression.args.get("begin") else ""
         end = " END" if expression.args.get("end") else ""
@@ -1343,13 +1360,17 @@ class Generator(metaclass=_Generator):
             elif p_loc == exp.Properties.Location.POST_SCHEMA:
                 root_properties.append(p)
 
-        return self.root_properties(
-            exp.Properties(expressions=root_properties)
-        ) + self.with_properties(exp.Properties(expressions=with_properties))
+        root_props = self.root_properties(exp.Properties(expressions=root_properties))
+        with_props = self.with_properties(exp.Properties(expressions=with_properties))
+
+        if root_props and with_props and not self.pretty:
+            with_props = " " + with_props
+
+        return root_props + with_props
 
     def root_properties(self, properties: exp.Properties) -> str:
         if properties.expressions:
-            return self.sep() + self.expressions(properties, indent=False, sep=" ")
+            return self.expressions(properties, indent=False, sep=" ")
         return ""
 
     def properties(
@@ -1368,7 +1389,7 @@ class Generator(metaclass=_Generator):
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
-        return self.properties(properties, prefix=self.seg("WITH"))
+        return self.properties(properties, prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep=""))
 
     def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
         properties_locs = defaultdict(list)
@@ -1536,19 +1557,25 @@ class Generator(metaclass=_Generator):
         return f"{data_sql}{statistics_sql}"
 
     def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
-        sql = "WITH(SYSTEM_VERSIONING=ON"
+        this = self.sql(expression, "this")
+        this = f"HISTORY_TABLE={this}" if this else ""
+        data_consistency: t.Optional[str] = self.sql(expression, "data_consistency")
+        data_consistency = (
+            f"DATA_CONSISTENCY_CHECK={data_consistency}" if data_consistency else None
+        )
+        retention_period: t.Optional[str] = self.sql(expression, "retention_period")
+        retention_period = (
+            f"HISTORY_RETENTION_PERIOD={retention_period}" if retention_period else None
+        )
 
-        if expression.this:
-            history_table = self.sql(expression, "this")
-            sql = f"{sql}(HISTORY_TABLE={history_table}"
+        if this:
+            on_sql = self.func("ON", this, data_consistency, retention_period)
+        else:
+            on_sql = "ON" if expression.args.get("on") else "OFF"
 
-            if expression.expression:
-                data_consistency_check = self.sql(expression, "expression")
-                sql = f"{sql}, DATA_CONSISTENCY_CHECK={data_consistency_check}"
+        sql = f"SYSTEM_VERSIONING={on_sql}"
 
-            sql = f"{sql})"
-
-        return f"{sql})"
+        return f"WITH({sql})" if expression.args.get("with") else sql
 
     def insert_sql(self, expression: exp.Insert) -> str:
         hint = self.sql(expression, "hint")
@@ -2998,8 +3025,15 @@ class Generator(metaclass=_Generator):
         if comment:
             return f"ALTER COLUMN {this} COMMENT {comment}"
 
-        if not expression.args.get("drop"):
+        allow_null = expression.args.get("allow_null")
+        drop = expression.args.get("drop")
+
+        if not drop and not allow_null:
             self.unsupported("Unsupported ALTER COLUMN syntax")
+
+        if allow_null is not None:
+            keyword = "DROP" if drop else "SET"
+            return f"ALTER COLUMN {this} {keyword} NOT NULL"
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
@@ -3030,6 +3064,10 @@ class Generator(metaclass=_Generator):
         old_column = self.sql(expression, "this")
         new_column = self.sql(expression, "to")
         return f"RENAME COLUMN{exists} {old_column} TO {new_column}"
+
+    def alterset_sql(self, expression: exp.AlterSet) -> str:
+        exprs = self.expressions(expression, flat=True)
+        return f"SET {exprs}"
 
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]
@@ -3821,6 +3859,18 @@ class Generator(metaclass=_Generator):
 
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
+
+        if expression.expressions:
+            upper = option.upper()
+
+            # Snowflake FILE_FORMAT options are separated by whitespace
+            sep = " " if upper == "FILE_FORMAT" else ", "
+
+            # Databricks copy/format options do not set their list of values with EQ
+            op = " " if upper in ("COPY_OPTIONS", "FORMAT_OPTIONS") else " = "
+            values = self.expressions(expression, flat=True, sep=sep)
+            return f"{option}{op}({values})"
+
         value = self.sql(expression, "expression")
 
         if not value:
@@ -3839,10 +3889,10 @@ class Generator(metaclass=_Generator):
         else:
             # Snowflake case: CREDENTIALS = (...)
             credentials = self.expressions(expression, key="credentials", flat=True, sep=" ")
-            credentials = f"CREDENTIALS = ({credentials})" if credentials else ""
+            credentials = f"CREDENTIALS = ({credentials})" if cred_expr is not None else ""
 
         storage = self.sql(expression, "storage")
-        storage = f" {storage}" if storage else ""
+        storage = f"STORAGE_INTEGRATION = {storage}" if storage else ""
 
         encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
         encryption = f" ENCRYPTION = ({encryption})" if encryption else ""
@@ -3860,16 +3910,48 @@ class Generator(metaclass=_Generator):
         this = f" INTO {this}" if self.COPY_HAS_INTO_KEYWORD else f" {this}"
 
         credentials = self.sql(expression, "credentials")
-        credentials = f" {credentials}" if credentials else ""
-        kind = " FROM " if expression.args.get("kind") else " TO "
+        credentials = self.seg(credentials) if credentials else ""
+        kind = self.seg("FROM" if expression.args.get("kind") else "TO")
         files = self.expressions(expression, key="files", flat=True)
 
         sep = ", " if self.dialect.COPY_PARAMS_ARE_CSV else " "
-        params = self.expressions(expression, key="params", flat=True, sep=sep)
-        if params:
-            params = f" WITH ({params})" if self.COPY_PARAMS_ARE_WRAPPED else f" {params}"
+        params = self.expressions(
+            expression,
+            key="params",
+            sep=sep,
+            new_line=True,
+            skip_last=True,
+            skip_first=True,
+            indent=self.COPY_PARAMS_ARE_WRAPPED,
+        )
 
-        return f"COPY{this}{kind}{files}{credentials}{params}"
+        if params:
+            if self.COPY_PARAMS_ARE_WRAPPED:
+                params = f" WITH ({params})"
+            elif not self.pretty:
+                params = f" {params}"
+
+        return f"COPY{this}{kind} {files}{credentials}{params}"
 
     def semicolon_sql(self, expression: exp.Semicolon) -> str:
         return ""
+
+    def datadeletionproperty_sql(self, expression: exp.DataDeletionProperty) -> str:
+        on_sql = "ON" if expression.args.get("on") else "OFF"
+        filter_col: t.Optional[str] = self.sql(expression, "filter_column")
+        filter_col = f"FILTER_COLUMN={filter_col}" if filter_col else None
+        retention_period: t.Optional[str] = self.sql(expression, "retention_period")
+        retention_period = f"RETENTION_PERIOD={retention_period}" if retention_period else None
+
+        if filter_col or retention_period:
+            on_sql = self.func("ON", filter_col, retention_period)
+
+        return f"DATA_DELETION={on_sql}"
+
+    def maskingpolicycolumnconstraint_sql(
+        self, expression: exp.MaskingPolicyColumnConstraint
+    ) -> str:
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" USING ({expressions})" if expressions else ""
+        return f"MASKING POLICY {this}{expressions}"

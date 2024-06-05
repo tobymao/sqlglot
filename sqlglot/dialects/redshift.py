@@ -63,6 +63,9 @@ class Redshift(Postgres):
             "DATE_DIFF": _build_date_delta(exp.TsOrDsDiff),
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "LISTAGG": exp.GroupConcat.from_arg_list,
+            "SPLIT_TO_ARRAY": lambda args: exp.StringToArray(
+                this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string(",")
+            ),
             "STRTOL": exp.FromBase.from_arg_list,
         }
 
@@ -124,6 +127,7 @@ class Redshift(Postgres):
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
+            "MINUS": TokenType.EXCEPT,
         }
         KEYWORDS.pop("VALUES")
 
@@ -142,6 +146,8 @@ class Redshift(Postgres):
         MULTI_ARG_DISTINCT = True
         COPY_PARAMS_ARE_WRAPPED = False
         HEX_FUNC = "TO_HEX"
+        # Redshift doesn't have `WITH` as part of their with_properties so we remove it
+        WITH_PROPERTIES_PREFIX = " "
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -184,6 +190,7 @@ class Redshift(Postgres):
             e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.StartsWith: lambda self,
             e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
+            exp.StringToArray: rename_func("SPLIT_TO_ARRAY"),
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
@@ -375,10 +382,6 @@ class Redshift(Postgres):
             alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
             return f"{arg} AS {alias}" if alias else arg
 
-        def with_properties(self, properties: exp.Properties) -> str:
-            """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""
-            return self.properties(properties, prefix=" ", suffix="")
-
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type(exp.DataType.Type.JSON):
                 # Redshift doesn't support a JSON type, so casting to it is treated as a noop
@@ -401,3 +404,13 @@ class Redshift(Postgres):
                     expression.append("expressions", exp.var("MAX"))
 
             return super().datatype_sql(expression)
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f" TABLE PROPERTIES ({exprs})" if exprs else ""
+            location = self.sql(expression, "location")
+            location = f" LOCATION {location}" if location else ""
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" FILE FORMAT {file_format}" if file_format else ""
+
+            return f"SET{exprs}{location}{file_format}"

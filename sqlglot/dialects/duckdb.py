@@ -233,7 +233,6 @@ class DuckDB(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ARRAY_HAS": exp.ArrayContains.from_arg_list,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "DATEDIFF": _build_date_diff,
@@ -342,7 +341,7 @@ class DuckDB(Dialect):
             if self._match(TokenType.L_BRACE, advance=False):
                 return self.expression(exp.ToMap, this=self._parse_bracket())
 
-            args = self._parse_wrapped_csv(self._parse_conjunction)
+            args = self._parse_wrapped_csv(self._parse_assignment)
             return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
 
         def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
@@ -381,6 +380,7 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
+            exp.ArrayContainsAll: rename_func("ARRAY_HAS_ALL"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
@@ -458,7 +458,7 @@ class DuckDB(Dialect):
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
-            exp.TimestampTrunc: timestamptrunc_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: self.func(
@@ -503,9 +503,91 @@ class DuckDB(Dialect):
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
             exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP_NS",
+        }
+
+        # https://github.com/duckdb/duckdb/blob/ff7f24fd8e3128d94371827523dae85ebaf58713/third_party/libpg_query/grammar/keywords/reserved_keywords.list#L1-L77
+        RESERVED_KEYWORDS = {
+            "array",
+            "analyse",
+            "union",
+            "all",
+            "when",
+            "in_p",
+            "default",
+            "create_p",
+            "window",
+            "asymmetric",
+            "to",
+            "else",
+            "localtime",
+            "from",
+            "end_p",
+            "select",
+            "current_date",
+            "foreign",
+            "with",
+            "grant",
+            "session_user",
+            "or",
+            "except",
+            "references",
+            "fetch",
+            "limit",
+            "group_p",
+            "leading",
+            "into",
+            "collate",
+            "offset",
+            "do",
+            "then",
+            "localtimestamp",
+            "check_p",
+            "lateral_p",
+            "current_role",
+            "where",
+            "asc_p",
+            "placing",
+            "desc_p",
+            "user",
+            "unique",
+            "initially",
+            "column",
+            "both",
+            "some",
+            "as",
+            "any",
+            "only",
+            "deferrable",
+            "null_p",
+            "current_time",
+            "true_p",
+            "table",
+            "case",
+            "trailing",
+            "variadic",
+            "for",
+            "on",
+            "distinct",
+            "false_p",
+            "not",
+            "constraint",
+            "current_timestamp",
+            "returning",
+            "primary",
+            "intersect",
+            "having",
+            "analyze",
+            "current_user",
+            "and",
+            "cast",
+            "symmetric",
+            "using",
+            "order",
+            "current_catalog",
         }
 
         UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)

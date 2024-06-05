@@ -92,6 +92,8 @@ class TokenType(AutoName):
     COLUMN_DEF = auto()
     SCHEMA = auto()
     TABLE = auto()
+    WAREHOUSE = auto()
+    STREAMLIT = auto()
     VAR = auto()
     BIT_STRING = auto()
     HEX_STRING = auto()
@@ -823,6 +825,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DOUBLE": TokenType.DOUBLE,
         "DOUBLE PRECISION": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
+        "JSONB": TokenType.JSONB,
         "CHAR": TokenType.CHAR,
         "CHARACTER": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,

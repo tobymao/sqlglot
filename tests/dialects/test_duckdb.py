@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -8,6 +8,9 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        with self.assertRaises(ParseError):
+            parse_one("1 //", read="duckdb")
+
         query = "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT t.col['b'] FROM _data, UNNEST(_data.col) AS t(col) WHERE t.col['a'] = 1"
         expr = annotate_types(self.validate_identity(query))
         self.assertEqual(
@@ -15,6 +18,13 @@ class TestDuckDB(Validator):
             "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT col.b FROM _data, UNNEST(_data.col) AS col WHERE col.a = 1",
         )
 
+        self.validate_all(
+            "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+                "snowflake": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMPNTZ)",
+            },
+        )
         self.validate_all(
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
             read={
@@ -247,7 +257,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT EPOCH_MS(10) AS t")
         self.validate_identity("SELECT MAKE_TIMESTAMP(10) AS t")
         self.validate_identity("SELECT TO_TIMESTAMP(10) AS t")
-        self.validate_identity("SELECT UNNEST(column, recursive := TRUE) FROM table")
+        self.validate_identity("SELECT UNNEST(col, recursive := TRUE) FROM t")
         self.validate_identity("VAR_POP(a)")
         self.validate_identity("SELECT * FROM foo ASOF LEFT JOIN bar ON a = b")
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
@@ -270,6 +280,10 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
+        )
+        self.validate_identity(
+            "SELECT a, LOGICAL_OR(b) FROM foo GROUP BY a",
+            "SELECT a, BOOL_OR(b) FROM foo GROUP BY a",
         )
         self.validate_identity(
             "SELECT JSON_EXTRACT_STRING(c, '$.k1') = 'v1'",
@@ -424,15 +438,15 @@ class TestDuckDB(Validator):
             write={"duckdb": 'WITH "x" AS (SELECT 1) SELECT * FROM x'},
         )
         self.validate_all(
-            "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            "CREATE TABLE IF NOT EXISTS t (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
-                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+                "duckdb": "CREATE TABLE IF NOT EXISTS t (cola INT, colb TEXT)",
             },
         )
         self.validate_all(
-            "CREATE TABLE IF NOT EXISTS table (cola INT COMMENT 'cola', colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            "CREATE TABLE IF NOT EXISTS t (cola INT COMMENT 'cola', colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
-                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+                "duckdb": "CREATE TABLE IF NOT EXISTS t (cola INT, colb TEXT)",
             },
         )
         self.validate_all(
@@ -735,12 +749,34 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity(
-            "COPY lineitem FROM 'lineitem.ndjson' WITH (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL(col1, col2))"
+            "COPY lineitem FROM 'lineitem.ndjson' WITH (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL (col1, col2))"
         )
         self.validate_identity(
             "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' WITH (FORMAT JSON, ARRAY TRUE)"
         )
         self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')")
+
+        self.validate_all(
+            "VARIANCE(a)",
+            write={
+                "duckdb": "VARIANCE(a)",
+                "clickhouse": "varSamp(a)",
+            },
+        )
+        self.validate_all(
+            "STDDEV(a)",
+            write={
+                "duckdb": "STDDEV(a)",
+                "clickhouse": "stddevSamp(a)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC('DAY', x)",
+            write={
+                "duckdb": "DATE_TRUNC('DAY', x)",
+                "clickhouse": "DATE_TRUNC('DAY', x)",
+            },
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
@@ -1062,12 +1098,6 @@ class TestDuckDB(Validator):
                 "postgres": "CAST(COL AS BIGINT[])",
                 "snowflake": "CAST(COL AS ARRAY(BIGINT))",
             },
-        )
-
-    def test_bool_or(self):
-        self.validate_all(
-            "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
-            write={"duckdb": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
 
     def test_encode_decode(self):

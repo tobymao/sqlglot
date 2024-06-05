@@ -116,7 +116,10 @@ def _string_agg_sql(self: Postgres.Generator, expression: exp.GroupConcat) -> st
 
 def _datatype_sql(self: Postgres.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
-        return f"{self.expressions(expression, flat=True)}[]" if expression.expressions else "ARRAY"
+        if expression.expressions:
+            values = self.expressions(expression, key="values", flat=True)
+            return f"{self.expressions(expression, flat=True)}[{values}]"
+        return "ARRAY"
     return self.datatype_sql(expression)
 
 
@@ -310,7 +313,6 @@ class Postgres(Dialect):
             "EXEC": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "INT8": TokenType.BIGINT,
-            "JSONB": TokenType.JSONB,
             "MONEY": TokenType.MONEY,
             "NAME": TokenType.NAME,
             "OID": TokenType.OBJECT_IDENTIFIER,
@@ -334,6 +336,7 @@ class Postgres(Dialect):
             "REGPROCEDURE": TokenType.OBJECT_IDENTIFIER,
             "REGROLE": TokenType.OBJECT_IDENTIFIER,
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
+            "FLOAT": TokenType.DOUBLE,
         }
 
         SINGLE_TOKENS = {
@@ -381,12 +384,12 @@ class Postgres(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
-            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
+            TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),
-            TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
+            TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
             TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         }
 
@@ -485,8 +488,7 @@ class Postgres(Dialect):
                 else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]"
             ),
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
-            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
-            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
+            exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: lambda self, e: self.func("ARRAY_LENGTH", e.this, e.expression or "1"),
@@ -543,7 +545,7 @@ class Postgres(Dialect):
             exp.Substring: _substring_sql,
             exp.TimeFromParts: rename_func("MAKE_TIME"),
             exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
-            exp.TimestampTrunc: timestamptrunc_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
@@ -609,3 +611,15 @@ class Postgres(Dialect):
             expressions = [f"{self.sql(e)} @@ {this}" for e in expression.expressions]
             sql = " OR ".join(expressions)
             return f"({sql})" if len(expressions) > 1 else sql
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f"({exprs})" if exprs else ""
+
+            access_method = self.sql(expression, "access_method")
+            access_method = f"ACCESS METHOD {access_method}" if access_method else ""
+            tablespace = self.sql(expression, "tablespace")
+            tablespace = f"TABLESPACE {tablespace}" if tablespace else ""
+            option = self.sql(expression, "option")
+
+            return f"SET {exprs}{access_method}{tablespace}{option}"

@@ -1269,7 +1269,7 @@ LANGUAGE js AS
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-                "duckdb": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
             },
         )
         self.validate_all(

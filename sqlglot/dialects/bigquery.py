@@ -570,6 +570,7 @@ class BigQuery(Dialect):
         SUPPORTS_TO_NUMBER = False
         NAMED_PLACEHOLDER_TOKEN = "@"
         HEX_FUNC = "TO_HEX"
+        WITH_PROPERTIES_PREFIX = "OPTIONS"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -704,7 +705,6 @@ class BigQuery(Dialect):
 
         # from: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
         RESERVED_KEYWORDS = {
-            *generator.Generator.RESERVED_KEYWORDS,
             "all",
             "and",
             "any",
@@ -906,9 +906,6 @@ class BigQuery(Dialect):
             if not expression.args.get("distinct"):
                 self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
             return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
-
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("OPTIONS"))
 
         def version_sql(self, expression: exp.Version) -> str:
             if expression.name == "TIMESTAMP":

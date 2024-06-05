@@ -2,6 +2,7 @@ from unittest import mock
 
 from sqlglot import UnsupportedError, exp, parse_one
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
 
 
@@ -10,6 +11,19 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity(
+            "transform(x, a int -> a + a + 1)",
+            "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",
+        )
+
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT(1, null, 2)",
+            write={
+                "spark": "ARRAY_COMPACT(ARRAY(1, NULL, 2))",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, NULL, 2)",
+            },
+        )
+
         expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
@@ -35,9 +49,10 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
+        self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")
-        self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
@@ -81,11 +96,6 @@ WHERE
         self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
-        self.validate_identity("ALTER TABLE IF EXISTS foo SET TAG a = 'a', b = 'b', c = 'c'")
-        self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
-        self.validate_identity("ALTER TABLE foo SET COMMENT = 'bar'")
-        self.validate_identity("ALTER TABLE foo SET CHANGE_TRACKING = FALSE")
-        self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
@@ -102,6 +112,10 @@ WHERE
         )
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
+        )
+        self.validate_identity(
+            "CURRENT_TIMESTAMP - INTERVAL '1 w' AND (1 = 1)",
+            "CURRENT_TIMESTAMP() - INTERVAL '1 WEEK' AND (1 = 1)",
         )
         self.validate_identity(
             "REGEXP_REPLACE('target', 'pattern', '\n')",
@@ -319,10 +333,12 @@ WHERE
             """SELECT PARSE_JSON('{"fruit":"banana"}'):fruit""",
             write={
                 "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"fruit":"banana"}'), '$.fruit')""",
+                "databricks": """SELECT GET_JSON_OBJECT('{"fruit":"banana"}', '$.fruit')""",
                 "duckdb": """SELECT JSON('{"fruit":"banana"}') -> '$.fruit'""",
                 "mysql": """SELECT JSON_EXTRACT('{"fruit":"banana"}', '$.fruit')""",
                 "presto": """SELECT JSON_EXTRACT(JSON_PARSE('{"fruit":"banana"}'), '$.fruit')""",
                 "snowflake": """SELECT GET_PATH(PARSE_JSON('{"fruit":"banana"}'), 'fruit')""",
+                "spark": """SELECT GET_JSON_OBJECT('{"fruit":"banana"}', '$.fruit')""",
                 "tsql": """SELECT ISNULL(JSON_QUERY('{"fruit":"banana"}', '$.fruit'), JSON_VALUE('{"fruit":"banana"}', '$.fruit'))""",
             },
         )
@@ -1177,6 +1193,25 @@ WHERE
         )
 
     def test_ddl(self):
+        for constraint_prefix in ("WITH ", ""):
+            with self.subTest(f"Constraint prefix: {constraint_prefix}"):
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p)",
+                    "CREATE TABLE t (id INT MASKING POLICY p)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p USING (c1, c2, c3))",
+                    "CREATE TABLE t (id INT MASKING POLICY p USING (c1, c2, c3))",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p)",
+                    "CREATE TABLE t (id INT PROJECTION POLICY p)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
+                    "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
+                )
+
         self.validate_identity(
             """create external table et2(
   col1 date as (parse_json(metadata$external_table_partition):COL1::date),
@@ -1196,9 +1231,14 @@ WHERE
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity("CREATE TAG cost_center ALLOWED_VALUES 'a', 'b'")
+        self.validate_identity("CREATE WAREHOUSE x").this.assert_is(exp.Identifier)
+        self.validate_identity("CREATE STREAMLIT x").this.assert_is(exp.Identifier)
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)
+        self.validate_identity(
+            "ALTER TABLE db_name.schmaName.tblName ADD COLUMN COLUMN_1 VARCHAR NOT NULL TAG (key1='value_1')"
+        )
         self.validate_identity(
             "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN)))"
         )
@@ -1219,6 +1259,12 @@ WHERE
         )
         self.validate_identity(
             "CREATE ICEBERG TABLE my_iceberg_table (amount ARRAY(INT)) CATALOG='SNOWFLAKE' EXTERNAL_VOLUME='my_external_volume' BASE_LOCATION='my/relative/path/from/extvol'"
+        )
+        self.validate_identity(
+            """CREATE OR REPLACE FUNCTION ibis_udfs.public.object_values("obj" OBJECT) RETURNS ARRAY LANGUAGE JAVASCRIPT RETURNS NULL ON NULL INPUT AS ' return Object.values(obj) '"""
+        )
+        self.validate_identity(
+            """CREATE OR REPLACE FUNCTION ibis_udfs.public.object_values("obj" OBJECT) RETURNS ARRAY LANGUAGE JAVASCRIPT STRICT AS ' return Object.values(obj) '"""
         )
         self.validate_identity(
             "CREATE OR REPLACE FUNCTION my_udf(location OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN))) RETURNS VARCHAR AS $$ SELECT 'foo' $$",
@@ -1265,6 +1311,20 @@ WHERE
             read={"teradata": "CREATE MULTISET TABLE a (b INT)"},
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
+
+        for action in ("SET", "DROP"):
+            with self.subTest(f"ALTER COLUMN {action} NOT NULL"):
+                self.validate_all(
+                    f"""
+                        ALTER TABLE a
+                        ALTER COLUMN my_column {action} NOT NULL;
+                    """,
+                    write={
+                        "snowflake": f"ALTER TABLE a ALTER COLUMN my_column {action} NOT NULL",
+                        "duckdb": f"ALTER TABLE a ALTER COLUMN my_column {action} NOT NULL",
+                        "postgres": f"ALTER TABLE a ALTER COLUMN my_column {action} NOT NULL",
+                    },
+                )
 
     def test_user_defined_functions(self):
         self.validate_all(
@@ -1817,7 +1877,7 @@ STORAGE_AWS_ROLE_ARN='arn:aws:iam::001234567890:role/myrole'
 ENABLED=TRUE
 STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             pretty=True,
-        )
+        ).this.assert_is(exp.Identifier)
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")
@@ -1863,16 +1923,71 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")
         self.validate_identity(
-            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' NULL_IF = () FIELD_OPTIONALLY_ENCLOSED_BY = '"' TIMESTAMP_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT = 'TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT = BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'"""
+            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('str1', 'str2') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'"""
         )
         self.validate_identity(
-            """COPY INTO load1 FROM @%load1/data1/ FILES = ('test1.csv', 'test2.csv') FORCE = TRUE"""
+            """COPY INTO load1 FROM @%load1/data1/ CREDENTIALS = (AWS_KEY_ID='id' AWS_SECRET_KEY='key' AWS_TOKEN='token') FILES = ('test1.csv', 'test2.csv') FORCE = TRUE"""
         )
         self.validate_identity(
-            """COPY INTO mytable FROM 'azure://myaccount.blob.core.windows.net/mycontainer/data/files' CREDENTIALS = (AZURE_SAS_TOKEN = 'token') ENCRYPTION = (TYPE = 'AZURE_CSE' MASTER_KEY = 'kPx...') FILE_FORMAT = (FORMAT_NAME = my_csv_format)"""
+            """COPY INTO mytable FROM 'azure://myaccount.blob.core.windows.net/mycontainer/data/files' CREDENTIALS = (AZURE_SAS_TOKEN='token') ENCRYPTION = (TYPE='AZURE_CSE' MASTER_KEY='kPx...') FILE_FORMAT = (FORMAT_NAME=my_csv_format)"""
         )
         self.validate_identity(
-            """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME = my_csv_format NULL_IF = ('str1', 'str2')) PARSE_HEADER = TRUE"""
+            """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' STORAGE_INTEGRATION = "storage" ENCRYPTION = (TYPE='NONE' MASTER_KEY='key') FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME=my_csv_format NULL_IF=('')) PARSE_HEADER = TRUE"""
+        )
+        self.validate_all(
+            """COPY INTO 's3://example/data.csv'
+    FROM EXTRA.EXAMPLE.TABLE
+    CREDENTIALS = ()
+    FILE_FORMAT = (TYPE = CSV COMPRESSION = NONE NULL_IF = ('') FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+    HEADER = TRUE
+    OVERWRITE = TRUE
+    SINGLE = TRUE
+            """,
+            write={
+                "": """COPY INTO 's3://example/data.csv'
+FROM EXTRA.EXAMPLE.TABLE
+CREDENTIALS = () WITH (
+  FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=(
+    ''
+  ) FIELD_OPTIONALLY_ENCLOSED_BY='"'),
+  HEADER TRUE,
+  OVERWRITE TRUE,
+  SINGLE TRUE
+)""",
+                "snowflake": """COPY INTO 's3://example/data.csv'
+FROM EXTRA.EXAMPLE.TABLE
+CREDENTIALS = ()
+FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=(
+  ''
+) FIELD_OPTIONALLY_ENCLOSED_BY='"')
+HEADER = TRUE
+OVERWRITE = TRUE
+SINGLE = TRUE""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """COPY INTO 's3://example/data.csv'
+    FROM EXTRA.EXAMPLE.TABLE
+    STORAGE_INTEGRATION = S3_INTEGRATION
+    FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"')
+    HEADER = TRUE
+    OVERWRITE = TRUE
+    SINGLE = TRUE
+            """,
+            write={
+                "": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE STORAGE_INTEGRATION = S3_INTEGRATION WITH (FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"'), HEADER TRUE, OVERWRITE TRUE, SINGLE TRUE)""",
+                "snowflake": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE STORAGE_INTEGRATION = S3_INTEGRATION FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE""",
+            },
+        )
+
+        copy_ast = parse_one(
+            """COPY INTO 's3://example/contacts.csv' FROM db.tbl STORAGE_INTEGRATION = PROD_S3_SIDETRADE_INTEGRATION FILE_FORMAT = (FORMAT_NAME=my_csv_format TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') MATCH_BY_COLUMN_NAME = CASE_SENSITIVE OVERWRITE = TRUE SINGLE = TRUE INCLUDE_METADATA = (col1 = METADATA$START_SCAN_TIME)""",
+            read="snowflake",
+        )
+        self.assertEqual(
+            quote_identifiers(copy_ast, dialect="snowflake").sql(dialect="snowflake"),
+            """COPY INTO 's3://example/contacts.csv' FROM "db"."tbl" STORAGE_INTEGRATION = "PROD_S3_SIDETRADE_INTEGRATION" FILE_FORMAT = (FORMAT_NAME="my_csv_format" TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') MATCH_BY_COLUMN_NAME = CASE_SENSITIVE OVERWRITE = TRUE SINGLE = TRUE INCLUDE_METADATA = ("col1" = "METADATA$START_SCAN_TIME")""",
         )
 
     def test_querying_semi_structured_data(self):
@@ -1882,3 +1997,20 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         self.validate_identity("SELECT $1:a.b", "SELECT GET_PATH($1, 'a.b')")
         self.validate_identity("SELECT t.$23:a.b", "SELECT GET_PATH(t.$23, 'a.b')")
         self.validate_identity("SELECT t.$17:a[0].b[0].c", "SELECT GET_PATH(t.$17, 'a[0].b[0].c')")
+
+    def test_alter_set_unset(self):
+        self.validate_identity("ALTER TABLE tbl SET DATA_RETENTION_TIME_IN_DAYS=1")
+        self.validate_identity("ALTER TABLE tbl SET DEFAULT_DDL_COLLATION='test'")
+        self.validate_identity("ALTER TABLE foo SET COMMENT='bar'")
+        self.validate_identity("ALTER TABLE foo SET CHANGE_TRACKING=FALSE")
+        self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
+        self.validate_identity("ALTER TABLE IF EXISTS foo SET TAG a = 'a', b = 'b', c = 'c'")
+        self.validate_identity(
+            """ALTER TABLE tbl SET STAGE_FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64)""",
+        )
+        self.validate_identity(
+            """ALTER TABLE tbl SET STAGE_COPY_OPTIONS = (ON_ERROR=SKIP_FILE SIZE_LIMIT=5 PURGE=TRUE MATCH_BY_COLUMN_NAME=CASE_SENSITIVE)"""
+        )
+
+        self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
+        self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")

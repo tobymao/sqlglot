@@ -254,7 +254,7 @@ class Hive(Dialect):
             "REFRESH": TokenType.REFRESH,
             "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,
             "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
-            "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
+            "SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
 
         NUMERIC_LITERALS = {
@@ -332,7 +332,7 @@ class Hive(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
-            "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
+            "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
@@ -415,7 +415,7 @@ class Hive(Dialect):
         ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
             return (
                 (
-                    self._parse_csv(self._parse_conjunction)
+                    self._parse_csv(self._parse_assignment)
                     if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
                     else []
                 ),
@@ -443,6 +443,7 @@ class Hive(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
         SUPPORTS_TO_NUMBER = False
+        WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -562,7 +563,6 @@ class Hive(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
-            exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
             exp.ClusteredColumnConstraint: lambda self,
@@ -572,6 +572,10 @@ class Hive(Dialect):
             exp.NotForReplicationColumnConstraint: lambda *_: "",
             exp.OnProperty: lambda *_: "",
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
+            exp.ParseJSON: lambda self, e: self.sql(e.this),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
         }
 
         PROPERTIES_LOCATION = {
@@ -628,9 +632,6 @@ class Hive(Dialect):
                 expression.this.this if isinstance(expression.this, exp.Order) else expression.this,
             )
 
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))
-
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
                 not expression.expressions or expression.expressions[0].name == "MAX"
@@ -665,3 +666,23 @@ class Hive(Dialect):
                     values.append(e)
 
             return self.func("STRUCT", *values)
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f" {exprs}" if exprs else ""
+            location = self.sql(expression, "location")
+            location = f" LOCATION {location}" if location else ""
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" FILEFORMAT {file_format}" if file_format else ""
+            serde = self.sql(expression, "serde")
+            serde = f" SERDE {serde}" if serde else ""
+            tags = self.expressions(expression, key="tag", flat=True, sep="")
+            tags = f" TAGS {tags}" if tags else ""
+
+            return f"SET{serde}{exprs}{location}{file_format}{tags}"
+
+        def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
+            prefix = "WITH " if expression.args.get("with") else ""
+            exprs = self.expressions(expression, flat=True)
+
+            return f"{prefix}SERDEPROPERTIES ({exprs})"

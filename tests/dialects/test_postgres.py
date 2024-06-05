@@ -8,6 +8,9 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
+        self.validate_identity(
+            'CREATE TABLE x (a TEXT COLLATE "de_DE")', "CREATE TABLE x (a TEXT COLLATE de_DE)"
+        )
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
@@ -22,6 +25,7 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")
@@ -38,8 +42,6 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(x AS TSTZMULTIRANGE)")
         self.validate_identity("CAST(x AS DATERANGE)")
         self.validate_identity("CAST(x AS DATEMULTIRANGE)")
-        self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
-        self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
         self.validate_identity("x$")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
@@ -64,6 +66,10 @@ class TestPostgres(Validator):
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
+        self.validate_identity(
+            "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
+            "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
+        )
         self.validate_identity(
             """UPDATE "x" SET "y" = CAST('0 days 60.000000 seconds' AS INTERVAL) WHERE "x"."id" IN (2, 3)"""
         )
@@ -325,6 +331,27 @@ class TestPostgres(Validator):
             "CAST(x AS BIGINT)",
         )
 
+        self.validate_all(
+            "STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')",
+            read={
+                "doris": "SPLIT_BY_STRING('xx~^~yy~^~zz', '~^~', 'yy')",
+            },
+            write={
+                "doris": "SPLIT_BY_STRING('xx~^~yy~^~zz', '~^~', 'yy')",
+                "postgres": "STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
+            read={
+                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2, 3], [1, 2])",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2, 3], [1, 2])",
+                "mysql": UnsupportedError,
+                "postgres": "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
+            },
+        )
         self.validate_all(
             "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
             write={
@@ -693,6 +720,9 @@ class TestPostgres(Validator):
         self.validate_identity(
             "COPY (SELECT * FROM t) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
         )
+        self.validate_identity("cast(a as FLOAT)", "CAST(a AS DOUBLE PRECISION)")
+        self.validate_identity("cast(a as FLOAT8)", "CAST(a AS DOUBLE PRECISION)")
+        self.validate_identity("cast(a as FLOAT4)", "CAST(a AS REAL)")
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
@@ -710,6 +740,8 @@ class TestPostgres(Validator):
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
+        self.validate_identity("CREATE TABLE t (col INT[3][5])")
+        self.validate_identity("CREATE TABLE t (col INT[3])")
         self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")
         self.validate_identity("CREATE INDEX et_vid_idx ON et(vid) INCLUDE (fid)")
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
@@ -733,6 +765,16 @@ class TestPostgres(Validator):
         self.validate_identity("TRUNCATE TABLE t1 RESTRICT")
         self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY CASCADE")
         self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY RESTRICT")
+        self.validate_identity("ALTER TABLE t1 SET LOGGED")
+        self.validate_identity("ALTER TABLE t1 SET UNLOGGED")
+        self.validate_identity("ALTER TABLE t1 SET WITHOUT CLUSTER")
+        self.validate_identity("ALTER TABLE t1 SET WITHOUT OIDS")
+        self.validate_identity("ALTER TABLE t1 SET ACCESS METHOD method")
+        self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
+        self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
+        self.validate_identity(
+            "CREATE FUNCTION pymax(a INT, b INT) RETURNS INT LANGUAGE plpython3u AS $$\n  if a > b:\n    return a\n  return b\n$$",
+        )
         self.validate_identity(
             "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
         )
@@ -798,6 +840,12 @@ class TestPostgres(Validator):
             "CREATE TABLE test (x TIMESTAMP[][])",
         )
         self.validate_identity(
+            "CREATE FUNCTION add(integer, integer) RETURNS INT LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT AS 'select $1 + $2;'",
+        )
+        self.validate_identity(
+            "CREATE FUNCTION add(integer, integer) RETURNS INT LANGUAGE SQL IMMUTABLE STRICT AS 'select $1 + $2;'"
+        )
+        self.validate_identity(
             "CREATE FUNCTION add(INT, INT) RETURNS INT SET search_path TO 'public' AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE",
             check_command_warning=True,
         )
@@ -806,15 +854,7 @@ class TestPostgres(Validator):
             check_command_warning=True,
         )
         self.validate_identity(
-            "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT",
-            check_command_warning=True,
-        )
-        self.validate_identity(
             "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE CALLED ON NULL INPUT",
-            check_command_warning=True,
-        )
-        self.validate_identity(
-            "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE STRICT",
             check_command_warning=True,
         )
         self.validate_identity(
@@ -823,6 +863,14 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY[3])",
+            "CREATE TABLE t (col INT[3])",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (col integer ARRAY)",
+            "CREATE TABLE t (col INT[])",
         )
         self.validate_identity(
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path TO 'public'",

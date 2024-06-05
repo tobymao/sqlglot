@@ -279,6 +279,10 @@ class MySQL(Dialect):
             **parser.Parser.CONJUNCTION,
             TokenType.DAMP: exp.And,
             TokenType.XOR: exp.Xor,
+        }
+
+        DISJUNCTION = {
+            **parser.Parser.DISJUNCTION,
             TokenType.DPIPE: exp.Or,
         }
 
@@ -597,19 +601,21 @@ class MySQL(Dialect):
             return offset, limit
 
         def _parse_set_item_charset(self, kind: str) -> exp.Expression:
-            this = self._parse_string() or self._parse_id_var()
+            this = self._parse_string() or self._parse_unquoted_field()
             return self.expression(exp.SetItem, this=this, kind=kind)
 
         def _parse_set_item_names(self) -> exp.Expression:
-            charset = self._parse_string() or self._parse_id_var()
+            charset = self._parse_string() or self._parse_unquoted_field()
             if self._match_text_seq("COLLATE"):
-                collate = self._parse_string() or self._parse_id_var()
+                collate = self._parse_string() or self._parse_unquoted_field()
             else:
                 collate = None
 
             return self.expression(exp.SetItem, this=charset, collate=collate, kind="NAMES")
 
-        def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
+        def _parse_type(
+            self, parse_interval: bool = True, fallback_to_identifier: bool = False
+        ) -> t.Optional[exp.Expression]:
             # mysql binary is special and can work anywhere, even in order by operations
             # it operates like a no paren func
             if self._match(TokenType.BINARY, advance=False):
@@ -618,10 +624,12 @@ class MySQL(Dialect):
                 if isinstance(data_type, exp.DataType):
                     return self.expression(exp.Cast, this=self._parse_column(), to=data_type)
 
-            return super()._parse_type(parse_interval=parse_interval)
+            return super()._parse_type(
+                parse_interval=parse_interval, fallback_to_identifier=fallback_to_identifier
+            )
 
         def _parse_chr(self) -> t.Optional[exp.Expression]:
-            expressions = self._parse_csv(self._parse_conjunction)
+            expressions = self._parse_csv(self._parse_assignment)
             kwargs: t.Dict[str, t.Any] = {"this": seq_get(expressions, 0)}
 
             if len(expressions) > 1:
@@ -666,6 +674,7 @@ class MySQL(Dialect):
             return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
+        INTERVAL_ALLOWS_PLURAL_FORM = False
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = None
         JOIN_HINTS = False
@@ -818,6 +827,303 @@ class MySQL(Dialect):
             exp.DataType.Type.TIMESTAMPTZ,
             exp.DataType.Type.TIMESTAMPLTZ,
         }
+
+        # https://dev.mysql.com/doc/refman/8.0/en/keywords.html
+        RESERVED_KEYWORDS = {
+            "accessible",
+            "add",
+            "all",
+            "alter",
+            "analyze",
+            "and",
+            "as",
+            "asc",
+            "asensitive",
+            "before",
+            "between",
+            "bigint",
+            "binary",
+            "blob",
+            "both",
+            "by",
+            "call",
+            "cascade",
+            "case",
+            "change",
+            "char",
+            "character",
+            "check",
+            "collate",
+            "column",
+            "condition",
+            "constraint",
+            "continue",
+            "convert",
+            "create",
+            "cross",
+            "cube",
+            "cume_dist",
+            "current_date",
+            "current_time",
+            "current_timestamp",
+            "current_user",
+            "cursor",
+            "database",
+            "databases",
+            "day_hour",
+            "day_microsecond",
+            "day_minute",
+            "day_second",
+            "dec",
+            "decimal",
+            "declare",
+            "default",
+            "delayed",
+            "delete",
+            "dense_rank",
+            "desc",
+            "describe",
+            "deterministic",
+            "distinct",
+            "distinctrow",
+            "div",
+            "double",
+            "drop",
+            "dual",
+            "each",
+            "else",
+            "elseif",
+            "empty",
+            "enclosed",
+            "escaped",
+            "except",
+            "exists",
+            "exit",
+            "explain",
+            "false",
+            "fetch",
+            "first_value",
+            "float",
+            "float4",
+            "float8",
+            "for",
+            "force",
+            "foreign",
+            "from",
+            "fulltext",
+            "function",
+            "generated",
+            "get",
+            "grant",
+            "group",
+            "grouping",
+            "groups",
+            "having",
+            "high_priority",
+            "hour_microsecond",
+            "hour_minute",
+            "hour_second",
+            "if",
+            "ignore",
+            "in",
+            "index",
+            "infile",
+            "inner",
+            "inout",
+            "insensitive",
+            "insert",
+            "int",
+            "int1",
+            "int2",
+            "int3",
+            "int4",
+            "int8",
+            "integer",
+            "intersect",
+            "interval",
+            "into",
+            "io_after_gtids",
+            "io_before_gtids",
+            "is",
+            "iterate",
+            "join",
+            "json_table",
+            "key",
+            "keys",
+            "kill",
+            "lag",
+            "last_value",
+            "lateral",
+            "lead",
+            "leading",
+            "leave",
+            "left",
+            "like",
+            "limit",
+            "linear",
+            "lines",
+            "load",
+            "localtime",
+            "localtimestamp",
+            "lock",
+            "long",
+            "longblob",
+            "longtext",
+            "loop",
+            "low_priority",
+            "master_bind",
+            "master_ssl_verify_server_cert",
+            "match",
+            "maxvalue",
+            "mediumblob",
+            "mediumint",
+            "mediumtext",
+            "middleint",
+            "minute_microsecond",
+            "minute_second",
+            "mod",
+            "modifies",
+            "natural",
+            "not",
+            "no_write_to_binlog",
+            "nth_value",
+            "ntile",
+            "null",
+            "numeric",
+            "of",
+            "on",
+            "optimize",
+            "optimizer_costs",
+            "option",
+            "optionally",
+            "or",
+            "order",
+            "out",
+            "outer",
+            "outfile",
+            "over",
+            "partition",
+            "percent_rank",
+            "precision",
+            "primary",
+            "procedure",
+            "purge",
+            "range",
+            "rank",
+            "read",
+            "reads",
+            "read_write",
+            "real",
+            "recursive",
+            "references",
+            "regexp",
+            "release",
+            "rename",
+            "repeat",
+            "replace",
+            "require",
+            "resignal",
+            "restrict",
+            "return",
+            "revoke",
+            "right",
+            "rlike",
+            "row",
+            "rows",
+            "row_number",
+            "schema",
+            "schemas",
+            "second_microsecond",
+            "select",
+            "sensitive",
+            "separator",
+            "set",
+            "show",
+            "signal",
+            "smallint",
+            "spatial",
+            "specific",
+            "sql",
+            "sqlexception",
+            "sqlstate",
+            "sqlwarning",
+            "sql_big_result",
+            "sql_calc_found_rows",
+            "sql_small_result",
+            "ssl",
+            "starting",
+            "stored",
+            "straight_join",
+            "system",
+            "table",
+            "terminated",
+            "then",
+            "tinyblob",
+            "tinyint",
+            "tinytext",
+            "to",
+            "trailing",
+            "trigger",
+            "true",
+            "undo",
+            "union",
+            "unique",
+            "unlock",
+            "unsigned",
+            "update",
+            "usage",
+            "use",
+            "using",
+            "utc_date",
+            "utc_time",
+            "utc_timestamp",
+            "values",
+            "varbinary",
+            "varchar",
+            "varcharacter",
+            "varying",
+            "virtual",
+            "when",
+            "where",
+            "while",
+            "window",
+            "with",
+            "write",
+            "xor",
+            "year_month",
+            "zerofill",
+            "cume_dist",
+            "dense_rank",
+            "empty",
+            "except",
+            "first_value",
+            "grouping",
+            "groups",
+            "intersect",
+            "json_table",
+            "lag",
+            "last_value",
+            "lateral",
+            "lead",
+            "nth_value",
+            "ntile",
+            "of",
+            "over",
+            "percent_rank",
+            "rank",
+            "recursive",
+            "row_number",
+            "system",
+            "window",
+        }
+
+        def array_sql(self, expression: exp.Array) -> str:
+            self.unsupported("Arrays are not supported by MySQL")
+            return self.function_fallback_sql(expression)
+
+        def arraycontainsall_sql(self, expression: exp.ArrayContainsAll) -> str:
+            self.unsupported("Array operations are not supported by MySQL")
+            return self.function_fallback_sql(expression)
 
         def dpipe_sql(self, expression: exp.DPipe) -> str:
             return self.func("CONCAT", *expression.flatten())

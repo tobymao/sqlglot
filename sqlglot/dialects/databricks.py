@@ -23,6 +23,7 @@ class Databricks(Spark):
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = True
+        COLON_IS_JSON_EXTRACT = True
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
@@ -57,8 +58,7 @@ class Databricks(Spark):
             ),
             exp.DatetimeDiff: _timestamp_diff,
             exp.TimestampDiff: _timestamp_diff,
-            exp.DatetimeTrunc: timestamptrunc_sql,
-            exp.JSONExtract: lambda self, e: self.binary(e, ":"),
+            exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -88,6 +88,3 @@ class Databricks(Spark):
         ) -> str:
             expression.set("this", True)  # trigger ALWAYS in super class
             return super().generatedasidentitycolumnconstraint_sql(expression)
-
-    class Tokenizer(Spark.Tokenizer):
-        HEX_STRINGS = []

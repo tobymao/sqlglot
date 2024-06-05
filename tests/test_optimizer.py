@@ -10,6 +10,7 @@ import sqlglot
 from sqlglot import exp, optimizer, parse_one
 from sqlglot.errors import OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
@@ -315,6 +316,18 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             qualified.sql(),
             'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
+        )
+
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 as f1) AS col) SELECT tbl1.col.* from tbl1",
+                    dialect="bigquery",
+                ),
+                schema=MappingSchema(schema=None, dialect="bigquery"),
+                infer_schema=False,
+            ).sql(dialect="bigquery"),
+            "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
         )
 
         self.check_file(
@@ -1202,3 +1215,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         query = parse_one("select a.b:c from d", read="snowflake")
         qualified = optimizer.qualify.qualify(query)
         self.assertEqual(qualified.expressions[0].alias, "c")
+
+    def test_normalization_distance(self):
+        def gen_expr(depth: int) -> exp.Expression:
+            return parse_one(" OR ".join("a AND b" for _ in range(depth)))
+
+        self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
+        self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
+        self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))

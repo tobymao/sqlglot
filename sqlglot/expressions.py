@@ -1632,6 +1632,7 @@ class AlterColumn(Expression):
         "default": False,
         "drop": False,
         "comment": False,
+        "allow_null": False,
     }
 
 
@@ -1642,6 +1643,20 @@ class AlterDistStyle(Expression):
 
 class AlterSortKey(Expression):
     arg_types = {"this": False, "expressions": False, "compound": False}
+
+
+class AlterSet(Expression):
+    arg_types = {
+        "expressions": False,
+        "option": False,
+        "tablespace": False,
+        "access_method": False,
+        "file_format": False,
+        "copy_options": False,
+        "tag": False,
+        "location": False,
+        "serde": False,
+    }
 
 
 class RenameColumn(Expression):
@@ -1821,6 +1836,11 @@ class NotForReplicationColumnConstraint(ColumnConstraintKind):
     arg_types = {}
 
 
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class MaskingPolicyColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True, "expressions": False}
+
+
 class NotNullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 
@@ -1828,6 +1848,11 @@ class NotNullColumnConstraint(ColumnConstraintKind):
 # https://dev.mysql.com/doc/refman/5.7/en/timestamp-initialization.html
 class OnUpdateColumnConstraint(ColumnConstraintKind):
     pass
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class TagColumnConstraint(ColumnConstraintKind):
+    arg_types = {"expressions": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-external-table#optional-parameters
@@ -1852,6 +1877,11 @@ class UppercaseColumnConstraint(ColumnConstraintKind):
 
 
 class PathColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class ProjectionPolicyColumnConstraint(ColumnConstraintKind):
     pass
 
 
@@ -1978,7 +2008,7 @@ class Connect(Expression):
 
 
 class CopyParameter(Expression):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expression": False, "expressions": False}
 
 
 class Copy(Expression):
@@ -2506,6 +2536,10 @@ class DataBlocksizeProperty(Property):
     }
 
 
+class DataDeletionProperty(Property):
+    arg_types = {"on": True, "filter_col": False, "retention_period": False}
+
+
 class DefinerProperty(Property):
     arg_types = {"this": True}
 
@@ -2682,7 +2716,11 @@ class RemoteWithConnectionModelProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "is_table": False, "table": False}
+    arg_types = {"this": False, "is_table": False, "table": False, "null": False}
+
+
+class StrictProperty(Property):
+    arg_types = {}
 
 
 class RowFormatProperty(Property):
@@ -2728,7 +2766,7 @@ class SchemaCommentProperty(Property):
 
 
 class SerdeProperties(Property):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "with": False}
 
 
 class SetProperty(Property):
@@ -2797,8 +2835,13 @@ class WithJournalTableProperty(Property):
 
 
 class WithSystemVersioningProperty(Property):
-    # this -> history table name, expression -> data consistency check
-    arg_types = {"this": False, "expression": False}
+    arg_types = {
+        "on": False,
+        "this": False,
+        "data_consistency": False,
+        "retention_period": False,
+        "with": True,
+    }
 
 
 class Properties(Expression):
@@ -4775,12 +4818,17 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
+class ArrayConstructCompact(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class ArrayContains(Binary, Func):
-    pass
+    _sql_names = ["ARRAY_CONTAINS", "ARRAY_HAS"]
 
 
-class ArrayContained(Binary):
-    pass
+class ArrayContainsAll(Binary, Func):
+    _sql_names = ["ARRAY_CONTAINS_ALL", "ARRAY_HAS_ALL"]
 
 
 class ArrayFilter(Func):
@@ -4791,6 +4839,11 @@ class ArrayFilter(Func):
 class ArrayToString(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
+
+
+class StringToArray(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
+    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]
 
 
 class ArrayOverlaps(Binary, Func):
@@ -6122,6 +6175,8 @@ def _apply_child_list_builder(
 ):
     instance = maybe_copy(instance, copy)
     parsed = []
+    properties = {} if properties is None else properties
+
     for expression in expressions:
         if expression is not None:
             if _is_wrong_expression(expression, into):
@@ -6134,14 +6189,18 @@ def _apply_child_list_builder(
                 prefix=prefix,
                 **opts,
             )
-            parsed.extend(expression.expressions)
+            for k, v in expression.args.items():
+                if k == "expressions":
+                    parsed.extend(v)
+                else:
+                    properties[k] = v
 
     existing = instance.args.get(arg)
     if append and existing:
         parsed = existing.expressions + parsed
 
     child = into(expressions=parsed)
-    for k, v in (properties or {}).items():
+    for k, v in properties.items():
         child.set(k, v)
     instance.set(arg, child)
 

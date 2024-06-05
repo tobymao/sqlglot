@@ -155,6 +155,10 @@ class TestMySQL(Validator):
             """SELECT * FROM foo WHERE 3 MEMBER OF(info->'$.value')""",
             """SELECT * FROM foo WHERE 3 MEMBER OF(JSON_EXTRACT(info, '$.value'))""",
         )
+        self.validate_identity(
+            "SELECT 1 AS row",
+            "SELECT 1 AS `row`",
+        )
 
         # Index hints
         self.validate_identity(
@@ -218,6 +222,9 @@ class TestMySQL(Validator):
         self.validate_identity("CHAR(77, 121, 83, 81, '76')")
         self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
         self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
+        self.validate_identity("SELECT @var1 := 1, @var2")
+        self.validate_identity("SELECT @var1, @var2 := @var1")
+        self.validate_identity("SELECT @var1 := COUNT(*) FROM t1")
 
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:
@@ -334,7 +341,7 @@ class TestMySQL(Validator):
         write_CC = {
             "bigquery": "SELECT 0xCC",
             "clickhouse": "SELECT 0xCC",
-            "databricks": "SELECT 204",
+            "databricks": "SELECT X'CC'",
             "drill": "SELECT 204",
             "duckdb": "SELECT 204",
             "hive": "SELECT 204",
@@ -355,7 +362,7 @@ class TestMySQL(Validator):
         write_CC_with_leading_zeros = {
             "bigquery": "SELECT 0x0000CC",
             "clickhouse": "SELECT 0x0000CC",
-            "databricks": "SELECT 204",
+            "databricks": "SELECT X'0000CC'",
             "drill": "SELECT 204",
             "duckdb": "SELECT 204",
             "hive": "SELECT 204",

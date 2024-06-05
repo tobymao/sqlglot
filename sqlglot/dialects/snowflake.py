@@ -336,6 +336,7 @@ class Snowflake(Dialect):
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
         DEFAULT_SAMPLING_METHOD = "BERNOULLI"
+        COLON_IS_JSON_EXTRACT = True
 
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,
@@ -426,7 +427,6 @@ class Snowflake(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
-            "SET": lambda self: self._parse_set(tag=self._match_text_seq("TAG")),
             "UNSET": lambda self: self.expression(
                 exp.Set,
                 tag=self._match_text_seq("TAG"),
@@ -473,6 +473,14 @@ class Snowflake(Dialect):
             "TERSE USERS": _show_parser("USERS"),
         }
 
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "WITH": lambda self: self._parse_with_constraint(),
+            "MASKING": lambda self: self._parse_with_constraint(),
+            "PROJECTION": lambda self: self._parse_with_constraint(),
+            "TAG": lambda self: self._parse_with_constraint(),
+        }
+
         STAGED_FILE_SINGLE_TOKENS = {
             TokenType.DOT,
             TokenType.MOD,
@@ -483,43 +491,50 @@ class Snowflake(Dialect):
 
         SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
 
+        NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
+
+        LAMBDAS = {
+            **parser.Parser.LAMBDAS,
+            TokenType.ARROW: lambda self, expressions: self.expression(
+                exp.Lambda,
+                this=self._replace_lambda(
+                    self._parse_assignment(),
+                    expressions,
+                ),
+                expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
+            ),
+        }
+
+        def _parse_with_constraint(self) -> t.Optional[exp.Expression]:
+            if self._prev.token_type != TokenType.WITH:
+                self._retreat(self._index - 1)
+
+            if self._match_text_seq("MASKING", "POLICY"):
+                return self.expression(
+                    exp.MaskingPolicyColumnConstraint,
+                    this=self._parse_id_var(),
+                    expressions=self._match(TokenType.USING)
+                    and self._parse_wrapped_csv(self._parse_id_var),
+                )
+            if self._match_text_seq("PROJECTION", "POLICY"):
+                return self.expression(
+                    exp.ProjectionPolicyColumnConstraint, this=self._parse_id_var()
+                )
+            if self._match(TokenType.TAG):
+                return self.expression(
+                    exp.TagColumnConstraint,
+                    expressions=self._parse_wrapped_csv(self._parse_property),
+                )
+
+            return None
+
         def _parse_create(self) -> exp.Create | exp.Command:
             expression = super()._parse_create()
-            if isinstance(expression, exp.Create) and expression.kind == "TAG":
+            if isinstance(expression, exp.Create) and expression.kind in self.NON_TABLE_CREATABLES:
                 # Replace the Table node with the enclosed Identifier
                 expression.this.replace(expression.this.this)
 
             return expression
-
-        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-            this = super()._parse_column_ops(this)
-
-            casts = []
-            json_path = []
-
-            while self._match(TokenType.COLON):
-                path = super()._parse_column_ops(self._parse_field(any_token=True))
-
-                # The cast :: operator has a lower precedence than the extraction operator :, so
-                # we rearrange the AST appropriately to avoid casting the 2nd argument of GET_PATH
-                while isinstance(path, exp.Cast):
-                    casts.append(path.to)
-                    path = path.this
-
-                if path:
-                    json_path.append(path.sql(dialect="snowflake", copy=False))
-
-            if json_path:
-                this = self.expression(
-                    exp.JSONExtract,
-                    this=this,
-                    expression=self.dialect.to_json_path(exp.Literal.string(".".join(json_path))),
-                )
-
-                while casts:
-                    this = self.expression(exp.Cast, this=this, to=casts.pop())
-
-            return this
 
         # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
         # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
@@ -561,7 +576,7 @@ class Snowflake(Dialect):
                 # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
                 return self._parse_slice(self._parse_string())
 
-            return self._parse_slice(self._parse_alias(self._parse_conjunction(), explicit=True))
+            return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
 
         def _parse_lateral(self) -> t.Optional[exp.Lateral]:
             lateral = super()._parse_lateral()
@@ -717,6 +732,19 @@ class Snowflake(Dialect):
 
             return exp.var("".join(part.text for part in parts if part))
 
+        def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
+            this = super()._parse_lambda_arg()
+
+            if not this:
+                return this
+
+            typ = self._parse_types()
+
+            if typ:
+                return self.expression(exp.Cast, this=this, to=typ)
+
+            return this
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
@@ -745,6 +773,8 @@ class Snowflake(Dialect):
             "TAG": TokenType.TAG,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
+            "WAREHOUSE": TokenType.WAREHOUSE,
+            "STREAMLIT": TokenType.STREAMLIT,
         }
 
         SINGLE_TOKENS = {
@@ -843,7 +873,7 @@ class Snowflake(Dialect):
             exp.TimestampDiff: lambda self, e: self.func(
                 "TIMESTAMPDIFF", e.unit, e.expression, e.this
             ),
-            exp.TimestampTrunc: timestamptrunc_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func(
                 "TO_CHAR", exp.cast(e.this, exp.DataType.Type.TIMESTAMP), self.format_time(e)
@@ -887,6 +917,9 @@ class Snowflake(Dialect):
             exp.Struct,
             exp.VarMap,
         }
+
+        def with_properties(self, properties: exp.Properties) -> str:
+            return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
         def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
             if expression.find(*self.UNSUPPORTED_VALUES_EXPRESSIONS):
@@ -1042,9 +1075,6 @@ class Snowflake(Dialect):
             this = self.sql(expression, "this")
             return f"SWAP WITH {this}"
 
-        def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(properties, wrapped=False, prefix=self.seg(""), sep=" ")
-
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
 
@@ -1064,14 +1094,6 @@ class Snowflake(Dialect):
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
 
-        def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
-            option = self.sql(expression, "this").upper()
-            if option == "FILE_FORMAT":
-                values = self.expressions(expression, key="expression", flat=True, sep=" ")
-                return f"{option} = ({values})"
-
-            return super().copyparameter_sql(expression)
-
         def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
             if expression.args.get("weight") or expression.args.get("accuracy"):
                 self.unsupported(
@@ -1079,3 +1101,15 @@ class Snowflake(Dialect):
                 )
 
             return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            exprs = f" {exprs}" if exprs else ""
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" STAGE_FILE_FORMAT = ({file_format})" if file_format else ""
+            copy_options = self.expressions(expression, key="copy_options", flat=True, sep=" ")
+            copy_options = f" STAGE_COPY_OPTIONS = ({copy_options})" if copy_options else ""
+            tag = self.expressions(expression, key="tag", flat=True)
+            tag = f" TAG {tag}" if tag else ""
+
+            return f"SET{exprs}{file_format}{copy_options}{tag}"

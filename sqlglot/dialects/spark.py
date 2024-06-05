@@ -96,6 +96,9 @@ class Spark(Spark2):
 
         TRANSFORMS = {
             **Spark2.Generator.TRANSFORMS,
+            exp.ArrayConstructCompact: lambda self, e: self.func(
+                "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
+            ),
             exp.Create: preprocess(
                 [
                     remove_unique_constraints,

@@ -1019,6 +1019,19 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "TIMESTAMP_TRUNC(x, DAY, 'UTC')",
+            write={
+                "": "TIMESTAMP_TRUNC(x, DAY, 'UTC')",
+                "duckdb": "DATE_TRUNC('DAY', x)",
+                "presto": "DATE_TRUNC('DAY', x)",
+                "postgres": "DATE_TRUNC('DAY', x, 'UTC')",
+                "snowflake": "DATE_TRUNC('DAY', x)",
+                "databricks": "DATE_TRUNC('DAY', x)",
+                "clickhouse": "DATE_TRUNC('DAY', x, 'UTC')",
+            },
+        )
+
         for unit in ("DAY", "MONTH", "YEAR"):
             self.validate_all(
                 f"{unit}(x)",
@@ -1150,7 +1163,7 @@ class TestDialect(Validator):
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
                 "duckdb": "x -> 'y'",
-                "doris": "x -> '$.y'",
+                "doris": "JSON_EXTRACT(x, '$.y')",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, '$.y')",
@@ -1161,7 +1174,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
                 "clickhouse": "JSONExtractString(x, 'y')",
-                "doris": "x -> '$.y'",
+                "doris": "JSON_EXTRACT(x, '$.y')",
                 "duckdb": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "oracle": "JSON_EXTRACT(x, '$.y')",
@@ -1205,7 +1218,7 @@ class TestDialect(Validator):
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
                 "duckdb": "x -> '$.y[0].z'",
-                "doris": "x -> '$.y[0].z'",
+                "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
                 "presto": "JSON_EXTRACT(x, '$.y[0].z')",
                 "snowflake": "GET_PATH(x, 'y[0].z')",
@@ -1215,7 +1228,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
                 "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
-                "doris": "x -> '$.y[0].z'",
+                "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "duckdb": "x -> '$.y[0].z'",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
                 "oracle": "JSON_EXTRACT(x, '$.y[0].z')",
@@ -1472,21 +1485,21 @@ class TestDialect(Validator):
                 "snowflake": "x ILIKE '%y'",
             },
             write={
-                "bigquery": "LOWER(x) LIKE '%y'",
+                "bigquery": "LOWER(x) LIKE LOWER('%y')",
                 "clickhouse": "x ILIKE '%y'",
                 "drill": "x `ILIKE` '%y'",
                 "duckdb": "x ILIKE '%y'",
-                "hive": "LOWER(x) LIKE '%y'",
-                "mysql": "LOWER(x) LIKE '%y'",
-                "oracle": "LOWER(x) LIKE '%y'",
+                "hive": "LOWER(x) LIKE LOWER('%y')",
+                "mysql": "LOWER(x) LIKE LOWER('%y')",
+                "oracle": "LOWER(x) LIKE LOWER('%y')",
                 "postgres": "x ILIKE '%y'",
-                "presto": "LOWER(x) LIKE '%y'",
+                "presto": "LOWER(x) LIKE LOWER('%y')",
                 "snowflake": "x ILIKE '%y'",
                 "spark": "x ILIKE '%y'",
-                "sqlite": "LOWER(x) LIKE '%y'",
-                "starrocks": "LOWER(x) LIKE '%y'",
-                "trino": "LOWER(x) LIKE '%y'",
-                "doris": "LOWER(x) LIKE '%y'",
+                "sqlite": "LOWER(x) LIKE LOWER('%y')",
+                "starrocks": "LOWER(x) LIKE LOWER('%y')",
+                "trino": "LOWER(x) LIKE LOWER('%y')",
+                "doris": "LOWER(x) LIKE LOWER('%y')",
             },
         )
         self.validate_all(
@@ -2517,7 +2530,7 @@ FROM subquery2""",
     def test_reserved_keywords(self):
         order = exp.select("*").from_("order")
 
-        for dialect in ("presto", "redshift"):
+        for dialect in ("duckdb", "presto", "redshift"):
             dialect = Dialect.get_or_raise(dialect)
             self.assertEqual(
                 order.sql(dialect=dialect),

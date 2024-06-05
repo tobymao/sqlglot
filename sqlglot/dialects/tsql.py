@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     build_date_delta,
     rename_func,
-    timestrtotime_sql,
     trim_sql,
 )
 from sqlglot.helper import seq_get
@@ -626,7 +625,7 @@ class TSQL(Dialect):
         ) -> t.Optional[exp.Expression]:
             this = self._parse_types()
             self._match(TokenType.COMMA)
-            args = [this, *self._parse_csv(self._parse_conjunction)]
+            args = [this, *self._parse_csv(self._parse_assignment)]
             convert = exp.Convert.from_arg_list(args)
             convert.set("safe", safe)
             convert.set("strict", strict)
@@ -818,6 +817,7 @@ class TSQL(Dialect):
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.ParseJSON: lambda self, e: self.sql(e, "this"),
+            exp.Repeat: rename_func("REPLICATE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -834,7 +834,9 @@ class TSQL(Dialect):
                 "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
-            exp.TimeStrToTime: timestrtotime_sql,
+            exp.TimeStrToTime: lambda self, e: self.sql(
+                exp.cast(e.this, exp.DataType.Type.DATETIME)
+            ),
             exp.TimeToStr: _format_sql,
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),

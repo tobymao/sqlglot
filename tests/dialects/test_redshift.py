@@ -6,6 +6,14 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity("1 div", "1 AS div")
+        self.validate_all(
+            "SELECT SPLIT_TO_ARRAY('12,345,6789')",
+            write={
+                "postgres": "SELECT STRING_TO_ARRAY('12,345,6789', ',')",
+                "redshift": "SELECT SPLIT_TO_ARRAY('12,345,6789', ',')",
+            },
+        )
         self.validate_all(
             "GETDATE()",
             read={
@@ -473,6 +481,10 @@ FROM (
         self.validate_identity("CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event")
         self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP NO")
         self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP YES")
+        self.validate_identity(
+            "select foo, bar from table_1 minus select foo, bar from table_2",
+            "SELECT foo, bar FROM table_1 EXCEPT SELECT foo, bar FROM table_2",
+        )
 
     def test_create_table_like(self):
         self.validate_identity(
@@ -509,6 +521,9 @@ FROM (
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE EVEN")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE AUTO")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c")
+        self.validate_identity("ALTER TABLE t SET TABLE PROPERTIES ('a' = '5', 'b' = 'c')")
+        self.validate_identity("ALTER TABLE t SET LOCATION 's3://bucket/folder/'")
+        self.validate_identity("ALTER TABLE t SET FILE FORMAT AVRO")
         self.validate_identity(
             "ALTER TABLE t ALTER DISTKEY c",
             "ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c",

@@ -31,7 +31,7 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
-            "COPY INTO test_1 FROM 'path' WITH (FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY = 'Shared Access Signature', SECRET = 'token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
+            "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
         )
 
         self.validate_all(
@@ -192,16 +192,9 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            """
-            CREATE TABLE x(
-                [zip_cd] [varchar](5) NULL NOT FOR REPLICATION,
-                [zip_cd_mkey] [varchar](5) NOT NULL,
-                CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC)
-                WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF) ON [INDEX]
-            ) ON [SECONDARY]
-            """,
+            """CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC) WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]""",
             write={
-                "tsql": "CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC)  WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]",
+                "tsql": "CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC) WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]",
                 "spark2": "CREATE TABLE x (`zip_cd` VARCHAR(5), `zip_cd_mkey` VARCHAR(5) NOT NULL, CONSTRAINT `pk_mytable` PRIMARY KEY (`zip_cd_mkey`))",
             },
         )
@@ -770,17 +763,31 @@ class TestTSQL(Validator):
             expression.sql(dialect="tsql"), "ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B"
         )
 
-        for clusterd_keyword in ("CLUSTERED", "NONCLUSTERED"):
+        for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(
                 'CREATE TABLE "dbo"."benchmark" ('
                 '"name" CHAR(7) NOT NULL, '
                 '"internal_id" VARCHAR(10) NOT NULL, '
-                f'UNIQUE {clusterd_keyword} ("internal_id" ASC))',
+                f'UNIQUE {clustered_keyword} ("internal_id" ASC))',
                 "CREATE TABLE [dbo].[benchmark] ("
                 "[name] CHAR(7) NOT NULL, "
                 "[internal_id] VARCHAR(10) NOT NULL, "
-                f"UNIQUE {clusterd_keyword} ([internal_id] ASC))",
+                f"UNIQUE {clustered_keyword} ([internal_id] ASC))",
             )
+
+        self.validate_identity(
+            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS)"
+        )
+        self.validate_identity(
+            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, HISTORY_RETENTION_PERIOD=INFINITE)"
+        )
+        self.validate_identity("ALTER TABLE tbl SET SYSTEM_VERSIONING=OFF")
+        self.validate_identity("ALTER TABLE tbl SET FILESTREAM_ON = 'test'")
+        self.validate_identity(
+            "ALTER TABLE tbl SET DATA_DELETION=ON(FILTER_COLUMN=col, RETENTION_PERIOD=5 MONTHS)"
+        )
+        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=ON")
+        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=OFF")
 
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
@@ -1086,7 +1093,13 @@ WHERE
         self.validate_all("LEN('x')", write={"tsql": "LEN('x')", "spark": "LENGTH('x')"})
 
     def test_replicate(self):
-        self.validate_all("REPLICATE('x', 2)", write={"spark": "REPEAT('x', 2)"})
+        self.validate_all(
+            "REPLICATE('x', 2)",
+            write={
+                "spark": "REPEAT('x', 2)",
+                "tsql": "REPLICATE('x', 2)",
+            },
+        )
 
     def test_isnull(self):
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})

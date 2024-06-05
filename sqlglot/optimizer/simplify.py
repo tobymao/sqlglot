@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import functools
 import itertools
 import typing as t
@@ -20,6 +21,8 @@ if t.TYPE_CHECKING:
         [exp.Expression, datetime.date, str, Dialect, exp.DataType], t.Optional[exp.Expression]
     ]
 
+logger = logging.getLogger("sqlglot")
+
 # Final means that an expression should not be simplified
 FINAL = "final"
 
@@ -38,6 +41,7 @@ def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
     dialect: DialectType = None,
+    max_depth: t.Optional[int] = None,
 ):
     """
     Rewrite sqlglot AST to simplify expressions.
@@ -51,7 +55,7 @@ def simplify(
     Args:
         expression: expression to simplify
         constant_propagation: whether the constant propagation rule should be used
-
+        max_depth: Chains of Connectors (AND, OR, etc) exceeding `max_depth` will be skipped
     Returns:
         sqlglot.Expression: simplified expression
     """
@@ -59,6 +63,18 @@ def simplify(
     dialect = Dialect.get_or_raise(dialect)
 
     def _simplify(expression, root=True):
+        if (
+            max_depth
+            and isinstance(expression, exp.Connector)
+            and not isinstance(expression.parent, exp.Connector)
+        ):
+            depth = connector_depth(expression)
+            if depth > max_depth:
+                logger.info(
+                    f"Skipping simplification because connector depth {depth} exceeds max {max_depth}"
+                )
+                return expression
+
         if expression.meta.get(FINAL):
             return expression
 
@@ -118,6 +134,33 @@ def simplify(
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)
     return expression
+
+
+def connector_depth(expression: exp.Expression) -> int:
+    """
+    Determine the maximum depth of a tree of Connectors.
+
+    For example:
+        >>> from sqlglot import parse_one
+        >>> connector_depth(parse_one("a AND b AND c AND d"))
+        3
+    """
+    stack = deque([(expression, 0)])
+    max_depth = 0
+
+    while stack:
+        expression, depth = stack.pop()
+
+        if not isinstance(expression, exp.Connector):
+            continue
+
+        depth += 1
+        max_depth = max(depth, max_depth)
+
+        stack.append((expression.left, depth))
+        stack.append((expression.right, depth))
+
+    return max_depth
 
 
 def catch(*exceptions):

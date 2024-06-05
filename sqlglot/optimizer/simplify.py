@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import functools
 import itertools
 import typing as t
-from collections import deque
+from collections import deque, defaultdict
 from decimal import Decimal
 from functools import reduce
 
@@ -19,6 +20,8 @@ if t.TYPE_CHECKING:
     DateTruncBinaryTransform = t.Callable[
         [exp.Expression, datetime.date, str, Dialect, exp.DataType], t.Optional[exp.Expression]
     ]
+
+logger = logging.getLogger("sqlglot")
 
 # Final means that an expression should not be simplified
 FINAL = "final"
@@ -35,7 +38,10 @@ class UnsupportedUnit(Exception):
 
 
 def simplify(
-    expression: exp.Expression, constant_propagation: bool = False, dialect: DialectType = None
+    expression: exp.Expression,
+    constant_propagation: bool = False,
+    dialect: DialectType = None,
+    max_depth: t.Optional[int] = None,
 ):
     """
     Rewrite sqlglot AST to simplify expressions.
@@ -47,9 +53,9 @@ def simplify(
         'TRUE'
 
     Args:
-        expression (sqlglot.Expression): expression to simplify
+        expression: expression to simplify
         constant_propagation: whether the constant propagation rule should be used
-
+        max_depth: Chains of Connectors (AND, OR, etc) exceeding `max_depth` will be skipped
     Returns:
         sqlglot.Expression: simplified expression
     """
@@ -57,6 +63,18 @@ def simplify(
     dialect = Dialect.get_or_raise(dialect)
 
     def _simplify(expression, root=True):
+        if (
+            max_depth
+            and isinstance(expression, exp.Connector)
+            and not isinstance(expression.parent, exp.Connector)
+        ):
+            depth = connector_depth(expression)
+            if depth > max_depth:
+                logger.info(
+                    f"Skipping simplification because connector depth {depth} exceeds max {max_depth}"
+                )
+                return expression
+
         if expression.meta.get(FINAL):
             return expression
 
@@ -116,6 +134,33 @@ def simplify(
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)
     return expression
+
+
+def connector_depth(expression: exp.Expression) -> int:
+    """
+    Determine the maximum depth of a tree of Connectors.
+
+    For example:
+        >>> from sqlglot import parse_one
+        >>> connector_depth(parse_one("a AND b AND c AND d"))
+        3
+    """
+    stack = deque([(expression, 0)])
+    max_depth = 0
+
+    while stack:
+        expression, depth = stack.pop()
+
+        if not isinstance(expression, exp.Connector):
+            continue
+
+        depth += 1
+        max_depth = max(depth, max_depth)
+
+        stack.append((expression.left, depth))
+        stack.append((expression.right, depth))
+
+    return max_depth
 
 
 def catch(*exceptions):
@@ -280,6 +325,7 @@ INVERSE_COMPARISONS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
 }
 
 NONDETERMINISTIC = (exp.Rand, exp.Randn)
+AND_OR = (exp.And, exp.Or)
 
 
 def _simplify_comparison(expression, left, right, or_=False):
@@ -351,12 +397,12 @@ def remove_complements(expression, root=True):
     A AND NOT A -> FALSE
     A OR NOT A -> TRUE
     """
-    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
-        complement = exp.false() if isinstance(expression, exp.And) else exp.true()
+    if isinstance(expression, AND_OR) and (root or not expression.same_parent):
+        ops = set(expression.flatten())
+        for op in ops:
+            if isinstance(op, exp.Not) and op.this in ops:
+                return exp.false() if isinstance(expression, exp.And) else exp.true()
 
-        for a, b in itertools.permutations(expression.flatten(), 2):
-            if is_complement(a, b):
-                return complement
     return expression
 
 
@@ -404,31 +450,63 @@ def absorb_and_eliminate(expression, root=True):
         (A AND B) OR (A AND NOT B) -> A
         (A OR B) AND (A OR NOT B) -> A
     """
-    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
+    if isinstance(expression, AND_OR) and (root or not expression.same_parent):
         kind = exp.Or if isinstance(expression, exp.And) else exp.And
 
-        for a, b in itertools.permutations(expression.flatten(), 2):
-            if isinstance(a, kind):
-                aa, ab = a.unnest_operands()
+        ops = tuple(expression.flatten())
 
-                # absorb
-                if is_complement(b, aa):
-                    aa.replace(exp.true() if kind == exp.And else exp.false())
-                elif is_complement(b, ab):
-                    ab.replace(exp.true() if kind == exp.And else exp.false())
-                elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(a.flatten()):
-                    a.replace(exp.false() if kind == exp.And else exp.true())
-                elif isinstance(b, kind):
-                    # eliminate
-                    rhs = b.unnest_operands()
-                    ba, bb = rhs
+        # Initialize lookup tables:
+        # Set of all operands, used to find complements for absorption.
+        op_set = set()
+        # Sub-operands, used to find subsets for absorption.
+        subops = defaultdict(list)
+        # Pairs of complements, used for elimination.
+        pairs = defaultdict(list)
 
-                    if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
-                        a.replace(aa)
-                        b.replace(aa)
-                    elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
-                        a.replace(ab)
-                        b.replace(ab)
+        # Populate the lookup tables
+        for op in ops:
+            op_set.add(op)
+
+            if not isinstance(op, kind):
+                # In cases like: A OR (A AND B)
+                # Subop will be: ^
+                subops[op].append({op})
+                continue
+
+            # In cases like: (A AND B) OR (A AND B AND C)
+            # Subops will be: ^     ^
+            subset = set(op.flatten())
+            for i in subset:
+                subops[i].append(subset)
+
+            a, b = op.unnest_operands()
+            if isinstance(a, exp.Not):
+                pairs[frozenset((a.this, b))].append((op, b))
+            if isinstance(b, exp.Not):
+                pairs[frozenset((a, b.this))].append((op, a))
+
+        for op in ops:
+            if not isinstance(op, kind):
+                continue
+
+            a, b = op.unnest_operands()
+
+            # Absorb
+            if isinstance(a, exp.Not) and a.this in op_set:
+                a.replace(exp.true() if kind == exp.And else exp.false())
+                continue
+            if isinstance(b, exp.Not) and b.this in op_set:
+                b.replace(exp.true() if kind == exp.And else exp.false())
+                continue
+            superset = set(op.flatten())
+            if any(any(subset < superset for subset in subops[i]) for i in superset):
+                op.replace(exp.false() if kind == exp.And else exp.true())
+                continue
+
+            # Eliminate
+            for other, complement in pairs[frozenset((a, b))]:
+                op.replace(complement)
+                other.replace(complement)
 
     return expression
 

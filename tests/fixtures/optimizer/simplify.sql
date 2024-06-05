@@ -161,6 +161,12 @@ A OR C;
 A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
 
+A AND (A OR B) AND (A OR B OR C);
+A;
+
+(A OR B) AND (A OR C) AND (A OR B OR C);
+(A OR B) AND (A OR C);
+
 --------------------------------------
 -- Elimination
 --------------------------------------
@@ -196,6 +202,15 @@ NOT A;
 
 E OR (A AND B) OR C OR D OR (A AND NOT B);
 A OR C OR D OR E;
+
+(A AND B) OR (A AND NOT B) OR (A AND NOT B);
+A;
+
+(A AND B) OR (A AND B) OR (A AND NOT B);
+A;
+
+(A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
+A;
 
 --------------------------------------
 -- Associativity

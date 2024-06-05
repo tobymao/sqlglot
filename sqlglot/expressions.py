@@ -5245,6 +5245,18 @@ class ToBase64(Func):
     pass
 
 
+class GapFill(Func):
+    arg_types = {
+        "this": True,
+        "ts_column": True,
+        "bucket_width": True,
+        "partitioning_columns": False,
+        "value_columns": False,
+        "origin": False,
+        "ignore_nulls": False,
+    }
+
+
 class GenerateDateArray(Func):
     arg_types = {"start": True, "end": True, "interval": False}
 

@@ -724,6 +724,18 @@ class TestPostgres(Validator):
         self.validate_identity("cast(a as FLOAT8)", "CAST(a AS DOUBLE PRECISION)")
         self.validate_identity("cast(a as FLOAT4)", "CAST(a AS REAL)")
 
+        self.validate_all(
+            "1 / DIV(4, 2)",
+            read={
+                "postgres": "1 / DIV(4, 2)",
+            },
+            write={
+                "sqlite": "1 / CAST(CAST(CAST(4 AS REAL) / 2 AS INTEGER) AS REAL)",
+                "duckdb": "1 / CAST(4 // 2 AS DECIMAL)",
+                "bigquery": "1 / CAST(DIV(4, 2) AS NUMERIC)",
+            },
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

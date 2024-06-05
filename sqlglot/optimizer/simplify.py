@@ -4,7 +4,7 @@ import datetime
 import functools
 import itertools
 import typing as t
-from collections import deque
+from collections import deque, defaultdict
 from decimal import Decimal
 from functools import reduce
 
@@ -38,7 +38,6 @@ def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
     dialect: DialectType = None,
-    max_operands: float = 100,
 ):
     """
     Rewrite sqlglot AST to simplify expressions.
@@ -52,9 +51,6 @@ def simplify(
     Args:
         expression: expression to simplify
         constant_propagation: whether the constant propagation rule should be used
-        max_operands: Some of the simplification rules become very computationally expensive with deeply
-            nested logical operations (e.g. a1 AND a2 AND ... AND a100).
-            This sets a depth at which these rules will be skipped.
 
     Returns:
         sqlglot.Expression: simplified expression
@@ -92,7 +88,7 @@ def simplify(
         node = expression
         node = rewrite_between(node)
         node = uniq_sort(node, root)
-        node = absorb_and_eliminate(node, root, max_operands)
+        node = absorb_and_eliminate(node, root)
         node = simplify_concat(node)
         node = simplify_conditionals(node)
 
@@ -104,11 +100,11 @@ def simplify(
         # Post-order transformations
         node = simplify_not(node)
         node = flatten(node)
-        node = simplify_connectors(node, root, max_operands)
+        node = simplify_connectors(node, root)
         node = remove_complements(node, root)
         node = simplify_coalesce(node)
         node.parent = expression.parent
-        node = simplify_literals(node, root, max_operands)
+        node = simplify_literals(node, root)
         node = simplify_equality(node)
         node = simplify_parens(node)
         node = simplify_datetrunc(node, dialect)
@@ -227,7 +223,7 @@ def flatten(expression):
     return expression
 
 
-def simplify_connectors(expression, root=True, max_operands=float("inf")):
+def simplify_connectors(expression, root=True):
     def _simplify_connectors(expression, left, right):
         if left == right:
             if isinstance(expression, exp.Xor):
@@ -263,7 +259,7 @@ def simplify_connectors(expression, root=True, max_operands=float("inf")):
             return _simplify_comparison(expression, left, right, or_=True)
 
     if isinstance(expression, exp.Connector):
-        return _flat_simplify(expression, _simplify_connectors, root, max_operands)
+        return _flat_simplify(expression, _simplify_connectors, root)
     return expression
 
 
@@ -399,7 +395,7 @@ def uniq_sort(expression, root=True):
     return expression
 
 
-def absorb_and_eliminate(expression, root=True, max_operands=float("inf")):
+def absorb_and_eliminate(expression, root=True):
     """
     absorption:
         A AND (A OR B) -> A
@@ -411,34 +407,52 @@ def absorb_and_eliminate(expression, root=True, max_operands=float("inf")):
         (A OR B) AND (A OR NOT B) -> A
     """
     if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
-        operands = tuple(expression.flatten())
-        if len(operands) > max_operands:
-            return expression
-
         kind = exp.Or if isinstance(expression, exp.And) else exp.And
 
-        for a, b in itertools.permutations(operands, 2):
-            if isinstance(a, kind):
-                aa, ab = a.unnest_operands()
+        ops = tuple(expression.flatten())
 
-                # absorb
-                if is_complement(b, aa):
-                    aa.replace(exp.true() if kind == exp.And else exp.false())
-                elif is_complement(b, ab):
-                    ab.replace(exp.true() if kind == exp.And else exp.false())
-                elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(a.flatten()):
-                    a.replace(exp.false() if kind == exp.And else exp.true())
-                elif isinstance(b, kind):
-                    # eliminate
-                    rhs = b.unnest_operands()
-                    ba, bb = rhs
+        complements = set()
+        subops = defaultdict(list)
+        pairs = defaultdict(list)
 
-                    if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
-                        a.replace(aa)
-                        b.replace(aa)
-                    elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
-                        a.replace(ab)
-                        b.replace(ab)
+        # Build the indexes
+        for op in ops:
+            complements.add(op)
+
+            if isinstance(op, kind):
+                subset = set(op.flatten())
+                for i in subset:
+                    subops[i].append(subset)
+
+                a, b = op.unnest_operands()
+                if isinstance(a, exp.Not):
+                    pairs[frozenset((a.this, b))].append((op, b))
+                if isinstance(b, exp.Not):
+                    pairs[frozenset((a, b.this))].append((op, a))
+            else:
+                subops[op].append({op})
+
+
+        for op in ops:
+            if isinstance(op, kind):
+                a, b = op.unnest_operands()
+
+                # Absorb
+                if isinstance(a, exp.Not) and a.this in complements:
+                    a.replace(exp.true() if kind == exp.And else exp.false())
+                    continue
+                if isinstance(b, exp.Not) and b.this in complements:
+                    b.replace(exp.true() if kind == exp.And else exp.false())
+                    continue
+                superset = set(op.flatten())
+                if any(any(subset < superset for subset in  subops[i]) for i in superset):
+                    op.replace(exp.false() if kind == exp.And else exp.true())
+                    continue
+
+                # Eliminate
+                for other, complement in pairs[frozenset((a, b))]:
+                    op.replace(complement)
+                    other.replace(complement)
 
     return expression
 
@@ -554,9 +568,9 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def simplify_literals(expression, root=True, max_operands=float("inf")):
+def simplify_literals(expression, root=True):
     if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
-        return _flat_simplify(expression, _simplify_binary, root, max_operands)
+        return _flat_simplify(expression, _simplify_binary, root)
 
     if isinstance(expression, exp.Neg):
         this = expression.this
@@ -1225,13 +1239,11 @@ def boolean_literal(condition):
     return exp.true() if condition else exp.false()
 
 
-def _flat_simplify(expression, simplifier, root=True, max_operands=float("inf")):
+def _flat_simplify(expression, simplifier, root=True):
     if root or not expression.same_parent:
         operands = []
         queue = deque(expression.flatten(unnest=False))
         size = len(queue)
-        if size > max_operands:
-            return expression
 
         while queue:
             a = queue.popleft()

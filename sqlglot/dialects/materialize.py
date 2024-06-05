@@ -10,28 +10,15 @@ from sqlglot.transforms import (
     ctas_with_tmp_tables_to_create_tmp_view,
     preprocess,
 )
+import typing as t
 
 
 class Materialize(Postgres):
     class Parser(Postgres.Parser):
         NO_PAREN_FUNCTION_PARSERS = {
             **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
-            "LIST": lambda self: self._parse_list(),
             "MAP": lambda self: self._parse_map(),
         }
-
-        def _parse_list(self) -> exp.List:
-            if self._match(TokenType.L_PAREN):
-                e = self.expression(exp.List, expressions=[self._parse_select()])
-                self._match_r_paren()
-                return e
-
-            if not self._match(TokenType.L_BRACKET):
-                self.raise_error("Expecting [")
-            entries = self._parse_csv(self._parse_conjunction)
-            if not self._match(TokenType.R_BRACKET):
-                self.raise_error("Expecting ]")
-            return self.expression(exp.List, expressions=entries)
 
         def _parse_map(self) -> exp.ToMap:
             if self._match(TokenType.L_PAREN):
@@ -46,7 +33,7 @@ class Materialize(Postgres):
                 self.raise_error("Expecting ]")
             return self.expression(exp.ToMap, this=self.expression(exp.Struct, expressions=entries))
 
-        def _parse_map_entry(self) -> exp.PropertyEQ | None:
+        def _parse_map_entry(self) -> t.Optional[exp.PropertyEQ]:
             key = self._parse_conjunction()
             if not key:
                 return None
@@ -75,28 +62,29 @@ class Materialize(Postgres):
             exp.ToMap: lambda self, e: self._to_map_sql(e),
         }
 
-        def _datatype_sql(self: Materialize.Generator, e: exp.DataType) -> str:
-            if e.is_type("list"):
-                if e.expressions:
-                    return f"{self.expressions(e, flat=True)} LIST"
+        def _datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.is_type(exp.DataType.Type.LIST):
+                if expression.expressions:
+                    return f"{self.expressions(expression, flat=True)} LIST"
                 return "LIST"
-            elif e.is_type("map"):
-                if e.expressions:
-                    key, value = e.expressions
+            if expression.is_type(exp.DataType.Type.MAP):
+                if len(expression.expressions) == 2:
+                    key, value = expression.expressions
                     return f"MAP[{self.sql(key)} => {self.sql(value)}]"
-            return Postgres.Generator.TRANSFORMS[exp.DataType](self, e)
+            return Postgres.Generator.TRANSFORMS[exp.DataType](self, expression)
 
-        def _list_sql(self: Materialize.Generator, e: exp.List) -> str:
-            if isinstance(seq_get(e.expressions, 0), exp.Select):
-                return f"{self.normalize_func('LIST')}({self.sql(seq_get(e.expressions, 0))})"
+        def _list_sql(self, expression: exp.List) -> str:
+            if isinstance(seq_get(expression.expressions, 0), exp.Select):
+                return self.func("LIST", seq_get(expression.expressions, 0))
 
-            return f"{self.normalize_func('LIST')}[{self.expressions(e, flat=True)}]"
+            return f"{self.normalize_func('LIST')}[{self.expressions(expression, flat=True)}]"
 
-        def _to_map_sql(self: Materialize.Generator, e: exp.ToMap) -> str:
-            if isinstance(e.this, exp.Select):
-                return f"{self.normalize_func('MAP')}({self.sql(e.this)})"
+        def _to_map_sql(self, expression: exp.ToMap) -> str:
+            if isinstance(expression.this, exp.Select):
+                return self.func("MAP", self.sql(expression.this))
 
             entries = ", ".join(
-                f"{self.sql(e.this)} => {self.sql(e.expression)}" for e in e.this.expressions
+                f"{self.sql(e.this)} => {self.sql(e.expression)}"
+                for e in expression.this.expressions
             )
             return f"{self.normalize_func('MAP')}[{entries}]"

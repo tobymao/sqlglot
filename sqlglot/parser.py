@@ -457,6 +457,11 @@ class Parser(metaclass=_Parser):
 
     ALIAS_TOKENS = ID_VAR_TOKENS
 
+    ARRAY_CONSTRUCTORS = {
+        "ARRAY": exp.Array,
+        "LIST": exp.List,
+    }
+
     COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 
     UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
@@ -5198,9 +5203,13 @@ class Parser(metaclass=_Parser):
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
             this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
-        elif not this or this.name.upper() == "ARRAY":
+        elif not this:
             this = self.expression(exp.Array, expressions=expressions)
         else:
+            constructor_type = self.ARRAY_CONSTRUCTORS.get(this.name.upper())
+            if constructor_type:
+                return self.expression(constructor_type, expressions=expressions)
+
             expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 

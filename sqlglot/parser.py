@@ -994,6 +994,7 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "GAP_FILL": lambda self: self._parse_gap_fill(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
         "JSON_TABLE": lambda self: self._parse_json_table(),
@@ -5262,6 +5263,16 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
         return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
+
+    def _parse_gap_fill(self) -> exp.GapFill:
+        self._match(TokenType.TABLE)
+        this = self._parse_table()
+
+        self._match(TokenType.COMMA)
+        args = [this, *self._parse_csv(lambda: self._parse_lambda())]
+
+        gap_fill = exp.GapFill.from_arg_list(args)
+        return self.validate_expression(gap_fill, args)
 
     def _parse_cast(self, strict: bool, safe: t.Optional[bool] = None) -> exp.Expression:
         this = self._parse_conjunction()

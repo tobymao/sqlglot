@@ -3955,3 +3955,8 @@ class Generator(metaclass=_Generator):
         expressions = self.expressions(expression, flat=True)
         expressions = f" USING ({expressions})" if expressions else ""
         return f"MASKING POLICY {this}{expressions}"
+
+    def gapfill_sql(self, expression: exp.GapFill) -> str:
+        this = self.sql(expression, "this")
+        this = f"TABLE {this}"
+        return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])

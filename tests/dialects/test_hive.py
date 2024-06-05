@@ -747,6 +747,7 @@ class TestHive(Validator):
         self.validate_all(
             "SELECT TRUNC(CAST(ds AS TIMESTAMP), MONTH) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
             read={
+                "hive": "SELECT TRUNC(CAST(ds AS TIMESTAMP), MONTH) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
                 "presto": "SELECT DATE_TRUNC('month', CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
             },
         )

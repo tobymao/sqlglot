@@ -81,7 +81,7 @@ class Materialize(Postgres):
 
         def _to_map_sql(self, expression: exp.ToMap) -> str:
             if isinstance(expression.this, exp.Select):
-                return self.func("MAP", self.sql(expression.this))
+                return self.func("MAP", expression.this)
 
             entries = ", ".join(
                 f"{self.sql(e.this)} => {self.sql(e.expression)}"

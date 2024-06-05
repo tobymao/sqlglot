@@ -457,7 +457,7 @@ def absorb_and_eliminate(expression, root=True):
 
         # Initialize lookup tables:
         # Set of all operands, used to find complements for absorption.
-        hashed = set()
+        op_set = set()
         # Sub-operands, used to find subsets for absorption.
         subops = defaultdict(list)
         # Pairs of complements, used for elimination.
@@ -465,7 +465,7 @@ def absorb_and_eliminate(expression, root=True):
 
         # Populate the lookup tables
         for op in ops:
-            hashed.add(op)
+            op_set.add(op)
 
             if not isinstance(op, kind):
                 # In cases like: A OR (A AND B)
@@ -492,10 +492,10 @@ def absorb_and_eliminate(expression, root=True):
             a, b = op.unnest_operands()
 
             # Absorb
-            if isinstance(a, exp.Not) and a.this in hashed:
+            if isinstance(a, exp.Not) and a.this in op_set:
                 a.replace(exp.true() if kind == exp.And else exp.false())
                 continue
-            if isinstance(b, exp.Not) and b.this in hashed:
+            if isinstance(b, exp.Not) and b.this in op_set:
                 b.replace(exp.true() if kind == exp.And else exp.false())
                 continue
             superset = set(op.flatten())

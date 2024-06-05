@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.0.2] - 2024-06-05
+### :sparkles: New Features
+- [`472058d`](https://github.com/tobymao/sqlglot/commit/472058daccf8dc2a7f7f4b7082309a06802017a5) - **bigquery**: add support for GAP_FILL function *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.0.0] - 2024-06-05
 ### :bug: Bug Fixes
 - [`f7081c4`](https://github.com/tobymao/sqlglot/commit/f7081c455cf2f61af61dcfd0859a1bf272b84258) - builder other props closes [#3588](https://github.com/tobymao/sqlglot/pull/3588) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3853,3 +3858,4 @@ Changelog
 [v24.1.1]: https://github.com/tobymao/sqlglot/compare/v24.1.0...v24.1.1
 [v24.1.2]: https://github.com/tobymao/sqlglot/compare/v24.1.1...v24.1.2
 [v25.0.0]: https://github.com/tobymao/sqlglot/compare/v24.1.2...v25.0.0
+[v25.0.2]: https://github.com/tobymao/sqlglot/compare/v25.0.1...v25.0.2

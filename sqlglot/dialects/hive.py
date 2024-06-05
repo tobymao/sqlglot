@@ -29,6 +29,7 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
     time_format,
     timestrtotime_sql,
+    unit_to_str,
     var_map_sql,
 )
 from sqlglot.transforms import (
@@ -318,6 +319,7 @@ class Hive(Dialect):
             ),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "hive"),
             "TO_JSON": exp.JSONFormat.from_arg_list,
+            "TRUNC": exp.TimestampTrunc.from_arg_list,
             "UNBASE64": exp.FromBase64.from_arg_list,
             "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
                 args or [exp.CurrentTimestamp()]
@@ -548,7 +550,7 @@ class Hive(Dialect):
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimestampTrunc: rename_func("TRUNC"),
+            exp.TimestampTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.ToBase64: rename_func("BASE64"),

@@ -67,10 +67,9 @@ class Materialize(Postgres):
                 if expression.expressions:
                     return f"{self.expressions(expression, flat=True)} LIST"
                 return "LIST"
-            if expression.is_type(exp.DataType.Type.MAP):
-                if len(expression.expressions) == 2:
-                    key, value = expression.expressions
-                    return f"MAP[{self.sql(key)} => {self.sql(value)}]"
+            if expression.is_type(exp.DataType.Type.MAP) and len(expression.expressions) == 2:
+                key, value = expression.expressions
+                return f"MAP[{self.sql(key)} => {self.sql(value)}]"
             return Postgres.Generator.TRANSFORMS[exp.DataType](self, expression)
 
         def _list_sql(self, expression: exp.List) -> str:

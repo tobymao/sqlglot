@@ -714,7 +714,7 @@ class Snowflake(Dialect):
         def _parse_file_location(self) -> t.Optional[exp.Expression]:
             # Parse either a subquery or a staged file
             return (
-                self._parse_select(table=True)
+                self._parse_select(table=True, parse_subquery_alias=False)
                 if self._match(TokenType.L_PAREN, advance=False)
                 else self._parse_table_parts()
             )

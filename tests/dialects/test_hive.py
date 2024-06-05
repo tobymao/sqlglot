@@ -744,6 +744,12 @@ class TestHive(Validator):
                 "hive": "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy'), GROUPING SETS ((a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy')), a)",
             },
         )
+        self.validate_all(
+            "SELECT TRUNC(CAST(ds AS TIMESTAMP), MONTH) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+            read={
+                "presto": "SELECT DATE_TRUNC('month', CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+            },
+        )
 
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")

@@ -282,6 +282,7 @@ INVERSE_COMPARISONS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
 }
 
 NONDETERMINISTIC = (exp.Rand, exp.Randn)
+AND_OR = (exp.And, exp.Or)
 
 
 def _simplify_comparison(expression, left, right, or_=False):
@@ -353,7 +354,7 @@ def remove_complements(expression, root=True):
     A AND NOT A -> FALSE
     A OR NOT A -> TRUE
     """
-    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
+    if isinstance(expression, AND_OR) and (root or not expression.same_parent):
         ops = set(expression.flatten())
         for op in ops:
             if isinstance(op, exp.Not) and op.this in ops:
@@ -406,52 +407,63 @@ def absorb_and_eliminate(expression, root=True):
         (A AND B) OR (A AND NOT B) -> A
         (A OR B) AND (A OR NOT B) -> A
     """
-    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
+    if isinstance(expression, AND_OR) and (root or not expression.same_parent):
         kind = exp.Or if isinstance(expression, exp.And) else exp.And
 
         ops = tuple(expression.flatten())
 
-        complements = set()
+        # Initialize lookup tables:
+        # Set of all operands, used to find complements for absorption.
+        hashed = set()
+        # Sub-operands, used to find subsets for absorption.
         subops = defaultdict(list)
+        # Pairs of complements, used for elimination.
         pairs = defaultdict(list)
 
-        # Build the indexes
+        # Populate the lookup tables
         for op in ops:
-            complements.add(op)
+            hashed.add(op)
 
-            if isinstance(op, kind):
-                subset = set(op.flatten())
-                for i in subset:
-                    subops[i].append(subset)
-
-                a, b = op.unnest_operands()
-                if isinstance(a, exp.Not):
-                    pairs[frozenset((a.this, b))].append((op, b))
-                if isinstance(b, exp.Not):
-                    pairs[frozenset((a, b.this))].append((op, a))
-            else:
+            if not isinstance(op, kind):
+                # In cases like: A OR (A AND B)
+                # Subop will be: ^
                 subops[op].append({op})
+                continue
+
+            # In cases like: (A AND B) OR (A AND B AND C)
+            # Subops will be: ^     ^
+            subset = set(op.flatten())
+            for i in subset:
+                subops[i].append(subset)
+
+            a, b = op.unnest_operands()
+            if isinstance(a, exp.Not):
+                pairs[frozenset((a.this, b))].append((op, b))
+            if isinstance(b, exp.Not):
+                pairs[frozenset((a, b.this))].append((op, a))
 
         for op in ops:
-            if isinstance(op, kind):
-                a, b = op.unnest_operands()
+            if not isinstance(op, kind):
+                continue
 
-                # Absorb
-                if isinstance(a, exp.Not) and a.this in complements:
-                    a.replace(exp.true() if kind == exp.And else exp.false())
-                    continue
-                if isinstance(b, exp.Not) and b.this in complements:
-                    b.replace(exp.true() if kind == exp.And else exp.false())
-                    continue
-                superset = set(op.flatten())
-                if any(any(subset < superset for subset in subops[i]) for i in superset):
-                    op.replace(exp.false() if kind == exp.And else exp.true())
-                    continue
+            a, b = op.unnest_operands()
 
-                # Eliminate
-                for other, complement in pairs[frozenset((a, b))]:
-                    op.replace(complement)
-                    other.replace(complement)
+            # Absorb
+            if isinstance(a, exp.Not) and a.this in hashed:
+                a.replace(exp.true() if kind == exp.And else exp.false())
+                continue
+            if isinstance(b, exp.Not) and b.this in hashed:
+                b.replace(exp.true() if kind == exp.And else exp.false())
+                continue
+            superset = set(op.flatten())
+            if any(any(subset < superset for subset in subops[i]) for i in superset):
+                op.replace(exp.false() if kind == exp.And else exp.true())
+                continue
+
+            # Eliminate
+            for other, complement in pairs[frozenset((a, b))]:
+                op.replace(complement)
+                other.replace(complement)
 
     return expression
 

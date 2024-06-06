@@ -47,7 +47,9 @@ def _build_dateadd(args: t.List) -> exp.Expression:
     if len(args) == 2:
         # DATE_ADD(startDate, numDays INTEGER)
         # https://docs.databricks.com/en/sql/language-manual/functions/date_add.html
-        return exp.TsOrDsAdd(this=seq_get(args, 0), expression=expression)
+        return exp.TsOrDsAdd(
+            this=seq_get(args, 0), expression=expression, unit=exp.Literal.string("DAY")
+        )
 
     # DATE_ADD / DATEADD / TIMESTAMPADD(unit, value integer, expr)
     # https://docs.databricks.com/en/sql/language-manual/functions/date_add3.html
@@ -81,7 +83,7 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
         # The 3 arg version of DATE_ADD produces a timestamp in Spark3/DB but possibly not
         # in other dialects
         return_type = expression.return_type
-        if not return_type.is_type(exp.DataType.Type.TIMESTAMP):
+        if not return_type.is_type(*(exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME)):
             this = f"CAST({this} AS {return_type})"
 
     return this

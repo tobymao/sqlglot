@@ -43,12 +43,14 @@
                     <li><a href="dialects/drill.html">drill</a></li>
                     <li><a href="dialects/duckdb.html">duckdb</a></li>
                     <li><a href="dialects/hive.html">hive</a></li>
+                    <li><a href="dialects/materialize.html">materialize</a></li>
                     <li><a href="dialects/mysql.html">mysql</a></li>
                     <li><a href="dialects/oracle.html">oracle</a></li>
                     <li><a href="dialects/postgres.html">postgres</a></li>
                     <li><a href="dialects/presto.html">presto</a></li>
                     <li><a href="dialects/prql.html">prql</a></li>
                     <li><a href="dialects/redshift.html">redshift</a></li>
+                    <li><a href="dialects/risingwave.html">risingwave</a></li>
                     <li><a href="dialects/snowflake.html">snowflake</a></li>
                     <li><a href="dialects/spark.html">spark</a></li>
                     <li><a href="dialects/spark2.html">spark2</a></li>
@@ -212,21 +214,23 @@ dialect implementations in order to understand how their various components can 
 </span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.drill</span> <span class="kn">import</span> <span class="n">Drill</span>
 </span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.duckdb</span> <span class="kn">import</span> <span class="n">DuckDB</span>
 </span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.hive</span> <span class="kn">import</span> <span class="n">Hive</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.mysql</span> <span class="kn">import</span> <span class="n">MySQL</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.oracle</span> <span class="kn">import</span> <span class="n">Oracle</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.postgres</span> <span class="kn">import</span> <span class="n">Postgres</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.presto</span> <span class="kn">import</span> <span class="n">Presto</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.prql</span> <span class="kn">import</span> <span class="n">PRQL</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.redshift</span> <span class="kn">import</span> <span class="n">Redshift</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.snowflake</span> <span class="kn">import</span> <span class="n">Snowflake</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.spark</span> <span class="kn">import</span> <span class="n">Spark</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.spark2</span> <span class="kn">import</span> <span class="n">Spark2</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.sqlite</span> <span class="kn">import</span> <span class="n">SQLite</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos">83</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.starrocks</span> <span class="kn">import</span> <span class="n">StarRocks</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.tableau</span> <span class="kn">import</span> <span class="n">Tableau</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos">85</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.teradata</span> <span class="kn">import</span> <span class="n">Teradata</span>
-</span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.trino</span> <span class="kn">import</span> <span class="n">Trino</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos">87</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.tsql</span> <span class="kn">import</span> <span class="n">TSQL</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.materialize</span> <span class="kn">import</span> <span class="n">Materialize</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.mysql</span> <span class="kn">import</span> <span class="n">MySQL</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.oracle</span> <span class="kn">import</span> <span class="n">Oracle</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.postgres</span> <span class="kn">import</span> <span class="n">Postgres</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.presto</span> <span class="kn">import</span> <span class="n">Presto</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.prql</span> <span class="kn">import</span> <span class="n">PRQL</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.redshift</span> <span class="kn">import</span> <span class="n">Redshift</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.risingwave</span> <span class="kn">import</span> <span class="n">RisingWave</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.snowflake</span> <span class="kn">import</span> <span class="n">Snowflake</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.spark</span> <span class="kn">import</span> <span class="n">Spark</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos">83</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.spark2</span> <span class="kn">import</span> <span class="n">Spark2</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.sqlite</span> <span class="kn">import</span> <span class="n">SQLite</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos">85</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.starrocks</span> <span class="kn">import</span> <span class="n">StarRocks</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.tableau</span> <span class="kn">import</span> <span class="n">Tableau</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos">87</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.teradata</span> <span class="kn">import</span> <span class="n">Teradata</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos">88</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.trino</span> <span class="kn">import</span> <span class="n">Trino</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos">89</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.tsql</span> <span class="kn">import</span> <span class="n">TSQL</span>
 </span></pre></div>
 
 

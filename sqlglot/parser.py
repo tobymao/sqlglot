@@ -5309,7 +5309,7 @@ class Parser(metaclass=_Parser):
         this = self._parse_table()
 
         self._match(TokenType.COMMA)
-        args = [this, *self._parse_csv(lambda: self._parse_lambda())]
+        args = [this, *self._parse_csv(self._parse_lambda)]
 
         gap_fill = exp.GapFill.from_arg_list(args)
         return self.validate_expression(gap_fill, args)

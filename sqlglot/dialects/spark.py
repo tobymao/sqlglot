@@ -83,7 +83,7 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
         # The 3 arg version of DATE_ADD produces a timestamp in Spark3/DB but possibly not
         # in other dialects
         return_type = expression.return_type
-        if not return_type.is_type(*(exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME)):
+        if not return_type.is_type(exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME):
             this = f"CAST({this} AS {return_type})"
 
     return this

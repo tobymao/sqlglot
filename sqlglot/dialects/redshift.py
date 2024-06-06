@@ -115,6 +115,12 @@ class Redshift(Postgres):
             self._retreat(index)
             return None
 
+        def _parse_column(self) -> t.Optional[exp.Expression]:
+            column = super()._parse_column()
+            if column:
+                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+            return column
+
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []
         HEX_STRINGS = []
@@ -128,6 +134,7 @@ class Redshift(Postgres):
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
             "MINUS": TokenType.EXCEPT,
+            "(+)": TokenType.JOIN_MARKER,
         }
         KEYWORDS.pop("VALUES")
 
@@ -148,6 +155,7 @@ class Redshift(Postgres):
         HEX_FUNC = "TO_HEX"
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "
+        COLUMN_JOIN_MARKS_SUPPORTED = True
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

@@ -675,6 +675,16 @@ TBLPROPERTIES (
                 "spark": "SELECT ARRAY_SORT(x)",
             },
         )
+        self.validate_all(
+            "SELECT DATE_ADD(MONTH, 20, col)",
+            read={
+                "spark": "SELECT TIMESTAMPADD(MONTH, 20, col)",
+            },
+            write={
+                "spark": "SELECT DATE_ADD(MONTH, 20, col)",
+                "databricks": "SELECT DATE_ADD(MONTH, 20, col)",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(

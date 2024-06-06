@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v25.0.3] - 2024-06-06
+### :sparkles: New Features
+- [`97f8d1a`](https://github.com/tobymao/sqlglot/commit/97f8d1a05801bcd7fd237dac0470c232d3106ca4) - add materialize dialect *(PR [#3577](https://github.com/tobymao/sqlglot/pull/3577) by [@bobbyiliev](https://github.com/bobbyiliev))*
+- [`bde5a8d`](https://github.com/tobymao/sqlglot/commit/bde5a8de346125704f757ed6a2de444905fe146e) - add risingwave dialect *(PR [#3598](https://github.com/tobymao/sqlglot/pull/3598) by [@neverchanje](https://github.com/neverchanje))*
+
+### :recycle: Refactors
+- [`5140817`](https://github.com/tobymao/sqlglot/commit/51408172ce940b6ab0ad783d98e632d972da6a0a) - **risingwave**: clean up initial implementation of RisingWave *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`f920014`](https://github.com/tobymao/sqlglot/commit/f920014709c2d3ccb7ec18fb622ecd6b6ee0afcd) - **materialize**: clean up initial implementation of Materialize *(PR [#3608](https://github.com/tobymao/sqlglot/pull/3608) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.0.2] - 2024-06-05
 ### :sparkles: New Features
 - [`472058d`](https://github.com/tobymao/sqlglot/commit/472058daccf8dc2a7f7f4b7082309a06802017a5) - **bigquery**: add support for GAP_FILL function *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3859,3 +3869,4 @@ Changelog
 [v24.1.2]: https://github.com/tobymao/sqlglot/compare/v24.1.1...v24.1.2
 [v25.0.0]: https://github.com/tobymao/sqlglot/compare/v24.1.2...v25.0.0
 [v25.0.2]: https://github.com/tobymao/sqlglot/compare/v25.0.1...v25.0.2
+[v25.0.3]: https://github.com/tobymao/sqlglot/compare/v25.0.2...v25.0.3

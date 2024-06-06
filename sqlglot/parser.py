@@ -4315,12 +4315,14 @@ class Parser(metaclass=_Parser):
             if not self._match(TokenType.FARROW):
                 self._retreat(index)
                 return None
+
             value_type = self._parse_types(
                 check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
             )
             if not self._match(TokenType.R_BRACKET):
                 self._retreat(index)
                 return None
+
             return exp.DataType(
                 this=exp.DataType.Type.MAP,
                 expressions=[key_type, value_type],

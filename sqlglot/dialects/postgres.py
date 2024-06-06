@@ -114,15 +114,6 @@ def _string_agg_sql(self: Postgres.Generator, expression: exp.GroupConcat) -> st
     return f"STRING_AGG({self.format_args(this, separator)}{order})"
 
 
-def _datatype_sql(self: Postgres.Generator, expression: exp.DataType) -> str:
-    if expression.is_type("array"):
-        if expression.expressions:
-            values = self.expressions(expression, key="values", flat=True)
-            return f"{self.expressions(expression, flat=True)}[{values}]"
-        return "ARRAY"
-    return self.datatype_sql(expression)
-
-
 def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
     auto = expression.find(exp.AutoIncrementColumnConstraint)
 
@@ -500,7 +491,6 @@ class Postgres(Dialect):
             exp.DateAdd: _date_add_sql("+"),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DataType: _datatype_sql,
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.GroupConcat: _string_agg_sql,
@@ -625,7 +615,7 @@ class Postgres(Dialect):
             return f"SET {exprs}{access_method}{tablespace}{option}"
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            if expression.is_type("array"):
+            if expression.is_type(exp.DataType.Type.ARRAY):
                 if expression.expressions:
                     values = self.expressions(expression, key="values", flat=True)
                     return f"{self.expressions(expression, flat=True)}[{values}]"

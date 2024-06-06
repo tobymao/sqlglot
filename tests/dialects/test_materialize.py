@@ -40,6 +40,13 @@ class TestMaterialize(Validator):
                 "postgres": 'SELECT JSON_EXTRACT_PATH_TEXT(\'{ "farm": {"barn": { "color": "red", "feed stocked": true }}}\', \'farm\', \'barn\', \'color\')',
             },
         )
+        self.validate_all(
+            "SELECT MAP['a' => 1]",
+            write={
+                "duckdb": "SELECT MAP {'a': 1}",
+                "materialize": "SELECT MAP['a' => 1]",
+            },
+        )
 
         # Test now functions.
         self.validate_identity("CURRENT_TIMESTAMP")
@@ -63,7 +70,6 @@ class TestMaterialize(Validator):
 
         # Test map types.
         self.validate_identity("SELECT MAP[]")
-        self.validate_identity("SELECT MAP['a' => 1]")
         self.validate_identity("SELECT MAP['a' => MAP['b' => 'c']]")
         self.validate_identity("SELECT CAST(MAP['a' => 1] AS MAP[TEXT => INT])")
         self.validate_identity("SELECT CAST(NULL AS MAP[TEXT => INT])")

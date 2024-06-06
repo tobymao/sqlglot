@@ -3977,6 +3977,7 @@ class DataType(Expression):
         IPV6 = auto()
         JSON = auto()
         JSONB = auto()
+        LIST = auto()
         LONGBLOB = auto()
         LONGTEXT = auto()
         LOWCARDINALITY = auto()
@@ -4766,6 +4767,12 @@ class Array(Func):
 # https://docs.snowflake.com/en/sql-reference/functions/to_array
 class ToArray(Func):
     pass
+
+
+# https://materialize.com/docs/sql/types/list/
+class List(Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_char

@@ -294,6 +294,7 @@ class TokenType(AutoName):
     LIKE = auto()
     LIKE_ANY = auto()
     LIMIT = auto()
+    LIST = auto()
     LOAD = auto()
     LOCK = auto()
     MAP = auto()
@@ -813,6 +814,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DECIMAL": TokenType.DECIMAL,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
         "BIGNUMERIC": TokenType.BIGDECIMAL,
+        "LIST": TokenType.LIST,
         "MAP": TokenType.MAP,
         "NULLABLE": TokenType.NULLABLE,
         "NUMBER": TokenType.DECIMAL,

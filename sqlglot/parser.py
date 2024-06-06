@@ -193,6 +193,7 @@ class Parser(metaclass=_Parser):
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
+        TokenType.LIST,
         TokenType.LOWCARDINALITY,
         TokenType.MAP,
         TokenType.NULLABLE,
@@ -455,6 +456,11 @@ class Parser(metaclass=_Parser):
     }
 
     ALIAS_TOKENS = ID_VAR_TOKENS
+
+    ARRAY_CONSTRUCTORS = {
+        "ARRAY": exp.Array,
+        "LIST": exp.List,
+    }
 
     COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 
@@ -4301,6 +4307,27 @@ class Parser(metaclass=_Parser):
         if type_token == TokenType.OBJECT_IDENTIFIER:
             return self.expression(exp.ObjectIdentifier, this=self._prev.text.upper())
 
+        # https://materialize.com/docs/sql/types/map/
+        if type_token == TokenType.MAP and self._match(TokenType.L_BRACKET):
+            key_type = self._parse_types(
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            )
+            if not self._match(TokenType.FARROW):
+                self._retreat(index)
+                return None
+            value_type = self._parse_types(
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            )
+            if not self._match(TokenType.R_BRACKET):
+                self._retreat(index)
+                return None
+            return exp.DataType(
+                this=exp.DataType.Type.MAP,
+                expressions=[key_type, value_type],
+                nested=True,
+                prefix=prefix,
+            )
+
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token in self.STRUCT_TYPE_TOKENS
         is_aggregate = type_token in self.AGGREGATE_TYPE_TOKENS
@@ -4409,6 +4436,10 @@ class Parser(metaclass=_Parser):
             )
         elif expressions:
             this.set("expressions", expressions)
+
+        # https://materialize.com/docs/sql/types/list/#type-name
+        while self._match(TokenType.LIST):
+            this = exp.DataType(this=exp.DataType.Type.LIST, expressions=[this], nested=True)
 
         index = self._index
 
@@ -5182,9 +5213,13 @@ class Parser(metaclass=_Parser):
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
             this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
-        elif not this or this.name.upper() == "ARRAY":
+        elif not this:
             this = self.expression(exp.Array, expressions=expressions)
         else:
+            constructor_type = self.ARRAY_CONSTRUCTORS.get(this.name.upper())
+            if constructor_type:
+                return self.expression(constructor_type, expressions=expressions)
+
             expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 

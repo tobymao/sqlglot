@@ -57,6 +57,7 @@ class Dialects(str, Enum):
     PRESTO = "presto"
     PRQL = "prql"
     REDSHIFT = "redshift"
+    RISINGWAVE = "risingwave"
     SNOWFLAKE = "snowflake"
     SPARK = "spark"
     SPARK2 = "spark2"

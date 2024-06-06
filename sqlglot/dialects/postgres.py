@@ -632,7 +632,7 @@ class Postgres(Dialect):
             this = expression.this
 
             # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
-            if isinstance(this, exp.IntDiv) and expression.to.is_type(exp.DataType.Type.DECIMAL):
+            if isinstance(this, exp.IntDiv) and expression.to == exp.DataType.build("decimal"):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)

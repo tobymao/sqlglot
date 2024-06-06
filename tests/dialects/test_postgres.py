@@ -735,6 +735,16 @@ class TestPostgres(Validator):
                 "bigquery": "1 / CAST(DIV(4, 2) AS NUMERIC)",
             },
         )
+        self.validate_all(
+            "CAST(DIV(4, 2) AS DECIMAL(5, 3))",
+            read={
+                "duckdb": "CAST(4 // 2 AS DECIMAL(5, 3))",
+            },
+            write={
+                "duckdb": "CAST(CAST(4 // 2 AS DECIMAL) AS DECIMAL(5, 3))",
+                "postgres": "CAST(DIV(4, 2) AS DECIMAL(5, 3))",
+            },
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

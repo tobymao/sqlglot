@@ -1034,7 +1034,7 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
 
         return (
             DATETRUNC_BINARY_COMPARISONS[comparison](
-                trunc_arg, date, unit, dialect, extract_type(trunc_arg, r)
+                trunc_arg, date, unit, dialect, extract_type(r)
             )
             or expression
         )

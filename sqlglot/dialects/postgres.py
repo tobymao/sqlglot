@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
+    binary_from_function,
     bool_xor_sql,
     datestrtodate_sql,
     build_formatted_time,
@@ -329,6 +330,7 @@ class Postgres(Dialect):
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
         }
+        KEYWORDS.pop("DIV")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
@@ -347,6 +349,9 @@ class Postgres(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": build_timestamp_trunc,
+            "DIV": lambda args: exp.cast(
+                binary_from_function(exp.IntDiv)(args), exp.DataType.Type.DECIMAL
+            ),
             "GENERATE_SERIES": _build_generate_series,
             "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
             "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
@@ -494,6 +499,7 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.GroupConcat: _string_agg_sql,
+            exp.IntDiv: rename_func("DIV"),
             exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
             exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
@@ -621,3 +627,12 @@ class Postgres(Dialect):
                     return f"{self.expressions(expression, flat=True)}[{values}]"
                 return "ARRAY"
             return super().datatype_sql(expression)
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            this = expression.this
+
+            # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
+            if isinstance(this, exp.IntDiv) and expression.to == exp.DataType.build("decimal"):
+                return self.sql(this)
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)

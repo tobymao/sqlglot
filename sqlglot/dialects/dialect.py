@@ -220,6 +220,9 @@ class Dialect(metaclass=_Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = True
     """Whether `SEMI` or `ANTI` joins are supported."""
 
+    SUPPORTS_COLUMN_JOIN_MARKS = False
+    """Whether the old-style outer join (+) syntax is supported."""
+
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     """
     Determines how function names are going to be normalized.

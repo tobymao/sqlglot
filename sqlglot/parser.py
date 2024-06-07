@@ -4496,7 +4496,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_column(self) -> t.Optional[exp.Expression]:
         this = self._parse_column_reference()
-        return self._parse_column_ops(this) if this else self._parse_bracket(this)
+        column = self._parse_column_ops(this) if this else self._parse_bracket(this)
+
+        if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and column:
+            column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+
+        return column
 
     def _parse_column_reference(self) -> t.Optional[exp.Expression]:
         this = self._parse_field()

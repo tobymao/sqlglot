@@ -40,6 +40,7 @@ class Redshift(Postgres):
     INDEX_OFFSET = 0
     COPY_PARAMS_ARE_CSV = False
     HEX_LOWERCASE = True
+    SUPPORTS_COLUMN_JOIN_MARKS = True
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -115,12 +116,6 @@ class Redshift(Postgres):
             self._retreat(index)
             return None
 
-        def _parse_column(self) -> t.Optional[exp.Expression]:
-            column = super()._parse_column()
-            if column:
-                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
-            return column
-
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []
         HEX_STRINGS = []
@@ -128,13 +123,13 @@ class Redshift(Postgres):
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
             "HLLSKETCH": TokenType.HLLSKETCH,
+            "MINUS": TokenType.EXCEPT,
             "SUPER": TokenType.SUPER,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
-            "MINUS": TokenType.EXCEPT,
-            "(+)": TokenType.JOIN_MARKER,
         }
         KEYWORDS.pop("VALUES")
 
@@ -155,7 +150,6 @@ class Redshift(Postgres):
         HEX_FUNC = "TO_HEX"
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "
-        COLUMN_JOIN_MARKS_SUPPORTED = True
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

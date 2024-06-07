@@ -3119,22 +3119,6 @@ class Intersect(Union):
     pass
 
 
-class Unnest(UDTF):
-    arg_types = {
-        "expressions": True,
-        "alias": False,
-        "offset": False,
-    }
-
-    @property
-    def selects(self) -> t.List[Expression]:
-        columns = super().selects
-        offset = self.args.get("offset")
-        if offset:
-            columns = columns + [to_identifier("offset") if offset is True else offset]
-        return columns
-
-
 class Update(Expression):
     arg_types = {
         "with": False,
@@ -5238,6 +5222,22 @@ class Posexplode(Explode):
 
 class PosexplodeOuter(Posexplode, ExplodeOuter):
     pass
+
+
+class Unnest(Func, UDTF):
+    arg_types = {
+        "expressions": True,
+        "alias": False,
+        "offset": False,
+    }
+
+    @property
+    def selects(self) -> t.List[Expression]:
+        columns = super().selects
+        offset = self.args.get("offset")
+        if offset:
+            columns = columns + [to_identifier("offset") if offset is True else offset]
+        return columns
 
 
 class Floor(Func):

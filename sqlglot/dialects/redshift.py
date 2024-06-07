@@ -211,6 +211,7 @@ class Redshift(Postgres):
 
         # Redshift supports LAST_DAY(..)
         TRANSFORMS.pop(exp.LastDay)
+        TRANSFORMS.pop(exp.SHA2)
 
         RESERVED_KEYWORDS = {
             "aes128",

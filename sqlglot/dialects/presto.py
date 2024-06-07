@@ -21,6 +21,7 @@ from sqlglot.dialects.dialect import (
     regexp_extract_sql,
     rename_func,
     right_to_substring_sql,
+    sha256_sql,
     struct_extract_sql,
     str_position_sql,
     timestamptrunc_sql,
@@ -452,9 +453,7 @@ class Presto(Dialect):
             ),
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
-            exp.SHA2: lambda self, e: self.func(
-                "SHA256" if e.text("length") == "256" else "SHA512", e.this
-            ),
+            exp.SHA2: sha256_sql,
         }
 
         RESERVED_KEYWORDS = {

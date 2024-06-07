@@ -761,12 +761,15 @@ LANGUAGE js AS
                 "clickhouse": "SHA256(x)",
                 "presto": "SHA256(x)",
                 "trino": "SHA256(x)",
+                "postgres": "SHA256(x)",
             },
             write={
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
                 "clickhouse": "SHA256(x)",
+                "postgres": "SHA256(x)",
                 "presto": "SHA256(x)",
+                "redshift": "SHA2(x, 256)",
                 "trino": "SHA256(x)",
             },
         )

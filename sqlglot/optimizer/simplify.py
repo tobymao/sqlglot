@@ -1034,7 +1034,7 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
 
         return (
             DATETRUNC_BINARY_COMPARISONS[comparison](
-                trunc_arg, date, unit, dialect, extract_type(trunc_arg, r)
+                trunc_arg, date, unit, dialect, extract_type(r)
             )
             or expression
         )
@@ -1060,7 +1060,7 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
                 return expression
 
             ranges = merge_ranges(ranges)
-            target_type = extract_type(l, *rs)
+            target_type = extract_type(*rs)
 
             return exp.or_(
                 *[_datetrunc_eq_expression(l, drange, target_type) for drange in ranges], copy=False

@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     build_timestamp_trunc,
     rename_func,
+    sha256_sql,
     str_position_sql,
     struct_extract_sql,
     timestamptrunc_sql,
@@ -362,6 +363,9 @@ class Postgres(Dialect):
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,
             "UNNEST": exp.Explode.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         }
 
         FUNCTION_PARSERS = {
@@ -534,6 +538,7 @@ class Postgres(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.SHA2: sha256_sql,
             exp.StrPosition: str_position_sql,
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),

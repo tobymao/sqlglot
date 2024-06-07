@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     build_json_extract_path,
     rename_func,
+    sha256_sql,
     var_map_sql,
     timestamptrunc_sql,
 )
@@ -758,9 +759,7 @@ class ClickHouse(Dialect):
             exp.MD5Digest: rename_func("MD5"),
             exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
             exp.SHA: rename_func("SHA1"),
-            exp.SHA2: lambda self, e: self.func(
-                "SHA256" if e.text("length") == "256" else "SHA512", e.this
-            ),
+            exp.SHA2: sha256_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.Variance: rename_func("varSamp"),

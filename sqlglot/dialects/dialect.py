@@ -1181,3 +1181,7 @@ def build_default_decimal_type(
         return exp.DataType.build(f"DECIMAL({params})")
 
     return _builder
+
+
+def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
+    return self.func(f"SHA{expression.text('length') or '256'}", expression.this)

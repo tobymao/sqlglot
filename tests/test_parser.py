@@ -106,6 +106,7 @@ class TestParser(unittest.TestCase):
         expr = parse_one("SELECT foo IN UNNEST(bla) AS bar")
         self.assertIsInstance(expr.selects[0], exp.Alias)
         self.assertEqual(expr.selects[0].output_name, "bar")
+        self.assertIsNotNone(parse_one("select unnest(x)").find(exp.Unnest))
 
     def test_unary_plus(self):
         self.assertEqual(parse_one("+15"), exp.Literal.number(15))

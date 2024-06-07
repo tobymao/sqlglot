@@ -281,6 +281,9 @@ class TestRedshift(Validator):
                 "redshift": "SELECT DATEADD(MONTH, 18, '2008-02-28')",
                 "snowflake": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "tsql": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS DATETIME2))",
+                "spark": "SELECT DATE_ADD(MONTH, 18, '2008-02-28')",
+                "spark2": "SELECT ADD_MONTHS('2008-02-28', 18)",
+                "databricks": "SELECT DATE_ADD(MONTH, 18, '2008-02-28')",
             },
         )
         self.validate_all(

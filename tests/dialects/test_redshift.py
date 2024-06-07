@@ -588,3 +588,9 @@ FROM (
         self.assertEqual(
             ast.sql("redshift"), "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l"
         )
+
+    def test_join_markers(self):
+        self.validate_identity(
+            "select a.foo, b.bar, a.baz from a, b where a.baz = b.baz (+)",
+            "SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)",
+        )

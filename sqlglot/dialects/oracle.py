@@ -337,27 +337,6 @@ def _update_from(
         raise ValueError("Cannot determine which table to use as the new from")
 
 
-def _update_join_dict(join: exp.Join, join_dict: t.Dict[str, exp.Join]) -> t.Dict[str, exp.Join]:
-    """Update the join dictionary with the new join.
-    If the join already exists, update the on clause.
-
-    Args:
-        join: The join to add to the dictionary
-        join_dict: dictionary of joins where str is join.alias_or_name
-
-    Returns:
-        The updated dictionary of joins
-    """
-    if join.alias_or_name in join_dict:
-        join_dict[join.alias_or_name].set(
-            "on",
-            exp.and_(join_dict[join.alias_or_name].args["on"], join.args["on"]),
-        )
-    else:
-        join_dict[join.alias_or_name] = join
-    return join_dict
-
-
 def _has_join_mark(col: exp.Expression) -> bool:
     """Check if the column has a join mark
 

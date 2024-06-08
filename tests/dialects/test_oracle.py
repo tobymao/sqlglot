@@ -450,6 +450,16 @@ WHERE
                 "SELECT table1.id, table2.cloumn1, table3.id FROM table1, table2, (SELECT tableInner1.id FROM tableInner1, tableInner2 WHERE tableInner1.id = tableInner2.id(+)) AS table3 WHERE table1.id = table2.id(+) and table1.id = table3.id(+)",
                 "SELECT table1.id, table2.cloumn1, table3.id FROM table1 LEFT JOIN table2 ON table1.id = table2.id LEFT JOIN (SELECT tableInner1.id FROM tableInner1 LEFT JOIN tableInner2 ON tableInner1.id = tableInner2.id) table3 ON table1.id = table3.id",
             ),
+            # 2 join marks on one side of predicate
+            (
+                "SELECT * FROM table1, table2 WHERE table1.column = table2.column1(+) + table2.column2(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column1 + table2.column2",
+            ),
+            # join mark and expression
+            (
+                "SELECT * FROM table1, table2 WHERE table1.column = table2.column1(+) + 25",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column1 + 25",
+            ),
         ]
 
         for sql_in, sql_out in test_sql:

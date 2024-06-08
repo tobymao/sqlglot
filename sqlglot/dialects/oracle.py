@@ -378,23 +378,29 @@ def _predicate_to_join(
     Returns:
         The join expression if the equality contains a join mark (otherwise None)
     """
-    if not (isinstance(eq.left, exp.Column) or isinstance(eq.right, exp.Column)):
-        return None
-    new_eq = eq.copy()
-    left_has_join_mark = _has_join_mark(eq.left)
-    right_has_join_mark = _has_join_mark(eq.right)
+
+    # if not (isinstance(eq.left, exp.Column) or isinstance(eq.right, exp.Column)):
+    #     return None
+
+    left_columns = [col for col in eq.left.find_all(exp.Column) if _has_join_mark(col)]
+    right_columns = [col for col in eq.right.find_all(exp.Column) if _has_join_mark(col)]
+
+    left_has_join_mark = len(left_columns) > 0
+    right_has_join_mark = len(right_columns) > 0
 
     if left_has_join_mark:
-        new_eq.left.set("join_mark", False)
-        join_on = new_eq.left.table
+        for col in left_columns:
+            col.set("join_mark", False)
+            join_on = col.table
     elif right_has_join_mark:
-        new_eq.right.set("join_mark", False)
-        join_on = new_eq.right.table
+        for col in right_columns:
+            col.set("join_mark", False)
+            join_on = col.table
     else:
         return None
 
     join_this = old_joins.get(join_on, old_from).this
-    return exp.Join(this=join_this, on=new_eq, kind="LEFT")
+    return exp.Join(this=join_this, on=eq, kind="LEFT")
 
 
 if t.TYPE_CHECKING:

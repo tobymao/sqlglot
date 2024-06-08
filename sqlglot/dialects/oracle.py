@@ -285,7 +285,7 @@ class Oracle(Dialect):
 
 
 def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
-    from sqlglot.optimizer.scope import build_scope
+    from sqlglot.optimizer.scope import traverse_scope
 
     """Remove join marks from an expression
     
@@ -305,10 +305,7 @@ def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
 
     Returns:
        The AST with join marks removed"""
-    scopes = build_scope(ast)
-    if not scopes:
-        return ast
-    for scope in scopes.traverse():
+    for scope in traverse_scope(ast):
         _eliminate_join_marks_from_scope(scope)
     return ast
 
@@ -361,32 +358,16 @@ def _update_join_dict(join: exp.Join, join_dict: t.Dict[str, exp.Join]) -> t.Dic
     return join_dict
 
 
-def _clean_binary_node(node: exp.Expression) -> None:
-    """if the node is left with only one child, promote the child to the parent node.
-    transformation is done in place.
-
-    Args:
-        node: The node to clean"""
-    if isinstance(node, exp.Binary):
-        if node.left is None:
-            node.replace(node.right)
-        elif node.right is None:
-            node.replace(node.left)
-
-
 def _has_join_mark(col: exp.Expression) -> bool:
     """Check if the column has a join mark
 
     Args:
         The column to check
     """
-    if not isinstance(col, exp.Column):
-        return False
-    result = col.args.get("join_mark", False)
-    return result
+    return col.args.get("join_mark", False)
 
 
-def _equality_to_join(
+def _predicate_to_join(
     eq: exp.Binary, old_joins: t.Dict[str, exp.Join], old_from: exp.From
 ) -> t.Optional[exp.Join]:
     """Convert an equality predicate to a join if it contains a join mark
@@ -416,7 +397,11 @@ def _equality_to_join(
     return exp.Join(this=join_this, on=new_eq, kind="LEFT")
 
 
-def _eliminate_join_marks_from_scope(scope) -> None:
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.scope import Scope
+
+
+def _eliminate_join_marks_from_scope(scope: Scope) -> None:
     """Remove join marks columns in scope's where clause.
     Converts them to left joins and replaces any existing joins.
     Updates scope in place.
@@ -425,37 +410,50 @@ def _eliminate_join_marks_from_scope(scope) -> None:
         scope: The scope to remove join marks from
     """
     select_scope = scope.expression
-    if not select_scope.args.get("where"):
+    where = select_scope.args.get("where")
+    joins = select_scope.args.get("joins")
+    if not where:
         return
-    if not select_scope.args.get("joins"):
+    if not joins:
         return
 
     # dictionaries used to keep track of joins to be replaced
-    old_joins: t.Dict[str, exp.Join] = {
-        join.alias_or_name: join for join in list(select_scope.args.get("joins", []))
-    }
+    old_joins = {join.alias_or_name: join for join in list(joins)}
     new_joins: t.Dict[str, exp.Join] = {}
 
     for node in scope.find_all(exp.Column):
         if _has_join_mark(node):
-            # find the predicate that contains the join mark
             predicate = node.find_ancestor(exp.Predicate)
             if not isinstance(predicate, exp.Binary):
                 continue
             predicate_parent = predicate.parent
 
             join_on = predicate.pop()
-            new_join = _equality_to_join(
+            new_join = _predicate_to_join(
                 join_on, old_joins=old_joins, old_from=select_scope.args["from"]
             )
+            # upsert new_join into new_joins dictionary
             if new_join:
-                new_joins = _update_join_dict(new_join, new_joins)
+                if new_join.alias_or_name in new_joins:
+                    new_joins[new_join.alias_or_name].set(
+                        "on",
+                        exp.and_(
+                            new_joins[new_join.alias_or_name].args["on"],
+                            new_join.args["on"],
+                        ),
+                    )
+                else:
+                    new_joins[new_join.alias_or_name] = new_join
+            # If the parent is a binary node with only one child, promote the child to the parent
             if predicate_parent:
-                _clean_binary_node(predicate_parent)
+                if isinstance(predicate_parent, exp.Binary):
+                    if predicate_parent.left is None:
+                        predicate_parent.replace(predicate_parent.right)
+                    elif predicate_parent.right is None:
+                        predicate_parent.replace(predicate_parent.left)
+
     _update_from(select_scope, new_joins, old_joins)
     replacement_joins = [new_joins.get(join.alias_or_name, join) for join in old_joins.values()]
     select_scope.set("joins", replacement_joins)
-    where = select_scope.args["where"]
-    if where:
-        if not where.this:
-            select_scope.set("where", None)
+    if not where.this:
+        where.pop()

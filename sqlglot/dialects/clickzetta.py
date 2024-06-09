@@ -46,8 +46,6 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"{self.sql(expression.expressions[0])}::TIMESTAMP"
     elif expression.this.upper() == 'GETDATE':
         return f"CURRENT_TIMESTAMP()"
-    elif expression.this.upper() == 'TRY':
-        return self.sql(expression.expressions[0])
     elif expression.this.upper() == 'LAST_DAY_OF_MONTH':
         return f"LAST_DAY({self.sql(expression.expressions[0])})"
     elif expression.this.upper() == 'TO_ISO8601':
@@ -156,6 +154,7 @@ class ClickZetta(Spark):
             exp.Nullif: nullif_to_if,
             exp.If: if_sql(false_value=exp.Null()),
             exp.Unnest: unnest_to_values,
+            exp.Try: lambda self, e: self.sql(e, "this"),
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

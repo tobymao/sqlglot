@@ -1,7 +1,4 @@
-from sqlglot import UnsupportedError, exp, parse_one
-from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
-import os
 
 class TestClickzetta(Validator):
     dialect = "clickzetta"
@@ -112,14 +109,9 @@ select j from a""",
             }
         )
 
-        # self.validate_all(
-        #     "select date_add('month',6,completion_month)",
-        #     write={
-        #         "clickzetta": "SELECT ADD_MONTHS(completion_month, 6)",
-        #     }
-        # )
-
     def test_read_dialect_related_function(self):
+        import os
+
         os.environ['READ_DIALECT'] = 'mysql'
         self.validate_all(
             'SELECT AES_DECRYPT_MYSQL(encrypted_string, key_string)',

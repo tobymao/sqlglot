@@ -17,6 +17,15 @@ import os
 
 logger = logging.getLogger("sqlglot")
 
+def read_dialect() -> str:
+    read_dialect = os.environ.get('READ_DIALECT')
+    if read_dialect:
+        if read_dialect.upper() in ['MYSQL', 'PRESTO', 'TRINO', 'ATHENA', 'STARROCKS', 'DORIS']:
+            return "mysql"
+        elif read_dialect.upper() in ['POSTGRES', 'REDSHIFT']:
+            return "postgres"
+    return None
+
 def _transform_create(expression: exp.Expression) -> exp.Expression:
     """Remove index column constraints.
     Remove unique column constraint (due to not buggy input)."""
@@ -50,6 +59,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"LAST_DAY({self.sql(expression.expressions[0])})"
     elif expression.this.upper() == 'TO_ISO8601':
         return f"DATE_FORMAT({self.sql(expression.expressions[0])}, 'yyyy-MM-dd\\\'T\\\'hh:mm:ss.SSSxxx')"
+    elif expression.this.upper() == 'AES_DECRYPT' and read_dialect() == 'mysql':
+        return f"AES_DECRYPT_MYSQL({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)
@@ -68,12 +79,12 @@ def unnest_to_values(self: ClickZetta.Generator, expression: exp.Unnest):
 
 def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     this = self.sql(expression, "this")
-    read_dialect = os.environ.get('READ_DIALECT')
-    if read_dialect:
-        if read_dialect.upper() in ['MYSQL', 'PRESTO', 'TRINO', 'ATHENA', 'STARROCKS', 'DORIS']:
-            return f"DATE_FORMAT_MYSQL({this}, {self.sql(expression, 'format')})"
-        elif read_dialect.upper() in ['POSTGRES', 'REDSHIFT']:
-            return f"DATE_FORMAT_PG({this}, {self.sql(expression, 'format')})"
+    dialect = read_dialect()
+    if dialect == 'mysql':
+        return f"DATE_FORMAT_MYSQL({this}, {self.sql(expression, 'format')})"
+    elif dialect == 'postgres':
+        return f"DATE_FORMAT_PG({this}, {self.sql(expression, 'format')})"
+
     # fallback to hive implementation
     time_format = self.format_time(expression)
     return f"DATE_FORMAT({this}, {time_format})"
@@ -135,7 +146,6 @@ class ClickZetta(Spark):
             exp.CharacterSetColumnConstraint: lambda self, e: '',
             exp.Create: transforms.preprocess([_transform_create]),
             exp.GroupConcat: _groupconcat_to_wmconcat,
-            # exp.AesDecrypt: rename_func("AES_DECRYPT_MYSQL"),
             exp.CurrentTime: lambda self, e: "DATE_FORMAT(NOW(),'HH:mm:ss')",
             exp.Anonymous: _anonymous_func,
             exp.AtTimeZone: lambda self, e: self.func(

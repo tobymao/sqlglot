@@ -13,11 +13,10 @@ from sqlglot.dialects.dialect import (
     if_sql,
 )
 
-import os
-
 logger = logging.getLogger("sqlglot")
 
 def read_dialect() -> str:
+    import os
     read_dialect = os.environ.get('READ_DIALECT')
     if read_dialect:
         if read_dialect.upper() in ['MYSQL', 'PRESTO', 'TRINO', 'ATHENA', 'STARROCKS', 'DORIS']:
@@ -40,14 +39,12 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
             schema.expressions.remove(e)
     return expression
 
-
 def _groupconcat_to_wmconcat(self: ClickZetta.Generator, expression: exp.GroupConcat) -> str:
     this = self.sql(expression, "this")
     sep = expression.args.get('separator')
     if not sep:
         sep = exp.Literal.string(',')
     return f"WM_CONCAT({sep}, {self.sql(this)})"
-
 
 def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> str:
     if expression.this.upper() == 'DATETIME':

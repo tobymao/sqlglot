@@ -32,6 +32,166 @@ def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
     return exp.ToChar.from_arg_list(args)
 
 
+def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
+    from sqlglot.optimizer.scope import traverse_scope
+
+    """Remove join marks from an expression
+    
+    SELECT * FROM a, b WHERE a.id = b.id(+)   
+    becomes:
+    SELECT * FROM a LEFT JOIN b ON a.id = b.id
+
+    - for each scope
+        - for each column with a join mark
+            - find the predicate it belongs to
+            - remove the predicate from the where clause
+            - convert the predicate to a join with the (+) side as the left join table
+            - replace the existing join with the new join
+
+    Args:
+        ast: The AST to remove join marks from
+
+    Returns:
+       The AST with join marks removed"""
+    for scope in traverse_scope(ast):
+        _eliminate_join_marks_from_scope(scope)
+    return ast
+
+
+def _update_from(
+    select: exp.Select,
+    new_join_dict: t.Dict[str, exp.Join],
+    old_join_dict: t.Dict[str, exp.Join],
+) -> None:
+    """If the from clause needs to become a new join, find an appropriate table to use as the new from.
+    updates select in place
+
+    Args:
+        select: The select statement to update
+        new_join_dict: The dictionary of new joins
+        old_join_dict: The dictionary of old joins
+    """
+    old_from = select.args["from"]
+    if old_from.alias_or_name not in new_join_dict:
+        return
+    in_old_not_new = old_join_dict.keys() - new_join_dict.keys()
+    if len(in_old_not_new) >= 1:
+        new_from_name = list(old_join_dict.keys() - new_join_dict.keys())[0]
+        new_from_this = old_join_dict[new_from_name].this
+        new_from = exp.From(this=new_from_this)
+        del old_join_dict[new_from_name]
+        select.set("from", new_from)
+    else:
+        raise ValueError("Cannot determine which table to use as the new from")
+
+
+def _has_join_mark(col: exp.Expression) -> bool:
+    """Check if the column has a join mark
+
+    Args:
+        The column to check
+    """
+    return col.args.get("join_mark", False)
+
+
+def _predicate_to_join(
+    eq: exp.Binary, old_joins: t.Dict[str, exp.Join], old_from: exp.From
+) -> t.Optional[exp.Join]:
+    """Convert an equality predicate to a join if it contains a join mark
+
+    Args:
+        eq: The equality expression to convert to a join
+
+    Returns:
+        The join expression if the equality contains a join mark (otherwise None)
+    """
+
+    # if not (isinstance(eq.left, exp.Column) or isinstance(eq.right, exp.Column)):
+    #     return None
+
+    left_columns = [col for col in eq.left.find_all(exp.Column) if _has_join_mark(col)]
+    right_columns = [col for col in eq.right.find_all(exp.Column) if _has_join_mark(col)]
+
+    left_has_join_mark = len(left_columns) > 0
+    right_has_join_mark = len(right_columns) > 0
+
+    if left_has_join_mark:
+        for col in left_columns:
+            col.set("join_mark", False)
+            join_on = col.table
+    elif right_has_join_mark:
+        for col in right_columns:
+            col.set("join_mark", False)
+            join_on = col.table
+    else:
+        return None
+
+    join_this = old_joins.get(join_on, old_from).this
+    return exp.Join(this=join_this, on=eq, kind="LEFT")
+
+
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.scope import Scope
+
+
+def _eliminate_join_marks_from_scope(scope: Scope) -> None:
+    """Remove join marks columns in scope's where clause.
+    Converts them to left joins and replaces any existing joins.
+    Updates scope in place.
+
+    Args:
+        scope: The scope to remove join marks from
+    """
+    select_scope = scope.expression
+    where = select_scope.args.get("where")
+    joins = select_scope.args.get("joins")
+    if not where:
+        return
+    if not joins:
+        return
+
+    # dictionaries used to keep track of joins to be replaced
+    old_joins = {join.alias_or_name: join for join in list(joins)}
+    new_joins: t.Dict[str, exp.Join] = {}
+
+    for node in scope.find_all(exp.Column):
+        if _has_join_mark(node):
+            predicate = node.find_ancestor(exp.Predicate)
+            if not isinstance(predicate, exp.Binary):
+                continue
+            predicate_parent = predicate.parent
+
+            join_on = predicate.pop()
+            new_join = _predicate_to_join(
+                join_on, old_joins=old_joins, old_from=select_scope.args["from"]
+            )
+            # upsert new_join into new_joins dictionary
+            if new_join:
+                if new_join.alias_or_name in new_joins:
+                    new_joins[new_join.alias_or_name].set(
+                        "on",
+                        exp.and_(
+                            new_joins[new_join.alias_or_name].args["on"],
+                            new_join.args["on"],
+                        ),
+                    )
+                else:
+                    new_joins[new_join.alias_or_name] = new_join
+            # If the parent is a binary node with only one child, promote the child to the parent
+            if predicate_parent:
+                if isinstance(predicate_parent, exp.Binary):
+                    if predicate_parent.left is None:
+                        predicate_parent.replace(predicate_parent.right)
+                    elif predicate_parent.right is None:
+                        predicate_parent.replace(predicate_parent.left)
+
+    _update_from(select_scope, new_joins, old_joins)
+    replacement_joins = [new_joins.get(join.alias_or_name, join) for join in old_joins.values()]
+    select_scope.set("joins", replacement_joins)
+    if not where.this:
+        where.pop()
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -237,6 +397,7 @@ class Oracle(Dialect):
                 [
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_qualify,
+                    eliminate_join_marks,
                 ]
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
@@ -282,163 +443,3 @@ class Oracle(Dialect):
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"
             return f"ADD {actions}"
-
-
-def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
-    from sqlglot.optimizer.scope import traverse_scope
-
-    """Remove join marks from an expression
-    
-    SELECT * FROM a, b WHERE a.id = b.id(+)   
-    becomes:
-    SELECT * FROM a LEFT JOIN b ON a.id = b.id
-
-    - for each scope
-        - for each column with a join mark
-            - find the predicate it belongs to
-            - remove the predicate from the where clause
-            - convert the predicate to a join with the (+) side as the left join table
-            - replace the existing join with the new join
-
-    Args:
-        ast: The AST to remove join marks from
-
-    Returns:
-       The AST with join marks removed"""
-    for scope in traverse_scope(ast):
-        _eliminate_join_marks_from_scope(scope)
-    return ast
-
-
-def _update_from(
-    select: exp.Select,
-    new_join_dict: t.Dict[str, exp.Join],
-    old_join_dict: t.Dict[str, exp.Join],
-) -> None:
-    """If the from clause needs to become a new join, find an appropriate table to use as the new from.
-    updates select in place
-
-    Args:
-        select: The select statement to update
-        new_join_dict: The dictionary of new joins
-        old_join_dict: The dictionary of old joins
-    """
-    old_from = select.args["from"]
-    if old_from.alias_or_name not in new_join_dict:
-        return
-    in_old_not_new = old_join_dict.keys() - new_join_dict.keys()
-    if len(in_old_not_new) >= 1:
-        new_from_name = list(old_join_dict.keys() - new_join_dict.keys())[0]
-        new_from_this = old_join_dict[new_from_name].this
-        new_from = exp.From(this=new_from_this)
-        del old_join_dict[new_from_name]
-        select.set("from", new_from)
-    else:
-        raise ValueError("Cannot determine which table to use as the new from")
-
-
-def _has_join_mark(col: exp.Expression) -> bool:
-    """Check if the column has a join mark
-
-    Args:
-        The column to check
-    """
-    return col.args.get("join_mark", False)
-
-
-def _predicate_to_join(
-    eq: exp.Binary, old_joins: t.Dict[str, exp.Join], old_from: exp.From
-) -> t.Optional[exp.Join]:
-    """Convert an equality predicate to a join if it contains a join mark
-
-    Args:
-        eq: The equality expression to convert to a join
-
-    Returns:
-        The join expression if the equality contains a join mark (otherwise None)
-    """
-
-    # if not (isinstance(eq.left, exp.Column) or isinstance(eq.right, exp.Column)):
-    #     return None
-
-    left_columns = [col for col in eq.left.find_all(exp.Column) if _has_join_mark(col)]
-    right_columns = [col for col in eq.right.find_all(exp.Column) if _has_join_mark(col)]
-
-    left_has_join_mark = len(left_columns) > 0
-    right_has_join_mark = len(right_columns) > 0
-
-    if left_has_join_mark:
-        for col in left_columns:
-            col.set("join_mark", False)
-            join_on = col.table
-    elif right_has_join_mark:
-        for col in right_columns:
-            col.set("join_mark", False)
-            join_on = col.table
-    else:
-        return None
-
-    join_this = old_joins.get(join_on, old_from).this
-    return exp.Join(this=join_this, on=eq, kind="LEFT")
-
-
-if t.TYPE_CHECKING:
-    from sqlglot.optimizer.scope import Scope
-
-
-def _eliminate_join_marks_from_scope(scope: Scope) -> None:
-    """Remove join marks columns in scope's where clause.
-    Converts them to left joins and replaces any existing joins.
-    Updates scope in place.
-
-    Args:
-        scope: The scope to remove join marks from
-    """
-    select_scope = scope.expression
-    where = select_scope.args.get("where")
-    joins = select_scope.args.get("joins")
-    if not where:
-        return
-    if not joins:
-        return
-
-    # dictionaries used to keep track of joins to be replaced
-    old_joins = {join.alias_or_name: join for join in list(joins)}
-    new_joins: t.Dict[str, exp.Join] = {}
-
-    for node in scope.find_all(exp.Column):
-        if _has_join_mark(node):
-            predicate = node.find_ancestor(exp.Predicate)
-            if not isinstance(predicate, exp.Binary):
-                continue
-            predicate_parent = predicate.parent
-
-            join_on = predicate.pop()
-            new_join = _predicate_to_join(
-                join_on, old_joins=old_joins, old_from=select_scope.args["from"]
-            )
-            # upsert new_join into new_joins dictionary
-            if new_join:
-                if new_join.alias_or_name in new_joins:
-                    new_joins[new_join.alias_or_name].set(
-                        "on",
-                        exp.and_(
-                            new_joins[new_join.alias_or_name].args["on"],
-                            new_join.args["on"],
-                        ),
-                    )
-                else:
-                    new_joins[new_join.alias_or_name] = new_join
-            # If the parent is a binary node with only one child, promote the child to the parent
-            if predicate_parent:
-                if isinstance(predicate_parent, exp.Binary):
-                    if predicate_parent.left is None:
-                        predicate_parent.replace(predicate_parent.right)
-                    elif predicate_parent.right is None:
-                        predicate_parent.replace(predicate_parent.left)
-
-    _update_from(select_scope, new_joins, old_joins)
-    replacement_joins = [new_joins.get(join.alias_or_name, join) for join in old_joins.values()]
-    select_scope.set("joins", replacement_joins)
-    if not where.this:
-        where.pop()

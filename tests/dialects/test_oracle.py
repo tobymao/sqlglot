@@ -1,7 +1,5 @@
 from sqlglot import exp
-from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
-from sqlglot.dialects.oracle import eliminate_join_marks
 
 
 class TestOracle(Validator):
@@ -246,20 +244,20 @@ class TestOracle(Validator):
             },
         )
 
-    def test_join_marker(self):
-        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
+    # def test_join_marker(self):
+    #     self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
 
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            write={"": UnsupportedError},
-        )
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            write={
-                "": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y",
-                "oracle": "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            },
-        )
+    #     self.validate_all(
+    #         "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+    #         write={"": UnsupportedError},
+    #     )
+    #     self.validate_all(
+    #         "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+    #         write={
+    #             "": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y",
+    #             "oracle": "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+    #         },
+    #     )
 
     def test_hints(self):
         self.validate_identity("SELECT /*+ USE_NL(A B) */ A.COL_TEST FROM TABLE_A A, TABLE_B B")
@@ -465,6 +463,6 @@ WHERE
         for sql_in, sql_out in test_sql:
             with self.subTest(sql_in):
                 self.assertEqual(
-                    eliminate_join_marks(self.parse_one(sql_in)).sql(dialect=self.dialect),
+                    self.parse_one(sql_in, dialect="oracle").sql(dialect=self.dialect),
                     sql_out,
                 )

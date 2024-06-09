@@ -1,7 +1,7 @@
 from sqlglot import UnsupportedError, exp, parse_one
 from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
-
+import os
 
 class TestClickzetta(Validator):
     dialect = "clickzetta"
@@ -11,6 +11,12 @@ class TestClickzetta(Validator):
             "SELECT user.id from t as user",
             write={
                 "clickzetta": "SELECT `user`.id FROM t AS `user`",
+            },
+        )
+        self.validate_all(
+            "with all as (select 1) select * from all",
+            write={
+                "clickzetta": "WITH `all` AS (SELECT 1) SELECT * FROM `all`",
             },
         )
 
@@ -36,10 +42,103 @@ class TestClickzetta(Validator):
             read={'postgres': 'create table foo (a enum)'}
         )
 
-    def functions(self):
+    def test_functions(self):
         self.validate_all(
             "select approx_percentile(a, 0.9)",
             write={
                 "clickzetta": "SELECT APPROX_PERCENTILE(a, 0.9)",
             }
+        )
+        self.validate_all(
+            "select to_iso8601(current_timestamp)",
+            write={
+                "clickzetta": r"SELECT DATE_FORMAT(CURRENT_TIMESTAMP(), 'yyyy-MM-dd\'T\'hh:mm:ss.SSSxxx')",
+            }
+        )
+        self.validate_all(
+            "select nullif('a',0)",
+            write={
+                "clickzetta": "SELECT IF('a' = 0, NULL, 'a')",
+            }
+        )
+        self.validate_all(
+            "select try(1/0), try_cast(a as bigint)",
+            write={
+                "clickzetta": "SELECT 1 / 0, TRY_CAST(a AS BIGINT)",
+            }
+        )
+        self.validate_all(
+            "select if(true, 'a')",
+            write={
+                "clickzetta": "SELECT IF(TRUE, 'a', NULL)",
+            }
+        )
+        self.validate_all(
+            "select power(10, 2)",
+            write={
+                "clickzetta": "SELECT POW(10, 2)",
+            }
+        )
+        self.validate_all(
+            "select last_day_of_month(a)",
+            write={
+                "clickzetta": "SELECT LAST_DAY(a)",
+            }
+        )
+        self.validate_all(
+            """select * from
+unnest(array[('a',1),('b',2),('c',3)]) as
+t(s,i)""",
+            write={
+                "clickzetta": "SELECT * FROM VALUES ('a', 1), ('b', 2), ('c', 3) AS t(s, i)",
+            }
+        )
+        self.validate_all(
+            "select json_format(json '{\"a\":1,\"b\":2}')",
+            write={
+                "clickzetta": "SELECT TO_JSON(JSON '{\"a\":1,\"b\":2}')",
+            }
+        )
+        self.validate_all(
+            """with a as (
+  with a as (
+    select 1 as i
+  )
+  select i as j from a
+)
+select j from a""",
+            write={
+                "clickzetta": "WITH a AS (WITH a AS (SELECT 1 AS i) SELECT i AS j FROM a) SELECT j FROM a",
+            }
+        )
+
+        # self.validate_all(
+        #     "select date_add('month',6,completion_month)",
+        #     write={
+        #         "clickzetta": "SELECT ADD_MONTHS(completion_month, 6)",
+        #     }
+        # )
+
+    def test_read_dialect_related_function(self):
+        os.environ['READ_DIALECT'] = 'mysql'
+        self.validate_all(
+            'SELECT AES_DECRYPT_MYSQL(encrypted_string, key_string)',
+            read={'mysql': 'select AES_DECRYPT(encrypted_string, key_string)'}
+        )
+        os.environ.pop('READ_DIALECT')
+        self.validate_all(
+            "SELECT AES_DECRYPT(encrypted_string, key_string)",
+            read={'spark': "select AES_DECRYPT(encrypted_string, key_string)"}
+        )
+
+        os.environ['READ_DIALECT'] = 'mysql'
+        self.validate_all(
+            r"SELECT DATE_FORMAT_MYSQL(CURRENT_DATE, '%x-%v')",
+            read={'presto': r"select DATE_FORMAT(CURRENT_DATE, '%x-%v')"}
+        )
+
+        os.environ['READ_DIALECT'] = 'postgres'
+        self.validate_all(
+            r"SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'Mon-dd-%Y,%H:mi:ss')",
+            read={'postgres': r"select to_char(now(), 'Mon-dd-YYYY,HH24:mi:ss')"}
         )

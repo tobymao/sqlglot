@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import List
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.spark import Spark
@@ -15,14 +14,17 @@ from sqlglot.dialects.dialect import (
 
 logger = logging.getLogger("sqlglot")
 
+MYSQL = 'mysql'
+POSTGRES = 'postgres'
+
 def read_dialect() -> str:
     import os
     read_dialect = os.environ.get('READ_DIALECT')
     if read_dialect:
         if read_dialect.upper() in ['MYSQL', 'PRESTO', 'TRINO', 'ATHENA', 'STARROCKS', 'DORIS']:
-            return "mysql"
+            return MYSQL
         elif read_dialect.upper() in ['POSTGRES', 'REDSHIFT']:
-            return "postgres"
+            return POSTGRES
     return None
 
 def _transform_create(expression: exp.Expression) -> exp.Expression:
@@ -77,9 +79,9 @@ def unnest_to_values(self: ClickZetta.Generator, expression: exp.Unnest):
 def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     this = self.sql(expression, "this")
     dialect = read_dialect()
-    if dialect == 'mysql':
+    if dialect == MYSQL:
         return f"DATE_FORMAT_MYSQL({this}, {self.sql(expression, 'format')})"
-    elif dialect == 'postgres':
+    elif dialect == POSTGRES:
         return f"DATE_FORMAT_PG({this}, {self.sql(expression, 'format')})"
 
     # fallback to hive implementation

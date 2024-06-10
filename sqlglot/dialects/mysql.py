@@ -213,6 +213,7 @@ class MySQL(Dialect):
             "MEMBER OF": TokenType.MEMBER_OF,
             "SEPARATOR": TokenType.SEPARATOR,
             "START": TokenType.BEGIN,
+            "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
             "UNLOCK TABLES": TokenType.COMMAND,
@@ -297,6 +298,11 @@ class MySQL(Dialect):
                 this=this,
                 expression=self._parse_wrapped(self._parse_expression),
             ),
+        }
+
+        JOIN_KINDS = {
+            *parser.Parser.JOIN_KINDS,
+            TokenType.STRAIGHT_JOIN,
         }
 
         FUNCTIONS = {
@@ -462,6 +468,13 @@ class MySQL(Dialect):
         STRING_ALIASES = True
         VALUES_FOLLOWED_BY_PAREN = False
         SUPPORTS_PARTITION_SELECTION = True
+
+        def _parse_join(
+            self, skip_join_token: bool = False, parse_bracket: bool = False
+        ) -> t.Optional[exp.Join]:
+            if self._match(TokenType.STRAIGHT_JOIN, advance=False):
+                skip_join_token = True
+            return super()._parse_join(skip_join_token=skip_join_token, parse_bracket=parse_bracket)
 
         def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
             this = self._parse_id_var()

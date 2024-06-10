@@ -360,6 +360,7 @@ class TokenType(AutoName):
     SORT_BY = auto()
     START_WITH = auto()
     STORAGE_INTEGRATION = auto()
+    STRAIGHT_JOIN = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TAG = auto()

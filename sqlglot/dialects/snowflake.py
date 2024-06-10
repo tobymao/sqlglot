@@ -510,15 +510,18 @@ class Snowflake(Dialect):
                 self._retreat(self._index - 1)
 
             if self._match_text_seq("MASKING", "POLICY"):
+                policy = self._parse_column()
                 return self.expression(
                     exp.MaskingPolicyColumnConstraint,
-                    this=self._parse_id_var(),
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
                     expressions=self._match(TokenType.USING)
                     and self._parse_wrapped_csv(self._parse_id_var),
                 )
             if self._match_text_seq("PROJECTION", "POLICY"):
+                policy = self._parse_column()
                 return self.expression(
-                    exp.ProjectionPolicyColumnConstraint, this=self._parse_id_var()
+                    exp.ProjectionPolicyColumnConstraint,
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
                 )
             if self._match(TokenType.TAG):
                 return self.expression(

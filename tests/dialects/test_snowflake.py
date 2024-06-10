@@ -1196,16 +1196,16 @@ WHERE
         for constraint_prefix in ("WITH ", ""):
             with self.subTest(f"Constraint prefix: {constraint_prefix}"):
                 self.validate_identity(
-                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p)",
-                    "CREATE TABLE t (id INT MASKING POLICY p)",
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p.q.r)",
+                    "CREATE TABLE t (id INT MASKING POLICY p.q.r)",
                 )
                 self.validate_identity(
                     f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p USING (c1, c2, c3))",
                     "CREATE TABLE t (id INT MASKING POLICY p USING (c1, c2, c3))",
                 )
                 self.validate_identity(
-                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p)",
-                    "CREATE TABLE t (id INT PROJECTION POLICY p)",
+                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p.q.r)",
+                    "CREATE TABLE t (id INT PROJECTION POLICY p.q.r)",
                 )
                 self.validate_identity(
                     f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",

@@ -287,6 +287,7 @@ class TokenType(AutoName):
     JOIN = auto()
     JOIN_MARKER = auto()
     KEEP = auto()
+    KEY = auto()
     KILL = auto()
     LANGUAGE = auto()
     LATERAL = auto()

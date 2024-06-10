@@ -21,6 +21,9 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
+        self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
+        self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
+        self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
         self.validate_identity(
             "CREATE TABLE `oauth_consumer` (`key` VARCHAR(32) NOT NULL, UNIQUE `OAUTH_CONSUMER_KEY` (`key`))"
         )
@@ -61,6 +64,10 @@ class TestMySQL(Validator):
             "CREATE OR REPLACE VIEW my_view AS SELECT column1 AS `boo`, column2 AS `foo` FROM my_table WHERE column3 = 'some_value' UNION SELECT q.* FROM fruits_table, JSON_TABLE(Fruits, '$[*]' COLUMNS(id VARCHAR(255) PATH '$.$id', value VARCHAR(255) PATH '$.value')) AS q",
         )
         self.validate_identity(
+            "ALTER TABLE t ADD KEY `i` (`c`)",
+            "ALTER TABLE t ADD INDEX `i` (`c`)",
+        )
+        self.validate_identity(
             "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
             "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
         )
@@ -74,9 +81,6 @@ class TestMySQL(Validator):
         )
         self.validate_identity(
             "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
-            "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
-        )
-        self.validate_identity(
             "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
         )
         self.validate_identity(

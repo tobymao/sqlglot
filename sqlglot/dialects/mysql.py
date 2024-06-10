@@ -202,6 +202,7 @@ class MySQL(Dialect):
             "CHARSET": TokenType.CHARACTER_SET,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
+            "KEY": TokenType.KEY,
             "LOCK TABLES": TokenType.COMMAND,
             "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,

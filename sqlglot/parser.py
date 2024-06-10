@@ -1138,7 +1138,14 @@ class Parser(metaclass=_Parser):
 
     FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
 
-    ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
+    ADD_CONSTRAINT_TOKENS = {
+        TokenType.CONSTRAINT,
+        TokenType.FOREIGN_KEY,
+        TokenType.INDEX,
+        TokenType.KEY,
+        TokenType.PRIMARY_KEY,
+        TokenType.UNIQUE,
+    }
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
@@ -3242,7 +3249,7 @@ class Parser(metaclass=_Parser):
             while self._match_set(self.TABLE_INDEX_HINT_TOKENS):
                 hint = exp.IndexTableHint(this=self._prev.text.upper())
 
-                self._match_texts(("INDEX", "KEY"))
+                self._match_set((TokenType.INDEX, TokenType.KEY))
                 if self._match(TokenType.FOR):
                     hint.set("target", self._advance_any() and self._prev.text.upper())
 

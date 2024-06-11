@@ -795,10 +795,10 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            "CREATE TABLE [#temptest] (name VARCHAR)",
+            "CREATE TABLE [#temptest] (name INTEGER)",
             read={
-                "duckdb": "CREATE TEMPORARY TABLE 'temptest' (name VARCHAR)",
-                "tsql": "CREATE TABLE [#temptest] (name VARCHAR)",
+                "duckdb": "CREATE TEMPORARY TABLE 'temptest' (name INTEGER)",
+                "tsql": "CREATE TABLE [#temptest] (name INTEGER)",
             },
         )
         self.validate_all(

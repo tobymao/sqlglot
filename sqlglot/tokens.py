@@ -765,6 +765,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "START WITH": TokenType.START_WITH,
+        "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

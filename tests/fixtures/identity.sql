@@ -872,3 +872,4 @@ SELECT name
 SELECT copy
 SELECT rollup
 SELECT unnest
+SELECT * FROM a STRAIGHT_JOIN b

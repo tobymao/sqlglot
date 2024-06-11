@@ -278,6 +278,7 @@ class TestDuckDB(Validator):
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
         self.validate_identity("x -> '$.family'")
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
+        self.validate_identity("SELECT * FROM foo WHERE bar > $baz AND bla = $bob")
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )

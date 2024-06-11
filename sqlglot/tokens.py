@@ -1270,18 +1270,6 @@ class Tokenizer(metaclass=_Tokenizer):
             elif token_type == TokenType.BIT_STRING:
                 base = 2
             elif token_type == TokenType.HEREDOC_STRING:
-                if (
-                    self.HEREDOC_TAG_IS_IDENTIFIER
-                    and not self._peek.isidentifier()
-                    and not self._peek == end
-                ):
-                    if self.HEREDOC_STRING_ALTERNATIVE != token_type.VAR:
-                        self._add(self.HEREDOC_STRING_ALTERNATIVE)
-                    else:
-                        self._scan_var()
-
-                    return True
-
                 self._advance()
 
                 if self._char == end:
@@ -1293,7 +1281,10 @@ class Tokenizer(metaclass=_Tokenizer):
                         raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
                     )
 
-                if self._end and tag and self.HEREDOC_TAG_IS_IDENTIFIER:
+                if tag and self.HEREDOC_TAG_IS_IDENTIFIER and (self._end or not tag.isidentifier()):
+                    if not self._end:
+                        self._advance(-1)
+
                     self._advance(-len(tag))
                     self._add(self.HEREDOC_STRING_ALTERNATIVE)
                     return True

@@ -4534,7 +4534,11 @@ class Parser(metaclass=_Parser):
 
         while self._match(TokenType.COLON):
             start_index = self._index
-            path = self._parse_column_ops(self._parse_field(any_token=True))
+
+            # Snowflake allows reserved keywords as json keys but advance_any() excludes TokenType.SELECT from any_tokens=True
+            path = self._parse_column_ops(
+                self._parse_field(any_token=True, tokens=(TokenType.SELECT,))
+            )
 
             # The cast :: operator has a lower precedence than the extraction operator :, so
             # we rearrange the AST appropriately to avoid casting the JSON path

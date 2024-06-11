@@ -19,6 +19,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT straight_join",
+            write={
+                "duckdb": "SELECT straight_join",
+                "mysql": "SELECT `straight_join`",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
             read={
                 "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",

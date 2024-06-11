@@ -361,6 +361,7 @@ class TokenType(AutoName):
     SORT_BY = auto()
     START_WITH = auto()
     STORAGE_INTEGRATION = auto()
+    STRAIGHT_JOIN = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TAG = auto()
@@ -765,6 +766,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "START WITH": TokenType.START_WITH,
+        "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

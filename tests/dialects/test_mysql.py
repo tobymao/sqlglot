@@ -117,6 +117,7 @@ class TestMySQL(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT e.* FROM e STRAIGHT_JOIN p ON e.x = p.y")
         self.validate_identity("ALTER TABLE test_table ALTER COLUMN test_column SET DEFAULT 1")
         self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:00.0000')")
         self.validate_identity("SELECT @var1 := 1, @var2")

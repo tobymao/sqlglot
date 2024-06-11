@@ -50,12 +50,14 @@ class Dialects(str, Enum):
     DRILL = "drill"
     DUCKDB = "duckdb"
     HIVE = "hive"
+    MATERIALIZE = "materialize"
     MYSQL = "mysql"
     ORACLE = "oracle"
     POSTGRES = "postgres"
     PRESTO = "presto"
     PRQL = "prql"
     REDSHIFT = "redshift"
+    RISINGWAVE = "risingwave"
     SNOWFLAKE = "snowflake"
     SPARK = "spark"
     SPARK2 = "spark2"
@@ -217,6 +219,9 @@ class Dialect(metaclass=_Dialect):
 
     SUPPORTS_SEMI_ANTI_JOIN = True
     """Whether `SEMI` or `ANTI` joins are supported."""
+
+    SUPPORTS_COLUMN_JOIN_MARKS = False
+    """Whether the old-style outer join (+) syntax is supported."""
 
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     """
@@ -1176,3 +1181,7 @@ def build_default_decimal_type(
         return exp.DataType.build(f"DECIMAL({params})")
 
     return _builder
+
+
+def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
+    return self.func(f"SHA{expression.text('length') or '256'}", expression.this)

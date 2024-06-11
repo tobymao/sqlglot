@@ -193,6 +193,7 @@ class Parser(metaclass=_Parser):
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
+        TokenType.LIST,
         TokenType.LOWCARDINALITY,
         TokenType.MAP,
         TokenType.NULLABLE,
@@ -455,6 +456,11 @@ class Parser(metaclass=_Parser):
     }
 
     ALIAS_TOKENS = ID_VAR_TOKENS
+
+    ARRAY_CONSTRUCTORS = {
+        "ARRAY": exp.Array,
+        "LIST": exp.List,
+    }
 
     COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 
@@ -1001,6 +1007,7 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "GAP_FILL": lambda self: self._parse_gap_fill(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
         "JSON_TABLE": lambda self: self._parse_json_table(),
@@ -1131,7 +1138,14 @@ class Parser(metaclass=_Parser):
 
     FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
 
-    ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
+    ADD_CONSTRAINT_TOKENS = {
+        TokenType.CONSTRAINT,
+        TokenType.FOREIGN_KEY,
+        TokenType.INDEX,
+        TokenType.KEY,
+        TokenType.PRIMARY_KEY,
+        TokenType.UNIQUE,
+    }
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
@@ -3235,7 +3249,7 @@ class Parser(metaclass=_Parser):
             while self._match_set(self.TABLE_INDEX_HINT_TOKENS):
                 hint = exp.IndexTableHint(this=self._prev.text.upper())
 
-                self._match_texts(("INDEX", "KEY"))
+                self._match_set((TokenType.INDEX, TokenType.KEY))
                 if self._match(TokenType.FOR):
                     hint.set("target", self._advance_any() and self._prev.text.upper())
 
@@ -4300,6 +4314,29 @@ class Parser(metaclass=_Parser):
         if type_token == TokenType.OBJECT_IDENTIFIER:
             return self.expression(exp.ObjectIdentifier, this=self._prev.text.upper())
 
+        # https://materialize.com/docs/sql/types/map/
+        if type_token == TokenType.MAP and self._match(TokenType.L_BRACKET):
+            key_type = self._parse_types(
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            )
+            if not self._match(TokenType.FARROW):
+                self._retreat(index)
+                return None
+
+            value_type = self._parse_types(
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            )
+            if not self._match(TokenType.R_BRACKET):
+                self._retreat(index)
+                return None
+
+            return exp.DataType(
+                this=exp.DataType.Type.MAP,
+                expressions=[key_type, value_type],
+                nested=True,
+                prefix=prefix,
+            )
+
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token in self.STRUCT_TYPE_TOKENS
         is_aggregate = type_token in self.AGGREGATE_TYPE_TOKENS
@@ -4409,6 +4446,10 @@ class Parser(metaclass=_Parser):
         elif expressions:
             this.set("expressions", expressions)
 
+        # https://materialize.com/docs/sql/types/list/#type-name
+        while self._match(TokenType.LIST):
+            this = exp.DataType(this=exp.DataType.Type.LIST, expressions=[this], nested=True)
+
         index = self._index
 
         # Postgres supports the INT ARRAY[3] syntax as a synonym for INT[3]
@@ -4462,7 +4503,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_column(self) -> t.Optional[exp.Expression]:
         this = self._parse_column_reference()
-        return self._parse_column_ops(this) if this else self._parse_bracket(this)
+        column = self._parse_column_ops(this) if this else self._parse_bracket(this)
+
+        if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and column:
+            column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+
+        return column
 
     def _parse_column_reference(self) -> t.Optional[exp.Expression]:
         this = self._parse_field()
@@ -5181,9 +5227,13 @@ class Parser(metaclass=_Parser):
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
             this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
-        elif not this or this.name.upper() == "ARRAY":
+        elif not this:
             this = self.expression(exp.Array, expressions=expressions)
         else:
+            constructor_type = self.ARRAY_CONSTRUCTORS.get(this.name.upper())
+            if constructor_type:
+                return self.expression(constructor_type, expressions=expressions)
+
             expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
@@ -5267,6 +5317,16 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
         return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
+
+    def _parse_gap_fill(self) -> exp.GapFill:
+        self._match(TokenType.TABLE)
+        this = self._parse_table()
+
+        self._match(TokenType.COMMA)
+        args = [this, *self._parse_csv(self._parse_lambda)]
+
+        gap_fill = exp.GapFill.from_arg_list(args)
+        return self.validate_expression(gap_fill, args)
 
     def _parse_cast(self, strict: bool, safe: t.Optional[bool] = None) -> exp.Expression:
         this = self._parse_assignment()

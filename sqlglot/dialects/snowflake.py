@@ -510,15 +510,18 @@ class Snowflake(Dialect):
                 self._retreat(self._index - 1)
 
             if self._match_text_seq("MASKING", "POLICY"):
+                policy = self._parse_column()
                 return self.expression(
                     exp.MaskingPolicyColumnConstraint,
-                    this=self._parse_id_var(),
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
                     expressions=self._match(TokenType.USING)
                     and self._parse_wrapped_csv(self._parse_id_var),
                 )
             if self._match_text_seq("PROJECTION", "POLICY"):
+                policy = self._parse_column()
                 return self.expression(
-                    exp.ProjectionPolicyColumnConstraint, this=self._parse_id_var()
+                    exp.ProjectionPolicyColumnConstraint,
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
                 )
             if self._match(TokenType.TAG):
                 return self.expression(
@@ -714,7 +717,7 @@ class Snowflake(Dialect):
         def _parse_file_location(self) -> t.Optional[exp.Expression]:
             # Parse either a subquery or a staged file
             return (
-                self._parse_select(table=True)
+                self._parse_select(table=True, parse_subquery_alias=False)
                 if self._match(TokenType.L_PAREN, advance=False)
                 else self._parse_table_parts()
             )

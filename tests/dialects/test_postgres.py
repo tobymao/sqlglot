@@ -8,6 +8,7 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
+        self.validate_identity("SHA384(x)")
         self.validate_identity(
             'CREATE TABLE x (a TEXT COLLATE "de_DE")', "CREATE TABLE x (a TEXT COLLATE de_DE)"
         )
@@ -729,6 +730,28 @@ class TestPostgres(Validator):
         self.validate_identity("cast(a as FLOAT)", "CAST(a AS DOUBLE PRECISION)")
         self.validate_identity("cast(a as FLOAT8)", "CAST(a AS DOUBLE PRECISION)")
         self.validate_identity("cast(a as FLOAT4)", "CAST(a AS REAL)")
+
+        self.validate_all(
+            "1 / DIV(4, 2)",
+            read={
+                "postgres": "1 / DIV(4, 2)",
+            },
+            write={
+                "sqlite": "1 / CAST(CAST(CAST(4 AS REAL) / 2 AS INTEGER) AS REAL)",
+                "duckdb": "1 / CAST(4 // 2 AS DECIMAL)",
+                "bigquery": "1 / CAST(DIV(4, 2) AS NUMERIC)",
+            },
+        )
+        self.validate_all(
+            "CAST(DIV(4, 2) AS DECIMAL(5, 3))",
+            read={
+                "duckdb": "CAST(4 // 2 AS DECIMAL(5, 3))",
+            },
+            write={
+                "duckdb": "CAST(CAST(4 // 2 AS DECIMAL) AS DECIMAL(5, 3))",
+                "postgres": "CAST(DIV(4, 2) AS DECIMAL(5, 3))",
+            },
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

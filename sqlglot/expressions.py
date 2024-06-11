@@ -3119,22 +3119,6 @@ class Intersect(Union):
     pass
 
 
-class Unnest(UDTF):
-    arg_types = {
-        "expressions": True,
-        "alias": False,
-        "offset": False,
-    }
-
-    @property
-    def selects(self) -> t.List[Expression]:
-        columns = super().selects
-        offset = self.args.get("offset")
-        if offset:
-            columns = columns + [to_identifier("offset") if offset is True else offset]
-        return columns
-
-
 class Update(Expression):
     arg_types = {
         "with": False,
@@ -3977,6 +3961,7 @@ class DataType(Expression):
         IPV6 = auto()
         JSON = auto()
         JSONB = auto()
+        LIST = auto()
         LONGBLOB = auto()
         LONGTEXT = auto()
         LOWCARDINALITY = auto()
@@ -4768,6 +4753,12 @@ class ToArray(Func):
     pass
 
 
+# https://materialize.com/docs/sql/types/list/
+class List(Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):
@@ -5233,6 +5224,22 @@ class PosexplodeOuter(Posexplode, ExplodeOuter):
     pass
 
 
+class Unnest(Func, UDTF):
+    arg_types = {
+        "expressions": True,
+        "alias": False,
+        "offset": False,
+    }
+
+    @property
+    def selects(self) -> t.List[Expression]:
+        columns = super().selects
+        offset = self.args.get("offset")
+        if offset:
+            columns = columns + [to_identifier("offset") if offset is True else offset]
+        return columns
+
+
 class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 
@@ -5243,6 +5250,18 @@ class FromBase64(Func):
 
 class ToBase64(Func):
     pass
+
+
+class GapFill(Func):
+    arg_types = {
+        "this": True,
+        "ts_column": True,
+        "bucket_width": True,
+        "partitioning_columns": False,
+        "value_columns": False,
+        "origin": False,
+        "ignore_nulls": False,
+    }
 
 
 class GenerateDateArray(Func):

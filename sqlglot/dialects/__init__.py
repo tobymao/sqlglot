@@ -70,12 +70,14 @@ from sqlglot.dialects.doris import Doris
 from sqlglot.dialects.drill import Drill
 from sqlglot.dialects.duckdb import DuckDB
 from sqlglot.dialects.hive import Hive
+from sqlglot.dialects.materialize import Materialize
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.dialects.oracle import Oracle
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.dialects.presto import Presto
 from sqlglot.dialects.prql import PRQL
 from sqlglot.dialects.redshift import Redshift
+from sqlglot.dialects.risingwave import RisingWave
 from sqlglot.dialects.snowflake import Snowflake
 from sqlglot.dialects.spark import Spark
 from sqlglot.dialects.spark2 import Spark2

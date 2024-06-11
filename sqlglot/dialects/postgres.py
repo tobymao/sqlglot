@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
+    binary_from_function,
     bool_xor_sql,
     datestrtodate_sql,
     build_formatted_time,
@@ -25,6 +26,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     build_timestamp_trunc,
     rename_func,
+    sha256_sql,
     str_position_sql,
     struct_extract_sql,
     timestamptrunc_sql,
@@ -112,15 +114,6 @@ def _string_agg_sql(self: Postgres.Generator, expression: exp.GroupConcat) -> st
         order = self.sql(expression.this)  # Order has a leading space
 
     return f"STRING_AGG({self.format_args(this, separator)}{order})"
-
-
-def _datatype_sql(self: Postgres.Generator, expression: exp.DataType) -> str:
-    if expression.is_type("array"):
-        if expression.expressions:
-            values = self.expressions(expression, key="values", flat=True)
-            return f"{self.expressions(expression, flat=True)}[{values}]"
-        return "ARRAY"
-    return self.datatype_sql(expression)
 
 
 def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
@@ -339,6 +332,7 @@ class Postgres(Dialect):
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
         }
+        KEYWORDS.pop("DIV")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
@@ -357,6 +351,9 @@ class Postgres(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": build_timestamp_trunc,
+            "DIV": lambda args: exp.cast(
+                binary_from_function(exp.IntDiv)(args), exp.DataType.Type.DECIMAL
+            ),
             "GENERATE_SERIES": _build_generate_series,
             "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
             "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
@@ -367,6 +364,9 @@ class Postgres(Dialect):
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,
             "UNNEST": exp.Explode.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         }
 
         FUNCTION_PARSERS = {
@@ -501,10 +501,10 @@ class Postgres(Dialect):
             exp.DateAdd: _date_add_sql("+"),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DataType: _datatype_sql,
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.GroupConcat: _string_agg_sql,
+            exp.IntDiv: rename_func("DIV"),
             exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
             exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
@@ -539,6 +539,7 @@ class Postgres(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.SHA2: sha256_sql,
             exp.StrPosition: str_position_sql,
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
@@ -624,3 +625,20 @@ class Postgres(Dialect):
             option = self.sql(expression, "option")
 
             return f"SET {exprs}{access_method}{tablespace}{option}"
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.is_type(exp.DataType.Type.ARRAY):
+                if expression.expressions:
+                    values = self.expressions(expression, key="values", flat=True)
+                    return f"{self.expressions(expression, flat=True)}[{values}]"
+                return "ARRAY"
+            return super().datatype_sql(expression)
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            this = expression.this
+
+            # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
+            if isinstance(this, exp.IntDiv) and expression.to == exp.DataType.build("decimal"):
+                return self.sql(this)
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)

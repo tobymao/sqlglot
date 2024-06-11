@@ -110,7 +110,7 @@ def normalization_distance(
     """
     total = -(sum(1 for _ in expression.find_all(exp.Connector)) + 1)
 
-    for length in _predicate_lengths(expression, dnf):
+    for length in _predicate_lengths(expression, dnf, max_):
         total += length
         if total > max_:
             return total
@@ -118,27 +118,32 @@ def normalization_distance(
     return total
 
 
-def _predicate_lengths(expression, dnf):
+def _predicate_lengths(expression, dnf, max_=float("inf"), depth=0):
     """
     Returns a list of predicate lengths when expanded to normalized form.
 
     (A AND B) OR C -> [2, 2] because len(A OR C), len(B OR C).
     """
+    if depth > max_:
+        yield depth
+        return
+
     expression = expression.unnest()
 
     if not isinstance(expression, exp.Connector):
         yield 1
         return
 
+    depth += 1
     left, right = expression.args.values()
 
     if isinstance(expression, exp.And if dnf else exp.Or):
-        for a in _predicate_lengths(left, dnf):
-            for b in _predicate_lengths(right, dnf):
+        for a in _predicate_lengths(left, dnf, max_, depth):
+            for b in _predicate_lengths(right, dnf, max_, depth):
                 yield a + b
     else:
-        yield from _predicate_lengths(left, dnf)
-        yield from _predicate_lengths(right, dnf)
+        yield from _predicate_lengths(left, dnf, max_, depth)
+        yield from _predicate_lengths(right, dnf, max_, depth)
 
 
 def distributive_law(expression, dnf, max_distance):

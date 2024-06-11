@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta_with_interval,
     regexp_replace_sql,
     rename_func,
+    sha256_sql,
     timestrtotime_sql,
     ts_or_ds_add_cast,
     unit_to_var,
@@ -637,9 +638,7 @@ class BigQuery(Dialect):
                 ]
             ),
             exp.SHA: rename_func("SHA1"),
-            exp.SHA2: lambda self, e: self.func(
-                "SHA256" if e.text("length") == "256" else "SHA512", e.this
-            ),
+            exp.SHA2: sha256_sql,
             exp.StabilityProperty: lambda self, e: (
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),

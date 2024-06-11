@@ -161,6 +161,12 @@ A OR C;
 A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
 
+A AND (A OR B) AND (A OR B OR C);
+A;
+
+(A OR B) AND (A OR C) AND (A OR B OR C);
+(A OR B) AND (A OR C);
+
 --------------------------------------
 -- Elimination
 --------------------------------------
@@ -196,6 +202,15 @@ NOT A;
 
 E OR (A AND B) OR C OR D OR (A AND NOT B);
 A OR C OR D OR E;
+
+(A AND B) OR (A AND NOT B) OR (A AND NOT B);
+A;
+
+(A AND B) OR (A AND B) OR (A AND NOT B);
+A;
+
+(A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
+A;
 
 --------------------------------------
 -- Associativity
@@ -1031,6 +1046,9 @@ x < CAST('2021-01-02' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
 TIMESTAMP_TRUNC(x, YEAR) = CAST(CAST('2021-01-01 01:02:03' AS DATE) AS DATETIME);
 x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);
+
+DATE_TRUNC('day', CAST(x AS DATE)) <= CAST('2021-01-01 01:02:03' AS TIMESTAMP);
+CAST(x AS DATE) < CAST('2021-01-02 01:02:03' AS TIMESTAMP);
 
 --------------------------------------
 -- EQUALITY

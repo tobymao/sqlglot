@@ -1196,16 +1196,16 @@ WHERE
         for constraint_prefix in ("WITH ", ""):
             with self.subTest(f"Constraint prefix: {constraint_prefix}"):
                 self.validate_identity(
-                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p)",
-                    "CREATE TABLE t (id INT MASKING POLICY p)",
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p.q.r)",
+                    "CREATE TABLE t (id INT MASKING POLICY p.q.r)",
                 )
                 self.validate_identity(
                     f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p USING (c1, c2, c3))",
                     "CREATE TABLE t (id INT MASKING POLICY p USING (c1, c2, c3))",
                 )
                 self.validate_identity(
-                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p)",
-                    "CREATE TABLE t (id INT PROJECTION POLICY p)",
+                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p.q.r)",
+                    "CREATE TABLE t (id INT PROJECTION POLICY p.q.r)",
                 )
                 self.validate_identity(
                     f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
@@ -1933,6 +1933,9 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         )
         self.validate_identity(
             """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' STORAGE_INTEGRATION = "storage" ENCRYPTION = (TYPE='NONE' MASTER_KEY='key') FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME=my_csv_format NULL_IF=('')) PARSE_HEADER = TRUE"""
+        )
+        self.validate_identity(
+            """COPY INTO @my_stage/result/data FROM (SELECT * FROM orderstiny) FILE_FORMAT = (TYPE='csv')"""
         )
         self.validate_all(
             """COPY INTO 's3://example/data.csv'

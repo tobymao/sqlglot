@@ -36,6 +36,7 @@ class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    SUPPORTS_COLUMN_JOIN_MARKS = True
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -173,12 +174,6 @@ class Oracle(Dialect):
                 **kwargs,
             )
 
-        def _parse_column(self) -> t.Optional[exp.Expression]:
-            column = super()._parse_column()
-            if column:
-                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
-            return column
-
         def _parse_hint(self) -> t.Optional[exp.Hint]:
             if self._match(TokenType.HINT):
                 start = self._curr
@@ -197,7 +192,6 @@ class Oracle(Dialect):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
         TABLE_HINTS = False
-        COLUMN_JOIN_MARKS_SUPPORTED = True
         DATA_TYPE_SPECIFIERS_ALLOWED = True
         ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"

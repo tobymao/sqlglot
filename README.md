@@ -86,7 +86,7 @@ I tried to parse invalid SQL and it worked, even though it should raise an error
 
 What happened to sqlglot.dataframe?
 
-* The PySpark dataframe api was moved to a standalone library called [sqlframe](https://github.com/eakmanrq/sqlframe) in v24. It now allows you to run queries as opposed to just generate SQL.
+* The PySpark dataframe api was moved to a standalone library called [SQLFrame](https://github.com/eakmanrq/sqlframe) in v24. It now allows you to run queries as opposed to just generate SQL.
 
 ## Examples
 
@@ -505,7 +505,7 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 * [Querybook](https://github.com/pinterest/querybook)
 * [Quokka](https://github.com/marsupialtail/quokka)
 * [Splink](https://github.com/moj-analytical-services/splink)
-* [sqlframe](https://github.com/eakmanrq/sqlframe)
+* [SQLFrame](https://github.com/eakmanrq/sqlframe)
 
 ## Documentation
 

@@ -225,9 +225,6 @@ class Generator(metaclass=_Generator):
     # Whether to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
     RETURNING_END = True
 
-    # Whether to generate the (+) suffix for columns used in old-style join conditions
-    COLUMN_JOIN_MARKS_SUPPORTED = False
-
     # Whether to generate an unquoted value for EXTRACT's date part argument
     EXTRACT_ALLOWS_QUOTES = True
 
@@ -827,7 +824,7 @@ class Generator(metaclass=_Generator):
     def column_sql(self, expression: exp.Column) -> str:
         join_mark = " (+)" if expression.args.get("join_mark") else ""
 
-        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
+        if join_mark and not self.dialect.SUPPORTS_COLUMN_JOIN_MARKS:
             join_mark = ""
             self.unsupported("Outer join syntax using the (+) operator is not supported.")
 
@@ -3955,3 +3952,8 @@ class Generator(metaclass=_Generator):
         expressions = self.expressions(expression, flat=True)
         expressions = f" USING ({expressions})" if expressions else ""
         return f"MASKING POLICY {this}{expressions}"
+
+    def gapfill_sql(self, expression: exp.GapFill) -> str:
+        this = self.sql(expression, "this")
+        this = f"TABLE {this}"
+        return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])

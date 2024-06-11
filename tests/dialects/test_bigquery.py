@@ -619,9 +619,9 @@ LANGUAGE js AS
             'SELECT TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
                 "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
-                "databricks": "SELECT DATEADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "databricks": "SELECT DATE_ADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
                 "mysql": "SELECT DATE_ADD(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL 10 MINUTE)",
-                "spark": "SELECT DATEADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "spark": "SELECT DATE_ADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -761,12 +761,15 @@ LANGUAGE js AS
                 "clickhouse": "SHA256(x)",
                 "presto": "SHA256(x)",
                 "trino": "SHA256(x)",
+                "postgres": "SHA256(x)",
             },
             write={
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
                 "clickhouse": "SHA256(x)",
+                "postgres": "SHA256(x)",
                 "presto": "SHA256(x)",
+                "redshift": "SHA2(x, 256)",
                 "trino": "SHA256(x)",
             },
         )
@@ -1522,6 +1525,26 @@ WHERE
         self.validate_identity(
             "SELECT cola FROM (SELECT CAST('1' AS STRING(10)) AS cola UNION ALL SELECT CAST('2' AS STRING(10)) AS cola)",
             "SELECT cola FROM (SELECT CAST('1' AS STRING) AS cola UNION ALL SELECT CAST('2' AS STRING) AS cola)",
+        )
+
+    def test_gap_fill(self):
+        self.validate_identity(
+            "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'locf')]) ORDER BY time"
+        )
+        self.validate_identity(
+            "SELECT a, b, c, d, e FROM GAP_FILL(TABLE foo, ts_column => 'b', partitioning_columns => ['a'], value_columns => [('c', 'bar'), ('d', 'baz'), ('e', 'bla')], bucket_width => INTERVAL '1' DAY)"
+        )
+        self.validate_identity(
+            "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'linear')], ignore_null_values => FALSE) ORDER BY time"
+        )
+        self.validate_identity(
+            "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE) ORDER BY time"
+        )
+        self.validate_identity(
+            "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'null')], origin => CAST('2023-11-01 09:30:01' AS DATETIME)) ORDER BY time"
+        )
+        self.validate_identity(
+            "SELECT * FROM GAP_FILL(TABLE (SELECT * FROM UNNEST(ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>[STRUCT(1, CAST('2023-11-01 09:34:01' AS DATETIME), 74, 'INACTIVE'), STRUCT(2, CAST('2023-11-01 09:36:00' AS DATETIME), 77, 'ACTIVE'), STRUCT(3, CAST('2023-11-01 09:37:00' AS DATETIME), 78, 'ACTIVE'), STRUCT(4, CAST('2023-11-01 09:38:01' AS DATETIME), 80, 'ACTIVE')])), ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'linear')]) ORDER BY time"
         )
 
     def test_models(self):

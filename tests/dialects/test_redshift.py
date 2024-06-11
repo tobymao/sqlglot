@@ -281,6 +281,9 @@ class TestRedshift(Validator):
                 "redshift": "SELECT DATEADD(MONTH, 18, '2008-02-28')",
                 "snowflake": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "tsql": "SELECT DATEADD(MONTH, 18, CAST('2008-02-28' AS DATETIME2))",
+                "spark": "SELECT DATE_ADD(MONTH, 18, '2008-02-28')",
+                "spark2": "SELECT ADD_MONTHS('2008-02-28', 18)",
+                "databricks": "SELECT DATE_ADD(MONTH, 18, '2008-02-28')",
             },
         )
         self.validate_all(
@@ -584,4 +587,10 @@ FROM (
         joins[2].this.assert_is(exp.Unnest).expressions[0].assert_is(exp.Dot)
         self.assertEqual(
             ast.sql("redshift"), "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l"
+        )
+
+    def test_join_markers(self):
+        self.validate_identity(
+            "select a.foo, b.bar, a.baz from a, b where a.baz = b.baz (+)",
+            "SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)",
         )

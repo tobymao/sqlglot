@@ -40,6 +40,7 @@ class Redshift(Postgres):
     INDEX_OFFSET = 0
     COPY_PARAMS_ARE_CSV = False
     HEX_LOWERCASE = True
+    SUPPORTS_COLUMN_JOIN_MARKS = True
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -122,12 +123,13 @@ class Redshift(Postgres):
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
             "HLLSKETCH": TokenType.HLLSKETCH,
+            "MINUS": TokenType.EXCEPT,
             "SUPER": TokenType.SUPER,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
-            "MINUS": TokenType.EXCEPT,
         }
         KEYWORDS.pop("VALUES")
 
@@ -209,6 +211,7 @@ class Redshift(Postgres):
 
         # Redshift supports LAST_DAY(..)
         TRANSFORMS.pop(exp.LastDay)
+        TRANSFORMS.pop(exp.SHA2)
 
         RESERVED_KEYWORDS = {
             "aes128",

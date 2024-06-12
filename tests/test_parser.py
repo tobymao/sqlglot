@@ -885,7 +885,7 @@ class TestParser(unittest.TestCase):
             """
         select * from x;
         -- my comment
-        """
+            """
         )
 
         self.assertEqual(

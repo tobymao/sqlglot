@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import OPTIONS_TYPE
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -306,6 +307,13 @@ class Oracle(Dialect):
         # Reference: https://stackoverflow.com/a/336455
         DISTINCT_TOKENS = {TokenType.DISTINCT, TokenType.UNIQUE}
 
+        QUERY_RESTRICTIONS: OPTIONS_TYPE = {
+            "WITH": (
+                ("READ", "ONLY"),
+                ("CHECK", "OPTION"),
+            ),
+        }
+
         def _parse_xml_table(self) -> exp.XMLTable:
             this = self._parse_string()
 
@@ -350,23 +358,15 @@ class Oracle(Dialect):
             return None
 
         def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
-            self._match(TokenType.WITH)
+            kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)
 
-            matched = self._match_text_seq("READ", "ONLY") or self._match_text_seq(
-                "CHECK", "OPTION"
-            )
-
-            if not matched:
-                self._retreat(self._index - 1)
+            if not kind:
                 return None
-
-            # Oracle <subquery_restriction_clause>
-            kind = "WITH READ ONLY" if self._prev.text.upper() == "ONLY" else "WITH CHECK OPTION"
 
             return self.expression(
                 exp.QueryOption,
-                this=exp.var(kind),
-                expression=self._parse_field() if self._match(TokenType.CONSTRAINT) else None,
+                this=kind,
+                expression=self._match(TokenType.CONSTRAINT) and self._parse_field(),
             )
 
     class Generator(generator.Generator):
@@ -432,8 +432,6 @@ class Oracle(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
-            exp.WithCheckOptionProperty: exp.Properties.Location.UNSUPPORTED,
-            exp.WithReadOnlyProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:

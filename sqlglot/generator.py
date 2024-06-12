@@ -2234,8 +2234,6 @@ class Generator(metaclass=_Generator):
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
-        options = self.options_modifier(expression)
-
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
@@ -2250,7 +2248,7 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "order"),
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
-            options,
+            self.options_modifier(expression),
             sep="",
         )
 
@@ -3965,13 +3963,3 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         this = f"TABLE {this}"
         return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])
-
-    def withreadonlyproperty_sql(self, expression: exp.WithReadOnlyProperty) -> str:
-        this = self.sql(expression, "this")
-        this = f" {this}" if this else ""
-        return f"WITH READ ONLY{this}"
-
-    def withcheckoptionproperty_sql(self, expression: exp.WithCheckOptionProperty) -> str:
-        this = self.sql(expression, "this")
-        this = f" {this}" if this else ""
-        return f"WITH CHECK OPTION{this}"

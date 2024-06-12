@@ -2844,14 +2844,6 @@ class WithSystemVersioningProperty(Property):
     }
 
 
-class WithReadOnlyProperty(Property):
-    arg_types = {"this": False}
-
-
-class WithCheckOptionProperty(Property):
-    arg_types = {"this": False}
-
-
 class Properties(Expression):
     arg_types = {"expressions": True}
 

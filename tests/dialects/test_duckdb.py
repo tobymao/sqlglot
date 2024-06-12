@@ -1008,6 +1008,7 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS CHAR)", "CAST(x AS TEXT)")
         self.validate_identity("CAST(x AS BPCHAR)", "CAST(x AS TEXT)")
         self.validate_identity("CAST(x AS STRING)", "CAST(x AS TEXT)")
+        self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS TEXT)")
         self.validate_identity("CAST(x AS INT1)", "CAST(x AS TINYINT)")
         self.validate_identity("CAST(x AS FLOAT4)", "CAST(x AS REAL)")
         self.validate_identity("CAST(x AS FLOAT)", "CAST(x AS REAL)")

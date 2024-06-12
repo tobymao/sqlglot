@@ -1118,3 +1118,7 @@ class TSQL(Dialect):
                 kind = f"TABLE {kind}"
 
             return f"{variable} AS {kind}{default}"
+
+        def options_modifier(self, expression: exp.Expression) -> str:
+            options = self.expressions(expression, key="options")
+            return f" OPTION{self.wrap(options)}" if options else ""

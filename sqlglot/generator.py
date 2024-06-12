@@ -2234,12 +2234,7 @@ class Generator(metaclass=_Generator):
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
-        options = self.expressions(expression, key="options")
-        if options:
-            options = f" OPTION{self.wrap(options)}"
-
-        restrictions = self.sql(expression, "restrictions")
-        restrictions = f" {restrictions}" if restrictions else ""
+        options = self.options_modifier(expression)
 
         return csv(
             *sqls,
@@ -2256,12 +2251,19 @@ class Generator(metaclass=_Generator):
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
             options,
-            restrictions,
             sep="",
         )
 
+    def options_modifier(self, expression: exp.Expression) -> str:
+        options = self.sql(expression, "options")
+        return f" {options}" if options else ""
+
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
-        return ""
+        option = self.sql(expression, "this")
+        value = self.sql(expression, "expression")
+        value = f" CONSTRAINT {value}" if value else ""
+
+        return f"{option}{value}"
 
     def offset_limit_modifiers(
         self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]

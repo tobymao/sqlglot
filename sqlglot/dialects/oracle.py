@@ -36,8 +36,8 @@ def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
     from sqlglot.optimizer.scope import traverse_scope
 
     """Remove join marks from an expression
-    
-    SELECT * FROM a, b WHERE a.id = b.id(+)   
+
+    SELECT * FROM a, b WHERE a.id = b.id(+)
     becomes:
     SELECT * FROM a LEFT JOIN b ON a.id = b.id
 
@@ -293,7 +293,7 @@ class Oracle(Dialect):
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
-            TokenType.WITH: lambda self: ("restrictions", self._parse_property()),
+            TokenType.WITH: lambda self: ("options", self._parse_query_restrictions()),
         }
 
         TYPE_LITERAL_PARSERS = {
@@ -348,6 +348,26 @@ class Oracle(Dialect):
                 return exp.Hint(expressions=[self._find_sql(start, end)])
 
             return None
+
+        def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
+            self._match(TokenType.WITH)
+
+            matched = self._match_text_seq("READ", "ONLY") or self._match_text_seq(
+                "CHECK", "OPTION"
+            )
+
+            if not matched:
+                self._retreat(self._index - 1)
+                return None
+
+            # Oracle <subquery_restriction_clause>
+            kind = "WITH READ ONLY" if self._prev.text.upper() == "ONLY" else "WITH CHECK OPTION"
+
+            return self.expression(
+                exp.QueryOption,
+                this=exp.var(kind),
+                expression=self._parse_field() if self._match(TokenType.CONSTRAINT) else None,
+            )
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

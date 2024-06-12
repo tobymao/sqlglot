@@ -313,9 +313,11 @@ class DuckDB(Dialect):
             ),
         }
 
-        TYPE_CONVERTER = {
+        TYPE_CONVERTERS = {
             # https://duckdb.org/docs/sql/data_types/numeric
             exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=18, scale=3),
+            # https://duckdb.org/docs/sql/data_types/text
+            exp.DataType.Type.TEXT: lambda dtype: exp.DataType.build("TEXT"),
         }
 
         def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:

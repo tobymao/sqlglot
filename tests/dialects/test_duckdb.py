@@ -1037,6 +1037,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "CAST(x AS VARCHAR(5))",
+            write={
+                "duckdb": "CAST(x AS TEXT)",
+                "postgres": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
             "CAST(x AS DECIMAL(38, 0))",
             read={
                 "snowflake": "CAST(x AS NUMBER)",

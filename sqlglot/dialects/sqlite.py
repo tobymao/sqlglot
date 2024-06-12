@@ -75,6 +75,26 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
+    if not isinstance(expression, exp.ColumnDef):
+        return expression
+
+    generated = expression.find(exp.GeneratedAsIdentityColumnConstraint)
+
+    if generated:
+        constraints = expression.args["constraints"]
+
+        constraints.remove(generated.parent)
+
+        not_null = expression.find(exp.NotNullColumnConstraint)
+        if not_null:
+            constraints.remove(not_null.parent)
+
+        constraints.append(exp.ColumnConstraint(kind=exp.AutoIncrementColumnConstraint()))
+
+    return expression
+
+
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -141,6 +161,7 @@ class SQLite(Dialect):
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.If: rename_func("IIF"),

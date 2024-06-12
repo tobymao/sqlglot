@@ -46,6 +46,9 @@
                                             <a class="variable" href="#RisingWave.Generator.TRY_SUPPORTED">TRY_SUPPORTED</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#RisingWave.Generator.SUPPORTS_UESCAPE">SUPPORTS_UESCAPE</a>
+                                    </li>
+                                    <li>
                                             <a class="variable" href="#RisingWave.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS">AFTER_HAVING_MODIFIER_TRANSFORMS</a>
                                     </li>
                             </ul>
@@ -424,6 +427,7 @@
                 <dd id="RisingWave.STRICT_STRING_CONCAT" class="variable"><a href="dialect.html#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
                 <dd id="RisingWave.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="dialect.html#Dialect.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="RisingWave.SUPPORTS_SEMI_ANTI_JOIN" class="variable"><a href="dialect.html#Dialect.SUPPORTS_SEMI_ANTI_JOIN">SUPPORTS_SEMI_ANTI_JOIN</a></dd>
+                <dd id="RisingWave.SUPPORTS_COLUMN_JOIN_MARKS" class="variable"><a href="dialect.html#Dialect.SUPPORTS_COLUMN_JOIN_MARKS">SUPPORTS_COLUMN_JOIN_MARKS</a></dd>
                 <dd id="RisingWave.NORMALIZE_FUNCTIONS" class="variable"><a href="dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
                 <dd id="RisingWave.LOG_BASE_FIRST" class="variable"><a href="dialect.html#Dialect.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="RisingWave.SAFE_DIVISION" class="variable"><a href="dialect.html#Dialect.SAFE_DIVISION">SAFE_DIVISION</a></dd>
@@ -560,6 +564,18 @@ Default: True</li>
     
 
                             </div>
+                            <div id="RisingWave.Generator.SUPPORTS_UESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_UESCAPE</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RisingWave.Generator.SUPPORTS_UESCAPE"></a>
+    
+    
+
+                            </div>
                             <div id="RisingWave.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS" class="classattr">
                                 <div class="attr variable">
             <span class="name">AFTER_HAVING_MODIFIER_TRANSFORMS</span>        =
@@ -593,7 +609,6 @@ Default: True</li>
                 <dd id="RisingWave.Generator.DUPLICATE_KEY_UPDATE_WITH_SET" class="variable"><a href="../generator.html#Generator.DUPLICATE_KEY_UPDATE_WITH_SET">DUPLICATE_KEY_UPDATE_WITH_SET</a></dd>
                 <dd id="RisingWave.Generator.LIMIT_IS_TOP" class="variable"><a href="../generator.html#Generator.LIMIT_IS_TOP">LIMIT_IS_TOP</a></dd>
                 <dd id="RisingWave.Generator.RETURNING_END" class="variable"><a href="../generator.html#Generator.RETURNING_END">RETURNING_END</a></dd>
-                <dd id="RisingWave.Generator.COLUMN_JOIN_MARKS_SUPPORTED" class="variable"><a href="../generator.html#Generator.COLUMN_JOIN_MARKS_SUPPORTED">COLUMN_JOIN_MARKS_SUPPORTED</a></dd>
                 <dd id="RisingWave.Generator.EXTRACT_ALLOWS_QUOTES" class="variable"><a href="../generator.html#Generator.EXTRACT_ALLOWS_QUOTES">EXTRACT_ALLOWS_QUOTES</a></dd>
                 <dd id="RisingWave.Generator.TZ_TO_WITH_TIME_ZONE" class="variable"><a href="../generator.html#Generator.TZ_TO_WITH_TIME_ZONE">TZ_TO_WITH_TIME_ZONE</a></dd>
                 <dd id="RisingWave.Generator.VALUES_AS_TABLE" class="variable"><a href="../generator.html#Generator.VALUES_AS_TABLE">VALUES_AS_TABLE</a></dd>
@@ -784,6 +799,7 @@ Default: True</li>
                 <dd id="RisingWave.Generator.matchrecognizemeasure_sql" class="function"><a href="../generator.html#Generator.matchrecognizemeasure_sql">matchrecognizemeasure_sql</a></dd>
                 <dd id="RisingWave.Generator.matchrecognize_sql" class="function"><a href="../generator.html#Generator.matchrecognize_sql">matchrecognize_sql</a></dd>
                 <dd id="RisingWave.Generator.query_modifiers" class="function"><a href="../generator.html#Generator.query_modifiers">query_modifiers</a></dd>
+                <dd id="RisingWave.Generator.options_modifier" class="function"><a href="../generator.html#Generator.options_modifier">options_modifier</a></dd>
                 <dd id="RisingWave.Generator.queryoption_sql" class="function"><a href="../generator.html#Generator.queryoption_sql">queryoption_sql</a></dd>
                 <dd id="RisingWave.Generator.offset_limit_modifiers" class="function"><a href="../generator.html#Generator.offset_limit_modifiers">offset_limit_modifiers</a></dd>
                 <dd id="RisingWave.Generator.after_limit_modifiers" class="function"><a href="../generator.html#Generator.after_limit_modifiers">after_limit_modifiers</a></dd>
@@ -861,7 +877,6 @@ Default: True</li>
                 <dd id="RisingWave.Generator.bitwiseor_sql" class="function"><a href="../generator.html#Generator.bitwiseor_sql">bitwiseor_sql</a></dd>
                 <dd id="RisingWave.Generator.bitwiserightshift_sql" class="function"><a href="../generator.html#Generator.bitwiserightshift_sql">bitwiserightshift_sql</a></dd>
                 <dd id="RisingWave.Generator.bitwisexor_sql" class="function"><a href="../generator.html#Generator.bitwisexor_sql">bitwisexor_sql</a></dd>
-                <dd id="RisingWave.Generator.cast_sql" class="function"><a href="../generator.html#Generator.cast_sql">cast_sql</a></dd>
                 <dd id="RisingWave.Generator.currentdate_sql" class="function"><a href="../generator.html#Generator.currentdate_sql">currentdate_sql</a></dd>
                 <dd id="RisingWave.Generator.currenttimestamp_sql" class="function"><a href="../generator.html#Generator.currenttimestamp_sql">currenttimestamp_sql</a></dd>
                 <dd id="RisingWave.Generator.collate_sql" class="function"><a href="../generator.html#Generator.collate_sql">collate_sql</a></dd>
@@ -1002,6 +1017,7 @@ Default: True</li>
                 <dd id="RisingWave.Generator.matchagainst_sql" class="function"><a href="postgres.html#Postgres.Generator.matchagainst_sql">matchagainst_sql</a></dd>
                 <dd id="RisingWave.Generator.alterset_sql" class="function"><a href="postgres.html#Postgres.Generator.alterset_sql">alterset_sql</a></dd>
                 <dd id="RisingWave.Generator.datatype_sql" class="function"><a href="postgres.html#Postgres.Generator.datatype_sql">datatype_sql</a></dd>
+                <dd id="RisingWave.Generator.cast_sql" class="function"><a href="postgres.html#Postgres.Generator.cast_sql">cast_sql</a></dd>
 
             </div>
                                 </dl>

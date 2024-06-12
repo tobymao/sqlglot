@@ -82,15 +82,15 @@ def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
     generated = expression.find(exp.GeneratedAsIdentityColumnConstraint)
 
     if generated:
-        constraints = expression.args["constraints"]
-
-        constraints.remove(generated.parent)
+        t.cast(exp.ColumnConstraint, generated.parent).pop()
 
         not_null = expression.find(exp.NotNullColumnConstraint)
         if not_null:
-            constraints.remove(not_null.parent)
+            t.cast(exp.ColumnConstraint, not_null.parent).pop()
 
-        constraints.append(exp.ColumnConstraint(kind=exp.AutoIncrementColumnConstraint()))
+        expression.append(
+            "constraints", exp.ColumnConstraint(kind=exp.AutoIncrementColumnConstraint())
+        )
 
     return expression
 

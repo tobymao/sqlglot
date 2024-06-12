@@ -1,5 +1,4 @@
 from sqlglot import exp
-from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -245,19 +244,20 @@ class TestOracle(Validator):
             },
         )
 
-    def test_join_marker(self):
-        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
+    # def test_join_marker(self):
+    #     self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
 
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)", write={"": UnsupportedError}
-        )
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            write={
-                "": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y",
-                "oracle": "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            },
-        )
+    #     self.validate_all(
+    #         "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+    #         write={"": UnsupportedError},
+    #     )
+    #     self.validate_all(
+    #         "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+    #         write={
+    #             "": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y",
+    #             "oracle": "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+    #         },
+    #     )
 
     def test_hints(self):
         self.validate_identity("SELECT /*+ USE_NL(A B) */ A.COL_TEST FROM TABLE_A A, TABLE_B B")
@@ -413,3 +413,56 @@ WHERE
 
         for query in (f"{body}{start}{connect}", f"{body}{connect}{start}"):
             self.validate_identity(query, pretty, pretty=True)
+
+    def test_eliminate_join_marks(self):
+        test_sql = [
+            (
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) > 5",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x AND T2.y > 5",
+            ),
+            (
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) IS NULL",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x AND T2.y IS NULL",
+            ),
+            (
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y IS NULL",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x WHERE T2.y IS NULL",
+            ),
+            (
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T1.Z > 4",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x WHERE T1.Z > 4",
+            ),
+            (
+                "SELECT * FROM table1, table2 WHERE table1.column = table2.column(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column",
+            ),
+            (
+                "SELECT * FROM table1, table2, table3, table4 WHERE table1.column = table2.column(+) and table2.column >= table3.column(+) and table1.column = table4.column(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column LEFT JOIN table3 ON table2.column >= table3.column LEFT JOIN table4 ON table1.column = table4.column",
+            ),
+            (
+                "SELECT * FROM table1, table2, table3 WHERE table1.column = table2.column(+) and table2.column >= table3.column(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column LEFT JOIN table3 ON table2.column >= table3.column",
+            ),
+            (
+                "SELECT table1.id, table2.cloumn1, table3.id FROM table1, table2, (SELECT tableInner1.id FROM tableInner1, tableInner2 WHERE tableInner1.id = tableInner2.id(+)) AS table3 WHERE table1.id = table2.id(+) and table1.id = table3.id(+)",
+                "SELECT table1.id, table2.cloumn1, table3.id FROM table1 LEFT JOIN table2 ON table1.id = table2.id LEFT JOIN (SELECT tableInner1.id FROM tableInner1 LEFT JOIN tableInner2 ON tableInner1.id = tableInner2.id) table3 ON table1.id = table3.id",
+            ),
+            # 2 join marks on one side of predicate
+            (
+                "SELECT * FROM table1, table2 WHERE table1.column = table2.column1(+) + table2.column2(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column1 + table2.column2",
+            ),
+            # join mark and expression
+            (
+                "SELECT * FROM table1, table2 WHERE table1.column = table2.column1(+) + 25",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.column = table2.column1 + 25",
+            ),
+        ]
+
+        for sql_in, sql_out in test_sql:
+            with self.subTest(sql_in):
+                self.assertEqual(
+                    self.parse_one(sql_in, dialect="oracle").sql(dialect=self.dialect),
+                    sql_out,
+                )

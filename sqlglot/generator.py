@@ -2257,11 +2257,7 @@ class Generator(metaclass=_Generator):
         return f" {options}" if options else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
-        option = self.sql(expression, "this")
-        value = self.sql(expression, "expression")
-        value = f" CONSTRAINT {value}" if value else ""
-
-        return f"{option}{value}"
+        return ""
 
     def offset_limit_modifiers(
         self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]

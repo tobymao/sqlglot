@@ -457,3 +457,10 @@ class Oracle(Dialect):
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"
             return f"ADD {actions}"
+
+        def queryoption_sql(self, expression: exp.QueryOption) -> str:
+            option = self.sql(expression, "this")
+            value = self.sql(expression, "expression")
+            value = f" CONSTRAINT {value}" if value else ""
+
+            return f"{option}{value}"

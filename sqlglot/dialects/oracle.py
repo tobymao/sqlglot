@@ -391,7 +391,6 @@ class Oracle(Dialect):
                 [
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_qualify,
-                    eliminate_join_marks,
                 ]
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),

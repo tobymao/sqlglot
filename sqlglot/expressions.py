@@ -5765,7 +5765,7 @@ class StrPosition(Func):
 
 
 class StrToDate(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": True, "format": False}
 
 
 class StrToTime(Func):

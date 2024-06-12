@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import OPTIONS_TYPE
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -36,8 +37,8 @@ def eliminate_join_marks(ast: exp.Expression) -> exp.Expression:
     from sqlglot.optimizer.scope import traverse_scope
 
     """Remove join marks from an expression
-    
-    SELECT * FROM a, b WHERE a.id = b.id(+)   
+
+    SELECT * FROM a, b WHERE a.id = b.id(+)
     becomes:
     SELECT * FROM a LEFT JOIN b ON a.id = b.id
 
@@ -299,6 +300,7 @@ class Oracle(Dialect):
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
+            TokenType.WITH: lambda self: ("options", self._parse_query_restrictions()),
         }
 
         TYPE_LITERAL_PARSERS = {
@@ -310,6 +312,13 @@ class Oracle(Dialect):
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
         # Reference: https://stackoverflow.com/a/336455
         DISTINCT_TOKENS = {TokenType.DISTINCT, TokenType.UNIQUE}
+
+        QUERY_RESTRICTIONS: OPTIONS_TYPE = {
+            "WITH": (
+                ("READ", "ONLY"),
+                ("CHECK", "OPTION"),
+            ),
+        }
 
         def _parse_xml_table(self) -> exp.XMLTable:
             this = self._parse_string()
@@ -353,6 +362,18 @@ class Oracle(Dialect):
                 return exp.Hint(expressions=[self._find_sql(start, end)])
 
             return None
+
+        def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
+            kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)
+
+            if not kind:
+                return None
+
+            return self.expression(
+                exp.QueryOption,
+                this=kind,
+                expression=self._match(TokenType.CONSTRAINT) and self._parse_field(),
+            )
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -442,3 +463,10 @@ class Oracle(Dialect):
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"
             return f"ADD {actions}"
+
+        def queryoption_sql(self, expression: exp.QueryOption) -> str:
+            option = self.sql(expression, "this")
+            value = self.sql(expression, "expression")
+            value = f" CONSTRAINT {value}" if value else ""
+
+            return f"{option}{value}"

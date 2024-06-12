@@ -2263,7 +2263,7 @@ class Generator(metaclass=_Generator):
         )
 
     def options_modifier(self, expression: exp.Expression) -> str:
-        options = self.sql(expression, "options")
+        options = self.expressions(expression, key="options")
         return f" {options}" if options else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:

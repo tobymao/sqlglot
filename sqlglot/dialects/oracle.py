@@ -300,7 +300,7 @@ class Oracle(Dialect):
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
-            TokenType.WITH: lambda self: ("options", self._parse_query_restrictions()),
+            TokenType.WITH: lambda self: ("options", [self._parse_query_restrictions()]),
         }
 
         TYPE_LITERAL_PARSERS = {

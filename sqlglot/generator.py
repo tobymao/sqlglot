@@ -2238,6 +2238,9 @@ class Generator(metaclass=_Generator):
         if options:
             options = f" OPTION{self.wrap(options)}"
 
+        restrictions = self.sql(expression, "restrictions")
+        restrictions = f" {restrictions}" if restrictions else ""
+
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
@@ -2253,6 +2256,7 @@ class Generator(metaclass=_Generator):
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
             options,
+            restrictions,
             sep="",
         )
 
@@ -3959,3 +3963,13 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         this = f"TABLE {this}"
         return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])
+
+    def withreadonlyproperty_sql(self, expression: exp.WithReadOnlyProperty) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"WITH READ ONLY{this}"
+
+    def withcheckoptionproperty_sql(self, expression: exp.WithCheckOptionProperty) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"WITH CHECK OPTION{this}"

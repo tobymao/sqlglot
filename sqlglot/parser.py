@@ -2005,6 +2005,20 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.SERDE_PROPERTIES, advance=False):
             return self._parse_serde_properties(with_=True)
 
+        if self._match_text_seq("READ", "ONLY") or self._match_text_seq("CHECK", "OPTION"):
+            # Oracle <subquery_restriction_clause>
+            klass = (
+                exp.WithReadOnlyProperty
+                if self._prev.text.upper() == "ONLY"
+                else exp.WithCheckOptionProperty
+            )
+            this = (
+                self._parse_constraint()
+                if self._match(TokenType.CONSTRAINT, advance=False)
+                else None
+            )
+            return self.expression(klass, this=this)
+
         if not self._next:
             return None
 

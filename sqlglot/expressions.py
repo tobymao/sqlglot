@@ -2844,6 +2844,14 @@ class WithSystemVersioningProperty(Property):
     }
 
 
+class WithReadOnlyProperty(Property):
+    arg_types = {"this": False}
+
+
+class WithCheckOptionProperty(Property):
+    arg_types = {"this": False}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 
@@ -2975,6 +2983,7 @@ QUERY_MODIFIERS = {
     "settings": False,
     "format": False,
     "options": False,
+    "restrictions": False,
 }
 
 

@@ -293,6 +293,7 @@ class Oracle(Dialect):
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
+            TokenType.WITH: lambda self: ("restrictions", self._parse_property()),
         }
 
         TYPE_LITERAL_PARSERS = {
@@ -411,6 +412,8 @@ class Oracle(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.WithCheckOptionProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.WithReadOnlyProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:

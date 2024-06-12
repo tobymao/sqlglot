@@ -468,3 +468,9 @@ WHERE
                     eliminate_join_marks(self.parse_one(original)).sql(dialect=self.dialect),
                     expected,
                 )
+
+    def test_query_restrictions(self):
+        for restriction in ("READ ONLY", "CHECK OPTION"):
+            with self.subTest(f"Restriction: {restriction}"):
+                self.validate_identity(f"SELECT * FROM tbl WITH {restriction}")
+                self.validate_identity(f"CREATE VIEW view AS SELECT * FROM tbl WITH {restriction}")

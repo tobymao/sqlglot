@@ -177,6 +177,14 @@ class _Dialect(type):
 
             klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS = modifier_transforms
 
+        if enum not in ("", "doris", "mysql"):
+            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                TokenType.STRAIGHT_JOIN,
+            }
+            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+                TokenType.STRAIGHT_JOIN,
+            }
+
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
             klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,

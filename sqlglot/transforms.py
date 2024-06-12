@@ -505,7 +505,10 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
     def _ensure_bool(node: exp.Expression) -> None:
         if (
             node.is_number
-            or node.is_type(exp.DataType.Type.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
+            or (
+                not isinstance(node, exp.SubqueryPredicate)
+                and node.is_type(exp.DataType.Type.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
+            )
             or (isinstance(node, exp.Column) and not node.type)
         ):
             node.replace(node.neq(0))

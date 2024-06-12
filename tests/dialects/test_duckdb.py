@@ -19,6 +19,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT straight_join",
+            write={
+                "duckdb": "SELECT straight_join",
+                "mysql": "SELECT `straight_join`",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
             read={
                 "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
@@ -278,6 +285,7 @@ class TestDuckDB(Validator):
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
         self.validate_identity("x -> '$.family'")
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
+        self.validate_identity("SELECT * FROM foo WHERE bar > $baz AND bla = $bob")
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )
@@ -1000,6 +1008,7 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS CHAR)", "CAST(x AS TEXT)")
         self.validate_identity("CAST(x AS BPCHAR)", "CAST(x AS TEXT)")
         self.validate_identity("CAST(x AS STRING)", "CAST(x AS TEXT)")
+        self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS TEXT)")
         self.validate_identity("CAST(x AS INT1)", "CAST(x AS TINYINT)")
         self.validate_identity("CAST(x AS FLOAT4)", "CAST(x AS REAL)")
         self.validate_identity("CAST(x AS FLOAT)", "CAST(x AS REAL)")

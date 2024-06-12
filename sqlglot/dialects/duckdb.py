@@ -207,7 +207,7 @@ class DuckDB(Dialect):
             "PIVOT_WIDER": TokenType.PIVOT,
             "POSITIONAL": TokenType.POSITIONAL,
             "SIGNED": TokenType.INT,
-            "STRING": TokenType.VARCHAR,
+            "STRING": TokenType.TEXT,
             "UBIGINT": TokenType.UBIGINT,
             "UINTEGER": TokenType.UINT,
             "USMALLINT": TokenType.USMALLINT,
@@ -216,6 +216,7 @@ class DuckDB(Dialect):
             "TIMESTAMP_MS": TokenType.TIMESTAMP_MS,
             "TIMESTAMP_NS": TokenType.TIMESTAMP_NS,
             "TIMESTAMP_US": TokenType.TIMESTAMP,
+            "VARCHAR": TokenType.TEXT,
         }
 
         SINGLE_TOKENS = {
@@ -495,6 +496,7 @@ class DuckDB(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BINARY: "BLOB",
+            exp.DataType.Type.BPCHAR: "TEXT",
             exp.DataType.Type.CHAR: "TEXT",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.NCHAR: "TEXT",

@@ -125,6 +125,10 @@ WHERE
             "SELECT a:from::STRING, a:from || ' test' ",
             "SELECT CAST(GET_PATH(a, 'from') AS TEXT), GET_PATH(a, 'from') || ' test'",
         )
+        self.validate_identity(
+            "SELECT a:select",
+            "SELECT GET_PATH(a, 'select')",
+        )
         self.validate_identity("x:from", "GET_PATH(x, 'from')")
         self.validate_identity(
             "value:values::string::int",

@@ -1066,7 +1066,7 @@ class Parser(metaclass=_Parser):
         exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
     }
 
-    TYPE_CONVERTER: t.Dict[exp.DataType.Type, t.Callable[[exp.DataType], exp.DataType]] = {}
+    TYPE_CONVERTERS: t.Dict[exp.DataType.Type, t.Callable[[exp.DataType], exp.DataType]] = {}
 
     DDL_SELECT_TOKENS = {TokenType.SELECT, TokenType.WITH, TokenType.L_PAREN}
 
@@ -4472,8 +4472,8 @@ class Parser(metaclass=_Parser):
             )
             self._match(TokenType.R_BRACKET)
 
-        if self.TYPE_CONVERTER and isinstance(this.this, exp.DataType.Type):
-            converter = self.TYPE_CONVERTER.get(this.this)
+        if self.TYPE_CONVERTERS and isinstance(this.this, exp.DataType.Type):
+            converter = self.TYPE_CONVERTERS.get(this.this)
             if converter:
                 this = converter(t.cast(exp.DataType, this))
 

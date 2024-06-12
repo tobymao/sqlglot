@@ -20,6 +20,14 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
+            write={
+                "bigquery": "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
+                "duckdb": "EXTRACT(HOUR FROM MAKE_TIMESTAMP(2008, 12, 25, 15, 30, 00))",
+                "snowflake": "DATE_PART(HOUR, TIMESTAMP_FROM_PARTS(2008, 12, 25, 15, 30, 00))",
+            },
+        )
         self.validate_identity(
             """CREATE TEMPORARY FUNCTION FOO()
 RETURNS STRING

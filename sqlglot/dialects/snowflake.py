@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     binary_from_function,
     build_default_decimal_type,
+    build_timestamp_from_parts,
     date_delta_sql,
     date_trunc_to_time,
     datestrtodate_sql,
@@ -236,15 +237,6 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     return trunc
 
 
-def _build_timestamp_from_parts(args: t.List) -> exp.Func:
-    if len(args) == 2:
-        # Other dialects don't have the TIMESTAMP_FROM_PARTS(date, time) concept,
-        # so we parse this into Anonymous for now instead of introducing complexity
-        return exp.Anonymous(this="TIMESTAMP_FROM_PARTS", expressions=args)
-
-    return exp.TimestampFromParts.from_arg_list(args)
-
-
 def _unqualify_unpivot_columns(expression: exp.Expression) -> exp.Expression:
     """
     Snowflake doesn't allow columns referenced in UNPIVOT to be qualified,
@@ -391,8 +383,8 @@ class Snowflake(Dialect):
             "TIMEDIFF": _build_datediff,
             "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
             "TIMESTAMPDIFF": _build_datediff,
-            "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
-            "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
+            "TIMESTAMPFROMPARTS": build_timestamp_from_parts,
+            "TIMESTAMP_FROM_PARTS": build_timestamp_from_parts,
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(

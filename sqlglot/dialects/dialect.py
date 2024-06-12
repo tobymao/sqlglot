@@ -1192,5 +1192,14 @@ def build_default_decimal_type(
     return _builder
 
 
+def build_timestamp_from_parts(args: t.List) -> exp.Func:
+    if len(args) == 2:
+        # Other dialects don't have the TIMESTAMP_FROM_PARTS(date, time) concept,
+        # so we parse this into Anonymous for now instead of introducing complexity
+        return exp.Anonymous(this="TIMESTAMP_FROM_PARTS", expressions=args)
+
+    return exp.TimestampFromParts.from_arg_list(args)
+
+
 def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)

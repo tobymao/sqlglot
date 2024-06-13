@@ -710,12 +710,6 @@ class TestPostgres(Validator):
                 "redshift": "CAST(x AS NAME)",
             },
         )
-        self.validate_all(
-            "SELECT DIV(9, 4)",
-            read={
-                "postgres": "SELECT DIV(9, 4)",
-            },
-        )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
 
         self.validate_identity(

@@ -24,7 +24,9 @@ if t.TYPE_CHECKING:
 
 def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
-        expr = expr_type(this=seq_get(args, 2), expression=seq_get(args, 1), unit=map_date_part(seq_get(args, 0)))
+        expr = expr_type(
+            this=seq_get(args, 2), expression=seq_get(args, 1), unit=map_date_part(seq_get(args, 0))
+        )
         if expr_type is exp.TsOrDsAdd:
             expr.set("return_type", exp.DataType.build("TIMESTAMP"))
 

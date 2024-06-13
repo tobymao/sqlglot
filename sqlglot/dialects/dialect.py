@@ -109,6 +109,7 @@ DATE_PART_MAPPING = {
     "TZM": "TIMEZONE_MINUTE",
 }
 
+
 class Dialects(str, Enum):
     """Dialects supported by SQLGLot."""
 
@@ -1133,6 +1134,7 @@ def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[
         return unit
     return exp.Var(this=default) if default else None
 
+
 @t.overload
 def map_date_part(part: exp.Expression) -> exp.Var:
     pass
@@ -1146,6 +1148,7 @@ def map_date_part(part: t.Optional[exp.Expression]) -> t.Optional[exp.Expression
 def map_date_part(part):
     mapped = DATE_PART_MAPPING.get(part.name.upper()) if part else None
     return exp.var(mapped) if mapped else part
+
 
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     trunc_curr_date = exp.func("date_trunc", "month", expression.this)

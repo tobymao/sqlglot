@@ -112,6 +112,7 @@ select j from a""",
     def test_read_dialect_related_function(self):
         import os
 
+        # aes_decrypt
         os.environ['READ_DIALECT'] = 'mysql'
         self.validate_all(
             'SELECT AES_DECRYPT_MYSQL(encrypted_string, key_string)',
@@ -123,14 +124,28 @@ select j from a""",
             read={'spark': "select AES_DECRYPT(encrypted_string, key_string)"}
         )
 
+        # date_format
         os.environ['READ_DIALECT'] = 'mysql'
         self.validate_all(
             r"SELECT DATE_FORMAT_MYSQL(CURRENT_DATE, '%x-%v')",
             read={'presto': r"select DATE_FORMAT(CURRENT_DATE, '%x-%v')"}
         )
-
         os.environ['READ_DIALECT'] = 'postgres'
         self.validate_all(
             r"SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'Mon-dd-%Y,%H:mi:ss')",
             read={'postgres': r"select to_char(now(), 'Mon-dd-YYYY,HH24:mi:ss')"}
         )
+
+        # struct operator=
+        os.environ['READ_DIALECT'] = 'presto'
+        self.validate_all(
+            "SELECT (1 AS __c1, 'hello' AS __c2) = (2 AS __c1, 'world' AS __c2)",
+            read={'presto': "select (1,'hello') = (2,'world')"}
+        )
+        os.environ['READ_DIALECT'] = 'spark'
+        self.validate_all(
+            "SELECT (1, 'hello') = (2, 'world')",
+            read={'spark': "select (1,'hello') = (2,'world')"}
+        )
+
+        os.environ.pop('READ_DIALECT')

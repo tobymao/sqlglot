@@ -88,6 +88,15 @@ def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     time_format = self.format_time(expression)
     return f"DATE_FORMAT({this}, {time_format})"
 
+def fill_tuple_with_column_name(self: ClickZetta.Generator, expression: exp.Tuple) -> str:
+    if read_dialect() == MYSQL:
+        elements = []
+        for i, e in enumerate(expression.expressions):
+            elements.append(f'{self.sql(e)} AS __c{i+1}')
+        return f"({', '.join(elements)})"
+    else:
+        return f"({self.expressions(expression, flat=True)})"
+
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
 
@@ -164,6 +173,7 @@ class ClickZetta(Spark):
             exp.If: if_sql(false_value=exp.Null()),
             exp.Unnest: unnest_to_values,
             exp.Try: lambda self, e: self.sql(e, "this"),
+            exp.Tuple: fill_tuple_with_column_name,
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

@@ -5065,6 +5065,12 @@ class DateTrunc(Func):
         return self.args["unit"]
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
+# expression can either be time_expr or time_zone
+class Datetime(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class DatetimeAdd(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
@@ -5115,7 +5121,7 @@ class Extract(Func):
 
 
 class Timestamp(Func):
-    arg_types = {"this": False, "expression": False, "with_tz": False}
+    arg_types = {"this": False, "zone": False, "with_tz": False}
 
 
 class TimestampAdd(Func, TimeUnit):
@@ -5831,6 +5837,11 @@ class StddevPop(AggFunc):
 
 class StddevSamp(AggFunc):
     pass
+
+
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/time_functions#time
+class Time(Func):
+    arg_types = {"this": False, "zone": False}
 
 
 class TimeToStr(Func):

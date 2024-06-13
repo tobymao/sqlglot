@@ -1345,6 +1345,34 @@ WHERE
                 "bigquery": "SELECT CAST(x AS DATETIME)",
             },
         )
+        self.validate_all(
+            "SELECT TIME(foo, 'America/Los_Angeles')",
+            write={
+                "duckdb": "SELECT CAST(CAST(foo AS TIMESTAMPTZ) AT TIME ZONE 'America/Los_Angeles' AS TIME)",
+                "bigquery": "SELECT TIME(foo, 'America/Los_Angeles')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME('2020-01-01')",
+            write={
+                "duckdb": "SELECT CAST('2020-01-01' AS TIMESTAMP)",
+                "bigquery": "SELECT DATETIME('2020-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME('2020-01-01', TIME '23:59:59')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2020-01-01' AS DATE) + CAST('23:59:59' AS TIME) AS TIMESTAMP)",
+                "bigquery": "SELECT DATETIME('2020-01-01', CAST('23:59:59' AS TIME))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME('2020-01-01', 'America/Los_Angeles')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2020-01-01' AS TIMESTAMPTZ) AT TIME ZONE 'America/Los_Angeles' AS TIMESTAMP)",
+                "bigquery": "SELECT DATETIME('2020-01-01', 'America/Los_Angeles')",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

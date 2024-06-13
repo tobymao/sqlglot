@@ -143,7 +143,7 @@ class Generator(metaclass=_Generator):
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
-        exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.expression),
+        exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.args.get("zone")),
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),

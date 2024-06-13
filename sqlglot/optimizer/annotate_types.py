@@ -158,6 +158,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         },
         exp.DataType.Type.DATETIME: {
             exp.CurrentDatetime,
+            exp.Datetime,
             exp.DatetimeAdd,
             exp.DatetimeSub,
         },
@@ -200,6 +201,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.CurrentTime,
             exp.CurrentTimestamp,
             exp.StrToTime,
+            exp.Time,
             exp.TimeAdd,
             exp.TimeStrToTime,
             exp.TimeSub,

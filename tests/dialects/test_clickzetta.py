@@ -114,6 +114,12 @@ select j from a""",
                 "clickzetta": "WITH a AS (WITH a AS (SELECT 1 AS i) SELECT i AS j FROM a) SELECT j FROM a",
             }
         )
+        self.validate_all(
+            "select map_agg('a', date_trunc('day',now()))",
+            write={
+                "clickzetta": "SELECT MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT('a', DATE_TRUNC('DAY', now()))))",
+            }
+        )
 
     def test_read_dialect_related_function(self):
         import os

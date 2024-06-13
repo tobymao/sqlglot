@@ -60,6 +60,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"DATE_FORMAT({self.sql(expression.expressions[0])}, 'yyyy-MM-dd\\\'T\\\'hh:mm:ss.SSSxxx')"
     elif expression.this.upper() == 'AES_DECRYPT' and read_dialect() == 'mysql':
         return f"AES_DECRYPT_MYSQL({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
+    elif expression.this.upper() == 'MAP_AGG':
+        return f"MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT({self.expressions(expression)})))"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)

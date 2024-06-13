@@ -16,6 +16,12 @@ class TestClickzetta(Validator):
                 "clickzetta": "WITH `all` AS (SELECT 1) SELECT * FROM `all`",
             },
         )
+        self.validate_all(
+            "select json_extract(to, '$.billing_zone') as to_billing_zone",
+            write={
+                "clickzetta": "SELECT GET_JSON_OBJECT(`to`, '$.billing_zone') AS to_billing_zone",
+              },
+        )
 
     def test_ddl_types(self):
         self.validate_all(

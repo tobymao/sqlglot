@@ -260,7 +260,7 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
-            "DATEDIFF('day', a, b)",
+            "DATEDIFF(days, a, b)",
             write={
                 "bigquery": "DATE_DIFF(CAST(b AS DATETIME), CAST(a AS DATETIME), DAY)",
                 "duckdb": "DATE_DIFF('DAY', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",

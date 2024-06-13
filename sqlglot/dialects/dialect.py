@@ -37,6 +37,78 @@ UNESCAPED_SEQUENCES = {
 }
 
 
+DATE_PART_MAPPING = {
+    "Y": "YEAR",
+    "YY": "YEAR",
+    "YYY": "YEAR",
+    "YYYY": "YEAR",
+    "YR": "YEAR",
+    "YEARS": "YEAR",
+    "YRS": "YEAR",
+    "MM": "MONTH",
+    "MON": "MONTH",
+    "MONS": "MONTH",
+    "MONTHS": "MONTH",
+    "D": "DAY",
+    "DD": "DAY",
+    "DAYS": "DAY",
+    "DAYOFMONTH": "DAY",
+    "WEEKDAY": "DAYOFWEEK",
+    "DOW": "DAYOFWEEK",
+    "DW": "DAYOFWEEK",
+    "WEEKDAY_ISO": "DAYOFWEEKISO",
+    "DOW_ISO": "DAYOFWEEKISO",
+    "DW_ISO": "DAYOFWEEKISO",
+    "YEARDAY": "DAYOFYEAR",
+    "DOY": "DAYOFYEAR",
+    "DY": "DAYOFYEAR",
+    "W": "WEEK",
+    "WK": "WEEK",
+    "WEEKOFYEAR": "WEEK",
+    "WOY": "WEEK",
+    "WY": "WEEK",
+    "WEEK_ISO": "WEEKISO",
+    "WEEKOFYEARISO": "WEEKISO",
+    "WEEKOFYEAR_ISO": "WEEKISO",
+    "Q": "QUARTER",
+    "QTR": "QUARTER",
+    "QTRS": "QUARTER",
+    "QUARTERS": "QUARTER",
+    "H": "HOUR",
+    "HH": "HOUR",
+    "HR": "HOUR",
+    "HOURS": "HOUR",
+    "HRS": "HOUR",
+    "M": "MINUTE",
+    "MI": "MINUTE",
+    "MIN": "MINUTE",
+    "MINUTES": "MINUTE",
+    "MINS": "MINUTE",
+    "S": "SECOND",
+    "SEC": "SECOND",
+    "SECONDS": "SECOND",
+    "SECS": "SECOND",
+    "MS": "MILLISECOND",
+    "MSEC": "MILLISECOND",
+    "MILLISECONDS": "MILLISECOND",
+    "US": "MICROSECOND",
+    "USEC": "MICROSECOND",
+    "MICROSECONDS": "MICROSECOND",
+    "NS": "NANOSECOND",
+    "NSEC": "NANOSECOND",
+    "NANOSEC": "NANOSECOND",
+    "NSECOND": "NANOSECOND",
+    "NSECONDS": "NANOSECOND",
+    "NANOSECS": "NANOSECOND",
+    "EPOCH": "EPOCH_SECOND",
+    "EPOCH_SECONDS": "EPOCH_SECOND",
+    "EPOCH_MILLISECONDS": "EPOCH_MILLISECOND",
+    "EPOCH_MICROSECONDS": "EPOCH_MICROSECOND",
+    "EPOCH_NANOSECONDS": "EPOCH_NANOSECOND",
+    "TZH": "TIMEZONE_HOUR",
+    "TZM": "TIMEZONE_MINUTE",
+}
+
 class Dialects(str, Enum):
     """Dialects supported by SQLGLot."""
 
@@ -1061,6 +1133,19 @@ def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[
         return unit
     return exp.Var(this=default) if default else None
 
+@t.overload
+def map_date_part(part: exp.Expression) -> exp.Var:
+    pass
+
+
+@t.overload
+def map_date_part(part: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    pass
+
+
+def map_date_part(part):
+    mapped = DATE_PART_MAPPING.get(part.name.upper()) if part else None
+    return exp.var(mapped) if mapped else part
 
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     trunc_curr_date = exp.func("date_trunc", "month", expression.this)

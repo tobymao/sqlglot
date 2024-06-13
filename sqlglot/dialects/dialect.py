@@ -410,12 +410,14 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def __init__(self, **kwargs) -> None:
-        normalization_strategy = kwargs.get("normalization_strategy")
+        normalization_strategy = kwargs.pop("normalization_strategy", None)
 
         if normalization_strategy is None:
             self.normalization_strategy = self.NORMALIZATION_STRATEGY
         else:
             self.normalization_strategy = NormalizationStrategy(normalization_strategy.upper())
+
+        self.settings = kwargs
 
     def __eq__(self, other: t.Any) -> bool:
         # Does not currently take dialect state into account

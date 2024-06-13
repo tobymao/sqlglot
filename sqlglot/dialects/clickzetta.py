@@ -89,7 +89,7 @@ def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     return f"DATE_FORMAT({this}, {time_format})"
 
 def fill_tuple_with_column_name(self: ClickZetta.Generator, expression: exp.Tuple) -> str:
-    if read_dialect() == MYSQL:
+    if not isinstance(expression.parent, exp.Values) and read_dialect() == MYSQL:
         elements = []
         for i, e in enumerate(expression.expressions):
             elements.append(f'{self.sql(e)} AS __c{i+1}')

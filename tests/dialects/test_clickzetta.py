@@ -136,11 +136,15 @@ select j from a""",
             read={'postgres': r"select to_char(now(), 'Mon-dd-YYYY,HH24:mi:ss')"}
         )
 
-        # struct operator=
+        # struct/tuple
         os.environ['READ_DIALECT'] = 'presto'
         self.validate_all(
             "SELECT (1 AS __c1, 'hello' AS __c2) = (2 AS __c1, 'world' AS __c2)",
             read={'presto': "select (1,'hello') = (2,'world')"}
+        )
+        self.validate_all(
+            "SELECT * FROM VALUES (1, 'hello'), (2, 'world')",
+            read={'presto': "select * from values (1,'hello'),(2,'world')"}
         )
         os.environ['READ_DIALECT'] = 'spark'
         self.validate_all(

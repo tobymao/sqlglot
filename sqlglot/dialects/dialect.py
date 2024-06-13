@@ -53,13 +53,14 @@ DATE_PART_MAPPING = {
     "DD": "DAY",
     "DAYS": "DAY",
     "DAYOFMONTH": "DAY",
+    "DAY OF WEEK": "DAYOFWEEK",
     "WEEKDAY": "DAYOFWEEK",
     "DOW": "DAYOFWEEK",
     "DW": "DAYOFWEEK",
     "WEEKDAY_ISO": "DAYOFWEEKISO",
     "DOW_ISO": "DAYOFWEEKISO",
     "DW_ISO": "DAYOFWEEKISO",
-    "YEARDAY": "DAYOFYEAR",
+    "DAY OF YEAR": "DAYOFYEAR",
     "DOY": "DAYOFYEAR",
     "DY": "DAYOFYEAR",
     "W": "WEEK",
@@ -90,9 +91,20 @@ DATE_PART_MAPPING = {
     "SECS": "SECOND",
     "MS": "MILLISECOND",
     "MSEC": "MILLISECOND",
+    "MSECS": "MILLISECOND",
+    "MSECOND": "MILLISECOND",
+    "MSECONDS": "MILLISECOND",
+    "MILLISEC": "MILLISECOND",
+    "MILLISECS": "MILLISECOND",
+    "MILLISECON": "MILLISECOND",
     "MILLISECONDS": "MILLISECOND",
     "US": "MICROSECOND",
     "USEC": "MICROSECOND",
+    "USECS": "MICROSECOND",
+    "MICROSEC": "MICROSECOND",
+    "MICROSECS": "MICROSECOND",
+    "USECOND": "MICROSECOND",
+    "USECONDS": "MICROSECOND",
     "MICROSECONDS": "MICROSECOND",
     "NS": "NANOSECOND",
     "NSEC": "NANOSECOND",
@@ -107,6 +119,16 @@ DATE_PART_MAPPING = {
     "EPOCH_NANOSECONDS": "EPOCH_NANOSECOND",
     "TZH": "TIMEZONE_HOUR",
     "TZM": "TIMEZONE_MINUTE",
+    "DEC": "DECADE",
+    "DECS": "DECADE",
+    "DECADES": "DECADE",
+    "MIL": "MILLENIUM",
+    "MILS": "MILLENIUM",
+    "MILLENIA": "MILLENIUM",
+    "C": "CENTURY",
+    "CENT": "CENTURY",
+    "CENTS": "CENTURY",
+    "CENTURIES": "CENTURY",
 }
 
 
@@ -1136,17 +1158,21 @@ def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[
 
 
 @t.overload
-def map_date_part(part: exp.Expression) -> exp.Var:
+def map_date_part(
+    part: exp.Expression, part_mapping: t.Dict[str, str] = DATE_PART_MAPPING
+) -> exp.Var:
     pass
 
 
 @t.overload
-def map_date_part(part: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+def map_date_part(
+    part: t.Optional[exp.Expression], part_mapping: t.Dict[str, str] = DATE_PART_MAPPING
+) -> t.Optional[exp.Expression]:
     pass
 
 
-def map_date_part(part):
-    mapped = DATE_PART_MAPPING.get(part.name.upper()) if part else None
+def map_date_part(part, part_mapping: t.Dict[str, str] = DATE_PART_MAPPING):
+    mapped = part_mapping.get(part.name.upper()) if part else None
     return exp.var(mapped) if mapped else part
 
 

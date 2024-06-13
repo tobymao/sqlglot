@@ -15,17 +15,22 @@ from sqlglot.dialects.dialect import (
     map_date_part,
 )
 from sqlglot.dialects.postgres import Postgres
+from sqlglot.dialects import dialect
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
+DATE_PART_MAPPING = {**dialect.DATE_PART_MAPPING, "EPOCH": "EPOCH"}
+
 
 def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
         expr = expr_type(
-            this=seq_get(args, 2), expression=seq_get(args, 1), unit=map_date_part(seq_get(args, 0))
+            this=seq_get(args, 2),
+            expression=seq_get(args, 1),
+            unit=map_date_part(seq_get(args, 0), part_mapping=DATE_PART_MAPPING),
         )
         if expr_type is exp.TsOrDsAdd:
             expr.set("return_type", exp.DataType.build("TIMESTAMP"))

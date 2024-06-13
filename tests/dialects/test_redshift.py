@@ -259,8 +259,14 @@ class TestRedshift(Validator):
                 "postgres": "COALESCE(a, b, c, d)",
             },
         )
-        self.validate_all(
+
+        self.validate_identity(
             "DATEDIFF(days, a, b)",
+            "DATEDIFF(DAY, a, b)",
+        )
+
+        self.validate_all(
+            "DATEDIFF('day', a, b)",
             write={
                 "bigquery": "DATE_DIFF(CAST(b AS DATETIME), CAST(a AS DATETIME), DAY)",
                 "duckdb": "DATE_DIFF('DAY', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",

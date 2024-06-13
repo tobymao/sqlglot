@@ -169,6 +169,7 @@ class _Dialect(type):
 
         if enum not in ("", "athena", "presto", "trino"):
             klass.generator_class.TRY_SUPPORTED = False
+            klass.generator_class.SUPPORTS_UESCAPE = False
 
         if enum not in ("", "databricks", "hive", "spark", "spark2"):
             modifier_transforms = klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS.copy()
@@ -1189,6 +1190,15 @@ def build_default_decimal_type(
         return exp.DataType.build(f"DECIMAL({params})")
 
     return _builder
+
+
+def build_timestamp_from_parts(args: t.List) -> exp.Func:
+    if len(args) == 2:
+        # Other dialects don't have the TIMESTAMP_FROM_PARTS(date, time) concept,
+        # so we parse this into Anonymous for now instead of introducing complexity
+        return exp.Anonymous(this="TIMESTAMP_FROM_PARTS", expressions=args)
+
+    return exp.TimestampFromParts.from_arg_list(args)
 
 
 def sha256_sql(self: Generator, expression: exp.SHA2) -> str:

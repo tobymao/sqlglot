@@ -356,6 +356,9 @@ class Generator(metaclass=_Generator):
     # Whether the conditional TRY(expression) function is supported
     TRY_SUPPORTED = True
 
+    # Whether the UESCAPE syntax in unicode strings is supported
+    SUPPORTS_UESCAPE = True
+
     # The keyword to use when generating a star projection with excluded columns
     STAR_EXCEPT = "EXCEPT"
 
@@ -1143,16 +1146,23 @@ class Generator(metaclass=_Generator):
         escape = expression.args.get("escape")
 
         if self.dialect.UNICODE_START:
-            escape = f" UESCAPE {self.sql(escape)}" if escape else ""
-            return f"{self.dialect.UNICODE_START}{this}{self.dialect.UNICODE_END}{escape}"
+            escape_substitute = r"\\\1"
+            left_quote, right_quote = self.dialect.UNICODE_START, self.dialect.UNICODE_END
+        else:
+            escape_substitute = r"\\u\1"
+            left_quote, right_quote = self.dialect.QUOTE_START, self.dialect.QUOTE_END
 
         if escape:
-            pattern = re.compile(rf"{escape.name}(\d+)")
+            escape_pattern = re.compile(rf"{escape.name}(\d+)")
+            escape_sql = f" UESCAPE {self.sql(escape)}" if self.SUPPORTS_UESCAPE else ""
         else:
-            pattern = ESCAPED_UNICODE_RE
+            escape_pattern = ESCAPED_UNICODE_RE
+            escape_sql = ""
 
-        this = pattern.sub(r"\\u\1", this)
-        return f"{self.dialect.QUOTE_START}{this}{self.dialect.QUOTE_END}"
+        if not self.dialect.UNICODE_START or (escape and not self.SUPPORTS_UESCAPE):
+            this = escape_pattern.sub(escape_substitute, this)
+
+        return f"{left_quote}{this}{right_quote}{escape_sql}"
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
         string = self.escape_str(expression.this.replace("\\", "\\\\"), escape_backslash=False)
@@ -2234,10 +2244,6 @@ class Generator(metaclass=_Generator):
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
-        options = self.expressions(expression, key="options")
-        if options:
-            options = f" OPTION{self.wrap(options)}"
-
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
@@ -2252,9 +2258,13 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "order"),
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
-            options,
+            self.options_modifier(expression),
             sep="",
         )
+
+    def options_modifier(self, expression: exp.Expression) -> str:
+        options = self.expressions(expression, key="options")
+        return f" {options}" if options else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         return ""

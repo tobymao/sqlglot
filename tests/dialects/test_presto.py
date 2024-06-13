@@ -564,6 +564,7 @@ class TestPresto(Validator):
             self.validate_all(
                 f"{prefix}'Hello winter \\2603 !'",
                 write={
+                    "oracle": "U'Hello winter \\2603 !'",
                     "presto": "U&'Hello winter \\2603 !'",
                     "snowflake": "'Hello winter \\u2603 !'",
                     "spark": "'Hello winter \\u2603 !'",
@@ -572,6 +573,7 @@ class TestPresto(Validator):
             self.validate_all(
                 f"{prefix}'Hello winter #2603 !' UESCAPE '#'",
                 write={
+                    "oracle": "U'Hello winter \\2603 !'",
                     "presto": "U&'Hello winter #2603 !' UESCAPE '#'",
                     "snowflake": "'Hello winter \\u2603 !'",
                     "spark": "'Hello winter \\u2603 !'",

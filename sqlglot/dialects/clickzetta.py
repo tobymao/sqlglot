@@ -116,7 +116,7 @@ class ClickZetta(Spark):
 
     class Generator(Spark.Generator):
 
-        RESERVED_KEYWORDS = {'all', 'user', 'to'}
+        RESERVED_KEYWORDS = {'all', 'user', 'to', 'check'}
 
         TYPE_MAPPING = {
             **Spark.Generator.TYPE_MAPPING,

@@ -17,6 +17,12 @@ class TestClickzetta(Validator):
             },
         )
         self.validate_all(
+            "with check as (select 1) select * from check",
+            write={
+                "clickzetta": "WITH `check` AS (SELECT 1) SELECT * FROM `check`",
+            },
+        )
+        self.validate_all(
             "select json_extract(to, '$.billing_zone') as to_billing_zone",
             write={
                 "clickzetta": "SELECT GET_JSON_OBJECT(`to`, '$.billing_zone') AS to_billing_zone",

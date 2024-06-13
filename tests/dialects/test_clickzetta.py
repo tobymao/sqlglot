@@ -95,9 +95,7 @@ class TestClickzetta(Validator):
             }
         )
         self.validate_all(
-            """select * from
-unnest(array[('a',1),('b',2),('c',3)]) as
-t(s,i)""",
+            "select * from unnest(array[('a',1),('b',2),('c',3)]) as t(s,i)",
             write={
                 "clickzetta": "SELECT * FROM VALUES ('a', 1), ('b', 2), ('c', 3) AS t(s, i)",
             }
@@ -125,6 +123,14 @@ select j from a""",
             write={
                 "clickzetta": "SELECT MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT('a', DATE_TRUNC('DAY', now()))))",
             }
+        )
+        self.validate_all(
+            "SELECT SEQUENCE(min_date, max_date, INTERVAL '1' DAY)",
+            read={'presto': "select sequence(min_date,max_date,interval '1' day)"}
+        )
+        self.validate_all(
+            "SELECT s.n FROM tmp LATERAL VIEW EXPLODE(SEQUENCE(min_date, max_date, INTERVAL '1' DAY)) s AS n",
+            read={'presto': "select s.n from tmp cross join unnest(sequence(min_date,max_date, INTERVAL '1' DAY)) s (n)"},
         )
 
     def test_read_dialect_related_function(self):

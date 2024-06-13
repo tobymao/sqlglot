@@ -73,10 +73,13 @@ def nullif_to_if(self: ClickZetta.Generator, expression: exp.Nullif):
     return self.sql(ret)
 
 def unnest_to_values(self: ClickZetta.Generator, expression: exp.Unnest):
-    array = expression.expressions[0].expressions # TODO: could be dangerous?
-    alias = expression.args.get('alias')
-    ret = exp.Values(expressions=array, alias=alias)
-    return self.sql(ret)
+    if isinstance(expression.expressions, list) and len(expression.expressions) == 1 and isinstance(expression.expressions[0], exp.Array):
+        array = expression.expressions[0].expressions
+        alias = expression.args.get('alias')
+        ret = exp.Values(expressions=array, alias=alias)
+        return self.sql(ret)
+    else:
+        return f"UNNEST({self.sql(expression.expressions)})" # TODO: don't know what to do
 
 def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     this = self.sql(expression, "this")
@@ -176,6 +179,7 @@ class ClickZetta(Spark):
             exp.Unnest: unnest_to_values,
             exp.Try: lambda self, e: self.sql(e, "this"),
             exp.Tuple: fill_tuple_with_column_name,
+            exp.GenerateSeries: rename_func("SEQUENCE"),
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

@@ -132,6 +132,10 @@ select j from a""",
             "SELECT s.n FROM tmp LATERAL VIEW EXPLODE(SEQUENCE(min_date, max_date, INTERVAL '1' DAY)) s AS n",
             read={'presto': "select s.n from tmp cross join unnest(sequence(min_date,max_date, INTERVAL '1' DAY)) s (n)"},
         )
+        self.validate_all(
+            "SELECT j[2]",
+            read={'presto': "select json_array_get(j,2)"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

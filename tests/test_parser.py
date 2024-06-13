@@ -102,6 +102,13 @@ class TestParser(unittest.TestCase):
     def test_float(self):
         self.assertEqual(parse_one(".2"), parse_one("0.2"))
 
+    def test_unnest(self):
+        unnest_sql = "UNNEST(foo)"
+        expr = parse_one(unnest_sql)
+        self.assertIsInstance(expr, exp.Unnest)
+        self.assertIsInstance(expr.expressions, list)
+        self.assertEqual(expr.sql(), unnest_sql)
+
     def test_unnest_projection(self):
         expr = parse_one("SELECT foo IN UNNEST(bla) AS bar")
         self.assertIsInstance(expr.selects[0], exp.Alias)

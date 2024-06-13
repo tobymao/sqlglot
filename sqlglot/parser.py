@@ -150,6 +150,7 @@ class Parser(metaclass=_Parser):
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
+        "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
@@ -157,11 +158,13 @@ class Parser(metaclass=_Parser):
         "LOG": build_logarithm,
         "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
         "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
+        "LOWER": build_lower,
         "MOD": build_mod,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
+        "TO_HEX": build_hex,
         "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
             this=exp.Cast(
                 this=seq_get(args, 0),
@@ -170,11 +173,9 @@ class Parser(metaclass=_Parser):
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
-        "VAR_MAP": build_var_map,
-        "LOWER": build_lower,
+        "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
-        "HEX": build_hex,
-        "TO_HEX": build_hex,
+        "VAR_MAP": build_var_map,
     }
 
     NO_PAREN_FUNCTIONS = {

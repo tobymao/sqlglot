@@ -164,6 +164,8 @@ class _Dialect(type):
 
         klass.ESCAPED_SEQUENCES = {v: k for k, v in klass.UNESCAPED_SEQUENCES.items()}
 
+        klass.SUPPORTS_COLUMN_JOIN_MARKS = "(+)" in klass.tokenizer_class.KEYWORDS
+
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
@@ -231,6 +233,9 @@ class Dialect(metaclass=_Dialect):
 
     SUPPORTS_COLUMN_JOIN_MARKS = False
     """Whether the old-style outer join (+) syntax is supported."""
+
+    COPY_PARAMS_ARE_CSV = True
+    """Separator of COPY statement parameters."""
 
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     """
@@ -341,9 +346,6 @@ class Dialect(metaclass=_Dialect):
     BYTE_END: t.Optional[str] = None
     UNICODE_START: t.Optional[str] = None
     UNICODE_END: t.Optional[str] = None
-
-    # Separator of COPY statement parameters
-    COPY_PARAMS_ARE_CSV = True
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:

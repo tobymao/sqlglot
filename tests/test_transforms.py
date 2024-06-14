@@ -3,6 +3,7 @@ import unittest
 from sqlglot import parse_one
 from sqlglot.transforms import (
     eliminate_distinct_on,
+    eliminate_join_marks,
     eliminate_qualify,
     remove_precision_parameterized_types,
     unalias_group,
@@ -12,9 +13,11 @@ from sqlglot.transforms import (
 class TestTransforms(unittest.TestCase):
     maxDiff = None
 
-    def validate(self, transform, sql, target):
-        with self.subTest(sql):
-            self.assertEqual(parse_one(sql).transform(transform).sql(), target)
+    def validate(self, transform, sql, target, dialect=None):
+        with self.subTest(f"{dialect} - {sql}"):
+            self.assertEqual(
+                parse_one(sql, dialect=dialect).transform(transform).sql(dialect=dialect), target
+            )
 
     def test_unalias_group(self):
         self.validate(
@@ -138,3 +141,76 @@ class TestTransforms(unittest.TestCase):
             "SELECT CAST(1 AS DECIMAL(10, 2)), CAST('13' AS VARCHAR(10))",
             "SELECT CAST(1 AS DECIMAL), CAST('13' AS VARCHAR)",
         )
+
+    def test_eliminate_join_marks(self):
+        for dialect in ("oracle", "redshift"):
+            self.validate(
+                eliminate_join_marks,
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) > 5",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x AND T2.y > 5",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x (+) = T2.x and T2.y > 5",
+                "SELECT T1.d, T2.c FROM T2 LEFT JOIN T1 ON T1.x = T2.x WHERE T2.y > 5",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) IS NULL",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x AND T2.y IS NULL",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y IS NULL",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x WHERE T2.y IS NULL",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T1.Z > 4",
+                "SELECT T1.d, T2.c FROM T1 LEFT JOIN T2 ON T1.x = T2.x WHERE T1.Z > 4",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM table1, table2 WHERE table1.col = table2.col(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM table1, table2, table3, table4 WHERE table1.col = table2.col(+) and table2.col >= table3.col(+) and table1.col = table4.col(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col LEFT JOIN table3 ON table2.col >= table3.col LEFT JOIN table4 ON table1.col = table4.col",
+                dialect,
+            )
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM table1, table2, table3 WHERE table1.col = table2.col(+) and table2.col >= table3.col(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col LEFT JOIN table3 ON table2.col >= table3.col",
+                dialect,
+            )
+            # 2 join marks on one side of predicate
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM table1, table2 WHERE table1.col = table2.col1(+) + table2.col2(+)",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col1 + table2.col2",
+                dialect,
+            )
+            # join mark and expression
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM table1, table2 WHERE table1.col = table2.col1(+) + 25",
+                "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col1 + 25",
+                dialect,
+            )
+
+            alias = "AS " if dialect != "oracle" else ""
+            self.validate(
+                eliminate_join_marks,
+                "SELECT table1.id, table2.cloumn1, table3.id FROM table1, table2, (SELECT tableInner1.id FROM tableInner1, tableInner2 WHERE tableInner1.id = tableInner2.id(+)) AS table3 WHERE table1.id = table2.id(+) and table1.id = table3.id(+)",
+                f"SELECT table1.id, table2.cloumn1, table3.id FROM table1 LEFT JOIN table2 ON table1.id = table2.id LEFT JOIN (SELECT tableInner1.id FROM tableInner1 LEFT JOIN tableInner2 ON tableInner1.id = tableInner2.id) {alias}table3 ON table1.id = table3.id",
+                dialect,
+            )

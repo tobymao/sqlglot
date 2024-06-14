@@ -306,6 +306,14 @@ class TestRedshift(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT EXTRACT(EPOCH FROM CURRENT_DATE)",
+            write={
+                "snowflake": "SELECT DATE_PART(EPOCH, CURRENT_DATE)",
+                "redshift": "SELECT EXTRACT(EPOCH FROM CURRENT_DATE)",
+            },
+        )
+
     def test_identity(self):
         self.validate_identity("LISTAGG(DISTINCT foo, ', ')")
         self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")

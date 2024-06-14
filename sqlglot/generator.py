@@ -1298,8 +1298,10 @@ class Generator(metaclass=_Generator):
         with_storage = f" WITH ({with_storage})" if with_storage else ""
         tablespace = self.sql(expression, "tablespace")
         tablespace = f" USING INDEX TABLESPACE {tablespace}" if tablespace else ""
+        on = self.sql(expression, "on")
+        on = f" ON {on}" if on else ""
 
-        return f"{using}{columns}{include}{with_storage}{tablespace}{partition_by}{where}"
+        return f"{using}{columns}{include}{with_storage}{tablespace}{partition_by}{where}{on}"
 
     def index_sql(self, expression: exp.Index) -> str:
         unique = "UNIQUE " if expression.args.get("unique") else ""

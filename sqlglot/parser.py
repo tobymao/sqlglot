@@ -3188,6 +3188,8 @@ class Parser(metaclass=_Parser):
         )
         where = self._parse_where()
 
+        on = self._parse_field() if self._match(TokenType.ON) else None
+
         return self.expression(
             exp.IndexParameters,
             using=using,
@@ -3197,6 +3199,7 @@ class Parser(metaclass=_Parser):
             where=where,
             with_storage=with_storage,
             tablespace=tablespace,
+            on=on,
         )
 
     def _parse_index(

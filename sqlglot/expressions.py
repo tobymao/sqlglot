@@ -2127,6 +2127,7 @@ class IndexParameters(Expression):
         "partition_by": False,
         "tablespace": False,
         "where": False,
+        "on": False,
     }
 
 

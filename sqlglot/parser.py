@@ -4288,7 +4288,7 @@ class Parser(metaclass=_Parser):
                 any_token=False, tokens=(TokenType.VAR,)
             )
             if identifier:
-                tokens = self.dialect.tokenize(identifier.name)
+                tokens = self.dialect.tokenize(identifier.sql(dialect=self.dialect))
 
                 if len(tokens) != 1:
                     self.raise_error("Unexpected identifier", self._prev)

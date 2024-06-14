@@ -316,6 +316,11 @@ class Dialect(metaclass=_Dialect):
         ) SELECT c FROM y;
     """
 
+    COPY_PARAMS_ARE_CSV = True
+    """
+    Whether COPY statement parameters are separated by comma or whitespace
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -346,6 +351,100 @@ class Dialect(metaclass=_Dialect):
     BYTE_END: t.Optional[str] = None
     UNICODE_START: t.Optional[str] = None
     UNICODE_END: t.Optional[str] = None
+
+    DATE_PART_MAPPING = {
+        "Y": "YEAR",
+        "YY": "YEAR",
+        "YYY": "YEAR",
+        "YYYY": "YEAR",
+        "YR": "YEAR",
+        "YEARS": "YEAR",
+        "YRS": "YEAR",
+        "MM": "MONTH",
+        "MON": "MONTH",
+        "MONS": "MONTH",
+        "MONTHS": "MONTH",
+        "D": "DAY",
+        "DD": "DAY",
+        "DAYS": "DAY",
+        "DAYOFMONTH": "DAY",
+        "DAY OF WEEK": "DAYOFWEEK",
+        "WEEKDAY": "DAYOFWEEK",
+        "DOW": "DAYOFWEEK",
+        "DW": "DAYOFWEEK",
+        "WEEKDAY_ISO": "DAYOFWEEKISO",
+        "DOW_ISO": "DAYOFWEEKISO",
+        "DW_ISO": "DAYOFWEEKISO",
+        "DAY OF YEAR": "DAYOFYEAR",
+        "DOY": "DAYOFYEAR",
+        "DY": "DAYOFYEAR",
+        "W": "WEEK",
+        "WK": "WEEK",
+        "WEEKOFYEAR": "WEEK",
+        "WOY": "WEEK",
+        "WY": "WEEK",
+        "WEEK_ISO": "WEEKISO",
+        "WEEKOFYEARISO": "WEEKISO",
+        "WEEKOFYEAR_ISO": "WEEKISO",
+        "Q": "QUARTER",
+        "QTR": "QUARTER",
+        "QTRS": "QUARTER",
+        "QUARTERS": "QUARTER",
+        "H": "HOUR",
+        "HH": "HOUR",
+        "HR": "HOUR",
+        "HOURS": "HOUR",
+        "HRS": "HOUR",
+        "M": "MINUTE",
+        "MI": "MINUTE",
+        "MIN": "MINUTE",
+        "MINUTES": "MINUTE",
+        "MINS": "MINUTE",
+        "S": "SECOND",
+        "SEC": "SECOND",
+        "SECONDS": "SECOND",
+        "SECS": "SECOND",
+        "MS": "MILLISECOND",
+        "MSEC": "MILLISECOND",
+        "MSECS": "MILLISECOND",
+        "MSECOND": "MILLISECOND",
+        "MSECONDS": "MILLISECOND",
+        "MILLISEC": "MILLISECOND",
+        "MILLISECS": "MILLISECOND",
+        "MILLISECON": "MILLISECOND",
+        "MILLISECONDS": "MILLISECOND",
+        "US": "MICROSECOND",
+        "USEC": "MICROSECOND",
+        "USECS": "MICROSECOND",
+        "MICROSEC": "MICROSECOND",
+        "MICROSECS": "MICROSECOND",
+        "USECOND": "MICROSECOND",
+        "USECONDS": "MICROSECOND",
+        "MICROSECONDS": "MICROSECOND",
+        "NS": "NANOSECOND",
+        "NSEC": "NANOSECOND",
+        "NANOSEC": "NANOSECOND",
+        "NSECOND": "NANOSECOND",
+        "NSECONDS": "NANOSECOND",
+        "NANOSECS": "NANOSECOND",
+        "EPOCH_SECOND": "EPOCH",
+        "EPOCH_SECONDS": "EPOCH",
+        "EPOCH_MILLISECONDS": "EPOCH_MILLISECOND",
+        "EPOCH_MICROSECONDS": "EPOCH_MICROSECOND",
+        "EPOCH_NANOSECONDS": "EPOCH_NANOSECOND",
+        "TZH": "TIMEZONE_HOUR",
+        "TZM": "TIMEZONE_MINUTE",
+        "DEC": "DECADE",
+        "DECS": "DECADE",
+        "DECADES": "DECADE",
+        "MIL": "MILLENIUM",
+        "MILS": "MILLENIUM",
+        "MILLENIA": "MILLENIUM",
+        "C": "CENTURY",
+        "CENT": "CENTURY",
+        "CENTS": "CENTURY",
+        "CENTURIES": "CENTURY",
+    }
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
@@ -1060,6 +1159,25 @@ def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[
     if isinstance(unit, (exp.Var, exp.Placeholder)):
         return unit
     return exp.Var(this=default) if default else None
+
+
+@t.overload
+def map_date_part(part: exp.Expression, dialect: DialectType = Dialect) -> exp.Var:
+    pass
+
+
+@t.overload
+def map_date_part(
+    part: t.Optional[exp.Expression], dialect: DialectType = Dialect
+) -> t.Optional[exp.Expression]:
+    pass
+
+
+def map_date_part(part, dialect: DialectType = Dialect):
+    mapped = (
+        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper()) if part else None
+    )
+    return exp.var(mapped) if mapped else part
 
 
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:

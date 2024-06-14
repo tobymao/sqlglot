@@ -259,6 +259,12 @@ class TestRedshift(Validator):
                 "postgres": "COALESCE(a, b, c, d)",
             },
         )
+
+        self.validate_identity(
+            "DATEDIFF(days, a, b)",
+            "DATEDIFF(DAY, a, b)",
+        )
+
         self.validate_all(
             "DATEDIFF('day', a, b)",
             write={
@@ -297,6 +303,14 @@ class TestRedshift(Validator):
                 "redshift": "SELECT DATEDIFF(WEEK, '2009-01-01', '2009-12-31')",
                 "snowflake": "SELECT DATEDIFF(WEEK, '2009-01-01', '2009-12-31')",
                 "tsql": "SELECT DATEDIFF(WEEK, '2009-01-01', '2009-12-31')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT EXTRACT(EPOCH FROM CURRENT_DATE)",
+            write={
+                "snowflake": "SELECT DATE_PART(EPOCH, CURRENT_DATE)",
+                "redshift": "SELECT EXTRACT(EPOCH FROM CURRENT_DATE)",
             },
         )
 

@@ -21,6 +21,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     timestrtotime_sql,
     var_map_sql,
+    map_date_part,
 )
 from sqlglot.helper import flatten, is_float, is_int, seq_get
 from sqlglot.tokens import TokenType
@@ -75,7 +76,7 @@ def _build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
 
 def _build_datediff(args: t.List) -> exp.DateDiff:
     return exp.DateDiff(
-        this=seq_get(args, 2), expression=seq_get(args, 1), unit=_map_date_part(seq_get(args, 0))
+        this=seq_get(args, 2), expression=seq_get(args, 1), unit=map_date_part(seq_get(args, 0))
     )
 
 
@@ -84,7 +85,7 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
         return expr_type(
             this=seq_get(args, 2),
             expression=seq_get(args, 1),
-            unit=_map_date_part(seq_get(args, 0)),
+            unit=map_date_part(seq_get(args, 0)),
         )
 
     return _builder
@@ -143,97 +144,9 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
     return _parse
 
 
-DATE_PART_MAPPING = {
-    "Y": "YEAR",
-    "YY": "YEAR",
-    "YYY": "YEAR",
-    "YYYY": "YEAR",
-    "YR": "YEAR",
-    "YEARS": "YEAR",
-    "YRS": "YEAR",
-    "MM": "MONTH",
-    "MON": "MONTH",
-    "MONS": "MONTH",
-    "MONTHS": "MONTH",
-    "D": "DAY",
-    "DD": "DAY",
-    "DAYS": "DAY",
-    "DAYOFMONTH": "DAY",
-    "WEEKDAY": "DAYOFWEEK",
-    "DOW": "DAYOFWEEK",
-    "DW": "DAYOFWEEK",
-    "WEEKDAY_ISO": "DAYOFWEEKISO",
-    "DOW_ISO": "DAYOFWEEKISO",
-    "DW_ISO": "DAYOFWEEKISO",
-    "YEARDAY": "DAYOFYEAR",
-    "DOY": "DAYOFYEAR",
-    "DY": "DAYOFYEAR",
-    "W": "WEEK",
-    "WK": "WEEK",
-    "WEEKOFYEAR": "WEEK",
-    "WOY": "WEEK",
-    "WY": "WEEK",
-    "WEEK_ISO": "WEEKISO",
-    "WEEKOFYEARISO": "WEEKISO",
-    "WEEKOFYEAR_ISO": "WEEKISO",
-    "Q": "QUARTER",
-    "QTR": "QUARTER",
-    "QTRS": "QUARTER",
-    "QUARTERS": "QUARTER",
-    "H": "HOUR",
-    "HH": "HOUR",
-    "HR": "HOUR",
-    "HOURS": "HOUR",
-    "HRS": "HOUR",
-    "M": "MINUTE",
-    "MI": "MINUTE",
-    "MIN": "MINUTE",
-    "MINUTES": "MINUTE",
-    "MINS": "MINUTE",
-    "S": "SECOND",
-    "SEC": "SECOND",
-    "SECONDS": "SECOND",
-    "SECS": "SECOND",
-    "MS": "MILLISECOND",
-    "MSEC": "MILLISECOND",
-    "MILLISECONDS": "MILLISECOND",
-    "US": "MICROSECOND",
-    "USEC": "MICROSECOND",
-    "MICROSECONDS": "MICROSECOND",
-    "NS": "NANOSECOND",
-    "NSEC": "NANOSECOND",
-    "NANOSEC": "NANOSECOND",
-    "NSECOND": "NANOSECOND",
-    "NSECONDS": "NANOSECOND",
-    "NANOSECS": "NANOSECOND",
-    "EPOCH": "EPOCH_SECOND",
-    "EPOCH_SECONDS": "EPOCH_SECOND",
-    "EPOCH_MILLISECONDS": "EPOCH_MILLISECOND",
-    "EPOCH_MICROSECONDS": "EPOCH_MICROSECOND",
-    "EPOCH_NANOSECONDS": "EPOCH_NANOSECOND",
-    "TZH": "TIMEZONE_HOUR",
-    "TZM": "TIMEZONE_MINUTE",
-}
-
-
-@t.overload
-def _map_date_part(part: exp.Expression) -> exp.Var:
-    pass
-
-
-@t.overload
-def _map_date_part(part: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    pass
-
-
-def _map_date_part(part):
-    mapped = DATE_PART_MAPPING.get(part.name.upper()) if part else None
-    return exp.var(mapped) if mapped else part
-
-
 def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
-    trunc.set("unit", _map_date_part(trunc.args["unit"]))
+    trunc.set("unit", map_date_part(trunc.args["unit"]))
     return trunc
 
 
@@ -367,7 +280,7 @@ class Snowflake(Dialect):
             ),
             "IFF": exp.If.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
-                this=seq_get(args, 0), unit=_map_date_part(seq_get(args, 1))
+                this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "MEDIAN": lambda args: exp.PercentileCont(
@@ -541,7 +454,7 @@ class Snowflake(Dialect):
 
             self._match(TokenType.COMMA)
             expression = self._parse_bitwise()
-            this = _map_date_part(this)
+            this = map_date_part(this)
             name = this.name.upper()
 
             if name.startswith("EPOCH"):

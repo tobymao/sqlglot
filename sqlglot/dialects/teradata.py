@@ -200,6 +200,14 @@ class Teradata(Dialect):
 
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 
+        def _parse_index_params(self) -> exp.IndexParameters:
+            this = super()._parse_index_params()
+
+            if this.args.get("on"):
+                this.set("on", None)
+                self._retreat(self._index - 2)
+            return this
+
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
         JOIN_HINTS = False

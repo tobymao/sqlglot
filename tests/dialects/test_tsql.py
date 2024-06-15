@@ -9,6 +9,9 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity(
+            "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
+        )
+        self.validate_identity(
             "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON X([y])"
         )
         self.validate_identity(

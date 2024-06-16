@@ -108,7 +108,7 @@ class Step:
 
         if isinstance(expression, exp.Select) and from_:
             step = Scan.from_expression(from_.this, ctes)
-        elif isinstance(expression, exp.Union):
+        elif isinstance(expression, exp.SetOperation):
             step = SetOperation.from_expression(expression, ctes)
         else:
             step = Scan()
@@ -426,7 +426,7 @@ class SetOperation(Step):
     def from_expression(
         cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> SetOperation:
-        assert isinstance(expression, exp.Union)
+        assert isinstance(expression, exp.SetOperation)
 
         left = Step.from_expression(expression.left, ctes)
         # SELECT 1 UNION SELECT 2  <-- these subqueries don't have names

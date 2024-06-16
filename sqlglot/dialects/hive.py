@@ -451,7 +451,7 @@ class Hive(Dialect):
             exp.Insert,
             exp.Select,
             exp.Subquery,
-            exp.Union,
+            exp.SetOperation,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

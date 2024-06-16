@@ -168,8 +168,8 @@ class Generator(metaclass=_Generator):
     # Whether locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
     LOCKING_READS_SUPPORTED = False
 
-    # Always do union distinct or union all
-    EXPLICIT_UNION = False
+    # Always do <set op> distinct or <set op> all
+    EXPLICIT_SET_OP = False
 
     # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
@@ -339,10 +339,10 @@ class Generator(metaclass=_Generator):
     # Whether the function TO_NUMBER is supported
     SUPPORTS_TO_NUMBER = True
 
-    # Whether or not union modifiers apply to the outer union or select.
+    # Whether or not set op modifiers apply to the outer set op or select.
     # SELECT * FROM x UNION SELECT * FROM y LIMIT 1
-    # True means limit 1 happens after the union, False means it it happens on y.
-    OUTER_UNION_MODIFIERS = True
+    # True means limit 1 happens after the set op, False means it it happens on y.
+    SET_OP_MODIFIERS = True
 
     # Whether parameters from COPY statement are wrapped in parentheses
     COPY_PARAMS_ARE_WRAPPED = True
@@ -506,7 +506,7 @@ class Generator(metaclass=_Generator):
         exp.Insert,
         exp.Join,
         exp.Select,
-        exp.Union,
+        exp.SetOperation,
         exp.Update,
         exp.Where,
         exp.With,
@@ -515,7 +515,7 @@ class Generator(metaclass=_Generator):
     # Expressions that should not have their comments generated in maybe_comment
     EXCLUDE_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
         exp.Binary,
-        exp.Union,
+        exp.SetOperation,
     )
 
     # Expressions that can remain unwrapped when appearing in the context of an INTERVAL
@@ -2395,8 +2395,8 @@ class Generator(metaclass=_Generator):
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
-    def set_operations(self, expression: exp.Union) -> str:
-        if not self.OUTER_UNION_MODIFIERS:
+    def set_operations(self, expression: exp.SetOperation) -> str:
+        if not self.SET_OP_MODIFIERS:
             limit = expression.args.get("limit")
             order = expression.args.get("order")
 
@@ -2415,7 +2415,7 @@ class Generator(metaclass=_Generator):
         while stack:
             node = stack.pop()
 
-            if isinstance(node, exp.Union):
+            if isinstance(node, exp.SetOperation):
                 stack.append(node.expression)
                 stack.append(
                     self.maybe_comment(
@@ -2435,8 +2435,8 @@ class Generator(metaclass=_Generator):
     def union_sql(self, expression: exp.Union) -> str:
         return self.set_operations(expression)
 
-    def union_op(self, expression: exp.Union) -> str:
-        kind = " DISTINCT" if self.EXPLICIT_UNION else ""
+    def union_op(self, expression: exp.SetOperation) -> str:
+        kind = " DISTINCT" if self.EXPLICIT_SET_OP else ""
         kind = kind if expression.args.get("distinct") else " ALL"
         by_name = " BY NAME" if expression.args.get("by_name") else ""
         return f"UNION{kind}{by_name}"

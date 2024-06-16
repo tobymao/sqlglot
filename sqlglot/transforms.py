@@ -439,7 +439,7 @@ def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression
         for cte in expression.expressions:
             if not cte.args["alias"].columns:
                 query = cte.this
-                if isinstance(query, exp.Union):
+                if isinstance(query, exp.SetOperation):
                     query = query.this
 
                 cte.args["alias"].set(

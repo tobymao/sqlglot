@@ -386,6 +386,8 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
             if not isinstance(columns, dict):
                 raise SchemaError(error_msg.format(".".join(keys[:-1]), len(flattened_schema[0])))
+            if not columns:
+                raise SchemaError(f"Table {'.'.join(keys[:-1])} must have at least one column")
             if isinstance(first(columns.values()), dict):
                 raise SchemaError(
                     error_msg.format(

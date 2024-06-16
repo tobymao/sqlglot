@@ -759,12 +759,14 @@ class TSQL(Dialect):
         SUPPORTS_SELECT_INTO = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
-        OUTER_UNION_MODIFIERS = False
+        SET_OP_MODIFIERS = False
         COPY_PARAMS_EQ_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
             exp.Insert,
+            exp.Intersect,
+            exp.Except,
             exp.Merge,
             exp.Select,
             exp.Subquery,

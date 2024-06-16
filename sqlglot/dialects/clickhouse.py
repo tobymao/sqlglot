@@ -138,7 +138,7 @@ class ClickHouse(Dialect):
         # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
         # * select x from t1 union all select x from t2 limit 1;
         # * select x from t1 union all (select x from t2 limit 1);
-        MODIFIERS_ATTACHED_TO_UNION = False
+        MODIFIERS_ATTACHED_TO_SET_OP = False
         INTERVAL_SPANS = False
 
         FUNCTIONS = {
@@ -657,6 +657,11 @@ class ClickHouse(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
+        JOIN_HINTS = False
+        TABLE_HINTS = False
+        EXPLICIT_SET_OP = True
+        GROUPINGS_SEP = ""
+        SET_OP_MODIFIERS = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",
@@ -772,12 +777,6 @@ class ClickHouse(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
         }
-
-        JOIN_HINTS = False
-        TABLE_HINTS = False
-        EXPLICIT_UNION = True
-        GROUPINGS_SEP = ""
-        OUTER_UNION_MODIFIERS = False
 
         # there's no list in docs, but it can be found in Clickhouse code
         # see `ClickHouse/src/Parsers/ParserCreate*.cpp`

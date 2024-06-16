@@ -152,8 +152,9 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
             )
-    if isinstance(scope.expression, exp.Union):
-        upstream = upstream or Node(name="UNION", source=scope.expression, expression=select)
+    if isinstance(scope.expression, exp.SetOperation):
+        name = type(scope.expression).__name__.upper()
+        upstream = upstream or Node(name=name, source=scope.expression, expression=select)
 
         index = (
             column

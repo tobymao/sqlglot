@@ -48,7 +48,7 @@ def unnest(select, parent_select, next_alias_name):
     ):
         return
 
-    if isinstance(select, exp.Union):
+    if isinstance(select, exp.SetOperation):
         select = exp.select(*select.selects).from_(select.subquery(next_alias_name()))
 
     alias = next_alias_name()

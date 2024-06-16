@@ -47,7 +47,7 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
         if scope.expression.args.get("distinct"):
             parent_selections = {SELECT_ALL}
 
-        if isinstance(scope.expression, exp.Union):
+        if isinstance(scope.expression, exp.SetOperation):
             left, right = scope.union_scopes
             referenced_columns[left] = parent_selections
 

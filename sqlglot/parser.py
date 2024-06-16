@@ -1185,8 +1185,8 @@ class Parser(metaclass=_Parser):
     STRING_ALIASES = False
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
-    MODIFIERS_ATTACHED_TO_UNION = True
-    UNION_MODIFIERS = {"order", "limit", "offset"}
+    MODIFIERS_ATTACHED_TO_SET_OP = True
+    SET_OP_MODIFIERS = {"order", "limit", "offset"}
 
     # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS = True
@@ -3963,7 +3963,7 @@ class Parser(metaclass=_Parser):
             token_type = self._prev.token_type
 
             if token_type == TokenType.UNION:
-                operation = exp.Union
+                operation: t.Type[exp.SetOperation] = exp.Union
             elif token_type == TokenType.EXCEPT:
                 operation = exp.Except
             else:
@@ -3983,11 +3983,11 @@ class Parser(metaclass=_Parser):
                 expression=expression,
             )
 
-        if isinstance(this, exp.Union) and self.MODIFIERS_ATTACHED_TO_UNION:
+        if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
             expression = this.expression
 
             if expression:
-                for arg in self.UNION_MODIFIERS:
+                for arg in self.SET_OP_MODIFIERS:
                     expr = expression.args.get(arg)
                     if expr:
                         this.set(arg, expr.pop())

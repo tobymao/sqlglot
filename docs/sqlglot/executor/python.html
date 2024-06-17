@@ -127,6 +127,9 @@
 
                         </li>
                         <li>
+                                <a class="variable" href="#Python.SUPPORTS_COLUMN_JOIN_MARKS">SUPPORTS_COLUMN_JOIN_MARKS</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Python.UNESCAPED_SEQUENCES">UNESCAPED_SEQUENCES</a>
                         </li>
                         <li>
@@ -1700,6 +1703,20 @@
 
     
 
+                            <div id="Python.SUPPORTS_COLUMN_JOIN_MARKS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_COLUMN_JOIN_MARKS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.SUPPORTS_COLUMN_JOIN_MARKS"></a>
+    
+            <div class="docstring"><p>Whether the old-style outer join (+) syntax is supported.</p>
+</div>
+
+
+                            </div>
                             <div id="Python.UNESCAPED_SEQUENCES" class="classattr">
                                 <div class="attr variable">
             <span class="name">UNESCAPED_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
@@ -1973,7 +1990,7 @@
                 <dd id="Python.STRICT_STRING_CONCAT" class="variable"><a href="../dialects/dialect.html#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
                 <dd id="Python.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="../dialects/dialect.html#Dialect.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="Python.SUPPORTS_SEMI_ANTI_JOIN" class="variable"><a href="../dialects/dialect.html#Dialect.SUPPORTS_SEMI_ANTI_JOIN">SUPPORTS_SEMI_ANTI_JOIN</a></dd>
-                <dd id="Python.SUPPORTS_COLUMN_JOIN_MARKS" class="variable"><a href="../dialects/dialect.html#Dialect.SUPPORTS_COLUMN_JOIN_MARKS">SUPPORTS_COLUMN_JOIN_MARKS</a></dd>
+                <dd id="Python.COPY_PARAMS_ARE_CSV" class="variable"><a href="../dialects/dialect.html#Dialect.COPY_PARAMS_ARE_CSV">COPY_PARAMS_ARE_CSV</a></dd>
                 <dd id="Python.NORMALIZE_FUNCTIONS" class="variable"><a href="../dialects/dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
                 <dd id="Python.LOG_BASE_FIRST" class="variable"><a href="../dialects/dialect.html#Dialect.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="Python.NULL_ORDERING" class="variable"><a href="../dialects/dialect.html#Dialect.NULL_ORDERING">NULL_ORDERING</a></dd>
@@ -1988,9 +2005,10 @@
                 <dd id="Python.FORMAT_MAPPING" class="variable"><a href="../dialects/dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
                 <dd id="Python.PSEUDOCOLUMNS" class="variable"><a href="../dialects/dialect.html#Dialect.PSEUDOCOLUMNS">PSEUDOCOLUMNS</a></dd>
                 <dd id="Python.PREFER_CTE_ALIAS_COLUMN" class="variable"><a href="../dialects/dialect.html#Dialect.PREFER_CTE_ALIAS_COLUMN">PREFER_CTE_ALIAS_COLUMN</a></dd>
-                <dd id="Python.COPY_PARAMS_ARE_CSV" class="variable"><a href="../dialects/dialect.html#Dialect.COPY_PARAMS_ARE_CSV">COPY_PARAMS_ARE_CSV</a></dd>
+                <dd id="Python.DATE_PART_MAPPING" class="variable"><a href="../dialects/dialect.html#Dialect.DATE_PART_MAPPING">DATE_PART_MAPPING</a></dd>
                 <dd id="Python.get_or_raise" class="function"><a href="../dialects/dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
                 <dd id="Python.format_time" class="function"><a href="../dialects/dialect.html#Dialect.format_time">format_time</a></dd>
+                <dd id="Python.settings" class="variable"><a href="../dialects/dialect.html#Dialect.settings">settings</a></dd>
                 <dd id="Python.normalize_identifier" class="function"><a href="../dialects/dialect.html#Dialect.normalize_identifier">normalize_identifier</a></dd>
                 <dd id="Python.case_sensitive" class="function"><a href="../dialects/dialect.html#Dialect.case_sensitive">case_sensitive</a></dd>
                 <dd id="Python.can_identify" class="function"><a href="../dialects/dialect.html#Dialect.can_identify">can_identify</a></dd>
@@ -2235,7 +2253,7 @@ Default: True</li>
                 <dd id="Python.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
                 <dd id="Python.Generator.IGNORE_NULLS_IN_FUNC" class="variable"><a href="../generator.html#Generator.IGNORE_NULLS_IN_FUNC">IGNORE_NULLS_IN_FUNC</a></dd>
                 <dd id="Python.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
-                <dd id="Python.Generator.EXPLICIT_UNION" class="variable"><a href="../generator.html#Generator.EXPLICIT_UNION">EXPLICIT_UNION</a></dd>
+                <dd id="Python.Generator.EXPLICIT_SET_OP" class="variable"><a href="../generator.html#Generator.EXPLICIT_SET_OP">EXPLICIT_SET_OP</a></dd>
                 <dd id="Python.Generator.WRAP_DERIVED_VALUES" class="variable"><a href="../generator.html#Generator.WRAP_DERIVED_VALUES">WRAP_DERIVED_VALUES</a></dd>
                 <dd id="Python.Generator.CREATE_FUNCTION_RETURN_AS" class="variable"><a href="../generator.html#Generator.CREATE_FUNCTION_RETURN_AS">CREATE_FUNCTION_RETURN_AS</a></dd>
                 <dd id="Python.Generator.MATCHED_BY_SOURCE" class="variable"><a href="../generator.html#Generator.MATCHED_BY_SOURCE">MATCHED_BY_SOURCE</a></dd>
@@ -2290,7 +2308,7 @@ Default: True</li>
                 <dd id="Python.Generator.SUPPORTED_JSON_PATH_PARTS" class="variable"><a href="../generator.html#Generator.SUPPORTED_JSON_PATH_PARTS">SUPPORTED_JSON_PATH_PARTS</a></dd>
                 <dd id="Python.Generator.CAN_IMPLEMENT_ARRAY_ANY" class="variable"><a href="../generator.html#Generator.CAN_IMPLEMENT_ARRAY_ANY">CAN_IMPLEMENT_ARRAY_ANY</a></dd>
                 <dd id="Python.Generator.SUPPORTS_TO_NUMBER" class="variable"><a href="../generator.html#Generator.SUPPORTS_TO_NUMBER">SUPPORTS_TO_NUMBER</a></dd>
-                <dd id="Python.Generator.OUTER_UNION_MODIFIERS" class="variable"><a href="../generator.html#Generator.OUTER_UNION_MODIFIERS">OUTER_UNION_MODIFIERS</a></dd>
+                <dd id="Python.Generator.SET_OP_MODIFIERS" class="variable"><a href="../generator.html#Generator.SET_OP_MODIFIERS">SET_OP_MODIFIERS</a></dd>
                 <dd id="Python.Generator.COPY_PARAMS_ARE_WRAPPED" class="variable"><a href="../generator.html#Generator.COPY_PARAMS_ARE_WRAPPED">COPY_PARAMS_ARE_WRAPPED</a></dd>
                 <dd id="Python.Generator.COPY_PARAMS_EQ_REQUIRED" class="variable"><a href="../generator.html#Generator.COPY_PARAMS_EQ_REQUIRED">COPY_PARAMS_EQ_REQUIRED</a></dd>
                 <dd id="Python.Generator.COPY_HAS_INTO_KEYWORD" class="variable"><a href="../generator.html#Generator.COPY_HAS_INTO_KEYWORD">COPY_HAS_INTO_KEYWORD</a></dd>

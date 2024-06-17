@@ -1,6 +1,40 @@
 Changelog
 =========
 
+## [v25.2.0] - 2024-06-17
+### :boom: BREAKING CHANGES
+- due to [`d331e56`](https://github.com/tobymao/sqlglot/commit/d331e56aad7784a122dc36d7bffe5cf0565e38d1) - Normalize time units in their full singular form *(PR [#3652](https://github.com/tobymao/sqlglot/pull/3652) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Normalize time units in their full singular form (#3652)
+
+- due to [`468123e`](https://github.com/tobymao/sqlglot/commit/468123e4b7612287e128529de62f3a88f4e1d579) - create SetOperation class *(PR [#3661](https://github.com/tobymao/sqlglot/pull/3661) by [@georgesittas](https://github.com/georgesittas))*:
+
+  create SetOperation class (#3661)
+
+
+### :sparkles: New Features
+- [`e7a158b`](https://github.com/tobymao/sqlglot/commit/e7a158b6f0990db00a4890dfb456de6112f50fd2) - set misc. dialect settings if available *(PR [#3649](https://github.com/tobymao/sqlglot/pull/3649) by [@georgesittas](https://github.com/georgesittas))*
+- [`ff3dabc`](https://github.com/tobymao/sqlglot/commit/ff3dabc75f9a03627caa988b85f88be04a6c70a4) - **tsql**: index on closes [#3658](https://github.com/tobymao/sqlglot/pull/3658) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`fb4d908`](https://github.com/tobymao/sqlglot/commit/fb4d9080a042d40455bcf631ca6a0afaacb19683) - **tsql**: clustered index closes [#3659](https://github.com/tobymao/sqlglot/pull/3659) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`88c4965`](https://github.com/tobymao/sqlglot/commit/88c49651ecc9d55967f5c8056352de0f0981989f) - **mysql**: delete redundant keywords *(PR [#3646](https://github.com/tobymao/sqlglot/pull/3646) by [@Toms1999](https://github.com/Toms1999))*
+- [`4c82c0d`](https://github.com/tobymao/sqlglot/commit/4c82c0d01086e0a622a1448d25f51b0e760d053f) - Parse UNNEST as a function in base dialect *(PR [#3650](https://github.com/tobymao/sqlglot/pull/3650) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3647](https://github.com/tobymao/sqlglot/issues/3647) opened by [@ronnix](https://github.com/ronnix)*
+- [`d331e56`](https://github.com/tobymao/sqlglot/commit/d331e56aad7784a122dc36d7bffe5cf0565e38d1) - **redshift**: Normalize time units in their full singular form *(PR [#3652](https://github.com/tobymao/sqlglot/pull/3652) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3651](https://github.com/tobymao/sqlglot/issues/3651) opened by [@vidit-wisdom](https://github.com/vidit-wisdom)*
+- [`a06ee36`](https://github.com/tobymao/sqlglot/commit/a06ee3695d4d23626c1ef0700b373fc84600d374) - **parser**: edge case in _parse_types *(PR [#3656](https://github.com/tobymao/sqlglot/pull/3656) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3655](https://github.com/tobymao/sqlglot/issues/3655) opened by [@dangoldin](https://github.com/dangoldin)*
+- [`a739741`](https://github.com/tobymao/sqlglot/commit/a739741dca5eefd7d4a2c450dd4506cb951d7efb) - teradata warning *(commit by [@tobymao](https://github.com/tobymao))*
+- [`868f30d`](https://github.com/tobymao/sqlglot/commit/868f30d1ff46ec9b8a048bb79fbb511f458fd769) - improve schema error handling *(PR [#3663](https://github.com/tobymao/sqlglot/pull/3663) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3662](https://github.com/tobymao/sqlglot/issues/3662) opened by [@dexhorthy](https://github.com/dexhorthy)*
+
+### :recycle: Refactors
+- [`e8cab58`](https://github.com/tobymao/sqlglot/commit/e8cab58c4c44e84ee21d11e8554ee7aed5dc5901) - clean up join mark elimination rule *(PR [#3653](https://github.com/tobymao/sqlglot/pull/3653) by [@georgesittas](https://github.com/georgesittas))*
+- [`468123e`](https://github.com/tobymao/sqlglot/commit/468123e4b7612287e128529de62f3a88f4e1d579) - create SetOperation class *(PR [#3661](https://github.com/tobymao/sqlglot/pull/3661) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3660](https://github.com/tobymao/sqlglot/issues/3660) opened by [@sorgfresser](https://github.com/sorgfresser)*
+
+
 ## [v25.1.0] - 2024-06-12
 ### :boom: BREAKING CHANGES
 - due to [`d6cfb41`](https://github.com/tobymao/sqlglot/commit/d6cfb41d63893eadf23a81adf413952f3bd4f0ad) - Support for DATE_ADD functions *(PR [#3609](https://github.com/tobymao/sqlglot/pull/3609) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3922,3 +3956,4 @@ Changelog
 [v25.0.2]: https://github.com/tobymao/sqlglot/compare/v25.0.1...v25.0.2
 [v25.0.3]: https://github.com/tobymao/sqlglot/compare/v25.0.2...v25.0.3
 [v25.1.0]: https://github.com/tobymao/sqlglot/compare/v25.0.3...v25.1.0
+[v25.2.0]: https://github.com/tobymao/sqlglot/compare/v25.1.0...v25.2.0

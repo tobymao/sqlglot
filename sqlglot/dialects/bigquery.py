@@ -249,7 +249,10 @@ class BigQuery(Dialect):
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
     def normalize_identifier(self, expression: E) -> E:
-        if isinstance(expression, exp.Identifier):
+        if (
+            isinstance(expression, exp.Identifier)
+            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
+        ):
             parent = expression.parent
             while isinstance(parent, exp.Dot):
                 parent = parent.parent

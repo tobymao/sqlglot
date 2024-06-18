@@ -2900,7 +2900,7 @@ class Parser(metaclass=_Parser):
                         continue
                 break
 
-        if self.SUPPORTS_IMPLICIT_UNNEST and this and "from" in this.args:
+        if self.SUPPORTS_IMPLICIT_UNNEST and this and this.args.get("from"):
             this = self._implicit_unnests_to_explicit(this)
 
         return this

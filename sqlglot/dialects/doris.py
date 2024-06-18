@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 
 
-def _add_lag(self: Doris.Generator, expression: exp.Lag) -> str:
+def _add_default_lag(self: Doris.Generator, expression: exp.Lag) -> str:
     args = expression.args
     offset = args.get('offset')
     default = args.get('default')
@@ -24,6 +24,20 @@ def _add_lag(self: Doris.Generator, expression: exp.Lag) -> str:
             default = exp.null()
 
     return self.func("LAG", expression.this, offset, default)
+
+
+def _add_default_lead(self: Doris.Generator, expression: exp.Lead) -> str:
+    args = expression.args
+    offset = args.get('offset')
+    default = args.get('default')
+
+    if len(args) == 1:
+            offset = exp.Literal.number(1)
+            default = exp.null()
+    if len(args) == 2:
+            default = exp.null()
+
+    return self.func("LEAD", expression.this, offset, default)
 
 
 class Doris(MySQL):
@@ -71,7 +85,8 @@ class Doris(MySQL):
                 "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
-            exp.Lag: _add_lag,
+            exp.Lag: _add_default_lag,
+            exp.Lead: _add_default_lead,
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),

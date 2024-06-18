@@ -112,6 +112,10 @@ class TestTranspile(unittest.TestCase):
 
     def test_comments(self):
         self.validate(
+            "select /* asfd /* asdf */ asdf */ 1",
+            "/* asfd /* asdf */ asdf */ SELECT 1",
+        )
+        self.validate(
             "SELECT c /* foo */ AS alias",
             "SELECT c AS alias /* foo */",
         )

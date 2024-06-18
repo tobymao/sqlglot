@@ -34,6 +34,7 @@ class JSONPathTokenizer(Tokenizer):
 
     IDENTIFIER_ESCAPES = ["\\"]
     STRING_ESCAPES = ["\\"]
+    IDENTIFIERS = ["`", '"']
 
 
 def parse(path: str) -> exp.JSONPath:

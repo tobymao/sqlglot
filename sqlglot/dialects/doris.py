@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
+
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     build_timestamp_trunc,
@@ -9,6 +10,20 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
+
+
+def _add_lag(self: Doris.Generator, expression: exp.Lag) -> str:
+    args = expression.args
+    offset = args.get('offset')
+    default = args.get('default')
+
+    if len(args) == 1:
+            offset = exp.Literal.number(1)
+            default = exp.null()
+    if len(args) == 2:
+            default = exp.null()
+
+    return self.func("LAG", expression.this, offset, default)
 
 
 class Doris(MySQL):
@@ -56,6 +71,7 @@ class Doris(MySQL):
                 "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
+            exp.Lag: _add_lag,
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),

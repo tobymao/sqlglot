@@ -56,6 +56,20 @@ class TestDoris(Validator):
                 "postgres": "SELECT STRING_AGG('aa', ',')",
             },
         )
+        self.validate_all(
+            "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
+            read={
+                "doris": "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
+                "postgres": "SELECT LAG(1) OVER (ORDER BY 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1)",
+            read={
+                "doris": "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1)",
+                "postgres": "SELECT LAG(1, 2) OVER (ORDER BY 1)",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("COALECSE(a, b, c, d)")

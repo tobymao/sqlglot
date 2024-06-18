@@ -182,6 +182,7 @@ class ClickZetta(Spark):
             exp.Try: lambda self, e: self.sql(e, "this"),
             exp.Tuple: fill_tuple_with_column_name,
             exp.GenerateSeries: rename_func("SEQUENCE"),
+            exp.DateAdd: lambda self, e: f"DATEADD({e.args.get('unit').this.upper()}, {self.sql(e.expression)}, {self.sql(e.this)})",
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

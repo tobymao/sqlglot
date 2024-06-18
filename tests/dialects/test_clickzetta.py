@@ -136,6 +136,10 @@ select j from a""",
             "SELECT j[2]",
             read={'presto': "select json_array_get(j,2)"}
         )
+        self.validate_all(
+            "SELECT DATEADD(HOUR, 1, CURRENT_TIMESTAMP())",
+            read={'presto': "select date_add('hour', 1, now())"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

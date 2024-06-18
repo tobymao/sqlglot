@@ -158,6 +158,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         },
         exp.DataType.Type.DATETIME: {
             exp.CurrentDatetime,
+            exp.Datetime,
             exp.DatetimeAdd,
             exp.DatetimeSub,
         },
@@ -195,6 +196,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         },
         exp.DataType.Type.JSON: {
             exp.ParseJSON,
+        },
+        exp.DataType.Type.TIME: {
+            exp.Time,
         },
         exp.DataType.Type.TIMESTAMP: {
             exp.CurrentTime,

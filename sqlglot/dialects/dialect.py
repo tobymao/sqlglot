@@ -906,19 +906,45 @@ def timestamptrunc_sql(zone: bool = False) -> t.Callable[[Generator, exp.Timesta
 
 
 def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
-    if not expression.expression:
+    zone = expression.args.get("zone")
+    if not zone:
         from sqlglot.optimizer.annotate_types import annotate_types
 
         target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
         return self.sql(exp.cast(expression.this, target_type))
-    if expression.text("expression").lower() in TIMEZONES:
+    if zone.name.lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
                 this=exp.cast(expression.this, exp.DataType.Type.TIMESTAMP),
-                zone=expression.expression,
+                zone=zone,
             )
         )
-    return self.func("TIMESTAMP", expression.this, expression.expression)
+    return self.func("TIMESTAMP", expression.this, zone)
+
+
+def no_time_sql(self: Generator, expression: exp.Time) -> str:
+    # Transpile BQ's TIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIME)
+    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ)
+    expr = exp.cast(
+        exp.AtTimeZone(this=this, zone=expression.args.get("zone")), exp.DataType.Type.TIME
+    )
+    return self.sql(expr)
+
+
+def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
+    this = expression.this
+    expr = expression.expression
+
+    if expr.name.lower() in TIMEZONES:
+        # Transpile BQ's DATETIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIMESTAMP)
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMPTZ)
+        this = exp.cast(exp.AtTimeZone(this=this, zone=expr), exp.DataType.Type.TIMESTAMP)
+        return self.sql(this)
+
+    this = exp.cast(this, exp.DataType.Type.DATE)
+    expr = exp.cast(expr, exp.DataType.Type.TIME)
+
+    return self.sql(exp.cast(exp.Add(this=this, expression=expr), exp.DataType.Type.TIMESTAMP))
 
 
 def locate_to_strposition(args: t.List) -> exp.Expression:

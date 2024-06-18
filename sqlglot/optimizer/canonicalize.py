@@ -42,7 +42,7 @@ def replace_date_funcs(node: exp.Expression) -> exp.Expression:
         and not node.args.get("zone")
     ):
         return exp.cast(node.this, to=exp.DataType.Type.DATE)
-    if isinstance(node, exp.Timestamp) and not node.expression:
+    if isinstance(node, exp.Timestamp) and not node.args.get("zone"):
         if not node.type:
             from sqlglot.optimizer.annotate_types import annotate_types
 

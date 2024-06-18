@@ -13,7 +13,6 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     build_formatted_time,
-    build_timestamp_from_parts,
     filter_array_using_unnest,
     if_sql,
     inline_array_unless_query,
@@ -202,10 +201,17 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
 def _build_time(args: t.List) -> exp.Func:
     if len(args) == 1:
         return exp.TsOrDsToTime(this=args[0])
-    if len(args) == 3:
-        return exp.TimeFromParts.from_arg_list(args)
+    if len(args) == 2:
+        return exp.Time.from_arg_list(args)
+    return exp.TimeFromParts.from_arg_list(args)
 
-    return exp.Anonymous(this="TIME", expressions=args)
+
+def _build_datetime(args: t.List) -> exp.Func:
+    if len(args) == 1:
+        return exp.TsOrDsToTimestamp.from_arg_list(args)
+    if len(args) == 2:
+        return exp.Datetime.from_arg_list(args)
+    return exp.TimestampFromParts.from_arg_list(args)
 
 
 class BigQuery(Dialect):
@@ -323,7 +329,7 @@ class BigQuery(Dialect):
                 unit=exp.Literal.string(str(seq_get(args, 1))),
                 this=seq_get(args, 0),
             ),
-            "DATETIME": build_timestamp_from_parts,
+            "DATETIME": _build_datetime,
             "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
             "DIV": binary_from_function(exp.IntDiv),
@@ -661,6 +667,7 @@ class BigQuery(Dialect):
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToTime: rename_func("TIME"),
+            exp.TsOrDsToTimestamp: rename_func("DATETIME"),
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixDate: rename_func("UNIX_DATE"),
             exp.UnixToTime: _unix_to_time_sql,

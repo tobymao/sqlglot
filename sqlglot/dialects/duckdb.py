@@ -15,11 +15,13 @@ from sqlglot.dialects.dialect import (
     build_default_decimal_type,
     date_trunc_to_time,
     datestrtodate_sql,
+    no_datetime_sql,
     encode_decode_sql,
     build_formatted_time,
     inline_array_unless_query,
     no_comment_column_constraint_sql,
     no_safe_divide_sql,
+    no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
     regexp_extract_sql,
@@ -407,6 +409,7 @@ class DuckDB(Dialect):
                 "DATE_DIFF", f"'{e.args.get('unit') or 'DAY'}'", e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
+            exp.Datetime: no_datetime_sql,
             exp.DateToDi: lambda self,
             e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
@@ -457,6 +460,7 @@ class DuckDB(Dialect):
             ),
             exp.Struct: _struct_sql,
             exp.TimeAdd: _date_delta_sql,
+            exp.Time: no_time_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this

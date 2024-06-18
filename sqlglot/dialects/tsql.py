@@ -450,6 +450,7 @@ class TSQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "CLUSTERED INDEX": TokenType.INDEX,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.DECLARE,
@@ -457,6 +458,7 @@ class TSQL(Dialect):
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
+            "NONCLUSTERED INDEX": TokenType.INDEX,
             "NTEXT": TokenType.TEXT,
             "OPTION": TokenType.OPTION,
             "OUTPUT": TokenType.RETURNING,
@@ -757,12 +759,14 @@ class TSQL(Dialect):
         SUPPORTS_SELECT_INTO = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
-        OUTER_UNION_MODIFIERS = False
+        SET_OP_MODIFIERS = False
         COPY_PARAMS_EQ_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
             exp.Insert,
+            exp.Intersect,
+            exp.Except,
             exp.Merge,
             exp.Select,
             exp.Subquery,

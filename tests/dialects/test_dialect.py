@@ -121,6 +121,12 @@ class TestDialect(Validator):
 
         self.assertEqual(str(cm.exception), "Unknown dialect 'asdfjasodiufjsd'.")
 
+        oracle_with_settings = Dialect.get_or_raise(
+            "oracle, normalization_strategy = lowercase, version = 19.5"
+        )
+        self.assertEqual(oracle_with_settings.normalization_strategy.value, "LOWERCASE")
+        self.assertEqual(oracle_with_settings.settings, {"version": "19.5"})
+
     def test_compare_dialects(self):
         bigquery_class = Dialect["bigquery"]
         bigquery_object = BigQuery()

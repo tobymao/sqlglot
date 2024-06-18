@@ -552,7 +552,7 @@ class BigQuery(Dialect):
             return bracket
 
     class Generator(generator.Generator):
-        EXPLICIT_UNION = True
+        EXPLICIT_SET_OP = True
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
         QUERY_HINTS = False

@@ -150,6 +150,7 @@ class Parser(metaclass=_Parser):
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
+        "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
@@ -157,11 +158,13 @@ class Parser(metaclass=_Parser):
         "LOG": build_logarithm,
         "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
         "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
+        "LOWER": build_lower,
         "MOD": build_mod,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
+        "TO_HEX": build_hex,
         "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
             this=exp.Cast(
                 this=seq_get(args, 0),
@@ -170,11 +173,9 @@ class Parser(metaclass=_Parser):
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
-        "VAR_MAP": build_var_map,
-        "LOWER": build_lower,
+        "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
-        "HEX": build_hex,
-        "TO_HEX": build_hex,
+        "VAR_MAP": build_var_map,
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -1184,8 +1185,8 @@ class Parser(metaclass=_Parser):
     STRING_ALIASES = False
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
-    MODIFIERS_ATTACHED_TO_UNION = True
-    UNION_MODIFIERS = {"order", "limit", "offset"}
+    MODIFIERS_ATTACHED_TO_SET_OP = True
+    SET_OP_MODIFIERS = {"order", "limit", "offset"}
 
     # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS = True
@@ -3187,6 +3188,8 @@ class Parser(metaclass=_Parser):
         )
         where = self._parse_where()
 
+        on = self._parse_field() if self._match(TokenType.ON) else None
+
         return self.expression(
             exp.IndexParameters,
             using=using,
@@ -3196,6 +3199,7 @@ class Parser(metaclass=_Parser):
             where=where,
             with_storage=with_storage,
             tablespace=tablespace,
+            on=on,
         )
 
     def _parse_index(
@@ -3959,7 +3963,7 @@ class Parser(metaclass=_Parser):
             token_type = self._prev.token_type
 
             if token_type == TokenType.UNION:
-                operation = exp.Union
+                operation: t.Type[exp.SetOperation] = exp.Union
             elif token_type == TokenType.EXCEPT:
                 operation = exp.Except
             else:
@@ -3979,11 +3983,11 @@ class Parser(metaclass=_Parser):
                 expression=expression,
             )
 
-        if isinstance(this, exp.Union) and self.MODIFIERS_ATTACHED_TO_UNION:
+        if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
             expression = this.expression
 
             if expression:
-                for arg in self.UNION_MODIFIERS:
+                for arg in self.SET_OP_MODIFIERS:
                     expr = expression.args.get(arg)
                     if expr:
                         this.set(arg, expr.pop())
@@ -4287,7 +4291,7 @@ class Parser(metaclass=_Parser):
                 any_token=False, tokens=(TokenType.VAR,)
             )
             if identifier:
-                tokens = self.dialect.tokenize(identifier.name)
+                tokens = self.dialect.tokenize(identifier.sql(dialect=self.dialect))
 
                 if len(tokens) != 1:
                     self.raise_error("Unexpected identifier", self._prev)

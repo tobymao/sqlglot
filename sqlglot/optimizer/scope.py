@@ -29,7 +29,7 @@ class Scope:
     Selection scope.
 
     Attributes:
-        expression (exp.Select|exp.Union): Root expression of this scope
+        expression (exp.Select|exp.SetOperation): Root expression of this scope
         sources (dict[str, exp.Table|Scope]): Mapping of source name to either
             a Table expression or another Scope instance. For example:
                 SELECT * FROM x                     {"x": Table(this="x")}
@@ -233,7 +233,7 @@ class Scope:
             SELECT * FROM x WHERE a IN (SELECT ...) <- that's a subquery
 
         Returns:
-            list[exp.Select | exp.Union]: subqueries
+            list[exp.Select | exp.SetOperation]: subqueries
         """
         self._ensure_collected()
         return self._subqueries
@@ -339,7 +339,7 @@ class Scope:
                 sources in the current scope.
         """
         if self._external_columns is None:
-            if isinstance(self.expression, exp.Union):
+            if isinstance(self.expression, exp.SetOperation):
                 left, right = self.union_scopes
                 self._external_columns = left.external_columns + right.external_columns
             else:
@@ -535,7 +535,7 @@ def _traverse_scope(scope):
 
     if isinstance(expression, exp.Select):
         yield from _traverse_select(scope)
-    elif isinstance(expression, exp.Union):
+    elif isinstance(expression, exp.SetOperation):
         yield from _traverse_ctes(scope)
         yield from _traverse_union(scope)
         return
@@ -588,7 +588,7 @@ def _traverse_union(scope):
             scope_type=ScopeType.UNION,
         )
 
-        if isinstance(expression, exp.Union):
+        if isinstance(expression, exp.SetOperation):
             yield from _traverse_ctes(new_scope)
 
             union_scope_stack.append(new_scope)
@@ -620,7 +620,7 @@ def _traverse_ctes(scope):
         if with_ and with_.recursive:
             union = cte.this
 
-            if isinstance(union, exp.Union):
+            if isinstance(union, exp.SetOperation):
                 sources[cte_name] = scope.branch(union.this, scope_type=ScopeType.CTE)
 
         child_scope = None

@@ -40,6 +40,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
     Q = t.TypeVar("Q", bound="Query")
+    S = t.TypeVar("S", bound="SetOperation")
 
 
 class _Expression(type):
@@ -2127,6 +2128,7 @@ class IndexParameters(Expression):
         "partition_by": False,
         "tablespace": False,
         "where": False,
+        "on": False,
     }
 
 
@@ -3065,7 +3067,7 @@ class Table(Expression):
         return col
 
 
-class Union(Query):
+class SetOperation(Query):
     arg_types = {
         "with": False,
         "this": True,
@@ -3076,13 +3078,13 @@ class Union(Query):
     }
 
     def select(
-        self,
+        self: S,
         *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> Union:
+    ) -> S:
         this = maybe_copy(self, copy)
         this.this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
         this.expression.unnest().select(
@@ -3111,11 +3113,15 @@ class Union(Query):
         return self.expression
 
 
-class Except(Union):
+class Union(SetOperation):
     pass
 
 
-class Intersect(Union):
+class Except(SetOperation):
+    pass
+
+
+class Intersect(SetOperation):
     pass
 
 
@@ -3727,7 +3733,7 @@ class Select(Query):
         return self.expressions
 
 
-UNWRAPPED_QUERIES = (Select, Union)
+UNWRAPPED_QUERIES = (Select, SetOperation)
 
 
 class Subquery(DerivedTable, Query):

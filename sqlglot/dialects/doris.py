@@ -11,6 +11,15 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 
 
+def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
+    return self.func(
+        "LAG" if isinstance(expression, exp.Lag) else "LEAD",
+        expression.this,
+        expression.args.get("offset") or exp.Literal.number(1),
+        expression.args.get("default") or exp.null(),
+    )
+
+
 class Doris(MySQL):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
@@ -56,6 +65,8 @@ class Doris(MySQL):
                 "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
+            exp.Lag: _lag_lead_sql,
+            exp.Lead: _lag_lead_sql,
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),

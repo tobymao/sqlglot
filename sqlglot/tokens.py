@@ -1162,9 +1162,21 @@ class Tokenizer(metaclass=_Tokenizer):
             # Skip the comment's start delimiter
             self._advance(comment_start_size)
 
+            comment_count = 1
             comment_end_size = len(comment_end)
-            while not self._end and self._chars(comment_end_size) != comment_end:
+
+            while not self._end:
+                if self._chars(comment_end_size) == comment_end:
+                    comment_count -= 1
+                    if not comment_count:
+                        break
+
                 self._advance(alnum=True)
+
+                # Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
+                if not self._end and self._chars(comment_end_size) == comment_start:
+                    self._advance(comment_start_size)
+                    comment_count += 1
 
             self._comments.append(self._text[comment_start_size : -comment_end_size + 1])
             self._advance(comment_end_size - 1)

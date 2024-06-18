@@ -361,10 +361,24 @@ impl<'a> TokenizerState<'a> {
             // Skip the comment's start delimiter.
             self.advance(comment_start_size as isize)?;
 
+            let mut comment_count = 1;
             let comment_end_size = comment_end.len();
 
-            while !self.is_end && self.chars(comment_end_size) != *comment_end {
+            while !self.is_end {
+                if self.chars(comment_end_size) == *comment_end {
+                    comment_count -= 1;
+                    if comment_count == 0 {
+                        break;
+                    }
+                }
+
                 self.advance(1)?;
+
+                // Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
+                if !self.is_end && self.chars(comment_start_size) == *comment_start {
+                    self.advance(comment_start_size as isize)?;
+                    comment_count += 1
+                }
             }
 
             let text = self.text();

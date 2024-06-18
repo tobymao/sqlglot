@@ -14,28 +14,28 @@ from sqlglot.dialects.mysql import MySQL
 
 def _add_default_lag(self: Doris.Generator, expression: exp.Lag) -> str:
     args = expression.args
-    offset = args.get('offset')
-    default = args.get('default')
+    offset = args.get("offset")
+    default = args.get("default")
 
     if len(args) == 1:
-            offset = exp.Literal.number(1)
-            default = exp.null()
+        offset = exp.Literal.number(1)
+        default = exp.null()
     if len(args) == 2:
-            default = exp.null()
+        default = exp.null()
 
     return self.func("LAG", expression.this, offset, default)
 
 
 def _add_default_lead(self: Doris.Generator, expression: exp.Lead) -> str:
     args = expression.args
-    offset = args.get('offset')
-    default = args.get('default')
+    offset = args.get("offset")
+    default = args.get("default")
 
     if len(args) == 1:
-            offset = exp.Literal.number(1)
-            default = exp.null()
+        offset = exp.Literal.number(1)
+        default = exp.null()
     if len(args) == 2:
-            default = exp.null()
+        default = exp.null()
 
     return self.func("LEAD", expression.this, offset, default)
 

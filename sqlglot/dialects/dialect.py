@@ -833,7 +833,7 @@ def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
     expr = expression.expression
 
     if expr.name.lower() in TIMEZONES:
-        # Transpile BQ's DATETIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIME)
+        # Transpile BQ's DATETIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIMESTAMP)
         this = exp.cast(this, exp.DataType.Type.TIMESTAMPTZ)
         this = exp.cast(exp.AtTimeZone(this=this, zone=expr), exp.DataType.Type.TIMESTAMP)
         return self.sql(this)

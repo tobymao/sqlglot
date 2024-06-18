@@ -13,7 +13,6 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     build_formatted_time,
-    build_timestamp_from_parts,
     filter_array_using_unnest,
     if_sql,
     inline_array_unless_query,
@@ -202,7 +201,7 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
 def _build_time(args: t.List) -> exp.Func:
     if len(args) == 1:
         return exp.TsOrDsToTime(this=args[0])
-    elif len(args) == 2:
+    if len(args) == 2:
         return exp.Time.from_arg_list(args)
     return exp.TimeFromParts.from_arg_list(args)
 
@@ -210,9 +209,9 @@ def _build_time(args: t.List) -> exp.Func:
 def _build_datetime(args: t.List) -> exp.Func:
     if len(args) == 1:
         return exp.TsOrDsToTimestamp.from_arg_list(args)
-    elif len(args) == 2:
+    if len(args) == 2:
         return exp.Datetime.from_arg_list(args)
-    return build_timestamp_from_parts(args)
+    return exp.TimestampFromParts.from_arg_list(args)
 
 
 class BigQuery(Dialect):

@@ -197,11 +197,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.DataType.Type.JSON: {
             exp.ParseJSON,
         },
+        exp.DataType.Type.TIME: {
+            exp.Time,
+        },
         exp.DataType.Type.TIMESTAMP: {
             exp.CurrentTime,
             exp.CurrentTimestamp,
             exp.StrToTime,
-            exp.Time,
             exp.TimeAdd,
             exp.TimeStrToTime,
             exp.TimeSub,

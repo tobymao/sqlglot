@@ -72,7 +72,7 @@ class Doris(MySQL):
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
             exp.JSONBExtractScalar: lambda self, e: self.func(
-                "JSONB_EXTRACT", e.this, _jsonb_extract_sql(e.expression)
+                "JSON_EXTRACT", e.this, _jsonb_extract_sql(e.expression)
             ),
             exp.Lag: _lag_lead_sql,
             exp.Lead: _lag_lead_sql,

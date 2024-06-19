@@ -106,7 +106,7 @@ def fill_tuple_with_column_name(self: ClickZetta.Generator, expression: exp.Tupl
 
 def date_add_sql(self: ClickZetta.Generator, expression: exp.DateAdd) -> str:
     if read_dialect() == MYSQL:
-        return f"{self.sql(expression.this)} + INTERVAL 1 {expression.args.get('unit').this.upper()} * ({self.sql(expression.expression)})"
+        return f"({self.sql(expression.this)} + INTERVAL 1 {expression.args.get('unit').this.upper()} * ({self.sql(expression.expression)}))"
     return f"DATEADD({expression.args.get('unit').this.upper()}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
 
 class ClickZetta(Spark):

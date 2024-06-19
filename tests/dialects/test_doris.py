@@ -84,6 +84,13 @@ class TestDoris(Validator):
                 "postgres": "SELECT LEAD(1, 2) OVER (ORDER BY 1)",
             },
         )
+        self.validate_all(
+            """SELECT JSONB_EXTRACT(CAST('{"A": {"B": {"C": "VALUE1"}}}' AS JSON), '$.A.B.C')""",
+            read={
+                "doris": """SELECT JSONB_EXTRACT(CAST('{"A": {"B": {"C": "VALUE1"}}}' AS JSON), '$.A.B.C')""",
+                "postgres": """SELECT '{"A": {"B": {"C": "VALUE1"}}}'::JSON#>>'{A,B,C}'""",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("COALECSE(a, b, c, d)")

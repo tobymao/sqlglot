@@ -20,6 +20,12 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     )
 
 
+def _jsonb_extract_sql(path_expression):
+    path = path_expression.this
+    path_elements = path.strip("{}").split(",")
+    return f"'$.{'.'.join(path_elements)}'"
+
+
 class Doris(MySQL):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
@@ -65,6 +71,9 @@ class Doris(MySQL):
                 "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
+            exp.JSONBExtractScalar: lambda self, e: self.func(
+                "JSONB_EXTRACT", e.this, _jsonb_extract_sql(e.expression)
+            ),
             exp.Lag: _lag_lead_sql,
             exp.Lead: _lag_lead_sql,
             exp.Map: rename_func("ARRAY_MAP"),

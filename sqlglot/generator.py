@@ -368,6 +368,9 @@ class Generator(metaclass=_Generator):
     # The keywords to use when prefixing & separating WITH based properties
     WITH_PROPERTIES_PREFIX = "WITH"
 
+    # Whether to quote the generated expression of exp.JsonPath
+    QUOTE_JSON_PATH = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2655,7 +2658,10 @@ class Generator(metaclass=_Generator):
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
         path = self.expressions(expression, sep="", flat=True).lstrip(".")
-        return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+        if self.QUOTE_JSON_PATH:
+            path = f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+
+        return path
 
     def json_path_part(self, expression: int | str | exp.JSONPathPart) -> str:
         if isinstance(expression, exp.JSONPathPart):

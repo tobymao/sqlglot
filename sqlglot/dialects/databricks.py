@@ -61,6 +61,7 @@ class Databricks(Spark):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = False
+        QUOTE_JSON_PATH = False
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
@@ -110,6 +111,3 @@ class Databricks(Spark):
         ) -> str:
             expression.set("this", True)  # trigger ALWAYS in super class
             return super().generatedasidentitycolumnconstraint_sql(expression)
-
-        def jsonpath_sql(self, expression: exp.JSONPath) -> str:
-            return self.expressions(expression, sep="", flat=True).lstrip(".")

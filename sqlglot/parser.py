@@ -869,6 +869,7 @@ class Parser(metaclass=_Parser):
         "SAMPLE": lambda self: self.expression(
             exp.SampleProperty, this=self._match_text_seq("BY") and self._parse_bitwise()
         ),
+        "SECURE": lambda self: self.expression(exp.SecureProperty),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SETTINGS": lambda self: self.expression(
             exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)

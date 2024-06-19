@@ -1216,6 +1216,7 @@ WHERE
                     "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
                 )
 
+        self.validate_identity("CREATE SECURE VIEW table1 AS (SELECT a FROM table2)")
         self.validate_identity(
             """create external table et2(
   col1 date as (parse_json(metadata$external_table_partition):COL1::date),

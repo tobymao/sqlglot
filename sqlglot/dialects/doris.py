@@ -20,8 +20,8 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     )
 
 
-def _jsonb_extract_sql(path_expression):
-    path = path_expression.this
+def _jsonb_extract_scalar_sql(expression: exp.JSONBExtractScalar) -> str:
+    path = expression.this
     path_elements = path.strip("{}").split(",")
     return f"'$.{'.'.join(path_elements)}'"
 
@@ -72,7 +72,7 @@ class Doris(MySQL):
             ),
             exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
             exp.JSONBExtractScalar: lambda self, e: self.func(
-                "JSON_EXTRACT", e.this, _jsonb_extract_sql(e.expression)
+                "JSONB_EXTRACT", e.this, _jsonb_extract_scalar_sql(e.expression)
             ),
             exp.Lag: _lag_lead_sql,
             exp.Lead: _lag_lead_sql,

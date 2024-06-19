@@ -104,6 +104,11 @@ def fill_tuple_with_column_name(self: ClickZetta.Generator, expression: exp.Tupl
     else:
         return f"({self.expressions(expression, flat=True)})"
 
+def date_add_sql(self: ClickZetta.Generator, expression: exp.DateAdd) -> str:
+    if read_dialect() == MYSQL:
+        return f"{self.sql(expression.this)} + INTERVAL 1 {expression.args.get('unit').this.upper()} * ({self.sql(expression.expression)})"
+    return f"DATEADD({expression.args.get('unit').this.upper()}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
+
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
 
@@ -182,7 +187,7 @@ class ClickZetta(Spark):
             exp.Try: lambda self, e: self.sql(e, "this"),
             exp.Tuple: fill_tuple_with_column_name,
             exp.GenerateSeries: rename_func("SEQUENCE"),
-            exp.DateAdd: lambda self, e: f"DATEADD({e.args.get('unit').this.upper()}, {self.sql(e.expression)}, {self.sql(e.this)})",
+            exp.DateAdd: date_add_sql,
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

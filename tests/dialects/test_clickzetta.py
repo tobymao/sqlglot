@@ -184,4 +184,11 @@ select j from a""",
             read={'spark': "select (1,'hello') = (2,'world')"}
         )
 
+        # date_add
+        os.environ['READ_DIALECT'] = 'presto'
+        self.validate_all(
+            "SELECT CURRENT_TIMESTAMP() + INTERVAL 1 HOUR * (1 + 2)",
+            read={'presto': "select date_add('hour', 1+2, now())"}
+        )
+
         os.environ.pop('READ_DIALECT')

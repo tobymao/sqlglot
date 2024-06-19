@@ -85,9 +85,9 @@ class TestDoris(Validator):
             },
         )
         self.validate_all(
-            """SELECT JSONB_EXTRACT(CAST('{"A": {"B": {"C": "VALUE1"}}}' AS JSON), '$.A.B.C')""",
+            """SELECT JSON_EXTRACT(CAST('{"A": {"B": {"C": "VALUE1"}}}' AS JSON), '$.A.B.C')""",
             read={
-                "doris": """SELECT JSONB_EXTRACT(CAST('{"A": {"B": {"C": "VALUE1"}}}' AS JSON), '$.A.B.C')""",
+                "doris": """SELECT JSON_EXTRACT(CAST('{"A": {"B": {"C": "VALUE1"}}}' AS JSON), '$.A.B.C')""",
                 "postgres": """SELECT '{"A": {"B": {"C": "VALUE1"}}}'::JSON#>>'{A,B,C}'""",
             },
         )

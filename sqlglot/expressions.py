@@ -2807,6 +2807,10 @@ class TemporaryProperty(Property):
     arg_types = {"this": False}
 
 
+class SecureProperty(Property):
+    arg_types = {}
+
+
 class TransformModelProperty(Property):
     arg_types = {"expressions": True}
 

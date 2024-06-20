@@ -4486,10 +4486,22 @@ class Parser(metaclass=_Parser):
 
     def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
-        this = (
-            self._parse_type(parse_interval=False, fallback_to_identifier=True)
-            or self._parse_id_var()
-        )
+
+        if (
+            self._curr
+            and self._next
+            and self._curr.token_type in self.TYPE_TOKENS
+            and self._next.token_type in self.TYPE_TOKENS
+        ):
+            # Takes care of special cases like `STRUCT<list ARRAY<...>>` where the identifier is also a
+            # type token. Without this, the list will be parsed as a type and we'll eventually crash
+            this = self._parse_id_var()
+        else:
+            this = (
+                self._parse_type(parse_interval=False, fallback_to_identifier=True)
+                or self._parse_id_var()
+            )
+
         self._match(TokenType.COLON)
 
         if (

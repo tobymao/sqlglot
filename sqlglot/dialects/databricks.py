@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, transforms
+from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
@@ -36,6 +36,9 @@ def _jsonextract_sql(
 class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
+
+    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+        IDENTIFIERS = ["`", '"']
 
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True

@@ -25,9 +25,6 @@ from sqlglot.tokens import Token, TokenType
 
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
-if t.TYPE_CHECKING:
-    pass
-
 
 def _build_date_format(args: t.List) -> exp.TimeToStr:
     expr = build_formatted_time(exp.TimeToStr, "clickhouse")(args)

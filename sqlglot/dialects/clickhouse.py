@@ -6,8 +6,8 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arg_max_or_min_no_count,
+    build_date_delta,
     build_formatted_time,
-    date_delta_sql,
     inline_array_sql,
     json_extract_segments,
     json_path_key_only_name,
@@ -17,9 +17,16 @@ from sqlglot.dialects.dialect import (
     sha256_sql,
     var_map_sql,
     timestamptrunc_sql,
+    unit_to_var,
 )
+from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
+
+DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
+
+if t.TYPE_CHECKING:
+    pass
 
 
 def _build_date_format(args: t.List) -> exp.TimeToStr:
@@ -75,6 +82,21 @@ def _build_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
         return exp.CountIf(this=seq_get(args, 0))
 
     return exp.CombinedAggFunc(this="countIf", expressions=args, parts=("count", "If"))
+
+
+def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA], str]:
+    def _delta_sql(self: Generator, expression: DATEΤΙΜΕ_DELTA) -> str:
+        if not expression.unit:
+            return rename_func(name)(self, expression)
+
+        return self.func(
+            name,
+            unit_to_var(expression),
+            expression.expression,
+            expression.this,
+        )
+
+    return _delta_sql
 
 
 class ClickHouse(Dialect):
@@ -146,19 +168,13 @@ class ClickHouse(Dialect):
             "ANY": exp.AnyValue.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "COUNTIF": _build_count_if,
-            "DATE_ADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATEADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATE_DIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATEDIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
+            "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
+            "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
+            "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None),
+            "DATEDIFF": build_date_delta(exp.DateDiff, default_unit=None),
             "DATE_FORMAT": _build_date_format,
+            "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
+            "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
             "FORMATDATETIME": _build_date_format,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
@@ -167,6 +183,10 @@ class ClickHouse(Dialect):
             "MATCH": exp.RegexpLike.from_arg_list,
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "TUPLE": exp.Struct.from_arg_list,
+            "TIMESTAMP_SUB": build_date_delta(exp.TimestampSub, default_unit=None),
+            "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
+            "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
+            "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
             "MD5": exp.MD5Digest.from_arg_list,
@@ -735,8 +755,9 @@ class ClickHouse(Dialect):
             exp.ComputedColumnConstraint: lambda self,
             e: f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}",
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
-            exp.DateAdd: date_delta_sql("DATE_ADD"),
-            exp.DateDiff: date_delta_sql("DATE_DIFF"),
+            exp.DateAdd: _datetime_delta_sql("DATE_ADD"),
+            exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
+            exp.DateSub: _datetime_delta_sql("DATE_SUB"),
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
@@ -759,6 +780,8 @@ class ClickHouse(Dialect):
             exp.TimeToStr: lambda self, e: self.func(
                 "DATE_FORMAT", e.this, self.format_time(e), e.args.get("timezone")
             ),
+            exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
+            exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
             exp.MD5Digest: rename_func("MD5"),

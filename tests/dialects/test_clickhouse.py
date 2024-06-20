@@ -880,3 +880,18 @@ LIFETIME(MIN 0 MAX 0)""",
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
                 self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")
+
+    def test_datetime_funcs(self):
+        # Function aliases are roundtripped back to one name e.g. DATE_SUB(), DATESUB() -> DATE_SUB()
+        func_names = (("DATE_SUB", "DATESUB"), ("DATE_ADD", "DATEADD"))
+        for funcs in func_names:
+            # Functions of type <func>(date, unit)
+            for func in (*funcs, ("TIMESTAMP_ADD", "TIMESTAMPADD")):
+                with self.subTest(f"Test 2-arg date-time {func}"):
+                    self.validate_identity(f"SELECT {funcs[0]}(date, INTERVAL '3' YEAR)")
+
+        for funcs in (*func_names, ("DATE_DIFF", "DATEDIFF"), ("TIMESTAMP_SUB", "TIMESTAMPSUB")):
+            # Functions of type <func>(unit, value, date)
+            for func in funcs:
+                with self.subTest(f"Test 3-arg date-time function {func}"):
+                    self.validate_identity(f"SELECT {funcs[0]}(SECOND, 1, bar)")

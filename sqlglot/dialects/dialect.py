@@ -9,7 +9,7 @@ from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, is_int, seq_get
-from sqlglot.jsonpath import JSONPathTokenizer
+from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -626,9 +626,8 @@ class Dialect(metaclass=_Dialect):
             path_text = path.name
             if path.is_number:
                 path_text = f"[{path_text}]"
-
             try:
-                return self.jsonpath_tokenizer.parse(path_text)
+                return parse_json_path(path_text, self)
             except ParseError as e:
                 logger.warning(f"Invalid JSON path syntax. {str(e)}")
 

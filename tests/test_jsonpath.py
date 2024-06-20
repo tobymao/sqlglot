@@ -2,14 +2,14 @@ import json
 import os
 import unittest
 
-from sqlglot import exp, jsonpath
+from sqlglot import exp
 from sqlglot.errors import ParseError, TokenError
+from sqlglot.jsonpath import parse
 from tests.helpers import FIXTURES_DIR
 
 
 class TestJsonpath(unittest.TestCase):
     maxDiff = None
-    jsonpath_tokenizer = jsonpath.JSONPathTokenizer()
 
     def test_jsonpath(self):
         expected_expressions = [
@@ -26,9 +26,7 @@ class TestJsonpath(unittest.TestCase):
             exp.JSONPathSelector(this=exp.JSONPathScript(this="@.x)")),
         ]
         self.assertEqual(
-            self.jsonpath_tokenizer.parse(
-                "$.*.a[0]['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"
-            ),
+            parse("$.*.a[0]['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"),
             exp.JSONPath(expressions=expected_expressions),
         )
 
@@ -39,7 +37,7 @@ class TestJsonpath(unittest.TestCase):
             ("$[((@.length-1))]", "$[((@.length-1))]"),
         ):
             with self.subTest(f"{selector} -> {expected}"):
-                self.assertEqual(self.jsonpath_tokenizer.parse(selector).sql(), f"'{expected}'")
+                self.assertEqual(parse(selector).sql(), f"'{expected}'")
 
     def test_cts_file(self):
         with open(os.path.join(FIXTURES_DIR, "jsonpath", "cts.json")) as file:
@@ -134,9 +132,9 @@ class TestJsonpath(unittest.TestCase):
             with self.subTest(f"{selector.strip()} /* {test['name']} */"):
                 if test.get("invalid_selector"):
                     try:
-                        self.jsonpath_tokenizer.parse(selector)
+                        parse(selector)
                     except (ParseError, TokenError):
                         pass
                 else:
-                    path = self.jsonpath_tokenizer.parse(selector)
+                    path = parse(selector)
                     self.assertEqual(path.sql(), f"'{overrides.get(selector, selector)}'")

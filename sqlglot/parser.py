@@ -4493,7 +4493,7 @@ class Parser(metaclass=_Parser):
             and self._curr.token_type in self.TYPE_TOKENS
             and self._next.token_type in self.TYPE_TOKENS
         ):
-            # Care of special cases like `STRUCT<list ARRAY<...>>` where the identifier is also a
+            # Takes care of special cases like `STRUCT<list ARRAY<...>>` where the identifier is also a
             # type token. Without this, the list will be parsed as a type and we'll eventually crash
             this = self._parse_id_var()
         else:

@@ -5457,7 +5457,7 @@ class OpenJSON(Func):
     arg_types = {"this": True, "path": False, "expressions": False}
 
 
-class JSONBContains(Binary):
+class JSONBContains(Binary, Func):
     _sql_names = ["JSONB_CONTAINS"]
 
 

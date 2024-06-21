@@ -1,6 +1,41 @@
 Changelog
 =========
 
+## [v25.3.0] - 2024-06-21
+### :boom: BREAKING CHANGES
+- due to [`84d820f`](https://github.com/tobymao/sqlglot/commit/84d820f96b161fdd5b00f265890b5c75c65a36f0) - Time/Datetime/Timestamp function additions *(PR [#3666](https://github.com/tobymao/sqlglot/pull/3666) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Time/Datetime/Timestamp function additions (#3666)
+
+- due to [`acbc81d`](https://github.com/tobymao/sqlglot/commit/acbc81d47a2e721c4334ac86b5e17177429cd1c6) - Preserve JSON/VARIANT path with operators *(PR [#3678](https://github.com/tobymao/sqlglot/pull/3678) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Preserve JSON/VARIANT path with operators (#3678)
+
+
+### :sparkles: New Features
+- [`84d820f`](https://github.com/tobymao/sqlglot/commit/84d820f96b161fdd5b00f265890b5c75c65a36f0) - **bigquery**: Time/Datetime/Timestamp function additions *(PR [#3666](https://github.com/tobymao/sqlglot/pull/3666) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`d46ad95`](https://github.com/tobymao/sqlglot/commit/d46ad95bb623f1931d9e373d8444d9ed947362c5) - **tokenizer**: add support for nested comments *(PR [#3670](https://github.com/tobymao/sqlglot/pull/3670) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3668](https://github.com/tobymao/sqlglot/issues/3668) opened by [@aersam](https://github.com/aersam)*
+- [`ac0e89c`](https://github.com/tobymao/sqlglot/commit/ac0e89c4401f2f278d32c3e956670b262ab21ce7) - **snowflake**: add SECURE post table property fixes [#3677](https://github.com/tobymao/sqlglot/pull/3677) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`acbc81d`](https://github.com/tobymao/sqlglot/commit/acbc81d47a2e721c4334ac86b5e17177429cd1c6) - **databricks**: Preserve JSON/VARIANT path with operators *(PR [#3678](https://github.com/tobymao/sqlglot/pull/3678) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3673](https://github.com/tobymao/sqlglot/issues/3673) opened by [@aersam](https://github.com/aersam)*
+- [`07158c7`](https://github.com/tobymao/sqlglot/commit/07158c77ae7879aa83b7982cefb4ec9d01c11857) - **clickhouse**: Fix roundtrips of DATE/TIMESTAMP functions *(PR [#3683](https://github.com/tobymao/sqlglot/pull/3683) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3679](https://github.com/tobymao/sqlglot/issues/3679) opened by [@TacoBel42](https://github.com/TacoBel42)*
+
+### :bug: Bug Fixes
+- [`79aea2a`](https://github.com/tobymao/sqlglot/commit/79aea2affece72acfac52b3ac85cf740d55ccff0) - **doris**: ensure LAG/LEAD are generated with three arguments *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`08fb2ec`](https://github.com/tobymao/sqlglot/commit/08fb2ecf808f25eae74b579f8e5c4369edc7c604) - **parser**: check if FROM exists when making implicit unnest explicit fixes [#3671](https://github.com/tobymao/sqlglot/pull/3671) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`049fc5a`](https://github.com/tobymao/sqlglot/commit/049fc5a430ad6fa2998fd94d6e20b23da3b545c3) - **bigquery**: handle the case-sensitive strategy in normalize_identifier *(PR [#3667](https://github.com/tobymao/sqlglot/pull/3667) by [@georgesittas](https://github.com/georgesittas))*
+- [`9e1b6aa`](https://github.com/tobymao/sqlglot/commit/9e1b6aa5d9e2abb141143327c835c8f3b4bbcb0f) - **parser**: handle another edge case in struct field type parser *(PR [#3682](https://github.com/tobymao/sqlglot/pull/3682) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3680](https://github.com/tobymao/sqlglot/issues/3680) opened by [@plaflamme](https://github.com/plaflamme)*
+- [`a1a0278`](https://github.com/tobymao/sqlglot/commit/a1a02782f22b471ee3c896d57f15237dc86565d1) - jsonbcontains default gen *(commit by [@tobymao](https://github.com/tobymao))*
+- [`bf44942`](https://github.com/tobymao/sqlglot/commit/bf44942a7d35eb83685ad3aa2b360c7105a9f5b7) - **oracle**: Fix default NULL_ORDERING *(PR [#3688](https://github.com/tobymao/sqlglot/pull/3688) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3684](https://github.com/tobymao/sqlglot/issues/3684) opened by [@ncclementi](https://github.com/ncclementi)*
+
+### :wrench: Chores
+- [`7ae99fe`](https://github.com/tobymao/sqlglot/commit/7ae99fe8284cf2e60819b3992bc79a020dfd00c5) - bump sqlglotrs to 0.2.7 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.2.0] - 2024-06-17
 ### :boom: BREAKING CHANGES
 - due to [`d331e56`](https://github.com/tobymao/sqlglot/commit/d331e56aad7784a122dc36d7bffe5cf0565e38d1) - Normalize time units in their full singular form *(PR [#3652](https://github.com/tobymao/sqlglot/pull/3652) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3957,3 +3992,4 @@ Changelog
 [v25.0.3]: https://github.com/tobymao/sqlglot/compare/v25.0.2...v25.0.3
 [v25.1.0]: https://github.com/tobymao/sqlglot/compare/v25.0.3...v25.1.0
 [v25.2.0]: https://github.com/tobymao/sqlglot/compare/v25.1.0...v25.2.0
+[v25.3.0]: https://github.com/tobymao/sqlglot/compare/v25.2.0...v25.3.0

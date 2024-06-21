@@ -424,7 +424,7 @@ impl<'a> TokenizerState<'a> {
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")
                 } else {
-                    self.extract_string(end, false, false, !self.settings.heredoc_tag_is_identifier)?
+                    self.extract_string(end, false, true, !self.settings.heredoc_tag_is_identifier)?
                 };
 
                 if !tag.is_empty()
@@ -449,7 +449,7 @@ impl<'a> TokenizerState<'a> {
         };
 
         self.advance(start.len() as isize)?;
-        let text = self.extract_string(&end, false, token_type != self.token_types.raw_string, true)?;
+        let text = self.extract_string(&end, false, token_type == self.token_types.raw_string, true)?;
 
         if let Some(b) = base {
             if u64::from_str_radix(&text, b).is_err() {
@@ -595,7 +595,7 @@ impl<'a> TokenizerState<'a> {
 
     fn scan_identifier(&mut self, identifier_end: &str) -> Result<(), TokenizerError> {
         self.advance(1)?;
-        let text = self.extract_string(identifier_end, true, true, true)?;
+        let text = self.extract_string(identifier_end, true, false, true)?;
         self.add(self.token_types.identifier, Some(text))
     }
 
@@ -603,7 +603,7 @@ impl<'a> TokenizerState<'a> {
         &mut self,
         delimiter: &str,
         use_identifier_escapes: bool,
-        unescape_sequences: bool,
+        raw_string: bool,
         raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
         let mut text = String::from("");
@@ -616,7 +616,7 @@ impl<'a> TokenizerState<'a> {
             };
             let peek_char_str = self.peek_char.to_string();
 
-            if unescape_sequences
+            if !raw_string
                 && !self.dialect_settings.unescaped_sequences.is_empty()
                 && !self.peek_char.is_whitespace()
                 && self.settings.string_escapes.contains(&self.current_char)
@@ -631,7 +631,8 @@ impl<'a> TokenizerState<'a> {
                 }
             }
 
-            if escapes.contains(&self.current_char)
+            if (self.settings.string_escapes_allowed_in_raw_strings || !raw_string)
+                && escapes.contains(&self.current_char)
                 && (peek_char_str == delimiter || escapes.contains(&self.peek_char))
                 && (self.current_char == self.peek_char
                     || !self

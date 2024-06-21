@@ -76,6 +76,7 @@ pub struct TokenizerSettings {
     pub commands: HashSet<TokenType>,
     pub command_prefix_tokens: HashSet<TokenType>,
     pub heredoc_tag_is_identifier: bool,
+    pub string_escapes_allowed_in_raw_strings: bool,
 }
 
 #[pymethods]
@@ -98,6 +99,7 @@ impl TokenizerSettings {
         commands: HashSet<TokenType>,
         command_prefix_tokens: HashSet<TokenType>,
         heredoc_tag_is_identifier: bool,
+        string_escapes_allowed_in_raw_strings: bool,
     ) -> Self {
         let to_char = |v: &String| {
             if v.len() == 1 {
@@ -147,6 +149,7 @@ impl TokenizerSettings {
             commands,
             command_prefix_tokens,
             heredoc_tag_is_identifier,
+            string_escapes_allowed_in_raw_strings,
         }
     }
 }

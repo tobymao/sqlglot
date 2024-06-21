@@ -852,13 +852,17 @@ def time_format(
 
 
 def build_date_delta(
-    exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
+    exp_class: t.Type[E],
+    unit_mapping: t.Optional[t.Dict[str, str]] = None,
+    default_unit: t.Optional[str] = "DAY",
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
         unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
-        unit = args[0] if unit_based else exp.Literal.string("DAY")
-        unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
+        unit = None
+        if unit_based or default_unit:
+            unit = args[0] if unit_based else exp.Literal.string(default_unit)
+            unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
         return exp_class(this=this, expression=seq_get(args, 1), unit=unit)
 
     return _builder

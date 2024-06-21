@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import exp, transforms
+import typing as t
+
+from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
@@ -10,15 +12,33 @@ from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
 
 
+def _build_json_extract(args: t.List) -> exp.JSONExtract:
+    # Transform GET_JSON_OBJECT(expr, '$.<path>') -> expr:<path>
+    this = args[0]
+    path = args[1].name.lstrip("$.")
+    return exp.JSONExtract(this=this, expression=path)
+
+
 def _timestamp_diff(
     self: Databricks.Generator, expression: exp.DatetimeDiff | exp.TimestampDiff
 ) -> str:
     return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)
 
 
+def _jsonextract_sql(
+    self: Databricks.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
+) -> str:
+    this = self.sql(expression, "this")
+    expr = self.sql(expression, "expression")
+    return f"{this}:{expr}"
+
+
 class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
+
+    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+        IDENTIFIERS = ["`", '"']
 
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
@@ -31,6 +51,7 @@ class Databricks(Spark):
             "DATE_ADD": build_date_delta(exp.DateAdd),
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
+            "GET_JSON_OBJECT": _build_json_extract,
         }
 
         FACTOR = {
@@ -42,6 +63,8 @@ class Databricks(Spark):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
+        JSON_PATH_SINGLE_QUOTE_ESCAPE = False
+        QUOTE_JSON_PATH = False
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
@@ -65,6 +88,9 @@ class Databricks(Spark):
                     transforms.unnest_to_explode,
                 ]
             ),
+            exp.JSONExtract: _jsonextract_sql,
+            exp.JSONExtractScalar: _jsonextract_sql,
+            exp.JSONPathRoot: lambda *_: "",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 

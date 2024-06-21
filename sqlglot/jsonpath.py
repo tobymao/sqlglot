@@ -8,6 +8,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
+    from sqlglot.dialects.dialect import DialectType
 
 
 class JSONPathTokenizer(Tokenizer):
@@ -36,9 +37,12 @@ class JSONPathTokenizer(Tokenizer):
     STRING_ESCAPES = ["\\"]
 
 
-def parse(path: str) -> exp.JSONPath:
+def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     """Takes in a JSON path string and parses it into a JSONPath expression."""
-    tokens = JSONPathTokenizer().tokenize(path)
+    from sqlglot.dialects import Dialect
+
+    jsonpath_tokenizer = Dialect.get_or_raise(dialect).jsonpath_tokenizer
+    tokens = jsonpath_tokenizer.tokenize(path)
     size = len(tokens)
 
     i = 0

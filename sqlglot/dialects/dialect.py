@@ -9,7 +9,7 @@ from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, is_int, seq_get
-from sqlglot.jsonpath import parse as parse_json_path
+from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -125,11 +125,15 @@ class _Dialect(type):
 
         base = seq_get(bases, 0)
         base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
+        base_jsonpath_tokenizer = (getattr(base, "jsonpath_tokenizer_class", JSONPathTokenizer),)
         base_parser = (getattr(base, "parser_class", Parser),)
         base_generator = (getattr(base, "generator_class", Generator),)
 
         klass.tokenizer_class = klass.__dict__.get(
             "Tokenizer", type("Tokenizer", base_tokenizer, {})
+        )
+        klass.jsonpath_tokenizer_class = klass.__dict__.get(
+            "JSONPathTokenizer", type("JSONPathTokenizer", base_jsonpath_tokenizer, {})
         )
         klass.parser_class = klass.__dict__.get("Parser", type("Parser", base_parser, {}))
         klass.generator_class = klass.__dict__.get(
@@ -324,6 +328,7 @@ class Dialect(metaclass=_Dialect):
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
+    jsonpath_tokenizer_class = JSONPathTokenizer
     parser_class = Parser
     generator_class = Generator
 
@@ -621,9 +626,8 @@ class Dialect(metaclass=_Dialect):
             path_text = path.name
             if path.is_number:
                 path_text = f"[{path_text}]"
-
             try:
-                return parse_json_path(path_text)
+                return parse_json_path(path_text, self)
             except ParseError as e:
                 logger.warning(f"Invalid JSON path syntax. {str(e)}")
 
@@ -654,6 +658,12 @@ class Dialect(metaclass=_Dialect):
         if not hasattr(self, "_tokenizer"):
             self._tokenizer = self.tokenizer_class(dialect=self)
         return self._tokenizer
+
+    @property
+    def jsonpath_tokenizer(self) -> JSONPathTokenizer:
+        if not hasattr(self, "_jsonpath_tokenizer"):
+            self._jsonpath_tokenizer = self.jsonpath_tokenizer_class(dialect=self)
+        return self._jsonpath_tokenizer
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(dialect=self, **opts)

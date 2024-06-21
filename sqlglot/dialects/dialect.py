@@ -663,7 +663,7 @@ class Dialect(metaclass=_Dialect):
     def jsonpath_tokenizer(self) -> JSONPathTokenizer:
         if not hasattr(self, "_jsonpath_tokenizer"):
             self._jsonpath_tokenizer = self.jsonpath_tokenizer_class(dialect=self)
-        return self.jsonpath_tokenizer_class(dialect=self)
+        return self._jsonpath_tokenizer
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(dialect=self, **opts)

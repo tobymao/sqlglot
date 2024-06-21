@@ -91,6 +91,20 @@ class TestDoris(Validator):
                 "postgres": """SELECT '{"A": {"B": {"C": "VALUE1"}}}'::JSON#>>'{A,B,C}'""",
             },
         )
+        self.validate_all(
+            """SELECT JSON_EXTRACT(CAST('{"A": {",": {"C": "VALUE"}}}' AS JSON), '$.A.,.C')""",
+            read={
+                "doris": """SELECT JSON_EXTRACT(CAST('{"A": {",": {"C": "VALUE"}}}' AS JSON), '$.A.,.C')""",
+                "postgres": """SELECT '{"A": {",": {"C": "VALUE"}}}'::JSON #>> '{A,\,,C}'""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_EXTRACT(CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON), '$.a[2]')""",
+            read={
+                "doris": """SELECT JSON_EXTRACT(CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON), '$.a[2]')""",
+                "postgres": """SELECT '{"a":[1,2,3],"b":[4,5,6]}'::json#>>'{a,2}'""",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("COALECSE(a, b, c, d)")

@@ -526,6 +526,7 @@ class _Tokenizer(type):
                     _TOKEN_TYPE_TO_INDEX[v] for v in klass.COMMAND_PREFIX_TOKENS
                 },
                 heredoc_tag_is_identifier=klass.HEREDOC_TAG_IS_IDENTIFIER,
+                string_escapes_allowed_in_raw_strings=klass.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],
@@ -601,6 +602,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
     # Token that we'll generate as a fallback if the heredoc prefix doesn't correspond to a heredoc
     HEREDOC_STRING_ALTERNATIVE = TokenType.VAR
+
+    # Whether string escape characters function as such when placed within raw strings
+    STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = True
 
     # Autofilled
     _COMMENTS: t.Dict[str, str] = {}
@@ -1292,7 +1296,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     tag = self._extract_string(
                         end,
-                        unescape_sequences=False,
+                        raw_string=True,
                         raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
                     )
 
@@ -1309,7 +1313,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return False
 
         self._advance(len(start))
-        text = self._extract_string(end, unescape_sequences=token_type != TokenType.RAW_STRING)
+        text = self._extract_string(end, raw_string=token_type == TokenType.RAW_STRING)
 
         if base:
             try:
@@ -1345,7 +1349,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self,
         delimiter: str,
         escapes: t.Optional[t.Set[str]] = None,
-        unescape_sequences: bool = True,
+        raw_string: bool = False,
         raise_unmatched: bool = True,
     ) -> str:
         text = ""
@@ -1354,7 +1358,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         while True:
             if (
-                unescape_sequences
+                not raw_string
                 and self.dialect.UNESCAPED_SEQUENCES
                 and self._peek
                 and self._char in self.STRING_ESCAPES
@@ -1365,7 +1369,8 @@ class Tokenizer(metaclass=_Tokenizer):
                     text += unescaped_sequence
                     continue
             if (
-                self._char in escapes
+                (self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS or not raw_string)
+                and self._char in escapes
                 and (self._peek == delimiter or self._peek in escapes)
                 and (self._char not in self._QUOTES or self._char == self._peek)
             ):

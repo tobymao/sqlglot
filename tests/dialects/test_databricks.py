@@ -25,6 +25,7 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE FUNCTION a AS b")
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
+        self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )
@@ -37,21 +38,21 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "SELECT * FROM sales UNPIVOT EXCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
         )
-
         self.validate_identity(
             "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $$def add_one(x):\n  return x+1$$"
         )
-
         self.validate_identity(
             "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $FOO$def add_one(x):\n  return x+1$FOO$"
         )
-
-        self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity(
             "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', city LIKE 'LA')"
         )
         self.validate_identity(
             "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
+        )
+        self.validate_identity(
+            r'SELECT r"\\foo.bar\"',
+            r"SELECT '\\\\foo.bar\\'",
         )
 
         self.validate_all(
@@ -67,7 +68,6 @@ class TestDatabricks(Validator):
                 "teradata": "CREATE TABLE t1 AS (SELECT c FROM t2) WITH DATA",
             },
         )
-
         self.validate_all(
             "SELECT X'1A2B'",
             read={

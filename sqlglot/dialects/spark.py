@@ -91,6 +91,8 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
 
 class Spark(Spark2):
     class Tokenizer(Spark2.Tokenizer):
+        STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
+
         RAW_STRINGS = [
             (prefix + q, q)
             for q in t.cast(t.List[str], Spark2.Tokenizer.QUOTES)

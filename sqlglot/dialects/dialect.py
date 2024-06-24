@@ -655,15 +655,11 @@ class Dialect(metaclass=_Dialect):
 
     @property
     def tokenizer(self) -> Tokenizer:
-        if not hasattr(self, "_tokenizer"):
-            self._tokenizer = self.tokenizer_class(dialect=self)
-        return self._tokenizer
+        return self.tokenizer_class(dialect=self)
 
     @property
     def jsonpath_tokenizer(self) -> JSONPathTokenizer:
-        if not hasattr(self, "_jsonpath_tokenizer"):
-            self._jsonpath_tokenizer = self.jsonpath_tokenizer_class(dialect=self)
-        return self._jsonpath_tokenizer
+        return self.jsonpath_tokenizer_class(dialect=self)
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(dialect=self, **opts)

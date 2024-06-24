@@ -477,6 +477,7 @@ class TSQL(Dialect):
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
         }
+        KEYWORDS.pop("/*+")
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
 

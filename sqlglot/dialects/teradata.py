@@ -96,6 +96,7 @@ class Teradata(Dialect):
             "TOP": TokenType.TOP,
             "UPD": TokenType.UPDATE,
         }
+        KEYWORDS.pop("/*+")
 
         # Teradata does not support % as a modulo operator
         SINGLE_TOKENS = {**tokens.Tokenizer.SINGLE_TOKENS}

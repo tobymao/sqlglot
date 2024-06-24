@@ -685,6 +685,7 @@ class Snowflake(Dialect):
             "WAREHOUSE": TokenType.WAREHOUSE,
             "STREAMLIT": TokenType.STREAMLIT,
         }
+        KEYWORDS.pop("/*+")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

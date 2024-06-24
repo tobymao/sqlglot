@@ -147,6 +147,7 @@ class ClickHouse(Dialect):
             "SYSTEM": TokenType.COMMAND,
             "PREWHERE": TokenType.PREWHERE,
         }
+        KEYWORDS.pop("/*+")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

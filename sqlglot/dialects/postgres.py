@@ -331,6 +331,7 @@ class Postgres(Dialect):
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
         }
+        KEYWORDS.pop("/*+")
         KEYWORDS.pop("DIV")
 
         SINGLE_TOKENS = {

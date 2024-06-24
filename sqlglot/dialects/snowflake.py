@@ -298,6 +298,7 @@ class Snowflake(Dialect):
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": build_timestamp_from_parts,
+            "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(
@@ -752,6 +753,9 @@ class Snowflake(Dialect):
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.ParseJSON: lambda self, e: self.func(
+                "TRY_PARSE_JSON" if e.args.get("safe") else "PARSE_JSON", e.this
+            ),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]

@@ -432,7 +432,6 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, exp.DataType.Type.TIMESTAMP, copy=True),
                 exp.cast(e.this, exp.DataType.Type.TIMESTAMP, copy=True),
             ),
-            exp.ParseJSON: rename_func("JSON"),
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
             exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
@@ -612,9 +611,11 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
 
-        def tryparsejson_sql(self, expression: exp.TryParseJSON) -> str:
+        def parsejson_sql(self, expression: exp.ParseJSON) -> str:
             arg = expression.this
-            return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
+            if expression.args.get("safe"):
+                return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
+            return self.func("JSON", arg)
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

@@ -5501,14 +5501,9 @@ class JSONArrayContains(Binary, Predicate, Func):
 
 class ParseJSON(Func):
     # BigQuery, Snowflake have PARSE_JSON, Presto has JSON_PARSE
+    # Snowflake has TRY_PARSE_JSON
     _sql_names = ["PARSE_JSON", "JSON_PARSE"]
-    arg_types = {"this": True, "expressions": False}
-    is_var_len_args = True
-
-
-class TryParseJSON(Func):
-    # https://docs.snowflake.com/en/sql-reference/functions/try_parse_json
-    _sql_names = ["TRY_PARSE_JSON"]
+    arg_types = {"this": True, "expression": False, "safe": False}
 
 
 class Least(Func):

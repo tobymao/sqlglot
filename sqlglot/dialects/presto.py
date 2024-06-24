@@ -227,7 +227,7 @@ class Presto(Dialect):
             "TDIGEST": TokenType.TDIGEST,
             "HYPERLOGLOG": TokenType.HLLSKETCH,
         }
-
+        KEYWORDS.pop("/*+")
         KEYWORDS.pop("QUALIFY")
 
     class Parser(parser.Parser):

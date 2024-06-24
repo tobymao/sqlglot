@@ -220,6 +220,7 @@ class DuckDB(Dialect):
             "TIMESTAMP_US": TokenType.TIMESTAMP,
             "VARCHAR": TokenType.TEXT,
         }
+        KEYWORDS.pop("/*+")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

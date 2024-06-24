@@ -612,6 +612,10 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
 
+        def tryparsejson_sql(self, expression: exp.TryParseJSON) -> str:
+            arg = expression.this
+            return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
+
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")
             if nano is not None:

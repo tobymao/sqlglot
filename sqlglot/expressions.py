@@ -5506,6 +5506,11 @@ class ParseJSON(Func):
     is_var_len_args = True
 
 
+class TryParseJSON(Func):
+    # https://docs.snowflake.com/en/sql-reference/functions/try_parse_json
+    _sql_names = ["TRY_PARSE_JSON"]
+
+
 class Least(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

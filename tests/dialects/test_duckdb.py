@@ -19,6 +19,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
+            read={
+                "duckdb": """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
+                "snowflake": """SELECT TRY_PARSE_JSON('{"x: 1}')""",
+            },
+        )
+        self.validate_all(
             "SELECT straight_join",
             write={
                 "duckdb": "SELECT straight_join",

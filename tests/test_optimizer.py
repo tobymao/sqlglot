@@ -473,13 +473,33 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             'SELECT "x"."a" + 1 AS "d", "x"."a" + 1 + 1 AS "e" FROM "x" AS "x" WHERE ("x"."a" + 2) > 1 GROUP BY "x"."a" + 1 + 1',
         )
 
+        unused_schema = {"l": {"c": "int"}}
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one("SELECT CAST(x AS INT) AS y FROM z AS z"),
-                schema={"l": {"c": "int"}},
+                schema=unused_schema,
                 infer_schema=False,
             ).sql(),
             "SELECT CAST(x AS INT) AS y FROM z AS z",
+        )
+
+        # BigQuery expands overlapping alias only for GROUP BY + HAVING
+        sql = "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT id AS my_id, CONCAT(id, name) AS full_name FROM data WHERE my_id = 1 GROUP BY my_id, full_name HAVING my_id = 1"
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(sql),
+                schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
+            ).sql(),
+            "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT data.id AS my_id, CONCAT(data.id, data.name) AS full_name FROM data WHERE data.my_id = 1 GROUP BY data.id, CONCAT(data.id, data.name) HAVING data.id = 1",
+        )
+
+        # Clickhouse expands overlapping alias across the entire query
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(sql),
+                schema=MappingSchema(schema=unused_schema, dialect="clickhouse"),
+            ).sql(),
+            "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT data.id AS my_id, CONCAT(data.id, data.name) AS full_name FROM data WHERE data.id = 1 GROUP BY data.id, CONCAT(data.id, data.name) HAVING data.id = 1",
         )
 
     def test_optimize_joins(self):

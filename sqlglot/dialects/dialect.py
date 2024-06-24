@@ -325,6 +325,32 @@ class Dialect(metaclass=_Dialect):
     Whether COPY statement parameters are separated by comma or whitespace
     """
 
+    FORCE_EARLY_ALIAS_REF_EXPANSION = False
+    """
+    Whether alias reference expansion (_expand_alias_refs()) should run before column qualification (_qualify_columns()).
+
+    For example:
+        WITH data AS (
+        SELECT
+            1 AS id,
+            2 AS my_id
+        )
+        SELECT
+            id AS my_id
+        FROM
+            data
+        WHERE
+            my_id = 1
+        GROUP BY
+            my_id,
+        HAVING
+            my_id = 1
+
+    In most dialects "my_id" would refer to "data.my_id" (which is done in _qualify_columns()) across the query, except:
+        - BigQuery, which will forward the alias to GROUP BY + HAVING clauses i.e it resolves to "WHERE my_id = 1 GROUP BY id HAVING id = 1"
+        - Clickhouse, which will forward the alias across the query i.e it resolves to "WHERE id = 1 GROUP BY id HAVING id = 1"
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

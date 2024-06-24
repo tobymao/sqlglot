@@ -60,8 +60,8 @@ def qualify_columns(
         _pop_table_column_aliases(scope.derived_tables)
         using_column_tables = _expand_using(scope, resolver)
 
-        if schema.empty and expand_alias_refs:
-            _expand_alias_refs(scope, resolver)
+        if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
+            _expand_alias_refs(scope, resolver, expand_only_groupby=(dialect == "bigquery"))
 
         _convert_columns_to_dots(scope, resolver)
         _qualify_columns(scope, resolver)
@@ -208,7 +208,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     return column_tables
 
 
-def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
+def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bool = False) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Select):
@@ -219,7 +219,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
     def replace_columns(
         node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
     ) -> None:
-        if not node:
+        if not node or (expand_only_groupby and not isinstance(node, exp.Group)):
             return
 
         for column in walk_in_scope(node, prune=lambda node: node.is_star):

@@ -5960,7 +5960,7 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_var_or_string(self) -> t.Optional[exp.Expression]:
-        return self._parse_var() or self._parse_string()
+        return self._parse_string() or self._parse_var(any_token=True)
 
     def _parse_primary_or_var(self) -> t.Optional[exp.Expression]:
         return self._parse_primary() or self._parse_var(any_token=True)

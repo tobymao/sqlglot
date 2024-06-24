@@ -76,10 +76,6 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity(
-            "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
-            "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
-        )
-        self.validate_identity(
             """UPDATE "x" SET "y" = CAST('0 days 60.000000 seconds' AS INTERVAL) WHERE "x"."id" IN (2, 3)"""
         )
         self.validate_identity(
@@ -134,6 +130,14 @@ class TestPostgres(Validator):
             "WHERE c.relname OPERATOR(pg_catalog.~) '^(courses)$' COLLATE pg_catalog.default AND "
             "pg_catalog.PG_TABLE_IS_VISIBLE(c.oid) "
             "ORDER BY 2, 3"
+        )
+        self.validate_identity(
+            "/*+ some comment*/ SELECT b.foo, b.bar FROM baz AS b",
+            "/* + some comment */ SELECT b.foo, b.bar FROM baz AS b",
+        )
+        self.validate_identity(
+            "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
+            "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
         )
         self.validate_identity(
             "SELECT ARRAY[]::INT[] AS foo",

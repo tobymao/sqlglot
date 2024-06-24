@@ -140,6 +140,14 @@ select j from a""",
             "SELECT DATEADD(HOUR, 1, CURRENT_TIMESTAMP())",
             read={'presto': "select date_add('hour', 1, now())"}
         )
+        self.validate_all(
+            "SELECT i FROM EXPLODE(SEQUENCE(-3, 0)) AS t(i)",
+            read={'presto': "select i from unnest(sequence(-3,0)) as t(i)"}
+        )
+        self.validate_all(
+            "SELECT * FROM EXPLODE(SEQUENCE(-3, 0))",
+            read={'presto': "select * from unnest(sequence(-3,0))"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

@@ -80,6 +80,12 @@ def unnest_to_values(self: ClickZetta.Generator, expression: exp.Unnest):
         alias = expression.args.get('alias')
         ret = exp.Values(expressions=array, alias=alias)
         return self.sql(ret)
+    elif len(expression.expressions) == 1:
+        ret = f"EXPLODE({self.sql(expression.expressions[0])})"
+        alias = expression.args.get('alias')
+        if alias:
+            ret = f"{ret} AS {self.tablealias_sql(expression.args.get('alias'))}"
+        return ret
     else:
         return f"UNNEST({self.sql(expression.expressions)})" # TODO: don't know what to do
 

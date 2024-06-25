@@ -1,4 +1,4 @@
-from sqlglot import transpile
+from sqlglot import exp, transpile
 from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
@@ -50,6 +50,10 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
         )
+        self.validate_identity(
+            "DATE_DIFF(day, created_at, current_date())",
+            "DATEDIFF(DAY, created_at, CURRENT_DATE)",
+        ).args["unit"].assert_is(exp.Var)
         self.validate_identity(
             r'SELECT r"\\foo.bar\"',
             r"SELECT '\\\\foo.bar\\'",

@@ -50,6 +50,7 @@ class Databricks(Spark):
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),
             "DATEDIFF": build_date_delta(exp.DateDiff),
+            "DATE_DIFF": build_date_delta(exp.DateDiff),
             "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
             "GET_JSON_OBJECT": _build_json_extract,
         }

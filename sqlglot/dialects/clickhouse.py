@@ -102,6 +102,7 @@ class ClickHouse(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
     LOG_BASE_FIRST: t.Optional[bool] = None
+    FORCE_EARLY_ALIAS_REF_EXPANSION = True
 
     UNESCAPED_SEQUENCES = {
         "\\0": "\0",

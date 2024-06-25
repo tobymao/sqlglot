@@ -221,6 +221,7 @@ class BigQuery(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
     HEX_LOWERCASE = True
+    FORCE_EARLY_ALIAS_REF_EXPANSION = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

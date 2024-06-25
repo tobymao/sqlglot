@@ -2641,6 +2641,10 @@ class DictRange(Property):
     arg_types = {"this": True, "min": True, "max": True}
 
 
+class DynamicProperty(Property):
+    arg_types = {}
+
+
 # Clickhouse CREATE ... ON CLUSTER modifier
 # https://clickhouse.com/docs/en/sql-reference/distributed-ddl
 class OnCluster(Property):

@@ -33,7 +33,7 @@ def _build_datediff(args: t.List) -> exp.Expression:
     expression = seq_get(args, 1)
 
     if len(args) == 3:
-        unit = this
+        unit = exp.var(t.cast(exp.Expression, this).name)
         this = args[2]
 
     return exp.DateDiff(
@@ -107,6 +107,7 @@ class Spark(Spark2):
             "DATEADD": _build_dateadd,
             "TIMESTAMPADD": _build_dateadd,
             "DATEDIFF": _build_datediff,
+            "DATE_DIFF": _build_datediff,
             "TIMESTAMP_LTZ": _build_as_cast("TIMESTAMP_LTZ"),
             "TIMESTAMP_NTZ": _build_as_cast("TIMESTAMP_NTZ"),
             "TRY_ELEMENT_AT": lambda args: exp.Bracket(

@@ -868,6 +868,9 @@ class TSQL(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def scope_resolution(self, rhs: str, scope_name: str) -> str:
+            return f"{scope_name}::{rhs}"
+
         def select_sql(self, expression: exp.Select) -> str:
             if expression.args.get("offset"):
                 if not expression.args.get("order"):

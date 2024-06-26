@@ -1,4 +1,4 @@
-from sqlglot import exp, parse
+from sqlglot import exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ParseError
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -8,29 +8,14 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
-        self.validate_identity(
-            "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
-        )
-        self.validate_identity(
-            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON X([y])"
-        )
-        self.validate_identity(
-            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON PRIMARY"
-        )
-
-        self.assertEqual(
-            annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
-            "SELECT 1 WHERE EXISTS(SELECT 1)",
-        )
+        # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
+        # tsql allows .. which means use the default schema
+        self.validate_identity("SELECT * FROM a..b")
 
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
         self.validate_identity("EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True)
-        # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
-        # tsql allows .. which means use the default schema
-        self.validate_identity("SELECT * FROM a..b")
-
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
         self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
@@ -47,7 +32,20 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
+            "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
+        )
+        self.validate_identity(
+            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON X([y])"
+        )
+        self.validate_identity(
+            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON PRIMARY"
+        )
+        self.validate_identity(
             "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
+        )
+        self.assertEqual(
+            annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
+            "SELECT 1 WHERE EXISTS(SELECT 1)",
         )
 
         self.validate_all(
@@ -1880,10 +1878,18 @@ FROM OPENJSON(@json) WITH (
         )
 
     def test_scope_resolution_op(self):
-        self.validate_identity("SELECT ::FOO(a, b)")
-        self.validate_identity("SELECT bar::BAZ(1, 2)")
-        self.validate_identity("SELECT LOGIN::EricKurjan")
-        self.validate_identity("SELECT GEOGRAPHY::POINT([latitude], [longitude], 4326) FROM tbl")
-        self.validate_identity(
-            "SELECT * FROM (VALUES (GEOGRAPHY::STGEOMFROMTEXT('POLYGON((-122.358 47.653 , -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))', 4326)))"
-        )
+        for lhs, rhs in (
+            ("", "FOO(a, b)"),
+            ("bar", "baZ(1, 2)"),
+            ("LOGIN", "EricKurjan"),
+            ("GEOGRAPHY", "Point(latitude, longitude, 4326)"),
+            (
+                "GEOGRAPHY",
+                "STGeomFromText('POLYGON((-122.358 47.653 , -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))', 4326)",
+            ),
+        ):
+            with self.subTest(f"Scope resolution, LHS: {lhs}, RHS: {rhs}"):
+                expr = self.validate_identity(f"{lhs}::{rhs}")
+                base_sql = expr.sql()
+                self.assertEqual(base_sql, f"SCOPE_RESOLUTION({lhs + ', ' if lhs else ''}{rhs})")
+                self.assertEqual(parse_one(base_sql).sql("tsql"), f"{lhs}::{rhs}")

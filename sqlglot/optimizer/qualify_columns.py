@@ -62,7 +62,9 @@ def qualify_columns(
 
         if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
             _expand_alias_refs(
-                scope, resolver, expand_only_groupby=dialect.EXPAND_ALIAS_REFS_ONLY_IN_GROUP_BY
+                scope,
+                resolver,
+                expand_only_groupby=dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY,
             )
 
         _convert_columns_to_dots(scope, resolver)

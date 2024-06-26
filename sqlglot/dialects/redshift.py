@@ -152,6 +152,8 @@ class Redshift(Postgres):
         MULTI_ARG_DISTINCT = True
         COPY_PARAMS_ARE_WRAPPED = False
         HEX_FUNC = "TO_HEX"
+        PARSE_JSON_NAME = "JSON_PARSE"
+
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "
 
@@ -184,7 +186,6 @@ class Redshift(Postgres):
             exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
-            exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -207,13 +208,14 @@ class Redshift(Postgres):
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots
         TRANSFORMS.pop(exp.Pivot)
 
+        # Postgres doesn't support JSON_PARSE, but Redshift does
+        TRANSFORMS.pop(exp.ParseJSON)
+
         # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
         TRANSFORMS.pop(exp.Pow)
 
-        # Redshift supports ANY_VALUE(..)
+        # Redshift supports these functions
         TRANSFORMS.pop(exp.AnyValue)
-
-        # Redshift supports LAST_DAY(..)
         TRANSFORMS.pop(exp.LastDay)
         TRANSFORMS.pop(exp.SHA2)
 

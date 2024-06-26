@@ -351,6 +351,9 @@ class Dialect(metaclass=_Dialect):
         - Clickhouse, which will forward the alias across the query i.e it resolves to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
+    EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
+    """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

@@ -4292,7 +4292,7 @@ class Parser(metaclass=_Parser):
             identifier = allow_identifiers and self._parse_id_var(
                 any_token=False, tokens=(TokenType.VAR,)
             )
-            if identifier:
+            if isinstance(identifier, exp.Identifier):
                 tokens = self.dialect.tokenize(identifier.sql(dialect=self.dialect))
 
                 if len(tokens) != 1:

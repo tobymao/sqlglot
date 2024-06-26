@@ -446,6 +446,7 @@ class Hive(Dialect):
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
         SUPPORTS_TO_NUMBER = False
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
+        PARSE_JSON_NAME = None
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -575,7 +576,6 @@ class Hive(Dialect):
             exp.NotForReplicationColumnConstraint: lambda *_: "",
             exp.OnProperty: lambda *_: "",
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
-            exp.ParseJSON: lambda self, e: self.sql(e.this),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),

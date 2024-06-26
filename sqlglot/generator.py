@@ -373,6 +373,9 @@ class Generator(metaclass=_Generator):
     # Whether to quote the generated expression of exp.JsonPath
     QUOTE_JSON_PATH = True
 
+    # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
+    PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -3996,3 +3999,9 @@ class Generator(metaclass=_Generator):
             expr = self.sql(expression, "expression")
 
         return self.scope_resolution(expr, this)
+
+    def parsejson_sql(self, expression: exp.ParseJSON) -> str:
+        if self.PARSE_JSON_NAME is None:
+            return self.sql(expression.this)
+
+        return self.func(self.PARSE_JSON_NAME, expression.this, expression.expression)

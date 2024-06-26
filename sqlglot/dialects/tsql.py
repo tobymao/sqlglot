@@ -775,6 +775,7 @@ class TSQL(Dialect):
         SUPPORTS_TO_NUMBER = False
         SET_OP_MODIFIERS = False
         COPY_PARAMS_EQ_REQUIRED = True
+        PARSE_JSON_NAME = None
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
@@ -834,7 +835,6 @@ class TSQL(Dialect):
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
-            exp.ParseJSON: lambda self, e: self.sql(e, "this"),
             exp.Repeat: rename_func("REPLICATE"),
             exp.Select: transforms.preprocess(
                 [

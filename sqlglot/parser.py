@@ -5369,7 +5369,7 @@ class Parser(metaclass=_Parser):
 
             if not to:
                 to = exp.DataType.build(exp.DataType.Type.UNKNOWN)
-            if to.this in exp.DataType.TEMPORAL_TYPES:
+            if not safe and to.this in exp.DataType.TEMPORAL_TYPES:
                 this = self.expression(
                     exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
                     this=this,

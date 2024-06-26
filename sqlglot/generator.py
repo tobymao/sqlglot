@@ -3982,13 +3982,17 @@ class Generator(metaclass=_Generator):
         this = f"TABLE {this}"
         return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])
 
+    def scope_resolution(self, rhs: str, scope_name: str) -> str:
+        return self.func("SCOPE_RESOLUTION", scope_name or None, rhs)
+
     def scoperesolution_sql(self, expression: exp.ScopeResolution) -> str:
         this = self.sql(expression, "this")
         expr = expression.expression
+
         if isinstance(expr, exp.Func):
             # T-SQL's CLR functions are case sensitive
             expr = f"{self.sql(expr, 'this')}({self.format_args(*expr.expressions)})"
         else:
             expr = self.sql(expression, "expression")
 
-        return f"{this}::{expr}"
+        return self.scope_resolution(expr, this)

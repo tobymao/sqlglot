@@ -61,7 +61,9 @@ def qualify_columns(
         using_column_tables = _expand_using(scope, resolver)
 
         if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
-            _expand_alias_refs(scope, resolver, expand_only_groupby=(dialect == "bigquery"))
+            _expand_alias_refs(
+                scope, resolver, expand_only_groupby=dialect.EXPAND_ALIAS_REFS_ONLY_IN_GROUP_BY
+            )
 
         _convert_columns_to_dots(scope, resolver)
         _qualify_columns(scope, resolver)

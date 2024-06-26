@@ -305,6 +305,7 @@ class Presto(Dialect):
         MULTI_ARG_DISTINCT = False
         SUPPORTS_TO_NUMBER = False
         HEX_FUNC = "TO_HEX"
+        PARSE_JSON_NAME = "JSON_PARSE"
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -389,7 +390,6 @@ class Presto(Dialect):
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
-            exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Last: _first_last_sql,
             exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),

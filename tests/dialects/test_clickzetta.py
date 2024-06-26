@@ -195,7 +195,11 @@ select j from a""",
         # date_add
         os.environ['READ_DIALECT'] = 'presto'
         self.validate_all(
-            "SELECT (CURRENT_TIMESTAMP() + INTERVAL 1 HOUR * (1 + 2))",
+            "SELECT TIMESTAMP_OR_DATE_ADD(LOWER('hour'), 1 + 2, CURRENT_TIMESTAMP())",
+            read={'presto': "select date_add(lower('hour'), 1+2, now())"}
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_OR_DATE_ADD('HOUR', 1 + 2, CURRENT_TIMESTAMP())",
             read={'presto': "select date_add('hour', 1+2, now())"}
         )
 

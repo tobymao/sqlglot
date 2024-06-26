@@ -14,18 +14,20 @@ from sqlglot.dialects.dialect import (
 
 logger = logging.getLogger("sqlglot")
 
-MYSQL = 'mysql'
-POSTGRES = 'postgres'
-
-def read_dialect() -> str:
+def is_read_dialect(target: str) -> bool:
+    target = target.upper()
     import os
     read_dialect = os.environ.get('READ_DIALECT')
-    if read_dialect:
-        if read_dialect.upper() in ['MYSQL', 'PRESTO', 'TRINO', 'ATHENA', 'STARROCKS', 'DORIS']:
-            return MYSQL
-        elif read_dialect.upper() in ['POSTGRES', 'REDSHIFT']:
-            return POSTGRES
-    return None
+    if not read_dialect:
+        return False
+    if target == 'MYSQL' and read_dialect.upper() in ['MYSQL', 'PRESTO', 'TRINO', 'ATHENA', 'STARROCKS', 'DORIS']:
+        return True
+    if target == 'POSTGRES' and read_dialect.upper() in ['POSTGRES', 'REDSHIFT']:
+        return True
+    if target == read_dialect.upper():
+        return True
+
+    return False
 
 def _transform_create(expression: exp.Expression) -> exp.Expression:
     """Remove index column constraints.
@@ -58,7 +60,7 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"LAST_DAY({self.sql(expression.expressions[0])})"
     elif expression.this.upper() == 'TO_ISO8601':
         return f"DATE_FORMAT({self.sql(expression.expressions[0])}, 'yyyy-MM-dd\\\'T\\\'hh:mm:ss.SSSxxx')"
-    elif expression.this.upper() == 'AES_DECRYPT' and read_dialect() == 'mysql':
+    elif expression.this.upper() == 'AES_DECRYPT' and is_read_dialect('mysql'):
         return f"AES_DECRYPT_MYSQL({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
     elif expression.this.upper() == 'MAP_AGG':
         return f"MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT({self.expressions(expression)})))"
@@ -91,10 +93,9 @@ def unnest_to_values(self: ClickZetta.Generator, expression: exp.Unnest):
 
 def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     this = self.sql(expression, "this")
-    dialect = read_dialect()
-    if dialect == MYSQL:
+    if is_read_dialect('mysql'):
         return f"DATE_FORMAT_MYSQL({this}, {self.sql(expression, 'format')})"
-    elif dialect == POSTGRES:
+    elif is_read_dialect('postgres'):
         return f"DATE_FORMAT_PG({this}, {self.sql(expression, 'format')})"
 
     # fallback to hive implementation
@@ -102,7 +103,7 @@ def time_to_str(self: ClickZetta.Generator, expression: exp.TimeToStr):
     return f"DATE_FORMAT({this}, {time_format})"
 
 def fill_tuple_with_column_name(self: ClickZetta.Generator, expression: exp.Tuple) -> str:
-    if not isinstance(expression.parent, exp.Values) and read_dialect() == MYSQL:
+    if not isinstance(expression.parent, exp.Values) and is_read_dialect('mysql'):
         elements = []
         for i, e in enumerate(expression.expressions):
             elements.append(f'{self.sql(e)} AS __c{i+1}')
@@ -111,9 +112,16 @@ def fill_tuple_with_column_name(self: ClickZetta.Generator, expression: exp.Tupl
         return f"({self.expressions(expression, flat=True)})"
 
 def date_add_sql(self: ClickZetta.Generator, expression: exp.DateAdd) -> str:
-    if read_dialect() == MYSQL:
-        return f"({self.sql(expression.this)} + INTERVAL 1 {expression.args.get('unit').this.upper()} * ({self.sql(expression.expression)}))"
-    return f"DATEADD({expression.args.get('unit').this.upper()}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
+    # this is a workaround since date_add in presto should be parsed as TsOrDsAdd
+    # https://prestodb.io/docs/current/functions/datetime.html#date_add
+    if is_read_dialect('presto'):
+        unit = expression.args.get('unit')
+        if isinstance(unit, exp.Var):
+            unit_str = f"'{self.sql(unit)}'"
+        else:
+            unit_str = self.sql(unit)
+        return f"TIMESTAMP_OR_DATE_ADD({unit_str}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
+    return f"DATEADD({self.sql(expression.args.get('unit'))}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
 
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"

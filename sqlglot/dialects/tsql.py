@@ -527,7 +527,9 @@ class TSQL(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DCOLON: lambda self, this: self.expression(
-                exp.ScopeResolution, this=this, expression=self._parse_function()
+                exp.ScopeResolution,
+                this=this,
+                expression=self._parse_function() or self._parse_var(any_token=True),
             ),
         }
 

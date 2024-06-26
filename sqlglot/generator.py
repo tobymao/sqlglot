@@ -3984,5 +3984,11 @@ class Generator(metaclass=_Generator):
 
     def scoperesolution_sql(self, expression: exp.ScopeResolution) -> str:
         this = self.sql(expression, "this")
-        func = self.sql(expression, "expression")
-        return f"{this}::{func}"
+        expr = expression.expression
+        if isinstance(expr, exp.Func):
+            # T-SQL's CLR functions are case sensitive
+            expr = f"{self.sql(expr, 'this')}({self.format_args(*expr.expressions)})"
+        else:
+            expr = self.sql(expression, "expression")
+
+        return f"{this}::{expr}"

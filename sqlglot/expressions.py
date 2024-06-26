@@ -5581,7 +5581,7 @@ class MapFromEntries(Func):
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/scope-resolution-operator-transact-sql?view=sql-server-ver16
-class ScopeResolution(Func):
+class ScopeResolution(Expression):
     arg_types = {"this": False, "expression": True}
 
 

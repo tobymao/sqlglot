@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.3.3] - 2024-06-26
+### :recycle: Refactors
+- [`972ce7d`](https://github.com/tobymao/sqlglot/commit/972ce7d27d9f083d8ef02ded9278e320da3aa0b6) - control ParseJSON generation logic with a flag *(PR [#3707](https://github.com/tobymao/sqlglot/pull/3707) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.3.2] - 2024-06-26
 ### :sparkles: New Features
 - [`a1327c7`](https://github.com/tobymao/sqlglot/commit/a1327c7f4ae74ae25617cd448448ae89c915c744) - **tsql**: Add support for scope qualifier operator *(PR [#3703](https://github.com/tobymao/sqlglot/pull/3703) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -4034,3 +4039,4 @@ Changelog
 [v25.3.0]: https://github.com/tobymao/sqlglot/compare/v25.2.0...v25.3.0
 [v25.3.1]: https://github.com/tobymao/sqlglot/compare/v25.3.0...v25.3.1
 [v25.3.2]: https://github.com/tobymao/sqlglot/compare/v25.3.1...v25.3.2
+[v25.3.3]: https://github.com/tobymao/sqlglot/compare/v25.3.2...v25.3.3

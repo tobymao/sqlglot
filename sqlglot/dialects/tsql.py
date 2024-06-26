@@ -524,6 +524,13 @@ class TSQL(Dialect):
             "TIMEFROMPARTS": _build_timefromparts,
         }
 
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.DCOLON: lambda self, this: self.expression(
+                exp.ScopeResolution, this=this, expression=self._parse_function()
+            ),
+        }
+
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
@@ -535,6 +542,10 @@ class TSQL(Dialect):
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
+
+        # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
+        COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
+        COLUMN_OPERATORS.pop(TokenType.DCOLON)
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
             if not self._match(TokenType.OPTION):

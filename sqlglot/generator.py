@@ -3981,3 +3981,8 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         this = f"TABLE {this}"
         return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])
+
+    def scoperesolution_sql(self, expression: exp.ScopeResolution) -> str:
+        this = self.sql(expression, "this")
+        func = self.sql(expression, "expression")
+        return f"{this}::{func}"

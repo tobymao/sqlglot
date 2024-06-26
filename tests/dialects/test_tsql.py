@@ -1878,3 +1878,11 @@ FROM OPENJSON(@json) WITH (
             "DECLARE vendor_cursor CURSOR FOR SELECT VendorID, Name FROM Purchasing.Vendor WHERE PreferredVendorStatus = 1 ORDER BY VendorID",
             check_command_warning=True,
         )
+
+    def test_scope_resolution_op(self):
+        self.validate_identity("SELECT ::FOO(a, b)")
+        self.validate_identity("SELECT bar::BAZ(1, 2)")
+        self.validate_identity("SELECT GEOGRAPHY::POINT([latitude], [longitude], 4326) FROM tbl")
+        self.validate_identity(
+            "SELECT * FROM (VALUES (GEOGRAPHY::STGEOMFROMTEXT('POLYGON((-122.358 47.653 , -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))', 4326)))"
+        )

@@ -174,6 +174,7 @@ class ClickHouse(Dialect):
             "DATE_FORMAT": _build_date_format,
             "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
+            "EXTRACT": exp.RegexpExtract.from_arg_list,
             "FORMATDATETIME": _build_date_format,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
@@ -346,6 +347,7 @@ class ClickHouse(Dialect):
             "QUANTILE": lambda self: self._parse_quantile(),
         }
 
+        FUNCTION_PARSERS.pop("EXTRACT")
         FUNCTION_PARSERS.pop("MATCH")
 
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()

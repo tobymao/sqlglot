@@ -7,6 +7,8 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity("extract(haystack, pattern)")
+
         self.validate_all(
             "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
             write={

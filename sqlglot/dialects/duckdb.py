@@ -738,3 +738,31 @@ class DuckDB(Dialect):
             this = self.sql(expression, "this").rstrip(")")
 
             return f"{this}{expression_sql})"
+
+        def length_sql(self, expression: exp.Length) -> str:
+            arg = expression.this
+
+            if not arg.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                arg = annotate_types(arg)
+
+            if arg.is_type(exp.DataType.Type.VARCHAR) or arg.is_string:
+                return self.func("LENGTH", arg)
+
+            # Dialects like BQ and Snowflake also accept binary values, so if we can't determine the
+            # arg type then attempt case-when resolution
+            trycast_blob = exp.TryCast(this=arg, to=exp.DataType.build(exp.DataType.Type.VARBINARY))
+            trycast_varchar = exp.TryCast(
+                this=arg, to=exp.DataType.build(exp.DataType.Type.VARCHAR)
+            )
+
+            case = (
+                exp.case(self.func("TYPEOF", arg))
+                .when(
+                    "'VARCHAR'", exp.Anonymous(this="LENGTH", expressions=[trycast_varchar])
+                )  # anonymous to break length_sql recursion
+                .when("'BLOB'", self.func("OCTET_LENGTH", trycast_blob))
+            )
+
+            return self.sql(case)

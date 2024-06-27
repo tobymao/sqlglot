@@ -755,6 +755,7 @@ class DuckDB(Dialect):
             if arg.is_type(*exp.DataType.TEXT_TYPES):
                 return self.func("LENGTH", arg)
 
+            # We need these casts to make duckdb's static type checker happy
             blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
             varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
 

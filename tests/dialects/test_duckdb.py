@@ -793,6 +793,7 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_identity("SELECT LENGTH(foo)")
         self.validate_identity("SELECT LENGTH('baz')")
         self.validate_identity("SELECT LENGTH(LOWER('bar'))")
 

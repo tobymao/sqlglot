@@ -5524,6 +5524,7 @@ class Right(Func):
 
 
 class Length(Func):
+    arg_types = {"this": True, "binary": False}
     _sql_names = ["LENGTH", "LEN"]
 
 

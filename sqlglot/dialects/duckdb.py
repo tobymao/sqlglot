@@ -755,17 +755,15 @@ class DuckDB(Dialect):
             if arg.is_type(*exp.DataType.TEXT_TYPES):
                 return self.func("LENGTH", arg)
 
-            trycast_blob = exp.TryCast(this=arg, to=exp.DataType.build(exp.DataType.Type.VARBINARY))
-            trycast_varchar = exp.TryCast(
-                this=arg, to=exp.DataType.build(exp.DataType.Type.VARCHAR)
-            )
+            blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
+            varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
             case = (
                 exp.case(self.func("TYPEOF", arg))
                 .when(
-                    "'VARCHAR'", exp.Anonymous(this="LENGTH", expressions=[trycast_varchar])
+                    "'VARCHAR'", exp.Anonymous(this="LENGTH", expressions=[varchar])
                 )  # anonymous to break length_sql recursion
-                .when("'BLOB'", self.func("OCTET_LENGTH", trycast_blob))
+                .when("'BLOB'", self.func("OCTET_LENGTH", blob))
             )
 
             return self.sql(case)

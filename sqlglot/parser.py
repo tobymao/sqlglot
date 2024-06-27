@@ -5335,7 +5335,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_extract(self) -> exp.Extract:
-        this = self._parse_function() or self._parse_var() or self._parse_type()
+        this = self._parse_function() or self._parse_var_or_string(upper=True)
 
         if self._match(TokenType.FROM):
             return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
@@ -5964,8 +5964,8 @@ class Parser(metaclass=_Parser):
             return self._prev
         return None
 
-    def _parse_var_or_string(self) -> t.Optional[exp.Expression]:
-        return self._parse_string() or self._parse_var(any_token=True)
+    def _parse_var_or_string(self, upper: bool = False) -> t.Optional[exp.Expression]:
+        return self._parse_string() or self._parse_var(any_token=True, upper=upper)
 
     def _parse_primary_or_var(self) -> t.Optional[exp.Expression]:
         return self._parse_primary() or self._parse_var(any_token=True)

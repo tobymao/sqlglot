@@ -14,6 +14,8 @@ class TestParser(unittest.TestCase):
             parse_one("")
 
     def test_parse_into(self):
+        self.assertIsInstance(parse_one("select * from t", into=exp.Select), exp.Select)
+        self.assertIsInstance(parse_one("select * from t limit 5", into=exp.Select), exp.Select)
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)

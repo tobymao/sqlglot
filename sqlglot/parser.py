@@ -674,6 +674,7 @@ class Parser(metaclass=_Parser):
         exp.Properties: lambda self: self._parse_properties(),
         exp.Qualify: lambda self: self._parse_qualify(),
         exp.Returning: lambda self: self._parse_returning(),
+        exp.Select: lambda self: self._parse_select(),
         exp.Sort: lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY),
         exp.Table: lambda self: self._parse_table_parts(),
         exp.TableAlias: lambda self: self._parse_table_alias(),

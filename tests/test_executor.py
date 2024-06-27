@@ -14,6 +14,8 @@ from sqlglot.errors import ExecuteError
 from sqlglot.executor import execute
 from sqlglot.executor.python import Python
 from sqlglot.executor.table import Table, ensure_tables
+from sqlglot.optimizer import optimize
+from sqlglot.planner import Plan
 from tests.helpers import (
     FIXTURES_DIR,
     SKIP_INTEGRATION,
@@ -862,3 +864,18 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT x FROM t", dialect="duckdb", tables=tables)
         self.assertEqual(result.columns, ("x",))
         self.assertEqual(result.rows, [([1, 2, 3],)])
+
+    def test_agg_order(self):
+        plan = Plan(
+            optimize("""
+            SELECT
+              AVG(bill_length_mm) AS avg_bill_length,
+              AVG(bill_depth_mm) AS avg_bill_depth
+            FROM penguins
+            """)
+        )
+
+        assert [agg.alias for agg in plan.root.aggregations] == [
+            "avg_bill_length",
+            "avg_bill_depth",
+        ]

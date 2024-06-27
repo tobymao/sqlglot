@@ -793,6 +793,8 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_identity("SELECT LENGTH(foo)")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

@@ -4005,3 +4005,6 @@ class Generator(metaclass=_Generator):
             return self.sql(expression.this)
 
         return self.func(self.PARSE_JSON_NAME, expression.this, expression.expression)
+
+    def length_sql(self, expression: exp.Length) -> str:
+        return self.func("LENGTH", expression.this)

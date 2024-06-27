@@ -1375,6 +1375,18 @@ WHERE
                 "bigquery": "SELECT DATETIME('2020-01-01', 'America/Los_Angeles')",
             },
         )
+        self.validate_all(
+            "SELECT LENGTH(foo)",
+            read={
+                "bigquery": "SELECT LENGTH(foo)",
+                "snowflake": "SELECT LENGTH(foo)",
+            },
+            write={
+                "duckdb": "SELECT CASE TYPEOF(foo) WHEN 'VARCHAR' THEN LENGTH(CAST(foo AS TEXT)) WHEN 'BLOB' THEN OCTET_LENGTH(CAST(foo AS BLOB)) END",
+                "snowflake": "SELECT LENGTH(foo)",
+                "": "SELECT LENGTH(foo)",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

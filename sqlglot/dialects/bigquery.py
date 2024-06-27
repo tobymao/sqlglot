@@ -346,6 +346,7 @@ class BigQuery(Dialect):
             "JSON_EXTRACT_SCALAR": lambda args: exp.JSONExtractScalar(
                 this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string("$")
             ),
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _build_to_hex,
             "PARSE_DATE": lambda args: build_formatted_time(exp.StrToDate, "bigquery")(

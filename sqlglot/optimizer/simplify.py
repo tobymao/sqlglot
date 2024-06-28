@@ -6,7 +6,6 @@ import functools
 import itertools
 import typing as t
 from collections import deque, defaultdict
-from decimal import Decimal
 from functools import reduce
 
 import sqlglot
@@ -347,8 +346,8 @@ def _simplify_comparison(expression, left, right, or_=False):
                 return expression
 
             if l.is_number and r.is_number:
-                l = float(l.name)
-                r = float(r.name)
+                l = l.to_py()
+                r = r.to_py()
             elif l.is_string and r.is_string:
                 l = l.name
                 r = r.name
@@ -626,13 +625,8 @@ def simplify_literals(expression, root=True):
     if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
         return _flat_simplify(expression, _simplify_binary, root)
 
-    if isinstance(expression, exp.Neg):
-        this = expression.this
-        if this.is_number:
-            value = this.name
-            if value[0] == "-":
-                return exp.Literal.number(value[1:])
-            return exp.Literal.number(f"-{value}")
+    if isinstance(expression, exp.Neg) and isinstance(expression.this, exp.Neg):
+        return expression.this.this
 
     if type(expression) in INVERSE_DATE_OPS:
         return _simplify_binary(expression, expression.this, expression.interval()) or expression
@@ -650,7 +644,7 @@ def _simplify_integer_cast(expr: exp.Expression) -> exp.Expression:
         this = expr.this
 
     if isinstance(expr, exp.Cast) and this.is_int:
-        num = int(this.name)
+        num = this.to_py()
 
         # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
         # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
@@ -690,8 +684,8 @@ def _simplify_binary(expression, a, b):
         return exp.null()
 
     if a.is_number and b.is_number:
-        num_a = int(a.name) if a.is_int else Decimal(a.name)
-        num_b = int(b.name) if b.is_int else Decimal(b.name)
+        num_a = a.to_py()
+        num_b = b.to_py()
 
         if isinstance(expression, exp.Add):
             return exp.Literal.number(num_a + num_b)
@@ -1206,7 +1200,7 @@ def _is_date_literal(expression: exp.Expression) -> bool:
 
 def extract_interval(expression):
     try:
-        n = int(expression.name)
+        n = int(expression.this.to_py())
         unit = expression.text("unit").lower()
         return interval(unit, n)
     except (UnsupportedUnit, ModuleNotFoundError, ValueError):

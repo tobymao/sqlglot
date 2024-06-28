@@ -453,8 +453,6 @@ class DuckDB(Dialect):
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: str_position_sql,
-            exp.StrToDate: lambda self, e: f"CAST({str_to_time_sql(self, e)} AS DATE)",
-            exp.StrToTime: str_to_time_sql,
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),
@@ -611,6 +609,18 @@ class DuckDB(Dialect):
         # can be transpiled to DuckDB, so we explicitly override them accordingly
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
+
+        def strtotime_sql(self, expression: exp.StrToTime) -> str:
+            if expression.args.get("safe"):
+                formatted_time = self.format_time(expression)
+                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS TIMESTAMP)"
+            return str_to_time_sql(self, expression)
+
+        def strtodate_sql(self, expression: exp.StrToDate) -> str:
+            if expression.args.get("safe"):
+                formatted_time = self.format_time(expression)
+                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS DATE)"
+            return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
 
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:
             arg = expression.this

@@ -4009,3 +4009,14 @@ class Generator(metaclass=_Generator):
 
     def length_sql(self, expression: exp.Length) -> str:
         return self.func("LENGTH", expression.this)
+
+    def strtodate_sql(self, expression: exp.StrToDate) -> str:
+        return self.func("STR_TO_DATE", expression.this, expression.args.get("format"))
+
+    def strtotime_sql(self, expression: exp.StrToTime) -> str:
+        return self.func(
+            "STR_TO_TIME",
+            expression.this,
+            expression.args.get("format"),
+            expression.args.get("zone"),
+        )

@@ -122,6 +122,8 @@ class _Dialect(type):
         )
         klass.INVERSE_TIME_MAPPING = {v: k for k, v in klass.TIME_MAPPING.items()}
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
+        klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
         base = seq_get(bases, 0)
         base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
@@ -367,6 +369,8 @@ class Dialect(metaclass=_Dialect):
 
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}
+    INVERSE_FORMAT_MAPPING: t.Dict[str, str] = {}
+    INVERSE_FORMAT_TRIE: t.Dict = {}
 
     ESCAPED_SEQUENCES: t.Dict[str, str] = {}
 

@@ -5376,7 +5376,7 @@ class Parser(metaclass=_Parser):
 
             if not to:
                 to = exp.DataType.build(exp.DataType.Type.UNKNOWN)
-            if not safe and to.this in exp.DataType.TEMPORAL_TYPES:
+            if to.this in exp.DataType.TEMPORAL_TYPES:
                 this = self.expression(
                     exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
                     this=this,
@@ -5387,6 +5387,7 @@ class Parser(metaclass=_Parser):
                             self.dialect.FORMAT_TRIE or self.dialect.TIME_TRIE,
                         )
                     ),
+                    safe=safe,
                 )
 
                 if isinstance(fmt, exp.AtTimeZone) and isinstance(this, exp.StrToTime):

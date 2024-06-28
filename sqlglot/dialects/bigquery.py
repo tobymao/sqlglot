@@ -214,6 +214,24 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
+def _str_to_datetime_sql(
+    self: BigQuery.Generator, expression: exp.StrToDate | exp.StrToTime
+) -> str:
+    this = self.sql(expression, "this")
+    dtype = "DATE" if isinstance(expression, exp.StrToDate) else "TIMESTAMP"
+
+    if expression.args.get("safe"):
+        fmt = self.format_time(
+            expression,
+            self.dialect.INVERSE_FORMAT_MAPPING,
+            self.dialect.INVERSE_FORMAT_TRIE,
+        )
+        return f"SAFE_CAST({this} AS {dtype} FORMAT {fmt})"
+
+    fmt = self.format_time(expression)
+    return self.func(f"PARSE_{dtype}", fmt, this, expression.args.get("zone"))
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -657,10 +675,8 @@ class BigQuery(Dialect):
             exp.StabilityProperty: lambda self, e: (
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),
-            exp.StrToDate: lambda self, e: self.func("PARSE_DATE", self.format_time(e), e.this),
-            exp.StrToTime: lambda self, e: self.func(
-                "PARSE_TIMESTAMP", self.format_time(e), e.this, e.args.get("zone")
-            ),
+            exp.StrToDate: _str_to_datetime_sql,
+            exp.StrToTime: _str_to_datetime_sql,
             exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
             exp.TimeFromParts: rename_func("TIME"),
             exp.TimestampFromParts: rename_func("DATETIME"),

@@ -5791,11 +5791,11 @@ class StrPosition(Func):
 
 
 class StrToDate(Func):
-    arg_types = {"this": True, "format": False}
+    arg_types = {"this": True, "format": False, "safe": False}
 
 
 class StrToTime(Func):
-    arg_types = {"this": True, "format": True, "zone": False}
+    arg_types = {"this": True, "format": True, "zone": False, "safe": False}
 
 
 # Spark allows unix_timestamp()

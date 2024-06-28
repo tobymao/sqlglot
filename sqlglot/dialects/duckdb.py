@@ -613,13 +613,13 @@ class DuckDB(Dialect):
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                return f"CAST({self.func("TRY_STRPTIME", expression.this, formatted_time)} AS TIMESTAMP)"
+                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS TIMESTAMP)"
             return str_to_time_sql(self, expression)
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                return f"CAST({self.func("TRY_STRPTIME", expression.this, formatted_time)} AS DATE)"
+                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS DATE)"
             return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
 
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:

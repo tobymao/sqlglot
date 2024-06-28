@@ -122,13 +122,6 @@ class Oracle(Dialect):
             "XMLTABLE": lambda self: self._parse_xml_table(),
         }
 
-        NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
-            "CONNECT_BY_ROOT": lambda self: self.expression(
-                exp.ConnectByRoot, this=self._parse_column()
-            ),
-        }
-
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "GLOBAL": lambda self: self._match_text_seq("TEMPORARY")
@@ -248,7 +241,6 @@ class Oracle(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.ConnectByRoot: lambda self, e: f"CONNECT_BY_ROOT {self.sql(e, 'this')}",
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),

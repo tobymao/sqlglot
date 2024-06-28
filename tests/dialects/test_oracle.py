@@ -9,7 +9,7 @@ class TestOracle(Validator):
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",
             write={
-                "": "SELECT CONNECT_BY_ROOT(x) AS y",
+                "": "SELECT CONNECT_BY_ROOT x AS y",
                 "oracle": "SELECT CONNECT_BY_ROOT x AS y",
             },
         )

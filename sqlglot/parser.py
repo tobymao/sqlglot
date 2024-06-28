@@ -997,6 +997,9 @@ class Parser(metaclass=_Parser):
     NO_PAREN_FUNCTION_PARSERS = {
         "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
         "CASE": lambda self: self._parse_case(),
+        "CONNECT_BY_ROOT": lambda self: self.expression(
+            exp.ConnectByRoot, this=self._parse_column()
+        ),
         "IF": lambda self: self._parse_if(),
         "NEXT": lambda self: self._parse_next_value_for(),
     }

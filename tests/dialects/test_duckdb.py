@@ -856,7 +856,7 @@ class TestDuckDB(Validator):
             read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
         )
         self.validate_all(
-            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (-1) DAY",
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",
             read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},
         )
         self.validate_all(

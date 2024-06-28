@@ -20,6 +20,7 @@ import textwrap
 import typing as t
 from collections import deque
 from copy import deepcopy
+from decimal import Decimal
 from enum import auto
 from functools import reduce
 
@@ -29,7 +30,6 @@ from sqlglot.helper import (
     camel_to_snake_case,
     ensure_collection,
     ensure_list,
-    is_int,
     seq_get,
     subclasses,
 )
@@ -175,23 +175,22 @@ class Expression(metaclass=_Expression):
         """
         Checks whether a Literal expression is a number.
         """
-        return isinstance(self, Literal) and not self.args["is_string"]
+        return (isinstance(self, Literal) and not self.args["is_string"]) or (
+            isinstance(self, Neg) and self.this.is_number
+        )
 
-    @property
-    def is_negative(self) -> bool:
+    def to_py(self) -> t.Any:
         """
-        Checks whether an expression is negative.
-
-        Handles both exp.Neg and Literal numbers with "-" which come from optimizer.simplify.
+        Returns a Python object equivalent of the SQL node.
         """
-        return isinstance(self, Neg) or (self.is_number and self.this.startswith("-"))
+        raise ValueError(f"{self} cannot be converted to a Python object.")
 
     @property
     def is_int(self) -> bool:
         """
-        Checks whether a Literal expression is an integer.
+        Checks whether an expression is an integer.
         """
-        return self.is_number and is_int(self.name)
+        return self.is_number and isinstance(self.to_py(), int)
 
     @property
     def is_star(self) -> bool:
@@ -2283,6 +2282,14 @@ class Literal(Condition):
     def output_name(self) -> str:
         return self.name
 
+    def to_py(self) -> int | str | Decimal:
+        if self.is_number:
+            try:
+                return int(self.this)
+            except ValueError:
+                return Decimal(self.this)
+        return self.this
+
 
 class Join(Expression):
     arg_types = {
@@ -3907,9 +3914,13 @@ class Null(Condition):
     def name(self) -> str:
         return "NULL"
 
+    def to_py(self) -> Lit[None]:
+        return None
+
 
 class Boolean(Condition):
-    pass
+    def to_py(self) -> bool:
+        return self.this
 
 
 class DataTypeParam(Expression):
@@ -4487,7 +4498,10 @@ class Paren(Unary):
 
 
 class Neg(Unary):
-    pass
+    def to_py(self) -> int | Decimal:
+        if self.is_number:
+            return self.this.to_py() * -1
+        return super().to_py()
 
 
 class Alias(Expression):

@@ -71,7 +71,7 @@ def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
         multiplier *= -1
 
     if expression.expression.is_number:
-        modified_increment = exp.Literal.number(int(expression.text("expression")) * multiplier)
+        modified_increment = exp.Literal.number(expression.expression.to_py() * multiplier)
     else:
         modified_increment = expression.expression
         if multiplier != 1:

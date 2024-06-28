@@ -56,12 +56,15 @@ def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_ADD_OR_SUB]
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
-        expression = self._simplify_unless_literal(expression.expression)
-        if not isinstance(expression, exp.Literal):
+        e = self._simplify_unless_literal(expression.expression)
+        if isinstance(e, exp.Literal):
+            e.args["is_string"] = True
+        elif e.is_number:
+            e = exp.Literal.string(e.to_py())
+        else:
             self.unsupported("Cannot add non literal")
 
-        expression.args["is_string"] = True
-        return f"{this} {kind} {self.sql(exp.Interval(this=expression, unit=unit))}"
+        return f"{this} {kind} {self.sql(exp.Interval(this=e, unit=unit))}"
 
     return func
 

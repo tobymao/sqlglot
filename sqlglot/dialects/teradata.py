@@ -24,9 +24,9 @@ def _date_add_sql(
         if not isinstance(value, exp.Literal):
             self.unsupported("Cannot add non literal")
 
-        if value.is_negative:
+        if isinstance(value, exp.Neg):
             kind_to_op = {"+": "-", "-": "+"}
-            value = exp.Literal.string(value.name[1:])
+            value = exp.Literal.string(value.this.to_py())
         else:
             kind_to_op = {"+": "+", "-": "-"}
             value.set("is_string", True)

@@ -152,7 +152,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables: t.Dict[str, t.Dict[str, t.Any]] = {}
 
-    for join in joins:
+    for i, join in enumerate(joins):
         using = join.args.get("using")
 
         if not using:
@@ -172,6 +172,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
         ordered.append(join_table)
         join_columns = resolver.get_source_columns(join_table)
         conditions = []
+        using_identifier_count = len(using)
 
         for identifier in using:
             identifier = identifier.name
@@ -182,9 +183,13 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
                     raise OptimizeError(f"Cannot automatically join: {identifier}")
 
             table = table or source_table
-            conditions.append(
-                exp.column(identifier, table=table).eq(exp.column(identifier, table=join_table))
-            )
+
+            if i == 0 or using_identifier_count == 1:
+                lhs: exp.Expression = exp.column(identifier, table=table)
+            else:
+                lhs = exp.func("coalesce", *[exp.column(identifier, table=t) for t in ordered[:-1]])
+
+            conditions.append(lhs.eq(exp.column(identifier, table=join_table)))
 
             # Set all values in the dict to None, because we only care about the key ordering
             tables = column_tables.setdefault(identifier, {})
@@ -200,8 +205,8 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
         for column in scope.columns:
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
-                coalesce = [exp.column(column.name, table=table) for table in tables]
-                replacement = exp.Coalesce(this=coalesce[0], expressions=coalesce[1:])
+                coalesce_args = [exp.column(column.name, table=table) for table in tables]
+                replacement = exp.func("coalesce", *coalesce_args)
 
                 # Ensure selects keep their output name
                 if isinstance(column.parent, exp.Select):
@@ -587,14 +592,10 @@ def _expand_stars(
                 if name in using_column_tables and table in using_column_tables[name]:
                     coalesced_columns.add(name)
                     tables = using_column_tables[name]
-                    coalesce = [exp.column(name, table=table) for table in tables]
+                    coalesce_args = [exp.column(name, table=table) for table in tables]
 
                     new_selections.append(
-                        alias(
-                            exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]),
-                            alias=name,
-                            copy=False,
-                        )
+                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                     )
                 else:
                     alias_ = replace_columns.get(table_id, {}).get(name, name)

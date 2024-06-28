@@ -480,6 +480,18 @@ SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
 WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
 WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m AS m JOIN n AS foo(a) ON m.a = foo.a;
 
+# title: coalesce the USING clause's columns (3 joins, 2 join columns)
+WITH t1 AS (SELECT 'x' AS id, DATE '2024-01-01' AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, DATE '2024-02-02' AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, DATE '2024-02-02' AS foo, 456 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING(id, foo) FULL OUTER JOIN t3 USING(id, foo);
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value) SELECT COALESCE(t1.id, t2.id, t3.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo) AS foo, t1.value AS value, t2.value AS value, t3.value AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo;
+
+# title: coalesce the USING clause's columns (3 joins, 3 join columns)
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING (id, foo, value) FULL OUTER JOIN t3 USING (id, foo, value);
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value) SELECT COALESCE(t1.id, t2.id, t3.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo) AS foo, COALESCE(t1.value, t2.value, t3.value) AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo AND t1.value = t2.value FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo AND COALESCE(t1.value, t2.value) = t3.value;
+
+# title: coalesce the USING clause's columns (4 joins, 2 join columns)
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value), t4 AS (SELECT 'x' AS id, CAST('2024-03-03' AS DATE) AS foo, 789 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING (id, foo) FULL OUTER JOIN t3 USING (id, foo) FULL OUTER JOIN t4 USING (id, foo);
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value), t4 AS (SELECT 'x' AS id, CAST('2024-03-03' AS DATE) AS foo, 789 AS value) SELECT COALESCE(t1.id, t2.id, t3.id, t4.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo, t4.foo) AS foo, t1.value AS value, t2.value AS value, t3.value AS value, t4.value AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo FULL OUTER JOIN t4 AS t4 ON COALESCE(t1.id, t2.id, t3.id) = t4.id AND COALESCE(t1.foo, t2.foo, t3.foo) = t4.foo;
+
 --------------------------------------
 -- Hint with table reference
 --------------------------------------

@@ -1,6 +1,37 @@
 Changelog
 =========
 
+## [v25.4.0] - 2024-06-28
+### :boom: BREAKING CHANGES
+- due to [`9fb1d79`](https://github.com/tobymao/sqlglot/commit/9fb1d79398769edb452e075eb3b6416e69f239bf) - extract unit should be a var, not a column *(PR [#3712](https://github.com/tobymao/sqlglot/pull/3712) by [@tobymao](https://github.com/tobymao))*:
+
+  extract unit should be a var, not a column (#3712)
+
+- due to [`ae1816f`](https://github.com/tobymao/sqlglot/commit/ae1816fc71a5a164d1aae6644a9c3bc4cec484d2) - simplify no longer removes neg, add to_py *(PR [#3714](https://github.com/tobymao/sqlglot/pull/3714) by [@tobymao](https://github.com/tobymao))*:
+
+  simplify no longer removes neg, add to_py (#3714)
+
+- due to [`beaf9cc`](https://github.com/tobymao/sqlglot/commit/beaf9cc1f07ff4223f99c84ad6645d3f29af5801) - coalesce left-hand side of join conditions produced by expanding USING *(PR [#3715](https://github.com/tobymao/sqlglot/pull/3715) by [@georgesittas](https://github.com/georgesittas))*:
+
+  coalesce left-hand side of join conditions produced by expanding USING (#3715)
+
+
+### :sparkles: New Features
+- [`97739fe`](https://github.com/tobymao/sqlglot/commit/97739fe692a883a45247d92b2a3efaed33c4b5bf) - add Select expression parser *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`1c2279c`](https://github.com/tobymao/sqlglot/commit/1c2279c0659d5cbe30c19afee85308ef7bf4c9c5) - **duckdb**: Transpile exp.Length from other dialects *(PR [#3708](https://github.com/tobymao/sqlglot/pull/3708) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`23dac71`](https://github.com/tobymao/sqlglot/commit/23dac7147883d559acca7d21e3600c28576ec950) - **snowflake**: add support for CONNECT_BY_ROOT expression *(PR [#3717](https://github.com/tobymao/sqlglot/pull/3717) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3716](https://github.com/tobymao/sqlglot/issues/3716) opened by [@niklaslorenzatalligator](https://github.com/niklaslorenzatalligator)*
+- [`4f050e0`](https://github.com/tobymao/sqlglot/commit/4f050e0aefcde8fb3c65abaf49c6aa4e2bbe5e2b) - transpile BigQuery's SAFE_CAST with FORMAT to DuckDB *(PR [#3718](https://github.com/tobymao/sqlglot/pull/3718) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2837](https://github.com/TobikoData/sqlmesh/issues/2837) opened by [@hustic](https://github.com/hustic)*
+
+### :bug: Bug Fixes
+- [`3a86d7e`](https://github.com/tobymao/sqlglot/commit/3a86d7e4ec02e96326021c417dc972b64076567f) - non deterministic aggs in planner closes [#3709](https://github.com/tobymao/sqlglot/pull/3709) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`3b8568d`](https://github.com/tobymao/sqlglot/commit/3b8568d37792c1916f05faf5df8af1841144b338) - **clickhouse**: extract closes [#3711](https://github.com/tobymao/sqlglot/pull/3711) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`9fb1d79`](https://github.com/tobymao/sqlglot/commit/9fb1d79398769edb452e075eb3b6416e69f239bf) - extract unit should be a var, not a column *(PR [#3712](https://github.com/tobymao/sqlglot/pull/3712) by [@tobymao](https://github.com/tobymao))*
+- [`ae1816f`](https://github.com/tobymao/sqlglot/commit/ae1816fc71a5a164d1aae6644a9c3bc4cec484d2) - simplify no longer removes neg, add to_py *(PR [#3714](https://github.com/tobymao/sqlglot/pull/3714) by [@tobymao](https://github.com/tobymao))*
+- [`beaf9cc`](https://github.com/tobymao/sqlglot/commit/beaf9cc1f07ff4223f99c84ad6645d3f29af5801) - **optimizer**: coalesce left-hand side of join conditions produced by expanding USING *(PR [#3715](https://github.com/tobymao/sqlglot/pull/3715) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.3.3] - 2024-06-26
 ### :recycle: Refactors
 - [`972ce7d`](https://github.com/tobymao/sqlglot/commit/972ce7d27d9f083d8ef02ded9278e320da3aa0b6) - control ParseJSON generation logic with a flag *(PR [#3707](https://github.com/tobymao/sqlglot/pull/3707) by [@georgesittas](https://github.com/georgesittas))*
@@ -4040,3 +4071,4 @@ Changelog
 [v25.3.1]: https://github.com/tobymao/sqlglot/compare/v25.3.0...v25.3.1
 [v25.3.2]: https://github.com/tobymao/sqlglot/compare/v25.3.1...v25.3.2
 [v25.3.3]: https://github.com/tobymao/sqlglot/compare/v25.3.2...v25.3.3
+[v25.4.0]: https://github.com/tobymao/sqlglot/compare/v25.3.3...v25.4.0

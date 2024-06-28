@@ -103,7 +103,6 @@ LANGUAGE js AS
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
-        self.validate_identity("SAFE_CAST(some_date AS DATE FORMAT 'DD MONTH YYYY')")
         self.validate_identity("CAST(x AS STRUCT<list ARRAY<INT64>>)")
         self.validate_identity("assert.true(1 = 1)")
         self.validate_identity("SELECT ARRAY_TO_STRING(list, '--') AS text")
@@ -295,6 +294,20 @@ LANGUAGE js AS
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
 
+        self.validate_all(
+            "SAFE_CAST(some_date AS DATE FORMAT 'DD MONTH YYYY')",
+            write={
+                "bigquery": "SAFE_CAST(some_date AS DATE FORMAT 'DD MONTH YYYY')",
+                "duckdb": "CAST(TRY_STRPTIME(some_date, '%d %B %Y') AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SAFE_CAST(some_date AS DATE FORMAT 'YYYY-MM-DD') AS some_date",
+            write={
+                "bigquery": "SAFE_CAST(some_date AS DATE FORMAT 'YYYY-MM-DD') AS some_date",
+                "duckdb": "CAST(TRY_STRPTIME(some_date, '%Y-%m-%d') AS DATE) AS some_date",
+            },
+        )
         self.validate_all(
             "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS h, UNNEST(h.t3) AS s",
             write={

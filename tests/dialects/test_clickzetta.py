@@ -148,6 +148,10 @@ select j from a""",
             "SELECT * FROM EXPLODE(SEQUENCE(-3, 0))",
             read={'presto': "select * from unnest(sequence(-3,0))"}
         )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(a, 'yyyy-MM-dd\\\'T\\\'HH:mm:ss\\\'Z\\\'')",
+            read={'presto': "select parse_datetime(a, 'yyyy-MM-dd''T''HH:mm:ss''Z''')"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

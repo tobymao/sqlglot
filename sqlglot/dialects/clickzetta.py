@@ -68,6 +68,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"{self.sql(expression.expressions[0])}[{self.sql(expression.expressions[1])}]"
     elif expression.this.upper() == 'PARSE_DATETIME':
         return f"TO_TIMESTAMP({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
+    elif expression.this.upper() == 'FROM_ISO8601_TIMESTAMP':
+        return f"CAST({self.sql(expression.expressions[0])} AS TIMESTAMP)"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)

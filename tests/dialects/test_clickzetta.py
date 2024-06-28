@@ -152,6 +152,10 @@ select j from a""",
             "SELECT TO_TIMESTAMP(a, 'yyyy-MM-dd\\\'T\\\'HH:mm:ss\\\'Z\\\'')",
             read={'presto': "select parse_datetime(a, 'yyyy-MM-dd''T''HH:mm:ss''Z''')"}
         )
+        self.validate_all(
+            "SELECT CAST('2020-01-01T00:00:00.000Z' AS TIMESTAMP)",
+            read={'presto': "select from_iso8601_timestamp('2020-01-01T00:00:00.000Z')"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

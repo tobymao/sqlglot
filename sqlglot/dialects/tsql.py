@@ -524,15 +524,6 @@ class TSQL(Dialect):
             "TIMEFROMPARTS": _build_timefromparts,
         }
 
-        RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,
-            TokenType.DCOLON: lambda self, this: self.expression(
-                exp.ScopeResolution,
-                this=this,
-                expression=self._parse_function() or self._parse_var(any_token=True),
-            ),
-        }
-
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
@@ -545,9 +536,25 @@ class TSQL(Dialect):
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.DCOLON: lambda self, this: self.expression(
+                exp.ScopeResolution,
+                this=this,
+                expression=self._parse_function() or self._parse_var(any_token=True),
+            ),
+        }
+
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
-        COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
-        COLUMN_OPERATORS.pop(TokenType.DCOLON)
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.DCOLON: lambda self, this, to: self.expression(exp.Cast, this=this, to=to)
+            if isinstance(to, exp.DataType) and to.this != exp.DataType.Type.USERDEFINED
+            else self.expression(exp.ScopeResolution, this=this, expression=to),
+        }
+
+        def _parse_dcolon(self) -> t.Optional[exp.Expression]:
+            return self._parse_function() or self._parse_types()
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
             if not self._match(TokenType.OPTION):

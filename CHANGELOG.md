@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.4.1] - 2024-06-29
+### :bug: Bug Fixes
+- [`6bf9853`](https://github.com/tobymao/sqlglot/commit/6bf9853fd0b26d5a4e93e37447c3b275cd108872) - **tsql**: cast shorthand closes [#3760](https://github.com/tobymao/sqlglot/pull/3760) *(PR [#3720](https://github.com/tobymao/sqlglot/pull/3720) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v25.4.0] - 2024-06-28
 ### :boom: BREAKING CHANGES
 - due to [`9fb1d79`](https://github.com/tobymao/sqlglot/commit/9fb1d79398769edb452e075eb3b6416e69f239bf) - extract unit should be a var, not a column *(PR [#3712](https://github.com/tobymao/sqlglot/pull/3712) by [@tobymao](https://github.com/tobymao))*:
@@ -4072,3 +4077,4 @@ Changelog
 [v25.3.2]: https://github.com/tobymao/sqlglot/compare/v25.3.1...v25.3.2
 [v25.3.3]: https://github.com/tobymao/sqlglot/compare/v25.3.2...v25.3.3
 [v25.4.0]: https://github.com/tobymao/sqlglot/compare/v25.3.3...v25.4.0
+[v25.4.1]: https://github.com/tobymao/sqlglot/compare/v25.4.0...v25.4.1

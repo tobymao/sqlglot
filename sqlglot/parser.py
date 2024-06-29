@@ -4597,6 +4597,9 @@ class Parser(metaclass=_Parser):
 
         return this
 
+    def _parse_dcolon(self) -> t.Optional[exp.Expression]:
+        return self._parse_types()
+
     def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         this = self._parse_bracket(this)
 
@@ -4605,7 +4608,7 @@ class Parser(metaclass=_Parser):
             op = self.COLUMN_OPERATORS.get(op_token)
 
             if op_token == TokenType.DCOLON:
-                field = self._parse_types()
+                field = self._parse_dcolon()
                 if not field:
                     self.raise_error("Expected type")
             elif op and self._curr:

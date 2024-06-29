@@ -1878,6 +1878,9 @@ FROM OPENJSON(@json) WITH (
         )
 
     def test_scope_resolution_op(self):
+        # we still want to support :: casting shorthand for tsql
+        self.validate_identity("x::int", "CAST(x AS INTEGER)")
+
         for lhs, rhs in (
             ("", "FOO(a, b)"),
             ("bar", "baZ(1, 2)"),

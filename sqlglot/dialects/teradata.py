@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     to_number_with_nls_param,
 )
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -160,6 +161,11 @@ class Teradata(Dialect):
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
 
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+        }
+
         EXPONENT = {
             TokenType.DSTAR: exp.Pow,
         }
@@ -239,6 +245,7 @@ class Teradata(Dialect):
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Pow: lambda self, e: self.binary(e, "**"),
+            exp.Rand: lambda self, e: self.func("RANDOM", e.args.get("lower"), e.args.get("upper")),
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),

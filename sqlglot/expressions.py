@@ -5682,9 +5682,11 @@ class Quarter(Func):
     pass
 
 
+# https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions/RANDOM/RANDOM-Function-Syntax
+# teradata lower and upper bounds
 class Rand(Func):
     _sql_names = ["RAND", "RANDOM"]
-    arg_types = {"this": False}
+    arg_types = {"this": False, "lower": False, "upper": False}
 
 
 class Randn(Func):

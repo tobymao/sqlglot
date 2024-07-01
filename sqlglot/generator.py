@@ -4010,6 +4010,14 @@ class Generator(metaclass=_Generator):
     def length_sql(self, expression: exp.Length) -> str:
         return self.func("LENGTH", expression.this)
 
+    def rand_sql(self, expression: exp.Rand) -> str:
+        lower = self.sql(expression, "lower")
+        upper = self.sql(expression, "upper")
+
+        if lower and upper:
+            return f"({upper} - {lower}) * {self.func('RAND', expression.this)} + {lower}"
+        return self.func("RAND", expression.this)
+
     def strtodate_sql(self, expression: exp.StrToDate) -> str:
         return self.func("STR_TO_DATE", expression.this, expression.args.get("format"))
 

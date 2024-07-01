@@ -10,7 +10,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.dialects.dialect import (
     rename_func,
     if_sql,
-)
+ )
 
 logger = logging.getLogger("sqlglot")
 
@@ -133,6 +133,19 @@ def date_add_sql(self: ClickZetta.Generator, expression: exp.DateAdd) -> str:
         return f"TIMESTAMP_OR_DATE_ADD({unit_str}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
     return f"DATEADD({self.sql(expression.args.get('unit'))}, {self.sql(expression.expression)}, {self.sql(expression.this)})"
 
+def regexp_extract_sql(self: ClickZetta.Generator, expression: exp.RegexpExtract):
+    bad_args = list(filter(expression.args.get, ("position", "occurrence", "parameters")))
+    if bad_args:
+        self.unsupported(f"REGEXP_EXTRACT does not support the following arg(s): {bad_args}")
+
+    group = expression.args.get('group')
+    if not group and is_read_dialect('presto'):
+        return f"REGEXP_EXTRACT({expression.this}, {expression.expression}, 0)"
+
+    return self.func(
+        "REGEXP_EXTRACT", expression.this, expression.expression, expression.args.get('group')
+    )
+
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
 
@@ -212,6 +225,7 @@ class ClickZetta(Spark):
             exp.Tuple: fill_tuple_with_column_name,
             exp.GenerateSeries: rename_func("SEQUENCE"),
             exp.DateAdd: date_add_sql,
+            exp.RegexpExtract: regexp_extract_sql,
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

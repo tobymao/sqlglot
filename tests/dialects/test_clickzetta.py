@@ -164,6 +164,10 @@ select j from a""",
             "SELECT DAYOFWEEK(d), DAYOFWEEK(d), DAYOFYEAR(d), DAYOFYEAR(d), YEAROFWEEK(d), YEAROFWEEK(d)",
             read={'presto': "select dow(d), day_of_week(d), doy(d), day_of_year(d), yow(d), year_of_week(d)"}
         )
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c')",
+            read={'spark': "select regexp_extract('aaaa', 'a|b|c')"}
+        )
 
     def test_read_dialect_related_function(self):
         import os
@@ -217,6 +221,17 @@ select j from a""",
         self.validate_all(
             "SELECT TIMESTAMP_OR_DATE_ADD('HOUR', 1 + 2, CURRENT_TIMESTAMP())",
             read={'presto': "select date_add('hour', 1+2, now())"}
+        )
+
+        # regexp_extract
+        os.environ['READ_DIALECT'] = 'presto'
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c', 0)",
+            read={'presto': "select regexp_extract('aaaa', 'a|b|c')"}
+        )
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c', 1)",
+            read={'presto': "select regexp_extract('aaaa', 'a|b|c', 1)"}
         )
 
         os.environ.pop('READ_DIALECT')

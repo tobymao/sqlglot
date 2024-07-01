@@ -70,6 +70,12 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"TO_TIMESTAMP({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
     elif expression.this.upper() == 'FROM_ISO8601_TIMESTAMP':
         return f"CAST({self.sql(expression.expressions[0])} AS TIMESTAMP)"
+    elif expression.this.upper() == 'DOW':
+        return f"DAYOFWEEK({self.sql(expression.expressions[0])})"
+    elif expression.this.upper() == 'DOY':
+        return f"DAYOFYEAR({self.sql(expression.expressions[0])})"
+    elif expression.this.upper() == 'YOW' or expression.this.upper() == 'YEAR_OF_WEEK':
+        return f"YEAROFWEEK({self.sql(expression.expressions[0])})"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)

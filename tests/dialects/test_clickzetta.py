@@ -156,10 +156,13 @@ select j from a""",
             "SELECT CAST('2020-01-01T00:00:00.000Z' AS TIMESTAMP)",
             read={'presto': "select from_iso8601_timestamp('2020-01-01T00:00:00.000Z')"}
         )
-
         self.validate_all(
             "SELECT * FROM t GROUP BY GROUPING SETS ((a), (b, c))",
             read={'presto': "select * from t group by grouping sets ((a), (b,c))"}
+        )
+        self.validate_all(
+            "SELECT DAYOFWEEK(d), DAYOFWEEK(d), DAYOFYEAR(d), DAYOFYEAR(d), YEAROFWEEK(d), YEAROFWEEK(d)",
+            read={'presto': "select dow(d), day_of_week(d), doy(d), day_of_year(d), yow(d), year_of_week(d)"}
         )
 
     def test_read_dialect_related_function(self):

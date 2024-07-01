@@ -157,6 +157,11 @@ select j from a""",
             read={'presto': "select from_iso8601_timestamp('2020-01-01T00:00:00.000Z')"}
         )
 
+        self.validate_all(
+            "SELECT * FROM t GROUP BY GROUPING SETS ((a), (b, c))",
+            read={'presto': "select * from t group by grouping sets ((a), (b,c))"}
+        )
+
     def test_read_dialect_related_function(self):
         import os
 

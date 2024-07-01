@@ -5,6 +5,14 @@ class TestTeradata(Validator):
     dialect = "teradata"
 
     def test_teradata(self):
+        self.validate_all(
+            "RANDOM(l, u)",
+            write={
+                "": "(u - l) * RAND() + l",
+                "teradata": "RANDOM(l, u)",
+            },
+        )
+
         self.validate_identity("TO_NUMBER(expr, fmt, nlsparam)")
         self.validate_identity("SELECT TOP 10 * FROM tbl")
         self.validate_identity("SELECT * FROM tbl SAMPLE 5")

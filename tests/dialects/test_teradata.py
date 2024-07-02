@@ -12,7 +12,6 @@ class TestTeradata(Validator):
                 "teradata": "RANDOM(l, u)",
             },
         )
-
         self.validate_identity("TO_NUMBER(expr, fmt, nlsparam)")
         self.validate_identity("SELECT TOP 10 * FROM tbl")
         self.validate_identity("SELECT * FROM tbl SAMPLE 5")
@@ -220,6 +219,8 @@ class TestTeradata(Validator):
         )
 
     def test_time(self):
+        self.validate_identity("CAST(CURRENT_TIMESTAMP(6) AS TIMESTAMP WITH TIME ZONE)")
+
         self.validate_all(
             "CURRENT_TIMESTAMP",
             read={

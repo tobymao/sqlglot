@@ -43,7 +43,7 @@ class Databricks(Spark):
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = True
-        COLON_IS_JSON_EXTRACT = True
+        COLON_IS_VARIANT_EXTRACT = True
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,

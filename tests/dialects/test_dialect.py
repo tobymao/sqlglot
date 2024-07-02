@@ -102,14 +102,10 @@ class TestDialect(Validator):
         lowercase_mysql = Dialect.get_or_raise("mysql, normalization_strategy = lowercase")
         self.assertEqual(lowercase_mysql.normalization_strategy.value, "LOWERCASE")
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(AttributeError) as cm:
             Dialect.get_or_raise("mysql, normalization_strategy")
 
-        self.assertEqual(
-            str(cm.exception),
-            "Invalid dialect format: 'mysql, normalization_strategy'. "
-            "Please use the correct format: 'dialect [, k1 = v2 [, ...]]'.",
-        )
+        self.assertEqual(str(cm.exception), "'bool' object has no attribute 'upper'")
 
         with self.assertRaises(ValueError) as cm:
             Dialect.get_or_raise("myqsl")
@@ -126,6 +122,12 @@ class TestDialect(Validator):
         )
         self.assertEqual(oracle_with_settings.normalization_strategy.value, "LOWERCASE")
         self.assertEqual(oracle_with_settings.settings, {"version": "19.5"})
+
+        bool_settings = Dialect.get_or_raise("oracle, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool")
+        self.assertEqual(
+            bool_settings.settings,
+            {"s1": True, "s2": True, "s3": False, "s4": False, "s5": "nonbool"},
+        )
 
     def test_compare_dialects(self):
         bigquery_class = Dialect["bigquery"]

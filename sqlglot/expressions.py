@@ -5481,7 +5481,13 @@ class JSONBContains(Binary, Func):
 
 
 class JSONExtract(Binary, Func):
-    arg_types = {"this": True, "expression": True, "only_json_types": False, "expressions": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "only_json_types": False,
+        "expressions": False,
+        "variant_extract": False,
+    }
     _sql_names = ["JSON_EXTRACT"]
     is_var_len_args = True
 

@@ -683,6 +683,7 @@ class ClickHouse(Dialect):
         EXPLICIT_SET_OP = True
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
+        SUPPORTS_TABLE_ALIAS_COLUMNS = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",

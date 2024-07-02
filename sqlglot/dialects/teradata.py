@@ -256,11 +256,14 @@ class Teradata(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
-            exp.CurrentTimestamp: lambda self, e: "CURRENT_TIMESTAMP" if not e.this else f"CURRENT_TIMESTAMP({self.sql(e, 'this')})",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
         }
+
+        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            prefix, suffix = ("(", ")") if expression.this else ("", "")
+            return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.to.this == exp.DataType.Type.UNKNOWN and expression.args.get("format"):

@@ -510,8 +510,28 @@ class Dialect(metaclass=_Dialect):
             return dialect
         if isinstance(dialect, str):
             try:
-                dialect_name, *kv_pairs = dialect.split(",")
-                kwargs = {k.strip(): v.strip() for k, v in (kv.split("=") for kv in kv_pairs)}
+                dialect_name, *kv_strings = dialect.split(",")
+                kv_pairs = [kv.split("=") for kv in kv_strings]
+                kwargs = {}
+                for pair in kv_pairs:
+                    key = pair[0].strip()
+                    value: t.Union[bool | str | None] = None
+
+                    if len(pair) == 1 and not key.lower() == "normalization_strategy":
+                        # Default initialize standalone settings to True except normalization strategy
+                        value = True
+                    elif len(pair) == 2:
+                        value = pair[1].strip()
+
+                        # Coerce the value to boolean if it matches to the truthy/falsy values below
+                        value_lower = value.lower()
+                        if value_lower in ("true", "1"):
+                            value = True
+                        elif value_lower in ("false", "0"):
+                            value = False
+
+                    kwargs[key] = value
+
             except ValueError:
                 raise ValueError(
                     f"Invalid dialect format: '{dialect}'. "

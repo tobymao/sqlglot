@@ -191,7 +191,13 @@ def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str
 
     # Convert the JSONPath extraction `JSON_EXTRACT(col, '$.x.y) to a ROW access col.x.y
     segments = []
-    for path_key in expression.find_all(exp.JSONPathKey):
+    for path_key in expression.expression.expressions:
+        if isinstance(path_key, exp.JSONPathRoot):
+            continue
+        if not isinstance(path_key, exp.JSONPathKey):
+            # Cannot transpile subscripts, wildcards etc to dot notation
+            self.unsupported(f"Cannot transpile JSONPath segment '{path_key}' to ROW access")
+            continue
         key = path_key.this
         if not exp.SAFE_IDENTIFIER_RE.match(key):
             key = f'"{key}"'

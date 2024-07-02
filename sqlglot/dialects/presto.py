@@ -173,6 +173,29 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / POW(10, {scale}))"
 
 
+def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str:
+    is_json_extract = self.dialect.settings.get("VARIANT_EXTRACT_IS_JSON_EXTRACT", True)
+
+    if isinstance(is_json_extract, str):
+        # if the kwarg was set by the user it's stored in a string
+        is_json_extract = is_json_extract.lower() == "true"
+
+    # Generate JSON_EXTRACT unless the user has configured that a Snowflake / Databricks
+    # VARIANT extract (e.g. col:x.y) should map to dot notation (i.e ROW access) in Presto/Trino
+    if not expression.args.get("variant_extract") or is_json_extract:
+        return self.func(
+            "JSON_EXTRACT", expression.this, expression.expression, *expression.expressions
+        )
+
+    this = self.sql(expression, "this")
+    expr = self.sql(expression, "expression")
+
+    # Convert the JSONPath extraction `JSON_EXTRACT(col, '$.k1.k2') to a ROW access col.k1.k2
+    expr = expr.replace("'", "").lstrip("$")
+
+    return f"{this}{expr}"
+
+
 def _to_int(expression: exp.Expression) -> exp.Expression:
     if not expression.type:
         from sqlglot.optimizer.annotate_types import annotate_types
@@ -390,6 +413,7 @@ class Presto(Dialect):
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
+            exp.JSONExtract: _jsonextract_sql,
             exp.Last: _first_last_sql,
             exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),

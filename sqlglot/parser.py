@@ -1203,8 +1203,8 @@ class Parser(metaclass=_Parser):
     # Whether the -> and ->> operators expect documents of type JSON (e.g. Postgres)
     JSON_ARROWS_REQUIRE_JSON_TYPE = False
 
-    # Whether the `:` operator is used to extract a value from a JSON document
-    COLON_IS_JSON_EXTRACT = False
+    # Whether the `:` operator is used to extract a value from a VARIANT column
+    COLON_IS_VARIANT_EXTRACT = False
 
     # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
     # If this is True and '(' is not found, the keyword will be treated as an identifier
@@ -4552,7 +4552,7 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_colon_as_json_extract(
+    def _parse_colon_as_variant_extract(
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
         casts = []
@@ -4585,11 +4585,14 @@ class Parser(metaclass=_Parser):
             if path:
                 json_path.append(self._find_sql(self._tokens[start_index], end_token))
 
+        # The VARIANT extract in Snowflake/Databricks is parsed as a JSONExtract; Snowflake uses the json_path in GET_PATH() while
+        # Databricks transforms it back to the colon/dot notation
         if json_path:
             this = self.expression(
                 exp.JSONExtract,
                 this=this,
                 expression=self.dialect.to_json_path(exp.Literal.string(".".join(json_path))),
+                variant_extract=True,
             )
 
             while casts:
@@ -4646,7 +4649,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_bracket(this)
 
-        return self._parse_colon_as_json_extract(this) if self.COLON_IS_JSON_EXTRACT else this
+        return self._parse_colon_as_variant_extract(this) if self.COLON_IS_VARIANT_EXTRACT else this
 
     def _parse_primary(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.PRIMARY_PARSERS):

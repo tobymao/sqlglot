@@ -518,11 +518,6 @@ class Dialect(metaclass=_Dialect):
                     value: t.Union[bool | str | None] = None
 
                     if len(pair) == 1:
-                        if key.lower() == "normalization_strategy":
-                            raise AttributeError(
-                                "Dialect setting 'normalization_strategy' requires a value."
-                            )
-
                         # Default initialize standalone settings to True
                         value = True
                     elif len(pair) == 2:

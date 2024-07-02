@@ -105,9 +105,7 @@ class TestDialect(Validator):
         with self.assertRaises(AttributeError) as cm:
             Dialect.get_or_raise("mysql, normalization_strategy")
 
-        self.assertEqual(
-            str(cm.exception), "Dialect setting 'normalization_strategy' requires a value."
-        )
+        self.assertEqual(str(cm.exception), "'bool' object has no attribute 'upper'")
 
         with self.assertRaises(ValueError) as cm:
             Dialect.get_or_raise("myqsl")

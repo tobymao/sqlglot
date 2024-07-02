@@ -4044,6 +4044,7 @@ class DataType(Expression):
         VARBINARY = auto()
         VARCHAR = auto()
         VARIANT = auto()
+        VECTOR = auto()
         XML = auto()
         YEAR = auto()
         TDIGEST = auto()

@@ -299,6 +299,7 @@ class Parser(metaclass=_Parser):
         TokenType.ROWVERSION,
         TokenType.IMAGE,
         TokenType.VARIANT,
+        TokenType.VECTOR,
         TokenType.OBJECT,
         TokenType.OBJECT_IDENTIFIER,
         TokenType.INET,
@@ -4382,6 +4383,10 @@ class Parser(metaclass=_Parser):
                 expressions.insert(0, func_or_ident)
             else:
                 expressions = self._parse_csv(self._parse_type_size)
+
+                # https://docs.snowflake.com/en/sql-reference/data-types-vector
+                if type_token == TokenType.VECTOR and len(expressions) == 2:
+                    expressions[0] = exp.DataType.build(expressions[0].name, dialect=self.dialect)
 
             if not expressions or not self._match(TokenType.R_PAREN):
                 self._retreat(index)

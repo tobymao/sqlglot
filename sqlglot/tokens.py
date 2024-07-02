@@ -202,6 +202,7 @@ class TokenType(AutoName):
     SIMPLEAGGREGATEFUNCTION = auto()
     TDIGEST = auto()
     UNKNOWN = auto()
+    VECTOR = auto()
 
     # keywords
     ALIAS = auto()
@@ -881,6 +882,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATERANGE": TokenType.DATERANGE,
         "DATEMULTIRANGE": TokenType.DATEMULTIRANGE,
         "UNIQUE": TokenType.UNIQUE,
+        "VECTOR": TokenType.VECTOR,
         "STRUCT": TokenType.STRUCT,
         "SEQUENCE": TokenType.SEQUENCE,
         "VARIANT": TokenType.VARIANT,

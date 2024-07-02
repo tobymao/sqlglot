@@ -176,10 +176,6 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
 def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str:
     is_json_extract = self.dialect.settings.get("variant_extract_is_json_extract", True)
 
-    if isinstance(is_json_extract, str):
-        # if the kwarg was set by the user it's stored in a string
-        is_json_extract = is_json_extract.lower() == "true"
-
     # Generate JSON_EXTRACT unless the user has configured that a Snowflake / Databricks
     # VARIANT extract (e.g. col:x.y) should map to dot notation (i.e ROW access) in Presto/Trino
     if not expression.args.get("variant_extract") or is_json_extract:
@@ -191,9 +187,7 @@ def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str
 
     # Convert the JSONPath extraction `JSON_EXTRACT(col, '$.x.y) to a ROW access col.x.y
     segments = []
-    for path_key in expression.expression.expressions:
-        if isinstance(path_key, exp.JSONPathRoot):
-            continue
+    for path_key in expression.expression.expressions[1:]:
         if not isinstance(path_key, exp.JSONPathKey):
             # Cannot transpile subscripts, wildcards etc to dot notation
             self.unsupported(f"Cannot transpile JSONPath segment '{path_key}' to ROW access")

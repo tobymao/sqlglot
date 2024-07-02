@@ -102,13 +102,12 @@ class TestDialect(Validator):
         lowercase_mysql = Dialect.get_or_raise("mysql, normalization_strategy = lowercase")
         self.assertEqual(lowercase_mysql.normalization_strategy.value, "LOWERCASE")
 
-        for dialect in ("mysql", "presto", "bigquery", "databricks"):
-            default_dialect = Dialect.get_or_raise(dialect)
-            lowercase_dialect = Dialect.get_or_raise(f"{dialect}, normalization_strategy")
-            self.assertEqual(
-                lowercase_dialect.normalization_strategy.value,
-                default_dialect.normalization_strategy.value,
-            )
+        with self.assertRaises(AttributeError) as cm:
+            Dialect.get_or_raise("mysql, normalization_strategy")
+
+        self.assertEqual(
+            str(cm.exception), "Dialect setting 'normalization_strategy' requires a value."
+        )
 
         with self.assertRaises(ValueError) as cm:
             Dialect.get_or_raise("myqsl")

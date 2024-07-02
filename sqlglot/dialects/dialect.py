@@ -511,7 +511,7 @@ class Dialect(metaclass=_Dialect):
         if isinstance(dialect, str):
             try:
                 dialect_name, *kv_strings = dialect.split(",")
-                kv_pairs = [kv.split("=") for kv in kv_strings]
+                kv_pairs = (kv.split("=") for kv in kv_strings)
                 kwargs = {}
                 for pair in kv_pairs:
                     key = pair[0].strip()

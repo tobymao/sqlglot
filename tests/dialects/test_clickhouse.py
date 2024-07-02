@@ -7,25 +7,6 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
-        self.validate_identity("extract(haystack, pattern)")
-
-        self.validate_all(
-            "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
-            write={
-                "": "SELECT * FROM x WHERE z = 2",
-                "clickhouse": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM x AS prewhere",
-            read={
-                "clickhouse": "SELECT * FROM x AS prewhere",
-                "duckdb": "SELECT * FROM x prewhere",
-            },
-        )
-
-        self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
-
         string_types = [
             "BLOB",
             "LONGBLOB",
@@ -44,6 +25,8 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("extract(haystack, pattern)")
+        self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
         self.validate_identity("SELECT CAST(x AS Tuple(String, Array(Nullable(Float64))))")
         self.validate_identity("countIf(x, y)")
         self.validate_identity("x = y")
@@ -96,17 +79,11 @@ class TestClickhouse(Validator):
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
+        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE DATABASE db")
+        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity(
             "SELECT id, quantileGK(100, 0.95)(reading) OVER (PARTITION BY id ORDER BY id RANGE BETWEEN 30000 PRECEDING AND CURRENT ROW) AS window FROM table"
-        )
-
-        self.validate_identity(
-            "SELECT $1$foo$1$",
-            "SELECT 'foo'",
-        )
-        self.validate_identity(
-            "SELECT * FROM table LIMIT 1, 2 BY a, b",
-            "SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b",
         )
         self.validate_identity(
             "SELECT * FROM table LIMIT 1 BY CONCAT(datalayerVariantNo, datalayerProductId, warehouse)"
@@ -136,10 +113,6 @@ class TestClickhouse(Validator):
             "SELECT sum(1) AS impressions, (arrayJoin(arrayZip(cities, browsers)) AS t).1 AS city, t.2 AS browser FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities, ['Firefox', 'Chrome', 'Chrome'] AS browsers) GROUP BY 2, 3"
         )
         self.validate_identity(
-            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ['Istanbul', 'Berlin']",
-            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
-        )
-        self.validate_identity(
             'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(String))'
         )
         self.validate_identity(
@@ -157,11 +130,42 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
         )
-        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
-        self.validate_identity("TRUNCATE DATABASE db")
-        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity(
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
+        )
+        self.validate_identity(
+            "SELECT $1$foo$1$",
+            "SELECT 'foo'",
+        )
+        self.validate_identity(
+            "SELECT * FROM table LIMIT 1, 2 BY a, b",
+            "SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b",
+        )
+        self.validate_identity(
+            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ['Istanbul', 'Berlin']",
+            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
+        )
+
+        self.validate_all(
+            "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+            write={
+                "": "SELECT * FROM x WHERE z = 2",
+                "clickhouse": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x AS prewhere",
+            read={
+                "clickhouse": "SELECT * FROM x AS prewhere",
+                "duckdb": "SELECT * FROM x prewhere",
+            },
+        )
+        self.validate_all(
+            "SELECT a, b FROM (SELECT * FROM x) AS t",
+            read={
+                "clickhouse": "SELECT a, b FROM (SELECT * FROM x) AS t",
+                "duckdb": "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
+            },
         )
         self.validate_all(
             "SELECT arrayJoin([1,2,3])",

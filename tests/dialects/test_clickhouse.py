@@ -25,6 +25,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("SELECT EXTRACT(YEAR FROM toDateTime('2023-02-01'))")
         self.validate_identity("extract(haystack, pattern)")
         self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
         self.validate_identity("SELECT CAST(x AS Tuple(String, Array(Nullable(Float64))))")

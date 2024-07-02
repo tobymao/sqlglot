@@ -1477,9 +1477,9 @@ class Parser(metaclass=_Parser):
 
     def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> t.Optional[T]:
         """
-        Attemps to backtrack if a parse function that contains a try/catch internally raises an error. This behavior can
-        be different depending on the uset-set ErrorLevel, so _try_parse aims to solve this by setting & resetting
-        the parser state accordingly
+        Attemps to backtrack if a parse function that contains a try/catch internally raises an error.
+        This behavior can be different depending on the uset-set ErrorLevel, so _try_parse aims to
+        solve this by setting & resetting the parser state accordingly
         """
         index = self._index
         error_level = self.error_level
@@ -5345,7 +5345,7 @@ class Parser(metaclass=_Parser):
             order=self._match(TokenType.OVER) and self._parse_wrapped(self._parse_order),
         )
 
-    def _parse_extract(self) -> exp.Extract:
+    def _parse_extract(self) -> exp.Extract | exp.Anonymous:
         this = self._parse_function() or self._parse_var_or_string(upper=True)
 
         if self._match(TokenType.FROM):

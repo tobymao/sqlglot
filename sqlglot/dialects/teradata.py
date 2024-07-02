@@ -223,11 +223,13 @@ class Teradata(Dialect):
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        TZ_TO_WITH_TIME_ZONE = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {
@@ -254,7 +256,7 @@ class Teradata(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
-            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentTimestamp: lambda self, e: "CURRENT_TIMESTAMP" if not e.this else f"CURRENT_TIMESTAMP({self.sql(e, 'this')})",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),

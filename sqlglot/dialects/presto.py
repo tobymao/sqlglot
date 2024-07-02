@@ -174,7 +174,7 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
 
 
 def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str:
-    is_json_extract = self.dialect.settings.get("VARIANT_EXTRACT_IS_JSON_EXTRACT", True)
+    is_json_extract = self.dialect.settings.get("variant_extract_is_json_extract", True)
 
     if isinstance(is_json_extract, str):
         # if the kwarg was set by the user it's stored in a string
@@ -188,10 +188,16 @@ def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str
         )
 
     this = self.sql(expression, "this")
-    expr = self.sql(expression, "expression")
 
-    # Convert the JSONPath extraction `JSON_EXTRACT(col, '$.k1.k2') to a ROW access col.k1.k2
-    expr = expr.replace("'", "").lstrip("$")
+    # Convert the JSONPath extraction `JSON_EXTRACT(col, '$.x.y) to a ROW access col.x.y
+    segments = []
+    for path_key in expression.find_all(exp.JSONPathKey):
+        key = path_key.this
+        if not exp.SAFE_IDENTIFIER_RE.match(key):
+            key = f'"{key}"'
+        segments.append(f".{key}")
+
+    expr = "".join(segments)
 
     return f"{this}{expr}"
 

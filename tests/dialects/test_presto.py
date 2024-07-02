@@ -1195,15 +1195,15 @@ MATCH_RECOGNIZE (
 
     def test_json_vs_row_extract(self):
         for dialect in ("trino", "presto"):
-            s = parse_one("SELECT col:x:y.z", read="snowflake")
+            s = parse_one('SELECT col:x:y."special string"', read="snowflake")
 
-            dialect_json_extract_setting = f"{dialect}, VARIANT_EXTRACT_IS_JSON_EXTRACT=True"
-            dialect_row_access_setting = f"{dialect}, VARIANT_EXTRACT_IS_JSON_EXTRACT=False"
+            dialect_json_extract_setting = f"{dialect}, variant_extract_is_json_extract=True"
+            dialect_row_access_setting = f"{dialect}, variant_extract_is_json_extract=False"
 
             # By default, Snowflake VARIANT will generate JSON_EXTRACT() in Presto/Trino
-            json_extract_result = "SELECT JSON_EXTRACT(col, '$.x.y.z')"
+            json_extract_result = """SELECT JSON_EXTRACT(col, '$.x.y["special string"]')"""
             self.assertEqual(s.sql(dialect), json_extract_result)
             self.assertEqual(s.sql(dialect_json_extract_setting), json_extract_result)
 
             # If the setting is overriden to False, then generate ROW access (dot notation)
-            self.assertEqual(s.sql(dialect_row_access_setting), "SELECT col.x.y.z")
+            self.assertEqual(s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"')

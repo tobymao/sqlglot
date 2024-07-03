@@ -504,7 +504,7 @@ class Snowflake(Dialect):
 
             return lateral
 
-        def _parse_at_before_end(self) -> t.Optional[exp.HistoricalData]:
+        def _parse_historical_data(self) -> t.Optional[exp.HistoricalData]:
             # https://docs.snowflake.com/en/sql-reference/constructs/at-before
             index = self._index
             historical_data = None
@@ -537,8 +537,8 @@ class Snowflake(Dialect):
             return self.expression(
                 exp.Changes,
                 information=information,
-                at_before=self._parse_at_before_end(),
-                end=self._parse_at_before_end(),
+                at_before=self._parse_historical_data(),
+                end=self._parse_historical_data(),
             )
 
         def _parse_table_parts(
@@ -577,7 +577,7 @@ class Snowflake(Dialect):
             if changes:
                 table.set("changes", changes)
 
-            at_before = self._parse_at_before_end()
+            at_before = self._parse_historical_data()
             if at_before:
                 table.set("when", at_before)
 

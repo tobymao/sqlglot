@@ -478,9 +478,6 @@ class Presto(Dialect):
                 [transforms.remove_within_group_for_percentiles]
             ),
             exp.Xor: bool_xor_sql,
-            exp.MD5: lambda self, e: self.func(
-                "LOWER", self.func("TO_HEX", self.func("MD5", self.sql(e, "this")))
-            ),
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
@@ -546,6 +543,19 @@ class Presto(Dialect):
             "where",
             "with",
         }
+
+        def md5_sql(self, expression: exp.MD5) -> str:
+            this = expression.this
+
+            if not this.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                this = annotate_types(this)
+
+            if this.is_type(*exp.DataType.TEXT_TYPES):
+                this = exp.Encode(this=this, charset=exp.Literal.string("utf-8"))
+
+            return self.func("LOWER", self.func("TO_HEX", self.func("MD5", self.sql(this))))
 
         def strtounix_sql(self, expression: exp.StrToUnix) -> str:
             # Since `TO_UNIXTIME` requires a `TIMESTAMP`, we need to parse the argument into one.

@@ -191,18 +191,6 @@ WHERE
             """SELECT CAST(GET_PATH(PARSE_JSON('{"food":{"fruit":"banana"}}'), 'food.fruit') AS VARCHAR)""",
         )
         self.validate_identity(
-            "SELECT * FROM foo at",
-            "SELECT * FROM foo AS at",
-        )
-        self.validate_identity(
-            "SELECT * FROM foo before",
-            "SELECT * FROM foo AS before",
-        )
-        self.validate_identity(
-            "SELECT * FROM foo at (col)",
-            "SELECT * FROM foo AS at(col)",
-        )
-        self.validate_identity(
             "SELECT * FROM unnest(x) with ordinality",
             "SELECT * FROM TABLE(FLATTEN(INPUT => x)) AS _u(seq, key, path, index, value, this)",
         )
@@ -1204,6 +1192,17 @@ WHERE
             "SELECT oldt.*, newt.* FROM my_table BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS oldt FULL OUTER JOIN my_table AT (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS newt ON oldt.id = newt.id WHERE oldt.id IS NULL OR newt.id IS NULL",
         )
 
+        # Make sure that the historical data keywords can still be used as aliases
+        for historical_data_prefix in ("AT", "BEFORE", "END", "CHANGES"):
+            for schema_suffix in ("", "(col)"):
+                with self.subTest(
+                    f"Testing historical data prefix alias: {historical_data_prefix}{schema_suffix}"
+                ):
+                    self.validate_identity(
+                        f"SELECT * FROM foo {historical_data_prefix}{schema_suffix}",
+                        f"SELECT * FROM foo AS {historical_data_prefix}{schema_suffix}",
+                    )
+
     def test_ddl(self):
         for constraint_prefix in ("WITH ", ""):
             with self.subTest(f"Constraint prefix: {constraint_prefix}"):
@@ -2033,3 +2032,15 @@ SINGLE = TRUE""",
 
         self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
+
+    def test_from_changes(self):
+        self.validate_identity(
+            """SELECT C1 FROM t1 CHANGES (INFORMATION => APPEND_ONLY) AT (STREAM => 's1') END (TIMESTAMP => $ts2)"""
+        )
+        self.validate_identity(
+            """SELECT C1 FROM t1 CHANGES (INFORMATION => APPEND_ONLY) BEFORE (STATEMENT => 'STMT_ID') END (TIMESTAMP => $ts2)"""
+        )
+        self.validate_identity(
+            """SELECT 1 FROM some_table CHANGES (INFORMATION => APPEND_ONLY) AT (TIMESTAMP => TO_TIMESTAMP_TZ('2024-07-01 00:00:00+00:00')) END (TIMESTAMP => TO_TIMESTAMP_TZ('2024-07-01 14:28:59.999999+00:00'))""",
+            """SELECT 1 FROM some_table CHANGES (INFORMATION => APPEND_ONLY) AT (TIMESTAMP => CAST('2024-07-01 00:00:00+00:00' AS TIMESTAMPTZ)) END (TIMESTAMP => CAST('2024-07-01 14:28:59.999999+00:00' AS TIMESTAMPTZ))""",
+        )

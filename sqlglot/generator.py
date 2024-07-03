@@ -1749,7 +1749,10 @@ class Generator(metaclass=_Generator):
         if when:
             table = f"{table} {when}"
 
-        return f"{only}{table}{partition}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
+        changes = self.sql(expression, "changes")
+        changes = f" {changes}" if changes else ""
+
+        return f"{only}{table}{changes}{partition}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self,
@@ -4028,3 +4031,13 @@ class Generator(metaclass=_Generator):
             expression.args.get("format"),
             expression.args.get("zone"),
         )
+
+    def changes_sql(self, expression: exp.Changes) -> str:
+        information = self.sql(expression, "information")
+        information = f"INFORMATION => {information}"
+        at_before = self.sql(expression, "at_before")
+        at_before = f"{self.seg('')}{at_before}" if at_before else ""
+        end = self.sql(expression, "end")
+        end = f"{self.seg('')}{end}" if end else ""
+
+        return f"CHANGES ({information}){at_before}{end}"

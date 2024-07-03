@@ -86,9 +86,9 @@ class TestOracle(Validator):
             "SELECT DISTINCT col1, col2 FROM table",
         )
         self.validate_identity(
-            "SELECT * FROM T ORDER BY I OFFSET nvl(:variable1, 10) ROWS FETCH NEXT nvl(:variable2, 10) ROWS ONLY",
-            "SELECT * FROM T ORDER BY I OFFSET COALESCE(:variable1, 10) ROWS FETCH NEXT COALESCE(:variable2, 10) ROWS ONLY",
+            "SELECT * FROM T ORDER BY I OFFSET NVL(:variable1, 10) ROWS FETCH NEXT NVL(:variable2, 10) ROWS ONLY",
         )
+        self.validate_identity("NVL(x, y)").assert_is(exp.Anonymous)
         self.validate_identity(
             "SELECT * FROM t SAMPLE (.25)",
             "SELECT * FROM t SAMPLE (0.25)",
@@ -187,13 +187,6 @@ class TestOracle(Validator):
             write={
                 "oracle": "SELECT CAST(NULL AS VARCHAR2(2328 BYTE)) AS COL1",
                 "spark": "SELECT CAST(NULL AS VARCHAR(2328)) AS COL1",
-            },
-        )
-        self.validate_all(
-            "NVL(NULL, 1)",
-            write={
-                "": "COALESCE(NULL, 1)",
-                "oracle": "COALESCE(NULL, 1)",
             },
         )
         self.validate_all(

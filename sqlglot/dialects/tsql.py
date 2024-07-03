@@ -554,7 +554,7 @@ class TSQL(Dialect):
         }
 
         def _parse_dcolon(self) -> t.Optional[exp.Expression]:
-            return self._parse_function() or self._parse_types()
+            return self._parse_types() or self._parse_function()
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
             if not self._match(TokenType.OPTION):

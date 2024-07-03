@@ -1880,12 +1880,14 @@ FROM OPENJSON(@json) WITH (
     def test_scope_resolution_op(self):
         # we still want to support :: casting shorthand for tsql
         self.validate_identity("x::int", "CAST(x AS INTEGER)")
+        self.validate_identity("x::varchar", "CAST(x AS VARCHAR)")
+        self.validate_identity("x::varchar(MAX)", "CAST(x AS VARCHAR(MAX))")
 
         for lhs, rhs in (
             ("", "FOO(a, b)"),
             ("bar", "baZ(1, 2)"),
             ("LOGIN", "EricKurjan"),
-            ("GEOGRAPHY", "Point(latitude, longitude, 4326)"),
+            ("GEOGRAPHY", "Point(LATITUDE, LONGITUDE, 4326)"),
             (
                 "GEOGRAPHY",
                 "STGeomFromText('POLYGON((-122.358 47.653 , -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))', 4326)",

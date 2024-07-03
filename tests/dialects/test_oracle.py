@@ -88,7 +88,7 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM T ORDER BY I OFFSET NVL(:variable1, 10) ROWS FETCH NEXT NVL(:variable2, 10) ROWS ONLY",
         )
-        self.parse_one("NVL(x, y)").assert_is(exp.Anonymous)
+        self.validate_identity("NVL(x, y)").assert_is(exp.Anonymous)
         self.validate_identity(
             "SELECT * FROM t SAMPLE (.25)",
             "SELECT * FROM t SAMPLE (0.25)",

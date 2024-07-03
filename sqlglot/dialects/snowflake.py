@@ -504,10 +504,11 @@ class Snowflake(Dialect):
 
             return lateral
 
-        def _parse_at_before(self, table: exp.Table) -> exp.Table:
+        def _parse_at_before_end(self) -> t.Optional[exp.HistoricalData]:
             # https://docs.snowflake.com/en/sql-reference/constructs/at-before
             index = self._index
-            if self._match_texts(("AT", "BEFORE")):
+            historical_data = None
+            if self._match_texts(self.HISTORICAL_DATA_PREFIX):
                 this = self._prev.text.upper()
                 kind = (
                     self._match(TokenType.L_PAREN)
@@ -518,14 +519,27 @@ class Snowflake(Dialect):
 
                 if expression:
                     self._match_r_paren()
-                    when = self.expression(
+                    historical_data = self.expression(
                         exp.HistoricalData, this=this, kind=kind, expression=expression
                     )
-                    table.set("when", when)
                 else:
                     self._retreat(index)
 
-            return table
+            return historical_data
+
+        def _parse_changes(self) -> t.Optional[exp.Changes]:
+            if not self._match_text_seq("CHANGES", "(", "INFORMATION", "=>"):
+                return None
+
+            information = self._parse_var(any_token=True)
+            self._match_r_paren()
+
+            return self.expression(
+                exp.Changes,
+                information=information,
+                at_before=self._parse_at_before_end(),
+                end=self._parse_at_before_end(),
+            )
 
         def _parse_table_parts(
             self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
@@ -559,7 +573,15 @@ class Snowflake(Dialect):
             else:
                 table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
 
-            return self._parse_at_before(table)
+            changes = self._parse_changes()
+            if changes:
+                table.set("changes", changes)
+
+            at_before = self._parse_at_before_end()
+            if at_before:
+                table.set("when", at_before)
+
+            return table
 
         def _parse_id_var(
             self,

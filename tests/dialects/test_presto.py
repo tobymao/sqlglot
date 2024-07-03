@@ -581,6 +581,13 @@ class TestPresto(Validator):
             )
 
     def test_presto(self):
+        self.assertEqual(
+            exp.func("md5", exp.func("concat", exp.cast("x", "text"), exp.Literal.string("s"))).sql(
+                dialect="presto"
+            ),
+            "LOWER(TO_HEX(MD5(TO_UTF8(CONCAT(CAST(x AS VARCHAR), CAST('s' AS VARCHAR))))))",
+        )
+
         with self.assertLogs(helper_logger):
             self.validate_all(
                 "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",

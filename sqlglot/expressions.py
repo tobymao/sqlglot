@@ -2002,6 +2002,10 @@ class Check(Expression):
     pass
 
 
+class Changes(Expression):
+    arg_types = {"information": True, "at_before": False, "end": False}
+
+
 # https://docs.snowflake.com/en/sql-reference/constructs/connect-by
 class Connect(Expression):
     arg_types = {"start": False, "connect": True, "nocycle": False}
@@ -3034,6 +3038,7 @@ class Table(Expression):
         "when": False,
         "only": False,
         "partition": False,
+        "changes": False,
     }
 
     @property

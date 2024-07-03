@@ -107,6 +107,7 @@ class Oracle(Dialect):
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
         }
+        FUNCTIONS.pop("NVL")
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,

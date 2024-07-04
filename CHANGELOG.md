@@ -1,6 +1,44 @@
 Changelog
 =========
 
+## [v25.5.0] - 2024-07-04
+### :boom: BREAKING CHANGES
+- due to [`8335ba1`](https://github.com/tobymao/sqlglot/commit/8335ba10e60c7c63881d7559a6f1fada11b0e55d) - preserve EXTRACT(date_part FROM datetime) calls *(PR [#3729](https://github.com/tobymao/sqlglot/pull/3729) by [@georgesittas](https://github.com/georgesittas))*:
+
+  preserve EXTRACT(date_part FROM datetime) calls (#3729)
+
+- due to [`fb066a6`](https://github.com/tobymao/sqlglot/commit/fb066a6167e1f887bd8c1a1369d063fe70f36a8a) - Decouple NVL() from COALESCE() *(PR [#3734](https://github.com/tobymao/sqlglot/pull/3734) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Decouple NVL() from COALESCE() (#3734)
+
+
+### :sparkles: New Features
+- [`0c03299`](https://github.com/tobymao/sqlglot/commit/0c032992fac622ebaee114cd9f6e405be1820054) - **teradata**: random lower upper closes [#3721](https://github.com/tobymao/sqlglot/pull/3721) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`37b6e2d`](https://github.com/tobymao/sqlglot/commit/37b6e2d806f6da1338c75803919c602f8705acac) - **snowflake**: add support for VECTOR(type, size) *(PR [#3724](https://github.com/tobymao/sqlglot/pull/3724) by [@georgesittas](https://github.com/georgesittas))*
+- [`1e07c4d`](https://github.com/tobymao/sqlglot/commit/1e07c4d29a43192fb57c120f3b9c1c2fa27d0fa6) - **presto, trino**: Configurable transpilation of Snowflake VARIANT *(PR [#3725](https://github.com/tobymao/sqlglot/pull/3725) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3713](https://github.com/tobymao/sqlglot/issues/3713) opened by [@Leonti](https://github.com/Leonti)*
+- [`e5a53aa`](https://github.com/tobymao/sqlglot/commit/e5a53aaa015806574cd3c4bbe46b5788e960903e) - **snowflake**: Support for FROM CHANGES *(PR [#3731](https://github.com/tobymao/sqlglot/pull/3731) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3730](https://github.com/tobymao/sqlglot/issues/3730) opened by [@achicoine-coveo](https://github.com/achicoine-coveo)*
+- [`820d664`](https://github.com/tobymao/sqlglot/commit/820d66430bb23bff88d0057b22842d313e1431c5) - **presto**: wrap md5 string arguments in to_utf8 *(PR [#3732](https://github.com/tobymao/sqlglot/pull/3732) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2855](https://github.com/TobikoData/sqlmesh/issues/2855) opened by [@MikeWallis42](https://github.com/MikeWallis42)*
+- [`912bc84`](https://github.com/tobymao/sqlglot/commit/912bc84791008ecce545cfbd3b0c9d4362131eb3) - **spark, databricks**: Support view schema binding options *(PR [#3739](https://github.com/tobymao/sqlglot/pull/3739) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3738](https://github.com/tobymao/sqlglot/issues/3738) opened by [@aersam](https://github.com/aersam)*
+
+### :bug: Bug Fixes
+- [`3454f86`](https://github.com/tobymao/sqlglot/commit/3454f861f22f680f6b8c18cca466154d3b9fe8d1) - **teradata**: use timestamp with time zone over timestamptz *(PR [#3723](https://github.com/tobymao/sqlglot/pull/3723) by [@mtagle](https://github.com/mtagle))*
+  - :arrow_lower_right: *fixes issue [#3722](https://github.com/tobymao/sqlglot/issues/3722) opened by [@mtagle](https://github.com/mtagle)*
+- [`f4a2872`](https://github.com/tobymao/sqlglot/commit/f4a28721fd33edb3178c1d99746209dadfbba487) - **clickhouse**: switch off table alias columns generation *(PR [#3727](https://github.com/tobymao/sqlglot/pull/3727) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3726](https://github.com/tobymao/sqlglot/issues/3726) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`8335ba1`](https://github.com/tobymao/sqlglot/commit/8335ba10e60c7c63881d7559a6f1fada11b0e55d) - **clickhouse**: preserve EXTRACT(date_part FROM datetime) calls *(PR [#3729](https://github.com/tobymao/sqlglot/pull/3729) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3728](https://github.com/tobymao/sqlglot/issues/3728) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`fb066a6`](https://github.com/tobymao/sqlglot/commit/fb066a6167e1f887bd8c1a1369d063fe70f36a8a) - **oracle**: Decouple NVL() from COALESCE() *(PR [#3734](https://github.com/tobymao/sqlglot/pull/3734) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3733](https://github.com/tobymao/sqlglot/issues/3733) opened by [@Hal-H2Apps](https://github.com/Hal-H2Apps)*
+- [`c790c3b`](https://github.com/tobymao/sqlglot/commit/c790c3b1fa274d7b0faf9f75e7dbc62bc4f55c67) - **tsql**: parse rhs of x::varchar(max) into a type *(PR [#3737](https://github.com/tobymao/sqlglot/pull/3737) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`84416d2`](https://github.com/tobymao/sqlglot/commit/84416d207a2e397aba12a4138fcbd1fab382c22d) - **teradata**: clean up CurrentTimestamp generation logic *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.4.1] - 2024-06-29
 ### :bug: Bug Fixes
 - [`6bf9853`](https://github.com/tobymao/sqlglot/commit/6bf9853fd0b26d5a4e93e37447c3b275cd108872) - **tsql**: cast shorthand closes [#3760](https://github.com/tobymao/sqlglot/pull/3760) *(PR [#3720](https://github.com/tobymao/sqlglot/pull/3720) by [@tobymao](https://github.com/tobymao))*
@@ -4078,3 +4116,4 @@ Changelog
 [v25.3.3]: https://github.com/tobymao/sqlglot/compare/v25.3.2...v25.3.3
 [v25.4.0]: https://github.com/tobymao/sqlglot/compare/v25.3.3...v25.4.0
 [v25.4.1]: https://github.com/tobymao/sqlglot/compare/v25.4.0...v25.4.1
+[v25.5.0]: https://github.com/tobymao/sqlglot/compare/v25.4.1...v25.5.0

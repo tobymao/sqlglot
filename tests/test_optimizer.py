@@ -345,19 +345,19 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt) WHERE t1.id > 10 GROUP BY 1, 2) AS _q_0",
+                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS _q_0",
                     dialect="bigquery",
                 ),
                 schema=MappingSchema(
                     schema={
-                        "t1": {"id": "int64", "dt": "date"},
-                        "lkp": {"id": "int64", "other_id": "int64"},
-                        "t2": {"other_id": "int64", "dt": "date", "v": "int64"},
+                        "t1": {"id": "int64", "dt": "date", "common": "int64"},
+                        "lkp": {"id": "int64", "other_id": "int64", "common": "int64"},
+                        "t2": {"other_id": "int64", "dt": "date", "v": "int64", "common": "int64"},
                     },
                     dialect="bigquery",
                 ),
             ).sql(dialect="bigquery"),
-            "SELECT _q_0.id AS id, _q_0.dt AS dt, _q_0.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS _q_0",
+            "SELECT _q_0.id AS id, _q_0.dt AS dt, _q_0.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS _q_0",
         )
 
         self.check_file(

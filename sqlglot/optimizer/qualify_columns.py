@@ -187,7 +187,15 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             if i == 0 or using_identifier_count == 1:
                 lhs: exp.Expression = exp.column(identifier, table=table)
             else:
-                lhs = exp.func("coalesce", *[exp.column(identifier, table=t) for t in ordered[:-1]])
+                coalesce_columns = [
+                    exp.column(identifier, table=t)
+                    for t in ordered[:-1]
+                    if identifier in resolver.get_source_columns(t)
+                ]
+                if len(coalesce_columns) > 1:
+                    lhs = exp.func("coalesce", *coalesce_columns)
+                else:
+                    lhs = exp.column(identifier, table=table)
 
             conditions.append(lhs.eq(exp.column(identifier, table=join_table)))
 
@@ -724,6 +732,7 @@ class Resolver:
         self._unambiguous_columns: t.Optional[t.Mapping[str, str]] = None
         self._all_columns: t.Optional[t.Set[str]] = None
         self._infer_schema = infer_schema
+        self._get_source_columns_cache: t.Dict[t.Tuple[str, bool], t.Sequence[str]] = {}
 
     def get_table(self, column_name: str) -> t.Optional[exp.Identifier]:
         """
@@ -776,41 +785,49 @@ class Resolver:
 
     def get_source_columns(self, name: str, only_visible: bool = False) -> t.Sequence[str]:
         """Resolve the source columns for a given source `name`."""
-        if name not in self.scope.sources:
-            raise OptimizeError(f"Unknown table: {name}")
+        cache_key = (name, only_visible)
+        if cache_key not in self._get_source_columns_cache:
+            if name not in self.scope.sources:
+                raise OptimizeError(f"Unknown table: {name}")
 
-        source = self.scope.sources[name]
+            source = self.scope.sources[name]
 
-        if isinstance(source, exp.Table):
-            columns = self.schema.column_names(source, only_visible)
-        elif isinstance(source, Scope) and isinstance(source.expression, (exp.Values, exp.Unnest)):
-            columns = source.expression.named_selects
+            if isinstance(source, exp.Table):
+                columns = self.schema.column_names(source, only_visible)
+            elif isinstance(source, Scope) and isinstance(
+                source.expression, (exp.Values, exp.Unnest)
+            ):
+                columns = source.expression.named_selects
 
-            # in bigquery, unnest structs are automatically scoped as tables, so you can
-            # directly select a struct field in a query.
-            # this handles the case where the unnest is statically defined.
-            if self.schema.dialect == "bigquery":
-                if source.expression.is_type(exp.DataType.Type.STRUCT):
-                    for k in source.expression.type.expressions:  # type: ignore
-                        columns.append(k.name)
-        else:
-            columns = source.expression.named_selects
+                # in bigquery, unnest structs are automatically scoped as tables, so you can
+                # directly select a struct field in a query.
+                # this handles the case where the unnest is statically defined.
+                if self.schema.dialect == "bigquery":
+                    if source.expression.is_type(exp.DataType.Type.STRUCT):
+                        for k in source.expression.type.expressions:  # type: ignore
+                            columns.append(k.name)
+            else:
+                columns = source.expression.named_selects
 
-        node, _ = self.scope.selected_sources.get(name) or (None, None)
-        if isinstance(node, Scope):
-            column_aliases = node.expression.alias_column_names
-        elif isinstance(node, exp.Expression):
-            column_aliases = node.alias_column_names
-        else:
-            column_aliases = []
+            node, _ = self.scope.selected_sources.get(name) or (None, None)
+            if isinstance(node, Scope):
+                column_aliases = node.expression.alias_column_names
+            elif isinstance(node, exp.Expression):
+                column_aliases = node.alias_column_names
+            else:
+                column_aliases = []
 
-        if column_aliases:
-            # If the source's columns are aliased, their aliases shadow the corresponding column names.
-            # This can be expensive if there are lots of columns, so only do this if column_aliases exist.
-            return [
-                alias or name for (name, alias) in itertools.zip_longest(columns, column_aliases)
-            ]
-        return columns
+            if column_aliases:
+                # If the source's columns are aliased, their aliases shadow the corresponding column names.
+                # This can be expensive if there are lots of columns, so only do this if column_aliases exist.
+                columns = [
+                    alias or name
+                    for (name, alias) in itertools.zip_longest(columns, column_aliases)
+                ]
+
+            self._get_source_columns_cache[cache_key] = columns
+
+        return self._get_source_columns_cache[cache_key]
 
     def _get_all_source_columns(self) -> t.Dict[str, t.Sequence[str]]:
         if self._source_columns is None:

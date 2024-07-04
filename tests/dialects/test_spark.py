@@ -801,3 +801,10 @@ TBLPROPERTIES (
                     self.assertEqual(query.sql(name), with_modifiers)
                 else:
                     self.assertEqual(query.sql(name), without_modifiers)
+
+    def test_schema_binding_options(self):
+        for schema_binding in ("BINDING", "COMPENSATION", "TYPE EVOLUTION", "EVOLUTION"):
+            with self.subTest(f"Test roundtrip of VIEW schema binding {schema_binding}"):
+                self.validate_identity(
+                    f"CREATE VIEW emp_v WITH SCHEMA {schema_binding} AS SELECT * FROM emp"
+                )

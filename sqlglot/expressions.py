@@ -2855,6 +2855,10 @@ class WithJournalTableProperty(Property):
     arg_types = {"this": True}
 
 
+class WithSchemaBindingProperty(Property):
+    arg_types = {"this": True}
+
+
 class WithSystemVersioningProperty(Property):
     arg_types = {
         "on": False,

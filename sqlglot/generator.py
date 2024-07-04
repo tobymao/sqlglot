@@ -157,6 +157,7 @@ class Generator(metaclass=_Generator):
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
+        exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
         exp.WithOperator: lambda self, e: f"{self.sql(e, 'this')} WITH {self.sql(e, 'op')}",
     }
 
@@ -502,6 +503,7 @@ class Generator(metaclass=_Generator):
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
+        exp.WithSchemaBindingProperty: exp.Properties.Location.POST_SCHEMA,
         exp.WithSystemVersioningProperty: exp.Properties.Location.POST_SCHEMA,
     }
 

@@ -1129,6 +1129,11 @@ class Parser(metaclass=_Parser):
 
     CAST_ACTIONS: OPTIONS_TYPE = dict.fromkeys(("RENAME", "ADD"), ("FIELDS",))
 
+    SCHEMA_BINDING_OPTIONS: OPTIONS_TYPE = {
+        "TYPE": ("EVOLUTION",),
+        **dict.fromkeys(("BINDING", "COMPENSATION", "EVOLUTION"), tuple()),
+    }
+
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     CLONE_KEYWORDS = {"CLONE", "COPY"}
@@ -2016,6 +2021,12 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.SERDE_PROPERTIES, advance=False):
             return self._parse_serde_properties(with_=True)
+
+        if self._match(TokenType.SCHEMA):
+            return self.expression(
+                exp.WithSchemaBindingProperty,
+                this=self._parse_var_from_options(self.SCHEMA_BINDING_OPTIONS),
+            )
 
         if not self._next:
             return None

@@ -554,6 +554,11 @@ class TSQL(Dialect):
         }
 
         def _parse_dcolon(self) -> t.Optional[exp.Expression]:
+            # We want to use _parse_types() if the first token after :: is a known type,
+            # otherwise we could parse something like x::varchar(max) into a function
+            if self._match_set(self.TYPE_TOKENS, advance=False):
+                return self._parse_types()
+
             return self._parse_function() or self._parse_types()
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:

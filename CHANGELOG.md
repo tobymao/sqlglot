@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.5.1] - 2024-07-05
+### :bug: Bug Fixes
+- [`2bdde22`](https://github.com/tobymao/sqlglot/commit/2bdde2221b8017791ce4cc619abb2706464ca408) - **optimizer**: only qualify coalesced USING columns if they exist in table schemas *(PR [#3740](https://github.com/tobymao/sqlglot/pull/3740) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.5.0] - 2024-07-04
 ### :boom: BREAKING CHANGES
 - due to [`8335ba1`](https://github.com/tobymao/sqlglot/commit/8335ba10e60c7c63881d7559a6f1fada11b0e55d) - preserve EXTRACT(date_part FROM datetime) calls *(PR [#3729](https://github.com/tobymao/sqlglot/pull/3729) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4117,3 +4122,4 @@ Changelog
 [v25.4.0]: https://github.com/tobymao/sqlglot/compare/v25.3.3...v25.4.0
 [v25.4.1]: https://github.com/tobymao/sqlglot/compare/v25.4.0...v25.4.1
 [v25.5.0]: https://github.com/tobymao/sqlglot/compare/v25.4.1...v25.5.0
+[v25.5.1]: https://github.com/tobymao/sqlglot/compare/v25.5.0...v25.5.1

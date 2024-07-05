@@ -574,8 +574,8 @@ def _expand_stars(
 
             table_id = id(table)
             columns_to_exclude = except_columns.get(table_id) or set()
-            rename_columns_dict = rename_columns.get(table_id, {})
-            replace_columns_dict = replace_columns.get(table_id, {})
+            renamed_columns = rename_columns.get(table_id, {})
+            replaced_columns = replace_columns.get(table_id, {})
 
             if pivot:
                 if pivot_output_columns and pivot_exclude_columns:
@@ -604,8 +604,8 @@ def _expand_stars(
                         alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                     )
                 else:
-                    selection_expr = replace_columns_dict.get(name) or exp.column(name, table=table)
-                    alias_ = rename_columns_dict.get(name, name)
+                    alias_ = renamed_columns.get(name, name)
+                    selection_expr = replaced_columns.get(name) or exp.column(name, table=table)
                     new_selections.append(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name

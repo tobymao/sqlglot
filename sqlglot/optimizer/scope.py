@@ -272,6 +272,20 @@ class Scope:
                 ancestor = column.find_ancestor(
                     exp.Select, exp.Qualify, exp.Order, exp.Having, exp.Hint, exp.Table, exp.Star
                 )
+
+                is_except_col = False
+                if isinstance(ancestor, exp.Star):
+                    except_cols = ancestor.args.get("except") or []
+                    replace_cols = ancestor.args.get("replace") or []
+                    cols = set(
+                        replace_col
+                        for col in replace_cols
+                        for replace_col in col.find_all(exp.Column)
+                    )
+                    # Exclude the columns in EXCEPT() from the scope unless they're used in REPLACE, i.e in
+                    # "SELECT * EXCEPT (col1) REPLACE (COALESCE(1, col1) AS col2)"", col1 must be kept in scope
+                    is_except_col = column in except_cols and column not in cols
+
                 if (
                     not ancestor
                     or column.table
@@ -284,6 +298,7 @@ class Scope:
                             or column.name not in named_selects
                         )
                     )
+                    or (isinstance(ancestor, exp.Star) and not is_except_col)
                 ):
                     self._columns.append(column)
 

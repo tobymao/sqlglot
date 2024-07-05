@@ -385,14 +385,14 @@ WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FRO
 WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;
 
 --------------------------------------
--- Except and Replace
+-- Except, Replace, Rename
 --------------------------------------
 # execute: false
-SELECT * REPLACE(a AS d) FROM x;
+SELECT * RENAME(a AS d) FROM x;
 SELECT x.a AS d, x.b AS b FROM x AS x;
 
 # execute: false
-SELECT * EXCEPT(b) REPLACE(a AS d) FROM x;
+SELECT * EXCEPT(b) RENAME(a AS d) FROM x;
 SELECT x.a AS d FROM x AS x;
 
 SELECT x.* EXCEPT(a), y.* FROM x, y;
@@ -415,6 +415,22 @@ SELECT x.a AS a, x.b AS b, y.b AS b FROM x AS x LEFT JOIN x AS y ON x.a = y.a;
 
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.b AS b FROM x AS t1, x AS t2;
+
+# execute: false
+SELECT * REPLACE(COALESCE(b, a) AS a, a as b) FROM x;
+SELECT COALESCE(x.b, x.a) AS a, x.a AS b FROM x AS x;
+
+# execute: false
+SELECT * REPLACE(1 AS a) RENAME(b as alias_b) FROM x;
+SELECT 1 AS a, x.b AS alias_b FROM x AS x;
+
+# execute: false
+SELECT * EXCEPT(a) REPLACE(COALESCE(a, b) AS b) RENAME(b AS new_b) FROM x;
+SELECT COALESCE(x.a, x.b) AS new_b FROM x AS x;
+
+# execute: false
+SELECT * REPLACE(1 AS a, a AS b) RENAME(b AS new_b) FROM x;
+SELECT 1 AS a, x.a AS new_b FROM x AS x;
 
 --------------------------------------
 -- Using

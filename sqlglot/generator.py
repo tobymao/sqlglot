@@ -406,13 +406,13 @@ class Generator(metaclass=_Generator):
     AFTER_HAVING_MODIFIER_TRANSFORMS = {
         "cluster": lambda self, e: self.sql(e, "cluster"),
         "distribute": lambda self, e: self.sql(e, "distribute"),
-        "qualify": lambda self, e: self.sql(e, "qualify"),
         "sort": lambda self, e: self.sql(e, "sort"),
         "windows": lambda self, e: (
             self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
             if e.args.get("windows")
             else ""
         ),
+        "qualify": lambda self, e: self.sql(e, "qualify"),
     }
 
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}

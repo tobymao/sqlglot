@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     arg_max_or_min_no_count,
@@ -789,7 +789,6 @@ class ClickHouse(Dialect):
             exp.Quantile: _quantile_sql,
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
-            exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
             exp.StartsWith: rename_func("startsWith"),
             exp.StrPosition: lambda self, e: self.func(
                 "position", e.this, e.args.get("substr"), e.args.get("position")

@@ -735,6 +735,13 @@ class BigQuery(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        # WINDOW comes after QUALIFY
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#window_clause
+        AFTER_HAVING_MODIFIER_TRANSFORMS = {
+            "qualify": generator.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS["qualify"],
+            "windows": generator.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS["windows"],
+        }
+
         # from: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
         RESERVED_KEYWORDS = {
             "all",

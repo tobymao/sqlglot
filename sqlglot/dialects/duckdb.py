@@ -596,6 +596,12 @@ class DuckDB(Dialect):
             "current_catalog",
         }
 
+        # QUALIFY comes after WINDOW, see https://duckdb.org/docs/sql/query_syntax/qualify.html
+        AFTER_HAVING_MODIFIER_TRANSFORMS = {
+            "windows": generator.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS["windows"],
+            "qualify": generator.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS["qualify"],
+        }
+
         UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
 
         # DuckDB doesn't generally support CREATE TABLE .. properties

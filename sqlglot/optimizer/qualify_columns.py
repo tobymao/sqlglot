@@ -513,7 +513,9 @@ def _expand_stars(
 
     new_selections = []
     except_columns: t.Dict[int, t.Set[str]] = {}
-    replace_columns: t.Dict[int, t.Dict[str, str]] = {}
+    replace_columns: t.Dict[int, t.Dict[str, exp.Alias]] = {}
+    rename_columns: t.Dict[int, t.Dict[str, str]] = {}
+
     coalesced_columns = set()
     dialect = resolver.schema.dialect
 
@@ -548,11 +550,13 @@ def _expand_stars(
             tables.extend(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
+            _add_rename_columns(expression, tables, rename_columns)
         elif expression.is_star:
             if not isinstance(expression, exp.Dot):
                 tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
+                _add_rename_columns(expression.this, tables, rename_columns)
             elif is_bigquery:
                 struct_fields = _expand_struct_stars(expression)
                 if struct_fields:
@@ -578,6 +582,8 @@ def _expand_stars(
 
             table_id = id(table)
             columns_to_exclude = except_columns.get(table_id) or set()
+            renamed_columns = rename_columns.get(table_id, {})
+            replaced_columns = replace_columns.get(table_id, {})
 
             if pivot:
                 if pivot_output_columns and pivot_exclude_columns:
@@ -606,10 +612,12 @@ def _expand_stars(
                         alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                     )
                 else:
-                    alias_ = replace_columns.get(table_id, {}).get(name, name)
-                    column = exp.column(name, table=table)
+                    alias_ = renamed_columns.get(name, name)
+                    selection_expr = replaced_columns.get(name) or exp.column(name, table=table)
                     new_selections.append(
-                        alias(column, alias_, copy=False) if alias_ != name else column
+                        alias(selection_expr, alias_, copy=False)
+                        if alias_ != name
+                        else selection_expr
                     )
 
     # Ensures we don't overwrite the initial selections with an empty list
@@ -631,15 +639,29 @@ def _add_except_columns(
         except_columns[id(table)] = columns
 
 
+def _add_rename_columns(
+    expression: exp.Expression, tables, rename_columns: t.Dict[int, t.Dict[str, str]]
+) -> None:
+    rename = expression.args.get("rename")
+
+    if not rename:
+        return
+
+    columns = {e.this.name: e.alias for e in rename}
+
+    for table in tables:
+        rename_columns[id(table)] = columns
+
+
 def _add_replace_columns(
-    expression: exp.Expression, tables, replace_columns: t.Dict[int, t.Dict[str, str]]
+    expression: exp.Expression, tables, replace_columns: t.Dict[int, t.Dict[str, exp.Alias]]
 ) -> None:
     replace = expression.args.get("replace")
 
     if not replace:
         return
 
-    columns = {e.this.name: e.alias for e in replace}
+    columns = {e.alias: e for e in replace}
 
     for table in tables:
         replace_columns[id(table)] = columns

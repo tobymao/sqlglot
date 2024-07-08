@@ -284,6 +284,7 @@ class Scope:
                             or column.name not in named_selects
                         )
                     )
+                    or (isinstance(ancestor, exp.Star) and not column.arg_key == "except")
                 ):
                     self._columns.append(column)
 

@@ -272,7 +272,6 @@ class Scope:
                 ancestor = column.find_ancestor(
                     exp.Select, exp.Qualify, exp.Order, exp.Having, exp.Hint, exp.Table, exp.Star
                 )
-
                 if (
                     not ancestor
                     or column.table

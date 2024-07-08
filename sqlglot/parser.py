@@ -108,6 +108,12 @@ def build_mod(args: t.List) -> exp.Mod:
     return exp.Mod(this=this, expression=expression)
 
 
+def build_pad(kind: str, args: t.List):
+    return exp.Pad(
+        kind=kind, this=seq_get(args, 0), expression=seq_get(args, 1), fill_pattern=seq_get(args, 2)
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -159,7 +165,11 @@ class Parser(metaclass=_Parser):
         "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
         "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
         "LOWER": build_lower,
+        "LPAD": lambda args: build_pad("L", args),
+        "LEFTPAD": lambda args: build_pad("L", args),
         "MOD": build_mod,
+        "RPAD": lambda args: build_pad("R", args),
+        "RIGHTPAD": lambda args: build_pad("R", args),
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),

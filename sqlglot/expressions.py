@@ -4793,6 +4793,11 @@ class List(Func):
     is_var_len_args = True
 
 
+# String pad, kind "L" -> LPAD, "R" -> RPAD
+class Pad(Func):
+    arg_types = {"kind": True, "this": True, "expression": True, "fill_pattern": False}
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):

@@ -381,6 +381,7 @@ class DuckDB(Dialect):
         SUPPORTS_TO_NUMBER = False
         COPY_HAS_INTO_KEYWORD = False
         STAR_EXCEPT = "EXCLUDE"
+        PAD_FILL_PATTERN_IS_REQUIRED = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

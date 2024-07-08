@@ -374,6 +374,9 @@ class Generator(metaclass=_Generator):
     # Whether to quote the generated expression of exp.JsonPath
     QUOTE_JSON_PATH = True
 
+    # Whether the text pattern/fill (3rd) parameter of RPAD()/LPAD() is optional (defaults to space)
+    PAD_FILL_PATTERN_IS_REQUIRED = False
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4041,3 +4044,12 @@ class Generator(metaclass=_Generator):
         end = f"{self.seg('')}{end}" if end else ""
 
         return f"CHANGES ({information}){at_before}{end}"
+
+    def pad_sql(self, expression: exp.Pad) -> str:
+        kind = self.sql(expression, "kind")
+
+        fill_pattern = self.sql(expression, "fill_pattern") or None
+        if not fill_pattern and self.PAD_FILL_PATTERN_IS_REQUIRED:
+            fill_pattern = "' '"
+
+        return self.func(f"{kind}PAD", expression.this, expression.expression, fill_pattern)

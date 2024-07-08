@@ -690,6 +690,7 @@ class MySQL(Dialect):
         JSON_KEY_VALUE_PAIR_SEP = ","
         SUPPORTS_TO_NUMBER = False
         PARSE_JSON_NAME = None
+        PAD_FILL_PATTERN_IS_REQUIRED = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

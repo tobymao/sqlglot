@@ -8,7 +8,6 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     binary_from_function,
     bool_xor_sql,
-    date_trunc_to_time,
     datestrtodate_sql,
     encode_decode_sql,
     build_formatted_time,
@@ -109,6 +108,13 @@ def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> st
     expr = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP)
     unit = unit_to_str(expression)
     return self.func("DATE_DIFF", unit, expr, this)
+
+
+def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
+    unit = seq_get(args, 0)
+    this = seq_get(args, 1)
+
+    return exp.DateTrunc(unit=unit, this=this)
 
 
 def _build_approx_percentile(args: t.List) -> exp.Expression:
@@ -281,7 +287,7 @@ class Presto(Dialect):
             ),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "presto"),
             "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
-            "DATE_TRUNC": date_trunc_to_time,
+            "DATE_TRUNC": _date_trunc_to_time,
             "ELEMENT_AT": lambda args: exp.Bracket(
                 this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
             ),

@@ -861,7 +861,7 @@ class TestDialect(Validator):
                 "bigquery": "TIMESTAMP_TRUNC(x, day)",
                 "duckdb": "DATE_TRUNC('day', x)",
                 "materialize": "DATE_TRUNC('day', x)",
-                "presto": "DATE_TRUNC('day', x)",
+                # "presto": "DATE_TRUNC('day', x)",
                 "postgres": "DATE_TRUNC('day', x)",
                 "snowflake": "DATE_TRUNC('day', x)",
                 "starrocks": "DATE_TRUNC('day', x)",

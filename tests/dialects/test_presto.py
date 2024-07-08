@@ -494,6 +494,12 @@ class TestPresto(Validator):
             },
         )
 
+    def test_date_trunc(self):
+        self.validate_all(
+            "SELECT DATE_TRUNC('year', CAST('2024-05-05' AS TIMESTAMP))",
+            write={"presto": "SELECT DATE_TRUNC('YEAR', CAST('2024-05-05' AS TIMESTAMP))"},
+        )
+
     def test_quotes(self):
         self.validate_all(
             "''''",

@@ -417,6 +417,14 @@ SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.* EXCEPT (a) FROM x AS t1, x
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.b AS b FROM x AS t1, x AS t2;
 
 # execute: false
+SELECT * REPLACE(2 AS a) FROM x;
+SELECT 2 AS a, x.b AS b FROM x AS x;
+
+# execute: false
+SELECT * EXCEPT (a, b) REPLACE (a AS a) FROM x;
+SELECT * EXCEPT (a, b) REPLACE (x.a AS a) FROM x AS x;
+
+# execute: false
 SELECT * REPLACE(COALESCE(b, a) AS a, a as b) FROM x;
 SELECT COALESCE(x.b, x.a) AS a, x.a AS b FROM x AS x;
 

@@ -116,17 +116,24 @@ def _build_make_timestamp(args: t.List) -> exp.Expression:
 
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args: t.List[str] = []
+
+    # BigQuery allows inline construction such as "STRUCT<a STRING, b INTEGER>('str', 1)" which is
+    # canonicalized to "ROW('str', 1) AS STRUCT(a TEXT, b INT)" in DuckDB
+    is_struct_cast = expression.find_ancestor(exp.Cast)
+
     for i, expr in enumerate(expression.expressions):
-        if isinstance(expr, exp.PropertyEQ):
-            key = expr.name
-            value = expr.expression
+        is_property_eq = isinstance(expr, exp.PropertyEQ)
+        value = expr.expression if is_property_eq else expr
+
+        if is_struct_cast:
+            args.append(self.sql(value))
         else:
-            key = f"_{i}"
-            value = expr
+            key = expr.name if is_property_eq else f"_{i}"
+            args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
 
-        args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
+    csv_args = ", ".join(args)
 
-    return f"{{{', '.join(args)}}}"
+    return f"ROW({csv_args})" if is_struct_cast else f"{{{csv_args}}}"
 
 
 def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:

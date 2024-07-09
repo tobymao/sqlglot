@@ -4252,6 +4252,9 @@ class Parser(metaclass=_Parser):
         index = self._index
         data_type = self._parse_types(check_func=True, allow_identifiers=False)
 
+        if isinstance(data_type, exp.Cast):
+            return self._parse_column_ops(data_type)
+
         if data_type:
             index2 = self._index
             this = self._parse_primary()
@@ -4471,9 +4474,14 @@ class Parser(metaclass=_Parser):
                 this=exp.DataType.Type[type_token.value],
                 expressions=expressions,
                 nested=nested,
-                values=values,
                 prefix=prefix,
             )
+
+            # Empty arrays/structs are allowed
+            if values is not None:
+                cls = exp.Struct if is_struct else exp.Array
+                this = exp.cast(cls(expressions=values), this, copy=False)
+
         elif expressions:
             this.set("expressions", expressions)
 

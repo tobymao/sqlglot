@@ -1042,11 +1042,11 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
-            "CAST([[{'a': 1}]] AS STRUCT(a BIGINT)[][])",
+            "CAST([[ROW(1)]] AS STRUCT(a BIGINT)[][])",
         )
         self.validate_identity(
             "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
-            "CAST([{'a': 1}] AS STRUCT(a BIGINT)[])",
+            "CAST([ROW(1)] AS STRUCT(a BIGINT)[])",
         )
 
         self.validate_all(

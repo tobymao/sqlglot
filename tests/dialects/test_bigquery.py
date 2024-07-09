@@ -138,7 +138,6 @@ LANGUAGE js AS
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
-        self.validate_identity("CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)")
         self.validate_identity("STRING_AGG(a)")
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
@@ -162,12 +161,9 @@ LANGUAGE js AS
         self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
         self.validate_identity("SELECT b'abc'")
-        self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])""")
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
-        self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
-        self.validate_identity("SELECT STRUCT<STRING>((SELECT a FROM b.c LIMIT 1)).*")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
@@ -1607,7 +1603,7 @@ WHERE
             "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'null')], origin => CAST('2023-11-01 09:30:01' AS DATETIME)) ORDER BY time"
         )
         self.validate_identity(
-            "SELECT * FROM GAP_FILL(TABLE (SELECT * FROM UNNEST(ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>[STRUCT(1, CAST('2023-11-01 09:34:01' AS DATETIME), 74, 'INACTIVE'), STRUCT(2, CAST('2023-11-01 09:36:00' AS DATETIME), 77, 'ACTIVE'), STRUCT(3, CAST('2023-11-01 09:37:00' AS DATETIME), 78, 'ACTIVE'), STRUCT(4, CAST('2023-11-01 09:38:01' AS DATETIME), 80, 'ACTIVE')])), ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'linear')]) ORDER BY time"
+            "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'locf')]) ORDER BY time"
         )
 
     def test_models(self):
@@ -1756,4 +1752,50 @@ OPTIONS (
         self.validate_identity(
             "MOD((a + 1), b)",
             "MOD(a + 1, b)",
+        )
+
+    def test_inline_constructor(self):
+        self.validate_identity(
+            """SELECT STRUCT<ARRAY<STRING>>(["2023-01-17"])""",
+            """SELECT CAST(STRUCT(['2023-01-17']) AS STRUCT<ARRAY<STRING>>)""",
+        )
+        self.validate_identity(
+            """SELECT STRUCT<STRING>((SELECT 'foo')).*""",
+            """SELECT CAST(STRUCT((SELECT 'foo')) AS STRUCT<STRING>).*""",
+        )
+
+        self.validate_all(
+            "SELECT ARRAY<INT>[1, 2, 3]",
+            write={
+                "bigquery": "SELECT CAST([1, 2, 3] AS ARRAY<INT64>)",
+                "duckdb": "SELECT CAST([1, 2, 3] AS INT[])",
+            },
+        )
+        self.validate_all(
+            "CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)",
+            write={
+                "bigquery": "CAST(CAST(STRUCT(1) AS STRUCT<a INT64>) AS STRUCT<a INT64>)",
+                "duckdb": "CAST(CAST(ROW(1) AS STRUCT(a BIGINT)) AS STRUCT(a BIGINT))",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])",
+            write={
+                "bigquery": "SELECT * FROM UNNEST(CAST([] AS ARRAY<STRUCT<x INT64>>))",
+                "duckdb": "SELECT * FROM UNNEST(CAST([] AS STRUCT(x BIGINT)[]))",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM UNNEST(ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>[STRUCT(1, DATETIME '2023-11-01 09:34:01', 74, 'INACTIVE'),STRUCT(4, DATETIME '2023-11-01 09:38:01', 80, 'ACTIVE')])",
+            write={
+                "bigquery": "SELECT * FROM UNNEST(CAST([STRUCT(1, CAST('2023-11-01 09:34:01' AS DATETIME), 74, 'INACTIVE'), STRUCT(4, CAST('2023-11-01 09:38:01' AS DATETIME), 80, 'ACTIVE')] AS ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>))",
+                "duckdb": "SELECT * FROM UNNEST(CAST([ROW(1, CAST('2023-11-01 09:34:01' AS TIMESTAMP), 74, 'INACTIVE'), ROW(4, CAST('2023-11-01 09:38:01' AS TIMESTAMP), 80, 'ACTIVE')] AS STRUCT(device_id BIGINT, time TIMESTAMP, signal BIGINT, state TEXT)[]))",
+            },
+        )
+        self.validate_all(
+            "SELECT STRUCT<a INT64, b STRUCT<c STRING>>(1, STRUCT('c_str'))",
+            write={
+                "bigquery": "SELECT CAST(STRUCT(1, STRUCT('c_str')) AS STRUCT<a INT64, b STRUCT<c STRING>>)",
+                "duckdb": "SELECT CAST(ROW(1, ROW('c_str')) AS STRUCT(a BIGINT, b STRUCT(c TEXT)))",
+            },
         )

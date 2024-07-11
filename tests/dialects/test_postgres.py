@@ -100,9 +100,6 @@ class TestPostgres(Validator):
             "SELECT * FROM JSON_ARRAY_ELEMENTS('[1,true, [2,false]]') WITH ORDINALITY AS kv_json(a, b)"
         )
         self.validate_identity(
-            """SELECT * FROM table, ROWS FROM (FUNC1(col1) AS alias1("col1" TEXT), FUNC2(col2) AS alias2("col2" INT)) WITH ORDINALITY AS alias3("col3" INT, "col4" TEXT)"""
-        )
-        self.validate_identity(
             "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
         )
         self.validate_identity(
@@ -1133,3 +1130,12 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(boxcrate AS JSON)) AS x(tbox)
 CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) AS y(boxes)"""
 
         self.validate_all(expected_postgres, read={"trino": trino_input}, pretty=True)
+
+    def test_rows_from(self):
+        self.validate_identity("""SELECT * FROM ROWS FROM (FUNC1(col1, col2))""")
+        self.validate_identity(
+            """SELECT * FROM ROWS FROM (FUNC1(col1) AS alias1("col1" TEXT), FUNC2(col2) AS alias2("col2" INT)) WITH ORDINALITY"""
+        )
+        self.validate_identity(
+            """SELECT * FROM table1, ROWS FROM (FUNC1(col1) AS alias1("col1" TEXT)) WITH ORDINALITY AS alias3("col3" INT, "col4" TEXT)"""
+        )

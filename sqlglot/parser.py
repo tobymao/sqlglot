@@ -3842,6 +3842,9 @@ class Parser(metaclass=_Parser):
         if not this:
             return None
 
+        if this.name.upper() == "ALL" and self.dialect.SUPPORTS_ORDER_BY_ALL:
+            this = exp.var("ALL")
+
         asc = self._match(TokenType.ASC)
         desc = self._match(TokenType.DESC) or (asc and False)
 

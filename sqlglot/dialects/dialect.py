@@ -356,6 +356,11 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
+    SUPPORTS_ORDER_BY_ALL = False
+    """
+    Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

@@ -1427,6 +1427,12 @@ WHERE
             transpile("DATE_ADD(x, day)", read="bigquery")
 
     def test_warnings(self):
+        with self.assertLogs(parser_logger) as cm:
+            self.validate_identity(
+                "/* some comment */ DECLARE foo DATE DEFAULT DATE_SUB(current_date, INTERVAL 2 day)"
+            )
+            self.assertIn("contains unsupported syntax", cm.output[0])
+
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(
                 "WITH cte(c) AS (SELECT * FROM t) SELECT * FROM cte",

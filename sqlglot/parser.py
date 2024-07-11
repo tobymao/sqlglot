@@ -1478,7 +1478,10 @@ class Parser(metaclass=_Parser):
     def _parse_command(self) -> exp.Command:
         self._warn_unsupported()
         return self.expression(
-            exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
+            exp.Command,
+            comments=self._prev_comments,
+            this=self._prev.text.upper(),
+            expression=self._parse_string(),
         )
 
     def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> t.Optional[T]:

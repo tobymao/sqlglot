@@ -1164,6 +1164,13 @@ class TestDialect(Validator):
             },
         )
 
+        order_by_all_sql = "SELECT * FROM t ORDER BY ALL"
+        self.validate_identity(order_by_all_sql).find(exp.Ordered).this.assert_is(exp.Column)
+
+        for dialect in ("duckdb", "spark", "databricks"):
+            with self.subTest(f"Testing ORDER BY ALL in {dialect}"):
+                parse_one(order_by_all_sql, read=dialect).find(exp.Ordered).this.assert_is(exp.Var)
+
     def test_json(self):
         self.validate_all(
             """JSON_EXTRACT(x, '$["a b"]')""",

@@ -4264,6 +4264,13 @@ class Parser(metaclass=_Parser):
         index = self._index
         data_type = self._parse_types(check_func=True, allow_identifiers=False)
 
+        # parse_types() returns a Cast if we parsed BQ's inline constructor <type>(<values>) e.g.
+        # STRUCT<a INT, b STRING>(1, 'foo'), which is canonicalized to CAST(<values> AS <type>)
+        if isinstance(data_type, exp.Cast):
+            # This constructor can contain ops directly after it, for instance struct unnesting:
+            # STRUCT<a INT, b STRING>(1, 'foo').* --> CAST(STRUCT(1, 'foo') AS STRUCT<a iNT, b STRING).*
+            return self._parse_column_ops(data_type)
+
         if data_type:
             index2 = self._index
             this = self._parse_primary()
@@ -4483,9 +4490,14 @@ class Parser(metaclass=_Parser):
                 this=exp.DataType.Type[type_token.value],
                 expressions=expressions,
                 nested=nested,
-                values=values,
                 prefix=prefix,
             )
+
+            # Empty arrays/structs are allowed
+            if values is not None:
+                cls = exp.Struct if is_struct else exp.Array
+                this = exp.cast(cls(expressions=values), this, copy=False)
+
         elif expressions:
             this.set("expressions", expressions)
 

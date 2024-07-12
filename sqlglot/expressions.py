@@ -4793,7 +4793,7 @@ class List(Func):
     is_var_len_args = True
 
 
-# String pad, kind "L" -> LPAD, "R" -> RPAD
+# String pad, kind True -> LPAD, False -> RPAD
 class Pad(Func):
     arg_types = {"kind": True, "this": True, "expression": True, "fill_pattern": False}
 

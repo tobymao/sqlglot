@@ -4046,7 +4046,7 @@ class Generator(metaclass=_Generator):
         return f"CHANGES ({information}){at_before}{end}"
 
     def pad_sql(self, expression: exp.Pad) -> str:
-        kind = self.sql(expression, "kind")
+        kind = "L" if expression.args.get("kind") else "R"
 
         fill_pattern = self.sql(expression, "fill_pattern") or None
         if not fill_pattern and self.PAD_FILL_PATTERN_IS_REQUIRED:

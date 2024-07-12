@@ -684,6 +684,8 @@ TBLPROPERTIES (
             write={
                 "spark": "SELECT DATE_ADD(MONTH, 20, col)",
                 "databricks": "SELECT DATE_ADD(MONTH, 20, col)",
+                "presto": "SELECT DATE_ADD('MONTH', 20, col)",
+                "trino": "SELECT DATE_ADD('MONTH', 20, col)",
             },
         )
 

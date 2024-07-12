@@ -777,7 +777,7 @@ class Parser(metaclass=_Parser):
         TokenType.PARAMETER: lambda self: self._parse_parameter(),
         TokenType.COLON: lambda self: (
             self.expression(exp.Placeholder, this=self._prev.text)
-            if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
+            if self._match_set(self.ID_VAR_TOKENS)
             else None
         ),
     }

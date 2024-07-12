@@ -1755,6 +1755,10 @@ class Generator(metaclass=_Generator):
         changes = self.sql(expression, "changes")
         changes = f" {changes}" if changes else ""
 
+        rows_from = self.expressions(expression, key="rows_from")
+        if rows_from:
+            table = f"ROWS FROM {self.wrap(rows_from)}"
+
         return f"{only}{table}{changes}{partition}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(

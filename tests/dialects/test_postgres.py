@@ -1130,3 +1130,12 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(boxcrate AS JSON)) AS x(tbox)
 CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) AS y(boxes)"""
 
         self.validate_all(expected_postgres, read={"trino": trino_input}, pretty=True)
+
+    def test_rows_from(self):
+        self.validate_identity("""SELECT * FROM ROWS FROM (FUNC1(col1, col2))""")
+        self.validate_identity(
+            """SELECT * FROM ROWS FROM (FUNC1(col1) AS alias1("col1" TEXT), FUNC2(col2) AS alias2("col2" INT)) WITH ORDINALITY"""
+        )
+        self.validate_identity(
+            """SELECT * FROM table1, ROWS FROM (FUNC1(col1) AS alias1("col1" TEXT)) WITH ORDINALITY AS alias3("col3" INT, "col4" TEXT)"""
+        )

@@ -3043,6 +3043,7 @@ class Table(Expression):
         "only": False,
         "partition": False,
         "changes": False,
+        "rows_from": False,
     }
 
     @property

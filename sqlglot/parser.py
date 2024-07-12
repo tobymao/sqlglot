@@ -3378,11 +3378,17 @@ class Parser(metaclass=_Parser):
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table, this=bracket) if bracket else None
 
+        rows_from = self._match_text_seq("ROWS", "FROM") and self._parse_wrapped_csv(
+            self._parse_table
+        )
+        rows_from = self.expression(exp.Table, rows_from=rows_from) if rows_from else None
+
         only = self._match(TokenType.ONLY)
 
         this = t.cast(
             exp.Expression,
             bracket
+            or rows_from
             or self._parse_bracket(
                 self._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
             ),

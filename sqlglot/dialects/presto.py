@@ -352,6 +352,7 @@ class Presto(Dialect):
         SUPPORTS_TO_NUMBER = False
         HEX_FUNC = "TO_HEX"
         PARSE_JSON_NAME = "JSON_PARSE"
+        PAD_FILL_PATTERN_IS_REQUIRED = True
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

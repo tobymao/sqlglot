@@ -2573,3 +2573,33 @@ FROM subquery2""",
             """SELECT partition.d FROM t PARTITION (d)""",
             """SELECT partition.d FROM t AS PARTITION(d)""",
         )
+
+    def test_string_functions(self):
+        for pad_func in ("LPAD", "RPAD"):
+            ch_alias = "LEFTPAD" if pad_func == "LPAD" else "RIGHTPAD"
+            for fill_pattern in ("", ", ' '"):
+                with self.subTest(f"Testing {pad_func}() with pattern {fill_pattern}"):
+                    self.validate_all(
+                        f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                        read={
+                            "snowflake": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "databricks": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "spark": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "postgres": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "clickhouse": f"SELECT {ch_alias}('bar', 5{fill_pattern})",
+                        },
+                        write={
+                            "": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "spark": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "postgres": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "clickhouse": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "snowflake": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "databricks": f"SELECT {pad_func}('bar', 5{fill_pattern})",
+                            "duckdb": f"SELECT {pad_func}('bar', 5, ' ')",
+                            "mysql": f"SELECT {pad_func}('bar', 5, ' ')",
+                            "hive": f"SELECT {pad_func}('bar', 5, ' ')",
+                            "spark2": f"SELECT {pad_func}('bar', 5, ' ')",
+                            "presto": f"SELECT {pad_func}('bar', 5, ' ')",
+                            "trino": f"SELECT {pad_func}('bar', 5, ' ')",
+                        },
+                    )

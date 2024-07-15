@@ -447,6 +447,7 @@ class Hive(Dialect):
         SUPPORTS_TO_NUMBER = False
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
         PARSE_JSON_NAME = None
+        PAD_FILL_PATTERN_IS_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,

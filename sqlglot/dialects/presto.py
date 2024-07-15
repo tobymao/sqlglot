@@ -35,6 +35,8 @@ from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 
+DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
+
 
 def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
     if isinstance(expression.this, exp.Explode):
@@ -223,6 +225,21 @@ def _build_to_char(args: t.List) -> exp.TimeToStr:
     return build_formatted_time(exp.TimeToStr, "teradata")(args)
 
 
+def _date_delta_sql(
+    name: str, negate_interval: bool = False
+) -> t.Callable[[Presto.Generator, DATE_ADD_OR_SUB], str]:
+    def _delta_sql(self: Presto.Generator, expression: DATE_ADD_OR_SUB) -> str:
+        interval = _to_int(expression.expression)
+        return self.func(
+            name,
+            unit_to_str(expression),
+            interval * (-1) if negate_interval else interval,
+            expression.this,
+        )
+
+    return _delta_sql
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -385,24 +402,14 @@ class Presto(Dialect):
             exp.BitwiseXor: lambda self, e: self.func("BITWISE_XOR", e.this, e.expression),
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.DateAdd: lambda self, e: self.func(
-                "DATE_ADD",
-                unit_to_str(e),
-                _to_int(e.expression),
-                e.this,
-            ),
+            exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self,
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
-            exp.DateSub: lambda self, e: self.func(
-                "DATE_ADD",
-                unit_to_str(e),
-                _to_int(e.expression * -1),
-                e.this,
-            ),
+            exp.DateSub: _date_delta_sql("DATE_ADD", negate_interval=True),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
             exp.DiToDate: lambda self,
             e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
@@ -451,6 +458,7 @@ class Presto(Dialect):
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
             exp.Timestamp: no_timestamp_sql,
+            exp.TimestampAdd: _date_delta_sql("DATE_ADD"),
             exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToDate: timestrtotime_sql,
             exp.TimeStrToTime: timestrtotime_sql,

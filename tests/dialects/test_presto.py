@@ -405,6 +405,14 @@ class TestPresto(Validator):
         )
         self.validate_identity("DATE_ADD('DAY', 1, y)")
 
+        self.validate_all(
+            "SELECT DATE_ADD('MINUTE', 30, col)",
+            write={
+                "presto": "SELECT DATE_ADD('MINUTE', 30, col)",
+                "trino": "SELECT DATE_ADD('MINUTE', 30, col)",
+            },
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",

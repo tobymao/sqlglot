@@ -1836,7 +1836,9 @@ class Generator(metaclass=_Generator):
             nulls = " INCLUDE NULLS " if include_nulls else " EXCLUDE NULLS "
         else:
             nulls = ""
-        return f"{direction}{nulls}({expressions} FOR {field}){alias}"
+        default_on_null = self.sql(expression, "default_on_null")
+        default_on_null = f" {default_on_null}" if default_on_null else ""
+        return f"{direction}{nulls}({expressions} FOR {field}{default_on_null}){alias}"
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"

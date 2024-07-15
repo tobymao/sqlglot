@@ -3859,6 +3859,8 @@ class Pivot(Expression):
         "group": False,
         "columns": False,
         "include_nulls": False,
+        "default_on_null": False,
+        "order": False,
     }
 
     @property

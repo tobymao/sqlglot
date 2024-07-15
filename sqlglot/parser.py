@@ -3727,7 +3727,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_pivot_in(self) -> exp.In:
         def _parse_aliased_expression() -> t.Optional[exp.Expression]:
-            this = self._parse_assignment()
+            this = self._parse_select_or_expression()
 
             self._match(TokenType.ALIAS)
             alias = self._parse_field()
@@ -3741,10 +3741,13 @@ class Parser(metaclass=_Parser):
         if not self._match_pair(TokenType.IN, TokenType.L_PAREN):
             self.raise_error("Expecting IN (")
 
-        aliased_expressions = self._parse_csv(_parse_aliased_expression)
+        if self._match_pair(TokenType.ANY, TokenType.ORDER_BY):
+            expressions = self._parse_csv(self._parse_ordered)
+        else:
+            expressions = self._parse_csv(_parse_aliased_expression)
 
         self._match_r_paren()
-        return self.expression(exp.In, this=value, expressions=aliased_expressions)
+        return self.expression(exp.In, this=value, expressions=expressions)
 
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index
@@ -3781,6 +3784,9 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expecting FOR")
 
         field = self._parse_pivot_in()
+        default_on_null = self._match_text_seq("DEFAULT", "ON", "NULL") and self._parse_wrapped(
+            self._parse_bitwise
+        )
 
         self._match_r_paren()
 
@@ -3790,6 +3796,7 @@ class Parser(metaclass=_Parser):
             field=field,
             unpivot=unpivot,
             include_nulls=include_nulls,
+            default_on_null=default_on_null,
         )
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):

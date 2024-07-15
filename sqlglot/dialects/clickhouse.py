@@ -332,6 +332,8 @@ class ClickHouse(Dialect):
             TokenType.SET,
         }
 
+        RESERVED_TOKENS = {*parser.Parser.RESERVED_TOKENS} - {TokenType.SELECT}
+
         AGG_FUNC_MAPPING = (
             lambda functions, suffixes: {
                 f"{f}{sfx}": (f, sfx) for sfx in (suffixes + [""]) for f in functions

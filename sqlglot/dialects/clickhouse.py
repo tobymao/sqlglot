@@ -332,7 +332,8 @@ class ClickHouse(Dialect):
             TokenType.SET,
         }
 
-        RESERVED_TOKENS = {*parser.Parser.RESERVED_TOKENS} - {TokenType.SELECT}
+        RESERVED_TOKENS = parser.Parser.RESERVED_TOKENS.copy()
+        RESERVED_TOKENS.remove(TokenType.SELECT)
 
         AGG_FUNC_MAPPING = (
             lambda functions, suffixes: {

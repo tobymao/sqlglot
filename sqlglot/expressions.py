@@ -4795,7 +4795,7 @@ class List(Func):
 
 # String pad, kind True -> LPAD, False -> RPAD
 class Pad(Func):
-    arg_types = {"kind": True, "this": True, "expression": True, "fill_pattern": False}
+    arg_types = {"this": True, "expression": True, "fill_pattern": False, "is_left": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_char

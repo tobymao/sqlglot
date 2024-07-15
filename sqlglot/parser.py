@@ -110,10 +110,10 @@ def build_mod(args: t.List) -> exp.Mod:
 
 def build_pad(args: t.List, is_left: bool = True):
     return exp.Pad(
-        kind=is_left,
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
         fill_pattern=seq_get(args, 2),
+        is_left=is_left,
     )
 
 

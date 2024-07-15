@@ -997,6 +997,7 @@ class Generator(metaclass=_Generator):
             expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
 
             if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
+                postalias_props_sql = ""
                 if properties_locs.get(exp.Properties.Location.POST_ALIAS):
                     postalias_props_sql = self.properties(
                         exp.Properties(
@@ -1004,9 +1005,8 @@ class Generator(metaclass=_Generator):
                         ),
                         wrapped=False,
                     )
-                    expression_sql = f" AS {postalias_props_sql}{expression_sql}"
-                else:
-                    expression_sql = f" AS{expression_sql}"
+                postalias_props_sql = f" {postalias_props_sql}" if postalias_props_sql else ""
+                expression_sql = f" AS{postalias_props_sql}{expression_sql}"
 
         postindex_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_INDEX):

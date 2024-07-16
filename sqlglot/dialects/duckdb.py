@@ -457,6 +457,8 @@ class DuckDB(Dialect):
             ),
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
+            exp.Return: lambda self, e: self.sql(e, "this"),
+            exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Split: rename_func("STR_SPLIT"),
@@ -618,6 +620,7 @@ class DuckDB(Dialect):
         # can be transpiled to DuckDB, so we explicitly override them accordingly
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
+        PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
             if expression.args.get("safe"):

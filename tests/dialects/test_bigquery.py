@@ -612,6 +612,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1, '2023-01-01T00:00:00')",
+                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) + INTERVAL 1 MILLISECOND",
                 },
             ),
         )
@@ -621,6 +622,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1 * -1, '2023-01-01T00:00:00')",
+                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) - INTERVAL 1 MILLISECOND",
                 },
             ),
         )

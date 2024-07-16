@@ -447,6 +447,9 @@ class Postgres(Dialect):
 
             return self.expression(exp.Extract, this=part, expression=value)
 
+        def _parse_unique_key(self) -> t.Optional[exp.Expression]:
+            return None
+
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
         RENAME_TABLE_WITH_DB = False

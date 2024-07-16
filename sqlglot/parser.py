@@ -5179,11 +5179,15 @@ class Parser(metaclass=_Parser):
 
         return self.CONSTRAINT_PARSERS[constraint](self)
 
+    def _parse_unique_key(self) -> t.Optional[exp.Expression]:
+        return self._parse_id_var(any_token=False)
+
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
         self._match_text_seq("KEY")
         return self.expression(
             exp.UniqueColumnConstraint,
-            this=self._parse_schema(self._parse_id_var(any_token=False)),
+            nulls=self._match_text_seq("NULLS", "NOT", "DISTINCT"),
+            this=self._parse_schema(self._parse_unique_key()),
             index_type=self._match(TokenType.USING) and self._advance_any() and self._prev.text,
             on_conflict=self._parse_on_conflict(),
         )

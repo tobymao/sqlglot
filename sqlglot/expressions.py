@@ -1869,7 +1869,7 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False, "index_type": False, "on_conflict": False}
+    arg_types = {"this": False, "index_type": False, "on_conflict": False, "nulls": False}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):

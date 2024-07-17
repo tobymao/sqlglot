@@ -71,6 +71,17 @@ class Generator(metaclass=_Generator):
         comments: Whether to preserve comments in the output SQL code.
             Default: True
     """
+    StackItem = t.Union[t.Tuple[t.Union[str, exp.Expression], None], t.Optional[str], bool]
+    Stack = t.List[StackItem]
+    ExpressionHandler = t.Callable[..., t.Generator[StackItem, None, None]]
+
+
+    ITERATIVE_TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[[Generator], ExpressionHandler]] = {
+        exp.Union: lambda self: self._set_operations_iter,
+        exp.Except: lambda self: self._set_operations_iter,
+        exp.Intersect: lambda self: self._set_operations_iter
+    }
+
 
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
         **JSON_PATH_PART_TRANSFORMS,
@@ -776,37 +787,85 @@ class Generator(metaclass=_Generator):
         key: t.Optional[str] = None,
         comment: bool = True,
     ) -> str:
-        if not expression:
-            return ""
+        # Iteratively traverse the AST using a stack.
+        # This falls back to recursion for expression types where we haven't
+        # converted the handler yet.
+        #
+        # We should visit nodes depth first, and build up the SQL from left
+        # to right.
+        #
+        #                Select (1)
+        #            ┌──────   ──────┐
+        #            ▼               ▼
+        #         Column (2)       From (3)
+        #                            │
+        #                            ▼
+        #                        Subquery (4)
+        #                       ┌───  ──────┐
+        #                       ▼           ▼
+        #                    Select (5)  TableAlias (10)
+        #                ┌────  ────┐
+        #                │          │
+        #                ▼          ▼
+        #             Column (6)  From (7)
+        #                           │
+        #                           ▼
+        #                         Table (8)
+        #                           │
+        #                           ▼
+        #                       Identifier (9)
+        #
+        stack: Generator.Stack = []
+        stack.append((expression, key, comment))
 
-        if isinstance(expression, str):
-            return expression
+        sqls = []
 
-        if key:
-            value = expression.args.get(key)
-            if value:
-                return self.sql(value)
-            return ""
+        while stack:
+            subexpression, key, comment = stack.pop()
 
-        transform = self.TRANSFORMS.get(expression.__class__)
+            if not subexpression:
+                continue
 
-        if callable(transform):
-            sql = transform(self, expression)
-        elif isinstance(expression, exp.Expression):
-            exp_handler_name = f"{expression.key}_sql"
+            # Whenever we encounter plain SQL, append to the output
+            if isinstance(subexpression, str):
+                sqls.append(subexpression)
+                continue
 
-            if hasattr(self, exp_handler_name):
-                sql = getattr(self, exp_handler_name)(expression)
-            elif isinstance(expression, exp.Func):
-                sql = self.function_fallback_sql(expression)
-            elif isinstance(expression, exp.Property):
-                sql = self.property_sql(expression)
+            if key:
+                value = subexpression.args.get(key)
+                if value:
+                    stack.append((value, None, True))
+                continue
+
+            sql = None
+
+            iterative_transform = self.ITERATIVE_TRANSFORMS.get(subexpression.__class__)
+            transform = self.TRANSFORMS.get(subexpression.__class__)
+
+            if callable(iterative_transform):
+                for stack_item in iterative_transform(self)(subexpression, comment=comment):
+                    stack.append(stack_item)
+            elif callable(transform):
+                sql = transform(self, subexpression)
+            elif isinstance(subexpression, exp.Expression):
+                exp_handler_name = f"{subexpression.key}_sql"
+
+                if hasattr(self, exp_handler_name):
+                    sql = getattr(self, exp_handler_name)(subexpression)
+                elif isinstance(subexpression, exp.Func):
+                    sql = self.function_fallback_sql(subexpression)
+                elif isinstance(subexpression, exp.Property):
+                    sql = self.property_sql(subexpression)
+                else:
+                    raise ValueError(f"Unsupported expression type {subexpression.__class__.__name__}")
             else:
-                raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
-        else:
-            raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
+                raise ValueError(f"Expected an Expression. Received {type(subexpression)}: {subexpression}")
 
-        return self.maybe_comment(sql, expression) if self.comments and comment else sql
+            if sql is not None:
+                sql = self.maybe_comment(sql, subexpression) if self.comments and comment else sql
+                sqls.append(sql)
+
+        return ''.join(sqls)
 
     def uncache_sql(self, expression: exp.Uncache) -> str:
         table = self.sql(expression, "this")
@@ -2419,7 +2478,7 @@ class Generator(metaclass=_Generator):
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
-    def set_operations(self, expression: exp.SetOperation) -> str:
+    def set_operations(self, expression: exp.Expression) -> str:
         if not self.SET_OP_MODIFIERS:
             limit = expression.args.get("limit")
             order = expression.args.get("order")
@@ -2455,6 +2514,10 @@ class Generator(metaclass=_Generator):
         this = self.sep().join(sqls)
         this = self.query_modifiers(expression, this)
         return self.prepend_ctes(expression, this)
+
+    def _set_operations_iter(self, expression: exp.Expression, comment: bool) -> t.Generator[StackItem, None, None]:
+        sql = self.set_operations(expression)
+        yield (sql, None, comment)
 
     def union_sql(self, expression: exp.Union) -> str:
         return self.set_operations(expression)

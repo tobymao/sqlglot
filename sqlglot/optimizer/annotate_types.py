@@ -184,7 +184,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.Ceil,
             exp.DatetimeDiff,
             exp.DateDiff,
-            exp.Extract,
             exp.TimestampDiff,
             exp.TimeDiff,
             exp.DateToDi,
@@ -268,6 +267,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Div: lambda self, e: self._annotate_div(e),
         exp.Dot: lambda self, e: self._annotate_dot(e),
         exp.Explode: lambda self, e: self._annotate_explode(e),
+        exp.Extract: lambda self, e: self._annotate_extract(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<DATE>")
@@ -679,4 +679,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     break
 
         self._set_type(expression, map_type)
+        return expression
+
+    def _annotate_extract(self, expression: exp.Extract) -> exp.Extract:
+        self._annotate_args(expression)
+        part = expression.name
+        if part == "TIME":
+            self._set_type(expression, exp.DataType.Type.TIME)
+        elif part == "DATE":
+            self._set_type(expression, exp.DataType.Type.DATE)
+        else:
+            self._set_type(expression, exp.DataType.Type.INT)
         return expression

@@ -2015,7 +2015,7 @@ class CopyParameter(Expression):
     arg_types = {"this": True, "expression": False, "expressions": False}
 
 
-class Copy(Expression):
+class Copy(DML):
     arg_types = {
         "this": True,
         "kind": True,

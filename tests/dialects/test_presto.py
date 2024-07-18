@@ -413,6 +413,19 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_identity("DATE_ADD('DAY', FLOOR(5), y)")
+        self.validate_identity(
+            """SELECT DATE_ADD('DAY', FLOOR(5.5), y), DATE_ADD('DAY', CEIL(5.5), y)""",
+            """SELECT DATE_ADD('DAY', CAST(FLOOR(5.5) AS BIGINT), y), DATE_ADD('DAY', CAST(CEIL(5.5) AS BIGINT), y)""",
+        )
+
+        self.validate_all(
+            "DATE_ADD('MINUTE', CAST(FLOOR(CAST(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP) AS DOUBLE) / NULLIF(30, 0)) * 30 AS BIGINT), col)",
+            read={
+                "spark": "TIMESTAMPADD(MINUTE, FLOOR(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP)/30)*30, col)",
+            },
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",

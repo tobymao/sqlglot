@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## [v25.6.1] - 2024-07-18
+### :bug: Bug Fixes
+- [`19370d5`](https://github.com/tobymao/sqlglot/commit/19370d5d16b555e25def503323ec3dc4e5d40e6c) - **postgres**: Decouple UNIQUE from DEFAULT constraints *(PR [#3775](https://github.com/tobymao/sqlglot/pull/3775) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3774](https://github.com/tobymao/sqlglot/issues/3774) opened by [@EdgyEdgemond](https://github.com/EdgyEdgemond)*
+- [`e99146b`](https://github.com/tobymao/sqlglot/commit/e99146b0989599772c020905f69496ea80e7e2e5) - make copy a dml statement for qualify_tables *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v25.6.0] - 2024-07-17
 ### :boom: BREAKING CHANGES
 - due to [`89fc63c`](https://github.com/tobymao/sqlglot/commit/89fc63c5831dc5d63feff9e39fea1e90d65e9a09) - QUALIFY comes after WINDOW clause in queries *(PR [#3745](https://github.com/tobymao/sqlglot/pull/3745) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4158,3 +4165,4 @@ Changelog
 [v25.5.0]: https://github.com/tobymao/sqlglot/compare/v25.4.1...v25.5.0
 [v25.5.1]: https://github.com/tobymao/sqlglot/compare/v25.5.0...v25.5.1
 [v25.6.0]: https://github.com/tobymao/sqlglot/compare/v25.5.1...v25.6.0
+[v25.6.1]: https://github.com/tobymao/sqlglot/compare/v25.6.0...v25.6.1

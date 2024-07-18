@@ -977,6 +977,10 @@ class TestPostgres(Validator):
             },
         )
 
+        self.validate_identity("CREATE TABLE tbl (col INT UNIQUE NULLS NOT DISTINCT DEFAULT 9.99)")
+        self.validate_identity("CREATE TABLE tbl (col UUID UNIQUE DEFAULT GEN_RANDOM_UUID())")
+        self.validate_identity("CREATE TABLE tbl (col UUID, UNIQUE NULLS NOT DISTINCT (col))")
+
         with self.assertRaises(ParseError):
             transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
         with self.assertRaises(ParseError):

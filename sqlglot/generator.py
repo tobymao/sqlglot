@@ -961,7 +961,8 @@ class Generator(metaclass=_Generator):
         index_type = f" USING {index_type}" if index_type else ""
         on_conflict = self.sql(expression, "on_conflict")
         on_conflict = f" {on_conflict}" if on_conflict else ""
-        return f"UNIQUE{this}{index_type}{on_conflict}"
+        nulls_sql = " NULLS NOT DISTINCT" if expression.args.get("nulls") else ""
+        return f"UNIQUE{nulls_sql}{this}{index_type}{on_conflict}"
 
     def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")

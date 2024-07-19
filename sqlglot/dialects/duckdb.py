@@ -168,7 +168,7 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
 
 def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYPE) -> str:
     arrow_sql = arrow_json_extract_sql(self, expression)
-    if not expression.same_parent and isinstance(expression.parent, exp.Binary):
+    if not expression.same_parent and isinstance(expression.parent, (exp.Binary, exp.Bracket)):
         arrow_sql = self.wrap(arrow_sql)
     return arrow_sql
 

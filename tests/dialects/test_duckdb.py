@@ -309,6 +309,14 @@ class TestDuckDB(Validator):
             "SELECT (c -> '$.k1') = 'v1'",
         )
         self.validate_identity(
+            "SELECT JSON_EXTRACT(c, '$[*].id')[0:2]",
+            "SELECT (c -> '$[*].id')[0 : 2]",
+        )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT_STRING(c, '$[*].id')[0:2]",
+            "SELECT (c ->> '$[*].id')[0 : 2]",
+        )
+        self.validate_identity(
             """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
             """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
         )

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot.expressions import DATA_TYPE
 from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
@@ -35,20 +36,34 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
-
-def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
-    this = self.sql(expression, "this")
-    interval = self.sql(exp.Interval(this=expression.expression, unit=unit_to_var(expression)))
-    return f"CAST({this} AS {self.sql(expression.return_type)}) + {interval}"
+DATETIME_DELTA = t.Union[
+    exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
+]
 
 
-def _date_delta_sql(
-    self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub | exp.TimeAdd
-) -> str:
-    this = self.sql(expression, "this")
+def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
+    this = expression.this
     unit = unit_to_var(expression)
-    op = "+" if isinstance(expression, (exp.DateAdd, exp.TimeAdd)) else "-"
-    return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    op = (
+        "+"
+        if isinstance(expression, (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd))
+        else "-"
+    )
+
+    to_type: t.Optional[DATA_TYPE] = None
+    if isinstance(expression, exp.TsOrDsAdd):
+        to_type = expression.return_type
+    elif this.is_string:
+        # Cast string literals (i.e function parameters) to the appropriate type for +/- interval to work
+        to_type = (
+            exp.DataType.Type.DATETIME
+            if isinstance(expression, (exp.DatetimeAdd, exp.DatetimeSub))
+            else exp.DataType.Type.DATE
+        )
+
+    this = exp.cast(this, to_type) if to_type else this
+
+    return f"{self.sql(this)} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
 
 # BigQuery -> DuckDB conversion for the DATE function
@@ -420,6 +435,8 @@ class DuckDB(Dialect):
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.Datetime: no_datetime_sql,
+            exp.DatetimeSub: _date_delta_sql,
+            exp.DatetimeAdd: _date_delta_sql,
             exp.DateToDi: lambda self,
             e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
@@ -484,7 +501,7 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsAdd: _date_delta_sql,
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",

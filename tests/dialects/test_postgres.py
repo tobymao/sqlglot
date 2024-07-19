@@ -981,6 +981,11 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE tbl (col UUID UNIQUE DEFAULT GEN_RANDOM_UUID())")
         self.validate_identity("CREATE TABLE tbl (col UUID, UNIQUE NULLS NOT DISTINCT (col))")
 
+        self.validate_identity("CREATE INDEX CONCURRENTLY ix_table_id ON tbl USING btree(id)")
+        self.validate_identity(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_table_id ON tbl USING btree(id)"
+        )
+
         with self.assertRaises(ParseError):
             transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
         with self.assertRaises(ParseError):

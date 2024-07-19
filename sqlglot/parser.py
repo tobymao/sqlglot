@@ -1677,6 +1677,7 @@ class Parser(metaclass=_Parser):
             if not properties or not create_token:
                 return self._parse_as_command(start)
 
+        concurrently = self._match_text_seq("CONCURRENTLY")
         exists = self._parse_exists(not_=True)
         this = None
         expression: t.Optional[exp.Expression] = None
@@ -1802,6 +1803,7 @@ class Parser(metaclass=_Parser):
             begin=begin,
             end=end,
             clone=clone,
+            concurrently=concurrently,
         )
 
     def _parse_sequence_properties(self) -> t.Optional[exp.SequenceProperties]:

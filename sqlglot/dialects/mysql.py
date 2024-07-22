@@ -691,6 +691,7 @@ class MySQL(Dialect):
         SUPPORTS_TO_NUMBER = False
         PARSE_JSON_NAME = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
+        WRAP_DERIVED_VALUES = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

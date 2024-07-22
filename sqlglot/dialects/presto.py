@@ -204,11 +204,11 @@ def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str
     return f"{this}{expr}"
 
 
-def _to_int(expression: exp.Expression) -> exp.Expression:
+def _to_int(self: Presto.Generator, expression: exp.Expression) -> exp.Expression:
     if not expression.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        annotate_types(expression)
+        annotate_types(expression, dialect=self.dialect)
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
         return exp.cast(expression, to=exp.DataType.Type.BIGINT)
     return expression
@@ -229,7 +229,7 @@ def _date_delta_sql(
     name: str, negate_interval: bool = False
 ) -> t.Callable[[Presto.Generator, DATE_ADD_OR_SUB], str]:
     def _delta_sql(self: Presto.Generator, expression: DATE_ADD_OR_SUB) -> str:
-        interval = _to_int(expression.expression)
+        interval = _to_int(self, expression.expression)
         return self.func(
             name,
             unit_to_str(expression),
@@ -255,6 +255,21 @@ class Presto(Dialect):
     # https://github.com/trinodb/trino/issues/12289
     # https://github.com/prestodb/presto/issues/2863
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    # The result of certain math functions in Presto/Trino is of type
+    # equal to the input type e.g: FLOOR(5.5/2) -> DECIMAL, FLOOR(5/2) -> BIGINT
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.Floor: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Ceil: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Mod: lambda self, e: self._annotate_by_args(e, "this", "expression"),
+        exp.Round: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Rand: lambda self, e: self._annotate_by_args(e, "this")
+        if e.this
+        else self._set_type(e, exp.DataType.Type.DOUBLE),
+    }
 
     class Tokenizer(tokens.Tokenizer):
         UNICODE_STRINGS = [

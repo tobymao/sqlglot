@@ -415,8 +415,8 @@ class TestPresto(Validator):
 
         self.validate_identity("DATE_ADD('DAY', FLOOR(5), y)")
         self.validate_identity(
-            """SELECT DATE_ADD('DAY', FLOOR(5.5), y), DATE_ADD('DAY', CEIL(5.5), y)""",
-            """SELECT DATE_ADD('DAY', CAST(FLOOR(5.5) AS BIGINT), y), DATE_ADD('DAY', CAST(CEIL(5.5) AS BIGINT), y)""",
+            """SELECT DATE_ADD('DAY', MOD(5, 2.5), y), DATE_ADD('DAY', CEIL(5.5), y)""",
+            """SELECT DATE_ADD('DAY', CAST(5 % 2.5 AS BIGINT), y), DATE_ADD('DAY', CAST(CEIL(5.5) AS BIGINT), y)""",
         )
 
         self.validate_all(

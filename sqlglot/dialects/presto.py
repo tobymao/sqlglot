@@ -262,11 +262,13 @@ class Presto(Dialect):
         **Dialect.ANNOTATORS,
         exp.Floor: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Ceil: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Mod: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Mod: lambda self, e: self._annotate_by_args(e, "this", "expression"),
         exp.Round: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Rand: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Rand: lambda self, e: self._annotate_by_args(e, "this")
+        if e.this
+        else self._set_type(e, exp.DataType.Type.DOUBLE),
     }
 
     class Tokenizer(tokens.Tokenizer):

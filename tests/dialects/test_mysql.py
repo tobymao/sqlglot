@@ -25,6 +25,9 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
         self.validate_identity(
+            "INSERT INTO things (a, b) VALUES (1, 2) AS new_data ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), a = new_data.a, b = new_data.b"
+        )
+        self.validate_identity(
             "CREATE TABLE `oauth_consumer` (`key` VARCHAR(32) NOT NULL, UNIQUE `OAUTH_CONSUMER_KEY` (`key`))"
         )
         self.validate_identity(

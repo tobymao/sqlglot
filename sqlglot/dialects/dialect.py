@@ -21,9 +21,11 @@ JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
 
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import B, E, F
+
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
-    from sqlglot._typing import B, E, F
+    AnnotatorsType = t.Dict[t.Type[E], t.Callable[[TypeAnnotator, E], E]]
 
 logger = logging.getLogger("sqlglot")
 
@@ -597,7 +599,7 @@ class Dialect(metaclass=_Dialect):
         },
     }
 
-    ANNOTATORS: t.Dict = {
+    ANNOTATORS: AnnotatorsType = {
         **{
             expr_type: lambda self, e: self._annotate_unary(e)
             for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))
@@ -629,7 +631,6 @@ class Dialect(metaclass=_Dialect):
         exp.Dot: lambda self, e: self._annotate_dot(e),
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Extract: lambda self, e: self._annotate_extract(e),
-        # exp.Floor: lambda self, e: self._annotate_math_functions(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<DATE>")

@@ -13,7 +13,7 @@ from sqlglot.helper import (
 )
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema, ensure_schema
-from sqlglot.dialects.dialect import Dialect, DialectType
+from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
@@ -24,11 +24,13 @@ if t.TYPE_CHECKING:
         BinaryCoercionFunc,
     ]
 
+    from sqlglot.dialects.dialect import DialectType, AnnotatorsType
+
 
 def annotate_types(
     expression: E,
     schema: t.Optional[t.Dict | Schema] = None,
-    annotators: t.Optional[t.Dict[t.Type[E], t.Callable[[TypeAnnotator, E], E]]] = None,
+    annotators: t.Optional[AnnotatorsType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
     dialect: t.Optional[DialectType] = None,
 ) -> E:
@@ -170,7 +172,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def __init__(
         self,
         schema: Schema,
-        annotators: t.Optional[t.Dict[t.Type[E], t.Callable[[TypeAnnotator, E], E]]] = None,
+        annotators: t.Optional[AnnotatorsType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
         dialect: t.Optional[DialectType] = None,
@@ -319,7 +321,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    def _annotate_with_type(self, expression: E, target_type: exp.DataType.Type) -> E:
+    def _annotate_with_type(
+        self, expression: E, target_type: exp.DataType | exp.DataType.Type
+    ) -> E:
         self._set_type(expression, target_type)
         return self._annotate_args(expression)
 

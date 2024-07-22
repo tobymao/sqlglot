@@ -561,6 +561,10 @@ FROM x""",
         AND Z""",
             """SELECT X FROM catalog.db.table WHERE Y AND Z""",
         )
+        self.validate(
+            """with a as /* comment */ ( select * from b) select * from a""",
+            """WITH a AS (SELECT * FROM b) /* comment */ SELECT * FROM a""",
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

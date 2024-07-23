@@ -151,6 +151,7 @@ def regexp_extract_sql(self: ClickZetta.Generator, expression: exp.RegexpExtract
 
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
+    LOG_BASE_FIRST = None
 
     class Tokenizer(Spark.Tokenizer):
         KEYWORDS = {

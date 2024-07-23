@@ -174,6 +174,10 @@ select j from a""",
             "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c')",
             read={'spark': "select regexp_extract('aaaa', 'a|b|c')"}
         )
+        self.validate_all(
+            "SELECT LOG10(10)",
+            read={'presto': "select log10(10)"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

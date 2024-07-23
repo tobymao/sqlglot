@@ -365,6 +365,7 @@ class Postgres(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "REGEXP_REPLACE": _build_regexp_replace,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
+            "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,
             "UNNEST": exp.Explode.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),

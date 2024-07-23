@@ -565,15 +565,10 @@ class TestPostgres(Validator):
                 "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1 DAY')",
                 "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY)",
                 "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY)",
-            },
-        )
-        self.validate_all(
-            "GENERATE_SERIES(a, b)",
-            write={
-                "postgres": "GENERATE_SERIES(a, b)",
-                "presto": "SEQUENCE(a, b)",
-                "trino": "SEQUENCE(a, b)",
-                "tsql": "GENERATE_SERIES(a, b)",
+                "hive": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
+                "spark2": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
+                "spark": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
+                "databricks": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
             },
         )
         self.validate_all(
@@ -583,6 +578,20 @@ class TestPostgres(Validator):
                 "presto": "SEQUENCE(a, b)",
                 "trino": "SEQUENCE(a, b)",
                 "tsql": "GENERATE_SERIES(a, b)",
+                "hive": "SEQUENCE(a, b)",
+                "spark2": "SEQUENCE(a, b)",
+                "spark": "SEQUENCE(a, b)",
+                "databricks": "SEQUENCE(a, b)",
+            },
+            write={
+                "postgres": "GENERATE_SERIES(a, b)",
+                "presto": "SEQUENCE(a, b)",
+                "trino": "SEQUENCE(a, b)",
+                "tsql": "GENERATE_SERIES(a, b)",
+                "hive": "SEQUENCE(a, b)",
+                "spark2": "SEQUENCE(a, b)",
+                "spark": "SEQUENCE(a, b)",
+                "databricks": "SEQUENCE(a, b)",
             },
         )
         self.validate_all(

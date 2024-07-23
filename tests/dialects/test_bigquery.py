@@ -1018,7 +1018,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT * FROM UNNEST(['7', '14']) AS x",
                 "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS _t0(x)",
-                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS _t0(x)",
+                "spark": "SELECT * FROM EXPLODE(ARRAY('7', '14')) AS _t0(x)",
             },
         )
         self.validate_all(

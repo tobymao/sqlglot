@@ -229,6 +229,23 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
     if isinstance(expression, exp.Select):
+        from_ = expression.args.get("from")
+
+        if from_ and isinstance(from_.this, exp.Unnest):
+            unnest = from_.this
+            alias = unnest.args.get("alias")
+            udtf = exp.Posexplode if unnest.args.get("offset") else exp.Explode
+            this, *expressions = unnest.expressions
+            unnest.replace(
+                exp.Table(
+                    this=udtf(
+                        this=this,
+                        expressions=expressions,
+                    ),
+                    alias=exp.TableAlias(this=alias.this, columns=alias.columns) if alias else None,
+                )
+            )
+
         for join in expression.args.get("joins") or []:
             unnest = join.this
 

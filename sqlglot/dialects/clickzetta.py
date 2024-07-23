@@ -276,16 +276,16 @@ class ClickZetta(Spark):
                 return expression
             l, r = expression.left, expression.right
 
-            if not self.SAFE_DIVISION and expression.args.get("safe"):
+            if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
                 r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
 
-            if self.TYPED_DIVISION and not expression.args.get("typed"):
+            if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
                 if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
                         *exp.DataType.FLOAT_TYPES
                 ):
                     l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
 
-            elif not self.TYPED_DIVISION and expression.args.get("typed"):
+            elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
                 if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
                     return self.sql(
                         exp.cast(

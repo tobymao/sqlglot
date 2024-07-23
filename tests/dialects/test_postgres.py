@@ -759,6 +759,14 @@ class TestPostgres(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT TO_DATE('01/01/2000', 'MM/DD/YYYY')",
+            write={
+                "duckdb": "SELECT CAST(STRPTIME('01/01/2000', '%m/%d/%Y') AS DATE)",
+                "postgres": "SELECT TO_DATE('01/01/2000', 'MM/DD/YYYY')",
+            },
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

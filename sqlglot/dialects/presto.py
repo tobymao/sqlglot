@@ -28,6 +28,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_add_cast,
     unit_to_str,
+    sequence_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -435,6 +436,7 @@ class Presto(Dialect):
             exp.FirstValue: _first_last_sql,
             exp.FromTimeZone: lambda self,
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
+            exp.GenerateSeries: sequence_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
@@ -650,26 +652,6 @@ class Presto(Dialect):
             modes = expression.args.get("modes")
             modes = f" {', '.join(modes)}" if modes else ""
             return f"START TRANSACTION{modes}"
-
-        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
-            start = expression.args["start"]
-            end = expression.args["end"]
-            step = expression.args.get("step")
-
-            if isinstance(start, exp.Cast):
-                target_type = start.to
-            elif isinstance(end, exp.Cast):
-                target_type = end.to
-            else:
-                target_type = None
-
-            if target_type and target_type.is_type("timestamp"):
-                if target_type is start.to:
-                    end = exp.cast(end, target_type)
-                else:
-                    start = exp.cast(start, target_type)
-
-            return self.func("SEQUENCE", start, end, step)
 
         def offset_limit_modifiers(
             self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]

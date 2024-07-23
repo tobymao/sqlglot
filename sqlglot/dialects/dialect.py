@@ -1588,3 +1588,24 @@ def build_timestamp_from_parts(args: t.List) -> exp.Func:
 
 def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
+
+
+def sequence_sql(self: Generator, expression: exp.GenerateSeries):
+    start = expression.args["start"]
+    end = expression.args["end"]
+    step = expression.args.get("step")
+
+    if isinstance(start, exp.Cast):
+        target_type = start.to
+    elif isinstance(end, exp.Cast):
+        target_type = end.to
+    else:
+        target_type = None
+
+    if target_type and target_type.is_type("timestamp"):
+        if target_type is start.to:
+            end = exp.cast(end, target_type)
+        else:
+            start = exp.cast(start, target_type)
+
+    return self.func("SEQUENCE", start, end, step)

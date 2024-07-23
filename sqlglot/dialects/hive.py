@@ -31,6 +31,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_str,
     var_map_sql,
+    sequence_sql,
 )
 from sqlglot.transforms import (
     remove_unique_constraints,
@@ -310,6 +311,7 @@ class Hive(Dialect):
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
             ),
+            "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
             "STR_TO_MAP": lambda args: exp.StrToMap(
@@ -506,6 +508,7 @@ class Hive(Dialect):
             exp.FileFormatProperty: lambda self,
             e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.FromBase64: rename_func("UNBASE64"),
+            exp.GenerateSeries: sequence_sql,
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.IsNan: rename_func("ISNAN"),

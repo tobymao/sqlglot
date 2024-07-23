@@ -76,6 +76,9 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"DAYOFYEAR({self.sql(expression.expressions[0])})"
     elif expression.this.upper() == 'YOW' or expression.this.upper() == 'YEAR_OF_WEEK':
         return f"YEAROFWEEK({self.sql(expression.expressions[0])})"
+    # TODO: temporary workaround for presto 'select current_timezone()'
+    elif expression.this.upper() == 'CURRENT_TIMEZONE':
+        return f"'Asia/Shanghai'"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)
@@ -290,117 +293,6 @@ class ClickZetta(Spark):
                         )
                     )
             return self.binary(expression, "DIV")
-
-        def create_sql(self, expression: exp.Create) -> str:
-            kind = self.sql(expression, "kind").upper()
-            properties = expression.args.get("properties")
-            properties_locs = self.locate_properties(properties) if properties else defaultdict()
-            this = self.createable_sql(expression, properties_locs)
-
-            properties_sql = ""
-            if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
-                    exp.Properties.Location.POST_WITH
-            ):
-                properties_sql = self.sql(
-                    exp.Properties(
-                        expressions=[
-                            *properties_locs[exp.Properties.Location.POST_SCHEMA],
-                            *properties_locs[exp.Properties.Location.POST_WITH],
-                        ]
-                    )
-                )
-            # print("properties_locs:", properties_locs)
-            primarykey_sql = ""
-            if expression.args.get("kind") == "TABLE":
-                if properties_locs.get(exp.Properties.Location.POST_NAME):
-                    exp_list = properties_locs.get(exp.Properties.Location.POST_NAME)
-                    for express in exp_list:
-                        if express.key == "primarykey":
-                            primarykey_sql = self.sql(express)
-
-            begin = " BEGIN" if expression.args.get("begin") else ""
-            end = " END" if expression.args.get("end") else ""
-
-            expression_sql = self.sql(expression, "expression")
-            if expression_sql:
-                expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
-
-                if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
-                    if properties_locs.get(exp.Properties.Location.POST_ALIAS):
-                        postalias_props_sql = self.properties(
-                            exp.Properties(
-                                expressions=properties_locs[exp.Properties.Location.POST_ALIAS]
-                            ),
-                            wrapped=False,
-                        )
-                        expression_sql = f" AS {postalias_props_sql}{expression_sql}"
-                    else:
-                        expression_sql = f" AS{expression_sql}"
-
-            postindex_props_sql = ""
-            if properties_locs.get(exp.Properties.Location.POST_INDEX):
-                postindex_props_sql = self.properties(
-                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_INDEX]),
-                    wrapped=False,
-                    prefix=" ",
-                )
-
-            indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
-            indexes = f" {indexes}" if indexes else ""
-            index_sql = indexes + postindex_props_sql
-
-            replace = " OR REPLACE" if expression.args.get("replace") else ""
-            unique = " UNIQUE" if expression.args.get("unique") else ""
-
-            postcreate_props_sql = ""
-            if properties_locs.get(exp.Properties.Location.POST_CREATE):
-                postcreate_props_sql = self.properties(
-                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_CREATE]),
-                    sep=" ",
-                    prefix=" ",
-                    wrapped=False,
-                )
-
-            modifiers = "".join((replace, unique, postcreate_props_sql))
-
-            postexpression_props_sql = ""
-            if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
-                postexpression_props_sql = self.properties(
-                    exp.Properties(
-                        expressions=properties_locs[exp.Properties.Location.POST_EXPRESSION]
-                    ),
-                    sep=" ",
-                    prefix=" ",
-                    wrapped=False,
-                )
-
-            exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
-            no_schema_binding = (
-                " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
-            )
-
-            clone = self.sql(expression, "clone")
-            clone = f" {clone}" if clone else ""
-
-            if expression.args.get("kind") == "TABLE":
-                if primarykey_sql == "":
-                    expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{self.seg(')', sep='')}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
-                else:
-                    expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this} {primarykey_sql}{self.seg(')', sep='')}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
-            else:
-                expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
-            return self.prepend_ctes(expression, expression_sql)
-
-        def schema_sql(self, expression: exp.Schema) -> str:
-            this = self.sql(expression, "this")
-            sql = self.schema_columns_sql(expression)
-            return f"{this} {self.seg('(', sep='')}{sql}" if this and sql else this or sql
-
-        def schema_columns_sql(self, expression: exp.Schema) -> str:
-            if expression.expressions:
-                sql = f"{self.expressions(expression)}"
-                return sql
-            return ""
 
         def preprocess(self, expression: exp.Expression) -> exp.Expression:
             """Apply generic preprocessing transformations to a given expression."""

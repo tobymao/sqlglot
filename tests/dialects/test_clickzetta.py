@@ -51,6 +51,12 @@ class TestClickzetta(Validator):
             read={'postgres': 'create table foo (a enum)'}
         )
 
+    def test_dml(self):
+        self.validate_all(
+            "INSERT INTO a.b.c (`x`, `y`, `z`) VALUES (1, 'hello', CAST('2024-07-23 15:17:12' AS TIMESTAMP))",
+            read={'presto': "insert into a.b.c (\"x\", \"y\", \"z\") values (1, 'hello', timestamp '2024-07-23 15:17:12')"}
+        )
+
     def test_functions(self):
         self.validate_all(
             "select approx_percentile(a, 0.9)",

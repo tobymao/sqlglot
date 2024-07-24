@@ -7,6 +7,9 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity("SELECT toFloat(like)")
+        self.validate_identity("SELECT like")
+
         string_types = [
             "BLOB",
             "LONGBLOB",

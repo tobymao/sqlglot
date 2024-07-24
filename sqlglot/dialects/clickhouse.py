@@ -334,6 +334,11 @@ class ClickHouse(Dialect):
 
         RESERVED_TOKENS = parser.Parser.RESERVED_TOKENS - {TokenType.SELECT}
 
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.LIKE,
+        }
+
         AGG_FUNC_MAPPING = (
             lambda functions, suffixes: {
                 f"{f}{sfx}": (f, sfx) for sfx in (suffixes + [""]) for f in functions

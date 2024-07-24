@@ -5485,6 +5485,16 @@ class JSONTable(Func):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/object_insert
+class ObjectInsert(Func):
+    arg_types = {
+        "this": True,
+        "key": True,
+        "value": True,
+        "update_flag": False,
+    }
+
+
 class OpenJSONColumnDef(Expression):
     arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
 

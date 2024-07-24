@@ -1056,7 +1056,14 @@ class TestDuckDB(Validator):
             "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
             "CAST([ROW(1)] AS STRUCT(a BIGINT)[])",
         )
-
+        self.validate_identity(
+            "STRUCT_PACK(a := 'b')::json",
+            "CAST({'a': 'b'} AS JSON)",
+        )
+        self.validate_identity(
+            "STRUCT_PACK(a := 'b')::STRUCT(a TEXT)",
+            "CAST(ROW('b') AS STRUCT(a TEXT))",
+        )
         self.validate_all(
             "CAST(x AS VARCHAR(5))",
             write={

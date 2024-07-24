@@ -855,6 +855,7 @@ class TSQL(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.Stddev: rename_func("STDEV"),
             exp.StrPosition: lambda self, e: self.func(
                 "CHARINDEX", e.args.get("substr"), e.this, e.args.get("position")
             ),

@@ -5888,7 +5888,7 @@ class Sqrt(Func):
 
 
 class Stddev(AggFunc):
-    pass
+    _sql_names = ["STDDEV", "STDEV"]
 
 
 class StddevPop(AggFunc):

@@ -391,6 +391,17 @@ class TestTSQL(Validator):
         self.validate_identity("HASHBYTES('MD2', 'x')")
         self.validate_identity("LOG(n, b)")
 
+        self.validate_all(
+            "STDEV(x)",
+            read={
+                "": "STDDEV(x)",
+            },
+            write={
+                "": "STDDEV(x)",
+                "tsql": "STDEV(x)",
+            },
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

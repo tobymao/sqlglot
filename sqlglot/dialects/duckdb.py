@@ -134,7 +134,14 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     # BigQuery allows inline construction such as "STRUCT<a STRING, b INTEGER>('str', 1)" which is
     # canonicalized to "ROW('str', 1) AS STRUCT(a TEXT, b INT)" in DuckDB
-    is_struct_cast = expression.find_ancestor(exp.Cast)
+    # The transformation to ROW will take place if a cast to STRUCT / ARRAY of STRUCTs is found
+    ancestor_cast = expression.find_ancestor(exp.Cast)
+    is_struct_cast = ancestor_cast and any(
+        [
+            casted_type.is_type(exp.DataType.Type.STRUCT)
+            for casted_type in ancestor_cast.find_all(exp.DataType)
+        ]
+    )
 
     for i, expr in enumerate(expression.expressions):
         is_property_eq = isinstance(expr, exp.PropertyEQ)

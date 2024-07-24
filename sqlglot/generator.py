@@ -1027,6 +1027,14 @@ class Generator(metaclass=_Generator):
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
 
+        clustered = expression.args.get("clustered")
+        if clustered is None:
+            clustered_sql = ""
+        elif clustered:
+            clustered_sql = " CLUSTERED COLUMNSTORE"
+        else:
+            clustered_sql = " NONCLUSTERED COLUMNSTORE"
+
         postcreate_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_CREATE):
             postcreate_props_sql = self.properties(
@@ -1036,7 +1044,7 @@ class Generator(metaclass=_Generator):
                 wrapped=False,
             )
 
-        modifiers = "".join((replace, unique, postcreate_props_sql))
+        modifiers = "".join((clustered_sql, replace, unique, postcreate_props_sql))
 
         postexpression_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):

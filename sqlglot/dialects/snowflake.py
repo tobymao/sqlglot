@@ -290,6 +290,7 @@ class Snowflake(Dialect):
             ),
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
+            "OBJECT_INSERT": exp.ObjectInsert.from_arg_list,
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,

@@ -807,3 +807,18 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
+
+        def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
+            this = expression.this
+            key = expression.args.get("key")
+            key_sql = key.name if isinstance(key, exp.Expression) else ""
+            value_sql = self.sql(expression, "value")
+
+            kv_sql = f"{key_sql} := {value_sql}"
+
+            # If the input struct is empty e.g. transpiling OBJECT_INSERT(OBJECT_CONSTRUCT(), key, value) from Snowflake
+            # then we can generate STRUCT_PACK which will build it since STRUCT_INSERT({}, key := value) is not valid DuckDB
+            if isinstance(this, exp.Struct) and not this.expressions:
+                return self.func("STRUCT_PACK", kv_sql)
+
+            return self.func("STRUCT_INSERT", this, kv_sql)

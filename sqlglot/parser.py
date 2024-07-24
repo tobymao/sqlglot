@@ -1663,6 +1663,15 @@ class Parser(metaclass=_Parser):
 
         unique = self._match(TokenType.UNIQUE)
 
+        if self._match_text_seq("CLUSTERED", "COLUMNSTORE"):
+            clustered = True
+        elif self._match_text_seq("NONCLUSTERED", "COLUMNSTORE") or self._match_text_seq(
+            "COLUMNSTORE"
+        ):
+            clustered = False
+        else:
+            clustered = None
+
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._advance()
 
@@ -1804,6 +1813,7 @@ class Parser(metaclass=_Parser):
             end=end,
             clone=clone,
             concurrently=concurrently,
+            clustered=clustered,
         )
 
     def _parse_sequence_properties(self) -> t.Optional[exp.SequenceProperties]:

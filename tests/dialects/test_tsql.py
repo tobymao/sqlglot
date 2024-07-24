@@ -888,6 +888,14 @@ class TestTSQL(Validator):
             },
         )
 
+        for colstore in ("NONCLUSTERED COLUMNSTORE", "CLUSTERED COLUMNSTORE"):
+            self.validate_identity(f"CREATE {colstore} INDEX index_name ON foo.bar")
+
+        self.validate_identity(
+            "CREATE COLUMNSTORE INDEX index_name ON foo.bar",
+            "CREATE NONCLUSTERED COLUMNSTORE INDEX index_name ON foo.bar",
+        )
+
     def test_insert_cte(self):
         self.validate_all(
             "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",

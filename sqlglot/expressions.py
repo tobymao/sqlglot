@@ -1394,6 +1394,7 @@ class Create(DDL):
         "end": False,
         "clone": False,
         "concurrently": False,
+        "clustered": False,
     }
 
     @property

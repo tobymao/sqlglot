@@ -1138,7 +1138,9 @@ class Parser(metaclass=_Parser):
 
     ISOLATED_LOADING_OPTIONS: OPTIONS_TYPE = {"FOR": ("ALL", "INSERT", "NONE")}
 
-    USABLES: OPTIONS_TYPE = dict.fromkeys(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"), tuple())
+    USABLES: OPTIONS_TYPE = dict.fromkeys(
+        ("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA", "CATALOG"), tuple()
+    )
 
     CAST_ACTIONS: OPTIONS_TYPE = dict.fromkeys(("RENAME", "ADD"), ("FIELDS",))
 

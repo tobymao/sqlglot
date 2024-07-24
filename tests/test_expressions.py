@@ -1120,3 +1120,6 @@ FROM foo""",
             AssertionError, "x is not <class 'sqlglot.expressions.Identifier'>\\."
         ):
             parse_one("x").assert_is(exp.Identifier)
+
+    def test_parse_identifier(self):
+        self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))

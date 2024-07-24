@@ -33,7 +33,7 @@ from sqlglot.helper import (
     seq_get,
     subclasses,
 )
-from sqlglot.tokens import Token
+from sqlglot.tokens import Token, TokenError
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
@@ -6893,7 +6893,7 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
     """
     try:
         expression = maybe_parse(name, dialect=dialect, into=Identifier)
-    except ParseError:
+    except (ParseError, TokenError):
         expression = to_identifier(name)
 
     return expression

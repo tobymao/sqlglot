@@ -7,6 +7,7 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("ALTER TABLE labels ADD COLUMN label_score FLOAT")
         self.validate_identity("DESCRIBE HISTORY a.b")
         self.validate_identity("DESCRIBE history.tbl")
         self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")

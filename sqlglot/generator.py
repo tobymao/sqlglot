@@ -3139,6 +3139,7 @@ class Generator(metaclass=_Generator):
                 expression,
                 key="actions",
                 prefix="ADD COLUMN ",
+                skip_first=True,
             )
         return f"ADD {self.expressions(expression, key='actions', flat=True)}"
 

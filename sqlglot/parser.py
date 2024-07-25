@@ -2760,7 +2760,7 @@ class Parser(metaclass=_Parser):
                 all_ = self._match(TokenType.ALL)
                 distinct = self._match_set(self.DISTINCT_TOKENS)
             else:
-                all_, distinct = False, False
+                all_, distinct = None, None
 
             kind = (
                 self._match(TokenType.ALIAS)

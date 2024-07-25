@@ -376,6 +376,7 @@ class Parser(metaclass=_Parser):
 
     # Tokens that can represent identifiers
     ID_VAR_TOKENS = {
+        TokenType.ALL,
         TokenType.VAR,
         TokenType.ANTI,
         TokenType.APPLY,
@@ -2742,8 +2743,12 @@ class Parser(metaclass=_Parser):
             comments = self._prev_comments
 
             hint = self._parse_hint()
-            all_ = self._match(TokenType.ALL)
-            distinct = self._match_set(self.DISTINCT_TOKENS)
+
+            if self._next and not self._next.token_type == TokenType.DOT:
+                all_ = self._match(TokenType.ALL)
+                distinct = self._match_set(self.DISTINCT_TOKENS)
+            else:
+                all_, distinct = False, False
 
             kind = (
                 self._match(TokenType.ALIAS)

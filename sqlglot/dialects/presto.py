@@ -589,11 +589,20 @@ class Presto(Dialect):
             # timezone involved, we wrap it in a `TRY` call and use `PARSE_DATETIME` as a fallback,
             # which seems to be using the same time mapping as Hive, as per:
             # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
-            value_as_text = exp.cast(expression.this, exp.DataType.Type.TEXT)
+            this = expression.this
+            value_as_text = exp.cast(this, exp.DataType.Type.TEXT)
+            value_as_timestamp = (
+                exp.cast(this, exp.DataType.Type.TIMESTAMP) if this.is_string else this
+            )
+
             parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
+
+            formatted_value = self.func(
+                "DATE_FORMAT", value_as_timestamp, self.format_time(expression)
+            )
             parse_with_tz = self.func(
                 "PARSE_DATETIME",
-                value_as_text,
+                formatted_value,
                 self.format_time(expression, Hive.INVERSE_TIME_MAPPING, Hive.INVERSE_TIME_TRIE),
             )
             coalesced = self.func("COALESCE", self.func("TRY", parse_without_tz), parse_with_tz)

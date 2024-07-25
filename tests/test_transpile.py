@@ -764,7 +764,7 @@ FROM x""",
         self.validate("STR_TO_TIME('x', 'y')", "DATE_PARSE('x', 'y')", write="presto")
         self.validate(
             "STR_TO_UNIX('x', 'y')",
-            "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('x' AS VARCHAR), 'y')), PARSE_DATETIME(CAST('x' AS VARCHAR), 'y')))",
+            "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('x' AS VARCHAR), 'y')), PARSE_DATETIME(DATE_FORMAT(CAST('x' AS TIMESTAMP), 'y'), 'y')))",
             write="presto",
         )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="presto")

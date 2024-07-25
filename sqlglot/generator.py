@@ -1743,8 +1743,7 @@ class Generator(metaclass=_Generator):
         alias = f"{sep}{alias}" if alias else ""
         hints = self.expressions(expression, key="hints", sep=" ")
         hints = f" {hints}" if hints and self.TABLE_HINTS else ""
-        pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
-        pivots = f" {pivots}" if pivots else ""
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         joins = self.indent(
             self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
         )
@@ -1831,7 +1830,7 @@ class Generator(metaclass=_Generator):
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        direction = "UNPIVOT" if expression.unpivot else "PIVOT"
+        direction = self.seg("UNPIVOT" if expression.unpivot else "PIVOT")
         field = self.sql(expression, "field")
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:
@@ -2418,10 +2417,7 @@ class Generator(metaclass=_Generator):
     def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
-
-        pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
-        pivots = f" {pivots}" if pivots else ""
-
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         sql = self.query_modifiers(expression, self.wrap(expression), alias, pivots)
         return self.prepend_ctes(expression, sql)
 

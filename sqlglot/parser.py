@@ -6305,6 +6305,13 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         if not self.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and self._match_text_seq("ADD"):
             return self._parse_wrapped_csv(self._parse_field_def, optional=True)
+
+        if self._match_text_seq("ADD", "COLUMNS"):
+            schema = self._parse_schema()
+            if schema:
+                return [schema]
+            return []
+
         return self._parse_wrapped_csv(self._parse_add_column, optional=True)
 
     def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:

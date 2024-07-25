@@ -17,9 +17,6 @@ class TestPostgres(Validator):
         )
 
         self.validate_identity("SHA384(x)")
-        self.validate_identity(
-            'CREATE TABLE x (a TEXT COLLATE "de_DE")', "CREATE TABLE x (a TEXT COLLATE de_DE)"
-        )
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
@@ -792,6 +789,8 @@ class TestPostgres(Validator):
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
+        self.validate_identity('CREATE TABLE x (a TEXT COLLATE "de_DE")')
+        self.validate_identity('CREATE TABLE x (a TEXT COLLATE pg_catalog."default")')
         self.validate_identity("CREATE TABLE t (col INT[3][5])")
         self.validate_identity("CREATE TABLE t (col INT[3])")
         self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")

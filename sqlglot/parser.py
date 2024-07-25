@@ -929,7 +929,8 @@ class Parser(metaclass=_Parser):
             enforced=self._match_text_seq("ENFORCED"),
         ),
         "COLLATE": lambda self: self.expression(
-            exp.CollateColumnConstraint, this=self._parse_var(any_token=True)
+            exp.CollateColumnConstraint,
+            this=self._parse_identifier() or self._parse_column(),
         ),
         "COMMENT": lambda self: self.expression(
             exp.CommentColumnConstraint, this=self._parse_string()

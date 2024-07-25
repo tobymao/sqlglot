@@ -11,6 +11,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity(
+            "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
+        )
+
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),

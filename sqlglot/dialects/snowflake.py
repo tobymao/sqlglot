@@ -614,7 +614,7 @@ class Snowflake(Dialect):
             # can be joined in a query with a comma separator, as well as closing paren
             # in case of subqueries
             while self._is_connected() and not self._match_set(
-                (TokenType.COMMA, TokenType.R_PAREN), advance=False
+                (TokenType.COMMA, TokenType.L_PAREN, TokenType.R_PAREN), advance=False
             ):
                 parts.append(self._advance_any(ignore_reserved=True))
 

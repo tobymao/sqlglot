@@ -919,6 +919,11 @@ WHERE
             "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
         )
 
+        self.validate_identity(
+            "SELECT * FROM @test.public.thing/location/somefile.csv( FILE_FORMAT => 'fmt' )",
+            "SELECT * FROM @test.public.thing/location/somefile.csv (FILE_FORMAT => 'fmt')",
+        )
+
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")

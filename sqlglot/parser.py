@@ -1149,6 +1149,17 @@ class Parser(metaclass=_Parser):
         **dict.fromkeys(("BINDING", "COMPENSATION", "EVOLUTION"), tuple()),
     }
 
+    KEY_CONSTRAINT_OPTIONS: OPTIONS_TYPE = {
+        "NOT": ("ENFORCED",),
+        "MATCH": (
+            "FULL",
+            "PARTIAL",
+            "SIMPLE",
+        ),
+        "INITIALLY": ("DEFERRED", "IMMEDIATE"),
+        **dict.fromkeys(("DEFERRABLE", "NORELY"), tuple()),
+    }
+
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     CLONE_KEYWORDS = {"CLONE", "COPY"}
@@ -5282,18 +5293,13 @@ class Parser(metaclass=_Parser):
                     self.raise_error("Invalid key constraint")
 
                 options.append(f"ON {on} {action}")
-            elif self._match_text_seq("NOT", "ENFORCED"):
-                options.append("NOT ENFORCED")
-            elif self._match_text_seq("DEFERRABLE"):
-                options.append("DEFERRABLE")
-            elif self._match_text_seq("INITIALLY", "DEFERRED"):
-                options.append("INITIALLY DEFERRED")
-            elif self._match_text_seq("NORELY"):
-                options.append("NORELY")
-            elif self._match_text_seq("MATCH", "FULL"):
-                options.append("MATCH FULL")
             else:
-                break
+                var = self._parse_var_from_options(
+                    self.KEY_CONSTRAINT_OPTIONS, raise_unmatched=False
+                )
+                if not var:
+                    break
+                options.append(var.name)
 
         return options
 

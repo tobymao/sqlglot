@@ -1003,6 +1003,29 @@ class TestPostgres(Validator):
             "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_table_id ON tbl USING btree(id)"
         )
 
+        self.validate_identity(
+            """
+        CREATE TABLE IF NOT EXISTS public.rental
+        (
+            inventory_id INT NOT NULL,
+            CONSTRAINT rental_customer_id_fkey FOREIGN KEY (customer_id)
+                REFERENCES public.customer (customer_id) MATCH FULL
+                ON UPDATE CASCADE
+                ON DELETE RESTRICT,
+            CONSTRAINT rental_inventory_id_fkey FOREIGN KEY (inventory_id)
+                REFERENCES public.inventory (inventory_id) MATCH PARTIAL
+                ON UPDATE CASCADE
+                ON DELETE RESTRICT,
+            CONSTRAINT rental_staff_id_fkey FOREIGN KEY (staff_id)
+                REFERENCES public.staff (staff_id) MATCH SIMPLE
+                ON UPDATE CASCADE
+                ON DELETE RESTRICT,
+            INITIALLY IMMEDIATE
+        )
+        """,
+            "CREATE TABLE IF NOT EXISTS public.rental (inventory_id INT NOT NULL, CONSTRAINT rental_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customer (customer_id) MATCH FULL ON UPDATE CASCADE ON DELETE RESTRICT, CONSTRAINT rental_inventory_id_fkey FOREIGN KEY (inventory_id) REFERENCES public.inventory (inventory_id) MATCH PARTIAL ON UPDATE CASCADE ON DELETE RESTRICT, CONSTRAINT rental_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff (staff_id) MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT, INITIALLY IMMEDIATE)",
+        )
+
         with self.assertRaises(ParseError):
             transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
         with self.assertRaises(ParseError):

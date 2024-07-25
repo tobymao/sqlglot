@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v25.7.1] - 2024-07-25
+### :bug: Bug Fixes
+- [`ae95c18`](https://github.com/tobymao/sqlglot/commit/ae95c18f636d34c7f92b48cd5970f4fa6ad81b08) - alter table add columns closes [#3835](https://github.com/tobymao/sqlglot/pull/3835) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`9b5839d`](https://github.com/tobymao/sqlglot/commit/9b5839d7fb04f78c9ef50b112cd9d4d24558c912) - make ast consistent *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v25.7.0] - 2024-07-25
 ### :sparkles: New Features
 - [`ba0aa50`](https://github.com/tobymao/sqlglot/commit/ba0aa50072f623c299eb4d2dbb69993541fff27b) - **duckdb**: Transpile BQ's exp.DatetimeAdd, exp.DatetimeSub *(PR [#3777](https://github.com/tobymao/sqlglot/pull/3777) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -4208,3 +4214,4 @@ Changelog
 [v25.6.0]: https://github.com/tobymao/sqlglot/compare/v25.5.1...v25.6.0
 [v25.6.1]: https://github.com/tobymao/sqlglot/compare/v25.6.0...v25.6.1
 [v25.7.0]: https://github.com/tobymao/sqlglot/compare/v25.6.1...v25.7.0
+[v25.7.1]: https://github.com/tobymao/sqlglot/compare/v25.7.0...v25.7.1

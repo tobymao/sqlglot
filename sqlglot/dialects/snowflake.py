@@ -504,43 +504,6 @@ class Snowflake(Dialect):
 
             return lateral
 
-        def _parse_historical_data(self) -> t.Optional[exp.HistoricalData]:
-            # https://docs.snowflake.com/en/sql-reference/constructs/at-before
-            index = self._index
-            historical_data = None
-            if self._match_texts(self.HISTORICAL_DATA_PREFIX):
-                this = self._prev.text.upper()
-                kind = (
-                    self._match(TokenType.L_PAREN)
-                    and self._match_texts(self.HISTORICAL_DATA_KIND)
-                    and self._prev.text.upper()
-                )
-                expression = self._match(TokenType.FARROW) and self._parse_bitwise()
-
-                if expression:
-                    self._match_r_paren()
-                    historical_data = self.expression(
-                        exp.HistoricalData, this=this, kind=kind, expression=expression
-                    )
-                else:
-                    self._retreat(index)
-
-            return historical_data
-
-        def _parse_changes(self) -> t.Optional[exp.Changes]:
-            if not self._match_text_seq("CHANGES", "(", "INFORMATION", "=>"):
-                return None
-
-            information = self._parse_var(any_token=True)
-            self._match_r_paren()
-
-            return self.expression(
-                exp.Changes,
-                information=information,
-                at_before=self._parse_historical_data(),
-                end=self._parse_historical_data(),
-            )
-
         def _parse_table_parts(
             self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
         ) -> exp.Table:
@@ -572,14 +535,6 @@ class Snowflake(Dialect):
                 table = self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
             else:
                 table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
-
-            changes = self._parse_changes()
-            if changes:
-                table.set("changes", changes)
-
-            at_before = self._parse_historical_data()
-            if at_before:
-                table.set("when", at_before)
 
             return table
 

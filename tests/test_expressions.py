@@ -1001,6 +1001,8 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY<UNKNOWN>")
         self.assertEqual(exp.DataType.build("ARRAY<NULL>").sql(), "ARRAY<NULL>")
         self.assertEqual(exp.DataType.build("varchar(100) collate 'en-ci'").sql(), "VARCHAR(100)")
+        self.assertEqual(exp.DataType.build("int[3]").sql(dialect="duckdb"), "INT[3]")
+        self.assertEqual(exp.DataType.build("int[3][3]").sql(dialect="duckdb"), "INT[3][3]")
 
         with self.assertRaises(ParseError):
             exp.DataType.build("varchar(")

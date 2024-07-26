@@ -395,3 +395,13 @@ JOIN b
   JOIN d
     USING (f)
   USING (g);
+
+('aaaaaaaaaaa', 'bbbbbbbbbbbbbbbb', 'ccccccccccccc', 'ddddddddddd', 'eeeeeeeeeeeeeeeeeeeee');
+(
+  'aaaaaaaaaaa',
+  'bbbbbbbbbbbbbbbb',
+  'ccccccccccccc',
+  'ddddddddddd',
+  'eeeeeeeeeeeeeeeeeeeee'
+);
+

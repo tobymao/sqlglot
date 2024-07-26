@@ -1846,7 +1846,7 @@ class Generator(metaclass=_Generator):
         return f"{this} {kind} {expr}"
 
     def tuple_sql(self, expression: exp.Tuple) -> str:
-        return f"({self.expressions(expression, flat=True)})"
+        return f"({self.expressions(expression, dynamic=True, new_line=True, skip_first=True, skip_last=True)})"
 
     def update_sql(self, expression: exp.Update) -> str:
         this = self.sql(expression, "this")
@@ -3397,12 +3397,8 @@ class Generator(metaclass=_Generator):
             return sep.join(sql for sql in (self.sql(e) for e in expressions) if sql)
 
         num_sqls = len(expressions)
-
-        # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
-        if self.pretty and not self.leading_comma:
-            stripped_sep = sep.strip()
-
         result_sqls = []
+
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
             if not sql:
@@ -3415,7 +3411,7 @@ class Generator(metaclass=_Generator):
                     result_sqls.append(f"{sep if i > 0 else ''}{prefix}{sql}{comments}")
                 else:
                     result_sqls.append(
-                        f"{prefix}{sql}{stripped_sep if i + 1 < num_sqls else ''}{comments}"
+                        f"{prefix}{sql}{(sep.rstrip() if comments else sep) if i + 1 < num_sqls else ''}{comments}"
                     )
             else:
                 result_sqls.append(f"{prefix}{sql}{comments}{sep if i + 1 < num_sqls else ''}")
@@ -3424,7 +3420,7 @@ class Generator(metaclass=_Generator):
             if new_line:
                 result_sqls.insert(0, "")
                 result_sqls.append("")
-            result_sql = "\n".join(result_sqls)
+            result_sql = "\n".join(s.rstrip() for s in result_sqls)
         else:
             result_sql = "".join(result_sqls)
         return (

@@ -81,6 +81,14 @@ def _build_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
     return exp.CombinedAggFunc(this="countIf", expressions=args, parts=("count", "If"))
 
 
+def _build_str_to_date(args: t.List) -> exp.Cast | exp.Anonymous:
+    if len(args) == 3:
+        return exp.Anonymous(this="STR_TO_DATE", expressions=args)
+
+    strtodate = exp.StrToDate.from_arg_list(args)
+    return exp.cast(strtodate, exp.DataType.build(exp.DataType.Type.DATETIME))
+
+
 def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA], str]:
     def _delta_sql(self: Generator, expression: DATEΤΙΜΕ_DELTA) -> str:
         if not expression.unit:
@@ -181,6 +189,7 @@ class ClickHouse(Dialect):
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "RANDCANONICAL": exp.Rand.from_arg_list,
+            "STR_TO_DATE": _build_str_to_date,
             "TUPLE": exp.Struct.from_arg_list,
             "TIMESTAMP_SUB": build_date_delta(exp.TimestampSub, default_unit=None),
             "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
@@ -835,6 +844,24 @@ class ClickHouse(Dialect):
             "FUNCTION",
             "NAMED COLLECTION",
         }
+
+        def strtodate_sql(self, expression: exp.StrToDate) -> str:
+            strtodate_sql = super().strtodate_sql(expression)
+
+            if not isinstance(expression.parent, exp.Cast):
+                # StrToDate returns DATEs in other dialects (eg. postgres), so
+                # this branch aims to improve the transpilation to clickhouse
+                return f"CAST({strtodate_sql} AS DATE)"
+
+            return strtodate_sql
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            this = expression.this
+
+            if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
+                return self.sql(this)
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
             this = self.json_path_part(expression.this)

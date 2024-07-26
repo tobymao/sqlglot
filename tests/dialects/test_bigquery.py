@@ -289,6 +289,10 @@ LANGUAGE js AS
             r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
+        self.validate_identity(
+            "SELECT CAST(1 AS BYTEINT)",
+            "SELECT CAST(1 AS INT64)",
+        )
 
         self.validate_all(
             "SAFE_CAST(some_date AS DATE FORMAT 'DD MONTH YYYY')",

@@ -293,6 +293,12 @@ class TestDuckDB(Validator):
         self.validate_identity("x -> '$.family'")
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
         self.validate_identity("SELECT * FROM foo WHERE bar > $baz AND bla = $bob")
+        self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
+        self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
+        self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
+        self.validate_identity(
+            "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
+        ).assert_is(exp.Summarize)
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )

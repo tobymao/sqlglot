@@ -364,6 +364,7 @@ class TokenType(AutoName):
     STORAGE_INTEGRATION = auto()
     STRAIGHT_JOIN = auto()
     STRUCT = auto()
+    SUMMARIZE = auto()
     TABLE_SAMPLE = auto()
     TAG = auto()
     TEMPORARY = auto()

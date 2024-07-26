@@ -2825,12 +2825,14 @@ class Parser(metaclass=_Parser):
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
+        elif self._match(TokenType.SUMMARIZE):
+            table = self._match(TokenType.TABLE)
+            this = self._parse_select() or self._parse_string() or self._parse_table()
+            return self.expression(exp.Summarize, this=this, table=table)
         else:
             this = None
 
-        if parse_set_operation:
-            return self._parse_set_operations(this)
-        return this
+        return self._parse_set_operations(this) if parse_set_operation else this
 
     def _parse_with(self, skip_with_token: bool = False) -> t.Optional[exp.With]:
         if not skip_with_token and not self._match(TokenType.WITH):

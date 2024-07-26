@@ -1439,6 +1439,11 @@ class Describe(Expression):
     arg_types = {"this": True, "style": False, "kind": False, "expressions": False}
 
 
+# https://duckdb.org/docs/guides/meta/summarize.html
+class Summarize(Expression):
+    arg_types = {"this": True, "table": False}
+
+
 class Kill(Expression):
     arg_types = {"this": True, "kind": False}
 

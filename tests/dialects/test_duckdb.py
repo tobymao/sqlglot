@@ -303,6 +303,10 @@ class TestDuckDB(Validator):
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )
         self.validate_identity(
+            "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
+            "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",
+        )
+        self.validate_identity(
             "SELECT a, LOGICAL_OR(b) FROM foo GROUP BY a",
             "SELECT a, BOOL_OR(b) FROM foo GROUP BY a",
         )

@@ -186,9 +186,14 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
     return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
 
 
+WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In)
+
+
 def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYPE) -> str:
     arrow_sql = arrow_json_extract_sql(self, expression)
-    if not expression.same_parent and isinstance(expression.parent, (exp.Binary, exp.Bracket)):
+    if not expression.same_parent and isinstance(
+        expression.parent, WRAPPED_JSON_EXTRACT_EXPRESSIONS
+    ):
         arrow_sql = self.wrap(arrow_sql)
     return arrow_sql
 

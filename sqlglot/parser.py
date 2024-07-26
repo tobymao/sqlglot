@@ -673,7 +673,7 @@ class Parser(metaclass=_Parser):
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         exp.Column: lambda self: self._parse_column(),
         exp.Condition: lambda self: self._parse_assignment(),
-        exp.DataType: lambda self: self._parse_types(allow_identifiers=False),
+        exp.DataType: lambda self: self._parse_types(allow_identifiers=False, schema=True),
         exp.Expression: lambda self: self._parse_expression(),
         exp.From: lambda self: self._parse_from(joins=True),
         exp.Group: lambda self: self._parse_group(),
@@ -4615,7 +4615,11 @@ class Parser(metaclass=_Parser):
 
             matched_array = False
             values = self._parse_csv(self._parse_assignment) or None
-            if values and not schema:
+            if (
+                values
+                and not schema
+                and this.is_type(exp.DataType.Type.ARRAY, exp.DataType.Type.MAP)
+            ):
                 self._retreat(index)
                 break
 

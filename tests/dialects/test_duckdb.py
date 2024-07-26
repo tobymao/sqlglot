@@ -8,6 +8,8 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
+
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 

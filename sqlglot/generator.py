@@ -4067,3 +4067,7 @@ class Generator(metaclass=_Generator):
             fill_pattern = "' '"
 
         return self.func(f"{prefix}PAD", expression.this, expression.expression, fill_pattern)
+
+    def summarize_sql(self, expression: exp.Summarize) -> str:
+        table = " TABLE" if expression.args.get("table") else ""
+        return f"SUMMARIZE{table} {self.sql(expression.this)}"

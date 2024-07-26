@@ -322,6 +322,7 @@ class BigQuery(Dialect):
             "ANY TYPE": TokenType.VARIANT,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
+            "BYTEINT": TokenType.INT,
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "DATETIME": TokenType.TIMESTAMP,

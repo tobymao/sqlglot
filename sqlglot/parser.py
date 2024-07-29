@@ -393,6 +393,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
         TokenType.COPY,
+        TokenType.CUBE,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -3827,7 +3828,7 @@ class Parser(metaclass=_Parser):
         while True:
             expressions = self._parse_csv(
                 lambda: None
-                if self._match(TokenType.ROLLUP, advance=False)
+                if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
                 else self._parse_assignment()
             )
             if expressions:

@@ -393,9 +393,6 @@ class Presto(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("ARBITRARY"),
-            exp.ApproxDistinct: lambda self, e: self.func(
-                "APPROX_DISTINCT", e.this, e.args.get("accuracy")
-            ),
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),

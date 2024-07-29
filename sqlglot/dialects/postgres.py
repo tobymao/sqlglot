@@ -168,16 +168,13 @@ def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
 
 def _build_generate_series(args: t.List) -> exp.GenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
+    # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
     step = seq_get(args, 2)
-
-    if step is None:
-        # Postgres allows calls with just two arguments -- the "step" argument defaults to 1
-        return exp.GenerateSeries.from_arg_list(args)
-
-    if step.is_string:
-        args[2] = exp.to_interval(step.this)
-    elif isinstance(step, exp.Interval) and not step.args.get("unit"):
-        args[2] = exp.to_interval(step.this.this)
+    if step is not None:
+        if step.is_string:
+            args[2] = exp.to_interval(step.this)
+        elif isinstance(step, exp.Interval) and not step.args.get("unit"):
+            args[2] = exp.to_interval(step.this.this)
 
     return exp.GenerateSeries.from_arg_list(args)
 

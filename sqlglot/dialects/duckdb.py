@@ -750,10 +750,9 @@ class DuckDB(Dialect):
         def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
             # GENERATE_SERIES(a, b) -> [a, b], RANGE(a, b) -> [a, b)
             if expression.args.get("is_end_exclusive"):
-                expression.set("is_end_exclusive", None)
                 return rename_func("RANGE")(self, expression)
 
-            return super().generateseries_sql(expression)
+            return self.function_fallback_sql(expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             this = expression.this

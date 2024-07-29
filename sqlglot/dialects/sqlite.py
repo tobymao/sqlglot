@@ -223,7 +223,7 @@ class SQLite(Dialect):
                     exp.select(exp.alias_("value", column_alias)).from_(expression).subquery()
                 )
             else:
-                sql = super().generateseries_sql(expression)
+                sql = self.function_fallback_sql(expression)
 
             return sql
 

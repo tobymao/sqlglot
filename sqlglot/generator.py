@@ -105,12 +105,6 @@ class Generator(metaclass=_Generator):
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
         exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
-        exp.JSONExtract: lambda self, e: self.func(
-            "JSON_EXTRACT", e.this, e.expression, *e.expressions
-        ),
-        exp.JSONExtractScalar: lambda self, e: self.func(
-            "JSON_EXTRACT_SCALAR", e.this, e.expression, *e.expressions
-        ),
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda _, e: f"{'NO ' if e.args.get('no') else ''}LOG",
@@ -146,7 +140,6 @@ class Generator(metaclass=_Generator):
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
-        exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.args.get("zone")),
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
@@ -2994,9 +2987,6 @@ class Generator(metaclass=_Generator):
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
 
-    def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
-        return self.func("CURRENT_TIMESTAMP", expression.this)
-
     def collate_sql(self, expression: exp.Collate) -> str:
         if self.COLLATE_IS_FUNC:
             return self.function_fallback_sql(expression)
@@ -3354,7 +3344,9 @@ class Generator(metaclass=_Generator):
         return f"{self.normalize_func(name)}{prefix}{self.format_args(*args)}{suffix}"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
-        arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
+        arg_sqls = tuple(
+            self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
+        )
         if self.pretty and self.too_wide(arg_sqls):
             return self.indent("\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)
@@ -3757,10 +3749,6 @@ class Generator(metaclass=_Generator):
 
         return self.function_fallback_sql(expression)
 
-    def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
-        expression.set("is_end_exclusive", None)
-        return self.function_fallback_sql(expression)
-
     def struct_sql(self, expression: exp.Struct) -> str:
         expression.set(
             "expressions",
@@ -4023,9 +4011,6 @@ class Generator(metaclass=_Generator):
 
         return self.func(self.PARSE_JSON_NAME, expression.this, expression.expression)
 
-    def length_sql(self, expression: exp.Length) -> str:
-        return self.func("LENGTH", expression.this)
-
     def rand_sql(self, expression: exp.Rand) -> str:
         lower = self.sql(expression, "lower")
         upper = self.sql(expression, "upper")
@@ -4033,17 +4018,6 @@ class Generator(metaclass=_Generator):
         if lower and upper:
             return f"({upper} - {lower}) * {self.func('RAND', expression.this)} + {lower}"
         return self.func("RAND", expression.this)
-
-    def strtodate_sql(self, expression: exp.StrToDate) -> str:
-        return self.func("STR_TO_DATE", expression.this, expression.args.get("format"))
-
-    def strtotime_sql(self, expression: exp.StrToTime) -> str:
-        return self.func(
-            "STR_TO_TIME",
-            expression.this,
-            expression.args.get("format"),
-            expression.args.get("zone"),
-        )
 
     def changes_sql(self, expression: exp.Changes) -> str:
         information = self.sql(expression, "information")

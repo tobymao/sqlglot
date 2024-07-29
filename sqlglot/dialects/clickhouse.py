@@ -846,7 +846,7 @@ class ClickHouse(Dialect):
         }
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
-            strtodate_sql = super().strtodate_sql(expression)
+            strtodate_sql = self.function_fallback_sql(expression)
 
             if not isinstance(expression.parent, exp.Cast):
                 # StrToDate returns DATEs in other dialects (eg. postgres), so

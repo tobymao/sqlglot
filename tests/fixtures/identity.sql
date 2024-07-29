@@ -868,6 +868,7 @@ SELECT name
 SELECT copy
 SELECT rollup
 SELECT unnest
+SELECT cube, cube.x FROM cube
 SELECT * FROM a STRAIGHT_JOIN b
 SELECT COUNT(DISTINCT "foo bar") FROM (SELECT 1 AS "foo bar") AS t
 SELECT vector

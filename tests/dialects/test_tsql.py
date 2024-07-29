@@ -49,6 +49,16 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
+            read={
+                "snowflake": "CREATE TABLE TEMP_NESTED_WITH AS WITH C AS (WITH A AS (SELECT 2 AS value) SELECT * FROM A) SELECT * FROM C",
+                "tsql": "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
+            },
+            write={
+                "snowflake": "CREATE TABLE TEMP_NESTED_WITH AS WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * FROM (SELECT * FROM C) AS temp",
+            },
+        )
+        self.validate_all(
             "SELECT IIF(cond <> 0, 'True', 'False')",
             read={
                 "spark": "SELECT IF(cond, 'True', 'False')",

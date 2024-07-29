@@ -799,6 +799,7 @@ class TSQL(Dialect):
         PARSE_JSON_NAME = None
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
+            exp.Create,
             exp.Delete,
             exp.Insert,
             exp.Intersect,

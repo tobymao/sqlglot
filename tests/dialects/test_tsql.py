@@ -1135,6 +1135,11 @@ WHERE
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
     def test_json(self):
+        self.validate_identity(
+            """JSON_QUERY(REPLACE(REPLACE(x , '''', '"'), '""', '"'))""",
+            """ISNULL(JSON_QUERY(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$'), JSON_VALUE(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$'))""",
+        )
+
         self.validate_all(
             "JSON_QUERY(r.JSON, '$.Attr_INT')",
             write={

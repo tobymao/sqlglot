@@ -322,6 +322,15 @@ def _build_with_arg_as_text(
     return _parse
 
 
+def _build_json_query(args: t.List, dialect: Dialect) -> exp.JSONExtract:
+    if len(args) == 1:
+        # The default value for path is '$'. As a result, if you don't provide a
+        # value for path, JSON_QUERY returns the input expression.
+        args.append(exp.Literal.string("$"))
+
+    return parser.build_extract_json_with_path(exp.JSONExtract)(args, dialect)
+
+
 def _json_extract_sql(
     self: TSQL.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
@@ -510,7 +519,7 @@ class TSQL(Dialect):
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "HASHBYTES": _build_hashbytes,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
+            "JSON_QUERY": _build_json_query,
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),
             "LEFT": _build_with_arg_as_text(exp.Left),

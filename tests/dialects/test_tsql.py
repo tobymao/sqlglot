@@ -807,6 +807,7 @@ class TestTSQL(Validator):
                 f"UNIQUE {clustered_keyword} ([internal_id] ASC))",
             )
 
+        self.validate_identity("CREATE VIEW t AS WITH cte AS (SELECT 1 AS c) SELECT c FROM cte")
         self.validate_identity(
             "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS)"
         )

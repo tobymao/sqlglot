@@ -692,6 +692,7 @@ class Snowflake(Dialect):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         STAR_EXCEPT = "EXCLUDE"
+        SUPPORTS_EXPLODING_PROJECTIONS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

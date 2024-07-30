@@ -166,7 +166,7 @@ def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _build_generate_series(args: t.List) -> exp.GenerateSeries:
+def _build_generate_series(args: t.List) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
     # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
     step = seq_get(args, 2)
@@ -176,7 +176,7 @@ def _build_generate_series(args: t.List) -> exp.GenerateSeries:
         elif isinstance(step, exp.Interval) and not step.args.get("unit"):
             args[2] = exp.to_interval(step.this.this)
 
-    return exp.GenerateSeries.from_arg_list(args)
+    return exp.ExplodingGenerateSeries.from_arg_list(args)
 
 
 def _build_to_timestamp(args: t.List) -> exp.UnixToTime | exp.StrToTime:
@@ -507,6 +507,7 @@ class Postgres(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
+            exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
             exp.GroupConcat: _string_agg_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),

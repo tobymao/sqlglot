@@ -371,6 +371,9 @@ class Generator(metaclass=_Generator):
     # Whether the text pattern/fill (3rd) parameter of RPAD()/LPAD() is optional (defaults to space)
     PAD_FILL_PATTERN_IS_REQUIRED = False
 
+    # Whether a projection can explode into multiple rows, e.g. by unnesting an array.
+    SUPPORTS_EXPLODING_PROJECTIONS = True
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4041,3 +4044,26 @@ class Generator(metaclass=_Generator):
     def summarize_sql(self, expression: exp.Summarize) -> str:
         table = " TABLE" if expression.args.get("table") else ""
         return f"SUMMARIZE{table} {self.sql(expression.this)}"
+
+    def explodinggenerateseries_sql(self, expression: exp.ExplodingGenerateSeries) -> str:
+        generate_series = exp.GenerateSeries(**expression.args)
+        generate_series_transform = self.TRANSFORMS.get(exp.GenerateSeries)
+
+        parent = expression.parent
+        if isinstance(parent, (exp.Alias, exp.TableAlias)):
+            parent = parent.parent
+
+        if generate_series_transform:
+            generate_series_sql = generate_series_transform(self, generate_series)
+        elif hasattr(self, "generateseries_sql"):
+            generate_series_sql = getattr(self, "generateseries_sql")(generate_series)
+        else:
+            generate_series_sql = self.function_fallback_sql(generate_series)
+
+        if self.SUPPORTS_EXPLODING_PROJECTIONS and not isinstance(parent, (exp.Table, exp.Unnest)):
+            return self.sql(exp.Unnest(expressions=[generate_series_sql]))
+
+        if isinstance(parent, exp.Select):
+            self.unsupported("GenerateSeries projection unnesting is not supported.")
+
+        return generate_series_sql

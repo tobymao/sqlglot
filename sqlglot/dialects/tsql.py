@@ -999,31 +999,32 @@ class TSQL(Dialect):
             kind = expression.kind
             exists = expression.args.pop("exists", None)
 
-            if kind == "VIEW":
-                expression.this.set("catalog", None)
-
-            sql = super().create_sql(expression)
-
             like_property = expression.find(exp.LikeProperty)
             if like_property:
                 ctas_expression = like_property.this
             else:
                 ctas_expression = expression.expression
 
+            if kind == "VIEW":
+                expression.this.set("catalog", None)
+                with_ = expression.args.get("with")
+                if ctas_expression and with_:
+                    # We've already preprocessed the Create expression to bubble up any nested CTEs,
+                    # but CREATE VIEW actually requires the WITH clause to come after it so we need
+                    # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
+                    ctas_expression.set("with", with_.pop())
+
+            sql = super().create_sql(expression)
+
             table = expression.find(exp.Table)
 
             # Convert CTAS statement to SELECT .. INTO ..
             if kind == "TABLE" and ctas_expression:
-                ctas_with = ctas_expression.args.get("with")
-                if ctas_with:
-                    ctas_with = ctas_with.pop()
-
                 if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
                     ctas_expression = ctas_expression.subquery()
 
                 select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
-                select_into.set("with", ctas_with)
 
                 if like_property:
                     select_into.limit(0, copy=False)

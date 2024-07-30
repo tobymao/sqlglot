@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.8.1] - 2024-07-30
+### :bug: Bug Fixes
+- [`a295b3a`](https://github.com/tobymao/sqlglot/commit/a295b3adbef0eff0b3f6c3b8b97b1eaa8c13f144) - **tsql**: regression related to CTEs in CREATE VIEW AS statements *(PR [#3852](https://github.com/tobymao/sqlglot/pull/3852) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.8.0] - 2024-07-29
 ### :sparkles: New Features
 - [`e37d63a`](https://github.com/tobymao/sqlglot/commit/e37d63a17d4709135c1de7876b2898cf7bd2e641) - **bigquery**: add support for BYTEINT closes [#3838](https://github.com/tobymao/sqlglot/pull/3838) *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -4238,3 +4243,4 @@ Changelog
 [v25.7.0]: https://github.com/tobymao/sqlglot/compare/v25.6.1...v25.7.0
 [v25.7.1]: https://github.com/tobymao/sqlglot/compare/v25.7.0...v25.7.1
 [v25.8.0]: https://github.com/tobymao/sqlglot/compare/v25.7.1...v25.8.0
+[v25.8.1]: https://github.com/tobymao/sqlglot/compare/v25.8.0...v25.8.1

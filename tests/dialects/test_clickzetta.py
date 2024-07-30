@@ -178,6 +178,10 @@ select j from a""",
             "SELECT LOG10(10)",
             read={'presto': "select log10(10)"}
         )
+        self.validate_all(
+            "SELECT CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP())",
+            read={'presto': "select now() at time zone 'UTC'"}
+        )
 
     def test_read_dialect_related_function(self):
         import os

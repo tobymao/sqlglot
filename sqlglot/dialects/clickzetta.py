@@ -210,10 +210,10 @@ class ClickZetta(Spark):
             exp.CurrentTime: lambda self, e: "DATE_FORMAT(NOW(),'HH:mm:ss')",
             exp.Anonymous: _anonymous_func,
             exp.AtTimeZone: lambda self, e: self.func(
-                "CONVERT_TIMEZONE", e.args.get("zone"), self._cz_integer_div_sql(e.this.args.get("this"))
+                "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
             exp.UnixToTime: lambda self, e: self.func(
-                "CONVERT_TIMEZONE", "'UTC+0'", self._cz_integer_div_sql(e.this)
+                "CONVERT_TIMEZONE", "'UTC+0'", e.this
             ),
             # exp.DistributedByProperty: lambda self, e: self.distributedbyproperty_sql(e),
             exp.EngineProperty: lambda self, e: '',
@@ -270,30 +270,6 @@ class ClickZetta(Spark):
                 return f"DATE_FORMAT_PG({self.sql(this)}, {self.sql(format_str)})"
 
             return super().tochar_sql(expression)
-
-        def _cz_integer_div_sql(self, expression: exp.Div) -> Div | str:
-            if not isinstance(expression, exp.Div):
-                return expression
-            l, r = expression.left, expression.right
-
-            if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
-                r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
-
-            if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
-                if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
-                        *exp.DataType.FLOAT_TYPES
-                ):
-                    l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
-
-            elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
-                if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
-                    return self.sql(
-                        exp.cast(
-                            l / r,
-                            to=exp.DataType.Type.BIGINT,
-                        )
-                    )
-            return self.binary(expression, "DIV")
 
         def preprocess(self, expression: exp.Expression) -> exp.Expression:
             """Apply generic preprocessing transformations to a given expression."""

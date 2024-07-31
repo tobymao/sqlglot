@@ -245,12 +245,16 @@ class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
     TIME_FORMAT = MySQL.TIME_FORMAT
-    TIME_MAPPING = MySQL.TIME_MAPPING
     STRICT_STRING_CONCAT = True
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
+
+    TIME_MAPPING = {
+        **MySQL.TIME_MAPPING,
+        "%W": "%A",
+    }
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289

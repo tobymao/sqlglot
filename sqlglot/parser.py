@@ -893,7 +893,7 @@ class Parser(metaclass=_Parser):
         "SECURE": lambda self: self.expression(exp.SecureProperty),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SETTINGS": lambda self: self.expression(
-            exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)
+            exp.SettingsProperty, expressions=self._parse_csv(self._parse_assignment)
         ),
         "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
         "SORTKEY": lambda self: self._parse_sortkey(),
@@ -1792,7 +1792,6 @@ class Parser(metaclass=_Parser):
 
                     # exp.Properties.Location.POST_INDEX
                     extend_props(self._parse_properties())
-
                     if not index:
                         break
                     else:

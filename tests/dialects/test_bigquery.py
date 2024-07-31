@@ -1257,6 +1257,13 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "DATE_DIFF('2021-01-01', '2020-01-01', DAY)",
+            write={
+                "bigquery": "DATE_DIFF('2021-01-01', '2020-01-01', DAY)",
+                "duckdb": "DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2021-01-01' AS DATE))",
+            },
+        )
+        self.validate_all(
             "CURRENT_DATE('UTC')",
             write={
                 "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",

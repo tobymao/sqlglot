@@ -879,6 +879,9 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "CREATE TABLE t (a String, b String, c UInt64, PROJECTION p1 (SELECT a, sum(c) GROUP BY a, b), PROJECTION p2 (SELECT b, sum(c) GROUP BY b)) ENGINE=MergeTree()"
         )
+        self.validate_identity(
+            """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
+        )
 
     def test_agg_functions(self):
         def extract_agg_func(query):

@@ -32,6 +32,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     timestrtotime_sql,
     unit_to_var,
+    unit_to_str,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -196,6 +197,16 @@ def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYP
     ):
         arrow_sql = self.wrap(arrow_sql)
     return arrow_sql
+
+
+def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
+    def _implicit_date_cast(arg: exp.Expression):
+        return exp.cast(arg, exp.DataType.Type.DATE) if isinstance(arg, exp.Literal) else arg
+
+    this = _implicit_date_cast(expression.this)
+    expr = _implicit_date_cast(expression.expression)
+
+    return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
 class DuckDB(Dialect):
@@ -441,9 +452,7 @@ class DuckDB(Dialect):
             exp.DateAdd: _date_delta_sql,
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.DateSub: _date_delta_sql,
-            exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", f"'{e.args.get('unit') or 'DAY'}'", e.expression, e.this
-            ),
+            exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.Datetime: no_datetime_sql,
             exp.DatetimeSub: _date_delta_sql,

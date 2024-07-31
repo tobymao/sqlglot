@@ -823,6 +823,7 @@ class ClickHouse(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.Variance: rename_func("varSamp"),
+            exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),
         }
 

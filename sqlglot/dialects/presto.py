@@ -142,17 +142,6 @@ def _build_from_unixtime(args: t.List) -> exp.Expression:
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
-    if isinstance(expression, exp.Table):
-        if isinstance(expression.this, exp.GenerateSeries):
-            unnest = exp.Unnest(expressions=[expression.this])
-
-            if expression.alias:
-                return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
-            return unnest
-    return expression
-
-
 def _first_last_sql(self: Presto.Generator, expression: exp.Func) -> str:
     """
     Trino doesn't support FIRST / LAST as functions, but they're valid in the context
@@ -471,7 +460,7 @@ class Presto(Dialect):
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,
             exp.StructExtract: struct_extract_sql,
-            exp.Table: transforms.preprocess([_unnest_sequence]),
+            exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampAdd: _date_delta_sql("DATE_ADD"),
             exp.TimestampTrunc: timestamptrunc_sql(),

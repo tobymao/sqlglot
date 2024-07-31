@@ -55,6 +55,18 @@ def preprocess(
     return _to_sql
 
 
+def unnest_generate_series(expression: exp.Expression) -> exp.Expression:
+    """Unnests GENERATE_SERIES or SEQUENCE table references."""
+    if isinstance(expression, exp.Table):
+        if isinstance(expression.this, exp.GenerateSeries):
+            unnest = exp.Unnest(expressions=[expression.this])
+
+            if expression.alias:
+                return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
+            return unnest
+    return expression
+
+
 def unalias_group(expression: exp.Expression) -> exp.Expression:
     """
     Replace references to select aliases in GROUP BY clauses.

@@ -1403,6 +1403,14 @@ WHERE
             },
         )
 
+        self.validate_all(
+            "SELECT TIME_DIFF('12:00:00', '12:30:00', MINUTE)",
+            write={
+                "duckdb": "SELECT DATE_DIFF('MINUTE', CAST('12:30:00' AS TIME), CAST('12:00:00' AS TIME))",
+                "bigquery": "SELECT TIME_DIFF('12:00:00', '12:30:00', MINUTE)",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")

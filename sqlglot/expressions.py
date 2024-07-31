@@ -4841,7 +4841,7 @@ class GenerateSeries(Func):
 # used in a projection, so this expression is a helper that facilitates transpilation to other
 # dialects. For example, we'd generate UNNEST(GENERATE_SERIES(...)) in DuckDB
 class ExplodingGenerateSeries(GenerateSeries):
-    _sql_names = ["GENERATE_SERIES"]
+    pass
 
 
 class ArrayAgg(AggFunc):

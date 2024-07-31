@@ -4046,16 +4046,16 @@ class Generator(metaclass=_Generator):
         return f"SUMMARIZE{table} {self.sql(expression.this)}"
 
     def explodinggenerateseries_sql(self, expression: exp.ExplodingGenerateSeries) -> str:
-        generate_series_sql = self.sql(exp.GenerateSeries(**expression.args))
+        generate_series = exp.GenerateSeries(**expression.args)
 
         parent = expression.parent
         if isinstance(parent, (exp.Alias, exp.TableAlias)):
             parent = parent.parent
 
         if self.SUPPORTS_EXPLODING_PROJECTIONS and not isinstance(parent, (exp.Table, exp.Unnest)):
-            return self.sql(exp.Unnest(expressions=[generate_series_sql]))
+            return self.sql(exp.Unnest(expressions=[generate_series]))
 
         if isinstance(parent, exp.Select):
             self.unsupported("GenerateSeries projection unnesting is not supported.")
 
-        return generate_series_sql
+        return self.sql(generate_series)

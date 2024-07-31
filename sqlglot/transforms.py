@@ -57,13 +57,14 @@ def preprocess(
 
 def unnest_generate_series(expression: exp.Expression) -> exp.Expression:
     """Unnests GENERATE_SERIES or SEQUENCE table references."""
-    if isinstance(expression, exp.Table):
-        if isinstance(expression.this, exp.GenerateSeries):
-            unnest = exp.Unnest(expressions=[expression.this])
+    this = expression.this
+    if isinstance(expression, exp.Table) and isinstance(this, exp.GenerateSeries):
+        unnest = exp.Unnest(expressions=[this])
+        if expression.alias:
+            return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
 
-            if expression.alias:
-                return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
-            return unnest
+        return unnest
+
     return expression
 
 

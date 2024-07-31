@@ -82,6 +82,16 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     return result
 
 
+# BigQuery -> DuckDB conversion for the TIME_DIFF function
+def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
+    this = exp.cast(expression.this, exp.DataType.Type.TIME)
+    expr = exp.cast(expression.expression, exp.DataType.Type.TIME)
+
+    # Although the 2 dialects share similar signatures, BQ seems to inverse
+    # the sign of the result so the start/end time operands are flipped
+    return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
+
+
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("DuckDB ARRAY_SORT does not support a comparator")
@@ -507,6 +517,7 @@ class DuckDB(Dialect):
             exp.Struct: _struct_sql,
             exp.TimeAdd: _date_delta_sql,
             exp.Time: no_time_sql,
+            exp.TimeDiff: _timediff_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this

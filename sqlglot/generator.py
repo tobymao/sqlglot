@@ -4046,19 +4046,11 @@ class Generator(metaclass=_Generator):
         return f"SUMMARIZE{table} {self.sql(expression.this)}"
 
     def explodinggenerateseries_sql(self, expression: exp.ExplodingGenerateSeries) -> str:
-        generate_series = exp.GenerateSeries(**expression.args)
-        generate_series_transform = self.TRANSFORMS.get(exp.GenerateSeries)
+        generate_series_sql = self.sql(exp.GenerateSeries(**expression.args))
 
         parent = expression.parent
         if isinstance(parent, (exp.Alias, exp.TableAlias)):
             parent = parent.parent
-
-        if generate_series_transform:
-            generate_series_sql = generate_series_transform(self, generate_series)
-        elif hasattr(self, "generateseries_sql"):
-            generate_series_sql = getattr(self, "generateseries_sql")(generate_series)
-        else:
-            generate_series_sql = self.function_fallback_sql(generate_series)
 
         if self.SUPPORTS_EXPLODING_PROJECTIONS and not isinstance(parent, (exp.Table, exp.Unnest)):
             return self.sql(exp.Unnest(expressions=[generate_series_sql]))

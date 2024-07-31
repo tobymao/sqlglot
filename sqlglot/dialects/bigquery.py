@@ -606,6 +606,7 @@ class BigQuery(Dialect):
         NAMED_PLACEHOLDER_TOKEN = "@"
         HEX_FUNC = "TO_HEX"
         WITH_PROPERTIES_PREFIX = "OPTIONS"
+        SUPPORTS_EXPLODING_PROJECTIONS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

@@ -4837,6 +4837,13 @@ class GenerateSeries(Func):
     arg_types = {"start": True, "end": True, "step": False, "is_end_exclusive": False}
 
 
+# Postgres' GENERATE_SERIES function returns a row set, i.e. it implicitly explodes when it's
+# used in a projection, so this expression is a helper that facilitates transpilation to other
+# dialects. For example, we'd generate UNNEST(GENERATE_SERIES(...)) in DuckDB
+class ExplodingGenerateSeries(GenerateSeries):
+    pass
+
+
 class ArrayAgg(AggFunc):
     pass
 

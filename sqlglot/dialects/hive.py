@@ -552,6 +552,7 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,
             exp.StructExtract: struct_extract_sql,
+            exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
@@ -570,6 +571,7 @@ class Hive(Dialect):
             ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
+            exp.Unnest: rename_func("EXPLODE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
@@ -592,6 +594,9 @@ class Hive(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            return rename_func("EXPLODE")(self, expression)
 
         def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
             if isinstance(expression.this, exp.JSONPathWildcard):

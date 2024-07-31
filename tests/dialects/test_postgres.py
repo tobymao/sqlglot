@@ -549,46 +549,53 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "SELECT GENERATE_SERIES(1, 5)",
+            write={
+                "bigquery": UnsupportedError,
+                "postgres": "SELECT GENERATE_SERIES(1, 5)",
+            },
+        )
+        self.validate_all(
+            "WITH dates AS (SELECT GENERATE_SERIES('2020-01-01'::DATE, '2024-01-01'::DATE, '1 day'::INTERVAL) AS date), date_table AS (SELECT DISTINCT DATE_TRUNC('MONTH', date) AS date FROM dates) SELECT * FROM date_table",
+            write={
+                "duckdb": "WITH dates AS (SELECT UNNEST(GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2024-01-01' AS DATE), CAST('1 day' AS INTERVAL))) AS date), date_table AS (SELECT DISTINCT DATE_TRUNC('MONTH', date) AS date FROM dates) SELECT * FROM date_table",
+                "postgres": "WITH dates AS (SELECT GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2024-01-01' AS DATE), CAST('1 day' AS INTERVAL)) AS date), date_table AS (SELECT DISTINCT DATE_TRUNC('MONTH', date) AS date FROM dates) SELECT * FROM date_table",
+            },
+        )
+        self.validate_all(
             "GENERATE_SERIES(a, b, '  2   days  ')",
             write={
                 "postgres": "GENERATE_SERIES(a, b, INTERVAL '2 DAYS')",
-                "presto": "SEQUENCE(a, b, INTERVAL '2' DAY)",
-                "trino": "SEQUENCE(a, b, INTERVAL '2' DAY)",
+                "presto": "UNNEST(SEQUENCE(a, b, INTERVAL '2' DAY))",
+                "trino": "UNNEST(SEQUENCE(a, b, INTERVAL '2' DAY))",
             },
         )
         self.validate_all(
             "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
             write={
+                "databricks": "EXPLODE(SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY))",
+                "hive": "EXPLODE(SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY))",
                 "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1 DAY')",
-                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY)",
-                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY)",
-                "hive": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
-                "spark2": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
-                "spark": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
-                "databricks": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY)",
+                "presto": "UNNEST(SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY))",
+                "spark": "EXPLODE(SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY))",
+                "spark2": "EXPLODE(SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), INTERVAL '1' DAY))",
+                "trino": "UNNEST(SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY))",
             },
         )
         self.validate_all(
-            "GENERATE_SERIES(a, b)",
+            "SELECT * FROM GENERATE_SERIES(a, b)",
             read={
-                "postgres": "GENERATE_SERIES(a, b)",
-                "presto": "SEQUENCE(a, b)",
-                "trino": "SEQUENCE(a, b)",
-                "tsql": "GENERATE_SERIES(a, b)",
-                "hive": "SEQUENCE(a, b)",
-                "spark2": "SEQUENCE(a, b)",
-                "spark": "SEQUENCE(a, b)",
-                "databricks": "SEQUENCE(a, b)",
+                "tsql": "SELECT * FROM GENERATE_SERIES(a, b)",
             },
             write={
-                "postgres": "GENERATE_SERIES(a, b)",
-                "presto": "SEQUENCE(a, b)",
-                "trino": "SEQUENCE(a, b)",
-                "tsql": "GENERATE_SERIES(a, b)",
-                "hive": "SEQUENCE(a, b)",
-                "spark2": "SEQUENCE(a, b)",
-                "spark": "SEQUENCE(a, b)",
-                "databricks": "SEQUENCE(a, b)",
+                "databricks": "SELECT * FROM EXPLODE(SEQUENCE(a, b))",
+                "hive": "SELECT * FROM EXPLODE(SEQUENCE(a, b))",
+                "postgres": "SELECT * FROM GENERATE_SERIES(a, b)",
+                "presto": "SELECT * FROM UNNEST(SEQUENCE(a, b))",
+                "spark": "SELECT * FROM EXPLODE(SEQUENCE(a, b))",
+                "spark2": "SELECT * FROM EXPLODE(SEQUENCE(a, b))",
+                "trino": "SELECT * FROM UNNEST(SEQUENCE(a, b))",
+                "tsql": "SELECT * FROM GENERATE_SERIES(a, b)",
             },
         )
         self.validate_all(

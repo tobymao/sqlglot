@@ -437,6 +437,7 @@ class DuckDB(Dialect):
         COPY_HAS_INTO_KEYWORD = False
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
+        ARRAY_CONCAT_IS_VAR_LEN = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

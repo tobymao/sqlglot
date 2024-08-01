@@ -873,3 +873,4 @@ SELECT * FROM a STRAIGHT_JOIN b
 SELECT COUNT(DISTINCT "foo bar") FROM (SELECT 1 AS "foo bar") AS t
 SELECT vector
 WITH all AS (SELECT 1 AS count) SELECT all.count FROM all
+SELECT rename

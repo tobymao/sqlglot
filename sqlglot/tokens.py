@@ -340,6 +340,7 @@ class TokenType(AutoName):
     RANGE = auto()
     RECURSIVE = auto()
     REFRESH = auto()
+    RENAME = auto()
     REPLACE = auto()
     RETURNING = auto()
     REFERENCES = auto()
@@ -753,6 +754,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
+        "RENAME": TokenType.RENAME,
         "REPLACE": TokenType.REPLACE,
         "RETURNING": TokenType.RETURNING,
         "REFERENCES": TokenType.REFERENCES,
@@ -913,6 +915,7 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.EXECUTE,
         TokenType.FETCH,
         TokenType.SHOW,
+        TokenType.RENAME,
     }
 
     COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}

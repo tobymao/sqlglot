@@ -433,6 +433,7 @@ class Parser(metaclass=_Parser):
         TokenType.RECURSIVE,
         TokenType.REFERENCES,
         TokenType.REFRESH,
+        TokenType.RENAME,
         TokenType.REPLACE,
         TokenType.RIGHT,
         TokenType.ROLLUP,

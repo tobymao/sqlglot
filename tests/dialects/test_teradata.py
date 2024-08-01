@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -30,6 +31,10 @@ class TestTeradata(Validator):
                 "teradata": "DATABASE tduser",
             },
         )
+
+        self.validate_identity(
+            "RENAME TABLE emp TO employee", check_command_warning=True
+        ).assert_is(exp.Command)
 
     def test_translate(self):
         self.validate_all(

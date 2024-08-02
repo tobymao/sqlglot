@@ -1431,6 +1431,20 @@ WHERE
                 "trino": "CONCAT(ARRAY[1, 2], ARRAY[3, 4], ARRAY[5, 6])",
             },
         )
+        self.validate_all(
+            "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08')",
+            write={
+                "duckdb": "SELECT CAST(GENERATE_SERIES(CAST('2016-10-05' AS DATE), CAST('2016-10-08' AS DATE), INTERVAL 1 DAY) AS DATE[])",
+                "bigquery": "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08', INTERVAL 1 DAY)",
+            },
+        )
+        self.validate_all(
+            "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08', INTERVAL '1' MONTH)",
+            write={
+                "duckdb": "SELECT CAST(GENERATE_SERIES(CAST('2016-10-05' AS DATE), CAST('2016-10-08' AS DATE), INTERVAL '1' MONTH) AS DATE[])",
+                "bigquery": "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08', INTERVAL '1' MONTH)",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

@@ -171,6 +171,7 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
             exp.Array: rename_func("ARRAY"),
+            exp.ArrayConcat: lambda self, e: super().arrayconcat_sql(e, name="ARRAY_CONCAT"),
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self,
@@ -425,6 +426,3 @@ class Redshift(Postgres):
             file_format = f" FILE FORMAT {file_format}" if file_format else ""
 
             return f"SET{exprs}{location}{file_format}"
-
-        def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CONCAT") -> str:
-            return super().arrayconcat_sql(expression, name=name)

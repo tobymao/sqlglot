@@ -493,6 +493,7 @@ class Postgres(Dialect):
                 if isinstance(seq_get(e.expressions, 0), exp.Select)
                 else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]"
             ),
+            exp.ArrayConcat: lambda self, e: super().arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
@@ -647,6 +648,3 @@ class Postgres(Dialect):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
-
-        def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CAT") -> str:
-            return super().arrayconcat_sql(expression, name=name)

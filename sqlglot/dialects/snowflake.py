@@ -701,6 +701,7 @@ class Snowflake(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: inline_array_sql,
+            exp.ArrayConcat: lambda self, e: super().arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
@@ -1006,6 +1007,3 @@ class Snowflake(Dialect):
             tag = f" TAG {tag}" if tag else ""
 
             return f"SET{exprs}{file_format}{copy_options}{tag}"
-
-        def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CAT") -> str:
-            return super().arrayconcat_sql(expression, name=name)

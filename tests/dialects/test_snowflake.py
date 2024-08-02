@@ -59,6 +59,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("exclude := [foo]")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)

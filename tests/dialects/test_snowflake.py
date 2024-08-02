@@ -115,6 +115,18 @@ WHERE
         self.validate_identity("SELECT MATCH_CONDITION")
         self.validate_identity("SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t")
         self.validate_identity(
+            "SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2', '2023_Q3', '2023_Q4', '2024_Q1') DEFAULT ON NULL (0)) ORDER BY empid"
+        )
+        self.validate_identity(
+            "SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (SELECT DISTINCT quarter FROM ad_campaign_types_by_quarter WHERE television = TRUE ORDER BY quarter)) ORDER BY empid"
+        )
+        self.validate_identity(
+            "SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR IN (ANY ORDER BY quarter)) ORDER BY empid"
+        )
+        self.validate_identity(
+            "SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR IN (ANY)) ORDER BY empid"
+        )
+        self.validate_identity(
             "MERGE INTO my_db AS ids USING (SELECT new_id FROM my_model WHERE NOT col IS NULL) AS new_ids ON ids.type = new_ids.type AND ids.source = new_ids.source WHEN NOT MATCHED THEN INSERT VALUES (new_ids.new_id)"
         )
         self.validate_identity(

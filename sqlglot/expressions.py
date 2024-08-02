@@ -3859,6 +3859,7 @@ class Pivot(Expression):
         "group": False,
         "columns": False,
         "include_nulls": False,
+        "default_on_null": False,
     }
 
     @property
@@ -4534,6 +4535,12 @@ class Alias(Expression):
 # other dialects require identifiers. This enables us to transpile between them easily.
 class PivotAlias(Alias):
     pass
+
+
+# Represents Snowflake's ANY [ ORDER BY ... ] syntax
+# https://docs.snowflake.com/en/sql-reference/constructs/pivot
+class PivotAny(Expression):
+    arg_types = {"this": False}
 
 
 class Aliases(Expression):

@@ -119,6 +119,7 @@ class Generator(metaclass=_Generator):
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
+        exp.PivotAny: lambda self, e: f"ANY{self.sql(e, 'this')}",
         exp.ProjectionPolicyColumnConstraint: lambda self,
         e: f"PROJECTION POLICY {self.sql(e, 'this')}",
         exp.RemoteWithConnectionModelProperty: lambda self,
@@ -1830,13 +1831,20 @@ class Generator(metaclass=_Generator):
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
         direction = self.seg("UNPIVOT" if expression.unpivot else "PIVOT")
+
         field = self.sql(expression, "field")
+        if field and isinstance(expression.args.get("field"), exp.PivotAny):
+            field = f"IN ({field})"
+
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:
             nulls = " INCLUDE NULLS " if include_nulls else " EXCLUDE NULLS "
         else:
             nulls = ""
-        return f"{direction}{nulls}({expressions} FOR {field}){alias}"
+
+        default_on_null = self.sql(expression, "default_on_null")
+        default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
+        return f"{direction}{nulls}({expressions} FOR {field}{default_on_null}){alias}"
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"

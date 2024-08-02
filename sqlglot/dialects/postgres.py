@@ -488,12 +488,7 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
-            exp.Array: lambda self, e: (
-                f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
-                if isinstance(seq_get(e.expressions, 0), exp.Select)
-                else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]"
-            ),
-            exp.ArrayConcat: lambda self, e: super().arrayconcat_sql(e, name="ARRAY_CAT"),
+            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
@@ -648,3 +643,11 @@ class Postgres(Dialect):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def array_sql(self, expression: exp.Array) -> str:
+            exprs = expression.expressions
+            return (
+                f"{self.normalize_func('ARRAY')}({self.sql(exprs[0])})"
+                if isinstance(seq_get(exprs, 0), exp.Select)
+                else f"{self.normalize_func('ARRAY')}[{self.expressions(expression, flat=True)}]"
+            )

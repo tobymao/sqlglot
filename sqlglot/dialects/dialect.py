@@ -369,6 +369,12 @@ class Dialect(metaclass=_Dialect):
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
     """
 
+    HAS_DISTINCT_ARRAY_CONSTRUCTORS = False
+    """
+    Whether the ARRAY constructor is context-sensitive, i.e in Redshift ARRAY[1, 2, 3] != ARRAY(1, 2, 3)
+    as the former is of type INT[] vs the latter which is SUPER
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

@@ -430,6 +430,9 @@ ORDER BY
         )
         self.validate_identity("SELECT JSON_PARSE('[]')")
 
+        self.validate_identity("SELECT ARRAY(1, 2, 3)")
+        self.validate_identity("SELECT ARRAY[1, 2, 3]")
+
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
         values = [str(v) for v in range(0, 10000)]

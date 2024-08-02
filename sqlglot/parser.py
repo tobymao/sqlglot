@@ -4132,6 +4132,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_assignment(self) -> t.Optional[exp.Expression]:
         this = self._parse_disjunction()
+        if not this and self._next and self._next.token_type in self.ASSIGNMENT:
+            # This allows us to parse <non-identifier token> := <expr>
+            this = exp.column(
+                t.cast(str, self._advance_any(ignore_reserved=True) and self._prev.text)
+            )
 
         while self._match_set(self.ASSIGNMENT):
             this = self.expression(

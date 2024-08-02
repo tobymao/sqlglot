@@ -117,6 +117,17 @@ def build_pad(args: t.List, is_left: bool = True):
     )
 
 
+def build_array_constructor(
+    exp_class: t.Type[E], args: t.List, bracket_kind: TokenType, dialect: Dialect
+) -> exp.Expression:
+    array_exp = exp_class(expressions=args)
+
+    if exp_class == exp.Array and dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS:
+        array_exp.set("bracket_notation", bracket_kind == TokenType.L_BRACKET)
+
+    return array_exp
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -144,6 +155,7 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS: t.Dict[str, t.Callable] = {
         **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
+        "ARRAY": lambda args, dialect: exp.Array(expressions=args),
         "CONCAT": lambda args, dialect: exp.Concat(
             expressions=args,
             safe=not dialect.STRICT_STRING_CONCAT,
@@ -5412,11 +5424,18 @@ class Parser(metaclass=_Parser):
         if bracket_kind == TokenType.L_BRACE:
             this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
         elif not this:
-            this = self.expression(exp.Array, expressions=expressions)
+            this = build_array_constructor(
+                exp.Array, args=expressions, bracket_kind=bracket_kind, dialect=self.dialect
+            )
         else:
             constructor_type = self.ARRAY_CONSTRUCTORS.get(this.name.upper())
             if constructor_type:
-                return self.expression(constructor_type, expressions=expressions)
+                return build_array_constructor(
+                    constructor_type,
+                    args=expressions,
+                    bracket_kind=bracket_kind,
+                    dialect=self.dialect,
+                )
 
             expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)

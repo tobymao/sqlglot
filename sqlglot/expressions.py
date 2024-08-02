@@ -4790,7 +4790,7 @@ class ApproxDistinct(AggFunc):
 
 
 class Array(Func):
-    arg_types = {"expressions": False}
+    arg_types = {"expressions": False, "bracket_notation": False}
     is_var_len_args = True
 
 

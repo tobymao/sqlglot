@@ -45,6 +45,7 @@ class Redshift(Postgres):
     INDEX_OFFSET = 0
     COPY_PARAMS_ARE_CSV = False
     HEX_LOWERCASE = True
+    HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -153,6 +154,7 @@ class Redshift(Postgres):
         COPY_PARAMS_ARE_WRAPPED = False
         HEX_FUNC = "TO_HEX"
         PARSE_JSON_NAME = "JSON_PARSE"
+        ARRAY_CONCAT_IS_VAR_LEN = False
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "
@@ -169,6 +171,7 @@ class Redshift(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
+            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CONCAT"),
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self,
@@ -423,3 +426,9 @@ class Redshift(Postgres):
             file_format = f" FILE FORMAT {file_format}" if file_format else ""
 
             return f"SET{exprs}{location}{file_format}"
+
+        def array_sql(self, expression: exp.Array) -> str:
+            if expression.args.get("bracket_notation"):
+                return super().array_sql(expression)
+
+            return rename_func("ARRAY")(self, expression)

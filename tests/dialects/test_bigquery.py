@@ -1408,12 +1408,27 @@ WHERE
                 "": "SELECT LENGTH(foo)",
             },
         )
-
         self.validate_all(
             "SELECT TIME_DIFF('12:00:00', '12:30:00', MINUTE)",
             write={
                 "duckdb": "SELECT DATE_DIFF('MINUTE', CAST('12:30:00' AS TIME), CAST('12:00:00' AS TIME))",
                 "bigquery": "SELECT TIME_DIFF('12:00:00', '12:30:00', MINUTE)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_CONCAT([1, 2], [3, 4], [5, 6])",
+            write={
+                "bigquery": "ARRAY_CONCAT([1, 2], [3, 4], [5, 6])",
+                "duckdb": "ARRAY_CONCAT([1, 2], ARRAY_CONCAT([3, 4], [5, 6]))",
+                "postgres": "ARRAY_CAT(ARRAY[1, 2], ARRAY_CAT(ARRAY[3, 4], ARRAY[5, 6]))",
+                "redshift": "ARRAY_CONCAT(ARRAY(1, 2), ARRAY_CONCAT(ARRAY(3, 4), ARRAY(5, 6)))",
+                "snowflake": "ARRAY_CAT([1, 2], ARRAY_CAT([3, 4], [5, 6]))",
+                "hive": "CONCAT(ARRAY(1, 2), ARRAY(3, 4), ARRAY(5, 6))",
+                "spark2": "CONCAT(ARRAY(1, 2), ARRAY(3, 4), ARRAY(5, 6))",
+                "spark": "CONCAT(ARRAY(1, 2), ARRAY(3, 4), ARRAY(5, 6))",
+                "databricks": "CONCAT(ARRAY(1, 2), ARRAY(3, 4), ARRAY(5, 6))",
+                "presto": "CONCAT(ARRAY[1, 2], ARRAY[3, 4], ARRAY[5, 6])",
+                "trino": "CONCAT(ARRAY[1, 2], ARRAY[3, 4], ARRAY[5, 6])",
             },
         )
 

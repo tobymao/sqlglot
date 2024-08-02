@@ -255,7 +255,7 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
-            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
+            "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0)
             ),
@@ -693,6 +693,7 @@ class Snowflake(Dialect):
         COPY_PARAMS_EQ_REQUIRED = True
         STAR_EXCEPT = "EXCLUDE"
         SUPPORTS_EXPLODING_PROJECTIONS = False
+        ARRAY_CONCAT_IS_VAR_LEN = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -700,7 +701,7 @@ class Snowflake(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: inline_array_sql,
-            exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this

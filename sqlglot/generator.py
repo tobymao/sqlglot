@@ -374,6 +374,9 @@ class Generator(metaclass=_Generator):
     # Whether a projection can explode into multiple rows, e.g. by unnesting an array.
     SUPPORTS_EXPLODING_PROJECTIONS = True
 
+    # Whether ARRAY_CONCAT can be generated with varlen args or if it should be reduced to 2-arg version
+    ARRAY_CONCAT_IS_VAR_LEN = True
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4059,3 +4062,12 @@ class Generator(metaclass=_Generator):
             self.unsupported("GenerateSeries projection unnesting is not supported.")
 
         return self.sql(generate_series)
+
+    def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CONCAT") -> str:
+        exprs = expression.expressions
+        if not self.ARRAY_CONCAT_IS_VAR_LEN:
+            rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
+        else:
+            rhs = self.expressions(expression)
+
+        return self.func(name, expression.this, rhs)

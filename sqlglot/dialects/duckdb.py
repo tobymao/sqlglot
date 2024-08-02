@@ -314,7 +314,7 @@ class DuckDB(Dialect):
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_REVERSE_SORT": _build_sort_array_desc,
             "LIST_SORT": exp.SortArray.from_arg_list,
-            "LIST_VALUE": exp.Array.from_arg_list,
+            "LIST_VALUE": lambda args: exp.Array(expressions=args),
             "MAKE_TIME": exp.TimeFromParts.from_arg_list,
             "MAKE_TIMESTAMP": _build_make_timestamp,
             "MEDIAN": lambda args: exp.PercentileCont(
@@ -437,6 +437,7 @@ class DuckDB(Dialect):
         COPY_HAS_INTO_KEYWORD = False
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
+        ARRAY_CONCAT_IS_VAR_LEN = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

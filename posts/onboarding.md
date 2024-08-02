@@ -27,7 +27,7 @@
 ## Onboarding
 This document aims to familiarize the reader with SQLGlot's codebase & architecture.
 
-Generally, background knowledge about programming languages / compilers is required. A good starting point is [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom, which served as the foundation when SQLGlot was initially created.
+Generally, some background knowledge about programming languages / compilers is required. A good starting point is [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom, which served as the foundation when SQLGlot was initially created.
 
 At a very high level, SQLGlot transpilation involves three modules:
 [Tokenizer](#tokenizer): converts raw code into a sequence of “tokens,” one for each word/symbol
@@ -40,13 +40,13 @@ Each dialect has unique syntax that is implemented by overriding the base versio
 
 The base versions of the modules implement the `sqlmesh` dialect, which is designed to accommodate as many common syntax elements as possible across the other supported dialects. This prevents duplication of code across the dialect-specific modules.
 
-SQLGlot includes two other modules not required for basic transpilation: the [Optimizer](#optimizer) and Executor. The Optimizer, modifies an abstract syntax tree for other uses (e.g., creating column-level lineage). The Executor runs SQL code in Python (not all SQL functionality is supported).
+SQLGlot includes two other modules not required for basic transpilation: the [Optimizer](#optimizer) and Executor. The Optimizer modifies an abstract syntax tree for other uses (e.g., creating column-level lineage). The Executor runs SQL code in Python (not all SQL functionality is supported).
 
 The rest of this document describes the three base modules, dialect-specific overrides, and the Optimizer module.
 
 ## Tokenizer
 
-The tokenizer module (`tokens.py`) is responsible for breaking down SQL code into tokens (like keywords, identifiers, literals, operators, etc.), which are the smallest units of meaningful information. This process is also commonly referred to as lexing/lexical analysis.
+The tokenizer module (`tokens.py`) is responsible for breaking down SQL code into tokens (like keywords, identifiers, etc.), which are the smallest units of meaningful information. This process is also known as lexing/lexical analysis.
 
 Python is not designed for maximum processing speed/performance, so SQLGlot maintains an equivalent [Rust version of the tokenizer](https://tobikodata.com/sqlglot-jumps-on-the-rust-bandwagon.html) in `sqlglotrs/tokenizer.rs` for improved performance.
 
@@ -72,7 +72,7 @@ for token in tokens:
 # <Token token_type: <TokenType.NUMBER: 'NUMBER'>, text: '1', line: 1, col: 31, start: 30, end: 30, comments: []>
 ```
 
-The Tokenizer processes each of the query’s eight symbols (words or operators like `=`) by matching each one to its mapping of keyword strings to token type.
+The Tokenizer processes each of the query’s eight symbols (words or operators like `=`) by looking up each one in its mapping of keyword strings to token type.
 
 Each token is generally represented by its `TokenType` and by its string value stored in the `text` field. Other metadata such as `line` or `col` are stored during this step and can help with error diagnostics and other tasks.
 
@@ -92,7 +92,7 @@ The parser sequentially processes a SQL statement’s list of tokens to infer th
 
 Each semantic concept is represented by an _expression_ in the AST. Converting tokens to expressions is the primary task of the parser.
 
-As the AST is the core concept of SQLGlot, a more detailed tutorial on its representation, traversal & mutation can [be found here](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md).
+As the AST is a core concept of SQLGlot, a more detailed tutorial on its representation, traversal, and mutation can [be found here](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md).
 
 The next sections describe how the parser processes a SQL statement’s list of tokens, followed by an explanation of how dialect-specific parsing works.
 
@@ -103,13 +103,13 @@ Once the current token has been successfully processed, the parser moves to the 
 
 If a token has been consumed but could not be parsed, the parser can move backward to the previous token by calling `_retreat()` to decrement the index.
 
-In some scenarios the parser’s behavior depends on both the current and surrounding tokens. The parser can “peek” at the previous and next tokens without consuming them by accessing the `_prev` and `_next` properties, respectively.
+In some scenarios, the parser’s behavior depends on both the current and surrounding tokens. The parser can “peek” at the previous and next tokens without consuming them by accessing the `_prev` and `_next` properties, respectively.
 
 ### Matching tokens and text
 When parsing a SQL statement, the parser must identify specific sets of keywords to correctly build the AST. It does so by “matching” sets of tokens or keywords to infer the structure of the statement.
 
 For example, these matches occur when parsing the window specification `SUM(x) OVER (PARTITION BY y)`:
-1. The `SUM` and `( tokens are matched and `x` is parsed as an identifier
+1. The `SUM` and `(` tokens are matched and `x` is parsed as an identifier
 2. The `)` token is matched
 2. The `OVER`  and `(` tokens are matched
 2. The `PARTITION` and `BY` tokens are matched
@@ -129,7 +129,7 @@ Method                | Use
 **`_match_texts(texts)`**   | Attempt to match a keyword in a set of strings/texts
 
 ### `_parse` methods
-SQLGlot’s parser uses the “recursive descent” approach, so the relationships between different SQL constructs are encoded in the parser itself. This allows SQLGlot to identify and parse components recursively until it has collected the elements needed to create an AST node expression.
+SQLGlot’s parser uses the “recursive descent” approach, so the relationships between different SQL constructs are encoded in the parser itself. This allows SQLGlot to identify and parse components recursively until it has collected the elements needed to create an AST expression node.
 
 For example, the SQL statement `CREATE TABLE a (col1 INT)` will be parsed into an `exp.Create` expression that includes the kind of object being created (table) and its schema (table name, column names and types). The schema will be parsed into an `exp.Schema` node that contains one column definition `exp.ColumnDef` node for each column.
 
@@ -175,9 +175,9 @@ Dialect-specific parser behavior is implemented in two ways: feature flags and p
 
 If two different parsing behaviors are common across dialects, the base parser may implement both and use feature flags to determine which should be used for a specific dialect. In contrast, parser overrides directly replace specific base parser methods.
 
-Therefore, each dialect’s Parser class may define:
+Therefore, each dialect’s Parser class may specify:
 
-- Feature flags such as `SUPPORTS_IMPLICIT_UNNEST` or `SUPPORTS_PARTITION_SELECTION`, which are used to control the behavior of base parser methods .
+- Feature flags such as `SUPPORTS_IMPLICIT_UNNEST` or `SUPPORTS_PARTITION_SELECTION`, which are used to control the behavior of base parser methods.
 
 - Sets of tokens that play a similar role, such as `RESERVED_TOKENS` that cannot be used as object names.
 
@@ -196,15 +196,15 @@ An example `token -> Callable` mapping is the `FUNCTIONS` dictionary that builds
      …,
 ```
 
-In this dialect, the `LOG2()` function calculates a logarithm of base 2, which is represented in SQLGlot by the general `exp.Log` expression and a parameter representing the logarithm’s base.
+In this dialect, the `LOG2()` function calculates a logarithm of base 2, which is represented in SQLGlot by the general `exp.Log` expression.
 
+The logarithm base and the user-specified value to `log` are stored in the node's arguments. The former is stored as an integer literal in the `this` argument, and the latter is stored in the `expression` argument.
 
-In this dialect, the `LOG2()` function calculates a logarithm of base 2, which is represented in SQLGlot by the general `exp.Log` expression; The base and the user-inputted value are stored in the node's arguments i.e the former is stored as an integer literal in `this` while the latter is stored in `expression`.
 
 ## Generator
 After the parser has created an AST, the generator module is responsible for converting it back into SQL code.
 
-Each dialect’s Generator class defines the following:
+Each dialect’s Generator class may specify:
 
 - A set of flags such as `ALTER_TABLE_INCLUDE_COLUMN_KEYWORD`. As with the parser, these flags control the behavior of base Generator methods.
 
@@ -212,7 +212,7 @@ Each dialect’s Generator class defines the following:
     - The generator traverses the AST recursively and produces the equivalent string for each expression it visits. This can be thought of as the reverse operation of the parser, where expressions / AST nodes are converted back to strings.
     - The mappings are grouped by general semantic type (e.g., data type expressions), with each type having its own dictionary.
 
-The mappings can be implemented as:
+The `Expression -> str` mappings can be implemented as either:
 - Entries in the `TRANSFORMS` dictionary, which are best suited for single-line generations.
 - Functions with names of the form `<expr_name>_sql(...)`. For example, to generate SQL for an `exp.SessionParameter` node we can override the base generator method by defining the method `def sessionparameter_sql(...)` in a dialect’s Generator class.
 
@@ -229,36 +229,36 @@ The Generator defines helper methods containing quality-of-life abstractions ove
 
 Method                | Use
 -------------------------|-----
-**`expressions()`**  | Generates the string representation for a list of `Expression`s, employs a series of arguments to help with their formatting
-**`func()`, `rename_func()`**  | Given a function name and an `Expression`, outputs the string representation of a function call by generating the expression's args as the func args.
+**`expressions()`**  | Generates the string representation for a list of `Expression`s, employing a series of arguments to help with their formatting
+**`func()`, `rename_func()`**  | Given a function name and an `Expression`, returns the string representation of a function call by generating the expression's args as the func args.
 
 These methods should be used whenever possible to reduce code duplication.
 
 ### Pretty print
-Pretty printing refers to the process of generating formatted & consistently styled SQL which improves readability, debugging, and code reviewing.
+Pretty printing refers to the process of generating formatted and consistently styled SQL, which improves readability, debugging, and code reviewing.
 
 SQLGlot generates an AST’s SQL code on a single line by default, but users may specify that it be `pretty` and include new lines and indenting.
 
-It is up to the developer to ensure that whitespaces and newlines are embedded in the SQL correctly. To aid in that process, the Generator class offers the `sep()` and `seg()` helper methods.
+It is up to the developer to ensure that whitespaces and newlines are embedded in the SQL correctly. To aid in that process, the Generator class provides the `sep()` and `seg()` helper methods.
 
 ## Dialects
 
-We briefly mentioned dialect-specific behaviors while describing the SQLGlot base Tokenizer, Parser, and Generator in previous sections. This section expands on how to specify a new SQL dialect.
+We briefly mentioned dialect-specific behaviors while describing the SQLGlot base Tokenizer, Parser, and Generator modules. This section expands on how to specify a new SQL dialect.
 
 As [described above](#dialect-specific-parsing), SQLGlot attempts to bridge dialect-specific variations in a "superset" dialect, which we refer to as the _sqlglot_ dialect.
 
-Each SQL dialect has its own Dialect subclass whose Tokenizer, Parser and Generator components are extended or overridden as needed.
+All other SQL dialects have their own Dialect subclass whose Tokenizer, Parser and Generator components extend or override the base modules as needed.
 
-Dialect definitions can be found under `dialects/<dialect>.py`. The base dialect components are defined in `tokens.py`, `parser.py` and `generator.py`.
+The base dialect components are defined in `tokens.py`, `parser.py` and `generator.py`. Dialect definitions can be found under `dialects/<dialect>.py`.
 
-When adding features that exist in multiple engines, it's best to place the common/overlapping parts in the _base_ dialect to prevent code repetition across dialects. Any dialect-specific features that cannot (or should not) be repeated can be specified in the dialect’s subclass.
+When adding features that will be used by multiple dialects, it's best to place the common/overlapping parts in the base _sqlglot_ dialect to prevent code repetition across other dialects. Any dialect-specific features that cannot (or should not) be repeated can be specified in the dialect’s subclass.
 
 The Dialect class contains flags that are visible to its Tokenizer, Parser and Generator components. Flags are only added in a Dialect when they need to be visible to at least two components, in order to avoid code duplication.
 
 ### Implementing a custom dialect
 Creating a new SQL dialect may seem complicated at first, but it is actually quite simple in SQLGlot.
 
-This example demonstrates a new dialect named `Custom`:
+This example demonstrates defining a new dialect named `Custom` that extends or overrides components of the base Dialect modules:
 
 ```Python
 from sqlglot import exp
@@ -279,16 +279,15 @@ class Custom(Dialect):
             "FLOAT64": TokenType.DOUBLE,
         }
 
+      class Parser(Parser):
+           # Specifies how certain tokens are mapped to function AST nodes
+           FUNCTIONS = {
+             **parser.Parser.FUNCTIONS,
+             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+           }
 
-    class Parser(Parser):
-        # Specifies how certain tokens are mapped to function AST nodes
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
-        }
-
-        # Specifies how a specific construct e.g. CONSTRAINT is parsed
-        def _parse_constraint(self) -> t.Optional[exp.Expression]:
+          # Specifies how a specific construct e.g. CONSTRAINT is parsed
+          def _parse_constraint(self) -> t.Optional[exp.Expression]:
             return super()._parse_constraint() or self._parse_projection_def()
 
     class Generator(Generator):
@@ -305,9 +304,8 @@ class Custom(Dialect):
         }
 ```
 
-This example demonstrates how certain parts of the base Dialect class can be overridden.
 
-Even though it is a fairly realistic starting point, we strongly encourage you to study existing dialect implementations to understand how their various components can be modified.
+Even though this example is a fairly realistic starting point, we strongly encourage you to study existing dialect implementations to understand how their various components can be modified.
 
 
 ## Schema
@@ -317,19 +315,21 @@ A Schema represents the structure of a database schema, including the tables/vie
 
 The file `schema.py` defines the abstract classes `Schema` and `AbstractMappingSchema`; the implementing class is `MappingSchema`.
 
-A `MappingSchema` object is defined with a nested dictionary, as in this example. The keys of the top-level dictionary are table names (`t`), the keys of `t`’s dictionary are its column names (`x` and `y`), and the values are the column data types (`int` and `datetime`):
+A `MappingSchema` object is defined with a nested dictionary, as in this example:
 
 ```Python
 schema = MappingSchema({"t": {"x": "int", "y": "datetime"}})
 ```
 
-A schema provides information required by various SQLGlot modules (most importantly, the optimizer and column level lineage).
+The keys of the top-level dictionary are table names (`t`), the keys of `t`’s dictionary are its column names (`x` and `y`), and the values are the column data types (`int` and `datetime`).
 
-Schema information is used to enrich ASTs using actions like replacing stars (`SELECT *`) with the names of the columns being selected from the upstream tables.
+A schema provides information required by other SQLGlot modules (most importantly, the optimizer and column level lineage).
+
+Schema information is used to enrich ASTs with actions like replacing stars (`SELECT *`) with the names of the columns being selected from the upstream tables.
 
 ## Optimizer
 
-The optimizer module in SQLGlot (`optimizer.py`) is responsible for producing canonicalized & efficient SQL queries by applying a series of optimization rules.
+The optimizer module in SQLGlot (`optimizer.py`) is responsible for producing canonicalized and efficient SQL queries by applying a series of optimization rules.
 
 Optimizations include simplifying expressions, removing redundant operations, and rewriting queries for better performance.
 
@@ -341,7 +341,7 @@ The optimizer operates on the abstract syntax tree (AST) returned by the parser,
 
 
 ### Optimization rules
-The optimizer essentially applies [a list of rules](https://sqlglot.com/sqlglot/optimizer.html) in a sequential manner, where each rule takes in an AST and produces a canonicalized & optimized version of it.
+The optimizer essentially applies [a list of rules](https://sqlglot.com/sqlglot/optimizer.html) in a sequential manner, where each rule takes in an AST and produces a canonicalized and optimized version of it.
 
 > [!WARNING]
 > The rule order is important, as some rules depend on others to work properly. We discourage manually applying individual rules, which may result in erroneous or unpredictable behavior.
@@ -352,7 +352,7 @@ The first, foundational optimization task is to _canonicalize_ an AST, which is 
 The most important rule in the optimizer is `qualify`, which is responsible for rewriting the AST such that all tables and columns are _normalized_ and _qualified_.
 
 ##### Identifier normalization
-The normalization step (`normalize_identifiers.py`) transforms all the unquoted identifiers to lower or upper case (depending on the dialect), essentially making them case-insensitive.
+The normalization step (`normalize_identifiers.py`) transforms all unquoted identifiers to lower or upper case (depending on the dialect), essentially making them case-insensitive.
 
 > [!NOTE]
 > Some dialects, like BigQuery, treat identifiers as case-insensitive even when they're quoted, so all identifiers are normalized.
@@ -362,23 +362,27 @@ Different dialects may have different normalization strategies. For instance, in
 This example demonstrates how the identifier `Foo` is normalized to lowercase `foo` in the default sqlglot dialect and uppercase `FOO` in the Snowflake dialect:
 
 ```Python
->>> normalize_identifiers("Foo").sql()
+import sqlglot
+from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+
+normalize_identifiers("Foo").sql()
 # 'foo'
 
->>> normalize_identifiers("Foo", dialect="snowflake").sql("snowflake")
+normalize_identifiers("Foo", dialect="snowflake").sql("snowflake")
 # 'FOO'
-
-
 ```
 
-##### Qualifying tables & columns
+##### Qualifying tables and columns
 After normalizing the identifiers, all table and column names are qualified so there is no ambiguity about the data sources referenced by the query.
 
-This means that  all table references are assigned an alias and all column names are prefixed with their source table’s name.
+This means that all table references are assigned an alias and all column names are prefixed with their source table’s name.
 
 This example demonstrates qualifying the query `SELECT col FROM tbl`, where `tbl` contains a single column `col`. Note that the table’s schema is passed as an argument to `qualify()`:
 
 ```Python
+import sqlglot
+from sqlglot.optimizer.qualify import qualify
+
 schema = {"tbl": {"col": "INT"}}
 expression = sqlglot.parse_one("SELECT col FROM tbl")
 qualify(expression, schema=schema).sql()
@@ -387,10 +391,16 @@ qualify(expression, schema=schema).sql()
 ```
 
 The `qualify` rule also offers a set of sub-rules that further canonicalize the query.
+
 For instance, `qualify()` can expand stars such that each `SELECT *` is replaced by a projection list of the selected columns.
-This example modifies the previous example’s query to use `SELECT *`. `qualify()` expands the star returns the same output:
+
+This example modifies the previous example’s query to use `SELECT *`. `qualify()` expands the star and returns the same output as before:
 
 ```Python
+import sqlglot
+from sqlglot.optimizer.qualify import qualify
+
+
 schema = {"tbl": {"col": "INT"}}
 expression = sqlglot.parse_one("SELECT * FROM tbl")
 qualify(expression, schema=schema).sql()
@@ -400,47 +410,115 @@ qualify(expression, schema=schema).sql()
 ```
 
 #### Type annotation
-Traverses the AST and attempts to infer the type of each expression. In many cases, both transpilation and optimization require types to work properly.
+Some SQL operators’ behavior changes based on the data type of its inputs.
 
-For instance, many dialects allow string concatenation through the `+` operator while others only offer this feature through functions such as `CONCAT(s1, s2, …)`. Transpiling an expression such as `a + b` between such dialects is sensitive to the types of `a` and `b` respectively.
+For example, in some SQL dialects `+` can be used for either adding numbers or concatenating strings. The database uses its knowledge of column data types to determine which operation should be executed in a specific situation.
 
-Thus, without having proper type annotation across the board, the optimizer wouldn't be able to understand the SQL and employ various optimizations & transformations safely.
+Like the database, SQLGlot needs to know column data types to perform some optimizations. In many cases, both transpilation and optimization need type information to work properly.
+
+Type annotation begins with user-provided information about column data types for at least one table. SQLGlot then traverses the AST, propagating that type information and attempting to infer the type returned by each AST expression.
+
+Users may need to provide column type information for multiple tables to successfully annotate all expressions in the AST.
+
+
 
 
 
 ## Column Level Lineage
-Column-level lineage tracks the flow of data from source columns in one table to target columns in another table through various transformations and operations. It is an important aspect of data lineage that helps in understanding how data is derived, transformed, and used across different parts of a data pipeline or database system.
+Column-level lineage (CLL) traces the flow of data from column to column as tables select and modify columns from one another in a SQL codebase.
 
-SQLGlot offers an implementation of CLL in `lineage.py`. An example of its use case:
+CLL provides critical information about data lineage that helps in understanding how data is derived, transformed, and used across different parts of a data pipeline or database system.
 
+SQLGlot’s CLL implementation is defined in `lineage.py`. It operates on a collection of queries that `SELECT` from one another. It assumes that the graph/network of queries forms a directed acyclic graph (DAG) where no two tables `SELECT` from each other.
+
+The user must provide:
+- A “target” query whose upstream column lineage should be traced
+- The queries linking all tables upstream of the target query
+- The schemas (column names and types) of the root tables in the DAG
+
+In this example, we trace the lineage of the column `traced_col`:
 
 ```Python
 from sqlglot.lineage import lineage
 
+target_query = “””
+WITH cte AS (
+  SELECT
+    traced_col
+  FROM
+    intermediate_table
+)
+SELECT
+  traced_col
+FROM
+  cte
+“””
+
 node = lineage(
-    column="a",
-    sql="WITH z AS (SELECT a FROM y) SELECT a FROM z",
-    schema={"x": {"a": "int"}},
-    sources={"y": "SELECT * FROM x"},
+    column="traced_col",
+    sql=target_query,
+    sources={"intermediate_table": "SELECT * FROM root_table"},
+    schema={"root_table": {"traced_col": "int"}},
 )
 ```
 
+The `lineage()` function’s `sql` argument takes the target query, the `sources` argument takes a dictionary of source table names and the query that produces each table, and the `schema` argument takes the column names/types of the graph’s root tables.
+
 ### Implementation details
-In the previous example, we're interested in tracing the origin of column `a`. Before lineage can be traced, the following preparatory steps must be carried out:
+This section describes how SQLGlot traces the lineage in the previous example.
 
+Before lineage can be traced, the following preparatory steps must be carried out:
 
-1. Expand the _sources_ such that we have a single standalone query:
+1. Replace the `sql` query’s table references with their `sources`’ queries, such that we have a single standalone query.
 
-```SQL
-WITH z AS (SELECT a FROM (SELECT * FROM x) AS y) SELECT a FROM z
-```
-
-2. Qualify the expanded query:
+This example demonstrates how the earlier example’s reference to `intermediate_table` inside the CTE is replaced with the query that generated it, `SELECT * FROM root_table`, and given the alias `intermediate_table`:
 
 ```SQL
-WITH z AS (SELECT y.a FROM (SELECT x.a FROM x AS x) AS y) SELECT z.a FROM z AS z
+WITH cte AS (
+  SELECT
+    traced_col
+  FROM (
+    SELECT
+      *
+    FROM
+      root_table
+  ) AS intermediate_table
+)
+SELECT
+  traced_col
+FROM
+  cte
 ```
 
-With these steps the query is canonicalized and the lineage can be tracked. This is a top-down process, meaning that the search would start from `z.a` (outer scope) and traverse inwards to find that its origin is `y.a`, which in turn is based on `x.a`. The search continues until the innermost scope has been visited; At this point all `sources` are exhausted so the `schema` will be searched to validate that the final table (e.g `x` in this case) exists and that the target column `a` is defined in it.
+2. Qualify the standalone query, expanding `*`s and annotating all column names with source tables:
 
-At each step, the column of interest (i.e `z.a`, `y.a` etc) is wrapped in a lineage object `Node` that is linked to its upstream (or parent) nodes; This incrementally builds a linked-list of `Nodes` that traces the lineage backwards for the target column such as `x.a -> y.a -> z.a`. The result can be visualized using the `node.to_html()` function which outputs an HTML graph based on vis.js.
+```SQL
+WITH cte AS (
+  SELECT
+    intermediate_table.traced_col
+  FROM (
+    SELECT
+      root_table.traced_col
+    FROM
+      root_table AS root_table
+  ) AS intermediate_table
+)
+SELECT
+  cte.traced_col
+FROM
+  cte AS cte
+```
+
+After these operations, the query is canonicalized and the lineage can be traced.
+
+Tracing is a top-down process, meaning that the search starts from `cte.traced_col` (outer scope) and traverse inwards to find that its origin is `intermediate_table.traced_col`, which in turn is based on `root_table.traced_col`.
+
+The search continues until the innermost scope has been visited. At that point all `sources` are exhausted, so the `schema` is searched to validate that the root table (`root_table` in our example) exists and that the target column `traced_col` is defined in it.
+
+At each step, the column of interest (i.e., `cte.traced_col`, `intermediate_table.traced_col`. etc) is wrapped in a lineage object `Node` that is linked to its upstream nodes.
+
+This approach incrementally builds a linked list of `Nodes` that traces the lineage for the target column: `root_table.traced_col -> intermediate_table.traced_col -> cte.traced_col`.
+
+The `lineage()` output can be visualized using the `node.to_html()` function, which generates an HTML lineage graph using `vis.js`:
+
+![Lineage](onboarding_images/lineage_img.png)

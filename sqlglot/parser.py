@@ -170,6 +170,12 @@ class Parser(metaclass=_Parser):
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
+        "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
+            start=seq_get(args, 0),
+            end=seq_get(args, 1),
+            interval=seq_get(args, 2)
+            or exp.Interval(this=exp.Literal.number(1), unit=exp.var("DAY")),
+        ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),

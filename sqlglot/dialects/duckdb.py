@@ -859,13 +859,10 @@ class DuckDB(Dialect):
             start = _implicit_date_cast(expression.args.get("start"))
             end = _implicit_date_cast(expression.args.get("end"))
 
-            # BigQuery has a default step/interval of 1 DAY
-            interval = expression.args.get("interval") or exp.Interval(
-                this=exp.Literal.number(1), unit=exp.var("DAY")
-            )
-
             # BQ's GENERATE_DATE_ARRAY is transformed to DuckDB'S GENERATE_SERIES
-            gen_series = exp.GenerateSeries(start=start, end=end, step=interval)
+            gen_series = exp.GenerateSeries(
+                start=start, end=end, step=expression.args.get("interval")
+            )
 
             # The result is TIMESTAMP array, so to match BQ's semantics we must cast it back to DATE array
             return self.sql(exp.cast(gen_series, exp.DataType.build("ARRAY<DATE>")))

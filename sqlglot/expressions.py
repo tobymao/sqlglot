@@ -4538,6 +4538,12 @@ class PivotAlias(Alias):
     pass
 
 
+# Represent's Snowflakes ANY [ ORDER BY ... ] syntax
+# https://docs.snowflake.com/en/sql-reference/constructs/pivot
+class PivotAny(Expression):
+    arg_types = {"this": False}
+
+
 class Aliases(Expression):
     arg_types = {"this": True, "expressions": True}
 

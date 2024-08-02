@@ -3725,7 +3725,7 @@ class Parser(metaclass=_Parser):
             exp.Pivot, this=this, expressions=expressions, using=using, group=group
         )
 
-    def _parse_pivot_in(self) -> exp.In:
+    def _parse_pivot_in(self) -> exp.In | exp.PivotAny:
         def _parse_aliased_expression() -> t.Optional[exp.Expression]:
             this = self._parse_select_or_expression()
 
@@ -3741,13 +3741,14 @@ class Parser(metaclass=_Parser):
         if not self._match_pair(TokenType.IN, TokenType.L_PAREN):
             self.raise_error("Expecting IN (")
 
-        if self._match_pair(TokenType.ANY, TokenType.ORDER_BY):
-            expressions = self._parse_csv(self._parse_ordered)
+        if self._match(TokenType.ANY):
+            expr: exp.PivotAny | exp.In = self.expression(exp.PivotAny, this=self._parse_order())
         else:
-            expressions = self._parse_csv(_parse_aliased_expression)
+            aliased_expressions = self._parse_csv(_parse_aliased_expression)
+            expr = self.expression(exp.In, this=value, expressions=aliased_expressions)
 
         self._match_r_paren()
-        return self.expression(exp.In, this=value, expressions=expressions)
+        return expr
 
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index

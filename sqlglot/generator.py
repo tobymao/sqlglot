@@ -3133,6 +3133,8 @@ class Generator(metaclass=_Generator):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):
             actions = self.expressions(expression, key="actions", flat=True)
+        elif isinstance(actions[0], exp.Select):
+            actions = "AS " + self.expressions(expression, key="actions", flat=True)
         else:
             actions = self.expressions(expression, key="actions", flat=True)
 
@@ -3142,11 +3144,8 @@ class Generator(metaclass=_Generator):
         only = " ONLY" if expression.args.get("only") else ""
         options = self.expressions(expression, key="options")
         options = f", {options}" if options else ""
-        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{options}"
-
-    def alterview_sql(self, expression: exp.AlterView) -> str:
-        expression_sql = self.sql(expression, "expression")
-        return f"ALTER VIEW {self.sql(expression, 'this')} AS {expression_sql}"
+        kind = expression.args.get("kind")
+        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{options}"
 
     def add_column_sql(self, expression: exp.AlterTable) -> str:
         if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:

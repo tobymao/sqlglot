@@ -4279,18 +4279,12 @@ class Rollback(Expression):
 class AlterTable(Expression):
     arg_types = {
         "this": True,
+        "kind": True,
         "actions": True,
         "exists": False,
         "only": False,
         "options": False,
         "cluster": False,
-    }
-
-
-class AlterView(Expression):
-    arg_types = {
-        "this": True,
-        "expression": False,
     }
 
 

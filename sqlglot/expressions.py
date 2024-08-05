@@ -4287,6 +4287,13 @@ class AlterTable(Expression):
     }
 
 
+class AlterView(Expression):
+    arg_types = {
+        "this": True,
+        "expression": False,
+    }
+
+
 class AddConstraint(Expression):
     arg_types = {"expressions": True}
 

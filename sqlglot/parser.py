@@ -6531,12 +6531,7 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
-    def _parse_alter(self) -> exp.AlterTable | exp.Command:
-        start = self._prev
-
-        if not self._match(TokenType.TABLE):
-            return self._parse_as_command(start)
-
+    def _parse_alter_table(self, start) -> exp.AlterTable | exp.Command:
         exists = self._parse_exists()
         only = self._match_text_seq("ONLY")
         this = self._parse_table(schema=True)
@@ -6562,6 +6557,30 @@ class Parser(metaclass=_Parser):
                 )
 
         return self._parse_as_command(start)
+
+    def _parse_alter_view(self, start) -> exp.AlterView | exp.Command:
+        self._parse_select()
+        table_parts = self._parse_table_parts()
+        this = self._parse_schema(this=table_parts)
+        if self._match(TokenType.ALIAS):
+            expression = self._parse_ddl_select()
+            return self.expression(
+                exp.AlterView,
+                this=this,
+                expression=expression
+            )
+
+        return self._parse_as_command(start)
+
+    def _parse_alter(self) -> exp.AlterTable | exp.AlterView | exp.Command:
+        start = self._prev
+
+        if self._match(TokenType.TABLE):
+            return self._parse_alter_table(start)
+        elif self._match(TokenType.VIEW):
+            return self._parse_alter_view(start)
+        else:
+            return self._parse_as_command(start)
 
     def _parse_merge(self) -> exp.Merge:
         self._match(TokenType.INTO)

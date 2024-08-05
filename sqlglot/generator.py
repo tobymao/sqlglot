@@ -3144,6 +3144,10 @@ class Generator(metaclass=_Generator):
         options = f", {options}" if options else ""
         return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{options}"
 
+    def alterview_sql(self, expression: exp.AlterView) -> str:
+        expression_sql = self.sql(expression, "expression")
+        return f"ALTER VIEW {self.sql(expression, 'this')} AS {expression_sql}"
+
     def add_column_sql(self, expression: exp.AlterTable) -> str:
         if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
             return self.expressions(

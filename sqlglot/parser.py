@@ -2848,6 +2848,8 @@ class Parser(metaclass=_Parser):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
             return self.expression(exp.Summarize, this=this, table=table)
+        elif self._match(TokenType.DESCRIBE):
+            this = self._parse_describe()
         else:
             this = None
 

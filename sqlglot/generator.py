@@ -3134,7 +3134,7 @@ class Generator(metaclass=_Generator):
         elif isinstance(actions[0], exp.Delete):
             actions = self.expressions(expression, key="actions", flat=True)
         elif isinstance(actions[0], exp.Select):
-            actions = "AS " + self.expressions(expression, key="actions", flat=True)
+            actions = "AS " + self.expressions(expression, key="actions")
         else:
             actions = self.expressions(expression, key="actions", flat=True)
 

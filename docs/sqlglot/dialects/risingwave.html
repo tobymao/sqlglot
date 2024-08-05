@@ -503,6 +503,8 @@
                 <dd id="RisingWave.FORCE_EARLY_ALIAS_REF_EXPANSION" class="variable"><a href="dialect.html#Dialect.FORCE_EARLY_ALIAS_REF_EXPANSION">FORCE_EARLY_ALIAS_REF_EXPANSION</a></dd>
                 <dd id="RisingWave.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY" class="variable"><a href="dialect.html#Dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY">EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY</a></dd>
                 <dd id="RisingWave.SUPPORTS_ORDER_BY_ALL" class="variable"><a href="dialect.html#Dialect.SUPPORTS_ORDER_BY_ALL">SUPPORTS_ORDER_BY_ALL</a></dd>
+                <dd id="RisingWave.HAS_DISTINCT_ARRAY_CONSTRUCTORS" class="variable"><a href="dialect.html#Dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS">HAS_DISTINCT_ARRAY_CONSTRUCTORS</a></dd>
+                <dd id="RisingWave.SUPPORTS_FIXED_SIZE_ARRAYS" class="variable"><a href="dialect.html#Dialect.SUPPORTS_FIXED_SIZE_ARRAYS">SUPPORTS_FIXED_SIZE_ARRAYS</a></dd>
                 <dd id="RisingWave.DATE_PART_MAPPING" class="variable"><a href="dialect.html#Dialect.DATE_PART_MAPPING">DATE_PART_MAPPING</a></dd>
                 <dd id="RisingWave.TYPE_TO_EXPRESSIONS" class="variable"><a href="dialect.html#Dialect.TYPE_TO_EXPRESSIONS">TYPE_TO_EXPRESSIONS</a></dd>
                 <dd id="RisingWave.ANNOTATORS" class="variable"><a href="dialect.html#Dialect.ANNOTATORS">ANNOTATORS</a></dd>
@@ -712,6 +714,7 @@ Default: True</li>
                 <dd id="RisingWave.Generator.WITH_PROPERTIES_PREFIX" class="variable"><a href="../generator.html#Generator.WITH_PROPERTIES_PREFIX">WITH_PROPERTIES_PREFIX</a></dd>
                 <dd id="RisingWave.Generator.QUOTE_JSON_PATH" class="variable"><a href="../generator.html#Generator.QUOTE_JSON_PATH">QUOTE_JSON_PATH</a></dd>
                 <dd id="RisingWave.Generator.PAD_FILL_PATTERN_IS_REQUIRED" class="variable"><a href="../generator.html#Generator.PAD_FILL_PATTERN_IS_REQUIRED">PAD_FILL_PATTERN_IS_REQUIRED</a></dd>
+                <dd id="RisingWave.Generator.SUPPORTS_EXPLODING_PROJECTIONS" class="variable"><a href="../generator.html#Generator.SUPPORTS_EXPLODING_PROJECTIONS">SUPPORTS_EXPLODING_PROJECTIONS</a></dd>
                 <dd id="RisingWave.Generator.PARSE_JSON_NAME" class="variable"><a href="../generator.html#Generator.PARSE_JSON_NAME">PARSE_JSON_NAME</a></dd>
                 <dd id="RisingWave.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
                 <dd id="RisingWave.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
@@ -1064,6 +1067,8 @@ Default: True</li>
                 <dd id="RisingWave.Generator.changes_sql" class="function"><a href="../generator.html#Generator.changes_sql">changes_sql</a></dd>
                 <dd id="RisingWave.Generator.pad_sql" class="function"><a href="../generator.html#Generator.pad_sql">pad_sql</a></dd>
                 <dd id="RisingWave.Generator.summarize_sql" class="function"><a href="../generator.html#Generator.summarize_sql">summarize_sql</a></dd>
+                <dd id="RisingWave.Generator.explodinggenerateseries_sql" class="function"><a href="../generator.html#Generator.explodinggenerateseries_sql">explodinggenerateseries_sql</a></dd>
+                <dd id="RisingWave.Generator.arrayconcat_sql" class="function"><a href="../generator.html#Generator.arrayconcat_sql">arrayconcat_sql</a></dd>
 
             </div>
             <div><dt><a href="postgres.html#Postgres.Generator">sqlglot.dialects.postgres.Postgres.Generator</a></dt>
@@ -1083,6 +1088,7 @@ Default: True</li>
                 <dd id="RisingWave.Generator.MULTI_ARG_DISTINCT" class="variable"><a href="postgres.html#Postgres.Generator.MULTI_ARG_DISTINCT">MULTI_ARG_DISTINCT</a></dd>
                 <dd id="RisingWave.Generator.CAN_IMPLEMENT_ARRAY_ANY" class="variable"><a href="postgres.html#Postgres.Generator.CAN_IMPLEMENT_ARRAY_ANY">CAN_IMPLEMENT_ARRAY_ANY</a></dd>
                 <dd id="RisingWave.Generator.COPY_HAS_INTO_KEYWORD" class="variable"><a href="postgres.html#Postgres.Generator.COPY_HAS_INTO_KEYWORD">COPY_HAS_INTO_KEYWORD</a></dd>
+                <dd id="RisingWave.Generator.ARRAY_CONCAT_IS_VAR_LEN" class="variable"><a href="postgres.html#Postgres.Generator.ARRAY_CONCAT_IS_VAR_LEN">ARRAY_CONCAT_IS_VAR_LEN</a></dd>
                 <dd id="RisingWave.Generator.SUPPORTED_JSON_PATH_PARTS" class="variable"><a href="postgres.html#Postgres.Generator.SUPPORTED_JSON_PATH_PARTS">SUPPORTED_JSON_PATH_PARTS</a></dd>
                 <dd id="RisingWave.Generator.TYPE_MAPPING" class="variable"><a href="postgres.html#Postgres.Generator.TYPE_MAPPING">TYPE_MAPPING</a></dd>
                 <dd id="RisingWave.Generator.TRANSFORMS" class="variable"><a href="postgres.html#Postgres.Generator.TRANSFORMS">TRANSFORMS</a></dd>
@@ -1095,6 +1101,7 @@ Default: True</li>
                 <dd id="RisingWave.Generator.alterset_sql" class="function"><a href="postgres.html#Postgres.Generator.alterset_sql">alterset_sql</a></dd>
                 <dd id="RisingWave.Generator.datatype_sql" class="function"><a href="postgres.html#Postgres.Generator.datatype_sql">datatype_sql</a></dd>
                 <dd id="RisingWave.Generator.cast_sql" class="function"><a href="postgres.html#Postgres.Generator.cast_sql">cast_sql</a></dd>
+                <dd id="RisingWave.Generator.array_sql" class="function"><a href="postgres.html#Postgres.Generator.array_sql">array_sql</a></dd>
 
             </div>
                                 </dl>

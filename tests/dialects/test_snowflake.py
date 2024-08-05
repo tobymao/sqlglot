@@ -860,6 +860,11 @@ WHERE
             },
         )
 
+        self.validate_identity(
+            """SELECT ARRAY_CONSTRUCT('foo')::VARIANT[0]""",
+            """SELECT CAST(['foo'] AS VARIANT)[0]""",
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

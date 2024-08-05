@@ -6537,7 +6537,7 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
-    def _parse_alter_view_as(self) -> exp.Expression:
+    def _parse_alter_view_as(self) -> t.Optional[exp.Expression]:
         return self._parse_select(self._prev)
 
     def _parse_alter(self) -> exp.AlterTable | exp.Command:

@@ -7308,6 +7308,7 @@ def rename_table(
     new_table = to_table(new_name, dialect=dialect)
     return AlterTable(
         this=old_table,
+        kind="TABLE",
         actions=[
             RenameTable(this=new_table),
         ],
@@ -7338,6 +7339,7 @@ def rename_column(
     new_column = to_column(new_column_name, dialect=dialect)
     return AlterTable(
         this=table,
+        kind="TABLE",
         actions=[
             RenameColumn(this=old_column, to=new_column, exists=exists),
         ],

@@ -581,8 +581,8 @@ class TestParser(unittest.TestCase):
 
     def test_rename_table(self):
         self.assertEqual(
-            parse_one("ALTER TABLE foo RENAME TO bar").sql(),
-            "ALTER TABLE foo RENAME TO bar",
+            parse_one("ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2").sql(),
+            "ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2",
         )
 
     def test_alter_view_as(self):

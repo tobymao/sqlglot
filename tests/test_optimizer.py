@@ -375,6 +375,22 @@ class TestOptimizer(unittest.TestCase):
             "SELECT a.g AS g FROM a AS a WHERE a.e < (SELECT MAX(w.u) AS _col_0 FROM (SELECT SUM(c.b) AS u FROM c AS c WHERE c.d = a.f GROUP BY c.e) AS w)",
         )
 
+        # Detection of correlation where columns are referenced in derived tables nested within lateral joins
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT u.user_id, l.log_date FROM users AS u CROSS JOIN LATERAL (SELECT l1.log_date FROM (SELECT l.log_date FROM logs AS l WHERE l.user_id = u.user_id AND l.log_date <= 100 ORDER BY l.log_date LIMIT 1) AS l1) AS l",
+                    dialect="postgres",
+                ),
+                schema={
+                    "users": {"user_id": "text", "log_date": "date"},
+                    "logs": {"user_id": "text", "log_date": "date"},
+                },
+                quote_identifiers=False,
+            ).sql("postgres"),
+            "SELECT u.user_id AS user_id, l.log_date AS log_date FROM users AS u CROSS JOIN LATERAL (SELECT l1.log_date AS log_date FROM (SELECT l.log_date AS log_date FROM logs AS l WHERE l.user_id = u.user_id AND l.log_date <= 100 ORDER BY l.log_date LIMIT 1) AS l1) AS l",
+        )
+
         self.check_file(
             "qualify_columns",
             qualify_columns,

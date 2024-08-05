@@ -227,6 +227,7 @@ class DuckDB(Dialect):
     INDEX_OFFSET = 1
     CONCAT_COALESCE = True
     SUPPORTS_ORDER_BY_ALL = True
+    SUPPORTS_FIXED_SIZE_ARRAYS = True
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

@@ -375,6 +375,12 @@ class Dialect(metaclass=_Dialect):
     as the former is of type INT[] vs the latter which is SUPER
     """
 
+    SUPPORTS_FIXED_SIZE_ARRAYS = False
+    """
+    Whether expressions such as x::INT[5] should be parsed as fixed-size array defs/casts e.g. in DuckDB. In
+    dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

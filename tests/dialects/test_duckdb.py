@@ -818,6 +818,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("SELECT LENGTH(foo)")
+        self.validate_identity("SELECT ARRAY[1, 2, 3]", "SELECT [1, 2, 3]")
 
         self.validate_identity("SELECT * FROM (DESCRIBE t)")
 
@@ -1156,6 +1157,12 @@ class TestDuckDB(Validator):
                 "postgres": "CAST(COL AS BIGINT[])",
                 "snowflake": "CAST(COL AS ARRAY(BIGINT))",
             },
+        )
+
+        self.validate_identity("SELECT x::INT[3][3]", "SELECT CAST(x AS INT[3][3])")
+        self.validate_identity(
+            """SELECT ARRAY[[[1]]]::INT[1][1][1]""",
+            """SELECT CAST([[[1]]] AS INT[1][1][1])""",
         )
 
     def test_encode_decode(self):

@@ -4643,6 +4643,7 @@ class Parser(metaclass=_Parser):
         matched_array = self._match(TokenType.ARRAY)
 
         while self._curr:
+            datatype_token = self._prev.token_type
             matched_l_bracket = self._match(TokenType.L_BRACKET)
             if not matched_l_bracket and not matched_array:
                 break
@@ -4652,8 +4653,12 @@ class Parser(metaclass=_Parser):
             if (
                 values
                 and not schema
-                and this.is_type(exp.DataType.Type.ARRAY, exp.DataType.Type.MAP)
+                and (
+                    not self.dialect.SUPPORTS_FIXED_SIZE_ARRAYS or datatype_token == TokenType.ARRAY
+                )
             ):
+                # Retreating here means that we should not parse the following values as part of the data type, e.g. in DuckDB
+                # ARRAY[1] should retreat and instead be parsed into exp.Array in contrast to INT[x][y] which denotes a fixed-size array data type
                 self._retreat(index)
                 break
 

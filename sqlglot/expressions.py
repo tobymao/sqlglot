@@ -5659,7 +5659,7 @@ class ScopeResolution(Expression):
 
 
 class Stream(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 class StarMap(Func):

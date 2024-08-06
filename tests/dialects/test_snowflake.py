@@ -865,6 +865,14 @@ WHERE
             """SELECT CAST(['foo'] AS VARIANT)[0]""",
         )
 
+        self.validate_all(
+            "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
+            write={
+                "snowflake": "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
+                "duckdb": "SELECT TIMEZONE('America/New_York', TIMEZONE('America/Los_Angeles', CAST('2024-08-06 09:10:00.000' AS TIMESTAMP)))",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

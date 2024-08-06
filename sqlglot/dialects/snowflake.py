@@ -122,9 +122,9 @@ def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> 
     )
 
 
-def _build_convert_timezone(args: t.List) -> t.Union[exp.Anonymous, exp.AtTimeZone]:
+def _build_convert_timezone(args: t.List) -> t.Union[exp.ConvertTimezone, exp.AtTimeZone]:
     if len(args) == 3:
-        return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=args)
+        return exp.ConvertTimezone.from_arg_list(args)
     return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))
 
 

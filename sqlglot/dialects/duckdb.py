@@ -867,3 +867,17 @@ class DuckDB(Dialect):
 
             # The result is TIMESTAMP array, so to match BQ's semantics we must cast it back to DATE array
             return self.sql(exp.cast(gen_series, exp.DataType.build("ARRAY<DATE>")))
+
+        def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+            # Transform Snowflake's CONVERT_TIMEZONE(source_tz, target_tz, ts) 3-arg version to
+            # TIMEZONE(target_tz, TIMEZONE(source_tz, ts::TIMESTAMP)) in DuckDB
+            timestamp = t.cast(exp.Expression, expression.args.get("timestamp"))
+
+            from_source_tz = self.func(
+                "TIMEZONE",
+                expression.args.get("source_tz"),
+                exp.cast(timestamp, exp.DataType.Type.TIMESTAMPNTZ),
+            )
+            to_target_tz = self.func("TIMEZONE", expression.args.get("target_tz"), from_source_tz)
+
+            return to_target_tz

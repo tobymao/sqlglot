@@ -343,6 +343,11 @@ WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.co
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1;
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1 AS tbl1;
 
+# title: CSV files are not scanned by default
+# execute: false
+SELECT * FROM READ_CSV('file.csv');
+SELECT * FROM READ_CSV('file.csv') AS _q_0;
+
 --------------------------------------
 -- CTEs
 --------------------------------------

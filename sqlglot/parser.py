@@ -461,7 +461,6 @@ class Parser(metaclass=_Parser):
         TokenType.SET,
         TokenType.SETTINGS,
         TokenType.SHOW,
-        TokenType.STREAM,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRUE,
@@ -2854,7 +2853,7 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Summarize, this=this, table=table)
         elif self._match(TokenType.DESCRIBE):
             this = self._parse_describe()
-        elif self._match(TokenType.STREAM):
+        elif self._match_text_seq("STREAM"):
             this = self.expression(exp.Stream, this=self._parse_function())
         else:
             this = None

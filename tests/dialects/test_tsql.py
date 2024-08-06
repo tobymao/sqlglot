@@ -822,6 +822,11 @@ class TestTSQL(Validator):
         self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=ON")
         self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=OFF")
 
+        self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+        self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
+        self.validate_identity("ALTER VIEW v WITH SCHEMABINDING AS SELECT * FROM foo WHERE c > 100")
+        self.validate_identity("ALTER VIEW v WITH ENCRYPTION AS SELECT * FROM foo WHERE c > 100")
+        self.validate_identity("ALTER VIEW v WITH VIEW_METADATA AS SELECT * FROM foo WHERE c > 100")
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",

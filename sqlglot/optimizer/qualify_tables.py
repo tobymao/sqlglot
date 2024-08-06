@@ -18,6 +18,7 @@ def qualify_tables(
     db: t.Optional[str | exp.Identifier] = None,
     catalog: t.Optional[str | exp.Identifier] = None,
     schema: t.Optional[Schema] = None,
+    infer_csv_schemas: bool = False,
     dialect: DialectType = None,
 ) -> E:
     """
@@ -39,6 +40,7 @@ def qualify_tables(
         db: Database name
         catalog: Catalog name
         schema: A schema to populate
+        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs' schemas.
         dialect: The dialect to parse catalog and schema into.
 
     Returns:
@@ -102,7 +104,7 @@ def qualify_tables(
                         "alias", exp.TableAlias(this=exp.to_identifier(next_alias_name()))
                     )
 
-                if schema and isinstance(source.this, exp.ReadCSV):
+                if infer_csv_schemas and schema and isinstance(source.this, exp.ReadCSV):
                     with csv_reader(source.this) as reader:
                         header = next(reader)
                         columns = next(reader)

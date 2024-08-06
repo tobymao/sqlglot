@@ -461,6 +461,7 @@ class Parser(metaclass=_Parser):
         TokenType.SET,
         TokenType.SETTINGS,
         TokenType.SHOW,
+        TokenType.STREAM,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRUE,
@@ -904,6 +905,7 @@ class Parser(metaclass=_Parser):
         "REMOTE": lambda self: self._parse_remote_with_connection(),
         "RETURNS": lambda self: self._parse_returns(),
         "STRICT": lambda self: self.expression(exp.StrictProperty),
+        "STREAMING": lambda self: self.expression(exp.StreamingTableProperty),
         "ROW": lambda self: self._parse_row(),
         "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
         "SAMPLE": lambda self: self.expression(
@@ -1695,6 +1697,7 @@ class Parser(metaclass=_Parser):
             or self._match_pair(TokenType.OR, TokenType.REPLACE)
             or self._match_pair(TokenType.OR, TokenType.ALTER)
         )
+        refresh = self._match_pair(TokenType.OR, TokenType.REFRESH)
 
         unique = self._match(TokenType.UNIQUE)
 
@@ -1837,6 +1840,7 @@ class Parser(metaclass=_Parser):
             this=this,
             kind=create_token.text.upper(),
             replace=replace,
+            refresh=refresh,
             unique=unique,
             expression=expression,
             exists=exists,
@@ -2850,6 +2854,8 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Summarize, this=this, table=table)
         elif self._match(TokenType.DESCRIBE):
             this = self._parse_describe()
+        elif self._match(TokenType.STREAM):
+            this = self.expression(exp.Stream, this=self._parse_function())
         else:
             this = None
 

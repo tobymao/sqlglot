@@ -137,6 +137,8 @@ class Generator(metaclass=_Generator):
         exp.SqlSecurityProperty: lambda _,
         e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.StabilityProperty: lambda _, e: e.name,
+        exp.Stream: lambda self, e: f"STREAM {self.sql(e, 'this')}",
+        exp.StreamingTableProperty: lambda *_: "STREAMING",
         exp.StrictProperty: lambda *_: "STRICT",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
@@ -495,6 +497,7 @@ class Generator(metaclass=_Generator):
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.StreamingTableProperty: exp.Properties.Location.POST_CREATE,
         exp.StrictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ToTableProperty: exp.Properties.Location.POST_SCHEMA,
@@ -1025,6 +1028,7 @@ class Generator(metaclass=_Generator):
         index_sql = indexes + postindex_props_sql
 
         replace = " OR REPLACE" if expression.args.get("replace") else ""
+        refresh = " OR REFRESH" if expression.args.get("refresh") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
 
         clustered = expression.args.get("clustered")
@@ -1044,7 +1048,7 @@ class Generator(metaclass=_Generator):
                 wrapped=False,
             )
 
-        modifiers = "".join((clustered_sql, replace, unique, postcreate_props_sql))
+        modifiers = "".join((clustered_sql, replace, refresh, unique, postcreate_props_sql))
 
         postexpression_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):

@@ -500,7 +500,7 @@ class BigQuery(Dialect):
                         table.set("db", exp.Identifier(this=parts[0]))
                         table.set("this", exp.Identifier(this=parts[1]))
 
-            if any("." in p.name for p in table.parts):
+            if isinstance(table.this, exp.Identifier) and any("." in p.name for p in table.parts):
                 catalog, db, this, *rest = (
                     exp.to_identifier(p, quoted=True)
                     for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)

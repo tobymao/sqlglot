@@ -3144,7 +3144,7 @@ class Generator(metaclass=_Generator):
         only = " ONLY" if expression.args.get("only") else ""
         options = self.expressions(expression, key="options")
         options = f", {options}" if options else ""
-        kind = expression.args.get("kind")
+        kind = self.sql(expression, "kind")
         return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{options}"
 
     def add_column_sql(self, expression: exp.AlterTable) -> str:

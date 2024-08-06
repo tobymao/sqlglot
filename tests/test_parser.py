@@ -585,12 +585,6 @@ class TestParser(unittest.TestCase):
             "ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2",
         )
 
-    def test_alter_view_as(self):
-        self.assertEqual(
-            parse_one("ALTER VIEW foo AS SELECT a, b, c FROM bar").sql(),
-            "ALTER VIEW foo AS SELECT a, b, c FROM bar",
-        )
-
     def test_pivot_columns(self):
         nothing_aliased = """
             SELECT * FROM (

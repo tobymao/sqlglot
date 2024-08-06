@@ -1030,7 +1030,7 @@ class Parser(metaclass=_Parser):
         "DROP": lambda self: self._parse_alter_table_drop(),
         "RENAME": lambda self: self._parse_alter_table_rename(),
         "SET": lambda self: self._parse_alter_table_set(),
-        "AS": lambda self: self._parse_alter_view_as(),
+        "AS": lambda self: self._parse_select(),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -6537,14 +6537,11 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
-    def _parse_alter_view_as(self) -> t.Optional[exp.Expression]:
-        return self._parse_select(self._prev)
-
     def _parse_alter(self) -> exp.AlterTable | exp.Command:
         start = self._prev
 
-        create_token = self._match_set(self.ALTERABLES) and self._prev
-        if not create_token:
+        alter_token = self._match_set(self.ALTERABLES) and self._prev
+        if not alter_token:
             return self._parse_as_command(start)
 
         exists = self._parse_exists()
@@ -6564,7 +6561,7 @@ class Parser(metaclass=_Parser):
                 return self.expression(
                     exp.AlterTable,
                     this=this,
-                    kind=create_token.text.upper(),
+                    kind=alter_token.text.upper(),
                     exists=exists,
                     actions=actions,
                     only=only,

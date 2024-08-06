@@ -622,7 +622,7 @@ SELECT
   "_q_0"."n_comment" AS "n_comment"
 FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') AS "_q_0"
 """.strip(),
-            optimizer.optimize(expression).sql(pretty=True),
+            optimizer.optimize(expression, infer_csv_schemas=True).sql(pretty=True),
         )
 
     def test_scope(self):

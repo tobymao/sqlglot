@@ -74,7 +74,9 @@ def execute(
         raise ExecuteError("Tables must support the same table args as schema")
 
     now = time.time()
-    expression = optimize(sql, schema, leave_tables_isolated=True, dialect=read)
+    expression = optimize(
+        sql, schema, leave_tables_isolated=True, infer_csv_schemas=True, dialect=read
+    )
 
     logger.debug("Optimization finished: %f", time.time() - now)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))

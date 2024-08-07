@@ -129,36 +129,13 @@ TBLPROPERTIES (
                 "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
             },
         )
-        self.validate_all(
-            "ALTER VIEW StudentInfoView AS SELECT * FROM StudentInfo",
-            write={
-                "spark": "ALTER VIEW StudentInfoView AS SELECT * FROM StudentInfo",
-            },
+        self.validate_identity("ALTER VIEW StudentInfoView AS SELECT * FROM StudentInfo")
+        self.validate_identity("ALTER VIEW StudentInfoView AS SELECT LastName FROM StudentInfo")
+        self.validate_identity("ALTER VIEW StudentInfoView RENAME TO StudentInfoViewRenamed")
+        self.validate_identity(
+            "ALTER VIEW StudentInfoView SET TBLPROPERTIES ('key1'='val1', 'key2'='val2')"
         )
-        self.validate_all(
-            "ALTER VIEW StudentInfoView AS SELECT LastName FROM StudentInfo",
-            write={
-                "spark": "ALTER VIEW StudentInfoView AS SELECT LastName FROM StudentInfo",
-            },
-        )
-        self.validate_all(
-            "ALTER VIEW StudentInfoView RENAME TO StudentInfoViewRenamed",
-            write={
-                "spark": "ALTER VIEW StudentInfoView RENAME TO StudentInfoViewRenamed",
-            },
-        )
-        self.validate_all(
-            "ALTER VIEW StudentInfoView SET TBLPROPERTIES ('key1'='val1', 'key2'='val2')",
-            write={
-                "spark": "ALTER VIEW StudentInfoView SET TBLPROPERTIES ('key1'='val1', 'key2'='val2')",
-            },
-        )
-        self.validate_all(
-            "ALTER VIEW StudentInfoView UNSET TBLPROPERTIES ('key1', 'key2')",
-            write={
-                "spark": "ALTER VIEW StudentInfoView UNSET TBLPROPERTIES ('key1', 'key2')",
-            },
-        )
+        self.validate_identity("ALTER VIEW StudentInfoView UNSET TBLPROPERTIES ('key1', 'key2')")
 
     def test_to_date(self):
         self.validate_all(

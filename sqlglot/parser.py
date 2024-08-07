@@ -6537,7 +6537,7 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
-    def _parse_alter(self) -> exp.AlterTable | exp.Command:
+    def _parse_alter(self) -> exp.Alter | exp.Command:
         start = self._prev
 
         alter_token = self._match_set(self.ALTERABLES) and self._prev
@@ -6559,7 +6559,7 @@ class Parser(metaclass=_Parser):
 
             if not self._curr and actions:
                 return self.expression(
-                    exp.AlterTable,
+                    exp.Alter,
                     this=this,
                     kind=alter_token.text.upper(),
                     exists=exists,

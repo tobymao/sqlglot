@@ -13,7 +13,7 @@ class TestOracle(Validator):
                 "oracle": "SELECT CONNECT_BY_ROOT x AS y",
             },
         )
-        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.AlterTable)
+        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")

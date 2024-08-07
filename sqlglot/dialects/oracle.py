@@ -291,7 +291,7 @@ class Oracle(Dialect):
             )
             return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')', sep='')}"
 
-        def add_column_sql(self, expression: exp.AlterTable) -> str:
+        def add_column_sql(self, expression: exp.Alter) -> str:
             actions = self.expressions(expression, key="actions", flat=True)
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"

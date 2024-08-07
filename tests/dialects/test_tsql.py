@@ -792,7 +792,7 @@ class TestTSQL(Validator):
             self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
 
         self.validate_identity("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B").assert_is(
-            exp.AlterTable
+            exp.Alter
         ).args["actions"][0].assert_is(exp.Drop)
 
         for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):

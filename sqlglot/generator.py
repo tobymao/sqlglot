@@ -3124,7 +3124,7 @@ class Generator(metaclass=_Generator):
         exprs = self.expressions(expression, flat=True)
         return f"SET {exprs}"
 
-    def altertable_sql(self, expression: exp.AlterTable) -> str:
+    def alter_sql(self, expression: exp.Alter) -> str:
         actions = expression.args["actions"]
 
         if isinstance(actions[0], exp.ColumnDef):
@@ -3147,7 +3147,7 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{options}"
 
-    def add_column_sql(self, expression: exp.AlterTable) -> str:
+    def add_column_sql(self, expression: exp.Alter) -> str:
         if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
             return self.expressions(
                 expression,

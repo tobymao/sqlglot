@@ -4276,7 +4276,7 @@ class Rollback(Expression):
     arg_types = {"savepoint": False, "this": False}
 
 
-class AlterTable(Expression):
+class Alter(Expression):
     arg_types = {
         "this": True,
         "kind": True,
@@ -7293,7 +7293,7 @@ def rename_table(
     old_name: str | Table,
     new_name: str | Table,
     dialect: DialectType = None,
-) -> AlterTable:
+) -> Alter:
     """Build ALTER TABLE... RENAME... expression
 
     Args:
@@ -7306,7 +7306,7 @@ def rename_table(
     """
     old_table = to_table(old_name, dialect=dialect)
     new_table = to_table(new_name, dialect=dialect)
-    return AlterTable(
+    return Alter(
         this=old_table,
         kind="TABLE",
         actions=[
@@ -7321,7 +7321,7 @@ def rename_column(
     new_column_name: str | Column,
     exists: t.Optional[bool] = None,
     dialect: DialectType = None,
-) -> AlterTable:
+) -> Alter:
     """Build ALTER TABLE... RENAME COLUMN... expression
 
     Args:
@@ -7337,7 +7337,7 @@ def rename_column(
     table = to_table(table_name, dialect=dialect)
     old_column = to_column(old_column_name, dialect=dialect)
     new_column = to_column(new_column_name, dialect=dialect)
-    return AlterTable(
+    return Alter(
         this=table,
         kind="TABLE",
         actions=[

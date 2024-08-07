@@ -1387,6 +1387,7 @@ class Create(DDL):
         "exists": False,
         "properties": False,
         "replace": False,
+        "refresh": False,
         "unique": False,
         "indexes": False,
         "no_schema_binding": False,
@@ -2733,6 +2734,10 @@ class PartitionBoundSpec(Expression):
 class PartitionedOfProperty(Property):
     # this -> parent_table (schema), expression -> FOR VALUES ... / DEFAULT
     arg_types = {"this": True, "expression": True}
+
+
+class StreamingTableProperty(Property):
+    arg_types = {}
 
 
 class RemoteWithConnectionModelProperty(Property):
@@ -5651,6 +5656,10 @@ class MapFromEntries(Func):
 # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/scope-resolution-operator-transact-sql?view=sql-server-ver16
 class ScopeResolution(Expression):
     arg_types = {"this": False, "expression": True}
+
+
+class Stream(Expression):
+    pass
 
 
 class StarMap(Func):

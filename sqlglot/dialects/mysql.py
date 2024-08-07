@@ -302,6 +302,9 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
+                source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
+            ),
             "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
@@ -1213,3 +1216,10 @@ class MySQL(Dialect):
             dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
 
             return self.sql(dateadd)
+
+        def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+            from_tz = expression.args.get("source_tz")
+            to_tz = expression.args.get("target_tz")
+            dt = expression.args.get("timestamp")
+
+            return self.func("CONVERT_TZ", dt, from_tz, to_tz)

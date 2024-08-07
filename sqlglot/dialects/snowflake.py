@@ -122,12 +122,6 @@ def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> 
     )
 
 
-def _build_convert_timezone(args: t.List) -> t.Union[exp.ConvertTimezone, exp.AtTimeZone]:
-    if len(args) == 3:
-        return exp.ConvertTimezone.from_arg_list(args)
-    return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))
-
-
 def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
     regexp_replace = exp.RegexpReplace.from_arg_list(args)
 
@@ -268,7 +262,6 @@ class Snowflake(Dialect):
             "BITXOR": binary_from_function(exp.BitwiseXor),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BOOLXOR": binary_from_function(exp.Xor),
-            "CONVERT_TIMEZONE": _build_convert_timezone,
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),
@@ -694,6 +687,7 @@ class Snowflake(Dialect):
         STAR_EXCEPT = "EXCLUDE"
         SUPPORTS_EXPLODING_PROJECTIONS = False
         ARRAY_CONCAT_IS_VAR_LEN = False
+        SUPPORTS_CONVERT_TIMEZONE = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

@@ -4557,7 +4557,7 @@ class AtIndex(Expression):
 
 
 class AtTimeZone(Expression):
-    arg_types = {"this": True, "zone": True}
+    arg_types = {"this": True, "zone": True, "source_zone": False}
 
 
 class FromTimeZone(Expression):
@@ -4841,7 +4841,7 @@ class Convert(Func):
 
 
 class ConvertTimezone(Func):
-    arg_types = {"source_tz": True, "target_tz": True, "timestamp": True}
+    arg_types = {"source_tz": False, "target_tz": True, "timestamp": True}
 
 
 class GenerateSeries(Func):

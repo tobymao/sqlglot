@@ -433,6 +433,11 @@ ORDER BY
         self.validate_identity("SELECT ARRAY(1, 2, 3)")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
 
+        self.validate_identity(
+            """SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')""",
+            """SELECT CONVERT_TIMEZONE('UTC', 'America/New_York', '2024-08-06 09:10:00.000')""",
+        )
+
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
         values = [str(v) for v in range(0, 10000)]

@@ -378,6 +378,9 @@ class Generator(metaclass=_Generator):
     # Whether ARRAY_CONCAT can be generated with varlen args or if it should be reduced to 2-arg version
     ARRAY_CONCAT_IS_VAR_LEN = True
 
+    # Whether CONVERT_TIMEZONE() is supported; if not, it will be generated as exp.AtTimeZone
+    SUPPORTS_CONVERT_TIMEZONE = False
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4079,3 +4082,20 @@ class Generator(metaclass=_Generator):
             rhs = self.expressions(expression)
 
         return self.func(name, expression.this, rhs)
+
+    def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+        if self.SUPPORTS_CONVERT_TIMEZONE:
+            return self.function_fallback_sql(expression)
+
+        source_tz = expression.args.get("source_tz")
+        target_tz = expression.args.get("target_tz")
+        timestamp = t.cast(exp.Expression, expression.args.get("timestamp"))
+
+        if source_tz:
+            timestamp = exp.AtTimeZone(
+                this=exp.cast(timestamp, exp.DataType.Type.TIMESTAMPNTZ), zone=source_tz
+            )
+
+        expr = exp.AtTimeZone(this=timestamp, zone=target_tz)
+
+        return self.sql(expr)

@@ -866,10 +866,24 @@ WHERE
         )
 
         self.validate_all(
+            "SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')",
+            write={
+                "snowflake": "SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')",
+                "spark": "SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')",
+                "databricks": "SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')",
+                "redshift": "SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')",
+            },
+        )
+
+        self.validate_all(
             "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
             write={
                 "snowflake": "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
-                "duckdb": "SELECT TIMEZONE('America/New_York', TIMEZONE('America/Los_Angeles', CAST('2024-08-06 09:10:00.000' AS TIMESTAMP)))",
+                "spark": "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
+                "databricks": "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
+                "redshift": "SELECT CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000')",
+                "mysql": "SELECT CONVERT_TZ('2024-08-06 09:10:00.000', 'America/Los_Angeles', 'America/New_York')",
+                "duckdb": "SELECT CAST('2024-08-06 09:10:00.000' AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles' AT TIME ZONE 'America/New_York'",
             },
         )
 

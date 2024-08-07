@@ -136,10 +136,8 @@ def build_convert_timezone(
         return exp.ConvertTimezone(
             source_tz=source_tz, target_tz=seq_get(args, 0), timestamp=seq_get(args, 1)
         )
-    if len(args) == 3:
-        return exp.ConvertTimezone.from_arg_list(args)
 
-    return exp.Anonymous.from_arg_list(args)
+    return exp.ConvertTimezone.from_arg_list(args)
 
 
 class _Parser(type):

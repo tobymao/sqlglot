@@ -128,6 +128,18 @@ def build_array_constructor(
     return array_exp
 
 
+def build_convert_timezone(
+    args: t.List, default_source_tz: t.Optional[str] = None
+) -> t.Union[exp.ConvertTimezone, exp.Anonymous]:
+    if len(args) == 2:
+        source_tz = exp.Literal.string(default_source_tz) if default_source_tz else None
+        return exp.ConvertTimezone(
+            source_tz=source_tz, target_tz=seq_get(args, 0), timestamp=seq_get(args, 1)
+        )
+
+    return exp.ConvertTimezone.from_arg_list(args)
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -166,6 +178,7 @@ class Parser(metaclass=_Parser):
             safe=not dialect.STRICT_STRING_CONCAT,
             coalesce=dialect.CONCAT_COALESCE,
         ),
+        "CONVERT_TIMEZONE": build_convert_timezone,
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

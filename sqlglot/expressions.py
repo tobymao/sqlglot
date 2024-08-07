@@ -4845,6 +4845,10 @@ class Convert(Func):
     arg_types = {"this": True, "expression": True, "style": False}
 
 
+class ConvertTimezone(Func):
+    arg_types = {"source_tz": False, "target_tz": True, "timestamp": True}
+
+
 class GenerateSeries(Func):
     arg_types = {"start": True, "end": True, "step": False, "is_end_exclusive": False}
 

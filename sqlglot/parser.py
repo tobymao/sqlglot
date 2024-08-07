@@ -3198,6 +3198,15 @@ class Parser(metaclass=_Parser):
             self._match_set(self.JOIN_KINDS) and self._prev,
         )
 
+    def _parse_using_identifiers(self) -> t.List[exp.Expression]:
+        def _parse_column_as_identifier() -> t.Optional[exp.Expression]:
+            this = self._parse_column()
+            if isinstance(this, exp.Column):
+                return this.this
+            return this
+
+        return self._parse_wrapped_csv(_parse_column_as_identifier, optional=True)
+
     def _parse_join(
         self, skip_join_token: bool = False, parse_bracket: bool = False
     ) -> t.Optional[exp.Join]:
@@ -3238,7 +3247,7 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.ON):
             kwargs["on"] = self._parse_assignment()
         elif self._match(TokenType.USING):
-            kwargs["using"] = self._parse_wrapped_id_vars()
+            kwargs["using"] = self._parse_using_identifiers()
         elif not isinstance(kwargs["this"], exp.Unnest) and not (
             kind and kind.token_type == TokenType.CROSS
         ):
@@ -3248,7 +3257,7 @@ class Parser(metaclass=_Parser):
             if joins and self._match(TokenType.ON):
                 kwargs["on"] = self._parse_assignment()
             elif joins and self._match(TokenType.USING):
-                kwargs["using"] = self._parse_wrapped_id_vars()
+                kwargs["using"] = self._parse_using_identifiers()
             else:
                 joins = None
                 self._retreat(index)

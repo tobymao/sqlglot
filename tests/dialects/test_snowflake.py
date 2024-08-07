@@ -139,6 +139,10 @@ WHERE
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
+            "SELECT * FROM t1 INNER JOIN t2 USING (t1.col)",
+            "SELECT * FROM t1 INNER JOIN t2 USING (col)",
+        )
+        self.validate_identity(
             "CURRENT_TIMESTAMP - INTERVAL '1 w' AND (1 = 1)",
             "CURRENT_TIMESTAMP() - INTERVAL '1 WEEK' AND (1 = 1)",
         )

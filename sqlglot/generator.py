@@ -4089,9 +4089,9 @@ class Generator(metaclass=_Generator):
 
         source_tz = expression.args.get("source_tz")
         target_tz = expression.args.get("target_tz")
-        timestamp = t.cast(exp.Expression, expression.args.get("timestamp"))
+        timestamp = expression.args.get("timestamp")
 
-        if source_tz:
+        if source_tz and timestamp:
             timestamp = exp.AtTimeZone(
                 this=exp.cast(timestamp, exp.DataType.Type.TIMESTAMPNTZ), zone=source_tz
             )

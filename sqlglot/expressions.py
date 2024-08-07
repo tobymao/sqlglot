@@ -4557,7 +4557,7 @@ class AtIndex(Expression):
 
 
 class AtTimeZone(Expression):
-    arg_types = {"this": True, "zone": True, "source_zone": False}
+    arg_types = {"this": True, "zone": True}
 
 
 class FromTimeZone(Expression):

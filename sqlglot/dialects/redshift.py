@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.parser import build_convert_timezone
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -63,6 +64,7 @@ class Redshift(Postgres):
                 unit=exp.var("month"),
                 return_type=exp.DataType.build("TIMESTAMP"),
             ),
+            "CONVERT_TIMEZONE": lambda args: build_convert_timezone(args, "UTC"),
             "DATEADD": _build_date_delta(exp.TsOrDsAdd),
             "DATE_ADD": _build_date_delta(exp.TsOrDsAdd),
             "DATEDIFF": _build_date_delta(exp.TsOrDsDiff),
@@ -155,6 +157,7 @@ class Redshift(Postgres):
         HEX_FUNC = "TO_HEX"
         PARSE_JSON_NAME = "JSON_PARSE"
         ARRAY_CONCAT_IS_VAR_LEN = False
+        SUPPORTS_CONVERT_TIMEZONE = True
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "

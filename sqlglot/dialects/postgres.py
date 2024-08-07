@@ -440,7 +440,7 @@ class Postgres(Dialect):
             self._match(TokenType.COMMA)
             value = self._parse_bitwise()
 
-            if part and part.is_string:
+            if part and isinstance(part, (exp.Column, exp.Literal)):
                 part = exp.var(part.name)
 
             return self.expression(exp.Extract, this=part, expression=value)

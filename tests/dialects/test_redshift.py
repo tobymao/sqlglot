@@ -6,7 +6,6 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
-        self.validate_identity("1 div", "1 AS div")
         self.validate_all(
             "SELECT SPLIT_TO_ARRAY('12,345,6789')",
             write={
@@ -315,6 +314,7 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("1 div", "1 AS div")
         self.validate_identity("LISTAGG(DISTINCT foo, ', ')")
         self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
         self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
@@ -337,6 +337,10 @@ class TestRedshift(Validator):
         self.validate_identity(
             """SELECT JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}', 'f4', 'f6', TRUE)"""
         )
+        self.validate_identity(
+            'DATE_PART(year, "somecol")',
+            'EXTRACT(year FROM "somecol")',
+        ).this.assert_is(exp.Var)
         self.validate_identity(
             "SELECT CONCAT('abc', 'def')",
             "SELECT 'abc' || 'def'",

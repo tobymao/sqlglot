@@ -256,3 +256,11 @@ class TestDatabricks(Validator):
                 "databricks": "WITH x AS (SELECT 1) SELECT * FROM x",
             },
         )
+
+    def test_streaming_tables(self):
+        self.validate_identity(
+            "CREATE STREAMING TABLE raw_data AS SELECT * FROM STREAM READ_FILES('abfss://container@storageAccount.dfs.core.windows.net/base/path')"
+        )
+        self.validate_identity(
+            "CREATE OR REFRESH STREAMING TABLE csv_data (id INT, ts TIMESTAMP, event STRING) AS SELECT * FROM STREAM READ_FILES('s3://bucket/path', format => 'csv', schema => 'id int, ts timestamp, event string')"
+        )

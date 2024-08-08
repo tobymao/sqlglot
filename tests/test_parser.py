@@ -903,3 +903,18 @@ class TestParser(unittest.TestCase):
 
     def test_parse_prop_eq(self):
         self.assertIsInstance(parse_one("x(a := b and c)").expressions[0], exp.PropertyEQ)
+
+    def test_collate(self):
+        collates = [
+            ('pg_catalog."default"', exp.Column),
+            ('"en_DE"', exp.Identifier),
+            ("LATIN1_GENERAL_BIN", exp.Var),
+            ("'en'", exp.Literal),
+        ]
+
+        for collate_pair in collates:
+            collate_node = parse_one(
+                f"""SELECT * FROM t WHERE foo LIKE '%bar%' COLLATE {collate_pair[0]}"""
+            ).find(exp.Collate)
+            self.assertIsInstance(collate_node, exp.Collate)
+            self.assertIsInstance(collate_node.expression, collate_pair[1])

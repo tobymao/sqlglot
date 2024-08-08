@@ -4382,7 +4382,26 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_term(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_factor, self.TERM)
+        this = self._parse_factor()
+
+        while self._match_set(self.TERM):
+            klass = self.TERM[self._prev.token_type]
+            comments = self._prev_comments
+            expression = self._parse_factor()
+
+            this = self.expression(klass, this=this, comments=comments, expression=expression)
+
+            if isinstance(this, exp.Collate):
+                expr = this.expression
+
+                # Preserve collations such as pg_catalog."default" (Postgres) as columns, otherwise
+                # fallback to Identifier / Var
+                if isinstance(expr, exp.Column) and len(expr.parts) == 1:
+                    ident = expr.this
+                    if isinstance(ident, exp.Identifier):
+                        this.set("expression", ident if ident.quoted else exp.var(ident.name))
+
+        return this
 
     def _parse_factor(self) -> t.Optional[exp.Expression]:
         parse_method = self._parse_exponent if self.EXPONENT else self._parse_unary

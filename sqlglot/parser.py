@@ -4376,7 +4376,8 @@ class Parser(metaclass=_Parser):
                 # fallback to Identifier / Var
                 if isinstance(expr, exp.Column) and len(expr.parts) == 1:
                     ident = expr.this
-                    this.set("expression", ident if ident.quoted else exp.var(ident.name))
+                    if isinstance(ident, exp.Identifier):
+                        this.set("expression", ident if ident.quoted else exp.var(ident.name))
 
         return this
 

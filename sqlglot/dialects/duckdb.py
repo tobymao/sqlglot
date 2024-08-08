@@ -209,15 +209,39 @@ def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYP
     return arrow_sql
 
 
-def _implicit_date_cast(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    return exp.cast(arg, exp.DataType.Type.DATE) if isinstance(arg, exp.Literal) else arg
+def _implicit_datetime_cast(
+    arg: t.Optional[exp.Expression], type: exp.DataType.Type = exp.DataType.Type.DATE
+) -> t.Optional[exp.Expression]:
+    return exp.cast(arg, type) if isinstance(arg, exp.Literal) else arg
 
 
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
-    this = _implicit_date_cast(expression.this)
-    expr = _implicit_date_cast(expression.expression)
+    this = _implicit_datetime_cast(expression.this)
+    expr = _implicit_datetime_cast(expression.expression)
 
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
+
+
+def _generate_datetime_array_sql(
+    self: DuckDB.Generator, expression: t.Union[exp.GenerateDateArray, exp.GenerateTimestampArray]
+) -> str:
+    is_generate_date_array = isinstance(expression, exp.GenerateDateArray)
+
+    type = exp.DataType.Type.DATE if is_generate_date_array else exp.DataType.Type.TIMESTAMP
+    start = _implicit_datetime_cast(expression.args.get("start"), type=type)
+    end = _implicit_datetime_cast(expression.args.get("end"), type=type)
+
+    # BQ's GENERATE_DATE_ARRAY & GENERATE_TIMESTAMP_ARRAY are transformed to DuckDB'S GENERATE_SERIES
+    gen_series: t.Union[exp.GenerateSeries, exp.Cast] = exp.GenerateSeries(
+        start=start, end=end, step=expression.args.get("interval")
+    )
+
+    if is_generate_date_array:
+        # The GENERATE_SERIES result type is TIMESTAMP array, so to match BQ's semantics for
+        # GENERATE_DATE_ARRAY we must cast it back to DATE array
+        gen_series = exp.cast(gen_series, exp.DataType.build("ARRAY<DATE>"))
+
+    return self.sql(gen_series)
 
 
 class DuckDB(Dialect):
@@ -476,6 +500,8 @@ class DuckDB(Dialect):
             exp.DiToDate: lambda self,
             e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
+            exp.GenerateDateArray: _generate_datetime_array_sql,
+            exp.GenerateTimestampArray: _generate_datetime_array_sql,
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
@@ -855,15 +881,3 @@ class DuckDB(Dialect):
                 return self.func("STRUCT_PACK", kv_sql)
 
             return self.func("STRUCT_INSERT", this, kv_sql)
-
-        def generatedatearray_sql(self, expression: exp.GenerateDateArray) -> str:
-            start = _implicit_date_cast(expression.args.get("start"))
-            end = _implicit_date_cast(expression.args.get("end"))
-
-            # BQ's GENERATE_DATE_ARRAY is transformed to DuckDB'S GENERATE_SERIES
-            gen_series = exp.GenerateSeries(
-                start=start, end=end, step=expression.args.get("interval")
-            )
-
-            # The result is TIMESTAMP array, so to match BQ's semantics we must cast it back to DATE array
-            return self.sql(exp.cast(gen_series, exp.DataType.build("ARRAY<DATE>")))

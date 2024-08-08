@@ -1212,6 +1212,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             exp.DataType.build("date"),
         )
 
+        self.assertEqual(
+            annotate_types(
+                optimizer.qualify.qualify(
+                    parse_one(
+                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x"
+                    )
+                )
+            )
+            .selects[0]
+            .type,
+            exp.DataType.build("timestamp"),
+        )
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))

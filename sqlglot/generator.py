@@ -3133,7 +3133,7 @@ class Generator(metaclass=_Generator):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):
             actions = self.expressions(expression, key="actions", flat=True)
-        elif isinstance(actions[0], exp.Select):
+        elif isinstance(actions[0], exp.Query):
             actions = "AS " + self.expressions(expression, key="actions")
         else:
             actions = self.expressions(expression, key="actions", flat=True)

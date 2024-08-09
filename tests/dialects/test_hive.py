@@ -178,7 +178,9 @@ class TestHive(Validator):
         )
         self.validate_identity("ALTER VIEW db1.v1 RENAME TO db2.v2")
         self.validate_identity("ALTER VIEW v1 SET TBLPROPERTIES ('tblp1'='1', 'tblp2'='2')")
-        self.validate_identity("ALTER VIEW v1 UNSET TBLPROPERTIES ('tblp1', 'tblp2')")
+        self.validate_identity(
+            "ALTER VIEW v1 UNSET TBLPROPERTIES ('tblp1', 'tblp2')", check_command_warning=True
+        )
 
     def test_lateral_view(self):
         self.validate_all(

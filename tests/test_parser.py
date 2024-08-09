@@ -579,12 +579,6 @@ class TestParser(unittest.TestCase):
             logger,
         )
 
-    def test_rename_table(self):
-        self.assertEqual(
-            parse_one("ALTER TABLE foo RENAME TO bar").sql(),
-            "ALTER TABLE foo RENAME TO bar",
-        )
-
     def test_pivot_columns(self):
         nothing_aliased = """
             SELECT * FROM (

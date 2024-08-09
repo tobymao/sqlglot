@@ -129,6 +129,16 @@ TBLPROPERTIES (
                 "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
             },
         )
+        self.validate_identity("ALTER VIEW StudentInfoView AS SELECT * FROM StudentInfo")
+        self.validate_identity("ALTER VIEW StudentInfoView AS SELECT LastName FROM StudentInfo")
+        self.validate_identity("ALTER VIEW StudentInfoView RENAME TO StudentInfoViewRenamed")
+        self.validate_identity(
+            "ALTER VIEW StudentInfoView SET TBLPROPERTIES ('key1'='val1', 'key2'='val2')"
+        )
+        self.validate_identity(
+            "ALTER VIEW StudentInfoView UNSET TBLPROPERTIES ('key1', 'key2')",
+            check_command_warning=True,
+        )
 
     def test_to_date(self):
         self.validate_all(

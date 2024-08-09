@@ -1965,7 +1965,7 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")
-        assert isinstance(ast, exp.AlterTable)
+        assert isinstance(ast, exp.Alter)
         assert isinstance(ast.args["actions"][0], exp.SwapTable)
 
     def test_try_cast(self):

@@ -1139,11 +1139,11 @@ class TSQL(Dialect):
         def partition_sql(self, expression: exp.Partition) -> str:
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
 
-        def altertable_sql(self, expression: exp.AlterTable) -> str:
+        def alter_sql(self, expression: exp.Alter) -> str:
             action = seq_get(expression.args.get("actions") or [], 0)
             if isinstance(action, exp.RenameTable):
                 return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
-            return super().altertable_sql(expression)
+            return super().alter_sql(expression)
 
         def drop_sql(self, expression: exp.Drop) -> str:
             if expression.args["kind"] == "VIEW":

@@ -28,7 +28,7 @@ class TestPostgres(Validator):
         alter_table_only = """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE NO ACTION ON UPDATE NO ACTION"""
         expr = self.parse_one(alter_table_only)
 
-        self.assertIsInstance(expr, exp.AlterTable)
+        self.assertIsInstance(expr, exp.Alter)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")

@@ -405,6 +405,11 @@ class Parser(metaclass=_Parser):
         *DB_CREATABLES,
     }
 
+    ALTERABLES = {
+        TokenType.TABLE,
+        TokenType.VIEW,
+    }
+
     # Tokens that can represent identifiers
     ID_VAR_TOKENS = {
         TokenType.ALL,
@@ -1025,6 +1030,7 @@ class Parser(metaclass=_Parser):
         "DROP": lambda self: self._parse_alter_table_drop(),
         "RENAME": lambda self: self._parse_alter_table_rename(),
         "SET": lambda self: self._parse_alter_table_set(),
+        "AS": lambda self: self._parse_select(),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -6531,10 +6537,11 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
-    def _parse_alter(self) -> exp.AlterTable | exp.Command:
+    def _parse_alter(self) -> exp.Alter | exp.Command:
         start = self._prev
 
-        if not self._match(TokenType.TABLE):
+        alter_token = self._match_set(self.ALTERABLES) and self._prev
+        if not alter_token:
             return self._parse_as_command(start)
 
         exists = self._parse_exists()
@@ -6552,8 +6559,9 @@ class Parser(metaclass=_Parser):
 
             if not self._curr and actions:
                 return self.expression(
-                    exp.AlterTable,
+                    exp.Alter,
                     this=this,
+                    kind=alter_token.text.upper(),
                     exists=exists,
                     actions=actions,
                     only=only,

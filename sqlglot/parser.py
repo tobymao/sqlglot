@@ -4241,12 +4241,18 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.Not, this=this)
 
         if negate:
-            this = self.expression(exp.Not, this=this)
+            this = self._negate_range(this)
 
         if self._match(TokenType.IS):
             this = self._parse_is(this)
 
         return this
+
+    def _negate_range(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
+        if not this:
+            return this
+
+        return self.expression(exp.Not, this=this)
 
     def _parse_is(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         index = self._index - 1

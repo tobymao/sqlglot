@@ -167,10 +167,6 @@ select j from a""",
             read={'presto': "select * from t group by grouping sets ((a), (b,c))"}
         )
         self.validate_all(
-            "SELECT DAYOFWEEK(d), DAYOFWEEK(d), DAYOFYEAR(d), DAYOFYEAR(d), YEAROFWEEK(d), YEAROFWEEK(d)",
-            read={'presto': "select dow(d), day_of_week(d), doy(d), day_of_year(d), yow(d), year_of_week(d)"}
-        )
-        self.validate_all(
             "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c')",
             read={'spark': "select regexp_extract('aaaa', 'a|b|c')"}
         )
@@ -182,7 +178,10 @@ select j from a""",
             "SELECT CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP())",
             read={'presto': "select now() at time zone 'UTC'"}
         )
-
+        self.validate_all(
+            "SELECT DAYOFWEEK(TO_DATE(d))",
+            read={'spark': "select dayofweek(d)"}
+        )
     def test_read_dialect_related_function(self):
         import os
 
@@ -246,6 +245,13 @@ select j from a""",
         self.validate_all(
             "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c', 1)",
             read={'presto': "select regexp_extract('aaaa', 'a|b|c', 1)"}
+        )
+
+        # day_of_week
+        os.environ['READ_DIALECT'] = 'presto'
+        self.validate_all(
+            "SELECT DAYOFWEEK_ISO(d), DAYOFWEEK_ISO(d), DAYOFYEAR(d), DAYOFYEAR(d), YEAROFWEEK(d), YEAROFWEEK(d)",
+            read={'presto': "select dow(d), day_of_week(d), doy(d), day_of_year(d), yow(d), year_of_week(d)"}
         )
 
         os.environ.pop('READ_DIALECT')

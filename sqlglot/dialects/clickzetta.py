@@ -71,7 +71,10 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
     elif expression.this.upper() == 'FROM_ISO8601_TIMESTAMP':
         return f"CAST({self.sql(expression.expressions[0])} AS TIMESTAMP)"
     elif expression.this.upper() == 'DOW':
-        return f"DAYOFWEEK({self.sql(expression.expressions[0])})"
+        # dow in presto is an alias of day_of_week, which is equivalent to dayofweek_iso
+        # https://prestodb.io/docs/current/functions/datetime.html#day_of_week-x-bigint
+        # https://doc.clickzetta.com/en-US/sql_functions/scalar_functions/datetime_functions/dayofweek_iso
+        return f"DAYOFWEEK_ISO({self.sql(expression.expressions[0])})"
     elif expression.this.upper() == 'DOY':
         return f"DAYOFYEAR({self.sql(expression.expressions[0])})"
     elif expression.this.upper() == 'YOW' or expression.this.upper() == 'YEAR_OF_WEEK':
@@ -149,6 +152,12 @@ def regexp_extract_sql(self: ClickZetta.Generator, expression: exp.RegexpExtract
         "REGEXP_EXTRACT", expression.this, expression.expression, expression.args.get('group')
     )
 
+def adjust_day_of_week(self: ClickZetta.Generator, expression: exp.DayOfWeek):
+    if is_read_dialect('presto'):
+        return f'DAYOFWEEK_ISO({self.sql(expression.this)})'
+    else:
+        return f'DAYOFWEEK({self.sql(expression.this)})'
+
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
     LOG_BASE_FIRST = None
@@ -167,7 +176,7 @@ class ClickZetta(Spark):
 
     class Generator(Spark.Generator):
 
-        RESERVED_KEYWORDS = {'all', 'user', 'to', 'check'}
+        RESERVED_KEYWORDS = {'all', 'user', 'to', 'check', 'order'}
 
         TYPE_MAPPING = {
             **Spark.Generator.TYPE_MAPPING,
@@ -230,6 +239,7 @@ class ClickZetta(Spark):
             exp.GenerateSeries: rename_func("SEQUENCE"),
             exp.DateAdd: date_add_sql,
             exp.RegexpExtract: regexp_extract_sql,
+            exp.DayOfWeek: adjust_day_of_week,
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

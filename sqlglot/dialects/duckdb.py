@@ -92,6 +92,14 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
+# BigQuery -> DuckDB conversion for the DATETIME_TRUNC function
+def _timestamp_trunc(self: DuckDB.Generator, expression: exp.DatetimeTrunc) -> str:
+    time_cast = exp.cast(expression.this, exp.DataType.Type.DATETIME)
+
+    args = [unit_to_str(expression), time_cast]
+    return self.func("DATE_TRUNC", *args)
+
+
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("DuckDB ARRAY_SORT does not support a comparator")
@@ -571,6 +579,7 @@ class DuckDB(Dialect):
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
             ),
+            exp.DatetimeTrunc: _timestamp_trunc,
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),

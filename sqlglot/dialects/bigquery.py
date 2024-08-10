@@ -401,6 +401,9 @@ class BigQuery(Dialect):
             ),
             "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(this=seq_get(args, 0)),
             "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
+            "FORMAT_DATETIME": lambda args: exp.TimeToStr(
+                this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
+            ),
         }
 
         FUNCTION_PARSERS = {

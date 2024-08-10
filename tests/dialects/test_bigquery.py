@@ -512,6 +512,13 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SELECT FORMAT_DATETIME('%Y%m%d', DATETIME '2023-12-25  15:30:00')",
+            write={
+                "bigquery": "SELECT FORMAT_DATE('%Y%m%d', CAST('2023-12-25  15:30:00' AS DATETIME))",
+                "duckdb": "SELECT STRFTIME(CAST(CAST('2023-12-25  15:30:00' AS TIMESTAMP) AS DATE), '%Y%m%d')",
+            },
+        )
+        self.validate_all(
             "SELECT COUNTIF(x)",
             read={
                 "clickhouse": "SELECT countIf(x)",

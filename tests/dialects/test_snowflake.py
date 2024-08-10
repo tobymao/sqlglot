@@ -139,6 +139,14 @@ WHERE
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
+            "SELECT * FROM s WHERE c NOT IN (1, 2, 3)",
+            "SELECT * FROM s WHERE NOT c IN (1, 2, 3)",
+        )
+        self.validate_identity(
+            "SELECT * FROM s WHERE c NOT IN (SELECT * FROM t)",
+            "SELECT * FROM s WHERE c <> ALL (SELECT * FROM t)",
+        )
+        self.validate_identity(
             "SELECT * FROM t1 INNER JOIN t2 USING (t1.col)",
             "SELECT * FROM t1 INNER JOIN t2 USING (col)",
         )

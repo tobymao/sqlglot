@@ -406,6 +406,26 @@ class Snowflake(Dialect):
             ),
         }
 
+        def _negate_range(
+            self, this: t.Optional[exp.Expression] = None
+        ) -> t.Optional[exp.Expression]:
+            if not this:
+                return this
+
+            query = this.args.get("query")
+            if isinstance(this, exp.In) and isinstance(query, exp.Query):
+                # Snowflake treats `value NOT IN (subquery)` as `VALUE <> ALL (subquery)`, so
+                # we do this conversion here to avoid parsing it into `NOT value IN (subquery)`
+                # which can produce different results (most likely a SnowFlake bug).
+                #
+                # https://docs.snowflake.com/en/sql-reference/functions/in
+                # Context: https://github.com/tobymao/sqlglot/issues/3890
+                return self.expression(
+                    exp.NEQ, this=this.this, expression=exp.All(this=query.unnest())
+                )
+
+            return self.expression(exp.Not, this=this)
+
         def _parse_with_constraint(self) -> t.Optional[exp.Expression]:
             if self._prev.token_type != TokenType.WITH:
                 self._retreat(self._index - 1)

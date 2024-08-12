@@ -159,6 +159,7 @@ class ClickHouse(Dialect):
             "PREWHERE": TokenType.PREWHERE,
         }
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("VALUES")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
@@ -198,6 +199,7 @@ class ClickHouse(Dialect):
             "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "UNIQ": exp.ApproxDistinct.from_arg_list,
+            "values": exp.Func.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),

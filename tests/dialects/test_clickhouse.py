@@ -1,4 +1,5 @@
 from datetime import date
+import unittest
 from sqlglot import exp, parse_one
 from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
@@ -472,6 +473,11 @@ class TestClickhouse(Validator):
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )
+
+    @unittest.expectedFailure
+    def test_clickhouse_values(self):
+        """clickhouse doesn't support VALUES as a statement; it is, and should be parsed as, a function."""
+        self.validate_identity("SELECT * FROM values('col String', ('why clickhouse why'))")
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

@@ -6,6 +6,12 @@ from sqlglot.tokens import TokenType
 
 
 class Athena(Trino):
+    class Tokenizer(Trino.Tokenizer):
+        KEYWORDS = {
+            **Trino.Tokenizer.KEYWORDS,
+            "UNLOAD": TokenType.COMMAND,
+        }
+
     class Parser(Trino.Parser):
         STATEMENT_PARSERS = {
             **Trino.Parser.STATEMENT_PARSERS,

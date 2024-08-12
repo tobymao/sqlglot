@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     arg_max_or_min_no_count,
     build_date_delta,
     build_formatted_time,
@@ -106,6 +107,7 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
 
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True

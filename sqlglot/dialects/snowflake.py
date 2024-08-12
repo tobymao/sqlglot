@@ -180,6 +180,44 @@ def _flatten_structured_types_unless_iceberg(expression: exp.Expression) -> exp.
     return expression
 
 
+def _unnest_generate_date_array(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        for unnest in expression.find_all(exp.Unnest):
+            if (
+                isinstance(unnest.parent, (exp.From, exp.Join))
+                and len(unnest.expressions) == 1
+                and isinstance(unnest.expressions[0], exp.GenerateDateArray)
+            ):
+                generate_date_array = unnest.expressions[0]
+                start = generate_date_array.args.get("start")
+                end = generate_date_array.args.get("end")
+                step = generate_date_array.args.get("step")
+
+                if not start or not end or not isinstance(step, exp.Interval) or step.name != "1":
+                    continue
+
+                unit = step.args.get("unit")
+
+                # We'll add the next sequence value to the starting date and project the result
+                date_add = _build_date_time_add(exp.DateAdd)(
+                    [unit, exp.cast("value", "int"), exp.cast(start, "date")]
+                ).as_("value")
+
+                # We use DATEDIFF to compute the number of sequence values needed
+                number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
+                    [exp.Literal.number(0), _build_datediff([unit, start, end]) + 1]
+                )
+
+                unnest_alias = unnest.args.get("alias")
+                if unnest_alias:
+                    unnest_alias = unnest_alias.copy()
+
+                unnest.set("expressions", [number_sequence])
+                unnest.replace(exp.select(date_add).from_(unnest.copy()).subquery(unnest_alias))
+
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -767,6 +805,7 @@ class Snowflake(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.explode_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
+                    _unnest_generate_date_array,
                 ]
             ),
             exp.SHA: rename_func("SHA1"),

@@ -99,6 +99,16 @@ class TestOracle(Validator):
         )
 
         self.validate_all(
+            "SELECT * FROM test WHERE MOD(col1, 4) = 3",
+            read={
+                "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",
+            },
+            write={
+                "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",
+                "oracle": "SELECT * FROM test WHERE MOD(col1, 4) = 3",
+            },
+        )
+        self.validate_all(
             "CURRENT_TIMESTAMP BETWEEN TO_DATE(f.C_SDATE, 'yyyy/mm/dd') AND TO_DATE(f.C_EDATE, 'yyyy/mm/dd')",
             read={
                 "postgres": "CURRENT_TIMESTAMP BETWEEN TO_DATE(f.C_SDATE, 'yyyy/mm/dd') AND TO_DATE(f.C_EDATE, 'yyyy/mm/dd')",

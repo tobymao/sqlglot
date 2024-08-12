@@ -247,6 +247,7 @@ class Oracle(Dialect):
             ),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
+            exp.Mod: rename_func("MOD"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

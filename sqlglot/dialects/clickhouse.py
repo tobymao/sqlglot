@@ -107,6 +107,18 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
 
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
+    # https://clickhouse.com/docs/en/sql-reference/syntax#keywords
+    # > Keywords are case-insensitive when they correspond to
+    # >  - SQL standard.
+    # >  - Implementation in some popular DBMS. For example `DateTime` is the same as `datetime`.
+    # > You can check whether a data type name is case-sensitive in the `system.data_type_families` table.
+    # > In contrast to standard SQL, all other keywords (including function names) are case-sensitive.
+    #
+    # In addition, unquoted identifiers are case sensitive, but I can't find documentation to support this.
+    # Test case (execute in clickhouse):
+    #     select c from values('C String', 'asdc');
+    # > DB::Exception: Unknown expression identifier 'c' in scope SELECT c FROM values('C String', 'asdc').
+    # > Maybe you meant: ['C']. (UNKNOWN_IDENTIFIER)
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False

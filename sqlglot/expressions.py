@@ -2670,6 +2670,11 @@ class OnCluster(Property):
     arg_types = {"this": True}
 
 
+# Clickhouse EMPTY table "property"
+class EmptyProperty(Property):
+    arg_types = {}
+
+
 class LikeProperty(Property):
     arg_types = {"this": True, "expressions": False}
 

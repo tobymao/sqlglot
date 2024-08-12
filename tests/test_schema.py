@@ -202,11 +202,11 @@ class TestSchema(unittest.TestCase):
             dialect="clickhouse",
         )
 
-        table_z = exp.table_("z", db="y", catalog="x")
+        table_z = exp.table_("Z", db="y", catalog="x")
         table_w = exp.table_("w", db="y", catalog="x")
 
         self.assertEqual(schema.column_names(table_z), ["a", "B"])
-        self.assertEqual(schema.column_names(table_w), ["c"])
+        self.assertEqual(schema.column_names(table_w), ["C"])
 
         schema = MappingSchema(schema={"x": {"`y`": "INT"}}, dialect="clickhouse")
         self.assertEqual(schema.column_names(exp.table_("x")), ["y"])

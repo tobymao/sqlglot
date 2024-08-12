@@ -753,6 +753,9 @@ class MySQL(Dialect):
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.UnixToTime: _unix_to_time_sql,
+            exp.Unnest: transforms.preprocess(
+                [transforms.unnest_generate_date_array_using_recursive_cte()]
+            ),
             exp.Week: _remove_ts_or_ds_to_date(),
             exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
             exp.Year: _remove_ts_or_ds_to_date(),

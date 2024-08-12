@@ -882,6 +882,13 @@ class TSQL(Dialect):
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
+            exp.Unnest: transforms.preprocess(
+                [
+                    transforms.unnest_generate_date_array_using_recursive_cte(
+                        bubble_up_recursive_cte=True
+                    )
+                ]
+            ),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

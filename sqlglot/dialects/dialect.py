@@ -1605,9 +1605,9 @@ def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
 
 
-def sequence_sql(self: Generator, expression: exp.GenerateSeries):
-    start = expression.args["start"]
-    end = expression.args["end"]
+def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateDateArray) -> str:
+    start = expression.args.get("start")
+    end = expression.args.get("end")
     step = expression.args.get("step")
 
     if isinstance(start, exp.Cast):
@@ -1617,8 +1617,8 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries):
     else:
         target_type = None
 
-    if target_type and target_type.is_type("timestamp"):
-        if target_type is start.to:
+    if start and end and target_type and target_type.is_type("date", "timestamp"):
+        if isinstance(start, exp.Cast) and target_type is start.to:
             end = exp.cast(end, target_type)
         else:
             start = exp.cast(start, target_type)

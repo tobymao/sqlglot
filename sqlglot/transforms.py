@@ -55,6 +55,61 @@ def preprocess(
     return _to_sql
 
 
+def unnest_generate_date_array_using_recursive_cte(
+    bubble_up_recursive_cte: bool = False,
+) -> t.Callable[[exp.Expression], exp.Expression]:
+    def _unnest_generate_date_array_using_recursive_cte(
+        expression: exp.Expression,
+    ) -> exp.Expression:
+        if (
+            isinstance(expression, exp.Unnest)
+            and isinstance(expression.parent, (exp.From, exp.Join))
+            and len(expression.expressions) == 1
+            and isinstance(expression.expressions[0], exp.GenerateDateArray)
+        ):
+            generate_date_array = expression.expressions[0]
+            start = generate_date_array.args.get("start")
+            end = generate_date_array.args.get("end")
+            step = generate_date_array.args.get("step")
+
+            if not start or not end or not isinstance(step, exp.Interval):
+                return expression
+
+            start = exp.cast(start, "date")
+            date_add = exp.func(
+                "date_add", "date_value", exp.Literal.number(step.name), step.args.get("unit")
+            )
+            cast_date_add = exp.cast(date_add, "date")
+
+            base_query = exp.select(start.as_("date_value"))
+            recursive_query = (
+                exp.select(cast_date_add.as_("date_value"))
+                .from_("_generated_dates")
+                .where(cast_date_add < exp.cast(end, "date"))
+            )
+            cte_query = base_query.union(recursive_query, distinct=False)
+            generate_dates_query = exp.select("date_value").from_("_generated_dates")
+
+            query_to_add_cte: exp.Query = generate_dates_query
+
+            if bubble_up_recursive_cte:
+                parent: t.Optional[exp.Expression] = expression.parent
+
+                while parent:
+                    if isinstance(parent, exp.Query):
+                        query_to_add_cte = parent
+                    parent = parent.parent
+
+            query_to_add_cte.with_(
+                "_generated_dates(date_value)", as_=cte_query, recursive=True, copy=False
+            )
+            return generate_dates_query.subquery("_generated_dates")
+
+        return expression
+
+    return _unnest_generate_date_array_using_recursive_cte
+
+
 def unnest_generate_series(expression: exp.Expression) -> exp.Expression:
     """Unnests GENERATE_SERIES or SEQUENCE table references."""
     this = expression.this

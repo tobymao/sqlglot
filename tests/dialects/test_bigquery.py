@@ -512,6 +512,20 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', DATETIME '2023-12-25 15:30:00')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', CAST('2023-12-25 15:30:00' AS DATETIME))",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%Y%m%d %H:%M:%S')",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%x')",
+            },
+        )
+        self.validate_all(
             "SELECT COUNTIF(x)",
             read={
                 "clickhouse": "SELECT countIf(x)",
@@ -637,6 +651,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
                     "databricks": "SELECT DATE_TRUNC('HOUR', '2023-01-01T01:01:01')",
+                    "duckdb": "SELECT DATE_TRUNC('HOUR', CAST('2023-01-01T01:01:01' AS DATETIME))",
                 },
             ),
         )

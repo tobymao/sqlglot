@@ -571,6 +571,9 @@ class DuckDB(Dialect):
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
             ),
+            exp.DatetimeTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", unit_to_str(e), exp.cast(e.this, exp.DataType.Type.DATETIME)
+            ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),

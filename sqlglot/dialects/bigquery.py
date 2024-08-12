@@ -401,6 +401,9 @@ class BigQuery(Dialect):
             ),
             "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(this=seq_get(args, 0)),
             "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
+            "FORMAT_DATETIME": lambda args: exp.TimeToStr(
+                this=exp.TsOrDsToTimestamp(this=seq_get(args, 1)), format=seq_get(args, 0)
+            ),
         }
 
         FUNCTION_PARSERS = {
@@ -879,8 +882,16 @@ class BigQuery(Dialect):
             return super().table_parts(expression)
 
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
-            this = expression.this if isinstance(expression.this, exp.TsOrDsToDate) else expression
-            return self.func("FORMAT_DATE", self.format_time(expression), this.this)
+            if isinstance(expression.this, exp.TsOrDsToTimestamp):
+                func_name = "FORMAT_DATETIME"
+            else:
+                func_name = "FORMAT_DATE"
+            this = (
+                expression.this
+                if isinstance(expression.this, (exp.TsOrDsToTimestamp, exp.TsOrDsToDate))
+                else expression
+            )
+            return self.func(func_name, self.format_time(expression), this.this)
 
         def eq_sql(self, expression: exp.EQ) -> str:
             # Operands of = cannot be NULL in BigQuery

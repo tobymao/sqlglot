@@ -1,4 +1,7 @@
+from datetime import date
+import unittest
 from sqlglot import exp, parse_one
+from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
 
@@ -471,6 +474,31 @@ class TestClickhouse(Validator):
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )
 
+        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_all(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            read={
+                # looks like values table function, but should be parsed as VALUES block
+                "clickhouse": "INSERT INTO t (col1, col2) values('abcd', 1234)"
+            },
+            write={
+                "clickhouse": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+                "postgres": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            },
+        )
+
+    @unittest.expectedFailure
+    def test_clickhouse_values(self):
+        """clickhouse doesn't support VALUES as a statement; it is, and should be parsed as, a function."""
+        self.validate_identity("SELECT * FROM values('col String', ('why clickhouse why'))")
+
+    @unittest.expectedFailure
+    def test_clickhouse_insert_format_values(self):
+        """in this case, Values is not a SQL identifier but a clickhouse format. This test should work as
+        soon as FORMAT is added as a keyword to sqlglot."""
+        self.validate_identity("INSERT INTO t (col1, col2) FORMAT VALUES ('abcd', 1234)")
+        self.validate_identity("INSERT INTO t (col1, col2) FORMAT values('abcd', 1234)")
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")
@@ -883,6 +911,8 @@ LIFETIME(MIN 0 MAX 0)""",
             """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
         )
 
+        self.validate_identity("""CREATE TABLE t (a String) EMPTY AS SELECT * FROM dummy""")
+
     def test_agg_functions(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this
@@ -937,3 +967,8 @@ LIFETIME(MIN 0 MAX 0)""",
                         f"SELECT {func_alias}(SECOND, 1, bar)",
                         f"SELECT {func_name}(SECOND, 1, bar)",
                     )
+
+    def test_convert(self):
+        self.assertEqual(
+            convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
+        )

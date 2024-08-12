@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     arg_max_or_min_no_count,
     build_date_delta,
     build_formatted_time,
@@ -106,6 +107,19 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
 
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
+    # https://clickhouse.com/docs/en/sql-reference/syntax#keywords
+    # > Keywords are case-insensitive when they correspond to
+    # >  - SQL standard.
+    # >  - Implementation in some popular DBMS. For example `DateTime` is the same as `datetime`.
+    # > You can check whether a data type name is case-sensitive in the `system.data_type_families` table.
+    # > In contrast to standard SQL, all other keywords (including function names) are case-sensitive.
+    #
+    # In addition, unquoted identifiers are case sensitive, but I can't find documentation to support this.
+    # Test case (execute in clickhouse):
+    #     select c from values('C String', 'asdc');
+    # > DB::Exception: Unknown expression identifier 'c' in scope SELECT c FROM values('C String', 'asdc').
+    # > Maybe you meant: ['C']. (UNKNOWN_IDENTIFIER)
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
@@ -196,6 +210,7 @@ class ClickHouse(Dialect):
             "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "UNIQ": exp.ApproxDistinct.from_arg_list,
+            "values": exp.Func.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
@@ -790,6 +805,7 @@ class ClickHouse(Dialect):
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: _datetime_delta_sql("DATE_ADD"),
             exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
+            exp.DateStrToDate: rename_func("toDate"),
             exp.DateSub: _datetime_delta_sql("DATE_SUB"),
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

@@ -797,6 +797,7 @@ class ClickHouse(Dialect):
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: _datetime_delta_sql("DATE_ADD"),
             exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
+            exp.DateStrToDate: rename_func("toDate"),
             exp.DateSub: _datetime_delta_sql("DATE_SUB"),
             exp.EmptyProperty: lambda *_: "EMPTY",
             exp.Explode: rename_func("arrayJoin"),

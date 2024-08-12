@@ -1,4 +1,6 @@
+from datetime import date
 from sqlglot import exp, parse_one
+from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
 
@@ -939,3 +941,8 @@ LIFETIME(MIN 0 MAX 0)""",
                         f"SELECT {func_alias}(SECOND, 1, bar)",
                         f"SELECT {func_name}(SECOND, 1, bar)",
                     )
+
+    def test_convert(self):
+        self.assertEqual(
+            convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
+        )

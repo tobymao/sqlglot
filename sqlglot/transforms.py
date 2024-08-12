@@ -76,7 +76,9 @@ def unnest_generate_date_array_using_recursive_cte(
                 return expression
 
             start = exp.cast(start, "date")
-            date_add = exp.func("date_add", "date_value", step.this, step.args.get("unit"))
+            date_add = exp.func(
+                "date_add", "date_value", exp.Literal.number(step.name), step.args.get("unit")
+            )
             cast_date_add = exp.cast(date_add, "date")
 
             base_query = exp.select(start.as_("date_value"))

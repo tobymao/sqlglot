@@ -474,10 +474,30 @@ class TestClickhouse(Validator):
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )
 
+        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_all(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            read={
+                # looks like values table function, but should be parsed as VALUES block
+                "clickhouse": "INSERT INTO t (col1, col2) values('abcd', 1234)"
+            },
+            write={
+                "clickhouse": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+                "postgres": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            },
+        )
+
     @unittest.expectedFailure
     def test_clickhouse_values(self):
         """clickhouse doesn't support VALUES as a statement; it is, and should be parsed as, a function."""
         self.validate_identity("SELECT * FROM values('col String', ('why clickhouse why'))")
+
+    @unittest.expectedFailure
+    def test_clickhouse_insert_format_values(self):
+        """in this case, Values is not a SQL identifier but a clickhouse format. This test should work as
+        soon as FORMAT is added as a keyword to sqlglot."""
+        self.validate_identity("INSERT INTO t (col1, col2) FORMAT VALUES ('abcd', 1234)")
+        self.validate_identity("INSERT INTO t (col1, col2) FORMAT values('abcd', 1234)")
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

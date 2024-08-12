@@ -171,7 +171,6 @@ class ClickHouse(Dialect):
             "PREWHERE": TokenType.PREWHERE,
         }
         KEYWORDS.pop("/*+")
-        KEYWORDS.pop("VALUES")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

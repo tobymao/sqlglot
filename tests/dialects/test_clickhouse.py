@@ -883,6 +883,8 @@ LIFETIME(MIN 0 MAX 0)""",
             """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
         )
 
+        self.validate_identity("""CREATE TABLE t (a String) EMPTY AS SELECT * FROM dummy""")
+
     def test_agg_functions(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this

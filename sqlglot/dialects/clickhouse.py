@@ -369,6 +369,11 @@ class ClickHouse(Dialect):
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
         NO_PAREN_FUNCTION_PARSERS.pop("ANY")
 
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "EMPTY": lambda self: self.expression(exp.EmptyProperty),
+        }
+
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.GLOBAL: lambda self, this: self._match(TokenType.IN)
@@ -793,6 +798,7 @@ class ClickHouse(Dialect):
             exp.DateAdd: _datetime_delta_sql("DATE_ADD"),
             exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
             exp.DateSub: _datetime_delta_sql("DATE_SUB"),
+            exp.EmptyProperty: lambda *_: "EMPTY",
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
@@ -834,6 +840,7 @@ class ClickHouse(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
+            exp.EmptyProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         # there's no list in docs, but it can be found in Clickhouse code

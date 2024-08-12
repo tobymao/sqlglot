@@ -5347,12 +5347,12 @@ class GapFill(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#generate_date_array
 class GenerateDateArray(Func):
-    arg_types = {"start": True, "end": True, "interval": False}
+    arg_types = {"start": True, "end": True, "step": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#generate_timestamp_array
 class GenerateTimestampArray(Func):
-    arg_types = {"start": True, "end": True, "interval": True}
+    arg_types = {"start": True, "end": True, "step": True}
 
 
 class Greatest(Func):

@@ -233,7 +233,7 @@ def _generate_datetime_array_sql(
 
     # BQ's GENERATE_DATE_ARRAY & GENERATE_TIMESTAMP_ARRAY are transformed to DuckDB'S GENERATE_SERIES
     gen_series: t.Union[exp.GenerateSeries, exp.Cast] = exp.GenerateSeries(
-        start=start, end=end, step=expression.args.get("interval")
+        start=start, end=end, step=expression.args.get("step")
     )
 
     if is_generate_date_array:

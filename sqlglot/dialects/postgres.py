@@ -584,21 +584,32 @@ class Postgres(Dialect):
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             if len(expression.expressions) == 1:
+                arg = expression.expressions[0]
+                if isinstance(arg, exp.GenerateDateArray):
+                    generate_series: exp.Expression = exp.GenerateSeries(**arg.args)
+                    if isinstance(expression.parent, (exp.From, exp.Join)):
+                        generate_series = (
+                            exp.select("value::date")
+                            .from_(generate_series.as_("value"))
+                            .subquery(expression.args.get("alias") or "_unnested_generate_series")
+                        )
+                    return self.sql(generate_series)
+
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                this = annotate_types(expression.expressions[0])
+                this = annotate_types(arg)
                 if this.is_type("array<json>"):
                     while isinstance(this, exp.Cast):
                         this = this.this
 
-                    arg = self.sql(exp.cast(this, exp.DataType.Type.JSON))
+                    arg_as_json = self.sql(exp.cast(this, exp.DataType.Type.JSON))
                     alias = self.sql(expression, "alias")
                     alias = f" AS {alias}" if alias else ""
 
                     if expression.args.get("offset"):
                         self.unsupported("Unsupported JSON_ARRAY_ELEMENTS with offset")
 
-                    return f"JSON_ARRAY_ELEMENTS({arg}){alias}"
+                    return f"JSON_ARRAY_ELEMENTS({arg_as_json}){alias}"
 
             return super().unnest_sql(expression)
 

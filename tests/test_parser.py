@@ -699,17 +699,19 @@ class TestParser(unittest.TestCase):
 
     def test_parse_nested(self):
         now = time.time()
-
         query = parse_one("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
         self.assertIsNotNone(query)
+        self.assertLessEqual(time.time() - now, 0.1)
 
+        now = time.time()
         query = parse_one("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
         self.assertIsNotNone(query)
+        self.assertLessEqual(time.time() - now, 0.1)
 
+        now = time.time()
         query = parse_one("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
         self.assertIsNotNone(query)
-
-        self.assertLessEqual(time.time() - now, 0.3)
+        self.assertLessEqual(time.time() - now, 0.1)
 
     def test_parse_properties(self):
         self.assertEqual(

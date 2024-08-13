@@ -2159,6 +2159,8 @@ class Insert(DDL, DML):
         "ignore": False,
         "by_name": False,
         "stored": False,
+        "partition": False,
+        "settings": False,
     }
 
     def with_(

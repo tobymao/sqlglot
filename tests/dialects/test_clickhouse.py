@@ -606,6 +606,9 @@ class TestClickhouse(Validator):
 
     def test_ddl(self):
         self.validate_identity(
+            "INSERT INTO FUNCTION s3('a', 'b', 'c', 'd', 'e') PARTITION BY CONCAT(s1, s2, s3, s4) SETTINGS set1 = 1, set2 = '2' SELECT * FROM some_table SETTINGS foo = 3"
+        )
+        self.validate_identity(
             'CREATE TABLE data5 ("x" UInt32, "y" UInt32) ENGINE=MergeTree ORDER BY (round(y / 1000000000), cityHash64(x)) SAMPLE BY cityHash64(x)'
         )
         self.validate_identity(

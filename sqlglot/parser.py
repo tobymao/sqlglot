@@ -3267,8 +3267,10 @@ class Parser(metaclass=_Parser):
             kwargs["on"] = self._parse_assignment()
         elif self._match(TokenType.USING):
             kwargs["using"] = self._parse_using_identifiers()
-        elif not isinstance(kwargs["this"], exp.Unnest) and not (
-            kind and kind.token_type == TokenType.CROSS
+        elif (
+            not (outer_apply or cross_apply)
+            and not isinstance(kwargs["this"], exp.Unnest)
+            and not (kind and kind.token_type == TokenType.CROSS)
         ):
             index = self._index
             joins: t.Optional[list] = list(self._parse_joins())

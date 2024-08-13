@@ -930,9 +930,7 @@ class Parser(metaclass=_Parser):
         ),
         "SECURE": lambda self: self.expression(exp.SecureProperty),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
-        "SETTINGS": lambda self: self.expression(
-            exp.SettingsProperty, expressions=self._parse_csv(self._parse_assignment)
-        ),
+        "SETTINGS": lambda self: self._parse_settings_property(),
         "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
         "SORTKEY": lambda self: self._parse_sortkey(),
         "SOURCE": lambda self: self._parse_dict_property(this="SOURCE"),
@@ -2019,6 +2017,11 @@ class Parser(metaclass=_Parser):
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
 
+    def _parse_settings_property(self) -> exp.SettingsProperty:
+        return self.expression(
+            exp.SettingsProperty, expressions=self._parse_csv(self._parse_assignment)
+        )
+
     def _parse_volatile_property(self) -> exp.VolatileProperty | exp.StabilityProperty:
         if self._index >= 2:
             pre_volatile_token = self._tokens[self._index - 2]
@@ -2538,6 +2541,8 @@ class Parser(metaclass=_Parser):
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),
             where=self._match_pair(TokenType.REPLACE, TokenType.WHERE) and self._parse_assignment(),
+            partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
+            settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
             expression=self._parse_derived_table_values() or self._parse_ddl_select(),
             conflict=self._parse_on_conflict(),
             returning=returning or self._parse_returning(),

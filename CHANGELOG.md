@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.11.1] - 2024-08-13
+### :sparkles: New Features
+- [`790c1b1`](https://github.com/tobymao/sqlglot/commit/790c1b141d4bc2206df017c70416b589932886a4) - **clickhouse**: support PARTITION BY, SETTINGS in Insert expression *(PR [#3904](https://github.com/tobymao/sqlglot/pull/3904) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.11.0] - 2024-08-13
 ### :boom: BREAKING CHANGES
 - due to [`0428c37`](https://github.com/tobymao/sqlglot/commit/0428c37e11f42be8eba352e69c1d2e7425824d38) - Support ALTER VIEW AS SELECT *(PR [#3873](https://github.com/tobymao/sqlglot/pull/3873) by [@xiaohui-sun](https://github.com/xiaohui-sun))*:
@@ -4347,3 +4352,4 @@ Changelog
 [v25.9.0]: https://github.com/tobymao/sqlglot/compare/v25.8.1...v25.9.0
 [v25.10.0]: https://github.com/tobymao/sqlglot/compare/v25.9.0...v25.10.0
 [v25.11.0]: https://github.com/tobymao/sqlglot/compare/v25.10.0...v25.11.0
+[v25.11.1]: https://github.com/tobymao/sqlglot/compare/v25.11.0...v25.11.1

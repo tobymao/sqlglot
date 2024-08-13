@@ -1,5 +1,4 @@
 from datetime import date
-import unittest
 from sqlglot import exp, parse_one
 from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
@@ -487,17 +486,33 @@ class TestClickhouse(Validator):
             },
         )
 
-    @unittest.expectedFailure
     def test_clickhouse_values(self):
-        """clickhouse doesn't support VALUES as a statement; it is, and should be parsed as, a function."""
-        self.validate_identity("SELECT * FROM values('col String', ('why clickhouse why'))")
+        values = exp.select("*").from_(
+            exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])
+        )
+        self.assertEqual(
+            values.sql("clickhouse"),
+            "SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq",
+        )
 
-    @unittest.expectedFailure
-    def test_clickhouse_insert_format_values(self):
-        """in this case, Values is not a SQL identifier but a clickhouse format. This test should work as
-        soon as FORMAT is added as a keyword to sqlglot."""
-        self.validate_identity("INSERT INTO t (col1, col2) FORMAT VALUES ('abcd', 1234)")
-        self.validate_identity("INSERT INTO t (col1, col2) FORMAT values('abcd', 1234)")
+        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_identity(
+            "INSERT INTO t (col1, col2) FORMAT Values('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+        )
+
+        self.validate_all(
+            "SELECT col FROM (SELECT 1 AS col) AS _t",
+            read={
+                "duckdb": "SELECT col FROM (VALUES (1)) AS _t(col)",
+            },
+        )
+        self.validate_all(
+            "SELECT col1, col2 FROM (SELECT 1 AS col1, 2 AS col2 UNION ALL SELECT 3, 4) AS _t",
+            read={
+                "duckdb": "SELECT col1, col2 FROM (VALUES (1, 2), (3, 4)) AS _t(col1, col2)",
+            },
+        )
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

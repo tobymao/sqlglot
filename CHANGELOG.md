@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v25.11.2] - 2024-08-14
+### :bug: Bug Fixes
+- [`c22f411`](https://github.com/tobymao/sqlglot/commit/c22f41129985ecfd3b3906b9594ca1692b91708c) - **clickhouse**: ensure we generate the Table in creatable_sql if it represents a db ref *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`19eee93`](https://github.com/tobymao/sqlglot/commit/19eee93c8027e6c612611d3b54980e193e0b6f49) - various fixups for unnest(generatedatearray) transpilation *(PR [#3906](https://github.com/tobymao/sqlglot/pull/3906) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.11.1] - 2024-08-13
 ### :sparkles: New Features
 - [`790c1b1`](https://github.com/tobymao/sqlglot/commit/790c1b141d4bc2206df017c70416b589932886a4) - **clickhouse**: support PARTITION BY, SETTINGS in Insert expression *(PR [#3904](https://github.com/tobymao/sqlglot/pull/3904) by [@georgesittas](https://github.com/georgesittas))*
@@ -4353,3 +4359,4 @@ Changelog
 [v25.10.0]: https://github.com/tobymao/sqlglot/compare/v25.9.0...v25.10.0
 [v25.11.0]: https://github.com/tobymao/sqlglot/compare/v25.10.0...v25.11.0
 [v25.11.1]: https://github.com/tobymao/sqlglot/compare/v25.11.0...v25.11.1
+[v25.11.2]: https://github.com/tobymao/sqlglot/compare/v25.11.1...v25.11.2

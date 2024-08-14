@@ -302,6 +302,9 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
+                source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
+            ),
             "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
@@ -689,6 +692,9 @@ class MySQL(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         JSON_KEY_VALUE_PAIR_SEP = ","
         SUPPORTS_TO_NUMBER = False
+        PARSE_JSON_NAME = None
+        PAD_FILL_PATTERN_IS_REQUIRED = True
+        WRAP_DERIVED_VALUES = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -714,7 +720,6 @@ class MySQL(Dialect):
             exp.Month: _remove_ts_or_ds_to_date(),
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
-            exp.ParseJSON: lambda self, e: self.sql(e, "this"),
             exp.Pivot: no_pivot_sql,
             exp.Select: transforms.preprocess(
                 [
@@ -722,6 +727,7 @@ class MySQL(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,
                     transforms.eliminate_full_outer_join,
+                    transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
             exp.StrPosition: strposition_to_locate_sql,
@@ -1211,3 +1217,10 @@ class MySQL(Dialect):
             dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
 
             return self.sql(dateadd)
+
+        def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+            from_tz = expression.args.get("source_tz")
+            to_tz = expression.args.get("target_tz")
+            dt = expression.args.get("timestamp")
+
+            return self.func("CONVERT_TZ", dt, from_tz, to_tz)

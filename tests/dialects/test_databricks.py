@@ -1,4 +1,4 @@
-from sqlglot import transpile
+from sqlglot import exp, transpile
 from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
@@ -7,6 +7,7 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("ALTER TABLE labels ADD COLUMN label_score FLOAT")
         self.validate_identity("DESCRIBE HISTORY a.b")
         self.validate_identity("DESCRIBE history.tbl")
         self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")
@@ -25,6 +26,7 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE FUNCTION a AS b")
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
+        self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )
@@ -37,21 +39,25 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "SELECT * FROM sales UNPIVOT EXCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
         )
-
         self.validate_identity(
             "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $$def add_one(x):\n  return x+1$$"
         )
-
         self.validate_identity(
             "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $FOO$def add_one(x):\n  return x+1$FOO$"
         )
-
-        self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity(
             "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', city LIKE 'LA')"
         )
         self.validate_identity(
             "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
+        )
+        self.validate_identity(
+            "DATE_DIFF(day, created_at, current_date())",
+            "DATEDIFF(DAY, created_at, CURRENT_DATE)",
+        ).args["unit"].assert_is(exp.Var)
+        self.validate_identity(
+            r'SELECT r"\\foo.bar\"',
+            r"SELECT '\\\\foo.bar\\'",
         )
 
         self.validate_all(
@@ -67,7 +73,6 @@ class TestDatabricks(Validator):
                 "teradata": "CREATE TABLE t1 AS (SELECT c FROM t2) WITH DATA",
             },
         )
-
         self.validate_all(
             "SELECT X'1A2B'",
             read={
@@ -94,35 +99,48 @@ class TestDatabricks(Validator):
                 read="databricks",
             )
 
+        self.validate_all(
+            "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS TABLE (a INT) RETURN SELECT a",
+            write={
+                "databricks": "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS TABLE (a INT) RETURN SELECT a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a, b) AS TABLE SELECT a",
+            },
+        )
+
+        self.validate_all(
+            "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS BIGINT RETURN a",
+            write={
+                "databricks": "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS BIGINT RETURN a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a, b) AS a",
+            },
+        )
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
+        self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")
         self.validate_identity(
-            """SELECT c1 : price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+            """SELECT c1:item[1].price FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
+        )
+        self.validate_identity(
+            """SELECT c1:item[*].price FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
+        )
+        self.validate_identity(
+            """SELECT FROM_JSON(c1:item[*].price, 'ARRAY<DOUBLE>')[0] FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
+        )
+        self.validate_identity(
+            """SELECT INLINE(FROM_JSON(c1:item[*], 'ARRAY<STRUCT<model STRING, price DOUBLE>>')) FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
+        )
+        self.validate_identity(
+            """SELECT c1:['price'] FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+            """SELECT c1:price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+        )
+        self.validate_identity(
             """SELECT GET_JSON_OBJECT(c1, '$.price') FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+            """SELECT c1:price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
         )
         self.validate_identity(
-            """SELECT c1:['price'] FROM VALUES('{ "price": 5 }') AS T(c1)""",
-            """SELECT GET_JSON_OBJECT(c1, '$.price') FROM VALUES ('{ "price": 5 }') AS T(c1)""",
-        )
-        self.validate_identity(
-            """SELECT c1:item[1].price FROM VALUES('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-            """SELECT GET_JSON_OBJECT(c1, '$.item[1].price') FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-        )
-        self.validate_identity(
-            """SELECT c1:item[*].price FROM VALUES('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-            """SELECT GET_JSON_OBJECT(c1, '$.item[*].price') FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-        )
-        self.validate_identity(
-            """SELECT from_json(c1:item[*].price, 'ARRAY<DOUBLE>')[0] FROM VALUES('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-            """SELECT FROM_JSON(GET_JSON_OBJECT(c1, '$.item[*].price'), 'ARRAY<DOUBLE>')[0] FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-        )
-        self.validate_identity(
-            """SELECT inline(from_json(c1:item[*], 'ARRAY<STRUCT<model STRING, price DOUBLE>>')) FROM VALUES('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-            """SELECT INLINE(FROM_JSON(GET_JSON_OBJECT(c1, '$.item[*]'), 'ARRAY<STRUCT<model STRING, price DOUBLE>>')) FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)""",
-        )
-        self.validate_identity(
-            "SELECT c1 : price",
-            "SELECT GET_JSON_OBJECT(c1, '$.price')",
+            """SELECT raw:`zip code`, raw:`fb:testid`, raw:store['bicycle'], raw:store["zip code"]""",
+            """SELECT raw:["zip code"], raw:["fb:testid"], raw:store.bicycle, raw:store["zip code"]""",
         )
 
     def test_datediff(self):
@@ -237,4 +255,12 @@ class TestDatabricks(Validator):
             write={
                 "databricks": "WITH x AS (SELECT 1) SELECT * FROM x",
             },
+        )
+
+    def test_streaming_tables(self):
+        self.validate_identity(
+            "CREATE STREAMING TABLE raw_data AS SELECT * FROM STREAM READ_FILES('abfss://container@storageAccount.dfs.core.windows.net/base/path')"
+        )
+        self.validate_identity(
+            "CREATE OR REFRESH STREAMING TABLE csv_data (id INT, ts TIMESTAMP, event STRING) AS SELECT * FROM STREAM READ_FILES('s3://bucket/path', format => 'csv', schema => 'id int, ts timestamp, event string')"
         )

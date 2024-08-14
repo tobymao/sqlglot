@@ -9,11 +9,11 @@ class TestOracle(Validator):
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",
             write={
-                "": "SELECT CONNECT_BY_ROOT(x) AS y",
+                "": "SELECT CONNECT_BY_ROOT x AS y",
                 "oracle": "SELECT CONNECT_BY_ROOT x AS y",
             },
         )
-        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.AlterTable)
+        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")
@@ -86,9 +86,9 @@ class TestOracle(Validator):
             "SELECT DISTINCT col1, col2 FROM table",
         )
         self.validate_identity(
-            "SELECT * FROM T ORDER BY I OFFSET nvl(:variable1, 10) ROWS FETCH NEXT nvl(:variable2, 10) ROWS ONLY",
-            "SELECT * FROM T ORDER BY I OFFSET COALESCE(:variable1, 10) ROWS FETCH NEXT COALESCE(:variable2, 10) ROWS ONLY",
+            "SELECT * FROM T ORDER BY I OFFSET NVL(:variable1, 10) ROWS FETCH NEXT NVL(:variable2, 10) ROWS ONLY",
         )
+        self.validate_identity("NVL(x, y)").assert_is(exp.Anonymous)
         self.validate_identity(
             "SELECT * FROM t SAMPLE (.25)",
             "SELECT * FROM t SAMPLE (0.25)",
@@ -98,6 +98,16 @@ class TestOracle(Validator):
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
 
+        self.validate_all(
+            "SELECT * FROM test WHERE MOD(col1, 4) = 3",
+            read={
+                "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",
+            },
+            write={
+                "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",
+                "oracle": "SELECT * FROM test WHERE MOD(col1, 4) = 3",
+            },
+        )
         self.validate_all(
             "CURRENT_TIMESTAMP BETWEEN TO_DATE(f.C_SDATE, 'yyyy/mm/dd') AND TO_DATE(f.C_EDATE, 'yyyy/mm/dd')",
             read={
@@ -190,13 +200,6 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
-            "NVL(NULL, 1)",
-            write={
-                "": "COALESCE(NULL, 1)",
-                "oracle": "COALESCE(NULL, 1)",
-            },
-        )
-        self.validate_all(
             "DATE '2022-01-01'",
             write={
                 "": "DATE_STR_TO_DATE('2022-01-01')",
@@ -243,6 +246,10 @@ class TestOracle(Validator):
                 "oracle": "SELECT TO_DATE('2024-12-12', 'YYYY-MM-DD')",
                 "duckdb": "SELECT CAST(STRPTIME('2024-12-12', '%Y-%m-%d') AS DATE)",
             },
+        )
+        self.validate_identity(
+            """SELECT * FROM t ORDER BY a ASC NULLS LAST, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC NULLS FIRST""",
+            """SELECT * FROM t ORDER BY a ASC, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC""",
         )
 
     def test_join_marker(self):

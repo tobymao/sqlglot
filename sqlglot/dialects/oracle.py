@@ -37,6 +37,7 @@ class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    NULL_ORDERING = "nulls_are_large"
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -106,6 +107,7 @@ class Oracle(Dialect):
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
         }
+        FUNCTIONS.pop("NVL")
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
@@ -119,13 +121,6 @@ class Oracle(Dialect):
                 order=self._parse_order(),
             ),
             "XMLTABLE": lambda self: self._parse_xml_table(),
-        }
-
-        NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
-            "CONNECT_BY_ROOT": lambda self: self.expression(
-                exp.ConnectByRoot, this=self._parse_column()
-            ),
         }
 
         PROPERTY_PARSERS = {
@@ -247,12 +242,12 @@ class Oracle(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.ConnectByRoot: lambda self, e: f"CONNECT_BY_ROOT {self.sql(e, 'this')}",
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
+            exp.Mod: rename_func("MOD"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -297,7 +292,7 @@ class Oracle(Dialect):
             )
             return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')', sep='')}"
 
-        def add_column_sql(self, expression: exp.AlterTable) -> str:
+        def add_column_sql(self, expression: exp.Alter) -> str:
             actions = self.expressions(expression, key="actions", flat=True)
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"

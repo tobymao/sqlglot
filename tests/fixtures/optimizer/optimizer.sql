@@ -547,7 +547,8 @@ FROM (
     "tb"."b" AS "b",
     "tb"."c" AS "c"
   FROM "sc"."tb" AS "tb"
-) AS "_q_0" PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
+) AS "_q_0"
+PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
 
 # title: pivoted source with explicit selections where one of them is excluded & selected at the same time
 # note: we need to respect the exclude when selecting * from pivoted source and not include the computed column twice
@@ -564,7 +565,8 @@ FROM (
     "tb"."b" AS "b",
     "tb"."c" AS "c"
   FROM "sc"."tb" AS "tb"
-) AS "_q_0" PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
+) AS "_q_0"
+PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
 
 # title: pivoted source with implicit selections
 # execute: false
@@ -579,7 +581,8 @@ FROM (
     "u"."g" AS "g",
     "u"."h" AS "h"
   FROM "u" AS "u"
-) AS "_q_0" PIVOT(SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "_q_1";
+) AS "_q_0"
+PIVOT(SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "_q_1";
 
 # title: selecting explicit qualified columns from pivoted source with explicit selections
 # execute: false
@@ -592,7 +595,8 @@ FROM (
     "u"."f" AS "f",
     "u"."h" AS "h"
   FROM "u" AS "u"
-) AS "_q_0" PIVOT(SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "piv";
+) AS "_q_0"
+PIVOT(SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "piv";
 
 # title: selecting explicit unqualified columns from pivoted source with implicit selections
 # execute: false
@@ -600,7 +604,8 @@ SELECT x, y FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
   "_q_0"."x" AS "x",
   "_q_0"."y" AS "y"
-FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
+FROM "u" AS "u"
+PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
 
 # title: selecting all columns from a pivoted CTE source, using alias for the aggregation and generating bigquery
 # execute: false
@@ -617,7 +622,8 @@ SELECT
   `_q_0`.`g` AS `g`,
   `_q_0`.`sum_x` AS `sum_x`,
   `_q_0`.`sum_y` AS `sum_y`
-FROM `u_cte` AS `u_cte` PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x', 'y')) AS `_q_0`;
+FROM `u_cte` AS `u_cte`
+PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x', 'y')) AS `_q_0`;
 
 # title: selecting all columns from a pivoted source and generating snowflake
 # execute: false
@@ -627,7 +633,8 @@ SELECT
   "_q_0"."G" AS "G",
   "_q_0"."'x'" AS "'x'",
   "_q_0"."'y'" AS "'y'"
-FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0";
+FROM "U" AS "U"
+PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0";
 
 # title: selecting all columns from a pivoted source and generating spark
 # note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)
@@ -641,7 +648,8 @@ SELECT
 FROM (
   SELECT
     *
-  FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
+  FROM `u` AS `u`
+  PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
 
 # title: selecting all columns from a pivoted source, pivot has column aliases
@@ -674,7 +682,8 @@ WITH "SOURCE" AS (
 SELECT
   "FINAL"."ID" AS "ID",
   "FINAL"."TIMESTAMP_1" AS "TIMESTAMP_1"
-FROM "SOURCE" AS "SOURCE" PIVOT(MAX("SOURCE"."VALUE") FOR "SOURCE"."KEY" IN ('a', 'b', 'c')) AS "FINAL"("ID", "TIMESTAMP_1", "TIMESTAMP_2", "COL_1", "COL_2", "COL_3");
+FROM "SOURCE" AS "SOURCE"
+PIVOT(MAX("SOURCE"."VALUE") FOR "SOURCE"."KEY" IN ('a', 'b', 'c')) AS "FINAL"("ID", "TIMESTAMP_1", "TIMESTAMP_2", "COL_1", "COL_2", "COL_3");
 
 # title: unpivoted table source with a single value column, unpivot columns can't be qualified
 # execute: false
@@ -685,7 +694,8 @@ SELECT
   "_q_0"."DEPT" AS "DEPT",
   "_q_0"."MONTH" AS "MONTH",
   "_q_0"."SALES" AS "SALES"
-FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB")
+UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
 ORDER BY
   "_q_0"."EMPID";
 
@@ -704,7 +714,8 @@ FROM (
     "m_sales"."jan" AS "jan",
     "m_sales"."feb" AS "feb"
   FROM "m_sales" AS "m_sales"
-) AS "m_sales" UNPIVOT("sales" FOR "month" IN ("m_sales"."jan", "m_sales"."feb")) AS "unpiv"("a", "b", "c", "d");
+) AS "m_sales"
+UNPIVOT("sales" FOR "month" IN ("m_sales"."jan", "m_sales"."feb")) AS "unpiv"("a", "b", "c", "d");
 
 # title: unpivoted derived table source with a single value column
 # execute: false
@@ -722,20 +733,22 @@ FROM (
     "M_SALES"."JAN" AS "JAN",
     "M_SALES"."FEB" AS "FEB"
   FROM "M_SALES" AS "M_SALES"
-) AS "M_SALES" UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+) AS "M_SALES"
+UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
 ORDER BY
   "_q_0"."EMPID";
 
 # title: unpivoted table source with a single value column, unpivot columns can be qualified
 # execute: false
 # dialect: bigquery
-# note: the named columns aren't supported by BQ but we add them here to avoid defining a schema
+# note: the named columns aren not supported by BQ but we add them here to avoid defining a schema
 SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT(sales FOR quarter IN (q1, q2, q3, q4));
 SELECT
   `_q_0`.`product` AS `product`,
   `_q_0`.`quarter` AS `quarter`,
   `_q_0`.`sales` AS `sales`
-FROM `produce` AS `produce` UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `_q_0`;
+FROM `produce` AS `produce`
+UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `_q_0`;
 
 # title: unpivoted table source with multiple value columns
 # execute: false
@@ -746,7 +759,8 @@ SELECT
   `_q_0`.`semesters` AS `semesters`,
   `_q_0`.`first_half_sales` AS `first_half_sales`,
   `_q_0`.`second_half_sales` AS `second_half_sales`
-FROM `produce` AS `produce` UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN ((`produce`.`q1`, `produce`.`q2`) AS 'semester_1', (`produce`.`q3`, `produce`.`q4`) AS 'semester_2')) AS `_q_0`;
+FROM `produce` AS `produce`
+UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN ((`produce`.`q1`, `produce`.`q2`) AS 'semester_1', (`produce`.`q3`, `produce`.`q4`) AS 'semester_2')) AS `_q_0`;
 
 # title: quoting is preserved
 # dialect: snowflake

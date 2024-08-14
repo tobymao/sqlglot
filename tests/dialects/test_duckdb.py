@@ -8,6 +8,8 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
+
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -18,6 +20,13 @@ class TestDuckDB(Validator):
             "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT col.b FROM _data, UNNEST(_data.col) AS col WHERE col.a = 1",
         )
 
+        self.validate_all(
+            """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
+            read={
+                "duckdb": """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
+                "snowflake": """SELECT TRY_PARSE_JSON('{"x: 1}')""",
+            },
+        )
         self.validate_all(
             "SELECT straight_join",
             write={
@@ -286,8 +295,18 @@ class TestDuckDB(Validator):
         self.validate_identity("x -> '$.family'")
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
         self.validate_identity("SELECT * FROM foo WHERE bar > $baz AND bla = $bob")
+        self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
+        self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
+        self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
+        self.validate_identity(
+            "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
+        ).assert_is(exp.Summarize)
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
+        )
+        self.validate_identity(
+            "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
+            "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",
         )
         self.validate_identity(
             "SELECT a, LOGICAL_OR(b) FROM foo GROUP BY a",
@@ -300,6 +319,14 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT JSON_EXTRACT(c, '$.k1') = 'v1'",
             "SELECT (c -> '$.k1') = 'v1'",
+        )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT(c, '$[*].id')[0:2]",
+            "SELECT (c -> '$[*].id')[0 : 2]",
+        )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT_STRING(c, '$[*].id')[0:2]",
+            "SELECT (c ->> '$[*].id')[0 : 2]",
         )
         self.validate_identity(
             """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
@@ -353,6 +380,10 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "SELECT * FROM (PIVOT Cities ON Year USING SUM(Population) GROUP BY Country) AS pivot_alias"
+        )
+        self.validate_identity(
+            # QUALIFY comes after WINDOW
+            "SELECT schema_name, function_name, ROW_NUMBER() OVER my_window AS function_rank FROM DUCKDB_FUNCTIONS() WINDOW my_window AS (PARTITION BY schema_name ORDER BY function_name) QUALIFY ROW_NUMBER() OVER my_window < 3"
         )
         self.validate_identity("DATE_SUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
         self.validate_identity("DATESUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
@@ -786,6 +817,11 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_identity("SELECT LENGTH(foo)")
+        self.validate_identity("SELECT ARRAY[1, 2, 3]", "SELECT [1, 2, 3]")
+
+        self.validate_identity("SELECT * FROM (DESCRIBE t)")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
@@ -818,10 +854,10 @@ class TestDuckDB(Validator):
             self.assertEqual(
                 cm.output,
                 [
-                    "WARNING:sqlglot:Applying array index offset (-1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "INFO:sqlglot:Applying array index offset (-1)",
+                    "INFO:sqlglot:Applying array index offset (1)",
+                    "INFO:sqlglot:Applying array index offset (1)",
+                    "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
 
@@ -847,7 +883,7 @@ class TestDuckDB(Validator):
             read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
         )
         self.validate_all(
-            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (-1) DAY",
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",
             read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},
         )
         self.validate_all(
@@ -1029,13 +1065,20 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
-            "CAST([[{'a': 1}]] AS STRUCT(a BIGINT)[][])",
+            "CAST([[ROW(1)]] AS STRUCT(a BIGINT)[][])",
         )
         self.validate_identity(
             "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
-            "CAST([{'a': 1}] AS STRUCT(a BIGINT)[])",
+            "CAST([ROW(1)] AS STRUCT(a BIGINT)[])",
         )
-
+        self.validate_identity(
+            "STRUCT_PACK(a := 'b')::json",
+            "CAST({'a': 'b'} AS JSON)",
+        )
+        self.validate_identity(
+            "STRUCT_PACK(a := 'b')::STRUCT(a TEXT)",
+            "CAST(ROW('b') AS STRUCT(a TEXT))",
+        )
         self.validate_all(
             "CAST(x AS VARCHAR(5))",
             write={
@@ -1114,6 +1157,12 @@ class TestDuckDB(Validator):
                 "postgres": "CAST(COL AS BIGINT[])",
                 "snowflake": "CAST(COL AS ARRAY(BIGINT))",
             },
+        )
+
+        self.validate_identity("SELECT x::INT[3][3]", "SELECT CAST(x AS INT[3][3])")
+        self.validate_identity(
+            """SELECT ARRAY[[[1]]]::INT[1][1][1]""",
+            """SELECT CAST([[[1]]] AS INT[1][1][1])""",
         )
 
     def test_encode_decode(self):

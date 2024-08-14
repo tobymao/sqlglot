@@ -1,4 +1,4 @@
-from sqlglot import exp, parse
+from sqlglot import exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ParseError
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -8,29 +8,14 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
-        self.validate_identity(
-            "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
-        )
-        self.validate_identity(
-            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON X([y])"
-        )
-        self.validate_identity(
-            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON PRIMARY"
-        )
-
-        self.assertEqual(
-            annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
-            "SELECT 1 WHERE EXISTS(SELECT 1)",
-        )
+        # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
+        # tsql allows .. which means use the default schema
+        self.validate_identity("SELECT * FROM a..b")
 
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
         self.validate_identity("EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True)
-        # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
-        # tsql allows .. which means use the default schema
-        self.validate_identity("SELECT * FROM a..b")
-
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
         self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
@@ -47,9 +32,32 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
+            "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
+        )
+        self.validate_identity(
+            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON X([y])"
+        )
+        self.validate_identity(
+            "CREATE INDEX [x] ON [y]([z] ASC) WITH (allow_page_locks=on) ON PRIMARY"
+        )
+        self.validate_identity(
             "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
         )
+        self.assertEqual(
+            annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
+            "SELECT 1 WHERE EXISTS(SELECT 1)",
+        )
 
+        self.validate_all(
+            "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
+            read={
+                "snowflake": "CREATE TABLE TEMP_NESTED_WITH AS WITH C AS (WITH A AS (SELECT 2 AS value) SELECT * FROM A) SELECT * FROM C",
+                "tsql": "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
+            },
+            write={
+                "snowflake": "CREATE TABLE TEMP_NESTED_WITH AS WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * FROM (SELECT * FROM C) AS temp",
+            },
+        )
         self.validate_all(
             "SELECT IIF(cond <> 0, 'True', 'False')",
             read={
@@ -392,6 +400,17 @@ class TestTSQL(Validator):
         )
         self.validate_identity("HASHBYTES('MD2', 'x')")
         self.validate_identity("LOG(n, b)")
+
+        self.validate_all(
+            "STDEV(x)",
+            read={
+                "": "STDDEV(x)",
+            },
+            write={
+                "": "STDDEV(x)",
+                "tsql": "STDEV(x)",
+            },
+        )
 
     def test_option(self):
         possible_options = [
@@ -773,7 +792,7 @@ class TestTSQL(Validator):
             self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
 
         self.validate_identity("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B").assert_is(
-            exp.AlterTable
+            exp.Alter
         ).args["actions"][0].assert_is(exp.Drop)
 
         for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
@@ -788,6 +807,7 @@ class TestTSQL(Validator):
                 f"UNIQUE {clustered_keyword} ([internal_id] ASC))",
             )
 
+        self.validate_identity("CREATE VIEW t AS WITH cte AS (SELECT 1 AS c) SELECT c FROM cte")
         self.validate_identity(
             "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS)"
         )
@@ -802,6 +822,20 @@ class TestTSQL(Validator):
         self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=ON")
         self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=OFF")
 
+        self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+        self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
+        self.validate_identity(
+            "ALTER VIEW v WITH SCHEMABINDING AS SELECT * FROM foo WHERE c > 100",
+            check_command_warning=True,
+        )
+        self.validate_identity(
+            "ALTER VIEW v WITH ENCRYPTION AS SELECT * FROM foo WHERE c > 100",
+            check_command_warning=True,
+        )
+        self.validate_identity(
+            "ALTER VIEW v WITH VIEW_METADATA AS SELECT * FROM foo WHERE c > 100",
+            check_command_warning=True,
+        )
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",
@@ -888,6 +922,14 @@ class TestTSQL(Validator):
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT) USING PARQUET",
                 "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             },
+        )
+
+        for colstore in ("NONCLUSTERED COLUMNSTORE", "CLUSTERED COLUMNSTORE"):
+            self.validate_identity(f"CREATE {colstore} INDEX index_name ON foo.bar")
+
+        self.validate_identity(
+            "CREATE COLUMNSTORE INDEX index_name ON foo.bar",
+            "CREATE NONCLUSTERED COLUMNSTORE INDEX index_name ON foo.bar",
         )
 
     def test_insert_cte(self):
@@ -1118,6 +1160,11 @@ WHERE
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
     def test_json(self):
+        self.validate_identity(
+            """JSON_QUERY(REPLACE(REPLACE(x , '''', '"'), '""', '"'))""",
+            """ISNULL(JSON_QUERY(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$'), JSON_VALUE(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$'))""",
+        )
+
         self.validate_all(
             "JSON_QUERY(r.JSON, '$.Attr_INT')",
             write={
@@ -1878,3 +1925,25 @@ FROM OPENJSON(@json) WITH (
             "DECLARE vendor_cursor CURSOR FOR SELECT VendorID, Name FROM Purchasing.Vendor WHERE PreferredVendorStatus = 1 ORDER BY VendorID",
             check_command_warning=True,
         )
+
+    def test_scope_resolution_op(self):
+        # we still want to support :: casting shorthand for tsql
+        self.validate_identity("x::int", "CAST(x AS INTEGER)")
+        self.validate_identity("x::varchar", "CAST(x AS VARCHAR)")
+        self.validate_identity("x::varchar(MAX)", "CAST(x AS VARCHAR(MAX))")
+
+        for lhs, rhs in (
+            ("", "FOO(a, b)"),
+            ("bar", "baZ(1, 2)"),
+            ("LOGIN", "EricKurjan"),
+            ("GEOGRAPHY", "Point(latitude, longitude, 4326)"),
+            (
+                "GEOGRAPHY",
+                "STGeomFromText('POLYGON((-122.358 47.653 , -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))', 4326)",
+            ),
+        ):
+            with self.subTest(f"Scope resolution, LHS: {lhs}, RHS: {rhs}"):
+                expr = self.validate_identity(f"{lhs}::{rhs}")
+                base_sql = expr.sql()
+                self.assertEqual(base_sql, f"SCOPE_RESOLUTION({lhs + ', ' if lhs else ''}{rhs})")
+                self.assertEqual(parse_one(base_sql).sql("tsql"), f"{lhs}::{rhs}")

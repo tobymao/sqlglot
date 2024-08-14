@@ -33,7 +33,7 @@ def _build_datediff(args: t.List) -> exp.Expression:
     expression = seq_get(args, 1)
 
     if len(args) == 3:
-        unit = this
+        unit = exp.var(t.cast(exp.Expression, this).name)
         this = args[2]
 
     return exp.DateDiff(
@@ -90,7 +90,11 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
 
 
 class Spark(Spark2):
+    SUPPORTS_ORDER_BY_ALL = True
+
     class Tokenizer(Spark2.Tokenizer):
+        STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
+
         RAW_STRINGS = [
             (prefix + q, q)
             for q in t.cast(t.List[str], Spark2.Tokenizer.QUOTES)
@@ -105,6 +109,7 @@ class Spark(Spark2):
             "DATEADD": _build_dateadd,
             "TIMESTAMPADD": _build_dateadd,
             "DATEDIFF": _build_datediff,
+            "DATE_DIFF": _build_datediff,
             "TIMESTAMP_LTZ": _build_as_cast("TIMESTAMP_LTZ"),
             "TIMESTAMP_NTZ": _build_as_cast("TIMESTAMP_NTZ"),
             "TRY_ELEMENT_AT": lambda args: exp.Bracket(
@@ -126,6 +131,8 @@ class Spark(Spark2):
 
     class Generator(Spark2.Generator):
         SUPPORTS_TO_NUMBER = True
+        PAD_FILL_PATTERN_IS_REQUIRED = False
+        SUPPORTS_CONVERT_TIMEZONE = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,

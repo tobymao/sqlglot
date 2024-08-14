@@ -177,3 +177,6 @@ SELECT a.id, a_2.id FROM c.db1.a AS a JOIN c.db2.a AS a_2 ON a.id = a_2.id;
 
 SELECT cat.db1.a.id, db2.a.id FROM cat.db1.a JOIN db2.a ON cat.db1.a.id = db2.a.id;
 SELECT a.id, a_2.id FROM cat.db1.a AS a JOIN c.db2.a AS a_2 ON a.id = a_2.id;
+
+COPY INTO (SELECT * FROM x) TO 'data' WITH (FORMAT 'CSV');
+COPY INTO (SELECT * FROM c.db.x AS x) TO 'data' WITH (FORMAT 'CSV');

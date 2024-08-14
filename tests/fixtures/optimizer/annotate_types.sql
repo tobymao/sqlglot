@@ -55,3 +55,15 @@ STRUCT<a INT, b DOUBLE>;
 # dialect: presto
 ROW(1, 2.5, 'foo');
 STRUCT<INT, DOUBLE, VARCHAR>;
+
+# dialect: bigquery
+EXTRACT(date from x);
+DATE;
+
+# dialect: bigquery
+EXTRACT(time from x);
+TIME;
+
+# dialect: bigquery
+EXTRACT(day from x);
+INT;

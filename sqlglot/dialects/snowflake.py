@@ -122,12 +122,6 @@ def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> 
     )
 
 
-def _build_convert_timezone(args: t.List) -> t.Union[exp.Anonymous, exp.AtTimeZone]:
-    if len(args) == 3:
-        return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=args)
-    return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))
-
-
 def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
     regexp_replace = exp.RegexpReplace.from_arg_list(args)
 
@@ -182,6 +176,47 @@ def _flatten_structured_types_unless_iceberg(expression: exp.Expression) -> exp.
                 column_type = schema_expression.kind
                 if isinstance(column_type, exp.DataType):
                     column_type.transform(_flatten_structured_type, copy=False)
+
+    return expression
+
+
+def _unnest_generate_date_array(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        for unnest in expression.find_all(exp.Unnest):
+            if (
+                isinstance(unnest.parent, (exp.From, exp.Join))
+                and len(unnest.expressions) == 1
+                and isinstance(unnest.expressions[0], exp.GenerateDateArray)
+            ):
+                generate_date_array = unnest.expressions[0]
+                start = generate_date_array.args.get("start")
+                end = generate_date_array.args.get("end")
+                step = generate_date_array.args.get("step")
+
+                if not start or not end or not isinstance(step, exp.Interval) or step.name != "1":
+                    continue
+
+                unit = step.args.get("unit")
+
+                unnest_alias = unnest.args.get("alias")
+                if unnest_alias:
+                    unnest_alias = unnest_alias.copy()
+                    sequence_value_name = seq_get(unnest_alias.columns, 0) or "value"
+                else:
+                    sequence_value_name = "value"
+
+                # We'll add the next sequence value to the starting date and project the result
+                date_add = _build_date_time_add(exp.DateAdd)(
+                    [unit, exp.cast(sequence_value_name, "int"), exp.cast(start, "date")]
+                ).as_(sequence_value_name)
+
+                # We use DATEDIFF to compute the number of sequence values needed
+                number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
+                    [exp.Literal.number(0), _build_datediff([unit, start, end]) + 1]
+                )
+
+                unnest.set("expressions", [number_sequence])
+                unnest.replace(exp.select(date_add).from_(unnest.copy()).subquery(unnest_alias))
 
     return expression
 
@@ -241,7 +276,7 @@ class Snowflake(Dialect):
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
         DEFAULT_SAMPLING_METHOD = "BERNOULLI"
-        COLON_IS_JSON_EXTRACT = True
+        COLON_IS_VARIANT_EXTRACT = True
 
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,
@@ -255,7 +290,7 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
-            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
+            "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0)
             ),
@@ -268,7 +303,6 @@ class Snowflake(Dialect):
             "BITXOR": binary_from_function(exp.BitwiseXor),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BOOLXOR": binary_from_function(exp.Xor),
-            "CONVERT_TIMEZONE": _build_convert_timezone,
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),
@@ -282,6 +316,8 @@ class Snowflake(Dialect):
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),
+            "LEN": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "MEDIAN": lambda args: exp.PercentileCont(
                 this=seq_get(args, 0), expression=exp.Literal.number(0.5)
@@ -298,6 +334,7 @@ class Snowflake(Dialect):
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": build_timestamp_from_parts,
+            "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(
@@ -410,6 +447,26 @@ class Snowflake(Dialect):
             ),
         }
 
+        def _negate_range(
+            self, this: t.Optional[exp.Expression] = None
+        ) -> t.Optional[exp.Expression]:
+            if not this:
+                return this
+
+            query = this.args.get("query")
+            if isinstance(this, exp.In) and isinstance(query, exp.Query):
+                # Snowflake treats `value NOT IN (subquery)` as `VALUE <> ALL (subquery)`, so
+                # we do this conversion here to avoid parsing it into `NOT value IN (subquery)`
+                # which can produce different results (most likely a SnowFlake bug).
+                #
+                # https://docs.snowflake.com/en/sql-reference/functions/in
+                # Context: https://github.com/tobymao/sqlglot/issues/3890
+                return self.expression(
+                    exp.NEQ, this=this.this, expression=exp.All(this=query.unnest())
+                )
+
+            return self.expression(exp.Not, this=this)
+
         def _parse_with_constraint(self) -> t.Optional[exp.Expression]:
             if self._prev.token_type != TokenType.WITH:
                 self._retreat(self._index - 1)
@@ -501,29 +558,6 @@ class Snowflake(Dialect):
 
             return lateral
 
-        def _parse_at_before(self, table: exp.Table) -> exp.Table:
-            # https://docs.snowflake.com/en/sql-reference/constructs/at-before
-            index = self._index
-            if self._match_texts(("AT", "BEFORE")):
-                this = self._prev.text.upper()
-                kind = (
-                    self._match(TokenType.L_PAREN)
-                    and self._match_texts(self.HISTORICAL_DATA_KIND)
-                    and self._prev.text.upper()
-                )
-                expression = self._match(TokenType.FARROW) and self._parse_bitwise()
-
-                if expression:
-                    self._match_r_paren()
-                    when = self.expression(
-                        exp.HistoricalData, this=this, kind=kind, expression=expression
-                    )
-                    table.set("when", when)
-                else:
-                    self._retreat(index)
-
-            return table
-
         def _parse_table_parts(
             self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
         ) -> exp.Table:
@@ -556,7 +590,7 @@ class Snowflake(Dialect):
             else:
                 table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
 
-            return self._parse_at_before(table)
+            return table
 
         def _parse_id_var(
             self,
@@ -634,7 +668,7 @@ class Snowflake(Dialect):
             # can be joined in a query with a comma separator, as well as closing paren
             # in case of subqueries
             while self._is_connected() and not self._match_set(
-                (TokenType.COMMA, TokenType.R_PAREN), advance=False
+                (TokenType.COMMA, TokenType.L_PAREN, TokenType.R_PAREN), advance=False
             ):
                 parts.append(self._advance_any(ignore_reserved=True))
 
@@ -684,6 +718,7 @@ class Snowflake(Dialect):
             "WAREHOUSE": TokenType.WAREHOUSE,
             "STREAMLIT": TokenType.STREAMLIT,
         }
+        KEYWORDS.pop("/*+")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
@@ -711,6 +746,9 @@ class Snowflake(Dialect):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         STAR_EXCEPT = "EXCLUDE"
+        SUPPORTS_EXPLODING_PROJECTIONS = False
+        ARRAY_CONCAT_IS_VAR_LEN = False
+        SUPPORTS_CONVERT_TIMEZONE = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -718,7 +756,7 @@ class Snowflake(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: inline_array_sql,
-            exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
@@ -752,6 +790,9 @@ class Snowflake(Dialect):
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.ParseJSON: lambda self, e: self.func(
+                "TRY_PARSE_JSON" if e.args.get("safe") else "PARSE_JSON", e.this
+            ),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
@@ -767,6 +808,7 @@ class Snowflake(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.explode_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
+                    _unnest_generate_date_array,
                 ]
             ),
             exp.SHA: rename_func("SHA1"),

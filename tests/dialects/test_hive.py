@@ -171,6 +171,16 @@ class TestHive(Validator):
         self.validate_identity(
             """CREATE EXTERNAL TABLE `my_table` (`a7` ARRAY<DATE>) ROW FORMAT SERDE 'a' STORED AS INPUTFORMAT 'b' OUTPUTFORMAT 'c' LOCATION 'd' TBLPROPERTIES ('e'='f')"""
         )
+        self.validate_identity("ALTER VIEW v1 AS SELECT x, UPPER(s) AS s FROM t2")
+        self.validate_identity("ALTER VIEW v1 (c1, c2) AS SELECT x, UPPER(s) AS s FROM t2")
+        self.validate_identity(
+            "ALTER VIEW v7 (c1 COMMENT 'Comment for c1', c2) AS SELECT t1.c1, t1.c2 FROM t1"
+        )
+        self.validate_identity("ALTER VIEW db1.v1 RENAME TO db2.v2")
+        self.validate_identity("ALTER VIEW v1 SET TBLPROPERTIES ('tblp1'='1', 'tblp2'='2')")
+        self.validate_identity(
+            "ALTER VIEW v1 UNSET TBLPROPERTIES ('tblp1', 'tblp2')", check_command_warning=True
+        )
 
     def test_lateral_view(self):
         self.validate_all(
@@ -372,7 +382,7 @@ class TestHive(Validator):
             "UNIX_TIMESTAMP(x)",
             write={
                 "duckdb": "EPOCH(STRPTIME(x, '%Y-%m-%d %H:%M:%S'))",
-                "presto": "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST(x AS VARCHAR), '%Y-%m-%d %T')), PARSE_DATETIME(CAST(x AS VARCHAR), 'yyyy-MM-dd HH:mm:ss')))",
+                "presto": "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST(x AS VARCHAR), '%Y-%m-%d %T')), PARSE_DATETIME(DATE_FORMAT(x, '%Y-%m-%d %T'), 'yyyy-MM-dd HH:mm:ss')))",
                 "hive": "UNIX_TIMESTAMP(x)",
                 "spark": "UNIX_TIMESTAMP(x)",
                 "": "STR_TO_UNIX(x, '%Y-%m-%d %H:%M:%S')",

@@ -53,6 +53,7 @@ x >> 1 | 1 & 1 ^ 1
 x || y
 x[ : ]
 x[1 : ]
+x[ : 2]
 x[1 : 2]
 x[-4 : -1]
 1 - -1
@@ -115,7 +116,7 @@ ARRAY(foo, time)
 ARRAY(LENGTH(waiter_name) > 0)
 ARRAY_CONTAINS(x, 1)
 x.EXTRACT(1)
-EXTRACT(x FROM y)
+EXTRACT(X FROM y)
 EXTRACT(DATE FROM y)
 EXTRACT(WEEK(monday) FROM created_at)
 CONCAT_WS('-', 'a', 'b')
@@ -203,6 +204,7 @@ USE ROLE x
 USE WAREHOUSE x
 USE DATABASE x
 USE SCHEMA x.y
+USE CATALOG abc
 NOT 1
 NOT NOT 1
 SELECT * FROM test
@@ -733,6 +735,8 @@ SELECT (WITH x AS (SELECT 1 AS y) SELECT * FROM x) AS z
 SELECT ((SELECT 1) + 1)
 SELECT * FROM project.dataset.INFORMATION_SCHEMA.TABLES
 SELECT CAST(x AS INT) /* comment */ FROM foo
+SELECT c /* c1 /* c2 */ c3 */
+SELECT c /* c1 /* c2 /* c3 */ */ */
 SELECT c /* c1 */ AS alias /* c2 */
 SELECT a /* x */, b /* x */
 SELECT a /* x */ /* y */ /* z */, b /* k */ /* m */
@@ -772,17 +776,13 @@ ALTER TABLE orders DROP PARTITION(dt = '2014-05-14', country = 'IN'), PARTITION(
 ALTER TABLE mydataset.mytable DELETE WHERE x = 1
 ALTER TABLE table1 RENAME COLUMN c1 TO c2
 ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2
+ALTER TABLE table1 RENAME TO table2
+ALTER VIEW view1 AS SELECT a, b, c FROM table1
+ALTER VIEW view1 AS SELECT a, b, c FROM table1 UNION ALL SELECT a, b, c FROM table2
+ALTER VIEW view1 AS SELECT a, b, c FROM table1 UNION ALL SELECT a, b, c FROM table2 LIMIT 100
 SELECT div.a FROM test_table AS div
 WITH view AS (SELECT 1 AS x) SELECT * FROM view
 ARRAY<STRUCT<INT, DOUBLE, ARRAY<INT>>>
-ARRAY<INT>[1, 2, 3]
-ARRAY<INT>[]
-STRUCT<x VARCHAR(10)>
-STRUCT<x VARCHAR(10)>("bla")
-STRUCT<VARCHAR(10)>("bla")
-STRUCT<INT>(5)
-STRUCT<DATE>("2011-05-05")
-STRUCT<x INT, y TEXT>(1, t.str_col)
 STRUCT<int INT>
 SELECT CAST(NULL AS ARRAY<INT>) IS NULL AS array_is_null
 ALTER TABLE "schema"."tablename" ADD CONSTRAINT "CHK_Name" CHECK (NOT "IdDwh" IS NULL AND "IdDwh" <> (0))
@@ -872,5 +872,9 @@ SELECT name
 SELECT copy
 SELECT rollup
 SELECT unnest
+SELECT cube, cube.x FROM cube
 SELECT * FROM a STRAIGHT_JOIN b
 SELECT COUNT(DISTINCT "foo bar") FROM (SELECT 1 AS "foo bar") AS t
+SELECT vector
+WITH all AS (SELECT 1 AS count) SELECT all.count FROM all
+SELECT rename

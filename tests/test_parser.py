@@ -14,6 +14,8 @@ class TestParser(unittest.TestCase):
             parse_one("")
 
     def test_parse_into(self):
+        self.assertIsInstance(parse_one("select * from t", into=exp.Select), exp.Select)
+        self.assertIsInstance(parse_one("select * from t limit 5", into=exp.Select), exp.Select)
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
@@ -577,12 +579,6 @@ class TestParser(unittest.TestCase):
             logger,
         )
 
-    def test_rename_table(self):
-        self.assertEqual(
-            parse_one("ALTER TABLE foo RENAME TO bar").sql(),
-            "ALTER TABLE foo RENAME TO bar",
-        )
-
     def test_pivot_columns(self):
         nothing_aliased = """
             SELECT * FROM (
@@ -703,77 +699,19 @@ class TestParser(unittest.TestCase):
 
     def test_parse_nested(self):
         now = time.time()
-        query = parse_one(
-            """
-            SELECT *
-            FROM a
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            LEFT JOIN b ON a.id = b.id
-            """
-        )
-
+        query = parse_one("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
         self.assertIsNotNone(query)
+        self.assertLessEqual(time.time() - now, 0.1)
 
-        query = parse_one(
-            """
-            SELECT *
-            FROM a
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            LEFT JOIN UNNEST(ARRAY[])
-            """
-        )
-
+        now = time.time()
+        query = parse_one("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
         self.assertIsNotNone(query)
-        self.assertLessEqual(time.time() - now, 0.2)
+        self.assertLessEqual(time.time() - now, 0.1)
+
+        now = time.time()
+        query = parse_one("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
+        self.assertIsNotNone(query)
+        self.assertLessEqual(time.time() - now, 0.1)
 
     def test_parse_properties(self):
         self.assertEqual(
@@ -901,3 +839,18 @@ class TestParser(unittest.TestCase):
 
     def test_parse_prop_eq(self):
         self.assertIsInstance(parse_one("x(a := b and c)").expressions[0], exp.PropertyEQ)
+
+    def test_collate(self):
+        collates = [
+            ('pg_catalog."default"', exp.Column),
+            ('"en_DE"', exp.Identifier),
+            ("LATIN1_GENERAL_BIN", exp.Var),
+            ("'en'", exp.Literal),
+        ]
+
+        for collate_pair in collates:
+            collate_node = parse_one(
+                f"""SELECT * FROM t WHERE foo LIKE '%bar%' COLLATE {collate_pair[0]}"""
+            ).find(exp.Collate)
+            self.assertIsInstance(collate_node, exp.Collate)
+            self.assertIsInstance(collate_node.expression, collate_pair[1])

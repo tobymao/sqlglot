@@ -106,11 +106,16 @@ class SQLite(Dialect):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
+        KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
+        KEYWORDS.pop("/*+")
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
             "STRFTIME": _build_strftime,
+            "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
+            "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
         }
         STRING_ALIASES = True
 
@@ -218,7 +223,7 @@ class SQLite(Dialect):
                     exp.select(exp.alias_("value", column_alias)).from_(expression).subquery()
                 )
             else:
-                sql = super().generateseries_sql(expression)
+                sql = self.function_fallback_sql(expression)
 
             return sql
 

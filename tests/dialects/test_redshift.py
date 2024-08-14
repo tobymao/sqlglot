@@ -6,7 +6,6 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
-        self.validate_identity("1 div", "1 AS div")
         self.validate_all(
             "SELECT SPLIT_TO_ARRAY('12,345,6789')",
             write={
@@ -28,7 +27,7 @@ class TestRedshift(Validator):
             """SELECT JSON_EXTRACT_PATH_TEXT('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', 'farm', 'barn', 'color')""",
             write={
                 "bigquery": """SELECT JSON_EXTRACT_SCALAR('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', '$.farm.barn.color')""",
-                "databricks": """SELECT GET_JSON_OBJECT('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', '$.farm.barn.color')""",
+                "databricks": """SELECT '{ "farm": {"barn": { "color": "red", "feed stocked": true }}}':farm.barn.color""",
                 "duckdb": """SELECT '{ "farm": {"barn": { "color": "red", "feed stocked": true }}}' ->> '$.farm.barn.color'""",
                 "postgres": """SELECT JSON_EXTRACT_PATH_TEXT('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', 'farm', 'barn', 'color')""",
                 "presto": """SELECT JSON_EXTRACT_SCALAR('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', '$.farm.barn.color')""",
@@ -228,7 +227,7 @@ class TestRedshift(Validator):
                 "drill": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC NULLS FIRST) AS _row_number FROM x) AS _t WHERE _row_number = 1",
                 "hive": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC NULLS FIRST) AS _row_number FROM x) AS _t WHERE _row_number = 1",
                 "mysql": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY CASE WHEN c IS NULL THEN 1 ELSE 0 END DESC, c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
-                "oracle": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC NULLS FIRST) AS _row_number FROM x) _t WHERE _row_number = 1",
+                "oracle": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) _t WHERE _row_number = 1",
                 "presto": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC NULLS FIRST) AS _row_number FROM x) AS _t WHERE _row_number = 1",
                 "redshift": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
                 "snowflake": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
@@ -315,6 +314,7 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("1 div", "1 AS div")
         self.validate_identity("LISTAGG(DISTINCT foo, ', ')")
         self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
         self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
@@ -337,6 +337,10 @@ class TestRedshift(Validator):
         self.validate_identity(
             """SELECT JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}', 'f4', 'f6', TRUE)"""
         )
+        self.validate_identity(
+            'DATE_PART(year, "somecol")',
+            'EXTRACT(year FROM "somecol")',
+        ).this.assert_is(exp.Var)
         self.validate_identity(
             "SELECT CONCAT('abc', 'def')",
             "SELECT 'abc' || 'def'",
@@ -429,6 +433,14 @@ ORDER BY
             "SELECT attr AS attr, JSON_TYPEOF(val) AS value_type FROM customer_orders_lineitem AS c, UNPIVOT c.c_orders AS val AT attr WHERE c_custkey = 9451"
         )
         self.validate_identity("SELECT JSON_PARSE('[]')")
+
+        self.validate_identity("SELECT ARRAY(1, 2, 3)")
+        self.validate_identity("SELECT ARRAY[1, 2, 3]")
+
+        self.validate_identity(
+            """SELECT CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000')""",
+            """SELECT CONVERT_TIMEZONE('UTC', 'America/New_York', '2024-08-06 09:10:00.000')""",
+        )
 
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError

@@ -56,12 +56,15 @@ def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_ADD_OR_SUB]
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
-        expression = self._simplify_unless_literal(expression.expression)
-        if not isinstance(expression, exp.Literal):
+        e = self._simplify_unless_literal(expression.expression)
+        if isinstance(e, exp.Literal):
+            e.args["is_string"] = True
+        elif e.is_number:
+            e = exp.Literal.string(e.to_py())
+        else:
             self.unsupported("Cannot add non literal")
 
-        expression.args["is_string"] = True
-        return f"{this} {kind} {self.sql(exp.Interval(this=expression, unit=unit))}"
+        return f"{this} {kind} {self.sql(exp.Interval(this=e, unit=unit))}"
 
     return func
 
@@ -163,20 +166,17 @@ def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _build_generate_series(args: t.List) -> exp.GenerateSeries:
+def _build_generate_series(args: t.List) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
+    # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
     step = seq_get(args, 2)
+    if step is not None:
+        if step.is_string:
+            args[2] = exp.to_interval(step.this)
+        elif isinstance(step, exp.Interval) and not step.args.get("unit"):
+            args[2] = exp.to_interval(step.this.this)
 
-    if step is None:
-        # Postgres allows calls with just two arguments -- the "step" argument defaults to 1
-        return exp.GenerateSeries.from_arg_list(args)
-
-    if step.is_string:
-        args[2] = exp.to_interval(step.this)
-    elif isinstance(step, exp.Interval) and not step.args.get("unit"):
-        args[2] = exp.to_interval(step.this.this)
-
-    return exp.GenerateSeries.from_arg_list(args)
+    return exp.ExplodingGenerateSeries.from_arg_list(args)
 
 
 def _build_to_timestamp(args: t.List) -> exp.UnixToTime | exp.StrToTime:
@@ -331,6 +331,7 @@ class Postgres(Dialect):
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
         }
+        KEYWORDS.pop("/*+")
         KEYWORDS.pop("DIV")
 
         SINGLE_TOKENS = {
@@ -361,6 +362,7 @@ class Postgres(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "REGEXP_REPLACE": _build_regexp_replace,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
+            "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,
             "UNNEST": exp.Explode.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
@@ -438,10 +440,13 @@ class Postgres(Dialect):
             self._match(TokenType.COMMA)
             value = self._parse_bitwise()
 
-            if part and part.is_string:
+            if part and isinstance(part, (exp.Column, exp.Literal)):
                 part = exp.var(part.name)
 
             return self.expression(exp.Extract, this=part, expression=value)
+
+        def _parse_unique_key(self) -> t.Optional[exp.Expression]:
+            return None
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
@@ -461,6 +466,7 @@ class Postgres(Dialect):
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         COPY_HAS_INTO_KEYWORD = False
+        ARRAY_CONCAT_IS_VAR_LEN = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
@@ -482,12 +488,7 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
-            exp.Array: lambda self, e: (
-                f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
-                if isinstance(seq_get(e.expressions, 0), exp.Select)
-                else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]"
-            ),
-            exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
@@ -502,6 +503,7 @@ class Postgres(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
+            exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
             exp.GroupConcat: _string_agg_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
@@ -582,21 +584,32 @@ class Postgres(Dialect):
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             if len(expression.expressions) == 1:
+                arg = expression.expressions[0]
+                if isinstance(arg, exp.GenerateDateArray):
+                    generate_series: exp.Expression = exp.GenerateSeries(**arg.args)
+                    if isinstance(expression.parent, (exp.From, exp.Join)):
+                        generate_series = (
+                            exp.select("value::date")
+                            .from_(generate_series.as_("value"))
+                            .subquery(expression.args.get("alias") or "_unnested_generate_series")
+                        )
+                    return self.sql(generate_series)
+
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                this = annotate_types(expression.expressions[0])
+                this = annotate_types(arg)
                 if this.is_type("array<json>"):
                     while isinstance(this, exp.Cast):
                         this = this.this
 
-                    arg = self.sql(exp.cast(this, exp.DataType.Type.JSON))
+                    arg_as_json = self.sql(exp.cast(this, exp.DataType.Type.JSON))
                     alias = self.sql(expression, "alias")
                     alias = f" AS {alias}" if alias else ""
 
                     if expression.args.get("offset"):
                         self.unsupported("Unsupported JSON_ARRAY_ELEMENTS with offset")
 
-                    return f"JSON_ARRAY_ELEMENTS({arg}){alias}"
+                    return f"JSON_ARRAY_ELEMENTS({arg_as_json}){alias}"
 
             return super().unnest_sql(expression)
 
@@ -641,3 +654,11 @@ class Postgres(Dialect):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def array_sql(self, expression: exp.Array) -> str:
+            exprs = expression.expressions
+            return (
+                f"{self.normalize_func('ARRAY')}({self.sql(exprs[0])})"
+                if isinstance(seq_get(exprs, 0), exp.Select)
+                else f"{self.normalize_func('ARRAY')}[{self.expressions(expression, flat=True)}]"
+            )

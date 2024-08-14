@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -5,6 +6,13 @@ class TestTeradata(Validator):
     dialect = "teradata"
 
     def test_teradata(self):
+        self.validate_all(
+            "RANDOM(l, u)",
+            write={
+                "": "(u - l) * RAND() + l",
+                "teradata": "RANDOM(l, u)",
+            },
+        )
         self.validate_identity("TO_NUMBER(expr, fmt, nlsparam)")
         self.validate_identity("SELECT TOP 10 * FROM tbl")
         self.validate_identity("SELECT * FROM tbl SAMPLE 5")
@@ -23,6 +31,10 @@ class TestTeradata(Validator):
                 "teradata": "DATABASE tduser",
             },
         )
+
+        self.validate_identity(
+            "RENAME TABLE emp TO employee", check_command_warning=True
+        ).assert_is(exp.Command)
 
     def test_translate(self):
         self.validate_all(
@@ -212,6 +224,8 @@ class TestTeradata(Validator):
         )
 
     def test_time(self):
+        self.validate_identity("CAST(CURRENT_TIMESTAMP(6) AS TIMESTAMP WITH TIME ZONE)")
+
         self.validate_all(
             "CURRENT_TIMESTAMP",
             read={

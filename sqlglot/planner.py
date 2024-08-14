@@ -124,13 +124,13 @@ class Step:
 
         projections = []  # final selects in this chain of steps representing a select
         operands = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
-        aggregations = set()
+        aggregations = {}
         next_operand_name = name_sequence("_a_")
 
         def extract_agg_operands(expression):
             agg_funcs = tuple(expression.find_all(exp.AggFunc))
             if agg_funcs:
-                aggregations.add(expression)
+                aggregations[expression] = None
 
             for agg in agg_funcs:
                 for operand in agg.unnest_operands():

@@ -343,6 +343,11 @@ WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.co
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1;
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1 AS tbl1;
 
+# title: CSV files are not scanned by default
+# execute: false
+SELECT * FROM READ_CSV('file.csv');
+SELECT * FROM READ_CSV('file.csv') AS _q_0;
+
 --------------------------------------
 -- CTEs
 --------------------------------------
@@ -385,14 +390,14 @@ WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FRO
 WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;
 
 --------------------------------------
--- Except and Replace
+-- Except, Replace, Rename
 --------------------------------------
 # execute: false
-SELECT * REPLACE(a AS d) FROM x;
+SELECT * RENAME(a AS d) FROM x;
 SELECT x.a AS d, x.b AS b FROM x AS x;
 
 # execute: false
-SELECT * EXCEPT(b) REPLACE(a AS d) FROM x;
+SELECT * EXCEPT(b) RENAME(a AS d) FROM x;
 SELECT x.a AS d FROM x AS x;
 
 SELECT x.* EXCEPT(a), y.* FROM x, y;
@@ -415,6 +420,30 @@ SELECT x.a AS a, x.b AS b, y.b AS b FROM x AS x LEFT JOIN x AS y ON x.a = y.a;
 
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.b AS b FROM x AS t1, x AS t2;
+
+# execute: false
+SELECT * REPLACE(2 AS a) FROM x;
+SELECT 2 AS a, x.b AS b FROM x AS x;
+
+# execute: false
+SELECT * EXCEPT (a, b) REPLACE (a AS a) FROM x;
+SELECT * EXCEPT (a, b) REPLACE (x.a AS a) FROM x AS x;
+
+# execute: false
+SELECT * REPLACE(COALESCE(b, a) AS a, a as b) FROM x;
+SELECT COALESCE(x.b, x.a) AS a, x.a AS b FROM x AS x;
+
+# execute: false
+SELECT * REPLACE(1 AS a) RENAME(b as alias_b) FROM x;
+SELECT 1 AS a, x.b AS alias_b FROM x AS x;
+
+# execute: false
+SELECT * EXCEPT(a) REPLACE(COALESCE(a, b) AS b) RENAME(b AS new_b) FROM x;
+SELECT COALESCE(x.a, x.b) AS new_b FROM x AS x;
+
+# execute: false
+SELECT * REPLACE(1 AS a, a AS b) RENAME(b AS new_b) FROM x;
+SELECT 1 AS a, x.a AS new_b FROM x AS x;
 
 --------------------------------------
 -- Using
@@ -479,6 +508,18 @@ SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
 
 WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
 WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m AS m JOIN n AS foo(a) ON m.a = foo.a;
+
+# title: coalesce the USING clause's columns (3 joins, 2 join columns)
+WITH t1 AS (SELECT 'x' AS id, DATE '2024-01-01' AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, DATE '2024-02-02' AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, DATE '2024-02-02' AS foo, 456 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING(id, foo) FULL OUTER JOIN t3 USING(id, foo);
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value) SELECT COALESCE(t1.id, t2.id, t3.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo) AS foo, t1.value AS value, t2.value AS value, t3.value AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo;
+
+# title: coalesce the USING clause's columns (3 joins, 3 join columns)
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING (id, foo, value) FULL OUTER JOIN t3 USING (id, foo, value);
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value) SELECT COALESCE(t1.id, t2.id, t3.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo) AS foo, COALESCE(t1.value, t2.value, t3.value) AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo AND t1.value = t2.value FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo AND COALESCE(t1.value, t2.value) = t3.value;
+
+# title: coalesce the USING clause's columns (4 joins, 2 join columns)
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value), t4 AS (SELECT 'x' AS id, CAST('2024-03-03' AS DATE) AS foo, 789 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING (id, foo) FULL OUTER JOIN t3 USING (id, foo) FULL OUTER JOIN t4 USING (id, foo);
+WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value), t4 AS (SELECT 'x' AS id, CAST('2024-03-03' AS DATE) AS foo, 789 AS value) SELECT COALESCE(t1.id, t2.id, t3.id, t4.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo, t4.foo) AS foo, t1.value AS value, t2.value AS value, t3.value AS value, t4.value AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo FULL OUTER JOIN t4 AS t4 ON COALESCE(t1.id, t2.id, t3.id) = t4.id AND COALESCE(t1.foo, t2.foo, t3.foo) = t4.foo;
 
 --------------------------------------
 -- Hint with table reference

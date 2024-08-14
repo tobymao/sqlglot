@@ -1,4 +1,6 @@
+from datetime import date
 from sqlglot import exp, parse_one
+from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
 
@@ -7,22 +9,8 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
-        self.validate_all(
-            "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
-            write={
-                "": "SELECT * FROM x WHERE z = 2",
-                "clickhouse": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM x AS prewhere",
-            read={
-                "clickhouse": "SELECT * FROM x AS prewhere",
-                "duckdb": "SELECT * FROM x prewhere",
-            },
-        )
-
-        self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
+        self.validate_identity("SELECT toFloat(like)")
+        self.validate_identity("SELECT like")
 
         string_types = [
             "BLOB",
@@ -42,6 +30,11 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("SELECT STR_TO_DATE(str, fmt, tz)")
+        self.validate_identity("SELECT STR_TO_DATE('05 12 2000', '%d %m %Y')")
+        self.validate_identity("SELECT EXTRACT(YEAR FROM toDateTime('2023-02-01'))")
+        self.validate_identity("extract(haystack, pattern)")
+        self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
         self.validate_identity("SELECT CAST(x AS Tuple(String, Array(Nullable(Float64))))")
         self.validate_identity("countIf(x, y)")
         self.validate_identity("x = y")
@@ -94,17 +87,14 @@ class TestClickhouse(Validator):
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
+        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE DATABASE db")
+        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
+        self.validate_identity(
+            "SELECT number, COUNT() OVER (PARTITION BY number % 3) AS partition_count FROM numbers(10) WINDOW window_name AS (PARTITION BY number) QUALIFY partition_count = 4 ORDER BY number"
+        )
         self.validate_identity(
             "SELECT id, quantileGK(100, 0.95)(reading) OVER (PARTITION BY id ORDER BY id RANGE BETWEEN 30000 PRECEDING AND CURRENT ROW) AS window FROM table"
-        )
-
-        self.validate_identity(
-            "SELECT $1$foo$1$",
-            "SELECT 'foo'",
-        )
-        self.validate_identity(
-            "SELECT * FROM table LIMIT 1, 2 BY a, b",
-            "SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b",
         )
         self.validate_identity(
             "SELECT * FROM table LIMIT 1 BY CONCAT(datalayerVariantNo, datalayerProductId, warehouse)"
@@ -134,10 +124,6 @@ class TestClickhouse(Validator):
             "SELECT sum(1) AS impressions, (arrayJoin(arrayZip(cities, browsers)) AS t).1 AS city, t.2 AS browser FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities, ['Firefox', 'Chrome', 'Chrome'] AS browsers) GROUP BY 2, 3"
         )
         self.validate_identity(
-            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ['Istanbul', 'Berlin']",
-            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
-        )
-        self.validate_identity(
             'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(String))'
         )
         self.validate_identity(
@@ -155,11 +141,53 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
         )
-        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
-        self.validate_identity("TRUNCATE DATABASE db")
-        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity(
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
+        )
+        self.validate_identity(
+            "SELECT $1$foo$1$",
+            "SELECT 'foo'",
+        )
+        self.validate_identity(
+            "SELECT * FROM table LIMIT 1, 2 BY a, b",
+            "SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b",
+        )
+        self.validate_identity(
+            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ['Istanbul', 'Berlin']",
+            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
+        )
+
+        self.validate_all(
+            "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+            read={
+                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+                "postgres": "SELECT TO_DATE('05 12 2000', 'DD MM YYYY')",
+            },
+            write={
+                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+                "postgres": "SELECT CAST(CAST(TO_DATE('05 12 2000', 'DD MM YYYY') AS TIMESTAMP) AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+            write={
+                "": "SELECT * FROM x WHERE z = 2",
+                "clickhouse": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x AS prewhere",
+            read={
+                "clickhouse": "SELECT * FROM x AS prewhere",
+                "duckdb": "SELECT * FROM x prewhere",
+            },
+        )
+        self.validate_all(
+            "SELECT a, b FROM (SELECT * FROM x) AS t",
+            read={
+                "clickhouse": "SELECT a, b FROM (SELECT * FROM x) AS t",
+                "duckdb": "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
+            },
         )
         self.validate_all(
             "SELECT arrayJoin([1,2,3])",
@@ -441,6 +469,51 @@ class TestClickhouse(Validator):
         self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
         self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
 
+        self.assertIsInstance(
+            parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
+        )
+
+        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_all(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            read={
+                # looks like values table function, but should be parsed as VALUES block
+                "clickhouse": "INSERT INTO t (col1, col2) values('abcd', 1234)"
+            },
+            write={
+                "clickhouse": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+                "postgres": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            },
+        )
+
+    def test_clickhouse_values(self):
+        values = exp.select("*").from_(
+            exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])
+        )
+        self.assertEqual(
+            values.sql("clickhouse"),
+            "SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq",
+        )
+
+        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_identity(
+            "INSERT INTO t (col1, col2) FORMAT Values('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+        )
+
+        self.validate_all(
+            "SELECT col FROM (SELECT 1 AS col) AS _t",
+            read={
+                "duckdb": "SELECT col FROM (VALUES (1)) AS _t(col)",
+            },
+        )
+        self.validate_all(
+            "SELECT col1, col2 FROM (SELECT 1 AS col1, 2 AS col2 UNION ALL SELECT 3, 4) AS _t",
+            read={
+                "duckdb": "SELECT col1, col2 FROM (VALUES (1, 2), (3, 4)) AS _t(col1, col2)",
+            },
+        )
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")
@@ -532,12 +605,24 @@ class TestClickhouse(Validator):
             )
 
     def test_ddl(self):
+        db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
+        create_with_cluster = exp.Create(
+            this=db_table_expr,
+            kind="DATABASE",
+            properties=exp.Properties(expressions=[exp.OnCluster(this=exp.to_identifier("c"))]),
+        )
+        self.assertEqual(create_with_cluster.sql("clickhouse"), "CREATE DATABASE foo ON CLUSTER c")
+
+        self.validate_identity(
+            "INSERT INTO FUNCTION s3('a', 'b', 'c', 'd', 'e') PARTITION BY CONCAT(s1, s2, s3, s4) SETTINGS set1 = 1, set2 = '2' SELECT * FROM some_table SETTINGS foo = 3"
+        )
         self.validate_identity(
             'CREATE TABLE data5 ("x" UInt32, "y" UInt32) ENGINE=MergeTree ORDER BY (round(y / 1000000000), cityHash64(x)) SAMPLE BY cityHash64(x)'
         )
         self.validate_identity(
             "CREATE TABLE foo (x UInt32) TTL time_column + INTERVAL '1' MONTH DELETE WHERE column = 'value'"
         )
+        self.validate_identity("CREATE TABLE named_tuples (a Tuple(select String, i Int64))")
 
         self.validate_all(
             """
@@ -848,6 +933,11 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "CREATE TABLE t (a String, b String, c UInt64, PROJECTION p1 (SELECT a, sum(c) GROUP BY a, b), PROJECTION p2 (SELECT b, sum(c) GROUP BY b)) ENGINE=MergeTree()"
         )
+        self.validate_identity(
+            """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
+        )
+
+        self.validate_identity("""CREATE TABLE t (a String) EMPTY AS SELECT * FROM dummy""")
 
     def test_agg_functions(self):
         def extract_agg_func(query):
@@ -880,3 +970,31 @@ LIFETIME(MIN 0 MAX 0)""",
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
                 self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")
+
+    def test_datetime_funcs(self):
+        # Each datetime func has an alias that is roundtripped to the original name e.g. (DATE_SUB, DATESUB) -> DATE_SUB
+        datetime_funcs = (("DATE_SUB", "DATESUB"), ("DATE_ADD", "DATEADD"))
+
+        # 2-arg functions of type <func>(date, unit)
+        for func in (*datetime_funcs, ("TIMESTAMP_ADD", "TIMESTAMPADD")):
+            func_name = func[0]
+            for func_alias in func:
+                self.validate_identity(
+                    f"""SELECT {func_alias}(date, INTERVAL '3' YEAR)""",
+                    f"""SELECT {func_name}(date, INTERVAL '3' YEAR)""",
+                )
+
+        # 3-arg functions of type <func>(unit, value, date)
+        for func in (*datetime_funcs, ("DATE_DIFF", "DATEDIFF"), ("TIMESTAMP_SUB", "TIMESTAMPSUB")):
+            func_name = func[0]
+            for func_alias in func:
+                with self.subTest(f"Test 3-arg date-time function {func_alias}"):
+                    self.validate_identity(
+                        f"SELECT {func_alias}(SECOND, 1, bar)",
+                        f"SELECT {func_name}(SECOND, 1, bar)",
+                    )
+
+    def test_convert(self):
+        self.assertEqual(
+            convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
+        )

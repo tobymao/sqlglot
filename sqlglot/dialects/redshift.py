@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.parser import build_convert_timezone
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -45,6 +46,7 @@ class Redshift(Postgres):
     INDEX_OFFSET = 0
     COPY_PARAMS_ARE_CSV = False
     HEX_LOWERCASE = True
+    HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -62,6 +64,7 @@ class Redshift(Postgres):
                 unit=exp.var("month"),
                 return_type=exp.DataType.build("TIMESTAMP"),
             ),
+            "CONVERT_TIMEZONE": lambda args: build_convert_timezone(args, "UTC"),
             "DATEADD": _build_date_delta(exp.TsOrDsAdd),
             "DATE_ADD": _build_date_delta(exp.TsOrDsAdd),
             "DATEDIFF": _build_date_delta(exp.TsOrDsDiff),
@@ -152,6 +155,10 @@ class Redshift(Postgres):
         MULTI_ARG_DISTINCT = True
         COPY_PARAMS_ARE_WRAPPED = False
         HEX_FUNC = "TO_HEX"
+        PARSE_JSON_NAME = "JSON_PARSE"
+        ARRAY_CONCAT_IS_VAR_LEN = False
+        SUPPORTS_CONVERT_TIMEZONE = True
+
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "
 
@@ -167,6 +174,7 @@ class Redshift(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
+            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CONCAT"),
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self,
@@ -184,12 +192,12 @@ class Redshift(Postgres):
             exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
-            exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.unqualify_unnest,
+                    transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
             exp.SortKeyProperty: lambda self,
@@ -207,13 +215,14 @@ class Redshift(Postgres):
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots
         TRANSFORMS.pop(exp.Pivot)
 
+        # Postgres doesn't support JSON_PARSE, but Redshift does
+        TRANSFORMS.pop(exp.ParseJSON)
+
         # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
         TRANSFORMS.pop(exp.Pow)
 
-        # Redshift supports ANY_VALUE(..)
+        # Redshift supports these functions
         TRANSFORMS.pop(exp.AnyValue)
-
-        # Redshift supports LAST_DAY(..)
         TRANSFORMS.pop(exp.LastDay)
         TRANSFORMS.pop(exp.SHA2)
 
@@ -421,3 +430,9 @@ class Redshift(Postgres):
             file_format = f" FILE FORMAT {file_format}" if file_format else ""
 
             return f"SET{exprs}{location}{file_format}"
+
+        def array_sql(self, expression: exp.Array) -> str:
+            if expression.args.get("bracket_notation"):
+                return super().array_sql(expression)
+
+            return rename_func("ARRAY")(self, expression)

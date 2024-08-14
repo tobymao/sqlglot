@@ -28,12 +28,15 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_add_cast,
     unit_to_str,
+    sequence_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
+
+DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
 
 def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
@@ -139,17 +142,6 @@ def _build_from_unixtime(args: t.List) -> exp.Expression:
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
-    if isinstance(expression, exp.Table):
-        if isinstance(expression.this, exp.GenerateSeries):
-            unnest = exp.Unnest(expressions=[expression.this])
-
-            if expression.alias:
-                return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
-            return unnest
-    return expression
-
-
 def _first_last_sql(self: Presto.Generator, expression: exp.Func) -> str:
     """
     Trino doesn't support FIRST / LAST as functions, but they're valid in the context
@@ -173,11 +165,40 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / POW(10, {scale}))"
 
 
-def _to_int(expression: exp.Expression) -> exp.Expression:
+def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str:
+    is_json_extract = self.dialect.settings.get("variant_extract_is_json_extract", True)
+
+    # Generate JSON_EXTRACT unless the user has configured that a Snowflake / Databricks
+    # VARIANT extract (e.g. col:x.y) should map to dot notation (i.e ROW access) in Presto/Trino
+    if not expression.args.get("variant_extract") or is_json_extract:
+        return self.func(
+            "JSON_EXTRACT", expression.this, expression.expression, *expression.expressions
+        )
+
+    this = self.sql(expression, "this")
+
+    # Convert the JSONPath extraction `JSON_EXTRACT(col, '$.x.y) to a ROW access col.x.y
+    segments = []
+    for path_key in expression.expression.expressions[1:]:
+        if not isinstance(path_key, exp.JSONPathKey):
+            # Cannot transpile subscripts, wildcards etc to dot notation
+            self.unsupported(f"Cannot transpile JSONPath segment '{path_key}' to ROW access")
+            continue
+        key = path_key.this
+        if not exp.SAFE_IDENTIFIER_RE.match(key):
+            key = f'"{key}"'
+        segments.append(f".{key}")
+
+    expr = "".join(segments)
+
+    return f"{this}{expr}"
+
+
+def _to_int(self: Presto.Generator, expression: exp.Expression) -> exp.Expression:
     if not expression.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        annotate_types(expression)
+        annotate_types(expression, dialect=self.dialect)
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
         return exp.cast(expression, to=exp.DataType.Type.BIGINT)
     return expression
@@ -194,21 +215,55 @@ def _build_to_char(args: t.List) -> exp.TimeToStr:
     return build_formatted_time(exp.TimeToStr, "teradata")(args)
 
 
+def _date_delta_sql(
+    name: str, negate_interval: bool = False
+) -> t.Callable[[Presto.Generator, DATE_ADD_OR_SUB], str]:
+    def _delta_sql(self: Presto.Generator, expression: DATE_ADD_OR_SUB) -> str:
+        interval = _to_int(self, expression.expression)
+        return self.func(
+            name,
+            unit_to_str(expression),
+            interval * (-1) if negate_interval else interval,
+            expression.this,
+        )
+
+    return _delta_sql
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
     TIME_FORMAT = MySQL.TIME_FORMAT
-    TIME_MAPPING = MySQL.TIME_MAPPING
     STRICT_STRING_CONCAT = True
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
 
+    TIME_MAPPING = {
+        **MySQL.TIME_MAPPING,
+        "%W": "%A",
+    }
+
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289
     # https://github.com/prestodb/presto/issues/2863
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    # The result of certain math functions in Presto/Trino is of type
+    # equal to the input type e.g: FLOOR(5.5/2) -> DECIMAL, FLOOR(5/2) -> BIGINT
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.Floor: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Ceil: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Mod: lambda self, e: self._annotate_by_args(e, "this", "expression"),
+        exp.Round: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Rand: lambda self, e: self._annotate_by_args(e, "this")
+        if e.this
+        else self._set_type(e, exp.DataType.Type.DOUBLE),
+    }
 
     class Tokenizer(tokens.Tokenizer):
         UNICODE_STRINGS = [
@@ -227,7 +282,7 @@ class Presto(Dialect):
             "TDIGEST": TokenType.TDIGEST,
             "HYPERLOGLOG": TokenType.HLLSKETCH,
         }
-
+        KEYWORDS.pop("/*+")
         KEYWORDS.pop("QUALIFY")
 
     class Parser(parser.Parser):
@@ -305,6 +360,8 @@ class Presto(Dialect):
         MULTI_ARG_DISTINCT = False
         SUPPORTS_TO_NUMBER = False
         HEX_FUNC = "TO_HEX"
+        PARSE_JSON_NAME = "JSON_PARSE"
+        PAD_FILL_PATTERN_IS_REQUIRED = True
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -329,9 +386,6 @@ class Presto(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("ARBITRARY"),
-            exp.ApproxDistinct: lambda self, e: self.func(
-                "APPROX_DISTINCT", e.this, e.args.get("accuracy")
-            ),
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
@@ -355,24 +409,14 @@ class Presto(Dialect):
             exp.BitwiseXor: lambda self, e: self.func("BITWISE_XOR", e.this, e.expression),
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.DateAdd: lambda self, e: self.func(
-                "DATE_ADD",
-                unit_to_str(e),
-                _to_int(e.expression),
-                e.this,
-            ),
+            exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self,
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
-            exp.DateSub: lambda self, e: self.func(
-                "DATE_ADD",
-                unit_to_str(e),
-                _to_int(e.expression * -1),
-                e.this,
-            ),
+            exp.DateSub: _date_delta_sql("DATE_ADD", negate_interval=True),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
             exp.DiToDate: lambda self,
             e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
@@ -382,6 +426,8 @@ class Presto(Dialect):
             exp.FirstValue: _first_last_sql,
             exp.FromTimeZone: lambda self,
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
+            exp.GenerateSeries: sequence_sql,
+            exp.GenerateDateArray: sequence_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
@@ -389,7 +435,7 @@ class Presto(Dialect):
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
-            exp.ParseJSON: rename_func("JSON_PARSE"),
+            exp.JSONExtract: _jsonextract_sql,
             exp.Last: _first_last_sql,
             exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
@@ -419,8 +465,9 @@ class Presto(Dialect):
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,
             exp.StructExtract: struct_extract_sql,
-            exp.Table: transforms.preprocess([_unnest_sequence]),
+            exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
             exp.Timestamp: no_timestamp_sql,
+            exp.TimestampAdd: _date_delta_sql("DATE_ADD"),
             exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToDate: timestrtotime_sql,
             exp.TimeStrToTime: timestrtotime_sql,
@@ -448,9 +495,6 @@ class Presto(Dialect):
                 [transforms.remove_within_group_for_percentiles]
             ),
             exp.Xor: bool_xor_sql,
-            exp.MD5: lambda self, e: self.func(
-                "LOWER", self.func("TO_HEX", self.func("MD5", self.sql(e, "this")))
-            ),
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
@@ -517,17 +561,39 @@ class Presto(Dialect):
             "with",
         }
 
+        def md5_sql(self, expression: exp.MD5) -> str:
+            this = expression.this
+
+            if not this.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                this = annotate_types(this)
+
+            if this.is_type(*exp.DataType.TEXT_TYPES):
+                this = exp.Encode(this=this, charset=exp.Literal.string("utf-8"))
+
+            return self.func("LOWER", self.func("TO_HEX", self.func("MD5", self.sql(this))))
+
         def strtounix_sql(self, expression: exp.StrToUnix) -> str:
             # Since `TO_UNIXTIME` requires a `TIMESTAMP`, we need to parse the argument into one.
             # To do this, we first try to `DATE_PARSE` it, but since this can fail when there's a
             # timezone involved, we wrap it in a `TRY` call and use `PARSE_DATETIME` as a fallback,
             # which seems to be using the same time mapping as Hive, as per:
             # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
-            value_as_text = exp.cast(expression.this, exp.DataType.Type.TEXT)
+            this = expression.this
+            value_as_text = exp.cast(this, exp.DataType.Type.TEXT)
+            value_as_timestamp = (
+                exp.cast(this, exp.DataType.Type.TIMESTAMP) if this.is_string else this
+            )
+
             parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
+
+            formatted_value = self.func(
+                "DATE_FORMAT", value_as_timestamp, self.format_time(expression)
+            )
             parse_with_tz = self.func(
                 "PARSE_DATETIME",
-                value_as_text,
+                formatted_value,
                 self.format_time(expression, Hive.INVERSE_TIME_MAPPING, Hive.INVERSE_TIME_TRIE),
             )
             coalesced = self.func("COALESCE", self.func("TRY", parse_without_tz), parse_with_tz)
@@ -586,26 +652,6 @@ class Presto(Dialect):
             modes = expression.args.get("modes")
             modes = f" {', '.join(modes)}" if modes else ""
             return f"START TRANSACTION{modes}"
-
-        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
-            start = expression.args["start"]
-            end = expression.args["end"]
-            step = expression.args.get("step")
-
-            if isinstance(start, exp.Cast):
-                target_type = start.to
-            elif isinstance(end, exp.Cast):
-                target_type = end.to
-            else:
-                target_type = None
-
-            if target_type and target_type.is_type("timestamp"):
-                if target_type is start.to:
-                    end = exp.cast(end, target_type)
-                else:
-                    start = exp.cast(start, target_type)
-
-            return self.func("SEQUENCE", start, end, step)
 
         def offset_limit_modifiers(
             self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]

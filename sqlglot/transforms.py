@@ -55,6 +55,76 @@ def preprocess(
     return _to_sql
 
 
+def unnest_generate_date_array_using_recursive_cte(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        count = 0
+        recursive_ctes = []
+
+        for unnest in expression.find_all(exp.Unnest):
+            if (
+                not isinstance(unnest.parent, (exp.From, exp.Join))
+                or len(unnest.expressions) != 1
+                or not isinstance(unnest.expressions[0], exp.GenerateDateArray)
+            ):
+                continue
+
+            generate_date_array = unnest.expressions[0]
+            start = generate_date_array.args.get("start")
+            end = generate_date_array.args.get("end")
+            step = generate_date_array.args.get("step")
+
+            if not start or not end or not isinstance(step, exp.Interval):
+                continue
+
+            alias = unnest.args.get("alias")
+            column_name = alias.columns[0] if isinstance(alias, exp.TableAlias) else "date_value"
+
+            start = exp.cast(start, "date")
+            date_add = exp.func(
+                "date_add", column_name, exp.Literal.number(step.name), step.args.get("unit")
+            )
+            cast_date_add = exp.cast(date_add, "date")
+
+            cte_name = "_generated_dates" + (f"_{count}" if count else "")
+
+            base_query = exp.select(start.as_(column_name))
+            recursive_query = (
+                exp.select(cast_date_add)
+                .from_(cte_name)
+                .where(cast_date_add <= exp.cast(end, "date"))
+            )
+            cte_query = base_query.union(recursive_query, distinct=False)
+
+            generate_dates_query = exp.select(column_name).from_(cte_name)
+            unnest.replace(generate_dates_query.subquery(cte_name))
+
+            recursive_ctes.append(
+                exp.alias_(exp.CTE(this=cte_query), cte_name, table=[column_name])
+            )
+            count += 1
+
+        if recursive_ctes:
+            with_expression = expression.args.get("with") or exp.With()
+            with_expression.set("recursive", True)
+            with_expression.set("expressions", [*recursive_ctes, *with_expression.expressions])
+            expression.set("with", with_expression)
+
+    return expression
+
+
+def unnest_generate_series(expression: exp.Expression) -> exp.Expression:
+    """Unnests GENERATE_SERIES or SEQUENCE table references."""
+    this = expression.this
+    if isinstance(expression, exp.Table) and isinstance(this, exp.GenerateSeries):
+        unnest = exp.Unnest(expressions=[this])
+        if expression.alias:
+            return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
+
+        return unnest
+
+    return expression
+
+
 def unalias_group(expression: exp.Expression) -> exp.Expression:
     """
     Replace references to select aliases in GROUP BY clauses.
@@ -229,6 +299,23 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
     if isinstance(expression, exp.Select):
+        from_ = expression.args.get("from")
+
+        if from_ and isinstance(from_.this, exp.Unnest):
+            unnest = from_.this
+            alias = unnest.args.get("alias")
+            udtf = exp.Posexplode if unnest.args.get("offset") else exp.Explode
+            this, *expressions = unnest.expressions
+            unnest.replace(
+                exp.Table(
+                    this=udtf(
+                        this=this,
+                        expressions=expressions,
+                    ),
+                    alias=exp.TableAlias(this=alias.this, columns=alias.columns) if alias else None,
+                )
+            )
+
         for join in expression.args.get("joins") or []:
             unnest = join.this
 

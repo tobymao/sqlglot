@@ -341,6 +341,56 @@ class TestOptimizer(unittest.TestCase):
             "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
         )
 
+        # can't coalesce USING columns because they don't exist in every already-joined table
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS _q_0",
+                    dialect="bigquery",
+                ),
+                schema=MappingSchema(
+                    schema={
+                        "t1": {"id": "int64", "dt": "date", "common": "int64"},
+                        "lkp": {"id": "int64", "other_id": "int64", "common": "int64"},
+                        "t2": {"other_id": "int64", "dt": "date", "v": "int64", "common": "int64"},
+                    },
+                    dialect="bigquery",
+                ),
+            ).sql(dialect="bigquery"),
+            "SELECT _q_0.id AS id, _q_0.dt AS dt, _q_0.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS _q_0",
+        )
+
+        # Detection of correlation where columns are referenced in derived tables nested within subqueries
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT a.g FROM a WHERE a.e < (SELECT MAX(u) FROM (SELECT SUM(c.b) AS u FROM c WHERE  c.d = f GROUP BY c.e) w)"
+                ),
+                schema={
+                    "a": {"g": "INT", "e": "INT", "f": "INT"},
+                    "c": {"d": "INT", "e": "INT", "b": "INT"},
+                },
+                quote_identifiers=False,
+            ).sql(),
+            "SELECT a.g AS g FROM a AS a WHERE a.e < (SELECT MAX(w.u) AS _col_0 FROM (SELECT SUM(c.b) AS u FROM c AS c WHERE c.d = a.f GROUP BY c.e) AS w)",
+        )
+
+        # Detection of correlation where columns are referenced in derived tables nested within lateral joins
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT u.user_id, l.log_date FROM users AS u CROSS JOIN LATERAL (SELECT l1.log_date FROM (SELECT l.log_date FROM logs AS l WHERE l.user_id = u.user_id AND l.log_date <= 100 ORDER BY l.log_date LIMIT 1) AS l1) AS l",
+                    dialect="postgres",
+                ),
+                schema={
+                    "users": {"user_id": "text", "log_date": "date"},
+                    "logs": {"user_id": "text", "log_date": "date"},
+                },
+                quote_identifiers=False,
+            ).sql("postgres"),
+            "SELECT u.user_id AS user_id, l.log_date AS log_date FROM users AS u CROSS JOIN LATERAL (SELECT l1.log_date AS log_date FROM (SELECT l.log_date AS log_date FROM logs AS l WHERE l.user_id = u.user_id AND l.log_date <= 100 ORDER BY l.log_date LIMIT 1) AS l1) AS l",
+        )
+
         self.check_file(
             "qualify_columns",
             qualify_columns,
@@ -473,13 +523,33 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             'SELECT "x"."a" + 1 AS "d", "x"."a" + 1 + 1 AS "e" FROM "x" AS "x" WHERE ("x"."a" + 2) > 1 GROUP BY "x"."a" + 1 + 1',
         )
 
+        unused_schema = {"l": {"c": "int"}}
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one("SELECT CAST(x AS INT) AS y FROM z AS z"),
-                schema={"l": {"c": "int"}},
+                schema=unused_schema,
                 infer_schema=False,
             ).sql(),
             "SELECT CAST(x AS INT) AS y FROM z AS z",
+        )
+
+        # BigQuery expands overlapping alias only for GROUP BY + HAVING
+        sql = "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT id AS my_id, CONCAT(id, name) AS full_name FROM data WHERE my_id = 1 GROUP BY my_id, full_name HAVING my_id = 1"
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(sql, dialect="bigquery"),
+                schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
+            ).sql(),
+            "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT data.id AS my_id, CONCAT(data.id, data.name) AS full_name FROM data WHERE data.my_id = 1 GROUP BY data.id, CONCAT(data.id, data.name) HAVING data.id = 1",
+        )
+
+        # Clickhouse expands overlapping alias across the entire query
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(sql, dialect="clickhouse"),
+                schema=MappingSchema(schema=unused_schema, dialect="clickhouse"),
+            ).sql(),
+            "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT data.id AS my_id, CONCAT(data.id, data.name) AS full_name FROM data WHERE data.id = 1 GROUP BY data.id, CONCAT(data.id, data.name) HAVING data.id = 1",
         )
 
     def test_optimize_joins(self):
@@ -552,7 +622,7 @@ SELECT
   "_q_0"."n_comment" AS "n_comment"
 FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') AS "_q_0"
 """.strip(),
-            optimizer.optimize(expression).sql(pretty=True),
+            optimizer.optimize(expression, infer_csv_schemas=True).sql(pretty=True),
         )
 
     def test_scope(self):
@@ -1140,6 +1210,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             .selects[0]
             .type,
             exp.DataType.build("date"),
+        )
+
+        self.assertEqual(
+            annotate_types(
+                optimizer.qualify.qualify(
+                    parse_one(
+                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x"
+                    )
+                )
+            )
+            .selects[0]
+            .type,
+            exp.DataType.build("timestamp"),
         )
 
     def test_map_annotation(self):

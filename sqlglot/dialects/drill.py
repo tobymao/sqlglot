@@ -70,6 +70,9 @@ class Drill(Dialect):
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
 
+        KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
+        KEYWORDS.pop("/*+")
+
     class Parser(parser.Parser):
         STRICT_CAST = False
 

@@ -1001,6 +1001,8 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY<UNKNOWN>")
         self.assertEqual(exp.DataType.build("ARRAY<NULL>").sql(), "ARRAY<NULL>")
         self.assertEqual(exp.DataType.build("varchar(100) collate 'en-ci'").sql(), "VARCHAR(100)")
+        self.assertEqual(exp.DataType.build("int[3]").sql(dialect="duckdb"), "INT[3]")
+        self.assertEqual(exp.DataType.build("int[3][3]").sql(dialect="duckdb"), "INT[3][3]")
 
         with self.assertRaises(ParseError):
             exp.DataType.build("varchar(")
@@ -1011,12 +1013,18 @@ FROM foo""",
             "ALTER TABLE t1 RENAME TO t2",
         )
 
-    def test_is_negative(self):
-        self.assertTrue(parse_one("-1").is_negative)
-        self.assertTrue(parse_one("- 1.0").is_negative)
-        self.assertTrue(exp.Literal.number("-1").is_negative)
-        self.assertFalse(parse_one("1").is_negative)
-        self.assertFalse(parse_one("x").is_negative)
+    def test_to_py(self):
+        self.assertEqual(parse_one("- -1").to_py(), 1)
+        self.assertIs(parse_one("TRUE").to_py(), True)
+        self.assertIs(parse_one("1").to_py(), 1)
+        self.assertIs(parse_one("'1'").to_py(), "1")
+        self.assertIs(parse_one("null").to_py(), None)
+
+        with self.assertRaises(ValueError):
+            parse_one("x").to_py()
+
+    def test_is_int(self):
+        self.assertTrue(parse_one("- -1").is_int)
 
     def test_is_star(self):
         assert parse_one("*").is_star
@@ -1114,3 +1122,6 @@ FROM foo""",
             AssertionError, "x is not <class 'sqlglot.expressions.Identifier'>\\."
         ):
             parse_one("x").assert_is(exp.Identifier)
+
+    def test_parse_identifier(self):
+        self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))

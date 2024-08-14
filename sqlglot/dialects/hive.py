@@ -31,6 +31,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_str,
     var_map_sql,
+    sequence_sql,
 )
 from sqlglot.transforms import (
     remove_unique_constraints,
@@ -71,7 +72,7 @@ def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
         multiplier *= -1
 
     if expression.expression.is_number:
-        modified_increment = exp.Literal.number(int(expression.text("expression")) * multiplier)
+        modified_increment = exp.Literal.number(expression.expression.to_py() * multiplier)
     else:
         modified_increment = expression.expression
         if multiplier != 1:
@@ -310,6 +311,7 @@ class Hive(Dialect):
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
             ),
+            "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
             "STR_TO_MAP": lambda args: exp.StrToMap(
@@ -446,6 +448,8 @@ class Hive(Dialect):
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
         SUPPORTS_TO_NUMBER = False
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
+        PARSE_JSON_NAME = None
+        PAD_FILL_PATTERN_IS_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -504,6 +508,8 @@ class Hive(Dialect):
             exp.FileFormatProperty: lambda self,
             e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.FromBase64: rename_func("UNBASE64"),
+            exp.GenerateSeries: sequence_sql,
+            exp.GenerateDateArray: sequence_sql,
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.IsNan: rename_func("ISNAN"),
@@ -547,6 +553,7 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,
             exp.StructExtract: struct_extract_sql,
+            exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
@@ -565,6 +572,7 @@ class Hive(Dialect):
             ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
+            exp.Unnest: rename_func("EXPLODE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
@@ -575,7 +583,6 @@ class Hive(Dialect):
             exp.NotForReplicationColumnConstraint: lambda *_: "",
             exp.OnProperty: lambda *_: "",
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
-            exp.ParseJSON: lambda self, e: self.sql(e.this),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
@@ -588,6 +595,9 @@ class Hive(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            return rename_func("EXPLODE")(self, expression)
 
         def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
             if isinstance(expression.this, exp.JSONPathWildcard):

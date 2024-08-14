@@ -129,6 +129,16 @@ TBLPROPERTIES (
                 "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
             },
         )
+        self.validate_identity("ALTER VIEW StudentInfoView AS SELECT * FROM StudentInfo")
+        self.validate_identity("ALTER VIEW StudentInfoView AS SELECT LastName FROM StudentInfo")
+        self.validate_identity("ALTER VIEW StudentInfoView RENAME TO StudentInfoViewRenamed")
+        self.validate_identity(
+            "ALTER VIEW StudentInfoView SET TBLPROPERTIES ('key1'='val1', 'key2'='val2')"
+        )
+        self.validate_identity(
+            "ALTER VIEW StudentInfoView UNSET TBLPROPERTIES ('key1', 'key2')",
+            check_command_warning=True,
+        )
 
     def test_to_date(self):
         self.validate_all(
@@ -245,7 +255,7 @@ TBLPROPERTIES (
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), x -> x + 1)")
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH TABLE a.b.c")
-        self.validate_identity("INTERVAL -86 DAYS")
+        self.validate_identity("INTERVAL '-86' DAYS")
         self.validate_identity("TRIM('    SparkSQL   ')")
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
@@ -297,6 +307,13 @@ TBLPROPERTIES (
                 },
             )
 
+        self.validate_all(
+            "SELECT DATE_FORMAT(DATE '2020-01-01', 'EEEE') AS weekday",
+            write={
+                "presto": "SELECT DATE_FORMAT(CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP), '%W') AS weekday",
+                "spark": "SELECT DATE_FORMAT(CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP), 'EEEE') AS weekday",
+            },
+        )
         self.validate_all(
             "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
             read={
@@ -684,6 +701,8 @@ TBLPROPERTIES (
             write={
                 "spark": "SELECT DATE_ADD(MONTH, 20, col)",
                 "databricks": "SELECT DATE_ADD(MONTH, 20, col)",
+                "presto": "SELECT DATE_ADD('MONTH', 20, col)",
+                "trino": "SELECT DATE_ADD('MONTH', 20, col)",
             },
         )
 
@@ -801,3 +820,10 @@ TBLPROPERTIES (
                     self.assertEqual(query.sql(name), with_modifiers)
                 else:
                     self.assertEqual(query.sql(name), without_modifiers)
+
+    def test_schema_binding_options(self):
+        for schema_binding in ("BINDING", "COMPENSATION", "TYPE EVOLUTION", "EVOLUTION"):
+            with self.subTest(f"Test roundtrip of VIEW schema binding {schema_binding}"):
+                self.validate_identity(
+                    f"CREATE VIEW emp_v WITH SCHEMA {schema_binding} AS SELECT * FROM emp"
+                )

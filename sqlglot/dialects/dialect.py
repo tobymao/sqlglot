@@ -8,8 +8,8 @@ from functools import reduce
 from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
-from sqlglot.helper import AutoName, flatten, is_int, seq_get
-from sqlglot.jsonpath import parse as parse_json_path
+from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses
+from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -23,6 +23,10 @@ JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
 
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
+    AnnotatorsType = t.Dict[t.Type[E], t.Callable[[TypeAnnotator, E], E]]
+
 logger = logging.getLogger("sqlglot")
 
 UNESCAPED_SEQUENCES = {
@@ -35,6 +39,10 @@ UNESCAPED_SEQUENCES = {
     "\\v": "\v",
     "\\\\": "\\",
 }
+
+
+def _annotate_with_type_lambda(data_type: exp.DataType.Type) -> t.Callable[[TypeAnnotator, E], E]:
+    return lambda self, e: self._annotate_with_type(e, data_type)
 
 
 class Dialects(str, Enum):
@@ -122,14 +130,20 @@ class _Dialect(type):
         )
         klass.INVERSE_TIME_MAPPING = {v: k for k, v in klass.TIME_MAPPING.items()}
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
+        klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
         base = seq_get(bases, 0)
         base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
+        base_jsonpath_tokenizer = (getattr(base, "jsonpath_tokenizer_class", JSONPathTokenizer),)
         base_parser = (getattr(base, "parser_class", Parser),)
         base_generator = (getattr(base, "generator_class", Generator),)
 
         klass.tokenizer_class = klass.__dict__.get(
             "Tokenizer", type("Tokenizer", base_tokenizer, {})
+        )
+        klass.jsonpath_tokenizer_class = klass.__dict__.get(
+            "JSONPathTokenizer", type("JSONPathTokenizer", base_jsonpath_tokenizer, {})
         )
         klass.parser_class = klass.__dict__.get("Parser", type("Parser", base_parser, {}))
         klass.generator_class = klass.__dict__.get(
@@ -321,9 +335,56 @@ class Dialect(metaclass=_Dialect):
     Whether COPY statement parameters are separated by comma or whitespace
     """
 
+    FORCE_EARLY_ALIAS_REF_EXPANSION = False
+    """
+    Whether alias reference expansion (_expand_alias_refs()) should run before column qualification (_qualify_columns()).
+
+    For example:
+        WITH data AS (
+        SELECT
+            1 AS id,
+            2 AS my_id
+        )
+        SELECT
+            id AS my_id
+        FROM
+            data
+        WHERE
+            my_id = 1
+        GROUP BY
+            my_id,
+        HAVING
+            my_id = 1
+
+    In most dialects "my_id" would refer to "data.my_id" (which is done in _qualify_columns()) across the query, except:
+        - BigQuery, which will forward the alias to GROUP BY + HAVING clauses i.e it resolves to "WHERE my_id = 1 GROUP BY id HAVING id = 1"
+        - Clickhouse, which will forward the alias across the query i.e it resolves to "WHERE id = 1 GROUP BY id HAVING id = 1"
+    """
+
+    EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
+    """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
+
+    SUPPORTS_ORDER_BY_ALL = False
+    """
+    Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
+    """
+
+    HAS_DISTINCT_ARRAY_CONSTRUCTORS = False
+    """
+    Whether the ARRAY constructor is context-sensitive, i.e in Redshift ARRAY[1, 2, 3] != ARRAY(1, 2, 3)
+    as the former is of type INT[] vs the latter which is SUPER
+    """
+
+    SUPPORTS_FIXED_SIZE_ARRAYS = False
+    """
+    Whether expressions such as x::INT[5] should be parsed as fixed-size array defs/casts e.g. in DuckDB. In
+    dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
+    jsonpath_tokenizer_class = JSONPathTokenizer
     parser_class = Parser
     generator_class = Generator
 
@@ -333,6 +394,8 @@ class Dialect(metaclass=_Dialect):
 
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}
+    INVERSE_FORMAT_MAPPING: t.Dict[str, str] = {}
+    INVERSE_FORMAT_TRIE: t.Dict = {}
 
     ESCAPED_SEQUENCES: t.Dict[str, str] = {}
 
@@ -446,6 +509,170 @@ class Dialect(metaclass=_Dialect):
         "CENTURIES": "CENTURY",
     }
 
+    TYPE_TO_EXPRESSIONS: t.Dict[exp.DataType.Type, t.Set[t.Type[exp.Expression]]] = {
+        exp.DataType.Type.BIGINT: {
+            exp.ApproxDistinct,
+            exp.ArraySize,
+            exp.Count,
+            exp.Length,
+        },
+        exp.DataType.Type.BOOLEAN: {
+            exp.Between,
+            exp.Boolean,
+            exp.In,
+            exp.RegexpLike,
+        },
+        exp.DataType.Type.DATE: {
+            exp.CurrentDate,
+            exp.Date,
+            exp.DateFromParts,
+            exp.DateStrToDate,
+            exp.DiToDate,
+            exp.StrToDate,
+            exp.TimeStrToDate,
+            exp.TsOrDsToDate,
+        },
+        exp.DataType.Type.DATETIME: {
+            exp.CurrentDatetime,
+            exp.Datetime,
+            exp.DatetimeAdd,
+            exp.DatetimeSub,
+        },
+        exp.DataType.Type.DOUBLE: {
+            exp.ApproxQuantile,
+            exp.Avg,
+            exp.Div,
+            exp.Exp,
+            exp.Ln,
+            exp.Log,
+            exp.Pow,
+            exp.Quantile,
+            exp.Round,
+            exp.SafeDivide,
+            exp.Sqrt,
+            exp.Stddev,
+            exp.StddevPop,
+            exp.StddevSamp,
+            exp.Variance,
+            exp.VariancePop,
+        },
+        exp.DataType.Type.INT: {
+            exp.Ceil,
+            exp.DatetimeDiff,
+            exp.DateDiff,
+            exp.TimestampDiff,
+            exp.TimeDiff,
+            exp.DateToDi,
+            exp.Levenshtein,
+            exp.Sign,
+            exp.StrPosition,
+            exp.TsOrDiToDi,
+        },
+        exp.DataType.Type.JSON: {
+            exp.ParseJSON,
+        },
+        exp.DataType.Type.TIME: {
+            exp.Time,
+        },
+        exp.DataType.Type.TIMESTAMP: {
+            exp.CurrentTime,
+            exp.CurrentTimestamp,
+            exp.StrToTime,
+            exp.TimeAdd,
+            exp.TimeStrToTime,
+            exp.TimeSub,
+            exp.TimestampAdd,
+            exp.TimestampSub,
+            exp.UnixToTime,
+        },
+        exp.DataType.Type.TINYINT: {
+            exp.Day,
+            exp.Month,
+            exp.Week,
+            exp.Year,
+            exp.Quarter,
+        },
+        exp.DataType.Type.VARCHAR: {
+            exp.ArrayConcat,
+            exp.Concat,
+            exp.ConcatWs,
+            exp.DateToDateStr,
+            exp.GroupConcat,
+            exp.Initcap,
+            exp.Lower,
+            exp.Substring,
+            exp.TimeToStr,
+            exp.TimeToTimeStr,
+            exp.Trim,
+            exp.TsOrDsToDateStr,
+            exp.UnixToStr,
+            exp.UnixToTimeStr,
+            exp.Upper,
+        },
+    }
+
+    ANNOTATORS: AnnotatorsType = {
+        **{
+            expr_type: lambda self, e: self._annotate_unary(e)
+            for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))
+        },
+        **{
+            expr_type: lambda self, e: self._annotate_binary(e)
+            for expr_type in subclasses(exp.__name__, exp.Binary)
+        },
+        **{
+            expr_type: _annotate_with_type_lambda(data_type)
+            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
+            for expr_type in expressions
+        },
+        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Anonymous: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
+        exp.Array: lambda self, e: self._annotate_by_args(e, "expressions", array=True),
+        exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),
+        exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.Bracket: lambda self, e: self._annotate_bracket(e),
+        exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
+        exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
+        exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
+        exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
+        exp.DateSub: lambda self, e: self._annotate_timeunit(e),
+        exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
+        exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Div: lambda self, e: self._annotate_div(e),
+        exp.Dot: lambda self, e: self._annotate_dot(e),
+        exp.Explode: lambda self, e: self._annotate_explode(e),
+        exp.Extract: lambda self, e: self._annotate_extract(e),
+        exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<DATE>")
+        ),
+        exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<TIMESTAMP>")
+        ),
+        exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
+        exp.Interval: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
+        exp.Least: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Literal: lambda self, e: self._annotate_literal(e),
+        exp.Map: lambda self, e: self._annotate_map(e),
+        exp.Max: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.Null: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.NULL),
+        exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
+        exp.PropertyEQ: lambda self, e: self._annotate_by_args(e, "expression"),
+        exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
+        exp.Struct: lambda self, e: self._annotate_struct(e),
+        exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
+        exp.Timestamp: lambda self, e: self._annotate_with_type(
+            e,
+            exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,
+        ),
+        exp.ToMap: lambda self, e: self._annotate_to_map(e),
+        exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
+        exp.Unnest: lambda self, e: self._annotate_unnest(e),
+        exp.VarMap: lambda self, e: self._annotate_map(e),
+    }
+
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
         """
@@ -472,8 +699,28 @@ class Dialect(metaclass=_Dialect):
             return dialect
         if isinstance(dialect, str):
             try:
-                dialect_name, *kv_pairs = dialect.split(",")
-                kwargs = {k.strip(): v.strip() for k, v in (kv.split("=") for kv in kv_pairs)}
+                dialect_name, *kv_strings = dialect.split(",")
+                kv_pairs = (kv.split("=") for kv in kv_strings)
+                kwargs = {}
+                for pair in kv_pairs:
+                    key = pair[0].strip()
+                    value: t.Union[bool | str | None] = None
+
+                    if len(pair) == 1:
+                        # Default initialize standalone settings to True
+                        value = True
+                    elif len(pair) == 2:
+                        value = pair[1].strip()
+
+                        # Coerce the value to boolean if it matches to the truthy/falsy values below
+                        value_lower = value.lower()
+                        if value_lower in ("true", "1"):
+                            value = True
+                        elif value_lower in ("false", "0"):
+                            value = False
+
+                    kwargs[key] = value
+
             except ValueError:
                 raise ValueError(
                     f"Invalid dialect format: '{dialect}'. "
@@ -621,9 +868,8 @@ class Dialect(metaclass=_Dialect):
             path_text = path.name
             if path.is_number:
                 path_text = f"[{path_text}]"
-
             try:
-                return parse_json_path(path_text)
+                return parse_json_path(path_text, self)
             except ParseError as e:
                 logger.warning(f"Invalid JSON path syntax. {str(e)}")
 
@@ -651,9 +897,11 @@ class Dialect(metaclass=_Dialect):
 
     @property
     def tokenizer(self) -> Tokenizer:
-        if not hasattr(self, "_tokenizer"):
-            self._tokenizer = self.tokenizer_class(dialect=self)
-        return self._tokenizer
+        return self.tokenizer_class(dialect=self)
+
+    @property
+    def jsonpath_tokenizer(self) -> JSONPathTokenizer:
+        return self.jsonpath_tokenizer_class(dialect=self)
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(dialect=self, **opts)
@@ -842,13 +1090,17 @@ def time_format(
 
 
 def build_date_delta(
-    exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
+    exp_class: t.Type[E],
+    unit_mapping: t.Optional[t.Dict[str, str]] = None,
+    default_unit: t.Optional[str] = "DAY",
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
         unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
-        unit = args[0] if unit_based else exp.Literal.string("DAY")
-        unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
+        unit = None
+        if unit_based or default_unit:
+            unit = args[0] if unit_based else exp.Literal.string(default_unit)
+            unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
         return exp_class(this=this, expression=seq_get(args, 1), unit=unit)
 
     return _builder
@@ -906,19 +1158,45 @@ def timestamptrunc_sql(zone: bool = False) -> t.Callable[[Generator, exp.Timesta
 
 
 def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
-    if not expression.expression:
+    zone = expression.args.get("zone")
+    if not zone:
         from sqlglot.optimizer.annotate_types import annotate_types
 
         target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
         return self.sql(exp.cast(expression.this, target_type))
-    if expression.text("expression").lower() in TIMEZONES:
+    if zone.name.lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
                 this=exp.cast(expression.this, exp.DataType.Type.TIMESTAMP),
-                zone=expression.expression,
+                zone=zone,
             )
         )
-    return self.func("TIMESTAMP", expression.this, expression.expression)
+    return self.func("TIMESTAMP", expression.this, zone)
+
+
+def no_time_sql(self: Generator, expression: exp.Time) -> str:
+    # Transpile BQ's TIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIME)
+    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ)
+    expr = exp.cast(
+        exp.AtTimeZone(this=this, zone=expression.args.get("zone")), exp.DataType.Type.TIME
+    )
+    return self.sql(expr)
+
+
+def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
+    this = expression.this
+    expr = expression.expression
+
+    if expr.name.lower() in TIMEZONES:
+        # Transpile BQ's DATETIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIMESTAMP)
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMPTZ)
+        this = exp.cast(exp.AtTimeZone(this=this, zone=expr), exp.DataType.Type.TIMESTAMP)
+        return self.sql(this)
+
+    this = exp.cast(this, exp.DataType.Type.DATE)
+    expr = exp.cast(expr, exp.DataType.Type.TIME)
+
+    return self.sql(exp.cast(exp.Add(this=this, expression=expr), exp.DataType.Type.TIMESTAMP))
 
 
 def locate_to_strposition(args: t.List) -> exp.Expression:
@@ -1325,3 +1603,24 @@ def build_timestamp_from_parts(args: t.List) -> exp.Func:
 
 def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
+
+
+def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateDateArray) -> str:
+    start = expression.args.get("start")
+    end = expression.args.get("end")
+    step = expression.args.get("step")
+
+    if isinstance(start, exp.Cast):
+        target_type = start.to
+    elif isinstance(end, exp.Cast):
+        target_type = end.to
+    else:
+        target_type = None
+
+    if start and end and target_type and target_type.is_type("date", "timestamp"):
+        if isinstance(start, exp.Cast) and target_type is start.to:
+            end = exp.cast(end, target_type)
+        else:
+            start = exp.cast(start, target_type)
+
+    return self.func("SEQUENCE", start, end, step)

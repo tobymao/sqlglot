@@ -322,6 +322,15 @@ def _build_with_arg_as_text(
     return _parse
 
 
+def _build_json_query(args: t.List, dialect: Dialect) -> exp.JSONExtract:
+    if len(args) == 1:
+        # The default value for path is '$'. As a result, if you don't provide a
+        # value for path, JSON_QUERY returns the input expression.
+        args.append(exp.Literal.string("$"))
+
+    return parser.build_extract_json_with_path(exp.JSONExtract)(args, dialect)
+
+
 def _json_extract_sql(
     self: TSQL.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
@@ -477,6 +486,7 @@ class TSQL(Dialect):
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
         }
+        KEYWORDS.pop("/*+")
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
 
@@ -509,7 +519,7 @@ class TSQL(Dialect):
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "HASHBYTES": _build_hashbytes,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
+            "JSON_QUERY": _build_json_query,
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),
             "LEFT": _build_with_arg_as_text(exp.Left),
@@ -534,6 +544,31 @@ class TSQL(Dialect):
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.DCOLON: lambda self, this: self.expression(
+                exp.ScopeResolution,
+                this=this,
+                expression=self._parse_function() or self._parse_var(any_token=True),
+            ),
+        }
+
+        # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.DCOLON: lambda self, this, to: self.expression(exp.Cast, this=this, to=to)
+            if isinstance(to, exp.DataType) and to.this != exp.DataType.Type.USERDEFINED
+            else self.expression(exp.ScopeResolution, this=this, expression=to),
+        }
+
+        def _parse_dcolon(self) -> t.Optional[exp.Expression]:
+            # We want to use _parse_types() if the first token after :: is a known type,
+            # otherwise we could parse something like x::varchar(max) into a function
+            if self._match_set(self.TYPE_TOKENS, advance=False):
+                return self._parse_types()
+
+            return self._parse_function() or self._parse_types()
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
             if not self._match(TokenType.OPTION):
@@ -761,8 +796,10 @@ class TSQL(Dialect):
         SUPPORTS_TO_NUMBER = False
         SET_OP_MODIFIERS = False
         COPY_PARAMS_EQ_REQUIRED = True
+        PARSE_JSON_NAME = None
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
+            exp.Create,
             exp.Delete,
             exp.Insert,
             exp.Intersect,
@@ -820,15 +857,16 @@ class TSQL(Dialect):
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
-            exp.ParseJSON: lambda self, e: self.sql(e, "this"),
             exp.Repeat: rename_func("REPLICATE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,
+                    transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
+            exp.Stddev: rename_func("STDEV"),
             exp.StrPosition: lambda self, e: self.func(
                 "CHARINDEX", e.args.get("substr"), e.this, e.args.get("position")
             ),
@@ -853,6 +891,9 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def scope_resolution(self, rhs: str, scope_name: str) -> str:
+            return f"{scope_name}::{rhs}"
 
         def select_sql(self, expression: exp.Select) -> str:
             if expression.args.get("offset"):
@@ -959,31 +1000,32 @@ class TSQL(Dialect):
             kind = expression.kind
             exists = expression.args.pop("exists", None)
 
-            if kind == "VIEW":
-                expression.this.set("catalog", None)
-
-            sql = super().create_sql(expression)
-
             like_property = expression.find(exp.LikeProperty)
             if like_property:
                 ctas_expression = like_property.this
             else:
                 ctas_expression = expression.expression
 
+            if kind == "VIEW":
+                expression.this.set("catalog", None)
+                with_ = expression.args.get("with")
+                if ctas_expression and with_:
+                    # We've already preprocessed the Create expression to bubble up any nested CTEs,
+                    # but CREATE VIEW actually requires the WITH clause to come after it so we need
+                    # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
+                    ctas_expression.set("with", with_.pop())
+
+            sql = super().create_sql(expression)
+
             table = expression.find(exp.Table)
 
             # Convert CTAS statement to SELECT .. INTO ..
             if kind == "TABLE" and ctas_expression:
-                ctas_with = ctas_expression.args.get("with")
-                if ctas_with:
-                    ctas_with = ctas_with.pop()
-
                 if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
                     ctas_expression = ctas_expression.subquery()
 
                 select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
-                select_into.set("with", ctas_with)
 
                 if like_property:
                     select_into.limit(0, copy=False)
@@ -1098,11 +1140,11 @@ class TSQL(Dialect):
         def partition_sql(self, expression: exp.Partition) -> str:
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
 
-        def altertable_sql(self, expression: exp.AlterTable) -> str:
+        def alter_sql(self, expression: exp.Alter) -> str:
             action = seq_get(expression.args.get("actions") or [], 0)
             if isinstance(action, exp.RenameTable):
                 return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
-            return super().altertable_sql(expression)
+            return super().alter_sql(expression)
 
         def drop_sql(self, expression: exp.Drop) -> str:
             if expression.args["kind"] == "VIEW":

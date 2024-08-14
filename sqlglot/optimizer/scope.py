@@ -65,6 +65,7 @@ class Scope:
         scope_type=ScopeType.ROOT,
         lateral_sources=None,
         cte_sources=None,
+        can_be_correlated=None,
     ):
         self.expression = expression
         self.sources = sources or {}
@@ -81,6 +82,7 @@ class Scope:
         self.cte_scopes = []
         self.union_scopes = []
         self.udtf_scopes = []
+        self.can_be_correlated = can_be_correlated
         self.clear_cache()
 
     def clear_cache(self):
@@ -110,6 +112,8 @@ class Scope:
             scope_type=scope_type,
             cte_sources={**self.cte_sources, **(cte_sources or {})},
             lateral_sources=lateral_sources.copy() if lateral_sources else None,
+            can_be_correlated=self.can_be_correlated
+            or scope_type in (ScopeType.SUBQUERY, ScopeType.UDTF),
             **kwargs,
         )
 
@@ -261,7 +265,11 @@ class Scope:
 
             external_columns = [
                 column
-                for scope in itertools.chain(self.subquery_scopes, self.udtf_scopes)
+                for scope in itertools.chain(
+                    self.subquery_scopes,
+                    self.udtf_scopes,
+                    (dts for dts in self.derived_table_scopes if dts.can_be_correlated),
+                )
                 for column in scope.external_columns
             ]
 
@@ -284,6 +292,7 @@ class Scope:
                             or column.name not in named_selects
                         )
                     )
+                    or (isinstance(ancestor, exp.Star) and not column.arg_key == "except")
                 ):
                     self._columns.append(column)
 
@@ -424,10 +433,7 @@ class Scope:
     @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
-        return bool(
-            (self.is_subquery or (self.parent and isinstance(self.parent.expression, exp.Lateral)))
-            and self.external_columns
-        )
+        return bool(self.can_be_correlated and self.external_columns)
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""

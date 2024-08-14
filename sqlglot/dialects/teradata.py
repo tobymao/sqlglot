@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     to_number_with_nls_param,
 )
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -24,9 +25,9 @@ def _date_add_sql(
         if not isinstance(value, exp.Literal):
             self.unsupported("Cannot add non literal")
 
-        if value.is_negative:
+        if isinstance(value, exp.Neg):
             kind_to_op = {"+": "-", "-": "+"}
-            value = exp.Literal.string(value.name[1:])
+            value = exp.Literal.string(value.this.to_py())
         else:
             kind_to_op = {"+": "+", "-": "-"}
             value.set("is_string", True)
@@ -96,6 +97,7 @@ class Teradata(Dialect):
             "TOP": TokenType.TOP,
             "UPD": TokenType.UPDATE,
         }
+        KEYWORDS.pop("/*+")
 
         # Teradata does not support % as a modulo operator
         SINGLE_TOKENS = {**tokens.Tokenizer.SINGLE_TOKENS}
@@ -159,6 +161,11 @@ class Teradata(Dialect):
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
 
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+        }
+
         EXPONENT = {
             TokenType.DSTAR: exp.Pow,
         }
@@ -216,11 +223,13 @@ class Teradata(Dialect):
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        TZ_TO_WITH_TIME_ZONE = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {
@@ -238,6 +247,7 @@ class Teradata(Dialect):
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Pow: lambda self, e: self.binary(e, "**"),
+            exp.Rand: lambda self, e: self.func("RANDOM", e.args.get("lower"), e.args.get("upper")),
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
@@ -246,11 +256,14 @@ class Teradata(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
-            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
         }
+
+        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            prefix, suffix = ("(", ")") if expression.this else ("", "")
+            return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.to.this == exp.DataType.Type.UNKNOWN and expression.args.get("format"):

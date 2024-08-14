@@ -375,7 +375,7 @@ order by
 SELECT
   "n1"."n_name" AS "supp_nation",
   "n2"."n_name" AS "cust_nation",
-  EXTRACT(year FROM CAST("lineitem"."l_shipdate" AS DATE)) AS "l_year",
+  EXTRACT(YEAR FROM CAST("lineitem"."l_shipdate" AS DATE)) AS "l_year",
   SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "revenue"
@@ -407,7 +407,7 @@ JOIN "nation" AS "n2"
 GROUP BY
   "n1"."n_name",
   "n2"."n_name",
-  EXTRACT(year FROM CAST("lineitem"."l_shipdate" AS DATE))
+  EXTRACT(YEAR FROM CAST("lineitem"."l_shipdate" AS DATE))
 ORDER BY
   "supp_nation",
   "cust_nation",
@@ -425,7 +425,7 @@ select
 from
         (
                 select
-                        extract(year from cast(o_orderdate as date)) as o_year,
+                        extract(YEAR from cast(o_orderdate as date)) as o_year,
                         l_extendedprice * (1 - l_discount) as volume,
                         n2.n_name as nation
                 from
@@ -454,7 +454,7 @@ group by
 order by
         o_year;
 SELECT
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
+  EXTRACT(YEAR FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
   SUM(
     CASE
       WHEN "n2"."n_name" = 'BRAZIL'
@@ -486,7 +486,7 @@ JOIN "region" AS "region"
 WHERE
   "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 GROUP BY
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE))
+  EXTRACT(YEAR FROM CAST("orders"."o_orderdate" AS DATE))
 ORDER BY
   "o_year";
 
@@ -527,7 +527,7 @@ order by
         o_year desc;
 SELECT
   "nation"."n_name" AS "nation",
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
+  EXTRACT(YEAR FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
   SUM(
     "lineitem"."l_extendedprice" * (
       1 - "lineitem"."l_discount"
@@ -549,7 +549,7 @@ WHERE
   "part"."p_name" LIKE '%green%'
 GROUP BY
   "nation"."n_name",
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE))
+  EXTRACT(YEAR FROM CAST("orders"."o_orderdate" AS DATE))
 ORDER BY
   "nation",
   "o_year" DESC;

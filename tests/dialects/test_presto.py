@@ -405,6 +405,27 @@ class TestPresto(Validator):
         )
         self.validate_identity("DATE_ADD('DAY', 1, y)")
 
+        self.validate_all(
+            "SELECT DATE_ADD('MINUTE', 30, col)",
+            write={
+                "presto": "SELECT DATE_ADD('MINUTE', 30, col)",
+                "trino": "SELECT DATE_ADD('MINUTE', 30, col)",
+            },
+        )
+
+        self.validate_identity("DATE_ADD('DAY', FLOOR(5), y)")
+        self.validate_identity(
+            """SELECT DATE_ADD('DAY', MOD(5, 2.5), y), DATE_ADD('DAY', CEIL(5.5), y)""",
+            """SELECT DATE_ADD('DAY', CAST(5 % 2.5 AS BIGINT), y), DATE_ADD('DAY', CAST(CEIL(5.5) AS BIGINT), y)""",
+        )
+
+        self.validate_all(
+            "DATE_ADD('MINUTE', CAST(FLOOR(CAST(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP) AS DOUBLE) / NULLIF(30, 0)) * 30 AS BIGINT), col)",
+            read={
+                "spark": "TIMESTAMPADD(MINUTE, FLOOR(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP)/30)*30, col)",
+            },
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
@@ -581,6 +602,13 @@ class TestPresto(Validator):
             )
 
     def test_presto(self):
+        self.assertEqual(
+            exp.func("md5", exp.func("concat", exp.cast("x", "text"), exp.Literal.string("s"))).sql(
+                dialect="presto"
+            ),
+            "LOWER(TO_HEX(MD5(TO_UTF8(CONCAT(CAST(x AS VARCHAR), CAST('s' AS VARCHAR))))))",
+        )
+
         with self.assertLogs(helper_logger):
             self.validate_all(
                 "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
@@ -927,8 +955,8 @@ class TestPresto(Validator):
             write={
                 "bigquery": "SELECT * FROM UNNEST(['7', '14'])",
                 "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
-                "hive": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x",
-                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x",
+                "hive": "SELECT * FROM EXPLODE(ARRAY('7', '14')) AS x",
+                "spark": "SELECT * FROM EXPLODE(ARRAY('7', '14')) AS x",
             },
         )
         self.validate_all(
@@ -936,8 +964,8 @@ class TestPresto(Validator):
             write={
                 "bigquery": "SELECT * FROM UNNEST(['7', '14']) AS y",
                 "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x(y)",
-                "hive": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x(y)",
-                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x(y)",
+                "hive": "SELECT * FROM EXPLODE(ARRAY('7', '14')) AS x(y)",
+                "spark": "SELECT * FROM EXPLODE(ARRAY('7', '14')) AS x(y)",
             },
         )
         self.validate_all(
@@ -1192,3 +1220,18 @@ MATCH_RECOGNIZE (
                 "starrocks": "SIGN(x)",
             },
         )
+
+    def test_json_vs_row_extract(self):
+        for dialect in ("trino", "presto"):
+            s = parse_one('SELECT col:x:y."special string"', read="snowflake")
+
+            dialect_json_extract_setting = f"{dialect}, variant_extract_is_json_extract=True"
+            dialect_row_access_setting = f"{dialect}, variant_extract_is_json_extract=False"
+
+            # By default, Snowflake VARIANT will generate JSON_EXTRACT() in Presto/Trino
+            json_extract_result = """SELECT JSON_EXTRACT(col, '$.x.y["special string"]')"""
+            self.assertEqual(s.sql(dialect), json_extract_result)
+            self.assertEqual(s.sql(dialect_json_extract_setting), json_extract_result)
+
+            # If the setting is overriden to False, then generate ROW access (dot notation)
+            self.assertEqual(s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"')

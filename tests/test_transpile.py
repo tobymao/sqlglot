@@ -112,6 +112,10 @@ class TestTranspile(unittest.TestCase):
 
     def test_comments(self):
         self.validate(
+            "select /* asfd /* asdf */ asdf */ 1",
+            "/* asfd /* asdf */ asdf */ SELECT 1",
+        )
+        self.validate(
             "SELECT c /* foo */ AS alias",
             "SELECT c AS alias /* foo */",
         )
@@ -552,10 +556,14 @@ FROM x""",
         )
 
         self.validate(
-            """SELECT X FROM  catalog.db.table WHERE Y 
+            """SELECT X FROM  catalog.db.table WHERE Y
         --
         AND Z""",
             """SELECT X FROM catalog.db.table WHERE Y AND Z""",
+        )
+        self.validate(
+            """with a as /* comment */ ( select * from b) select * from a""",
+            """WITH a AS (SELECT * FROM b) /* comment */ SELECT * FROM a""",
         )
 
     def test_types(self):
@@ -585,24 +593,24 @@ FROM x""",
     def test_extract(self):
         self.validate(
             "EXTRACT(day FROM '2020-01-01'::TIMESTAMP)",
-            "EXTRACT(day FROM CAST('2020-01-01' AS TIMESTAMP))",
+            "EXTRACT(DAY FROM CAST('2020-01-01' AS TIMESTAMP))",
         )
         self.validate(
             "EXTRACT(timezone FROM '2020-01-01'::TIMESTAMP)",
-            "EXTRACT(timezone FROM CAST('2020-01-01' AS TIMESTAMP))",
+            "EXTRACT(TIMEZONE FROM CAST('2020-01-01' AS TIMESTAMP))",
         )
         self.validate(
             "EXTRACT(year FROM '2020-01-01'::TIMESTAMP WITH TIME ZONE)",
-            "EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMPTZ))",
+            "EXTRACT(YEAR FROM CAST('2020-01-01' AS TIMESTAMPTZ))",
         )
         self.validate(
             "extract(month from '2021-01-31'::timestamp without time zone)",
-            "EXTRACT(month FROM CAST('2021-01-31' AS TIMESTAMP))",
+            "EXTRACT(MONTH FROM CAST('2021-01-31' AS TIMESTAMP))",
         )
-        self.validate("extract(week from current_date + 2)", "EXTRACT(week FROM CURRENT_DATE + 2)")
+        self.validate("extract(week from current_date + 2)", "EXTRACT(WEEK FROM CURRENT_DATE + 2)")
         self.validate(
             "EXTRACT(minute FROM datetime1 - datetime2)",
-            "EXTRACT(minute FROM datetime1 - datetime2)",
+            "EXTRACT(MINUTE FROM datetime1 - datetime2)",
         )
 
     def test_if(self):
@@ -756,7 +764,7 @@ FROM x""",
         self.validate("STR_TO_TIME('x', 'y')", "DATE_PARSE('x', 'y')", write="presto")
         self.validate(
             "STR_TO_UNIX('x', 'y')",
-            "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('x' AS VARCHAR), 'y')), PARSE_DATETIME(CAST('x' AS VARCHAR), 'y')))",
+            "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('x' AS VARCHAR), 'y')), PARSE_DATETIME(DATE_FORMAT(CAST('x' AS TIMESTAMP), 'y'), 'y')))",
             write="presto",
         )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="presto")
@@ -807,10 +815,10 @@ FROM x""",
             self.assertEqual(
                 cm.output,
                 [
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (-1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "INFO:sqlglot:Applying array index offset (1)",
+                    "INFO:sqlglot:Applying array index offset (-1)",
+                    "INFO:sqlglot:Applying array index offset (1)",
+                    "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
 
@@ -837,7 +845,6 @@ FROM x""",
             "ALTER TABLE table1 RENAME COLUMN c1 TO c2, c2 TO c3",
             "ALTER TABLE table1 RENAME COLUMN c1 c2",
             "ALTER TYPE electronic_mail RENAME TO email",
-            "ALTER VIEW foo ALTER COLUMN bla SET DEFAULT 'NOT SET'",
             "ALTER schema doo",
             "ANALYZE a.y",
             "CALL catalog.system.iceberg_procedure_name(named_arg_1 => 'arg_1', named_arg_2 => 'arg_2')",

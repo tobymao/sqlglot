@@ -76,27 +76,30 @@ def unnest_generate_date_array_using_recursive_cte(expression: exp.Expression) -
             if not start or not end or not isinstance(step, exp.Interval):
                 continue
 
+            alias = unnest.args.get("alias")
+            column_name = alias.columns[0] if isinstance(alias, exp.TableAlias) else "date_value"
+
             start = exp.cast(start, "date")
             date_add = exp.func(
-                "date_add", "date_value", exp.Literal.number(step.name), step.args.get("unit")
+                "date_add", column_name, exp.Literal.number(step.name), step.args.get("unit")
             )
             cast_date_add = exp.cast(date_add, "date")
 
             cte_name = "_generated_dates" + (f"_{count}" if count else "")
 
-            base_query = exp.select(start.as_("date_value"))
+            base_query = exp.select(start.as_(column_name))
             recursive_query = (
-                exp.select(cast_date_add.as_("date_value"))
+                exp.select(cast_date_add.as_(column_name))
                 .from_(cte_name)
                 .where(cast_date_add < exp.cast(end, "date"))
             )
             cte_query = base_query.union(recursive_query, distinct=False)
 
-            generate_dates_query = exp.select("date_value").from_(cte_name)
+            generate_dates_query = exp.select(column_name).from_(cte_name)
             unnest.replace(generate_dates_query.subquery(cte_name))
 
             recursive_ctes.append(
-                exp.alias_(exp.CTE(this=cte_query), cte_name, table=["date_value"])
+                exp.alias_(exp.CTE(this=cte_query), cte_name, table=[column_name])
             )
             count += 1
 

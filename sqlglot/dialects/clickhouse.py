@@ -973,7 +973,7 @@ class ClickHouse(Dialect):
             return super().createable_sql(expression, locations)
 
         def create_sql(self, expression: exp.Create) -> str:
-            # CTAS statements need to have their COMMENT property appended, i.e. after the query
+            # The comment property comes last in CTAS statements, i.e. after the query
             if isinstance(expression.expression, exp.Query):
                 comment_prop = expression.find(exp.SchemaCommentProperty)
                 if comment_prop:

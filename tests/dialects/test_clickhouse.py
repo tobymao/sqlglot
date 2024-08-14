@@ -613,6 +613,7 @@ class TestClickhouse(Validator):
         )
         self.assertEqual(create_with_cluster.sql("clickhouse"), "CREATE DATABASE foo ON CLUSTER c")
 
+        self.validate_identity("CREATE TABLE a ENGINE=Memory AS SELECT 1 AS c COMMENT 'foo'")
         self.validate_identity(
             "INSERT INTO FUNCTION s3('a', 'b', 'c', 'd', 'e') PARTITION BY CONCAT(s1, s2, s3, s4) SETTINGS set1 = 1, set2 = '2' SELECT * FROM some_table SETTINGS foo = 3"
         )

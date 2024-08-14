@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.11.3] - 2024-08-14
+### :bug: Bug Fixes
+- [`57f7aa9`](https://github.com/tobymao/sqlglot/commit/57f7aa9108ed38c0e83ef5bf4fac900434fac777) - **clickhouse**: COMMENT property in CTAS needs to come last *(PR [#3910](https://github.com/tobymao/sqlglot/pull/3910) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.11.2] - 2024-08-14
 ### :bug: Bug Fixes
 - [`c22f411`](https://github.com/tobymao/sqlglot/commit/c22f41129985ecfd3b3906b9594ca1692b91708c) - **clickhouse**: ensure we generate the Table in creatable_sql if it represents a db ref *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -4360,3 +4365,4 @@ Changelog
 [v25.11.0]: https://github.com/tobymao/sqlglot/compare/v25.10.0...v25.11.0
 [v25.11.1]: https://github.com/tobymao/sqlglot/compare/v25.11.0...v25.11.1
 [v25.11.2]: https://github.com/tobymao/sqlglot/compare/v25.11.1...v25.11.2
+[v25.11.3]: https://github.com/tobymao/sqlglot/compare/v25.11.2...v25.11.3

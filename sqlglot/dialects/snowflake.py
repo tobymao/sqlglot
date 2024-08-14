@@ -198,19 +198,22 @@ def _unnest_generate_date_array(expression: exp.Expression) -> exp.Expression:
 
                 unit = step.args.get("unit")
 
+                unnest_alias = unnest.args.get("alias")
+                if unnest_alias:
+                    unnest_alias = unnest_alias.copy()
+                    sequence_value_name = seq_get(unnest_alias.columns, 0) or "value"
+                else:
+                    sequence_value_name = "value"
+
                 # We'll add the next sequence value to the starting date and project the result
                 date_add = _build_date_time_add(exp.DateAdd)(
-                    [unit, exp.cast("value", "int"), exp.cast(start, "date")]
-                ).as_("value")
+                    [unit, exp.cast(sequence_value_name, "int"), exp.cast(start, "date")]
+                ).as_(sequence_value_name)
 
                 # We use DATEDIFF to compute the number of sequence values needed
                 number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
                     [exp.Literal.number(0), _build_datediff([unit, start, end]) + 1]
                 )
-
-                unnest_alias = unnest.args.get("alias")
-                if unnest_alias:
-                    unnest_alias = unnest_alias.copy()
 
                 unnest.set("expressions", [number_sequence])
                 unnest.replace(exp.select(date_add).from_(unnest.copy()).subquery(unnest_alias))

@@ -960,7 +960,10 @@ class ClickHouse(Dialect):
             if expression.kind in self.ON_CLUSTER_TARGETS and locations.get(
                 exp.Properties.Location.POST_NAME
             ):
-                this_name = self.sql(expression.this, "this")
+                this_name = self.sql(
+                    expression.this if isinstance(expression.this, exp.Schema) else expression,
+                    "this",
+                )
                 this_properties = " ".join(
                     [self.sql(prop) for prop in locations[exp.Properties.Location.POST_NAME]]
                 )

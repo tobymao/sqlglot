@@ -605,6 +605,14 @@ class TestClickhouse(Validator):
             )
 
     def test_ddl(self):
+        db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
+        create_with_cluster = exp.Create(
+            this=db_table_expr,
+            kind="DATABASE",
+            properties=exp.Properties(expressions=[exp.OnCluster(this=exp.to_identifier("c"))]),
+        )
+        self.assertEqual(create_with_cluster.sql("clickhouse"), "CREATE DATABASE foo ON CLUSTER c")
+
         self.validate_identity(
             "INSERT INTO FUNCTION s3('a', 'b', 'c', 'd', 'e') PARTITION BY CONCAT(s1, s2, s3, s4) SETTINGS set1 = 1, set2 = '2' SELECT * FROM some_table SETTINGS foo = 3"
         )

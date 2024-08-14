@@ -91,7 +91,7 @@ def unnest_generate_date_array_using_recursive_cte(expression: exp.Expression) -
             recursive_query = (
                 exp.select(cast_date_add.as_(column_name))
                 .from_(cte_name)
-                .where(cast_date_add < exp.cast(end, "date"))
+                .where(cast_date_add <= exp.cast(end, "date"))
             )
             cte_query = base_query.union(recursive_query, distinct=False)
 

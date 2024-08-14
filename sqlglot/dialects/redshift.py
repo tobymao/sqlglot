@@ -197,6 +197,7 @@ class Redshift(Postgres):
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.unqualify_unnest,
+                    transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
             exp.SortKeyProperty: lambda self,
@@ -209,13 +210,6 @@ class Redshift(Postgres):
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.UnixToTime: lambda self,
             e: f"(TIMESTAMP 'epoch' + {self.sql(e.this)} * INTERVAL '1 SECOND')",
-            exp.Unnest: transforms.preprocess(
-                [
-                    transforms.unnest_generate_date_array_using_recursive_cte(
-                        bubble_up_recursive_cte=True
-                    )
-                ]
-            ),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

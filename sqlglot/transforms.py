@@ -55,59 +55,61 @@ def preprocess(
     return _to_sql
 
 
-def unnest_generate_date_array_using_recursive_cte(
-    bubble_up_recursive_cte: bool = False,
-) -> t.Callable[[exp.Expression], exp.Expression]:
-    def _unnest_generate_date_array_using_recursive_cte(
-        expression: exp.Expression,
-    ) -> exp.Expression:
-        if (
-            isinstance(expression, exp.Unnest)
-            and isinstance(expression.parent, (exp.From, exp.Join))
-            and len(expression.expressions) == 1
-            and isinstance(expression.expressions[0], exp.GenerateDateArray)
-        ):
-            generate_date_array = expression.expressions[0]
+def unnest_generate_date_array_using_recursive_cte(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        count = 0
+        recursive_ctes = []
+
+        for unnest in expression.find_all(exp.Unnest):
+            if (
+                not isinstance(unnest.parent, (exp.From, exp.Join))
+                or len(unnest.expressions) != 1
+                or not isinstance(unnest.expressions[0], exp.GenerateDateArray)
+            ):
+                continue
+
+            generate_date_array = unnest.expressions[0]
             start = generate_date_array.args.get("start")
             end = generate_date_array.args.get("end")
             step = generate_date_array.args.get("step")
 
             if not start or not end or not isinstance(step, exp.Interval):
-                return expression
+                continue
+
+            alias = unnest.args.get("alias")
+            column_name = alias.columns[0] if isinstance(alias, exp.TableAlias) else "date_value"
 
             start = exp.cast(start, "date")
             date_add = exp.func(
-                "date_add", "date_value", exp.Literal.number(step.name), step.args.get("unit")
+                "date_add", column_name, exp.Literal.number(step.name), step.args.get("unit")
             )
             cast_date_add = exp.cast(date_add, "date")
 
-            base_query = exp.select(start.as_("date_value"))
+            cte_name = "_generated_dates" + (f"_{count}" if count else "")
+
+            base_query = exp.select(start.as_(column_name))
             recursive_query = (
-                exp.select(cast_date_add.as_("date_value"))
-                .from_("_generated_dates")
-                .where(cast_date_add < exp.cast(end, "date"))
+                exp.select(cast_date_add)
+                .from_(cte_name)
+                .where(cast_date_add <= exp.cast(end, "date"))
             )
             cte_query = base_query.union(recursive_query, distinct=False)
-            generate_dates_query = exp.select("date_value").from_("_generated_dates")
 
-            query_to_add_cte: exp.Query = generate_dates_query
+            generate_dates_query = exp.select(column_name).from_(cte_name)
+            unnest.replace(generate_dates_query.subquery(cte_name))
 
-            if bubble_up_recursive_cte:
-                parent: t.Optional[exp.Expression] = expression.parent
-
-                while parent:
-                    if isinstance(parent, exp.Query):
-                        query_to_add_cte = parent
-                    parent = parent.parent
-
-            query_to_add_cte.with_(
-                "_generated_dates(date_value)", as_=cte_query, recursive=True, copy=False
+            recursive_ctes.append(
+                exp.alias_(exp.CTE(this=cte_query), cte_name, table=[column_name])
             )
-            return generate_dates_query.subquery("_generated_dates")
+            count += 1
 
-        return expression
+        if recursive_ctes:
+            with_expression = expression.args.get("with") or exp.With()
+            with_expression.set("recursive", True)
+            with_expression.set("expressions", [*recursive_ctes, *with_expression.expressions])
+            expression.set("with", with_expression)
 
-    return _unnest_generate_date_array_using_recursive_cte
+    return expression
 
 
 def unnest_generate_series(expression: exp.Expression) -> exp.Expression:

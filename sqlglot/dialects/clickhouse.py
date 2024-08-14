@@ -972,6 +972,22 @@ class ClickHouse(Dialect):
 
             return super().createable_sql(expression, locations)
 
+        def create_sql(self, expression: exp.Create) -> str:
+            # CTAS statements need to have their COMMENT property appended, i.e. after the query
+            if isinstance(expression.expression, exp.Query):
+                comment_prop = expression.find(exp.SchemaCommentProperty)
+                if comment_prop:
+                    comment_prop.pop()
+            else:
+                comment_prop = None
+
+            create_sql = super().create_sql(expression)
+
+            comment_sql = self.sql(comment_prop)
+            comment_sql = f" {comment_sql}" if comment_sql else ""
+
+            return f"{create_sql}{comment_sql}"
+
         def prewhere_sql(self, expression: exp.PreWhere) -> str:
             this = self.indent(self.sql(expression, "this"))
             return f"{self.seg('PREWHERE')}{self.sep()}{this}"

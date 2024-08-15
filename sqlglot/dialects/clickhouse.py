@@ -974,10 +974,12 @@ class ClickHouse(Dialect):
 
         def create_sql(self, expression: exp.Create) -> str:
             # The comment property comes last in CTAS statements, i.e. after the query
-            if isinstance(expression.expression, exp.Query):
+            query = expression.expression
+            if isinstance(query, exp.Query):
                 comment_prop = expression.find(exp.SchemaCommentProperty)
                 if comment_prop:
                     comment_prop.pop()
+                    query.replace(exp.paren(query))
             else:
                 comment_prop = None
 

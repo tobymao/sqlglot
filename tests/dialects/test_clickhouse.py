@@ -1,8 +1,10 @@
 from datetime import date
-from sqlglot import exp, parse_one
+from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
+from sqlglot.generator import logger as generator_logger
 
 
 class TestClickhouse(Validator):
@@ -12,19 +14,24 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT toFloat(like)")
         self.validate_identity("SELECT like")
 
-        string_types = [
-            "BLOB",
-            "LONGBLOB",
-            "LONGTEXT",
-            "MEDIUMBLOB",
-            "MEDIUMTEXT",
-            "TINYBLOB",
-            "TINYTEXT",
-            "VARCHAR(255)",
-        ]
+        for string_type_enum in ClickHouse.Generator.STRING_TYPE_MAPPING:
+            self.validate_identity(f"CAST(x AS {string_type_enum.value})", "CAST(x AS String)")
 
-        for string_type in string_types:
-            self.validate_identity(f"CAST(x AS {string_type})", "CAST(x AS String)")
+        for try_cast_type in ClickHouse.Generator.TRY_CAST_TYPES:
+            cast = parse_one(f"TRY_CAST(x AS {try_cast_type})")
+            target_type = cast.to.sql("clickhouse")
+            self.assertEqual(cast.sql("clickhouse"), f"to{target_type}OrNull(x)")
+
+        try_cast_to_text = parse_one("TRY_CAST(x AS TEXT)")
+
+        with self.assertLogs(generator_logger) as cm:
+            self.assertEqual(try_cast_to_text.sql("clickhouse"), "CAST(x AS String)")
+            self.assertEqual(
+                cm.output, ["WARNING:sqlglot:There is no `to<Type>OrNull` for type String."]
+            )
+
+        with self.assertRaises(UnsupportedError):
+            try_cast_to_text.sql("clickhouse", unsupported_level=ErrorLevel.RAISE)
 
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")

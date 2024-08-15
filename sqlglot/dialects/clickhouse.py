@@ -428,6 +428,15 @@ class ClickHouse(Dialect):
             "INDEX",
         }
 
+        def _parse_create(self) -> exp.Create | exp.Command:
+            create = super()._parse_create()
+
+            # DATABASE in ClickHouse is the same as SCHEMA in other dialects
+            if isinstance(create, exp.Create) and create.kind == "DATABASE":
+                create.set("kind", "SCHEMA")
+
+            return create
+
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index
             this = self._parse_bitwise()
@@ -437,7 +446,7 @@ class ClickHouse(Dialect):
 
             # We return Anonymous here because extract and regexpExtract have different semantics,
             # so parsing extract(foo, bar) into RegexpExtract can potentially break queries. E.g.,
-            # `extract('foobar', 'b')` works, but CH crashes for `regexpExtract('foobar', 'b')`.
+            # `extract('foobar', 'b')` works, but ClickHouse crashes for `regexpExtract('foobar', 'b')`.
             #
             # TODO: can we somehow convert the former into an equivalent `regexpExtract` call?
             self._match(TokenType.COMMA)
@@ -593,7 +602,7 @@ class ClickHouse(Dialect):
 
                 if isinstance(expr, exp.Window):
                     # The window's func was parsed as Anonymous in base parser, fix its
-                    # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
+                    # type to be ClickHouse style CombinedAnonymousAggFunc / AnonymousAggFunc
                     expr.set("this", func)
                 elif params:
                     # Params have blocked super()._parse_function() from parsing the following window
@@ -982,6 +991,10 @@ class ClickHouse(Dialect):
                     query.replace(exp.paren(query))
             else:
                 comment_prop = None
+
+            # ClickHouse only has DATABASEs and objects under them, eg. TABLEs, VIEWs, etc
+            if expression.kind == "SCHEMA":
+                expression.set("kind", "DATABASE")
 
             create_sql = super().create_sql(expression)
 

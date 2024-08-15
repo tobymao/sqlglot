@@ -629,9 +629,18 @@ class TestClickhouse(Validator):
             "CREATE TABLE foo ENGINE=Memory AS (SELECT * FROM db.other_table) COMMENT 'foo'",
         )
 
+        self.validate_identity("""CREATE TABLE ip_data (ip4 IPv4, ip6 IPv6) ENGINE=TinyLog()""")
+        self.validate_identity("""CREATE TABLE dates (dt1 Date32) ENGINE=TinyLog()""")
+        self.validate_identity("CREATE TABLE named_tuples (a Tuple(select String, i Int64))")
+        self.validate_identity("""CREATE TABLE t (a String) EMPTY AS SELECT * FROM dummy""")
         self.validate_identity(
-            "CREATE TABLE a ENGINE=Memory AS SELECT 1 AS c COMMENT 'foo'",
-            "CREATE TABLE a ENGINE=Memory AS (SELECT 1 AS c) COMMENT 'foo'",
+            "CREATE TABLE t1 (a String EPHEMERAL, b String EPHEMERAL func(), c String MATERIALIZED func(), d String ALIAS func()) ENGINE=TinyLog()"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a String, b String, c UInt64, PROJECTION p1 (SELECT a, sum(c) GROUP BY a, b), PROJECTION p2 (SELECT b, sum(c) GROUP BY b)) ENGINE=MergeTree()"
+        )
+        self.validate_identity(
+            """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
         )
         self.validate_identity(
             "INSERT INTO FUNCTION s3('a', 'b', 'c', 'd', 'e') PARTITION BY CONCAT(s1, s2, s3, s4) SETTINGS set1 = 1, set2 = '2' SELECT * FROM some_table SETTINGS foo = 3"
@@ -642,8 +651,21 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "CREATE TABLE foo (x UInt32) TTL time_column + INTERVAL '1' MONTH DELETE WHERE column = 'value'"
         )
-        self.validate_identity("CREATE TABLE named_tuples (a Tuple(select String, i Int64))")
+        self.validate_identity(
+            "CREATE TABLE a ENGINE=Memory AS SELECT 1 AS c COMMENT 'foo'",
+            "CREATE TABLE a ENGINE=Memory AS (SELECT 1 AS c) COMMENT 'foo'",
+        )
 
+        self.validate_all(
+            "CREATE DATABASE x",
+            read={
+                "duckdb": "CREATE SCHEMA x",
+            },
+            write={
+                "clickhouse": "CREATE DATABASE x",
+                "duckdb": "CREATE SCHEMA x",
+            },
+        )
         self.validate_all(
             """
             CREATE TABLE example1 (
@@ -929,8 +951,6 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
-        self.validate_identity("""CREATE TABLE ip_data (ip4 IPv4, ip6 IPv6) ENGINE=TinyLog()""")
-        self.validate_identity("""CREATE TABLE dates (dt1 Date32) ENGINE=TinyLog()""")
         self.validate_all(
             """
             CREATE TABLE t (
@@ -947,17 +967,6 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
-        self.validate_identity(
-            "CREATE TABLE t1 (a String EPHEMERAL, b String EPHEMERAL func(), c String MATERIALIZED func(), d String ALIAS func()) ENGINE=TinyLog()"
-        )
-        self.validate_identity(
-            "CREATE TABLE t (a String, b String, c UInt64, PROJECTION p1 (SELECT a, sum(c) GROUP BY a, b), PROJECTION p2 (SELECT b, sum(c) GROUP BY b)) ENGINE=MergeTree()"
-        )
-        self.validate_identity(
-            """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
-        )
-
-        self.validate_identity("""CREATE TABLE t (a String) EMPTY AS SELECT * FROM dummy""")
 
     def test_agg_functions(self):
         def extract_agg_func(query):

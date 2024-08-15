@@ -243,8 +243,8 @@ select j from a""",
             read={'presto': "select regexp_extract('aaaa', 'a|b|c')"}
         )
         self.validate_all(
-            "SELECT REGEXP_EXTRACT('aaaa', 'a|b|c', 1)",
-            read={'presto': "select regexp_extract('aaaa', 'a|b|c', 1)"}
+            "SELECT REGEXP_EXTRACT(`a`, 'a|b|c', 1)",
+            read={'presto': "select regexp_extract(\"a\", 'a|b|c', 1)"}
         )
 
         # day_of_week

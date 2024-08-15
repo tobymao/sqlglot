@@ -146,7 +146,7 @@ def regexp_extract_sql(self: ClickZetta.Generator, expression: exp.RegexpExtract
 
     group = expression.args.get('group')
     if not group and is_read_dialect('presto'):
-        return f"REGEXP_EXTRACT({expression.this}, {expression.expression}, 0)"
+        return f"REGEXP_EXTRACT({self.sql(expression.this)}, {self.sql(expression.expression)}, 0)"
 
     return self.func(
         "REGEXP_EXTRACT", expression.this, expression.expression, expression.args.get('group')

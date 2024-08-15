@@ -41,7 +41,7 @@ Each dialect has unique syntax that is implemented by overriding the base versio
 
 The base versions of the modules implement the `sqlglot` (or `base`) dialect, which is designed to accommodate as many common syntax elements as possible across the other supported dialects. This prevents duplication of code across the dialect-specific modules.
 
-SQLGlot includes two other modules not required for basic transpilation: the [Optimizer](#optimizer) and Executor. The Optimizer modifies an abstract syntax tree for other uses (e.g., inferring column-level lineage). The Executor runs SQL code in Python (not all SQL functionality is supported).
+SQLGlot includes other modules which are not required for basic transpilation, such as the [Optimizer](#optimizer) and Executor. The Optimizer modifies an abstract syntax tree for other uses (e.g., inferring column-level lineage). The Executor runs SQL code in Python (not all SQL functionality is supported).
 
 The rest of this document describes the three base modules, dialect-specific overrides, and the Optimizer module.
 
@@ -338,8 +338,7 @@ Optimizations include simplifying expressions, removing redundant operations, an
 The optimizer operates on the abstract syntax tree (AST) returned by the parser, transforming it into a more compact form while preserving the semantics of the original query.
 
 > [!NOTE]
-> The optimizer does not currently support statistics, so it cannot employ cost-based optimizations such as join reordering
->
+> The optimizer performs only logical optimization; The underlying engine is almost always better at optimizing for performance.
 
 
 ### Optimization rules
@@ -348,7 +347,7 @@ The optimizer essentially applies [a list of rules](https://sqlglot.com/sqlglot/
 > [!WARNING]
 > The rule order is important, as some rules depend on others to work properly. We discourage manually applying individual rules, which may result in erroneous or unpredictable behavior.
 
-The first, foundational optimization task is to _canonicalize_ an AST, which is required by other optimization steps. These rules implement canonicalization:
+The first, foundational optimization task is to _standardize_ an AST, which is required by other optimization steps. These rules implement canonicalization:
 
 #### Qualify
 The most important rule in the optimizer is `qualify`, which is responsible for rewriting the AST such that all tables and columns are _normalized_ and _qualified_.

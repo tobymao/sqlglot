@@ -1,6 +1,21 @@
 Changelog
 =========
 
+## [v25.12.0] - 2024-08-15
+### :boom: BREAKING CHANGES
+- due to [`e8e70f3`](https://github.com/tobymao/sqlglot/commit/e8e70f3a6cc2ca24de2afe622bbcbccb1ac8aeb3) - treat DATABASE kind as SCHEMA (and conversely) in exp.Create *(PR [#3912](https://github.com/tobymao/sqlglot/pull/3912) by [@georgesittas](https://github.com/georgesittas))*:
+
+  treat DATABASE kind as SCHEMA (and conversely) in exp.Create (#3912)
+
+
+### :sparkles: New Features
+- [`9a66903`](https://github.com/tobymao/sqlglot/commit/9a66903975f16a09d84337a8405bf70945706412) - **clickhouse**: add support for TryCast generation *(PR [#3913](https://github.com/tobymao/sqlglot/pull/3913) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`7965cac`](https://github.com/tobymao/sqlglot/commit/7965cace1d9632c865cae257781072b0932b709d) - **clickhouse**: wrap query in CTAS when COMMENT prop is present *(PR [#3911](https://github.com/tobymao/sqlglot/pull/3911) by [@georgesittas](https://github.com/georgesittas))*
+- [`e8e70f3`](https://github.com/tobymao/sqlglot/commit/e8e70f3a6cc2ca24de2afe622bbcbccb1ac8aeb3) - **clickhouse**: treat DATABASE kind as SCHEMA (and conversely) in exp.Create *(PR [#3912](https://github.com/tobymao/sqlglot/pull/3912) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.11.3] - 2024-08-14
 ### :bug: Bug Fixes
 - [`57f7aa9`](https://github.com/tobymao/sqlglot/commit/57f7aa9108ed38c0e83ef5bf4fac900434fac777) - **clickhouse**: COMMENT property in CTAS needs to come last *(PR [#3910](https://github.com/tobymao/sqlglot/pull/3910) by [@georgesittas](https://github.com/georgesittas))*
@@ -4366,3 +4381,4 @@ Changelog
 [v25.11.1]: https://github.com/tobymao/sqlglot/compare/v25.11.0...v25.11.1
 [v25.11.2]: https://github.com/tobymao/sqlglot/compare/v25.11.1...v25.11.2
 [v25.11.3]: https://github.com/tobymao/sqlglot/compare/v25.11.2...v25.11.3
+[v25.12.0]: https://github.com/tobymao/sqlglot/compare/v25.11.3...v25.12.0

@@ -863,31 +863,31 @@ class ClickHouse(Dialect):
 
         # https://github.com/ClickHouse/ClickHouse/blob/275de04b8f6bb8c9334bf8070001afe2dab0b17d/src/Functions/FunctionsConversion.cpp#L2939-L2989
         TRY_CAST_TYPES = {
-            "DATE",
-            "DATE32",
-            "DATETIME",
-            "DATETIME64",
-            "DECIMAL32",
-            "DECIMAL64",
-            "DECIMAL128",
-            "DECIMAL256",
-            "FLOAT32",
-            "FLOAT64",
-            "INT8",
-            "INT16",
-            "INT32",
-            "INT64",
-            "INT128",
-            "INT256",
-            "IPV4",
-            "IPV6",
-            "UINT8",
-            "UINT16",
-            "UINT32",
-            "UINT64",
-            "UINT128",
-            "UINT256",
-            "UUID",
+            "DATE": "Date",
+            "DATE32": "Date32",
+            "DATETIME": "DateTime",
+            "DATETIME64": "DateTime64",
+            "DECIMAL32": "Decimal32",
+            "DECIMAL64": "Decimal64",
+            "DECIMAL128": "Decimal128",
+            "DECIMAL256": "Decimal256",
+            "FLOAT32": "Float32",
+            "FLOAT64": "Float64",
+            "INT8": "Int8",
+            "INT16": "Int16",
+            "INT32": "Int32",
+            "INT64": "Int64",
+            "INT128": "Int128",
+            "INT256": "Int256",
+            "IPV4": "IPv4",
+            "IPV6": "IPv6",
+            "UINT8": "UInt8",
+            "UINT16": "UInt16",
+            "UINT32": "UInt32",
+            "UINT64": "UInt64",
+            "UINT128": "UInt128",
+            "UINT256": "UInt256",
+            "UUID": "UUID",
         }
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
@@ -911,7 +911,9 @@ class ClickHouse(Dialect):
         def trycast_sql(self, expression: exp.TryCast) -> str:
             target_type = self.sql(expression.to)
             if target_type.upper() in self.TRY_CAST_TYPES:
-                return self.func(f"to{target_type}OrNull", expression.this)
+                return self.func(
+                    f"to{self.TRY_CAST_TYPES[target_type.upper()]}OrNull", expression.this
+                )
 
             self.unsupported(f"There is no `to<Type>OrNull` for type {target_type}.")
             return super().cast_sql(expression)

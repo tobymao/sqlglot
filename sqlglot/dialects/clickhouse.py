@@ -861,6 +861,35 @@ class ClickHouse(Dialect):
             "NAMED COLLECTION",
         }
 
+        # https://github.com/ClickHouse/ClickHouse/blob/275de04b8f6bb8c9334bf8070001afe2dab0b17d/src/Functions/FunctionsConversion.cpp#L2939-L2989
+        TRY_CAST_TYPES = {
+            "DATE",
+            "DATE32",
+            "DATETIME",
+            "DATETIME64",
+            "DECIMAL32",
+            "DECIMAL64",
+            "DECIMAL128",
+            "DECIMAL256",
+            "FLOAT32",
+            "FLOAT64",
+            "INT8",
+            "INT16",
+            "INT32",
+            "INT64",
+            "INT128",
+            "INT256",
+            "IPV4",
+            "IPV6",
+            "UINT8",
+            "UINT16",
+            "UINT32",
+            "UINT64",
+            "UINT128",
+            "UINT256",
+            "UUID",
+        }
+
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)
 
@@ -878,6 +907,14 @@ class ClickHouse(Dialect):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def trycast_sql(self, expression: exp.TryCast) -> str:
+            target_type = self.sql(expression.to)
+            if target_type.upper() in self.TRY_CAST_TYPES:
+                return self.func(f"to{target_type}OrNull", expression.this)
+
+            self.unsupported(f"There is no `to<Type>OrNull` for type {target_type}.")
+            return super().cast_sql(expression)
 
         def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
             this = self.json_path_part(expression.this)

@@ -428,6 +428,22 @@ class ClickHouse(Dialect):
             "INDEX",
         }
 
+        def _parse_types(
+            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+        ) -> t.Optional[exp.Expression]:
+            dtype = super()._parse_types(
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            )
+            if isinstance(dtype, exp.DataType):
+                # Mark every type as non-nullable which is ClickHouse's default. This marker
+                # helps us transpile types from other dialects to ClickHouse, so that we can
+                # e.g. produce `CAST(x AS Nullable(String))` from `CAST(x AS TEXT)`. If there
+                # is a `NULL` value in `x`, the former would fail in ClickHouse without the
+                # `Nullable` type constructor
+                dtype.set("nullable", False)
+
+            return dtype
+
         def _parse_create(self) -> exp.Create | exp.Command:
             create = super()._parse_create()
 
@@ -850,7 +866,7 @@ class ClickHouse(Dialect):
             exp.OnCluster: exp.Properties.Location.POST_NAME,
         }
 
-        # there's no list in docs, but it can be found in Clickhouse code
+        # There's no list in docs, but it can be found in Clickhouse code
         # see `ClickHouse/src/Parsers/ParserCreate*.cpp`
         ON_CLUSTER_TARGETS = {
             "DATABASE",
@@ -860,6 +876,14 @@ class ClickHouse(Dialect):
             "INDEX",
             "FUNCTION",
             "NAMED COLLECTION",
+        }
+
+        # https://clickhouse.com/docs/en/sql-reference/data-types/nullable
+        NON_NULLABLE_TYPES = {
+            exp.DataType.Type.ARRAY,
+            exp.DataType.Type.MAP,
+            exp.DataType.Type.NULLABLE,
+            exp.DataType.Type.STRUCT,
         }
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
@@ -882,18 +906,9 @@ class ClickHouse(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             dtype = expression.to
-
-            # Composite data types can't be Nullable
-            # See: https://clickhouse.com/docs/en/sql-reference/data-types/nullable
-            if not dtype.is_type(
-                exp.DataType.Type.ARRAY, exp.DataType.Type.MAP, exp.DataType.Type.STRUCT
-            ):
+            if not dtype.is_type(*self.NON_NULLABLE_TYPES):
                 # Casting x into Nullable(T) appears to behave similarly to TRY_CAST(x AS T)
-                dtype.replace(
-                    exp.DataType(
-                        this=exp.DataType.Type.NULLABLE, expressions=[dtype.copy()], nested=True
-                    )
-                )
+                dtype.set("nullable", True)
 
             return super().cast_sql(expression)
 
@@ -938,9 +953,23 @@ class ClickHouse(Dialect):
             #
             # https://clickhouse.com/docs/en/sql-reference/data-types/string
             if expression.this in self.STRING_TYPE_MAPPING:
-                return "String"
+                dtype = "String"
+            else:
+                dtype = super().datatype_sql(expression)
 
-            return super().datatype_sql(expression)
+            parent = expression.parent
+            if (
+                expression.args.get("nullable") in (None, True)
+                and not isinstance(parent, exp.DataType)
+                and not (
+                    isinstance(parent, exp.ColumnDef)
+                    and isinstance(parent.parent, (exp.ColumnDef, exp.DataType))
+                )
+                and not expression.is_type(*self.NON_NULLABLE_TYPES)
+            ):
+                dtype = f"Nullable({dtype})"
+
+            return dtype
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.args.get("scalar"):

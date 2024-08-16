@@ -963,7 +963,7 @@ class ClickHouse(Dialect):
             # - It's not the key type of a `Map`. This is because ClickHouse enforces the following
             #   constraint: "Type of Map key must be a type, that can be represented by integer or
             #   String or FixedString (possibly LowCardinality) or UUID or IPv6"
-            # - It's not a non-nullable type, e.g. `Nullable(Array(...))` is not a valid type
+            # - It's not a composite type, e.g. `Nullable(Array(...))` is not a valid type
             parent = expression.parent
             if (
                 expression.args.get("nullable") in (None, True)

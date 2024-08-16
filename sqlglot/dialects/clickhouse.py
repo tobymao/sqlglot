@@ -957,13 +957,12 @@ class ClickHouse(Dialect):
             else:
                 dtype = super().datatype_sql(expression)
 
-            # This section makes the type `Nullable` if the following conditions hold:
+            # This section changes the type to `Nullable(...)` if the following conditions hold:
             # - It's marked as nullable - this ensures we won't wrap ClickHouse types with `Nullable`
             #   and change their semantics
             # - It's not the key type of a `Map`. This is because ClickHouse enforces the following
-            #   constraint on the map's key/value types: "Type of Map key must be a type, that can
-            #   be represented by integer or String or FixedString (possibly LowCardinality) or UUID
-            #   or IPv6"
+            #   constraint: "Type of Map key must be a type, that can be represented by integer or
+            #   String or FixedString (possibly LowCardinality) or UUID or IPv6"
             # - It's not a non-nullable type, e.g. `Nullable(Array(...))` is not a valid type
             parent = expression.parent
             if (

@@ -82,6 +82,7 @@ class TestClickhouse(Validator):
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)")
+        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")

@@ -756,6 +756,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.DATE32: "Date32",
             exp.DataType.Type.DATETIME64: "DateTime64",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.DOUBLE: "Float64",
             exp.DataType.Type.ENUM: "Enum",
             exp.DataType.Type.ENUM8: "Enum8",

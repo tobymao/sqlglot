@@ -231,14 +231,22 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):
-                right_type_by_select = {s.alias_or_name: s.type for s in expression.right.selects}
-                selects[name] = {
-                    s.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, s.type),
-                        right_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
-                    )
-                    for s in expression.left.selects
-                }
+                if expression.args.get("by_name"):
+                    r_type_by_select = {s.alias_or_name: s.type for s in expression.right.selects}
+                    selects[name] = {
+                        s.alias_or_name: self._maybe_coerce(
+                            t.cast(exp.DataType, s.type),
+                            r_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
+                        )
+                        for s in expression.left.selects
+                    }
+                else:
+                    selects[name] = {
+                        ls.alias or rs.alias or ls.name or rs.name: self._maybe_coerce(
+                            t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                        )
+                        for ls, rs in zip(expression.left.selects, expression.right.selects)
+                    }
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 

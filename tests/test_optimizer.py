@@ -1229,11 +1229,20 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             ("SELECT 1 AS c", "SELECT NULL AS c", "INT"),
             ("SELECT FOO() AS c", "SELECT 1 AS c", "UNKNOWN"),
             ("SELECT FOO() AS c", "SELECT BAR() AS c", "UNKNOWN"),
+            ("SELECT 1", "SELECT 1 AS c", "INT"),
         ):
             with self.subTest(f"left: {left}, right: {right}, expected: {expected_type}"):
                 lr = annotate_types(parse_one(f"SELECT t.c FROM ({left} UNION ALL {right}) t(c)"))
                 rl = annotate_types(parse_one(f"SELECT t.c FROM ({right} UNION ALL {left}) t(c)"))
                 assert lr.selects[0].type == rl.selects[0].type == exp.DataType.build(expected_type)
+
+        union_by_name = annotate_types(
+            parse_one(
+                "SELECT t.a, t.d FROM (SELECT 1 a, 3 d, UNION ALL BY NAME SELECT 7.0 d, 8::BIGINT a) AS t(a, d)"
+            )
+        )
+        self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.BIGINT)
+        self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.DOUBLE)
 
     def test_recursive_cte(self):
         query = parse_one(

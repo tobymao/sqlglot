@@ -82,6 +82,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
     # TODO: temporary workaround for presto 'select current_timezone()'
     elif expression.this.upper() == 'CURRENT_TIMEZONE':
         return f"'Asia/Shanghai'"
+    elif expression.this.upper() == 'GROUPING':
+        return f"GROUPING_ID({self.expressions(expression, flat=True)})"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)

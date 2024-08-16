@@ -182,6 +182,11 @@ select j from a""",
             "SELECT DAYOFWEEK(TO_DATE(d))",
             read={'spark': "select dayofweek(d)"}
         )
+        self.validate_all(
+            "SELECT GROUPING_ID(a, b), GROUPING_ID(a, c) FROM foo GROUP BY GROUPING SETS ((a, b), (a, c))",
+            read={'presto': "select grouping(a,b), grouping(a,c) from foo group by grouping sets ((a,b),(a,c))"}
+        )
+
     def test_read_dialect_related_function(self):
         import os
 

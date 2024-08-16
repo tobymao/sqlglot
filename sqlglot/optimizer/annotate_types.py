@@ -128,6 +128,13 @@ class _TypeAnnotator(type):
                 klass.COERCES_TO[data_type] = coerces_to.copy()
                 coerces_to |= {data_type}
 
+        # NULL can be coerced to any type, so e.g. NULL + 1 will have type INT
+        klass.COERCES_TO[exp.DataType.Type.NULL] = {
+            *text_precedence,
+            *numeric_precedence,
+            *timelike_precedence,
+        }
+
         return klass
 
 
@@ -201,31 +208,47 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         for name, source in scope.sources.items():
             if not isinstance(source, Scope):
                 continue
-            if isinstance(source.expression, exp.UDTF):
+
+            expression = source.expression
+            if isinstance(expression, exp.UDTF):
                 values = []
 
-                if isinstance(source.expression, exp.Lateral):
-                    if isinstance(source.expression.this, exp.Explode):
-                        values = [source.expression.this.this]
-                elif isinstance(source.expression, exp.Unnest):
-                    values = [source.expression]
+                if isinstance(expression, exp.Lateral):
+                    if isinstance(expression.this, exp.Explode):
+                        values = [expression.this.this]
+                elif isinstance(expression, exp.Unnest):
+                    values = [expression]
                 else:
-                    values = source.expression.expressions[0].expressions
+                    values = expression.expressions[0].expressions
 
                 if not values:
                     continue
 
                 selects[name] = {
-                    alias: column
-                    for alias, column in zip(
-                        source.expression.alias_column_names,
-                        values,
-                    )
+                    alias: column.type
+                    for alias, column in zip(expression.alias_column_names, values)
                 }
+            elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
+                expression.right.selects
+            ):
+                if expression.args.get("by_name"):
+                    r_type_by_select = {s.alias_or_name: s.type for s in expression.right.selects}
+                    selects[name] = {
+                        s.alias_or_name: self._maybe_coerce(
+                            t.cast(exp.DataType, s.type),
+                            r_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
+                        )
+                        for s in expression.left.selects
+                    }
+                else:
+                    selects[name] = {
+                        ls.alias_or_name: self._maybe_coerce(
+                            t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                        )
+                        for ls, rs in zip(expression.left.selects, expression.right.selects)
+                    }
             else:
-                selects[name] = {
-                    select.alias_or_name: select for select in source.expression.selects
-                }
+                selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 
         # First annotate the current scope's column references
         for col in scope.columns:
@@ -237,7 +260,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 self._set_type(col, self.schema.get_column_type(source, col))
             elif source:
                 if col.table in selects and col.name in selects[col.table]:
-                    self._set_type(col, selects[col.table][col.name].type)
+                    self._set_type(col, selects[col.table][col.name])
                 elif isinstance(source.expression, exp.Unnest):
                     self._set_type(col, source.expression.type)
 
@@ -264,15 +287,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _maybe_coerce(
         self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
-    ) -> exp.DataType | exp.DataType.Type:
+    ) -> exp.DataType:
         type1_value = type1.this if isinstance(type1, exp.DataType) else type1
         type2_value = type2.this if isinstance(type2, exp.DataType) else type2
 
-        # We propagate the NULL / UNKNOWN types upwards if found
-        if exp.DataType.Type.NULL in (type1_value, type2_value):
-            return exp.DataType.Type.NULL
+        # We propagate the UNKNOWN type upwards if found
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
-            return exp.DataType.Type.UNKNOWN
+            return exp.DataType.build("unknown")
 
         return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
@@ -282,17 +303,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         left, right = expression.left, expression.right
         left_type, right_type = left.type.this, right.type.this  # type: ignore
 
-        if isinstance(expression, exp.Connector):
-            if left_type == exp.DataType.Type.NULL and right_type == exp.DataType.Type.NULL:
-                self._set_type(expression, exp.DataType.Type.NULL)
-            elif exp.DataType.Type.NULL in (left_type, right_type):
-                self._set_type(
-                    expression,
-                    exp.DataType.build("NULLABLE", expressions=exp.DataType.build("BOOLEAN")),
-                )
-            else:
-                self._set_type(expression, exp.DataType.Type.BOOLEAN)
-        elif isinstance(expression, exp.Predicate):
+        if isinstance(expression, (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
         elif (left_type, right_type) in self.binary_coercions:
             self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
@@ -351,7 +362,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 last_datatype = expr_type
                 break
 
-            if not expr_type.is_type(exp.DataType.Type.NULL, exp.DataType.Type.UNKNOWN):
+            if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
                 last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
 
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)

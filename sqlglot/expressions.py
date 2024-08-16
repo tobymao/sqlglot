@@ -3149,11 +3149,11 @@ class SetOperation(Query):
         return self.this.unnest().selects
 
     @property
-    def left(self) -> Expression:
+    def left(self) -> Query:
         return self.this
 
     @property
-    def right(self) -> Expression:
+    def right(self) -> Query:
         return self.expression
 
 

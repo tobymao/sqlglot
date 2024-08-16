@@ -20,7 +20,10 @@ class TestClickhouse(Validator):
         for try_cast_type in ClickHouse.Generator.TRY_CAST_TYPES:
             cast = parse_one(f"TRY_CAST(x AS {try_cast_type})")
             target_type = cast.to.sql("clickhouse")
-            self.assertEqual(cast.sql("clickhouse"), f"to{target_type}OrNull(x)")
+            self.assertEqual(
+                cast.sql("clickhouse"),
+                f"to{ClickHouse.Generator.TRY_CAST_TYPES[target_type.upper()]}OrNull(x)",
+            )
 
         try_cast_to_text = parse_one("TRY_CAST(x AS TEXT)")
 

@@ -966,7 +966,7 @@ class ClickHouse(Dialect):
             # - It's not a composite type, e.g. `Nullable(Array(...))` is not a valid type
             parent = expression.parent
             if (
-                expression.args.get("nullable") in (None, True)
+                expression.args.get("nullable") is not False
                 and not (
                     isinstance(parent, exp.DataType)
                     and parent.is_type(exp.DataType.Type.MAP)

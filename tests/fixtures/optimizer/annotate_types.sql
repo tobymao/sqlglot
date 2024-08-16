@@ -15,6 +15,7 @@ bool;
 
 null;
 null;
+
 CASE WHEN x THEN NULL ELSE 1 END;
 INT;
 

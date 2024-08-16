@@ -993,16 +993,15 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("UNKNOWN", dialect="bigquery").sql(), "UNKNOWN")
         self.assertEqual(exp.DataType.build("UNKNOWN", dialect="snowflake").sql(), "UNKNOWN")
         self.assertEqual(exp.DataType.build("TIMESTAMP", dialect="bigquery").sql(), "TIMESTAMPTZ")
-        self.assertEqual(
-            exp.DataType.build("struct<x int>", dialect="spark").sql(), "STRUCT<x INT>"
-        )
         self.assertEqual(exp.DataType.build("USER-DEFINED").sql(), "USER-DEFINED")
-
         self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY<UNKNOWN>")
         self.assertEqual(exp.DataType.build("ARRAY<NULL>").sql(), "ARRAY<NULL>")
         self.assertEqual(exp.DataType.build("varchar(100) collate 'en-ci'").sql(), "VARCHAR(100)")
         self.assertEqual(exp.DataType.build("int[3]").sql(dialect="duckdb"), "INT[3]")
         self.assertEqual(exp.DataType.build("int[3][3]").sql(dialect="duckdb"), "INT[3][3]")
+        self.assertEqual(
+            exp.DataType.build("struct<x int>", dialect="spark").sql(), "STRUCT<x INT>"
+        )
 
         with self.assertRaises(ParseError):
             exp.DataType.build("varchar(")

@@ -861,35 +861,6 @@ class ClickHouse(Dialect):
             "NAMED COLLECTION",
         }
 
-        # https://github.com/ClickHouse/ClickHouse/blob/275de04b8f6bb8c9334bf8070001afe2dab0b17d/src/Functions/FunctionsConversion.cpp#L2939-L2989
-        TRY_CAST_TYPES = {
-            "DATE": "Date",
-            "DATE32": "Date32",
-            "DATETIME": "DateTime",
-            "DATETIME64": "DateTime64",
-            "DECIMAL32": "Decimal32",
-            "DECIMAL64": "Decimal64",
-            "DECIMAL128": "Decimal128",
-            "DECIMAL256": "Decimal256",
-            "FLOAT32": "Float32",
-            "FLOAT64": "Float64",
-            "INT8": "Int8",
-            "INT16": "Int16",
-            "INT32": "Int32",
-            "INT64": "Int64",
-            "INT128": "Int128",
-            "INT256": "Int256",
-            "IPV4": "IPv4",
-            "IPV6": "IPv6",
-            "UINT8": "UInt8",
-            "UINT16": "UInt16",
-            "UINT32": "UInt32",
-            "UINT64": "UInt64",
-            "UINT128": "UInt128",
-            "UINT256": "UInt256",
-            "UUID": "UUID",
-        }
-
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)
 
@@ -909,12 +880,20 @@ class ClickHouse(Dialect):
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
-            target_type = self.sql(expression.to)
-            type_sql = self.TRY_CAST_TYPES.get(target_type.upper())
-            if type_sql:
-                return self.func(f"to{type_sql}OrNull", expression.this)
+            dtype = expression.to
 
-            self.unsupported(f"There is no `to<Type>OrNull` for type {target_type}.")
+            # Composite data types can't be Nullable
+            # See: https://clickhouse.com/docs/en/sql-reference/data-types/nullable
+            if not dtype.is_type(
+                exp.DataType.Type.ARRAY, exp.DataType.Type.MAP, exp.DataType.Type.STRUCT
+            ):
+                # Casting x into Nullable(T) appears to behave similarly to TRY_CAST(x AS T)
+                dtype.replace(
+                    exp.DataType(
+                        this=exp.DataType.Type.NULLABLE, expressions=[dtype.copy()], nested=True
+                    )
+                )
+
             return super().cast_sql(expression)
 
         def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:

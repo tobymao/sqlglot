@@ -1,45 +1,35 @@
 from datetime import date
-from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
-from sqlglot.generator import logger as generator_logger
 
 
 class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
-        self.validate_identity("SELECT toFloat(like)")
-        self.validate_identity("SELECT like")
-
         for string_type_enum in ClickHouse.Generator.STRING_TYPE_MAPPING:
             self.validate_identity(f"CAST(x AS {string_type_enum.value})", "CAST(x AS String)")
 
-        for try_cast_type in ClickHouse.Generator.TRY_CAST_TYPES:
-            cast = parse_one(f"TRY_CAST(x AS {try_cast_type})")
-            target_type = cast.to.sql("clickhouse")
-            self.assertEqual(
-                cast.sql("clickhouse"),
-                f"to{ClickHouse.Generator.TRY_CAST_TYPES[target_type.upper()]}OrNull(x)",
-            )
+        # Arrays, maps and tuples can't be Nullable in ClickHouse
+        for non_nullable_type in ("ARRAY<INT>", "MAP<INT, INT>", "STRUCT(a: INT)"):
+            try_cast = parse_one(f"TRY_CAST(x AS {non_nullable_type})")
+            target_type = try_cast.to.sql("clickhouse")
+            self.assertEqual(try_cast.sql("clickhouse"), f"CAST(x AS {target_type})")
 
-        try_cast_to_text = parse_one("TRY_CAST(x AS TEXT)")
-
-        with self.assertLogs(generator_logger) as cm:
-            self.assertEqual(try_cast_to_text.sql("clickhouse"), "CAST(x AS String)")
-            self.assertEqual(
-                cm.output, ["WARNING:sqlglot:There is no `to<Type>OrNull` for type String."]
-            )
-
-        with self.assertRaises(UnsupportedError):
-            try_cast_to_text.sql("clickhouse", unsupported_level=ErrorLevel.RAISE)
+        for nullable_type in ("INT", "UINT", "BIGINT", "FLOAT", "DOUBLE", "TEXT", "DATE", "UUID"):
+            try_cast = parse_one(f"TRY_CAST(x AS {nullable_type})")
+            target_type = try_cast.to.sql("clickhouse")
+            self.assertEqual(try_cast.sql("clickhouse"), f"CAST(x AS Nullable({target_type}))")
 
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("SELECT toFloat(like)")
+        self.validate_identity("SELECT like")
         self.validate_identity("SELECT STR_TO_DATE(str, fmt, tz)")
         self.validate_identity("SELECT STR_TO_DATE('05 12 2000', '%d %m %Y')")
         self.validate_identity("SELECT EXTRACT(YEAR FROM toDateTime('2023-02-01'))")

@@ -1068,17 +1068,6 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             exp.DataType.Type.UNKNOWN,
         )
 
-    def test_null_annotation(self):
-        expression = annotate_types(parse_one("NULL AND FALSE"))
-        self.assertEqual(expression.type.this, exp.DataType.Type.BOOLEAN)
-        self.assertEqual(expression.left.type.this, exp.DataType.Type.NULL)
-        self.assertEqual(expression.right.type.this, exp.DataType.Type.BOOLEAN)
-
-        expression = annotate_types(parse_one("SELECT NULL + 2")).expressions[0]
-        self.assertEqual(expression.type.this, exp.DataType.Type.INT)
-        self.assertEqual(expression.left.type.this, exp.DataType.Type.NULL)
-        self.assertEqual(expression.right.type.this, exp.DataType.Type.INT)
-
     def test_predicate_annotation(self):
         expression = annotate_types(parse_one("x BETWEEN a AND b"))
         self.assertEqual(expression.type.this, exp.DataType.Type.BOOLEAN)

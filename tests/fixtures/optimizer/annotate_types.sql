@@ -16,6 +16,12 @@ bool;
 null;
 null;
 
+null and false;
+bool;
+
+null + 1;
+int;
+
 CASE WHEN x THEN NULL ELSE 1 END;
 INT;
 

@@ -910,10 +910,9 @@ class ClickHouse(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             target_type = self.sql(expression.to)
-            if target_type.upper() in self.TRY_CAST_TYPES:
-                return self.func(
-                    f"to{self.TRY_CAST_TYPES[target_type.upper()]}OrNull", expression.this
-                )
+            type_sql = self.TRY_CAST_TYPES.get(target_type.upper())
+            if type_sql:
+                return self.func(f"to{type_sql}OrNull", expression.this)
 
             self.unsupported(f"There is no `to<Type>OrNull` for type {target_type}.")
             return super().cast_sql(expression)

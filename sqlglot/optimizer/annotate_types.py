@@ -242,7 +242,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     }
                 else:
                     selects[name] = {
-                        ls.alias or rs.alias or ls.name or rs.name: self._maybe_coerce(
+                        ls.alias_or_name: self._maybe_coerce(
                             t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
                         )
                         for ls, rs in zip(expression.left.selects, expression.right.selects)

@@ -219,19 +219,19 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(MAP('a', '1') AS MAP(TEXT, TEXT))",
             write={
-                "clickhouse": "CAST(map('a', '1') AS Map(String, String))",
+                "clickhouse": "CAST(map('a', '1') AS Map(String, Nullable(String)))",
             },
         )
         self.validate_all(
             "CAST(ARRAY(1, 2) AS ARRAY<TINYINT>)",
             write={
-                "clickhouse": "CAST([1, 2] AS Array(Int8))",
+                "clickhouse": "CAST([1, 2] AS Array(Nullable(Int8)))",
             },
         )
         self.validate_all(
             "CAST((1, 2, 3, 4) AS STRUCT<a: TINYINT, b: SMALLINT, c: INT, d: BIGINT>)",
             write={
-                "clickhouse": "CAST((1, 2, 3, 4) AS Tuple(a Int8, b Int16, c Int32, d Int64))",
+                "clickhouse": "CAST((1, 2, 3, 4) AS Tuple(a Nullable(Int8), b Nullable(Int16), c Nullable(Int32), d Nullable(Int64)))",
             },
         )
         self.validate_all(

@@ -1,6 +1,27 @@
 Changelog
 =========
 
+## [v25.13.0] - 2024-08-17
+### :boom: BREAKING CHANGES
+- due to [`102f5d4`](https://github.com/tobymao/sqlglot/commit/102f5d48279ac1a7a1851737f55a13bd08512f3d) - infer set op types more accurately *(PR [#3918](https://github.com/tobymao/sqlglot/pull/3918) by [@georgesittas](https://github.com/georgesittas))*:
+
+  infer set op types more accurately (#3918)
+
+- due to [`46496a6`](https://github.com/tobymao/sqlglot/commit/46496a6af80bd49d36ef8d265800679d2b07c4db) - improve transpilation of nullable/non-nullable data types *(PR [#3921](https://github.com/tobymao/sqlglot/pull/3921) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve transpilation of nullable/non-nullable data types (#3921)
+
+
+### :bug: Bug Fixes
+- [`c74a8fd`](https://github.com/tobymao/sqlglot/commit/c74a8fd2acd859f5947f27a8f091f13fba1d39e4) - **clickhouse**: make try_cast toXXXOrNull() functions case-specific *(PR [#3917](https://github.com/tobymao/sqlglot/pull/3917) by [@treysp](https://github.com/treysp))*
+- [`102f5d4`](https://github.com/tobymao/sqlglot/commit/102f5d48279ac1a7a1851737f55a13bd08512f3d) - **optimizer**: infer set op types more accurately *(PR [#3918](https://github.com/tobymao/sqlglot/pull/3918) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3916](https://github.com/tobymao/sqlglot/issues/3916) opened by [@racevedoo](https://github.com/racevedoo)*
+
+### :recycle: Refactors
+- [`1d436d4`](https://github.com/tobymao/sqlglot/commit/1d436d45b4469bb8195dd3597319b6fc5c3f2344) - **clickhouse**: transpile TRY_CAST(x AS T) to CAST(x AS Nullable(T)) *(PR [#3919](https://github.com/tobymao/sqlglot/pull/3919) by [@georgesittas](https://github.com/georgesittas))*
+- [`46496a6`](https://github.com/tobymao/sqlglot/commit/46496a6af80bd49d36ef8d265800679d2b07c4db) - **clickhouse**: improve transpilation of nullable/non-nullable data types *(PR [#3921](https://github.com/tobymao/sqlglot/pull/3921) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.12.0] - 2024-08-15
 ### :boom: BREAKING CHANGES
 - due to [`e8e70f3`](https://github.com/tobymao/sqlglot/commit/e8e70f3a6cc2ca24de2afe622bbcbccb1ac8aeb3) - treat DATABASE kind as SCHEMA (and conversely) in exp.Create *(PR [#3912](https://github.com/tobymao/sqlglot/pull/3912) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4382,3 +4403,4 @@ Changelog
 [v25.11.2]: https://github.com/tobymao/sqlglot/compare/v25.11.1...v25.11.2
 [v25.11.3]: https://github.com/tobymao/sqlglot/compare/v25.11.2...v25.11.3
 [v25.12.0]: https://github.com/tobymao/sqlglot/compare/v25.11.3...v25.12.0
+[v25.13.0]: https://github.com/tobymao/sqlglot/compare/v25.12.0...v25.13.0

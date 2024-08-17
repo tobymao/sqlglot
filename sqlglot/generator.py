@@ -3315,8 +3315,26 @@ class Generator(metaclass=_Generator):
         return f"USE{kind}{this}"
 
     def binary(self, expression: exp.Binary, op: str) -> str:
-        op = self.maybe_comment(op, comments=expression.comments)
-        return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
+        sqls: t.List[str] = []
+        stack: t.List[t.Union[str, exp.Expression]] = [expression]
+        subclass = type(expression)
+        operator = expression.args.get("operator")
+
+        while stack:
+            node = stack.pop()
+
+            if isinstance(node, subclass) and (
+                (operator is None) or (operator == node.args.get("operator"))
+            ):
+                op = self.maybe_comment(op, comments=node.comments)
+
+                stack.append(node.right)
+                stack.append(f" {op} ")
+                stack.append(node.left)
+            else:
+                sqls.append(self.sql(node))
+
+        return "".join(sqls)
 
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []

@@ -1664,7 +1664,7 @@ WHERE
             },
             write={
                 "bigquery": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
-                "clickhouse": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
+                "clickhouse": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS Nullable(DATE)))",
                 "duckdb": "LAST_DAY(CAST(CURRENT_TIMESTAMP AS DATE))",
                 "mysql": "LAST_DAY(DATE(CURRENT_TIMESTAMP()))",
                 "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE)) + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
@@ -1679,7 +1679,7 @@ WHERE
             "EOMONTH(GETDATE(), -1)",
             write={
                 "bigquery": "LAST_DAY(DATE_ADD(CAST(CURRENT_TIMESTAMP() AS DATE), INTERVAL -1 MONTH))",
-                "clickhouse": "LAST_DAY(DATE_ADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS DATE)))",
+                "clickhouse": "LAST_DAY(DATE_ADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS Nullable(DATE))))",
                 "duckdb": "LAST_DAY(CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL (-1) MONTH)",
                 "mysql": "LAST_DAY(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 MONTH))",
                 "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL '-1 MONTH') + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",

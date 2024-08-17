@@ -21,7 +21,7 @@ class TestClickhouse(Validator):
 
         for nullable_type in ("INT", "UINT", "BIGINT", "FLOAT", "DOUBLE", "TEXT", "DATE", "UUID"):
             try_cast = parse_one(f"TRY_CAST(x AS {nullable_type})")
-            target_type = try_cast.to.sql("clickhouse")
+            target_type = exp.DataType.build(nullable_type, dialect="clickhouse").sql("clickhouse")
             self.assertEqual(try_cast.sql("clickhouse"), f"CAST(x AS Nullable({target_type}))")
 
         expr = parse_one("count(x)")
@@ -210,10 +210,15 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' MICROSECOND",
+            "SELECT CAST('2020-01-01' AS Nullable(TIMESTAMP)) + INTERVAL '500' MICROSECOND",
             read={
                 "duckdb": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
                 "postgres": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
+            },
+            write={
+                "clickhouse": "SELECT CAST('2020-01-01' AS Nullable(TIMESTAMP)) + INTERVAL '500' MICROSECOND",
+                "duckdb": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' MICROSECOND",
+                "postgres": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500 MICROSECOND'",
             },
         )
         self.validate_all(

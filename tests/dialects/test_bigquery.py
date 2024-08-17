@@ -447,7 +447,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
                 "duckdb": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
-                "clickhouse": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "clickhouse": "SELECT LAST_DAY(CAST('2008-11-25' AS Nullable(DATE)))",
                 "mysql": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
                 "oracle": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
                 "postgres": "SELECT CAST(DATE_TRUNC('MONTH', CAST('2008-11-25' AS DATE)) + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",

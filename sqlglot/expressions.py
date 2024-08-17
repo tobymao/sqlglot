@@ -3961,6 +3961,8 @@ class DataTypeParam(Expression):
         return self.this.name
 
 
+# The `nullable` arg is helpful when transpiling types from other dialects to ClickHouse, which
+# assumes non-nullable types by default. Values `None` and `True` mean the type is nullable.
 class DataType(Expression):
     arg_types = {
         "this": True,
@@ -3969,6 +3971,7 @@ class DataType(Expression):
         "values": False,
         "prefix": False,
         "kind": False,
+        "nullable": False,
     }
 
     class Type(AutoName):

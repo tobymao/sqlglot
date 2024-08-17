@@ -453,6 +453,15 @@ class ClickHouse(Dialect):
 
             return create
 
+        def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
+            drop = super()._parse_drop(exists)
+
+            # DATABASE in ClickHouse is the same as SCHEMA in other dialects
+            if isinstance(drop, exp.Drop) and drop.args["kind"] == "DATABASE":
+                drop.args["kind"] = "SCHEMA"
+
+            return drop
+
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index
             this = self._parse_bitwise()
@@ -1056,6 +1065,12 @@ class ClickHouse(Dialect):
             comment_sql = f" {comment_sql}" if comment_sql else ""
 
             return f"{create_sql}{comment_sql}"
+
+        def drop_sql(self, expression: exp.Drop) -> str:
+            # ClickHouse only has DATABASEs and objects under them, eg. TABLEs, VIEWs, etc
+            if expression.args["kind"] == "SCHEMA":
+                expression.args["kind"] = "DATABASE"
+            return super().drop_sql(expression)
 
         def prewhere_sql(self, expression: exp.PreWhere) -> str:
             this = self.indent(self.sql(expression, "this"))

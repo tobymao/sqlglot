@@ -912,12 +912,12 @@ class TestDuckDB(Validator):
             "EPOCH_MS(x)",
             write={
                 "bigquery": "TIMESTAMP_MILLIS(x)",
+                "clickhouse": "fromUnixTimestamp64Milli(CAST(x AS Nullable(Int64)))",
                 "duckdb": "EPOCH_MS(x)",
+                "mysql": "FROM_UNIXTIME(x / POWER(10, 3))",
+                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / 10 ^ 3)",
                 "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / POW(10, 3))",
                 "spark": "TIMESTAMP_MILLIS(x)",
-                "clickhouse": "fromUnixTimestamp64Milli(CAST(x AS Int64))",
-                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / 10 ^ 3)",
-                "mysql": "FROM_UNIXTIME(x / POWER(10, 3))",
             },
         )
         self.validate_all(

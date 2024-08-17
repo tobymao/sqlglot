@@ -160,7 +160,7 @@ class TestDialect(Validator):
             "CAST(a AS TEXT)",
             write={
                 "bigquery": "CAST(a AS STRING)",
-                "clickhouse": "CAST(a AS String)",
+                "clickhouse": "CAST(a AS Nullable(String))",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "materialize": "CAST(a AS TEXT)",
@@ -181,7 +181,7 @@ class TestDialect(Validator):
             "CAST(a AS BINARY(4))",
             write={
                 "bigquery": "CAST(a AS BYTES)",
-                "clickhouse": "CAST(a AS BINARY(4))",
+                "clickhouse": "CAST(a AS Nullable(BINARY(4)))",
                 "drill": "CAST(a AS VARBINARY(4))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "materialize": "CAST(a AS BYTEA(4))",
@@ -201,7 +201,7 @@ class TestDialect(Validator):
             "CAST(a AS VARBINARY(4))",
             write={
                 "bigquery": "CAST(a AS BYTES)",
-                "clickhouse": "CAST(a AS String)",
+                "clickhouse": "CAST(a AS Nullable(String))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "materialize": "CAST(a AS BYTEA(4))",
                 "mysql": "CAST(a AS VARBINARY(4))",
@@ -219,19 +219,19 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(MAP('a', '1') AS MAP(TEXT, TEXT))",
             write={
-                "clickhouse": "CAST(map('a', '1') AS Map(String, String))",
+                "clickhouse": "CAST(map('a', '1') AS Map(String, Nullable(String)))",
             },
         )
         self.validate_all(
             "CAST(ARRAY(1, 2) AS ARRAY<TINYINT>)",
             write={
-                "clickhouse": "CAST([1, 2] AS Array(Int8))",
+                "clickhouse": "CAST([1, 2] AS Array(Nullable(Int8)))",
             },
         )
         self.validate_all(
-            "CAST((1, 2) AS STRUCT<a: TINYINT, b: SMALLINT, c: INT, d: BIGINT>)",
+            "CAST((1, 2, 3, 4) AS STRUCT<a: TINYINT, b: SMALLINT, c: INT, d: BIGINT>)",
             write={
-                "clickhouse": "CAST((1, 2) AS Tuple(a Int8, b Int16, c Int32, d Int64))",
+                "clickhouse": "CAST((1, 2, 3, 4) AS Tuple(a Nullable(Int8), b Nullable(Int16), c Nullable(Int32), d Nullable(Int64)))",
             },
         )
         self.validate_all(
@@ -328,19 +328,9 @@ class TestDialect(Validator):
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
             write={
-                "duckdb": "CAST(a AS DOUBLE)",
-                "drill": "CAST(a AS DOUBLE)",
-                "postgres": "CAST(a AS DOUBLE PRECISION)",
-                "redshift": "CAST(a AS DOUBLE PRECISION)",
-                "doris": "CAST(a AS DOUBLE)",
-            },
-        )
-
-        self.validate_all(
-            "CAST(a AS DOUBLE)",
-            write={
                 "bigquery": "CAST(a AS FLOAT64)",
-                "clickhouse": "CAST(a AS Float64)",
+                "clickhouse": "CAST(a AS Nullable(Float64))",
+                "doris": "CAST(a AS DOUBLE)",
                 "drill": "CAST(a AS DOUBLE)",
                 "duckdb": "CAST(a AS DOUBLE)",
                 "materialize": "CAST(a AS DOUBLE PRECISION)",

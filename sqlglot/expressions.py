@@ -4215,28 +4215,45 @@ class DataType(Expression):
 
         return DataType(**{**data_type_exp.args, **kwargs})
 
-    def is_type(self, *dtypes: DATA_TYPE) -> bool:
+    def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """
         Checks whether this DataType matches one of the provided data types. Nested types or precision
         will be compared using "structural equivalence" semantics, so e.g. array<int> != array<float>.
 
         Args:
             dtypes: the data types to compare this DataType to.
+            check_nullable: whether to take the NULLABLE type constructor into account for the comparison.
+                If false, it means that NULLABLE<INT> is equivalent to INT.
 
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
+        if (
+            not check_nullable
+            and self.this == DataType.Type.NULLABLE
+            and len(self.expressions) == 1
+        ):
+            this_type = self.expressions[0]
+        else:
+            this_type = self
+
         for dtype in dtypes:
-            other = DataType.build(dtype, copy=False, udt=True)
+            other_type = DataType.build(dtype, copy=False, udt=True)
+            if (
+                not check_nullable
+                and other_type.this == DataType.Type.NULLABLE
+                and len(other_type.expressions) == 1
+            ):
+                other_type = other_type.expressions[0]
 
             if (
-                other.expressions
-                or self.this == DataType.Type.USERDEFINED
-                or other.this == DataType.Type.USERDEFINED
+                other_type.expressions
+                or this_type.this == DataType.Type.USERDEFINED
+                or other_type.this == DataType.Type.USERDEFINED
             ):
-                matches = self == other
+                matches = this_type == other_type
             else:
-                matches = self.this == other.this
+                matches = this_type.this == other_type.this
 
             if matches:
                 return True

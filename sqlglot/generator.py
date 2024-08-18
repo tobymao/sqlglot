@@ -980,6 +980,7 @@ class Generator(metaclass=_Generator):
 
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind")
+        kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
         properties = expression.args.get("properties")
         properties_locs = self.locate_properties(properties) if properties else defaultdict()
 
@@ -1278,6 +1279,7 @@ class Generator(metaclass=_Generator):
         expressions = self.expressions(expression, flat=True)
         expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
+        kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""

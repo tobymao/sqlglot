@@ -120,6 +120,8 @@ class ClickHouse(Dialect):
         "\\0": "\0",
     }
 
+    CREATABLE_KIND_MAPPING = {"DATABASE": "SCHEMA"}
+
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]
@@ -443,24 +445,6 @@ class ClickHouse(Dialect):
                 dtype.set("nullable", False)
 
             return dtype
-
-        def _parse_create(self) -> exp.Create | exp.Command:
-            create = super()._parse_create()
-
-            # DATABASE in ClickHouse is the same as SCHEMA in other dialects
-            if isinstance(create, exp.Create) and create.kind == "DATABASE":
-                create.set("kind", "SCHEMA")
-
-            return create
-
-        def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
-            drop = super()._parse_drop(exists)
-
-            # DATABASE in ClickHouse is the same as SCHEMA in other dialects
-            if isinstance(drop, exp.Drop) and drop.args["kind"] == "DATABASE":
-                drop.args["kind"] = "SCHEMA"
-
-            return drop
 
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index
@@ -1055,22 +1039,12 @@ class ClickHouse(Dialect):
             else:
                 comment_prop = None
 
-            # ClickHouse only has DATABASEs and objects under them, eg. TABLEs, VIEWs, etc
-            if expression.kind == "SCHEMA":
-                expression.set("kind", "DATABASE")
-
             create_sql = super().create_sql(expression)
 
             comment_sql = self.sql(comment_prop)
             comment_sql = f" {comment_sql}" if comment_sql else ""
 
             return f"{create_sql}{comment_sql}"
-
-        def drop_sql(self, expression: exp.Drop) -> str:
-            # ClickHouse only has DATABASEs and objects under them, eg. TABLEs, VIEWs, etc
-            if expression.args["kind"] == "SCHEMA":
-                expression.args["kind"] = "DATABASE"
-            return super().drop_sql(expression)
 
         def prewhere_sql(self, expression: exp.PreWhere) -> str:
             this = self.indent(self.sql(expression, "this"))

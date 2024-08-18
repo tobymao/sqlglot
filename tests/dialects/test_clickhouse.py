@@ -673,6 +673,16 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
+            "DROP DATABASE x",
+            read={
+                "duckdb": "DROP SCHEMA x",
+            },
+            write={
+                "clickhouse": "DROP DATABASE x",
+                "duckdb": "DROP SCHEMA x",
+            },
+        )
+        self.validate_all(
             """
             CREATE TABLE example1 (
                timestamp DateTime,

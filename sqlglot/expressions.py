@@ -2001,6 +2001,11 @@ class Drop(Expression):
         "cluster": False,
     }
 
+    @property
+    def kind(self) -> t.Optional[str]:
+        kind = self.args.get("kind")
+        return kind and kind.upper()
+
 
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}

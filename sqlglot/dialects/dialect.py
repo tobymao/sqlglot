@@ -133,6 +133,10 @@ class _Dialect(type):
         klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
         klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
+        klass.INVERSE_CREATABLE_KIND_MAPPING = {
+            v: k for k, v in klass.CREATABLE_KIND_MAPPING.items()
+        }
+
         base = seq_get(bases, 0)
         base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
         base_jsonpath_tokenizer = (getattr(base, "jsonpath_tokenizer_class", JSONPathTokenizer),)
@@ -384,6 +388,12 @@ class Dialect(metaclass=_Dialect):
     dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
     """
 
+    CREATABLE_KIND_MAPPING: dict[str, str] = {}
+    """
+    Helper for dialects that use a different name for the same creatable kind. For example, the Clickhouse
+    equivalent of CREATE SCHEMA is CREATE DATABASE.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -399,6 +409,8 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_TRIE: t.Dict = {}
     INVERSE_FORMAT_MAPPING: t.Dict[str, str] = {}
     INVERSE_FORMAT_TRIE: t.Dict = {}
+
+    INVERSE_CREATABLE_KIND_MAPPING: dict[str, str] = {}
 
     ESCAPED_SEQUENCES: t.Dict[str, str] = {}
 

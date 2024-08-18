@@ -1665,7 +1665,7 @@ class Parser(metaclass=_Parser):
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match_text_seq("MATERIALIZED")
 
-        kind = self._match_set(self.CREATABLES) and self._prev.text
+        kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
         if not kind:
             return self._parse_as_command(start)
 
@@ -1687,7 +1687,7 @@ class Parser(metaclass=_Parser):
             exists=if_exists,
             this=table,
             expressions=expressions,
-            kind=kind.upper(),
+            kind=self.dialect.CREATABLE_KIND_MAPPING.get(kind) or kind,
             temporary=temporary,
             materialized=materialized,
             cascade=self._match_text_seq("CASCADE"),
@@ -1850,11 +1850,12 @@ class Parser(metaclass=_Parser):
         if self._curr and not self._match_set((TokenType.R_PAREN, TokenType.COMMA), advance=False):
             return self._parse_as_command(start)
 
+        create_kind_text = create_token.text.upper()
         return self.expression(
             exp.Create,
             comments=comments,
             this=this,
-            kind=create_token.text.upper(),
+            kind=self.dialect.CREATABLE_KIND_MAPPING.get(create_kind_text) or create_kind_text,
             replace=replace,
             refresh=refresh,
             unique=unique,

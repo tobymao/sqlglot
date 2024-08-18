@@ -120,6 +120,8 @@ class ClickHouse(Dialect):
         "\\0": "\0",
     }
 
+    CREATABLE_KIND_MAPPING = {"DATABASE": "SCHEMA"}
+
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]
@@ -443,15 +445,6 @@ class ClickHouse(Dialect):
                 dtype.set("nullable", False)
 
             return dtype
-
-        def _parse_create(self) -> exp.Create | exp.Command:
-            create = super()._parse_create()
-
-            # DATABASE in ClickHouse is the same as SCHEMA in other dialects
-            if isinstance(create, exp.Create) and create.kind == "DATABASE":
-                create.set("kind", "SCHEMA")
-
-            return create
 
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index
@@ -1045,10 +1038,6 @@ class ClickHouse(Dialect):
                     query.replace(exp.paren(query))
             else:
                 comment_prop = None
-
-            # ClickHouse only has DATABASEs and objects under them, eg. TABLEs, VIEWs, etc
-            if expression.kind == "SCHEMA":
-                expression.set("kind", "DATABASE")
 
             create_sql = super().create_sql(expression)
 

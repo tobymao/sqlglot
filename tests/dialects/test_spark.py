@@ -233,6 +233,14 @@ TBLPROPERTIES (
             },
         )
 
+    def test_minus(self):
+        self.validate_all(
+            "SELECT * FROM db.table1 MINUS SELECT * FROM db.table2",
+            write={
+                "spark": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table1",
+            }
+        )
+
     def test_spark(self):
         self.assertEqual(
             parse_one("REFRESH TABLE t", read="spark").assert_is(exp.Refresh).sql(dialect="spark"),

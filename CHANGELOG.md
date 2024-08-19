@@ -1,6 +1,24 @@
 Changelog
 =========
 
+## [v25.14.0] - 2024-08-19
+### :boom: BREAKING CHANGES
+- due to [`605f1b2`](https://github.com/tobymao/sqlglot/commit/605f1b217d5d1de654cfe2fa1b51435a1a71ae62) - use creatable kind mapping dict for schema<-->database substitution *(PR [#3924](https://github.com/tobymao/sqlglot/pull/3924) by [@treysp](https://github.com/treysp))*:
+
+  use creatable kind mapping dict for schema<-->database substitution (#3924)
+
+- due to [`f418caa`](https://github.com/tobymao/sqlglot/commit/f418caafa8ed317f9e360c6c8f01bdac596258e5) - skip nullable comparison in is_type by default *(PR [#3927](https://github.com/tobymao/sqlglot/pull/3927) by [@georgesittas](https://github.com/georgesittas))*:
+
+  skip nullable comparison in is_type by default (#3927)
+
+
+### :sparkles: New Features
+- [`f418caa`](https://github.com/tobymao/sqlglot/commit/f418caafa8ed317f9e360c6c8f01bdac596258e5) - skip nullable comparison in is_type by default *(PR [#3927](https://github.com/tobymao/sqlglot/pull/3927) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`605f1b2`](https://github.com/tobymao/sqlglot/commit/605f1b217d5d1de654cfe2fa1b51435a1a71ae62) - **clickhouse**: use creatable kind mapping dict for schema<-->database substitution *(PR [#3924](https://github.com/tobymao/sqlglot/pull/3924) by [@treysp](https://github.com/treysp))*
+
+
 ## [v25.13.0] - 2024-08-17
 ### :boom: BREAKING CHANGES
 - due to [`102f5d4`](https://github.com/tobymao/sqlglot/commit/102f5d48279ac1a7a1851737f55a13bd08512f3d) - infer set op types more accurately *(PR [#3918](https://github.com/tobymao/sqlglot/pull/3918) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4404,3 +4422,4 @@ Changelog
 [v25.11.3]: https://github.com/tobymao/sqlglot/compare/v25.11.2...v25.11.3
 [v25.12.0]: https://github.com/tobymao/sqlglot/compare/v25.11.3...v25.12.0
 [v25.13.0]: https://github.com/tobymao/sqlglot/compare/v25.12.0...v25.13.0
+[v25.14.0]: https://github.com/tobymao/sqlglot/compare/v25.13.0...v25.14.0

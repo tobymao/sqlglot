@@ -64,8 +64,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"AES_DECRYPT_MYSQL({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
     elif expression.this.upper() == 'MAP_AGG':
         return f"MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT({self.expressions(expression)})))"
-    elif expression.this.upper() == 'JSON_ARRAY_GET':
-        return f"{self.sql(expression.expressions[0])}[{self.sql(expression.expressions[1])}]"
+    # elif expression.this.upper() == 'JSON_ARRAY_GET':
+    #     return f"{self.sql(expression.expressions[0])}[{self.sql(expression.expressions[1])}]"
     elif expression.this.upper() == 'PARSE_DATETIME':
         return f"TO_TIMESTAMP({self.sql(expression.expressions[0])}, {self.sql(expression.expressions[1])})"
     elif expression.this.upper() == 'FROM_ISO8601_TIMESTAMP':

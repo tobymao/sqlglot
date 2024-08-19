@@ -138,10 +138,10 @@ select j from a""",
             "SELECT s.n FROM tmp LATERAL VIEW EXPLODE(SEQUENCE(min_date, max_date, INTERVAL '1' DAY)) s AS n",
             read={'presto': "select s.n from tmp cross join unnest(sequence(min_date,max_date, INTERVAL '1' DAY)) s (n)"},
         )
-        self.validate_all(
-            "SELECT j[2]",
-            read={'presto': "select json_array_get(j,2)"}
-        )
+        # self.validate_all(
+        #     "SELECT j[2]",
+        #     read={'presto': "select json_array_get(j,2)"}
+        # )
         self.validate_all(
             "SELECT DATEADD(HOUR, 1, CURRENT_TIMESTAMP())",
             read={'presto': "select date_add('hour', 1, now())"}

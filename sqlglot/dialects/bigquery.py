@@ -591,15 +591,15 @@ class BigQuery(Dialect):
 
             if unnest:
                 expr = seq_get(unnest.expressions, 0)
+                if expr:
+                    from sqlglot.optimizer.annotate_types import annotate_types
 
-                # Unnesting a nested array (i.e array of structs) in BQ explodes the struct fields,
-                # in contrast to other dialects such as DuckDB which flattens only the array by default
-                if (
-                    expr
-                    and (isinstance(expr, exp.Array) or expr.is_type(exp.DataType.Type.ARRAY))
-                    and expr.find(exp.Struct)
-                ):
-                    unnest.set("nested_array", True)
+                    expr = annotate_types(expr)
+
+                    # Unnesting a nested array (i.e array of structs) in BQ explodes the top-level struct fields,
+                    # in contrast to other dialects such as DuckDB which flattens only the array by default
+                    if expr.is_type(exp.DataType.Type.ARRAY) and expr.find(exp.Struct):
+                        unnest.set("explode_array", True)
 
             return unnest
 

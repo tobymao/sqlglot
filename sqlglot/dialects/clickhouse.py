@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+import datetime
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
@@ -103,6 +104,22 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
         )
 
     return _delta_sql
+
+def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime):
+    tz = expression.args.get("timezone")
+    datatype = exp.DataType.build(dtype=exp.DataType.Type.TIMESTAMP)
+    ts = expression.this
+    if tz:
+        # build a datatype that encodes the timezone as a type parameter, eg DateTime('America/Los_Angeles')
+        datatype = exp.DataType.build(
+            dtype=exp.DataType.Type.TIMESTAMPTZ, # Type.TIMESTAMPTZ maps to DateTime
+            expressions=[exp.DataTypeParam(this=tz)]
+        )
+        # strip the timezone out of the literal, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
+        # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if it's part of the timestamp string
+        ts_without_tz = datetime.datetime.fromisoformat(expression.this.name).replace(tzinfo=None).isoformat(sep=' ')
+        ts = exp.Literal.string(ts_without_tz)
+    return self.sql(exp.cast(ts, datatype))
 
 
 class ClickHouse(Dialect):
@@ -764,8 +781,10 @@ class ClickHouse(Dialect):
             exp.DataType.Type.ARRAY: "Array",
             exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.DATE32: "Date32",
+            exp.DataType.Type.DATETIME: "DateTime",
             exp.DataType.Type.DATETIME64: "DateTime64",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP: "DateTime",
+            exp.DataType.Type.TIMESTAMPTZ: "DateTime",
             exp.DataType.Type.DOUBLE: "Float64",
             exp.DataType.Type.ENUM: "Enum",
             exp.DataType.Type.ENUM8: "Enum8",
@@ -837,6 +856,7 @@ class ClickHouse(Dialect):
             exp.TimeToStr: lambda self, e: self.func(
                 "DATE_FORMAT", e.this, self.format_time(e), e.args.get("timezone")
             ),
+            exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
             exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),

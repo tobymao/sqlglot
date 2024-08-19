@@ -1244,7 +1244,16 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
 
 
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
-    return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
+    datatype = exp.DataType.Type.TIMESTAMPTZ if expression.args.get("timezone") else exp.DataType.Type.TIMESTAMP
+
+    # dont re-cast if the expression is already a cast to the correct type
+    if isinstance(expression.this, exp.Cast):
+        cast_to_type: exp.DataType.Type = expression.this.to.this
+        types_are_equivalent = self.TYPE_MAPPING.get(cast_to_type, cast_to_type) == self.TYPE_MAPPING.get(datatype, datatype)
+        if cast_to_type == datatype or types_are_equivalent:
+            return self.sql(expression.this)
+
+    return self.sql(exp.cast(expression.this, datatype))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:

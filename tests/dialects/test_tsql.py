@@ -1527,6 +1527,10 @@ WHERE
             },
         )
 
+        # Check superfluous casts arent added. ref: https://github.com/TobikoData/sqlmesh/issues/2672
+        self.validate_identity("SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo")
+
+
     def test_lateral_subquery(self):
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) t(v, y)",

@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     rename_func,
     trim_sql,
+    timestrtotime_sql
 )
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
@@ -338,6 +339,14 @@ def _json_extract_sql(
     json_value = self.func("JSON_VALUE", expression.this, expression.expression)
     return self.func("ISNULL", json_query, json_value)
 
+def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
+    sql = timestrtotime_sql(self, expression)
+    if expression.args.get("timezone"):
+        # If there is a timezone, produce an expression like:
+        # CAST('2020-01-01 12:13:14-08:00' AS DATETIMEOFFSET) AT TIME ZONE 'UTC'
+        # If you dont have AT TIME ZONE 'UTC', wrapping that expression in another cast back to DATETIME2 just drops the timezone information
+        return self.sql(exp.AtTimeZone(this=sql, zone=exp.Literal.string("UTC")))
+    return sql
 
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -876,9 +885,7 @@ class TSQL(Dialect):
                 "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
-            exp.TimeStrToTime: lambda self, e: self.sql(
-                exp.cast(e.this, exp.DataType.Type.DATETIME)
-            ),
+            exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimeToStr: _format_sql,
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),

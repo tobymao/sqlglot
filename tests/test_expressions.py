@@ -791,6 +791,7 @@ class TestExpressions(unittest.TestCase):
 
     def test_convert(self):
         from collections import namedtuple
+        from zoneinfo import ZoneInfo
 
         PointTuple = namedtuple("Point", ["x", "y"])
 
@@ -814,6 +815,10 @@ class TestExpressions(unittest.TestCase):
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
                 "TIME_STR_TO_TIME('2022-10-01 01:01:01+00:00')",
+            ),
+            (
+                datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=ZoneInfo("America/Los_Angeles")),
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01-07:00', 'America/Los_Angeles')",
             ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
             (math.nan, "NULL"),

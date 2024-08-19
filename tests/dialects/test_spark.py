@@ -237,7 +237,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT * FROM db.table1 MINUS SELECT * FROM db.table2",
             write={
-                "spark": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table1",
+                "spark": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
             }
         )
 

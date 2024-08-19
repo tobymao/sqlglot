@@ -575,7 +575,9 @@ TBLPROPERTIES (
 
         self.validate_all(
             "CAST(x AS TIMESTAMP)",
-            read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"},
+            read={
+                "trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)",
+            },
         )
         self.validate_all(
             "SELECT DATE_ADD(my_date_column, 1)",

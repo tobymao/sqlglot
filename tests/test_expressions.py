@@ -1106,6 +1106,10 @@ FROM foo""",
         dtype = exp.DataType.build("a.b.c", udt=True)
         assert dtype.is_type("a.b.c")
 
+        dtype = exp.DataType.build("Nullable(Int32)", dialect="clickhouse")
+        assert dtype.is_type("int")
+        assert not dtype.is_type("int", check_nullable=True)
+
         with self.assertRaises(ParseError):
             exp.DataType.build("foo")
 

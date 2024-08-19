@@ -28,6 +28,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("@macro").assert_is(exp.Parameter).this.assert_is(exp.Var)
         self.validate_identity("SELECT toFloat(like)")
         self.validate_identity("SELECT like")
         self.validate_identity("SELECT STR_TO_DATE(str, fmt, tz)")

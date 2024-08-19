@@ -6,6 +6,7 @@ from collections import defaultdict
 from sqlglot import exp, transforms
 from sqlglot.dialects.spark import Spark
 from sqlglot.expressions import Div
+from sqlglot.helper import seq_get, csv
 from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.dialects.dialect import (
     rename_func,
@@ -84,6 +85,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"'Asia/Shanghai'"
     elif expression.this.upper() == 'GROUPING':
         return f"GROUPING_ID({self.expressions(expression, flat=True)})"
+    elif expression.this.upper() == 'HASH':
+        return f"murmurhash3_32({self.sql(expression.expressions[0])})"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)
@@ -159,6 +162,58 @@ def adjust_day_of_week(self: ClickZetta.Generator, expression: exp.DayOfWeek):
         return f'DAYOFWEEK_ISO({self.sql(expression.this)})'
     else:
         return f'DAYOFWEEK({self.sql(expression.this)})'
+
+
+def _group_sql(self: ClickZetta.Generator, expression: exp.Group):
+    grouping_sets = ""
+    rollup_sql = ""
+    cube_sql = ""
+    has_cause = False
+
+    # Handle CUBE
+    if expression.args.get("cube"):
+        cube = expression.args.get("cube", [])
+        has_cause = True
+        if seq_get(cube, 0) is True:
+            columns = ", ".join(self.sql(e) for e in expression.expressions)
+            cube_sql = f"{self.seg('CUBE')}({columns})"
+        else:
+            cube_sql = self.expressions(expression, key="cube", indent=False)
+            cube_sql = f"{self.seg('CUBE')} {self.wrap(cube_sql)}" if cube_sql else ""
+
+    # Handle ROLLUP
+    if expression.args.get("rollup"):
+        rollup = expression.args.get("rollup", [])
+        has_cause = True
+        if seq_get(rollup, 0) is True:
+            columns = ", ".join(self.sql(e) for e in expression.expressions)
+            rollup_sql = f"{self.seg('ROLLUP')}({columns})"
+        else:
+            rollup_sql = self.expressions(expression, key="rollup", indent=False)
+            rollup_sql = f"{self.seg('ROLLUP')} {self.wrap(rollup_sql)}" if rollup_sql else ""
+
+    # Handle GROUPING SETS
+    if expression.args.get("grouping_sets"):
+        grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
+        has_cause = True
+        grouping_sets = (
+            f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""
+        )
+
+    group_by = " GROUP BY"
+    if not has_cause:
+        group_by = self.op_expressions(f"GROUP BY", expression)
+
+    # Combine all parts
+    groupings = csv(
+        grouping_sets,
+        cube_sql,
+        rollup_sql,
+        sep=self.GROUPINGS_SEP,
+    )
+
+    return f"{group_by}{groupings}"
+
 
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
@@ -242,6 +297,8 @@ class ClickZetta(Spark):
             exp.DateAdd: date_add_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.DayOfWeek: adjust_day_of_week,
+            exp.Group: _group_sql,
+            exp.Kill: lambda self, e: f"CANCEL JOB {self.sql(e.this)}",
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

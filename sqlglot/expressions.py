@@ -7389,8 +7389,8 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         if not value.tzinfo:
             value = value.replace(tzinfo=datetime.timezone.utc)
 
-        #this works for zoneinfo.ZoneInfo, pytz.timezone and datetime.datetime.utc to return IANA timezone names like "America/Los_Angeles"
-        #instead of abbreviations like "PDT". This is for consistency with other timezone handling functions in SQLGlot
+        # this works for zoneinfo.ZoneInfo, pytz.timezone and datetime.datetime.utc to return IANA timezone names like "America/Los_Angeles"
+        # instead of abbreviations like "PDT". This is for consistency with other timezone handling functions in SQLGlot
         tz = str(value.tzinfo)
 
         # Only populate the timezone attribute if its not UTC because we assume/force UTC if we are passed a naive datetime

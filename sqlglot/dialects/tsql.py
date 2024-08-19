@@ -18,7 +18,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     rename_func,
     trim_sql,
-    timestrtotime_sql
+    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
@@ -339,6 +339,7 @@ def _json_extract_sql(
     json_value = self.func("JSON_VALUE", expression.this, expression.expression)
     return self.func("ISNULL", json_query, json_value)
 
+
 def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     sql = timestrtotime_sql(self, expression)
     if expression.args.get("timezone"):
@@ -347,6 +348,7 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
         # If you dont have AT TIME ZONE 'UTC', wrapping that expression in another cast back to DATETIME2 just drops the timezone information
         return self.sql(exp.AtTimeZone(this=sql, zone=exp.Literal.string("UTC")))
     return sql
+
 
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

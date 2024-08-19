@@ -1246,7 +1246,7 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
     datatype = (
         exp.DataType.Type.TIMESTAMPTZ
-        if expression.args.get("timezone")
+        if expression.args.get("zone")
         else exp.DataType.Type.TIMESTAMP
     )
 

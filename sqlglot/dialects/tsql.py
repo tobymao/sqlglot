@@ -342,7 +342,7 @@ def _json_extract_sql(
 
 def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     sql = timestrtotime_sql(self, expression)
-    if expression.args.get("timezone"):
+    if expression.args.get("zone"):
         # If there is a timezone, produce an expression like:
         # CAST('2020-01-01 12:13:14-08:00' AS DATETIMEOFFSET) AT TIME ZONE 'UTC'
         # If you dont have AT TIME ZONE 'UTC', wrapping that expression in another cast back to DATETIME2 just drops the timezone information

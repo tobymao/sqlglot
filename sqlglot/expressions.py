@@ -5969,7 +5969,7 @@ class Time(Func):
 
 
 class TimeToStr(Func):
-    arg_types = {"this": True, "format": True, "culture": False, "timezone": False}
+    arg_types = {"this": True, "format": True, "culture": False, "zone": False}
 
 
 class TimeToTimeStr(Func):
@@ -5985,7 +5985,7 @@ class TimeStrToDate(Func):
 
 
 class TimeStrToTime(Func):
-    arg_types = {"this": True, "timezone": False}
+    arg_types = {"this": True, "zone": False}
 
 
 class TimeStrToUnix(Func):
@@ -7394,11 +7394,11 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         tz = str(value.tzinfo)
 
         # Only populate the timezone attribute if its not UTC because we assume/force UTC if we are passed a naive datetime
-        # and we want to reatain the distinction between TIMESTAMP (UTC) or TIMESTAMPTZ (arbitrary timezone)
+        # and we want to retain the distinction between TIMESTAMP (UTC) or TIMESTAMPTZ (arbitrary timezone)
         tz_literal = Literal.string(tz) if tz != "UTC" else None
         datetime_literal = Literal.string(value.isoformat(sep=" "))
 
-        return TimeStrToTime(this=datetime_literal, timezone=tz_literal)
+        return TimeStrToTime(this=datetime_literal, zone=tz_literal)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)

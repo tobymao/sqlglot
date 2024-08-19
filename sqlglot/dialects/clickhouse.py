@@ -33,7 +33,7 @@ def _build_date_format(args: t.List) -> exp.TimeToStr:
 
     timezone = seq_get(args, 2)
     if timezone:
-        expr.set("timezone", timezone)
+        expr.set("zone", timezone)
 
     return expr
 
@@ -107,21 +107,19 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
 
 
 def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime):
-    tz = expression.args.get("timezone")
-    datatype = exp.DataType.build(dtype=exp.DataType.Type.TIMESTAMP)
+    tz = expression.args.get("zone")
+    datatype = exp.DataType.build(exp.DataType.Type.TIMESTAMP)
     ts = expression.this
     if tz:
         # build a datatype that encodes the timezone as a type parameter, eg DateTime('America/Los_Angeles')
         datatype = exp.DataType.build(
-            dtype=exp.DataType.Type.TIMESTAMPTZ,  # Type.TIMESTAMPTZ maps to DateTime
+            exp.DataType.Type.TIMESTAMPTZ,  # Type.TIMESTAMPTZ maps to DateTime
             expressions=[exp.DataTypeParam(this=tz)],
         )
         # strip the timezone out of the literal, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
         # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if it's part of the timestamp string
         ts_without_tz = (
-            datetime.datetime.fromisoformat(expression.this.name)
-            .replace(tzinfo=None)
-            .isoformat(sep=" ")
+            datetime.datetime.fromisoformat(ts.name).replace(tzinfo=None).isoformat(sep=" ")
         )
         ts = exp.Literal.string(ts_without_tz)
     return self.sql(exp.cast(ts, datatype))
@@ -859,7 +857,7 @@ class ClickHouse(Dialect):
                 "position", e.this, e.args.get("substr"), e.args.get("position")
             ),
             exp.TimeToStr: lambda self, e: self.func(
-                "DATE_FORMAT", e.this, self.format_time(e), e.args.get("timezone")
+                "DATE_FORMAT", e.this, self.format_time(e), e.args.get("zone")
             ),
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),

@@ -90,7 +90,6 @@ class Oracle(Dialect):
             "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
-            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
         }
@@ -108,6 +107,11 @@ class Oracle(Dialect):
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
         }
         FUNCTIONS.pop("NVL")
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
+        }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
@@ -275,6 +279,9 @@ class Oracle(Dialect):
         }
 
         def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            if expression.args.get("sysdate"):
+                return "SYSDATE"
+
             this = expression.this
             return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"
 

@@ -7,7 +7,6 @@ from sqlglot.dialects.dialect import rename_func, unit_to_var
 from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
 from sqlglot.helper import ensure_list, seq_get
-from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
     ctas_with_tmp_tables_to_create_tmp_view,
     remove_unique_constraints,
@@ -101,13 +100,6 @@ class Spark(Spark2):
             for q in t.cast(t.List[str], Spark2.Tokenizer.QUOTES)
             for prefix in ("r", "R")
         ]
-
-        KEYWORDS = {
-            **Spark2.Tokenizer.KEYWORDS,
-            # as per https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-setops.html
-            # MINUS is an alias for EXCEPT
-            "MINUS": TokenType.EXCEPT,
-        }
 
     class Parser(Spark2.Parser):
         FUNCTIONS = {

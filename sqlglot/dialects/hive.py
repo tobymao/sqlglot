@@ -252,6 +252,7 @@ class Hive(Dialect):
             "ADD FILES": TokenType.COMMAND,
             "ADD JAR": TokenType.COMMAND,
             "ADD JARS": TokenType.COMMAND,
+            "MINUS": TokenType.EXCEPT,
             "MSCK REPAIR": TokenType.COMMAND,
             "REFRESH": TokenType.REFRESH,
             "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,

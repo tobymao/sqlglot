@@ -1,3 +1,4 @@
+import sys
 import datetime
 import math
 import unittest
@@ -791,7 +792,7 @@ class TestExpressions(unittest.TestCase):
 
     def test_convert(self):
         from collections import namedtuple
-        from zoneinfo import ZoneInfo
+        import pytz
 
         PointTuple = namedtuple("Point", ["x", "y"])
 
@@ -817,7 +818,9 @@ class TestExpressions(unittest.TestCase):
                 "TIME_STR_TO_TIME('2022-10-01 01:01:01+00:00')",
             ),
             (
-                datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=ZoneInfo("America/Los_Angeles")),
+                pytz.timezone("America/Los_Angeles").localize(
+                    datetime.datetime(2022, 10, 1, 1, 1, 1)
+                ),
                 "TIME_STR_TO_TIME('2022-10-01 01:01:01-07:00', 'America/Los_Angeles')",
             ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
@@ -833,6 +836,21 @@ class TestExpressions(unittest.TestCase):
             exp.convert({"test": "value"}).sql(dialect="spark"),
             "MAP_FROM_ARRAYS(ARRAY('test'), ARRAY('value'))",
         )
+
+    @unittest.skipUnless(sys.version_info >= (3, 9), "zoneinfo only available from python 3.9+")
+    def test_convert_python39(self):
+        import zoneinfo
+
+        for value, expected in [
+            (
+                datetime.datetime(
+                    2022, 10, 1, 1, 1, 1, tzinfo=zoneinfo.ZoneInfo("America/Los_Angeles")
+                ),
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01-07:00', 'America/Los_Angeles')",
+            )
+        ]:
+            with self.subTest(value):
+                self.assertEqual(exp.convert(value).sql(), expected)
 
     def test_comment_alias(self):
         sql = """

@@ -15,6 +15,7 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("SYSDATE")
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("REGEXP_REPLACE('source', 'search')")
@@ -71,10 +72,6 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT JSON_OBJECTAGG(KEY department_name VALUE department_id) FROM dep WHERE id <= 30",
             "SELECT JSON_OBJECTAGG(department_name: department_id) FROM dep WHERE id <= 30",
-        )
-        self.validate_identity(
-            "SYSDATE",
-            "CURRENT_TIMESTAMP",
         )
         self.validate_identity(
             "SELECT last_name, department_id, salary, MIN(salary) KEEP (DENSE_RANK FIRST ORDER BY commission_pct) "

@@ -80,7 +80,7 @@ class Redshift(Postgres):
         NO_PAREN_FUNCTION_PARSERS = {
             **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
             "APPROXIMATE": lambda self: self._parse_approximate_count(),
-            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, transaction=True),
+            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }
 
         SUPPORTS_IMPLICIT_UNNEST = True
@@ -180,7 +180,7 @@ class Redshift(Postgres):
             exp.ApproxDistinct: lambda self,
             e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
             exp.CurrentTimestamp: lambda self, e: (
-                "SYSDATE" if e.args.get("transaction") else "GETDATE()"
+                "SYSDATE" if e.args.get("sysdate") else "GETDATE()"
             ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

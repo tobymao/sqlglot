@@ -884,3 +884,13 @@ class DuckDB(Dialect):
                 return self.func("STRUCT_PACK", kv_sql)
 
             return self.func("STRUCT_INSERT", this, kv_sql)
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            unnest_sql = super().unnest_sql(expression)
+
+            # Transpile BQ's UNNEST of nested array which must be made recursive to explode the struct fields
+            # by transforming "FROM UNNEST(...)" to DDB's "FROM (SELECT UNNEST(..., recursive => TRUE))"
+            if expression.args.get("nested_array"):
+                unnest_sql = f"(SELECT {unnest_sql[:-1]}, recursive => TRUE))"
+
+            return unnest_sql

@@ -586,6 +586,23 @@ class BigQuery(Dialect):
 
             return bracket
 
+        def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
+            unnest = super()._parse_unnest(with_alias=with_alias)
+
+            if unnest:
+                expr = seq_get(unnest.expressions, 0)
+
+                # Unnesting a nested array (i.e array of structs) in BQ explodes the struct fields,
+                # in contrast to other dialects such as DuckDB which flattens only the array by default
+                if (
+                    expr
+                    and (isinstance(expr, exp.Array) or expr.is_type(exp.DataType.Type.ARRAY))
+                    and expr.find(exp.Struct)
+                ):
+                    unnest.set("nested_array", True)
+
+            return unnest
+
     class Generator(generator.Generator):
         EXPLICIT_SET_OP = True
         INTERVAL_ALLOWS_PLURAL_FORM = False

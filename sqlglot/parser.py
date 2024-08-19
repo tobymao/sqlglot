@@ -3776,8 +3776,10 @@ class Parser(metaclass=_Parser):
             this = self._parse_select_or_expression()
 
             self._match(TokenType.ALIAS)
-            alias = self._parse_field()
+            alias = self._parse_bitwise()
             if alias:
+                if isinstance(alias, exp.Column) and not alias.db:
+                    alias = alias.this
                 return self.expression(exp.PivotAlias, this=this, alias=alias)
 
             return this

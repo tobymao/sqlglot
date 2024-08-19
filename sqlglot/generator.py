@@ -2909,11 +2909,13 @@ class Generator(metaclass=_Generator):
 
     def pivotalias_sql(self, expression: exp.PivotAlias) -> str:
         alias = expression.args["alias"]
+
         identifier_alias = isinstance(alias, exp.Identifier)
+        literal_alias = isinstance(alias, exp.Literal)
 
         if identifier_alias and not self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
             alias.replace(exp.Literal.string(alias.output_name))
-        elif not identifier_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+        elif not identifier_alias and literal_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
             alias.replace(exp.to_identifier(alias.output_name))
 
         return self.alias_sql(expression)

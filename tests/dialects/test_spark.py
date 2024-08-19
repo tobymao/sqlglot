@@ -574,7 +574,8 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
-            "CAST(x AS TIMESTAMP)", read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"}
+            "CAST(x AS TIMESTAMP)",
+            read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"},
         )
         self.validate_all(
             "SELECT DATE_ADD(my_date_column, 1)",
@@ -822,8 +823,22 @@ TBLPROPERTIES (
                     self.assertEqual(query.sql(name), without_modifiers)
 
     def test_schema_binding_options(self):
-        for schema_binding in ("BINDING", "COMPENSATION", "TYPE EVOLUTION", "EVOLUTION"):
+        for schema_binding in (
+            "BINDING",
+            "COMPENSATION",
+            "TYPE EVOLUTION",
+            "EVOLUTION",
+        ):
             with self.subTest(f"Test roundtrip of VIEW schema binding {schema_binding}"):
                 self.validate_identity(
                     f"CREATE VIEW emp_v WITH SCHEMA {schema_binding} AS SELECT * FROM emp"
                 )
+
+    def test_minus(self):
+        self.validate_all(
+            "SELECT * FROM db.table1 MINUS SELECT * FROM db.table2",
+            write={
+                "spark": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
+                "databricks": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
+            },
+        )

@@ -31,9 +31,9 @@ Generally, some background knowledge about programming languages / compilers is 
 
 At a high level, SQLGlot transpilation involves three modules:
 
-[Tokenizer](#tokenizer): converts raw code into a sequence of “tokens,” one for each word/symbol
-[Parser](#parser): converts sequence of tokens into an abstract syntax tree representing the semantics of the raw code
-[Generator](#generator): converts an abstract syntax tree into SQL code
+- [Tokenizer](#tokenizer): Converts raw code into a sequence of “tokens”, one for each word/symbol
+- [Parser](#parser): Converts sequence of tokens into an abstract syntax tree representing the semantics of the raw code
+- [Generator](#generator): Converts an abstract syntax tree into SQL code
 
 SQLGlot can transpile SQL between different _SQL dialects_, which are usually associated with different database systems.
 

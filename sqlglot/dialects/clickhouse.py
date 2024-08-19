@@ -430,6 +430,11 @@ class ClickHouse(Dialect):
             "INDEX",
         }
 
+        PLACEHOLDER_PARSERS = {
+            **parser.Parser.PLACEHOLDER_PARSERS,
+            TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
+        }
+
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:
@@ -476,14 +481,11 @@ class ClickHouse(Dialect):
 
             return this
 
-        def _parse_placeholder(self) -> t.Optional[exp.Expression]:
+        def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
             """
             Parse a placeholder expression like SELECT {abc: UInt32} or FROM {table: Identifier}
             https://clickhouse.com/docs/en/sql-reference/syntax#defining-and-using-query-parameters
             """
-            if not self._match(TokenType.L_BRACE):
-                return None
-
             this = self._parse_id_var()
             self._match(TokenType.COLON)
             kind = self._parse_types(check_func=False, allow_identifiers=False) or (

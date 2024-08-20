@@ -48,12 +48,9 @@ class Redshift(Postgres):
     HEX_LOWERCASE = True
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
 
-    TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
-    TIME_MAPPING = {
-        **Postgres.TIME_MAPPING,
-        "MON": "%b",
-        "HH": "%H",
-    }
+    # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
+    TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    TIME_MAPPING = {**Postgres.TIME_MAPPING, "MON": "%b", "HH24": "%H", "HH": "%I"}
 
     class Parser(Postgres.Parser):
         FUNCTIONS = {

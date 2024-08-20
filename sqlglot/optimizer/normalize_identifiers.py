@@ -19,8 +19,12 @@ def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.I
 
 def normalize_identifiers(expression, dialect=None):
     """
-    Normalize all unquoted identifiers to either lower or upper case, depending
-    on the dialect. This essentially makes those identifiers case-insensitive.
+    Normalize identifiers by converting them to either lower or upper case,
+    ensuring the semantics are preserved in each case (e.g. by respecting
+    case-sensitivity).
+
+    This transformation reflects how identifiers would be resolved by the engine corresponding
+    to each SQL dialect, and plays a very important role in the standardization of the AST.
 
     It's possible to make this a no-op by adding a special comment next to the
     identifier of interest:
@@ -30,7 +34,7 @@ def normalize_identifiers(expression, dialect=None):
     In this example, the identifier `a` will not be normalized.
 
     Note:
-        Some dialects (e.g. BigQuery) treat identifiers as case-insensitive even
+        Some dialects (e.g. DuckDB) treat all identifiers as case-insensitive even
         when they're quoted, so in these cases all identifiers are normalized.
 
     Example:

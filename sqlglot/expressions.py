@@ -7410,19 +7410,15 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
     if isinstance(value, bytes):
         return HexString(this=value.hex())
     if isinstance(value, datetime.datetime):
-        if not value.tzinfo:
-            value = value.replace(tzinfo=datetime.timezone.utc)
-
-        # this works for zoneinfo.ZoneInfo, pytz.timezone and datetime.datetime.utc to return IANA timezone names like "America/Los_Angeles"
-        # instead of abbreviations like "PDT". This is for consistency with other timezone handling functions in SQLGlot
-        tz = str(value.tzinfo)
-
-        # Only populate the timezone attribute if its not UTC because we assume/force UTC if we are passed a naive datetime
-        # and we want to retain the distinction between TIMESTAMP (UTC) or TIMESTAMPTZ (arbitrary timezone)
-        tz_literal = Literal.string(tz) if tz != "UTC" else None
         datetime_literal = Literal.string(value.isoformat(sep=" "))
 
-        return TimeStrToTime(this=datetime_literal, zone=tz_literal)
+        tz = None
+        if value.tzinfo:
+            # this works for zoneinfo.ZoneInfo, pytz.timezone and datetime.datetime.utc to return IANA timezone names like "America/Los_Angeles"
+            # instead of abbreviations like "PDT". This is for consistency with other timezone handling functions in SQLGlot
+            tz = Literal.string(str(value.tzinfo))
+
+        return TimeStrToTime(this=datetime_literal, zone=tz)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)

@@ -833,11 +833,11 @@ class TestExpressions(unittest.TestCase):
             ({"x": None}, "MAP(ARRAY('x'), ARRAY(NULL))"),
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, 1),
-                "TIME_STR_TO_TIME('2022-10-01 01:01:01.000001+00:00')",
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01.000001')",
             ),
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
-                "TIME_STR_TO_TIME('2022-10-01 01:01:01+00:00')",
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01+00:00', 'UTC')",
             ),
             (
                 pytz.timezone("America/Los_Angeles").localize(

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.spark import Spark
-from sqlglot.expressions import Div
 from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.dialects.dialect import (
     rename_func,
@@ -84,6 +82,8 @@ def _anonymous_func(self: ClickZetta.Generator, expression: exp.Anonymous) -> st
         return f"'Asia/Shanghai'"
     elif expression.this.upper() == 'GROUPING':
         return f"GROUPING_ID({self.expressions(expression, flat=True)})"
+    elif expression.this.upper() == 'MURMUR_HASH3_32':
+        return f"MURMURHASH3_32({self.sql(expression.expressions[0])})"
 
     # return as it is
     args = ", ".join(self.sql(e) for e in expression.expressions)
@@ -159,6 +159,36 @@ def adjust_day_of_week(self: ClickZetta.Generator, expression: exp.DayOfWeek):
         return f'DAYOFWEEK_ISO({self.sql(expression.this)})'
     else:
         return f'DAYOFWEEK({self.sql(expression.this)})'
+
+
+def _transform_group_sql(expression: exp.Group) -> exp.Group:
+    # Handle CUBE
+    cube = expression.args.get("cube", [])
+    # If the cube list is only `true` not Column expressions, then convert to Column expressions
+    if cube and cube[0] is True:
+        return exp.Group(
+            cube=expression.expressions,
+            expressions=[]
+        )
+
+    # Handle ROLLUP
+    rollup = expression.args.get("rollup", [])
+    if rollup and rollup[0] is True:
+        return exp.Group(
+            rollup=expression.expressions,
+            expressions=[]
+        )
+
+    # Handle GROUPING SETS
+    if expression.args.get("grouping_sets") and expression.expressions:
+        return exp.Group(
+            grouping_sets=expression.args.get("grouping_sets"),
+            expressions=[]
+        )
+
+    # If no special clauses, return the original expression
+    return expression
+
 
 class ClickZetta(Spark):
     NULL_ORDERING = "nulls_are_small"
@@ -242,6 +272,7 @@ class ClickZetta(Spark):
             exp.DateAdd: date_add_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.DayOfWeek: adjust_day_of_week,
+            exp.Group: transforms.preprocess([_transform_group_sql]),
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

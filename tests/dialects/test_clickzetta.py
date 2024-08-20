@@ -260,3 +260,74 @@ select j from a""",
         )
 
         os.environ.pop('READ_DIALECT')
+
+    def test_group_sql_expression(self):
+        self.validate_all(
+            "SELECT a, AVG(b), AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) "
+            "tab(a, b, c) GROUP BY a",
+            write={
+                "clickzetta": "SELECT a, AVG(b), AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3),"
+                              " ('A1', 1, 1) AS tab(a, b, c) GROUP BY a",
+            },
+        )
+        self.validate_all(
+            "SELECT a, AVG(b), AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) "
+            "tab(a, b, c) GROUP BY a, b WITH CUBE",
+            write={
+                "clickzetta": "SELECT a, AVG(b), AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3),"
+                              " ('A1', 1, 1) AS tab(a, b, c) GROUP BY CUBE (a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT a, AVG(b), AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) "
+            "tab(a, b, c) GROUP BY a, b WITH rollup",
+            write={
+                "clickzetta": "SELECT a, AVG(b), AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3),"
+                              " ('A1', 1, 1) AS tab(a, b, c) GROUP BY ROLLUP (a, b)",
+            },
+        )
+        self.validate_all(
+            """SELECT a, b, AVG(c), COUNT(*)
+                        FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) tab(a, b, c)
+                    GROUP BY CUBE (a, b)""",
+            write={
+                "clickzetta": "SELECT a, b, AVG(c), COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), "
+                              "('A1', 1, 1) AS tab(a, b, c) GROUP BY CUBE (a, b)",
+            },
+        )
+        self.validate_all(
+            """SELECT a, b, count(*)
+                    FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) tab(a, b, c)
+                    group by a, b with cube order by a, b LIMIT 10""",
+            write={
+                "clickzetta": "SELECT a, b, COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1)"
+                              " AS tab(a, b, c) GROUP BY CUBE (a, b) ORDER BY a, b LIMIT 10",
+            },
+        )
+        self.validate_all(
+            """select category, max(live) live, max(comments) comments, rank() OVER 
+                    (PARTITION BY category ORDER BY comments) rank1
+                    FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) tab(a, b, c)
+                    GROUP BY category
+                    GROUPING SETS ((), (category))
+                    HAVING max(comments) > 0""",
+            write={
+                "clickzetta": "SELECT category, MAX(live) AS live, MAX(comments) AS comments, rank() OVER "
+                              "(PARTITION BY category ORDER BY comments) AS rank1 FROM VALUES "
+                              "('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) AS tab(a, b, c) "
+                              "GROUP BY GROUPING SETS ((), (category)) HAVING MAX(comments) > 0",
+            },
+        )
+        self.validate_all(
+            """SELECT a, b, count(*)
+                    FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1) tab(a, b, c)
+                    group by rollup(a,b), cube(c) order by a, b LIMIT 10""",
+            write={
+                "clickzetta": "SELECT a, b, COUNT(*) FROM VALUES ('A1', 2, 2), ('A1', 1, 1), ('A2', 3, 3), ('A1', 1, 1)"
+                              " AS tab(a, b, c) GROUP BY CUBE (c), ROLLUP (a, b) ORDER BY a, b LIMIT 10",
+            },
+        )
+
+    def test_hash_func(self):
+        self.validate_all("select sum(murmur_hash3_32('test'))",
+                          write={"clickzetta": "SELECT SUM(MURMURHASH3_32('test'))"})

@@ -2105,6 +2105,17 @@ SELECT
             },
         )
 
+        # needs to preserve the target alias in then WHEN condition but not in the THEN clause
+        self.validate_all(
+            """MERGE INTO foo AS target USING (SELECT a, b FROM tbl) AS src ON src.a = target.a
+            WHEN MATCHED AND target.a <> src.a THEN UPDATE SET target.b = 'FOO'
+            WHEN NOT MATCHED THEN INSERT (target.a, target.b) VALUES (src.a, src.b)""",
+            write={
+                "trino": """MERGE INTO foo AS target USING (SELECT a, b FROM tbl) AS src ON src.a = target.a WHEN MATCHED AND target.a <> src.a THEN UPDATE SET b = 'FOO' WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)""",
+                "postgres": """MERGE INTO foo AS target USING (SELECT a, b FROM tbl) AS src ON src.a = target.a WHEN MATCHED AND target.a <> src.a THEN UPDATE SET b = 'FOO' WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)""",
+            },
+        )
+
     def test_substring(self):
         self.validate_all(
             "SUBSTR('123456', 2, 3)",

@@ -1110,7 +1110,7 @@ def build_date_delta(
     default_unit: t.Optional[str] = "DAY",
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
-        unit_based = len(args) >= 3
+        unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
         unit = None
         if unit_based or default_unit:

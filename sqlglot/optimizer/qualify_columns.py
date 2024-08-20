@@ -275,6 +275,17 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bo
         if isinstance(projection, exp.Alias):
             alias_to_expression[projection.alias] = (projection.this, i + 1)
 
+    parent_scope = scope
+    while parent_scope.is_union:
+        parent_scope = parent_scope.parent
+
+    # We shouldn't expand aliases if theye match the recursive CTE's columns
+    if parent_scope.is_cte:
+        cte = parent_scope.expression.parent
+        if cte.find_ancestor(exp.With).recursive:
+            for recursive_cte_column in cte.args["alias"].columns or cte.this.selects:
+                alias_to_expression.pop(recursive_cte_column.output_name, None)
+
     replace_columns(expression.args.get("where"))
     replace_columns(expression.args.get("group"), literal_index=True)
     replace_columns(expression.args.get("having"), resolve_table=True)

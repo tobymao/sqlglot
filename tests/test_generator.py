@@ -1,3 +1,4 @@
+import time
 import unittest
 
 from sqlglot import exp, parse_one
@@ -43,3 +44,10 @@ class TestGenerator(unittest.TestCase):
         assert parse_one("X").sql(identify="safe") == "X"
         assert parse_one("x as 1").sql(identify="safe") == '"x" AS "1"'
         assert parse_one("X as 1").sql(identify="safe") == 'X AS "1"'
+
+    def test_generate_nested_binary(self):
+        sql = "SELECT 'foo'" + (" || 'foo'" * 500)
+
+        now = time.time()
+        self.assertEqual(parse_one(sql).sql(), sql)
+        self.assertLessEqual(time.time() - now, 0.1)

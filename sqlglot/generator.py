@@ -118,6 +118,7 @@ class Generator(metaclass=_Generator):
         e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
         exp.OnProperty: lambda self, e: f"ON {self.sql(e, 'this')}",
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
+        exp.Operator: lambda self, e: self.binary(e, ""),  # The operator is produced in `binary`
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
         exp.PivotAny: lambda self, e: f"ANY{self.sql(e, 'this')}",
@@ -3353,19 +3354,18 @@ class Generator(metaclass=_Generator):
     def binary(self, expression: exp.Binary, op: str) -> str:
         sqls: t.List[str] = []
         stack: t.List[t.Union[str, exp.Expression]] = [expression]
-        subclass = type(expression)
-        operator = expression.args.get("operator")
+        binary_type = type(expression)
 
         while stack:
             node = stack.pop()
 
-            if isinstance(node, subclass) and (
-                (operator is None) or (operator == node.args.get("operator"))
-            ):
-                op = self.maybe_comment(op, comments=node.comments)
+            if type(node) is binary_type:
+                op_func = node.args.get("operator")
+                if op_func:
+                    op = f"OPERATOR({self.sql(op_func)})"
 
                 stack.append(node.right)
-                stack.append(f" {op} ")
+                stack.append(f" {self.maybe_comment(op, comments=node.comments)} ")
                 stack.append(node.left)
             else:
                 sqls.append(self.sql(node))
@@ -3716,9 +3716,6 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         table = "" if isinstance(expression.this, exp.Literal) else "TABLE "
         return f"REFRESH {table}{this}"
-
-    def operator_sql(self, expression: exp.Operator) -> str:
-        return self.binary(expression, f"OPERATOR({self.sql(expression, 'operator')})")
 
     def toarray_sql(self, expression: exp.ToArray) -> str:
         arg = expression.this

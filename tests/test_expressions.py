@@ -432,6 +432,25 @@ class TestExpressions(unittest.TestCase):
         table = expression.find(exp.Table)
         self.assertEqual(table.alias_column_names, ["a", "b"])
 
+    def test_cast(self):
+        expression = parse_one("select cast(x as DATE)")
+        casts = list(expression.find_all(exp.Cast))
+        self.assertEqual(len(casts), 1)
+
+        cast = casts[0]
+        self.assertTrue(cast.to.is_type(exp.DataType.Type.DATE))
+
+        # check that already cast values arent re-cast if wrapped in a cast to the same type
+        recast = exp.cast(cast, to=exp.DataType.Type.DATE)
+        self.assertEqual(recast, cast)
+        self.assertEqual(recast.sql(), "CAST(x AS DATE)")
+
+        # however, recasting is fine if the types are different
+        recast = exp.cast(cast, to=exp.DataType.Type.VARCHAR)
+        self.assertNotEqual(recast, cast)
+        self.assertEqual(len(list(recast.find_all(exp.Cast))), 2)
+        self.assertEqual(recast.sql(), "CAST(CAST(x AS DATE) AS VARCHAR)")
+
     def test_ctes(self):
         expression = parse_one("SELECT a FROM x")
         self.assertEqual(expression.ctes, [])
@@ -658,7 +677,10 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("TIME_TO_TIME_STR(a)"), exp.Cast)
         self.assertIsInstance(parse_one("TIME_TO_UNIX(a)"), exp.TimeToUnix)
         self.assertIsInstance(parse_one("TIME_STR_TO_DATE(a)"), exp.TimeStrToDate)
-        self.assertIsInstance(parse_one("TIME_STR_TO_TIME(a)"), exp.TimeStrToTime)
+        (self.assertIsInstance(parse_one("TIME_STR_TO_TIME(a)"), exp.TimeStrToTime),)
+        self.assertIsInstance(
+            parse_one("TIME_STR_TO_TIME(a, 'America/Los_Angeles')"), exp.TimeStrToTime
+        )
         self.assertIsInstance(parse_one("TIME_STR_TO_UNIX(a)"), exp.TimeStrToUnix)
         self.assertIsInstance(parse_one("TRIM(LEADING 'b' FROM 'bla')"), exp.Trim)
         self.assertIsInstance(parse_one("TS_OR_DS_ADD(a, 1, 'day')"), exp.TsOrDsAdd)

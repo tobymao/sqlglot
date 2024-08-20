@@ -677,6 +677,27 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "TIME_STR_TO_TIME(col, 'America/Los_Angeles')",
+            write={
+                "bigquery": "CAST(col AS TIMESTAMP)",
+                "databricks": "CAST(col AS TIMESTAMP)",
+                "duckdb": "CAST(col AS TIMESTAMPTZ)",
+                "tsql": "CAST(col AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
+                "mysql": "CAST(col AS DATETIME)",
+                "postgres": "CAST(col AS TIMESTAMPTZ)",
+                "redshift": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
+                "snowflake": "CAST(col AS TIMESTAMPTZ)",
+                "spark": "CAST(col AS TIMESTAMP)",
+                "trino": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
+                "clickhouse": "CAST(col AS Nullable(DateTime('America/Los_Angeles')))",
+                "drill": "CAST(col AS TIMESTAMP)",
+                "hive": "CAST(col AS TIMESTAMP)",
+                "presto": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
+                "sqlite": "col",
+                "doris": "CAST(col AS DATETIME)",
+            },
+        )
+        self.validate_all(
             "TIME_STR_TO_UNIX('2020-01-01')",
             write={
                 "duckdb": "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",

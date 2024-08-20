@@ -7193,7 +7193,9 @@ def column(
     return this
 
 
-def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast:
+def cast(
+    expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, dialect: DialectType = None, **opts
+) -> Cast:
     """Cast an expression to a data type.
 
     Example:
@@ -7204,6 +7206,16 @@ def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast
         expression: The expression to cast.
         to: The datatype to cast to.
         copy: Whether to copy the supplied expressions.
+        dialect: The target dialect. This is used to prevent a re-cast in the following scenario:
+            - The expression to be cast is already a exp.Cast expression
+            - The existing cast is to a type that is logically equivalent to new type
+
+            For example, if :expression='CAST(x as DATETIME)' and :to=Type.TIMESTAMP,
+            but in the target dialect DATETIME is mapped to TIMESTAMP, then we will NOT return `CAST(x (as DATETIME) as TIMESTAMP)`
+            and instead just return the original expression `CAST(x as DATETIME)`.
+
+            This is to prevent it being output as a double cast `CAST(x (as TIMESTAMP) as TIMESTAMP)` once the DATETIME -> TIMESTAMP
+            mapping is applied in the target dialect generator.
 
     Returns:
         The new Cast instance.
@@ -7211,8 +7223,20 @@ def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast
     expr = maybe_parse(expression, copy=copy, **opts)
     data_type = DataType.build(to, copy=copy, **opts)
 
-    if expr.is_type(data_type):
-        return expr
+    # dont re-cast if the expression is already a cast to the correct type
+    if isinstance(expr, Cast):
+        from sqlglot.dialects.dialect import Dialect
+
+        target_dialect = Dialect.get_or_raise(dialect)
+        type_mapping = target_dialect.generator_class.TYPE_MAPPING
+
+        existing_cast_type: DataType.Type = expr.to.this
+        new_cast_type: DataType.Type = data_type.this
+        types_are_equivalent = type_mapping.get(
+            existing_cast_type, existing_cast_type
+        ) == type_mapping.get(new_cast_type, new_cast_type)
+        if expr.is_type(data_type) or types_are_equivalent:
+            return expr
 
     expr = Cast(this=expr, to=data_type)
     expr.type = data_type

@@ -116,13 +116,16 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
             exp.DataType.Type.TIMESTAMPTZ,  # Type.TIMESTAMPTZ maps to DateTime
             expressions=[exp.DataTypeParam(this=tz)],
         )
-        # strip the timezone out of the literal, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
-        # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if it's part of the timestamp string
-        ts_without_tz = (
-            datetime.datetime.fromisoformat(ts.name).replace(tzinfo=None).isoformat(sep=" ")
-        )
-        ts = exp.Literal.string(ts_without_tz)
-    return self.sql(exp.cast(ts, datatype))
+
+        if isinstance(ts, exp.Literal):
+            # strip the timezone out of the literal, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
+            # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if it's part of the timestamp string
+            ts_without_tz = (
+                datetime.datetime.fromisoformat(ts.name).replace(tzinfo=None).isoformat(sep=" ")
+            )
+            ts = exp.Literal.string(ts_without_tz)
+
+    return self.sql(exp.cast(ts, datatype, dialect=self.dialect))
 
 
 class ClickHouse(Dialect):

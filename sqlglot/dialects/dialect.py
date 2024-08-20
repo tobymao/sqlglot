@@ -1110,7 +1110,7 @@ def build_date_delta(
     default_unit: t.Optional[str] = "DAY",
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
-        unit_based = len(args) == 3
+        unit_based = len(args) >= 3
         this = args[2] if unit_based else seq_get(args, 0)
         unit = None
         if unit_based or default_unit:
@@ -1250,16 +1250,7 @@ def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
         else exp.DataType.Type.TIMESTAMP
     )
 
-    # dont re-cast if the expression is already a cast to the correct type
-    if isinstance(expression.this, exp.Cast):
-        cast_to_type: exp.DataType.Type = expression.this.to.this
-        types_are_equivalent = self.TYPE_MAPPING.get(
-            cast_to_type, cast_to_type
-        ) == self.TYPE_MAPPING.get(datatype, datatype)
-        if cast_to_type == datatype or types_are_equivalent:
-            return self.sql(expression.this)
-
-    return self.sql(exp.cast(expression.this, datatype))
+    return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:

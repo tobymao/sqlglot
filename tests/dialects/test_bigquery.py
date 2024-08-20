@@ -1470,13 +1470,6 @@ WHERE
                 "bigquery": "SELECT GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-07 00:00:00', INTERVAL '1' DAY)",
             },
         )
-        self.validate_all(
-            "SELECT name, laps FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps), STRUCT('Makhloufi' AS name, [24.5, 25.4, 26.6, 26.1] AS laps)])",
-            write={
-                "bigquery": "SELECT name, laps FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps), STRUCT('Makhloufi' AS name, [24.5, 25.4, 26.6, 26.1] AS laps)])",
-                "duckdb": "SELECT name, laps FROM (SELECT UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}, {'name': 'Makhloufi', 'laps': [24.5, 25.4, 26.6, 26.1]}], max_depth => 2))",
-            },
-        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):
@@ -1869,7 +1862,7 @@ OPTIONS (
             "SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])",
             write={
                 "bigquery": "SELECT * FROM UNNEST(CAST([] AS ARRAY<STRUCT<x INT64>>))",
-                "duckdb": "SELECT * FROM UNNEST(CAST([] AS STRUCT(x BIGINT)[]))",
+                "duckdb": "SELECT * FROM (SELECT UNNEST(CAST([] AS STRUCT(x BIGINT)[]), max_depth => 2))",
             },
         )
         self.validate_all(
@@ -1904,3 +1897,36 @@ OPTIONS (
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(dialect=self.dialect), expected)
+
+    def test_unnest(self):
+        # UNNESTing a nested array without alias is transpiled to a recursive DuckDB UNNEST
+        self.validate_all(
+            "SELECT name, laps FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps), STRUCT('Makhloufi' AS name, [24.5, 25.4, 26.6, 26.1] AS laps)])",
+            write={
+                "bigquery": "SELECT name, laps FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps), STRUCT('Makhloufi' AS name, [24.5, 25.4, 26.6, 26.1] AS laps)])",
+                "duckdb": "SELECT name, laps FROM (SELECT UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}, {'name': 'Makhloufi', 'laps': [24.5, 25.4, 26.6, 26.1]}], max_depth => 2))",
+            },
+        )
+        self.validate_all(
+            "WITH Races AS (SELECT '800M' AS race) SELECT race, name, laps FROM Races AS r CROSS JOIN UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)])",
+            write={
+                "bigquery": "WITH Races AS (SELECT '800M' AS race) SELECT race, name, laps FROM Races AS r CROSS JOIN UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)])",
+                "duckdb": "WITH Races AS (SELECT '800M' AS race) SELECT race, name, laps FROM Races AS r CROSS JOIN (SELECT UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}], max_depth => 2))",
+            },
+        )
+
+        # UNNESTing a nested array with alias preserves the STRUCT and is thus transpiled as-is to DuckDB
+        self.validate_all(
+            "SELECT participant FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)]) AS participant",
+            write={
+                "bigquery": "SELECT participant FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)]) AS participant",
+                "duckdb": "SELECT participant FROM UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}]) AS _t0(participant)",
+            },
+        )
+        self.validate_all(
+            "WITH Races AS (SELECT '800M' AS race) SELECT race, participant FROM Races AS r CROSS JOIN UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)]) AS participant",
+            write={
+                "bigquery": "WITH Races AS (SELECT '800M' AS race) SELECT race, participant FROM Races AS r CROSS JOIN UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)]) AS participant",
+                "duckdb": "WITH Races AS (SELECT '800M' AS race) SELECT race, participant FROM Races AS r CROSS JOIN UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}]) AS _t0(participant)",
+            },
+        )

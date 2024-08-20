@@ -589,16 +589,22 @@ class BigQuery(Dialect):
         def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
             unnest = super()._parse_unnest(with_alias=with_alias)
 
-            if unnest:
-                expr = seq_get(unnest.expressions, 0)
-                if expr:
-                    from sqlglot.optimizer.annotate_types import annotate_types
+            if not unnest:
+                return None
 
-                    expr = annotate_types(expr)
+            unnest_expr = seq_get(unnest.expressions, 0)
+            if unnest_expr and not unnest.args.get("alias"):
+                from sqlglot.optimizer.annotate_types import annotate_types
 
-                    # Unnesting a nested array (i.e array of structs) in BQ explodes the top-level struct fields,
-                    # in contrast to other dialects such as DuckDB which flattens only the array by default
-                    if expr.is_type(exp.DataType.Type.ARRAY) and expr.find(exp.Struct):
+                unnest_expr = annotate_types(unnest_expr)
+
+                # Unnesting a nested array (i.e array of structs) without UNNEST alias explodes the top-level struct fields,
+                # in contrast to other dialects such as DuckDB which flattens only the array by default
+                if unnest_expr.is_type(exp.DataType.Type.ARRAY):
+                    if any(
+                        array_elem.is_type(exp.DataType.Type.STRUCT)
+                        for array_elem in unnest_expr._type.expressions
+                    ):
                         unnest.set("explode_array", True)
 
             return unnest

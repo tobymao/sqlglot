@@ -620,3 +620,9 @@ FROM (
             "select a.foo, b.bar, a.baz from a, b where a.baz = b.baz (+)",
             "SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)",
         )
+
+    def test_time(self):
+        self.validate_all(
+            "TIME_TO_STR(a, '%Y-%m-%d %H:%M:%S.%f')",
+            write={"redshift": "TO_CHAR(a, 'YYYY-MM-DD HH24:MI:SS.US')"},
+        )

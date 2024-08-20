@@ -2183,15 +2183,7 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         this = f"{this} " if this else this
         siblings = "SIBLINGS " if expression.args.get("siblings") else ""
-        order = self.op_expressions(f"{this}ORDER {siblings}BY", expression, flat=this or flat)  # type: ignore
-        interpolated_values = [
-            f"{self.sql(named_expression, 'alias')} AS {self.sql(named_expression, 'this')}"
-            for named_expression in expression.args.get("interpolate") or []
-        ]
-        interpolate = (
-            f" INTERPOLATE ({', '.join(interpolated_values)})" if interpolated_values else ""
-        )
-        return f"{order}{interpolate}"
+        return self.op_expressions(f"{this}ORDER {siblings}BY", expression, flat=this or flat)  # type: ignore
 
     def withfill_sql(self, expression: exp.WithFill) -> str:
         from_sql = self.sql(expression, "from")
@@ -2200,7 +2192,14 @@ class Generator(metaclass=_Generator):
         to_sql = f" TO {to_sql}" if to_sql else ""
         step_sql = self.sql(expression, "step")
         step_sql = f" STEP {step_sql}" if step_sql else ""
-        return f"WITH FILL{from_sql}{to_sql}{step_sql}"
+        interpolated_values = [
+            f"{self.sql(named_expression, 'alias')} AS {self.sql(named_expression, 'this')}"
+            for named_expression in expression.args.get("interpolate") or []
+        ]
+        interpolate = (
+            f" INTERPOLATE ({', '.join(interpolated_values)})" if interpolated_values else ""
+        )
+        return f"WITH FILL{from_sql}{to_sql}{step_sql}{interpolate}"
 
     def cluster_sql(self, expression: exp.Cluster) -> str:
         return self.op_expressions("CLUSTER BY", expression)

@@ -2472,17 +2472,17 @@ class Offset(Expression):
 
 
 class Order(Expression):
-    arg_types = {
-        "this": False,
-        "expressions": True,
-        "interpolate": False,
-        "siblings": False,
-    }
+    arg_types = {"this": False, "expressions": True, "siblings": False}
 
 
 # https://clickhouse.com/docs/en/sql-reference/statements/select/order-by#order-by-expr-with-fill-modifier
 class WithFill(Expression):
-    arg_types = {"from": False, "to": False, "step": False}
+    arg_types = {
+        "from": False,
+        "to": False,
+        "step": False,
+        "interpolate": False,
+    }
 
 
 # hive specific sorts

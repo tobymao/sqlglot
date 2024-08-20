@@ -4008,7 +4008,6 @@ class Parser(metaclass=_Parser):
             exp.Order,
             this=this,
             expressions=self._parse_csv(self._parse_ordered),
-            interpolate=self._parse_interpolate(),
             siblings=siblings,
         )
 
@@ -4053,6 +4052,7 @@ class Parser(metaclass=_Parser):
                     "from": self._match(TokenType.FROM) and self._parse_bitwise(),
                     "to": self._match_text_seq("TO") and self._parse_bitwise(),
                     "step": self._match_text_seq("STEP") and self._parse_bitwise(),
+                    "interpolate": self._parse_interpolate(),
                 },
             )
         else:

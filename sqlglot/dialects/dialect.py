@@ -1494,14 +1494,19 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         targets.add(normalize(alias.this))
 
     for when in expression.expressions:
-        when.transform(
-            lambda node: (
-                exp.column(node.this)
-                if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
-                else node
-            ),
-            copy=False,
-        )
+        # only remove the target names from the THEN clause
+        # theyre still valid in the <condition> part of WHEN MATCHED / WHEN NOT MATCHED
+        # ref: https://github.com/TobikoData/sqlmesh/issues/2934
+        then = when.args.get("then")
+        if then:
+            then.transform(
+                lambda node: (
+                    exp.column(node.this)
+                    if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
+                    else node
+                ),
+                copy=False,
+            )
 
     return self.merge_sql(expression)
 

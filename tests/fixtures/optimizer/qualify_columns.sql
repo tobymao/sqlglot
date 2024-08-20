@@ -660,6 +660,16 @@ SELECT x.a + x.b AS f, x.a + x.b AS _col_1, x.a + x.b + 5 AS _col_2 FROM x AS x;
 SELECT a, SUM(b) AS c, SUM(c) OVER(PARTITION BY a) AS d from x group by 1 ORDER BY a;
 SELECT x.a AS a, SUM(x.b) AS c, SUM(SUM(x.b)) OVER (PARTITION BY x.a) AS d FROM x AS x GROUP BY x.a ORDER BY a;
 
+# title: we can't expand aliases corresponding to recursive CTE columns (CTE names output columns)
+# execute: false
+WITH RECURSIVE t(c) AS (SELECT 1 AS c UNION ALL SELECT c + 1 AS c FROM t WHERE c <= 10) SELECT c FROM t;
+WITH RECURSIVE t(c) AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHERE t.c <= 10) SELECT t.c AS c FROM t AS t;
+
+# title: we can't expand aliases corresponding to recursive CTE columns (CTE doesn't name output columns)
+# execute: false
+WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT c + 1 AS c FROM t WHERE c <= 10) SELECT c FROM t;
+WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHERE t.c <= 10) SELECT t.c AS c FROM t AS t;
+
 --------------------------------------
 -- Wrapped tables / join constructs
 --------------------------------------

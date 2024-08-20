@@ -43,7 +43,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 0.01)")
         self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 1 / 10 OFFSET 1 / 2)")
         self.validate_identity("SELECT sum(foo * bar) FROM bla SAMPLE 10000000")
-        self.validate_identity("CAST(x AS Nested(ID UInt32, Serial UInt32, EventTime DATETIME))")
+        self.validate_identity("CAST(x AS Nested(ID UInt32, Serial UInt32, EventTime DateTime))")
         self.validate_identity("CAST(x AS Enum('hello' = 1, 'world' = 2))")
         self.validate_identity("CAST(x AS Enum('hello', 'world'))")
         self.validate_identity("CAST(x AS Enum('hello' = 1, 'world'))")
@@ -82,8 +82,8 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")
-        self.validate_identity("CAST(x AS DATETIME)")
-        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS DateTime)")
+        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS DateTime)")
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
@@ -211,14 +211,14 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST('2020-01-01' AS Nullable(TIMESTAMP)) + INTERVAL '500' MICROSECOND",
+            "SELECT CAST('2020-01-01' AS Nullable(DateTime)) + INTERVAL '500' MICROSECOND",
             read={
                 "duckdb": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
                 "postgres": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
             },
             write={
-                "clickhouse": "SELECT CAST('2020-01-01' AS Nullable(TIMESTAMP)) + INTERVAL '500' MICROSECOND",
-                "duckdb": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' MICROSECOND",
+                "clickhouse": "SELECT CAST('2020-01-01' AS Nullable(DateTime)) + INTERVAL '500' MICROSECOND",
+                "duckdb": "SELECT CAST('2020-01-01' AS DATETIME) + INTERVAL '500' MICROSECOND",
                 "postgres": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500 MICROSECOND'",
             },
         )
@@ -581,7 +581,7 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT {abc: UInt32}, {b: String}, {c: DateTime},{d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
             write={
-                "clickhouse": "SELECT {abc: UInt32}, {b: String}, {c: DATETIME}, {d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
+                "clickhouse": "SELECT {abc: UInt32}, {b: String}, {c: DateTime}, {d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
                 "": "SELECT :abc, :b, :c, :d, :e",
             },
         )
@@ -647,7 +647,7 @@ class TestClickhouse(Validator):
             "CREATE TABLE t (a String, b String, c UInt64, PROJECTION p1 (SELECT a, sum(c) GROUP BY a, b), PROJECTION p2 (SELECT b, sum(c) GROUP BY b)) ENGINE=MergeTree()"
         )
         self.validate_identity(
-            """CREATE TABLE xyz (ts DATETIME, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
+            """CREATE TABLE xyz (ts DateTime, data String) ENGINE=MergeTree() ORDER BY ts SETTINGS index_granularity = 8192 COMMENT '{"key": "value"}'"""
         )
         self.validate_identity(
             "INSERT INTO FUNCTION s3('a', 'b', 'c', 'd', 'e') PARTITION BY CONCAT(s1, s2, s3, s4) SETTINGS set1 = 1, set2 = '2' SELECT * FROM some_table SETTINGS foo = 3"
@@ -696,7 +696,7 @@ class TestClickhouse(Validator):
             """,
             write={
                 "clickhouse": """CREATE TABLE example1 (
-  timestamp DATETIME,
+  timestamp DateTime,
   x UInt32 TTL now() + INTERVAL '1' MONTH,
   y String TTL timestamp + INTERVAL '1' DAY,
   z String
@@ -774,7 +774,7 @@ SETTINGS
             """,
             write={
                 "clickhouse": """CREATE TABLE example_table (
-  d DATETIME,
+  d DateTime,
   a Int32
 )
 ENGINE=MergeTree
@@ -801,7 +801,7 @@ TTL
             """,
             write={
                 "clickhouse": """CREATE TABLE table_with_where (
-  d DATETIME,
+  d DateTime,
   a Int32
 )
 ENGINE=MergeTree
@@ -829,7 +829,7 @@ WHERE
             """,
             write={
                 "clickhouse": """CREATE TABLE table_for_recompression (
-  d DATETIME,
+  d DateTime,
   key UInt64,
   value String
 )
@@ -861,7 +861,7 @@ SETTINGS
             """,
             write={
                 "clickhouse": """CREATE TABLE table_for_aggregation (
-  d DATETIME,
+  d DateTime,
   k1 Int32,
   k2 Int32,
   x Int32,

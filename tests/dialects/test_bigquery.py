@@ -1,4 +1,6 @@
 from unittest import mock
+import datetime
+import pytz
 
 from sqlglot import (
     ErrorLevel,
@@ -1877,3 +1879,21 @@ OPTIONS (
                 "duckdb": "SELECT CAST(ROW(1, ROW('c_str')) AS STRUCT(a BIGINT, b STRUCT(c TEXT)))",
             },
         )
+
+    def test_convert(self):
+        for value, expected in [
+            (datetime.datetime(2023, 1, 1), "CAST('2023-01-01 00:00:00' AS DATETIME)"),
+            (datetime.datetime(2023, 1, 1, 12, 13, 14), "CAST('2023-01-01 12:13:14' AS DATETIME)"),
+            (
+                datetime.datetime(2023, 1, 1, 12, 13, 14, tzinfo=datetime.timezone.utc),
+                "CAST('2023-01-01 12:13:14+00:00' AS TIMESTAMP)",
+            ),
+            (
+                pytz.timezone("America/Los_Angeles").localize(
+                    datetime.datetime(2023, 1, 1, 12, 13, 14)
+                ),
+                "CAST('2023-01-01 12:13:14-08:00' AS TIMESTAMP)",
+            ),
+        ]:
+            with self.subTest(value):
+                self.assertEqual(exp.convert(value).sql(dialect=self.dialect), expected)

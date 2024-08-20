@@ -593,12 +593,12 @@ class BigQuery(Dialect):
                 return None
 
             unnest_expr = seq_get(unnest.expressions, 0)
-            if unnest_expr and not unnest.args.get("alias"):
+            if unnest_expr:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
                 unnest_expr = annotate_types(unnest_expr)
 
-                # Unnesting a nested array (i.e array of structs) without UNNEST alias explodes the top-level struct fields,
+                # Unnesting a nested array (i.e array of structs) explodes the top-level struct fields,
                 # in contrast to other dialects such as DuckDB which flattens only the array by default
                 if unnest_expr.is_type(exp.DataType.Type.ARRAY):
                     if any(

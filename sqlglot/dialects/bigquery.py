@@ -252,6 +252,7 @@ class BigQuery(Dialect):
     TIME_MAPPING = {
         "%D": "%m/%d/%y",
         "%E6S": "%S.%f",
+        "%e": "%-d",
     }
 
     FORMAT_MAPPING = {

@@ -1470,6 +1470,13 @@ WHERE
                 "bigquery": "SELECT GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-07 00:00:00', INTERVAL '1' DAY)",
             },
         )
+        self.validate_all(
+            "SELECT PARSE_DATE('%A %b %e %Y', 'Thursday Dec 25 2008')",
+            write={
+                "bigquery": "SELECT PARSE_DATE('%A %b %e %Y', 'Thursday Dec 25 2008')",
+                "duckdb": "SELECT CAST(STRPTIME('Thursday Dec 25 2008', '%A %b %-d %Y') AS DATE)",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

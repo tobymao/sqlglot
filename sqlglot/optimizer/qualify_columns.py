@@ -279,7 +279,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bo
     while parent_scope.is_union:
         parent_scope = parent_scope.parent
 
-    # We shouldn't expand aliases if theye match the recursive CTE's columns
+    # We shouldn't expand aliases if they match the recursive CTE's columns
     if parent_scope.is_cte:
         cte = parent_scope.expression.parent
         if cte.find_ancestor(exp.With).recursive:

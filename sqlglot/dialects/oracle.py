@@ -78,6 +78,8 @@ class Oracle(Dialect):
             for prefix in ("U", "u")
         ]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,

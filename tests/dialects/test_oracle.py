@@ -6,6 +6,7 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("1 /* /* */")
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",
             write={

@@ -2497,7 +2497,12 @@ class Parser(metaclass=_Parser):
         expressions = properties.expressions if properties else None
         partition = self._parse_partition()
         return self.expression(
-            exp.Describe, this=this, style=style, kind=kind, expressions=expressions, partition=partition
+            exp.Describe,
+            this=this,
+            style=style,
+            kind=kind,
+            expressions=expressions,
+            partition=partition,
         )
 
     def _parse_insert(self) -> exp.Insert:

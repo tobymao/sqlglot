@@ -708,6 +708,7 @@ TBLPROPERTIES (
                 "trino": "SELECT DATE_ADD('MONTH', 20, col)",
             },
         )
+        self.validate_identity("DESCRIBE schema.test PARTITION(ds = '2024-01-01')")
 
     def test_bool_or(self):
         self.validate_all(

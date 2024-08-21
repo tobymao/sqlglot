@@ -600,12 +600,11 @@ class BigQuery(Dialect):
 
                 # Unnesting a nested array (i.e array of structs) explodes the top-level struct fields,
                 # in contrast to other dialects such as DuckDB which flattens only the array by default
-                if unnest_expr.is_type(exp.DataType.Type.ARRAY):
-                    if any(
-                        array_elem.is_type(exp.DataType.Type.STRUCT)
-                        for array_elem in unnest_expr._type.expressions
-                    ):
-                        unnest.set("explode_array", True)
+                if unnest_expr.is_type(exp.DataType.Type.ARRAY) and any(
+                    array_elem.is_type(exp.DataType.Type.STRUCT)
+                    for array_elem in unnest_expr._type.expressions
+                ):
+                    unnest.set("explode_array", True)
 
             return unnest
 

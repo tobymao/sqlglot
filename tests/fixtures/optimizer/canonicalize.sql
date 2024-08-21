@@ -52,6 +52,10 @@ SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE CASE WHEN COALESCE("x"."b" <> 0, 1 <
 DATE('2023-01-01');
 CAST('2023-01-01' AS DATE);
 
+-- Some dialects only allow dates
+DATE('2023-01-01 00:00:00');
+DATE('2023-01-01 00:00:00');
+
 TIMESTAMP('2023-01-01');
 CAST('2023-01-01' AS TIMESTAMP);
 

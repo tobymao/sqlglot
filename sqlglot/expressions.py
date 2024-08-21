@@ -1437,7 +1437,13 @@ class Clone(Expression):
 
 
 class Describe(Expression):
-    arg_types = {"this": True, "style": False, "kind": False, "expressions": False, "partition": False}
+    arg_types = {
+        "this": True,
+        "style": False,
+        "kind": False,
+        "expressions": False,
+        "partition": False,
+    }
 
 
 # https://duckdb.org/docs/guides/meta/summarize.html

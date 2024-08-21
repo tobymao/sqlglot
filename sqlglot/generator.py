@@ -1117,7 +1117,8 @@ class Generator(metaclass=_Generator):
     def describe_sql(self, expression: exp.Describe) -> str:
         style = expression.args.get("style")
         style = f" {style}" if style else ""
-        return f"DESCRIBE{style} {self.sql(expression, 'this')}"
+        partition = expression.args.get('partition')
+        return f"DESCRIBE{style} {self.sql(expression, 'this')} {self.sql(partition)}"
 
     def heredoc_sql(self, expression: exp.Heredoc) -> str:
         tag = self.sql(expression, "tag")

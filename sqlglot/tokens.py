@@ -609,6 +609,8 @@ class Tokenizer(metaclass=_Tokenizer):
     # Whether string escape characters function as such when placed within raw strings
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = True
 
+    NESTED_COMMENTS = True
+
     # Autofilled
     _COMMENTS: t.Dict[str, str] = {}
     _FORMAT_STRINGS: t.Dict[str, t.Tuple[str, TokenType]] = {}
@@ -1184,7 +1186,11 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance(alnum=True)
 
                 # Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
-                if not self._end and self._chars(comment_end_size) == comment_start:
+                if (
+                    self.NESTED_COMMENTS
+                    and not self._end
+                    and self._chars(comment_end_size) == comment_start
+                ):
                     self._advance(comment_start_size)
                     comment_count += 1
 

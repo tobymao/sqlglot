@@ -11,6 +11,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("1 /* /* */")
         self.validate_identity(
             "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )

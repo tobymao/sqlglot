@@ -692,6 +692,7 @@ class Snowflake(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         RAW_STRINGS = ["$$"]
         COMMENTS = ["--", "//", ("/*", "*/")]
+        NESTED_COMMENTS = False
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

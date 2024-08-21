@@ -8,8 +8,6 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
-
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -32,31 +30,6 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT straight_join",
                 "mysql": "SELECT `straight_join`",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
-            read={
-                "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
-                "snowflake": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMPNTZ)",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
-            read={
-                "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
-                "mysql": "SELECT DATE '2020-01-01' + INTERVAL day_offset DAY FROM t",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
-            read={
-                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
-                "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
-            },
-            write={
-                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
-                "snowflake": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2 HOUR'",
             },
         )
         self.validate_all(
@@ -112,7 +85,9 @@ class TestDuckDB(Validator):
 
         self.validate_all(
             "CREATE TEMPORARY FUNCTION f1(a, b) AS (a + b)",
-            read={"bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)"},
+            read={
+                "bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)",
+            },
         )
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
@@ -128,13 +103,17 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "{'a': 1, 'b': '2'}", write={"presto": "CAST(ROW(1, '2') AS ROW(a INTEGER, b VARCHAR))"}
+            "{'a': 1, 'b': '2'}",
+            write={
+                "presto": "CAST(ROW(1, '2') AS ROW(a INTEGER, b VARCHAR))",
+            },
         )
         self.validate_all(
             "struct_pack(a := 1, b := 2)",
-            write={"presto": "CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))"},
+            write={
+                "presto": "CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))",
+            },
         )
-
         self.validate_all(
             "struct_pack(a := 1, b := x)",
             write={
@@ -1026,6 +1005,7 @@ class TestDuckDB(Validator):
         self.validate_identity("ARRAY((SELECT id FROM t))")
 
     def test_cast(self):
+        self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
         self.validate_identity("CAST(x AS REAL)")
         self.validate_identity("CAST(x AS UINTEGER)")
         self.validate_identity("CAST(x AS UBIGINT)")
@@ -1078,6 +1058,39 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "STRUCT_PACK(a := 'b')::STRUCT(a TEXT)",
             "CAST(ROW('b') AS STRUCT(a TEXT))",
+        )
+
+        self.validate_all(
+            "CAST(x AS TIME)",
+            read={
+                "duckdb": "CAST(x AS TIME)",
+                "presto": "CAST(x AS TIME(6))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+                "snowflake": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMPNTZ)",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+                "mysql": "SELECT DATE '2020-01-01' + INTERVAL day_offset DAY FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
+            read={
+                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+                "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
+            },
+            write={
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+                "snowflake": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2 HOUR'",
+            },
         )
         self.validate_all(
             "CAST(x AS VARCHAR(5))",

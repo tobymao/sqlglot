@@ -171,8 +171,10 @@ def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
 
-    # Type TIMESTAMP / TIME WITH TIME ZONE does not support any modifiers
-    if expression.is_type("timestamptz", "timetz"):
+    # Type TIME / TIMESTAMP / TIME WITH TIME ZONE does not support any modifiers
+    if expression.is_type(
+        exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ, exp.DataType.Type.TIMESTAMPTZ
+    ):
         return expression.this.value
 
     return self.datatype_sql(expression)

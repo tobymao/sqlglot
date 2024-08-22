@@ -19,6 +19,12 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
+            read={
+                "trino": "SELECT from_iso8601_timestamp('2020-05-11T11:15:05')",
+            },
+        )
+        self.validate_all(
             """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
             read={
                 "duckdb": """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",

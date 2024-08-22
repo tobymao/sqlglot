@@ -208,10 +208,37 @@ select j from a""",
             r"SELECT DATE_FORMAT_MYSQL(CURRENT_DATE, '%x-%v')",
             read={'presto': r"select DATE_FORMAT(CURRENT_DATE, '%x-%v')"}
         )
+        self.validate_all(
+            "SELECT CAST(DATE_FORMAT_MYSQL(TIMESTAMP('2024-08-22 14:53:12'), '%Y-%m-%d') AS DATE)",
+            read={'presto': r"""SELECT CAST(date_format(timestamp('2024-08-22 14:53:12'), '%Y-%m-%d') AS DATE);"""}
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP('2024-08-22 14:53:12'), DATE_FORMAT_MYSQL(TIMESTAMP('2024-08-22 "
+            "14:53:12'), '%Y %M') /* expected: 2024 August */, DATE_FORMAT_MYSQL(TIMESTAMP('2024-08"
+            "-22 14:53:12'), '%e') /* expected: 22 */, DATE_FORMAT_MYSQL(TIMESTAMP('2024-08-22 14:5"
+            "3:12'), '%H %i %s') /* expected: 14 53 12 */",
+            read={'presto': r"""select timestamp('2024-08-22 14:53:12')
+                    , date_format(timestamp('2024-08-22 14:53:12'), '%Y %M') -- expected: 2024 August
+                    , date_format(timestamp('2024-08-22 14:53:12'), '%e') -- expected: 22
+                    , date_format(timestamp('2024-08-22 14:53:12'), '%H %i %s') -- expected: 14 53 12"""}
+        )
         os.environ['READ_DIALECT'] = 'postgres'
         self.validate_all(
-            r"SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'Mon-dd-%Y,%H:mi:ss')",
+            r"SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'Mon-dd-YYYY,HH24:mi:ss')",
             read={'postgres': r"select to_char(now(), 'Mon-dd-YYYY,HH24:mi:ss')"}
+        )
+        self.validate_all(
+            r"SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'YYYY-MM-DD')",
+            read={'postgres': r"SELECT to_char(now(), 'YYYY-MM-DD');"}
+        )
+        self.validate_all(
+            r"""SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'YYYY-MM-DD HH24:MI:SS')""",
+            read={'postgres': r"""SELECT to_char(now(), 'YYYY-MM-DD HH24:MI:SS');"""}
+        )
+        self.validate_all(
+            r"""SELECT DATE_FORMAT_PG(CURRENT_TIMESTAMP(), 'YYYY-MM-DD"T"HH24:MI:SS.MS')""",
+            read={
+                'postgres': r"""SELECT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS.MS');"""}
         )
 
         # struct/tuple

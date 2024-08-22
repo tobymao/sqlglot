@@ -704,6 +704,9 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
 
+        def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))
+
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)

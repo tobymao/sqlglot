@@ -25,6 +25,7 @@ from sqlglot.dialects.dialect import (
     strposition_to_locate_sql,
     unit_to_var,
     trim_sql,
+    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -685,6 +686,9 @@ class MySQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ArrayAgg: rename_func("GROUP_CONCAT"),
+            exp.AtTimeZone: lambda self, e: self.func(
+                "CONVERT_TZ", e.this, exp.var("@@global.time_zone"), e.args.get("zone")
+            ),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
@@ -728,8 +732,10 @@ class MySQL(Dialect):
             ),
             exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeStrToTime: lambda self, e: self.sql(
-                exp.cast(e.this, exp.DataType.Type.DATETIME, copy=True)
+            exp.TimeStrToTime: lambda self, e: timestrtotime_sql(
+                self,
+                e,
+                include_precision=lambda datatype: datatype != exp.DataType.Type.TIMESTAMPTZ,
             ),
             exp.TimeToStr: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))

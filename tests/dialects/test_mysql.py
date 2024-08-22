@@ -637,6 +637,53 @@ class TestMySQL(Validator):
             },
         )
 
+        # No timezone, make sure DATETIME captures the correct precision
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.123456+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.123456+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12345+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.12345+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1234+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.1234+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.123+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.123+00:00' AS DATETIME(3))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.12+00:00' AS DATETIME(3))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.1+00:00' AS DATETIME(3))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15+00:00' AS DATETIME)",
+        )
+
+        # With timezone, make sure the TIMESTAMP constructor is used
+        # also TIMESTAMP doesnt have the subsecond precision truncation issue that DATETIME does so we dont need to TIMESTAMP(6)
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15-08:00', 'America/Los_Angeles')",
+            write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15-08:00', 'America/Los_Angeles')",
+            write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",
+        )
+
+        # Check AT TIME ZONE generates as CONVERT_TZ
+        self.validate_identity(
+            "SELECT foo AT TIME ZONE 'UTC'",
+            write_sql="SELECT CONVERT_TZ(foo, @@global.time_zone, 'UTC')",
+        )
+
     def test_mysql(self):
         self.validate_all(
             "SELECT CONCAT('11', '22')",

@@ -11,7 +11,7 @@ from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
-from sqlglot.time import TIMEZONES, format_time
+from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
@@ -1243,14 +1243,29 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
     )
 
 
-def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
+def timestrtotime_sql(
+    self: Generator,
+    expression: exp.TimeStrToTime,
+    include_precision: bool | t.Callable[[exp.DataType.Type], bool] = False,
+) -> str:
     datatype = (
         exp.DataType.Type.TIMESTAMPTZ
         if expression.args.get("zone")
         else exp.DataType.Type.TIMESTAMP
     )
 
-    return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))
+    if callable(include_precision):
+        include_precision = include_precision(datatype)
+
+    datatype_built = exp.DataType.build(datatype)
+    if isinstance(expression.this, exp.Literal) and include_precision:
+        precision = subsecond_precision(expression.this.name)
+        if precision > 0:
+            datatype_built = exp.DataType.build(
+                datatype, expressions=[exp.DataTypeParam(this=exp.Literal.number(precision))]
+            )
+
+    return self.sql(exp.cast(expression.this, datatype_built, dialect=self.dialect))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:

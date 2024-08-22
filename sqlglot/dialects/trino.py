@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql
+from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql, timestrtotime_sql
 from sqlglot.dialects.presto import Presto
 
 
@@ -21,6 +21,7 @@ class Trino(Presto):
             exp.ArraySum: lambda self,
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.Merge: merge_without_target_sql,
+            exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
         }
 

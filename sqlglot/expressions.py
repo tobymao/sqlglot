@@ -5348,6 +5348,7 @@ class Unnest(Func, UDTF):
         "expressions": True,
         "alias": False,
         "offset": False,
+        "explode_array": False,
     }
 
     @property

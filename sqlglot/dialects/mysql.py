@@ -735,7 +735,7 @@ class MySQL(Dialect):
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(
                 self,
                 e,
-                include_precision=lambda datatype: datatype != exp.DataType.Type.TIMESTAMPTZ,
+                include_precision=not e.args.get("zone"),
             ),
             exp.TimeToStr: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))

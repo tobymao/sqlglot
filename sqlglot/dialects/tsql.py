@@ -983,9 +983,8 @@ class TSQL(Dialect):
             return super().setitem_sql(expression)
 
         def boolean_sql(self, expression: exp.Boolean) -> str:
-            if (
-                type(expression.parent) in BIT_TYPES
-                or expression.find_ancestor(exp.Values) is not None
+            if type(expression.parent) in BIT_TYPES or isinstance(
+                expression.find_ancestor(exp.Values, exp.Select), exp.Values
             ):
                 return "1" if expression.this else "0"
 

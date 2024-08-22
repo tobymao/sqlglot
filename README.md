@@ -10,7 +10,7 @@ Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities ca
 
 Learn more about SQLGlot in the API [documentation](https://sqlglot.com/) and the expression tree [primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md).
 
-Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) to get started!
+Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) and the [onboarding document](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md) to get started!
 
 ## Table of Contents
 

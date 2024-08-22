@@ -1302,7 +1302,7 @@ class Generator(metaclass=_Generator):
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")
         direction = f" {direction}" if direction else ""
-        count = expression.args.get("count")
+        count = self.sql(expression, "count")
         count = f" {count}" if count else ""
         if expression.args.get("percent"):
             count = f"{count} PERCENT"

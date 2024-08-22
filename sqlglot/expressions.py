@@ -5371,6 +5371,11 @@ class ToBase64(Func):
     pass
 
 
+# https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp
+class FromISO8601Timestamp(Func):
+    _sql_names = ["FROM_ISO8601_TIMESTAMP"]
+
+
 class GapFill(Func):
     arg_types = {
         "this": True,

@@ -14,6 +14,13 @@ class TestPresto(Validator):
         self.validate_identity("CAST(x AS HYPERLOGLOG)")
 
         self.validate_all(
+            "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
+            write={
+                "duckdb": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
+                "presto": "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
+            },
+        )
+        self.validate_all(
             "CAST(x AS INTERVAL YEAR TO MONTH)",
             write={
                 "oracle": "CAST(x AS INTERVAL YEAR TO MONTH)",

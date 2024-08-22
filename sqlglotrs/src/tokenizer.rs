@@ -375,7 +375,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
 
                 // Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
-                if !self.is_end && self.chars(comment_start_size) == *comment_start {
+                if self.settings.nested_comments && !self.is_end && self.chars(comment_start_size) == *comment_start {
                     self.advance(comment_start_size as isize)?;
                     comment_count += 1
                 }

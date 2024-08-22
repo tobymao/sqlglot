@@ -530,6 +530,7 @@ class _Tokenizer(type):
                 },
                 heredoc_tag_is_identifier=klass.HEREDOC_TAG_IS_IDENTIFIER,
                 string_escapes_allowed_in_raw_strings=klass.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
+                nested_comments=klass.NESTED_COMMENTS,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],

@@ -10,7 +10,6 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import Tokenizer, TokenType
-from sqlglot.trie import new_trie
 
 logger = logging.getLogger("sqlglot")
 
@@ -280,6 +279,7 @@ class ClickZetta(Spark):
             exp.RegexpExtract: regexp_extract_sql,
             exp.DayOfWeek: adjust_day_of_week,
             exp.Group: transforms.preprocess([_transform_group_sql]),
+            exp.RegexpLike: rename_func("RLIKE"),
         }
 
         # def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

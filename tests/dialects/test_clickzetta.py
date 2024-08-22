@@ -279,6 +279,12 @@ select j from a""",
             read={'presto': "select regexp_extract(\"a\", 'a|b|c', 1)"}
         )
 
+        # rlike
+        self.validate_all(
+            r"SELECT RLIKE('1a 2b 14m', '\\d+b')",
+            read={'presto': "SELECT regexp_like('1a 2b 14m', '\d+b')"}
+        )
+
         # day_of_week
         os.environ['READ_DIALECT'] = 'presto'
         self.validate_all(

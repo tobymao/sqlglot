@@ -77,6 +77,7 @@ pub struct TokenizerSettings {
     pub command_prefix_tokens: HashSet<TokenType>,
     pub heredoc_tag_is_identifier: bool,
     pub string_escapes_allowed_in_raw_strings: bool,
+    pub nested_comments: bool,
 }
 
 #[pymethods]
@@ -100,6 +101,7 @@ impl TokenizerSettings {
         command_prefix_tokens: HashSet<TokenType>,
         heredoc_tag_is_identifier: bool,
         string_escapes_allowed_in_raw_strings: bool,
+        nested_comments: bool,
     ) -> Self {
         let to_char = |v: &String| {
             if v.len() == 1 {
@@ -150,6 +152,7 @@ impl TokenizerSettings {
             command_prefix_tokens,
             heredoc_tag_is_identifier,
             string_escapes_allowed_in_raw_strings,
+            nested_comments,
         }
     }
 }

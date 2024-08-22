@@ -2648,11 +2648,13 @@ class Generator(metaclass=_Generator):
         trim_type = self.sql(expression, "position")
 
         if trim_type == "LEADING":
-            return self.func("LTRIM", expression.this)
+            func_name = "LTRIM"
         elif trim_type == "TRAILING":
-            return self.func("RTRIM", expression.this)
+            func_name = "RTRIM"
         else:
-            return self.func("TRIM", expression.this, expression.expression)
+            func_name = "TRIM"
+
+        return self.func(func_name, expression.this, expression.expression)
 
     def convert_concat_args(self, expression: exp.Concat | exp.ConcatWs) -> t.List[exp.Expression]:
         args = expression.expressions

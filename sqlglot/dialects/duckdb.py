@@ -889,3 +889,24 @@ class DuckDB(Dialect):
                 return self.func("STRUCT_PACK", kv_sql)
 
             return self.func("STRUCT_INSERT", this, kv_sql)
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            explode_array = expression.args.get("explode_array")
+            if explode_array:
+                # In BigQuery, UNNESTing a nested array leads to explosion of the top-level array & struct
+                # This is transpiled to DDB by transforming "FROM UNNEST(...)" to "FROM (SELECT UNNEST(..., max_depth => 2))"
+                expression.expressions.append(
+                    exp.Kwarg(this=exp.var("max_depth"), expression=exp.Literal.number(2))
+                )
+
+                # If BQ's UNNEST is aliased, we transform it from a column alias to a table alias in DDB
+                alias = expression.args.get("alias")
+                if alias:
+                    expression.set("alias", None)
+                    alias = exp.TableAlias(this=seq_get(alias.args.get("columns"), 0))
+
+                unnest_sql = super().unnest_sql(expression)
+                select = exp.Select(expressions=[unnest_sql]).subquery(alias)
+                return self.sql(select)
+
+            return super().unnest_sql(expression)

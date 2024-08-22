@@ -671,6 +671,7 @@ def subsecond_precision(timestamp_literal: str) -> int:
     # Note that in practice, this is either 3 or 6 digits (3 = millisecond precision, 6 = microsecond precision)
     # - 6 is the maximum because strftime's '%f' formats to microseconds and almost every database supports microsecond precision in timestamps
     # - Except Presto/Trino which in most cases only supports millisecond precision but will still honour '%f' and format to microseconds (replacing the remaining 3 digits with 0's)
+    # - Python prior to 3.11 only supports 0, 3 or 6 digits in a timestamp literal. Any other amounts will throw a 'ValueError: Invalid isoformat string:' error
     try:
         parsed = datetime.datetime.fromisoformat(timestamp_literal)
         subsecond_digit_count = len(str(parsed.microsecond).rstrip("0"))

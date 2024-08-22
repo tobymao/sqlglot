@@ -1,3 +1,6 @@
+import unittest
+import sys
+
 from sqlglot import expressions as exp
 from sqlglot.dialects.mysql import MySQL
 from tests.dialects.test_dialect import Validator
@@ -643,24 +646,8 @@ class TestMySQL(Validator):
             write_sql="SELECT CAST('2023-01-01 13:14:15.123456+00:00' AS DATETIME(6))",
         )
         self.validate_identity(
-            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12345+00:00')",
-            write_sql="SELECT CAST('2023-01-01 13:14:15.12345+00:00' AS DATETIME(6))",
-        )
-        self.validate_identity(
-            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1234+00:00')",
-            write_sql="SELECT CAST('2023-01-01 13:14:15.1234+00:00' AS DATETIME(6))",
-        )
-        self.validate_identity(
             "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.123+00:00')",
             write_sql="SELECT CAST('2023-01-01 13:14:15.123+00:00' AS DATETIME(3))",
-        )
-        self.validate_identity(
-            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12+00:00')",
-            write_sql="SELECT CAST('2023-01-01 13:14:15.12+00:00' AS DATETIME(3))",
-        )
-        self.validate_identity(
-            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1+00:00')",
-            write_sql="SELECT CAST('2023-01-01 13:14:15.1+00:00' AS DATETIME(3))",
         )
         self.validate_identity(
             "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15+00:00')",
@@ -682,6 +669,28 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT foo AT TIME ZONE 'UTC'",
             write_sql="SELECT CONVERT_TZ(foo, @@global.time_zone, 'UTC')",
+        )
+
+    @unittest.skipUnless(
+        sys.version_info >= (3, 11),
+        "Python 3.11 relaxed datetime.fromisoformat() parsing with regards to microseconds",
+    )
+    def test_mysql_time_python311(self):
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12345+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.12345+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1234+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.1234+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.12+00:00' AS DATETIME(3))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.1+00:00' AS DATETIME(3))",
         )
 
     def test_mysql(self):

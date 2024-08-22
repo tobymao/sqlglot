@@ -107,8 +107,10 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
+            "NVL": lambda args: exp.Coalesce(
+                this=seq_get(args, 0), expressions=args[1:], is_nvl=True
+            ),
         }
-        FUNCTIONS.pop("NVL")
 
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
@@ -313,3 +315,7 @@ class Oracle(Dialect):
             value = f" CONSTRAINT {value}" if value else ""
 
             return f"{option}{value}"
+
+        def coalesce_sql(self, expression: exp.Coalesce) -> str:
+            func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
+            return rename_func(func_name)(self, expression)

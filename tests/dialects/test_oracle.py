@@ -89,7 +89,6 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM T ORDER BY I OFFSET NVL(:variable1, 10) ROWS FETCH NEXT NVL(:variable2, 10) ROWS ONLY",
         )
-        self.validate_identity("NVL(x, y)").assert_is(exp.Anonymous)
         self.validate_identity(
             "SELECT * FROM t SAMPLE (.25)",
             "SELECT * FROM t SAMPLE (0.25)",
@@ -251,6 +250,15 @@ class TestOracle(Validator):
         self.validate_identity(
             """SELECT * FROM t ORDER BY a ASC NULLS LAST, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC NULLS FIRST""",
             """SELECT * FROM t ORDER BY a ASC, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC""",
+        )
+
+        self.validate_all(
+            "NVL(NULL, 1)",
+            write={
+                "oracle": "NVL(NULL, 1)",
+                "": "COALESCE(NULL, 1)",
+                "clickhouse": "COALESCE(NULL, 1)",
+            },
         )
 
     def test_join_marker(self):

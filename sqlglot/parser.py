@@ -222,6 +222,7 @@ class Parser(metaclass=_Parser):
         "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
         "VAR_MAP": build_var_map,
+        "COALESCE": lambda args: exp.Coalesce(this=seq_get(args, 0), expressions=args[1:]),
     }
 
     NO_PAREN_FUNCTIONS = {

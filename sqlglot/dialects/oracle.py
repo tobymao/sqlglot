@@ -267,7 +267,7 @@ class Oracle(Dialect):
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
             exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),
-            exp.TableSample: lambda self, e: self.tablesample_sql(e, sep=" "),
+            exp.TableSample: lambda self, e: self.tablesample_sql(e),
             exp.TemporaryProperty: lambda _, e: f"{e.name or 'GLOBAL'} TEMPORARY",
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),

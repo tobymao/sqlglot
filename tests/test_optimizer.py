@@ -27,11 +27,11 @@ def parse_and_optimize(func, sql, read_dialect, **kwargs):
     return func(parse_one(sql, read=read_dialect), **kwargs)
 
 
-def qualify_columns(expression, **kwargs):
+def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
     expression = optimizer.qualify.qualify(
         expression,
         infer_schema=True,
-        validate_qualify_columns=False,
+        validate_qualify_columns=validate_qualify_columns,
         identify=False,
         **kwargs,
     )
@@ -135,10 +135,16 @@ class TestOptimizer(unittest.TestCase):
                     continue
                 dialect = meta.get("dialect")
                 leave_tables_isolated = meta.get("leave_tables_isolated")
+                validate_qualify_columns = meta.get("validate_qualify_columns")
 
                 func_kwargs = {**kwargs}
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+
+                if validate_qualify_columns is not None:
+                    func_kwargs["validate_qualify_columns"] = string_to_bool(
+                        validate_qualify_columns
+                    )
 
                 if set_dialect and dialect:
                     func_kwargs["dialect"] = dialect

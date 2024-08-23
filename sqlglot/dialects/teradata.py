@@ -278,7 +278,6 @@ class Teradata(Dialect):
         def tablesample_sql(
             self,
             expression: exp.TableSample,
-            sep: str = " AS ",
             tablesample_keyword: t.Optional[str] = None,
         ) -> str:
             return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"

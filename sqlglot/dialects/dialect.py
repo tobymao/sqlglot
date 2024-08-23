@@ -1295,7 +1295,7 @@ def trim_sql(self: Generator, expression: exp.Trim) -> str:
     collation = self.sql(expression, "collation")
 
     # Use TRIM/LTRIM/RTRIM syntax if the expression isn't database-specific
-    if not remove_chars and not collation:
+    if not remove_chars:
         return self.trim_sql(expression)
 
     trim_type = f"{trim_type} " if trim_type else ""

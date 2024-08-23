@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_to_locate_sql,
     unit_to_var,
+    trim_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -93,21 +94,6 @@ def _str_to_date_sql(
     self: MySQL.Generator, expression: exp.StrToDate | exp.StrToTime | exp.TsOrDsToDate
 ) -> str:
     return self.func("STR_TO_DATE", expression.this, self.format_time(expression))
-
-
-def _trim_sql(self: MySQL.Generator, expression: exp.Trim) -> str:
-    target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position")
-    remove_chars = self.sql(expression, "expression")
-
-    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't mysql-specific
-    if not remove_chars:
-        return self.trim_sql(expression)
-
-    trim_type = f"{trim_type} " if trim_type else ""
-    remove_chars = f"{remove_chars} " if remove_chars else ""
-    from_part = "FROM " if trim_type or remove_chars else ""
-    return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 
 def _unix_to_time_sql(self: MySQL.Generator, expression: exp.UnixToTime) -> str:
@@ -748,7 +734,7 @@ class MySQL(Dialect):
             exp.TimeToStr: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))
             ),
-            exp.Trim: _trim_sql,
+            exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: date_add_sql("ADD"),
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),

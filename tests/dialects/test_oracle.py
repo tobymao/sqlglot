@@ -251,13 +251,28 @@ class TestOracle(Validator):
             """SELECT * FROM t ORDER BY a ASC NULLS LAST, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC NULLS FIRST""",
             """SELECT * FROM t ORDER BY a ASC, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC""",
         )
-
         self.validate_all(
             "NVL(NULL, 1)",
             write={
                 "oracle": "NVL(NULL, 1)",
                 "": "COALESCE(NULL, 1)",
                 "clickhouse": "COALESCE(NULL, 1)",
+            },
+        )
+        self.validate_all(
+            "LTRIM('Hello World', 'H')",
+            write={
+                "oracle": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "": "LTRIM('Hello World', 'H')",
+            },
+        )
+        self.validate_all(
+            "RTRIM('Hello World', 'd')",
+            write={
+                "oracle": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "": "RTRIM('Hello World', 'd')",
             },
         )
 

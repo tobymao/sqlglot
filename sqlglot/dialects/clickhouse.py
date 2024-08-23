@@ -20,6 +20,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
     timestamptrunc_sql,
     unit_to_var,
+    trim_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
@@ -875,6 +876,7 @@ class ClickHouse(Dialect):
             exp.SHA2: sha256_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
+            exp.Trim: trim_sql,
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),

@@ -84,7 +84,7 @@ def qualify_tables(
 
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
-                pivots = pivots = source.args.get("pivots")
+                pivots = source.args.get("pivots")
                 if not source.alias:
                     # Don't add the pivot's alias to the pivoted table, use the table's name instead
                     if pivots and pivots[0].alias == name:

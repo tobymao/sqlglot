@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v25.16.1] - 2024-08-23
+### :bug: Bug Fixes
+- [`c4e5be7`](https://github.com/tobymao/sqlglot/commit/c4e5be7d3f4d7a9075d11dc56ece02774f32e749) - include dialect when parsing inside cast *(PR [#3960](https://github.com/tobymao/sqlglot/pull/3960) by [@eakmanrq](https://github.com/eakmanrq))*
+
+### :wrench: Chores
+- [`794dc4c`](https://github.com/tobymao/sqlglot/commit/794dc4cea3c4298c8986ade8e0fee88479851b34) - update readme to include onboarding doc *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.16.0] - 2024-08-22
 ### :boom: BREAKING CHANGES
 - due to [`f68d155`](https://github.com/tobymao/sqlglot/commit/f68d155c38a79a6527685c37f8de8773ce790bca) - exp.Merge, for Trino and Postgres, dont strip the target alias from then WHEN MATCHED condition to prevent an ambiguous column error *(PR [#3940](https://github.com/tobymao/sqlglot/pull/3940) by [@erindru](https://github.com/erindru))*:
@@ -4491,3 +4499,4 @@ Changelog
 [v25.14.0]: https://github.com/tobymao/sqlglot/compare/v25.13.0...v25.14.0
 [v25.15.0]: https://github.com/tobymao/sqlglot/compare/v25.14.0...v25.15.0
 [v25.16.0]: https://github.com/tobymao/sqlglot/compare/v25.15.0...v25.16.0
+[v25.16.1]: https://github.com/tobymao/sqlglot/compare/v25.16.0...v25.16.1

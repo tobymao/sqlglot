@@ -85,6 +85,27 @@ NULL;
 NULL = NULL;
 NULL;
 
+1 AND 0;
+FALSE;
+
+0 AND 1;
+FALSE;
+
+0 OR 1;
+TRUE;
+
+0 OR NULL;
+NULL;
+
+NULL OR 0;
+NULL;
+
+0 AND NULL;
+FALSE;
+
+NULL AND 0;
+FALSE;
+
 -- Can't optimize this because different engines do different things
 -- mysql converts to 0 and 1 but tsql does true and false
 NULL <=> NULL;

@@ -267,12 +267,10 @@ def flatten(expression):
 
 def simplify_connectors(expression, root=True):
     def _simplify_connectors(expression, left, right):
-        if left == right:
-            if isinstance(expression, exp.Xor):
-                return exp.false()
-            return left
         if isinstance(expression, exp.And):
             if is_false(left) or is_false(right):
+                return exp.false()
+            if is_zero(left) or is_zero(right):
                 return exp.false()
             if is_null(left) or is_null(right):
                 return exp.null()
@@ -286,12 +284,10 @@ def simplify_connectors(expression, root=True):
         elif isinstance(expression, exp.Or):
             if always_true(left) or always_true(right):
                 return exp.true()
-            if is_false(left) and is_false(right):
-                return exp.false()
             if (
                 (is_null(left) and is_null(right))
-                or (is_null(left) and is_false(right))
-                or (is_false(left) and is_null(right))
+                or (is_null(left) and always_false(right))
+                or (always_false(left) and is_null(right))
             ):
                 return exp.null()
             if is_false(left):
@@ -299,6 +295,9 @@ def simplify_connectors(expression, root=True):
             if is_false(right):
                 return left
             return _simplify_comparison(expression, left, right, or_=True)
+        elif isinstance(expression, exp.Xor):
+            if left == right:
+                return exp.false()
 
     if isinstance(expression, exp.Connector):
         return _flat_simplify(expression, _simplify_connectors, root)
@@ -1108,13 +1107,17 @@ def remove_where_true(expression):
 
 
 def always_true(expression):
-    return (isinstance(expression, exp.Boolean) and expression.this) or isinstance(
-        expression, exp.Literal
+    return (isinstance(expression, exp.Boolean) and expression.this) or (
+        isinstance(expression, exp.Literal) and not is_zero(expression)
     )
 
 
 def always_false(expression):
-    return is_false(expression) or is_null(expression)
+    return is_false(expression) or is_null(expression) or is_zero(expression)
+
+
+def is_zero(expression):
+    return isinstance(expression, exp.Literal) and expression.to_py() == 0
 
 
 def is_complement(a, b):

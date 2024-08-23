@@ -7249,8 +7249,8 @@ def cast(
     Returns:
         The new Cast instance.
     """
-    expr = maybe_parse(expression, copy=copy, **opts)
-    data_type = DataType.build(to, copy=copy, **opts)
+    expr = maybe_parse(expression, copy=copy, dialect=dialect, **opts)
+    data_type = DataType.build(to, copy=copy, dialect=dialect, **opts)
 
     # dont re-cast if the expression is already a cast to the correct type
     if isinstance(expr, Cast):

@@ -317,10 +317,14 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
             )
 
         for join in expression.args.get("joins") or []:
-            unnest = join.this
+            join_expr = join.this
+
+            is_lateral = isinstance(join_expr, exp.Lateral)
+
+            unnest = join_expr.this if is_lateral else join_expr
 
             if isinstance(unnest, exp.Unnest):
-                alias = unnest.args.get("alias")
+                alias = join_expr.args.get("alias") if is_lateral else unnest.args.get("alias")
                 udtf = exp.Posexplode if unnest.args.get("offset") else exp.Explode
 
                 expression.args["joins"].remove(join)

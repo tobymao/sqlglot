@@ -7,6 +7,7 @@ class TestStarrocks(Validator):
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
+        self.validate_identity("SELECT [1, 2, 3]")
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
@@ -28,3 +29,24 @@ class TestStarrocks(Validator):
                 "mysql": "SELECT REGEXP_LIKE(abc, '%foo%')",
             },
         )
+
+    def test_unnest(self):
+        self.validate_identity(
+            "SELECT student, score, t.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS t",
+            "SELECT student, score, t.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS t(unnest)",
+        )
+
+        lateral_explode_sqls = [
+            "SELECT id, t.col FROM tbl, UNNEST(scores) AS t(col)",
+            "SELECT id, t.col FROM tbl CROSS JOIN LATERAL UNNEST(scores) AS t(col)",
+        ]
+
+        for sql in lateral_explode_sqls:
+            with self.subTest(f"Testing Starrocks roundtrip & transpilation of: {sql}"):
+                self.validate_all(
+                    sql,
+                    write={
+                        "starrocks": sql,
+                        "spark": "SELECT id, t.col FROM tbl LATERAL VIEW EXPLODE(scores) t AS col",
+                    },
+                )

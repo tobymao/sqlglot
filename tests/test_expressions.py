@@ -451,6 +451,12 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(len(list(recast.find_all(exp.Cast))), 2)
         self.assertEqual(recast.sql(), "CAST(CAST(x AS DATE) AS VARCHAR)")
 
+        # check that dialect is used when casting strings
+        self.assertEqual(
+            exp.cast("x", to="regtype", dialect="postgres").sql(), "CAST(x AS REGTYPE)"
+        )
+        self.assertEqual(exp.cast("`x`", to="date", dialect="hive").sql(), 'CAST("x" AS DATE)')
+
     def test_ctes(self):
         expression = parse_one("SELECT a FROM x")
         self.assertEqual(expression.ctes, [])

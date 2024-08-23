@@ -3553,7 +3553,7 @@ class Parser(metaclass=_Parser):
             this.set("version", version)
 
         if self.dialect.ALIAS_POST_TABLESAMPLE:
-            table_sample = self._parse_table_sample()
+            this.set("sample", self._parse_table_sample())
 
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
         if alias:
@@ -3570,11 +3570,7 @@ class Parser(metaclass=_Parser):
             this.set("pivots", self._parse_pivots())
 
         if not self.dialect.ALIAS_POST_TABLESAMPLE:
-            table_sample = self._parse_table_sample()
-
-        if table_sample:
-            table_sample.set("this", this)
-            this = table_sample
+            this.set("sample", self._parse_table_sample())
 
         if joins:
             for join in self._parse_joins():

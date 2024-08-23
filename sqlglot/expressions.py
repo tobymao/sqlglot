@@ -3074,6 +3074,7 @@ class Table(Expression):
         "partition": False,
         "changes": False,
         "rows_from": False,
+        "sample": False,
     }
 
     @property
@@ -3846,7 +3847,6 @@ class Subquery(DerivedTable, Query):
 
 class TableSample(Expression):
     arg_types = {
-        "this": False,
         "expressions": False,
         "method": False,
         "bucket_numerator": False,

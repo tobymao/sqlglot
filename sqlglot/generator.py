@@ -1764,6 +1764,15 @@ class Generator(metaclass=_Generator):
         version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
+
+        sample = self.sql(expression, "sample")
+        if self.dialect.ALIAS_POST_TABLESAMPLE:
+            sample_pre_alias = sample
+            sample_post_alias = ""
+        else:
+            sample_pre_alias = ""
+            sample_post_alias = sample
+
         hints = self.expressions(expression, key="hints", sep=" ")
         hints = f" {hints}" if hints and self.TABLE_HINTS else ""
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
@@ -1794,23 +1803,13 @@ class Generator(metaclass=_Generator):
         if rows_from:
             table = f"ROWS FROM {self.wrap(rows_from)}"
 
-        return f"{only}{table}{changes}{partition}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
+        return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self,
         expression: exp.TableSample,
-        sep: str = " AS ",
         tablesample_keyword: t.Optional[str] = None,
     ) -> str:
-        if self.dialect.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
-            table = expression.this.copy()
-            table.set("alias", None)
-            this = self.sql(table)
-            alias = f"{sep}{self.sql(expression.this, 'alias')}"
-        else:
-            this = self.sql(expression, "this")
-            alias = ""
-
         method = self.sql(expression, "method")
         method = f"{method} " if method and self.TABLESAMPLE_WITH_METHOD else ""
         numerator = self.sql(expression, "bucket_numerator")
@@ -1833,9 +1832,7 @@ class Generator(metaclass=_Generator):
         if self.TABLESAMPLE_REQUIRES_PARENS:
             expr = f"({expr})"
 
-        return (
-            f"{this} {tablesample_keyword or self.TABLESAMPLE_KEYWORDS} {method}{expr}{seed}{alias}"
-        )
+        return f" {tablesample_keyword or self.TABLESAMPLE_KEYWORDS} {method}{expr}{seed}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)

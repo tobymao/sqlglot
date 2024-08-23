@@ -753,7 +753,6 @@ class DuckDB(Dialect):
         def tablesample_sql(
             self,
             expression: exp.TableSample,
-            sep: str = " AS ",
             tablesample_keyword: t.Optional[str] = None,
         ) -> str:
             if not isinstance(expression.parent, exp.Select):
@@ -769,9 +768,7 @@ class DuckDB(Dialect):
                     )
                     expression.set("method", exp.var("RESERVOIR"))
 
-            return super().tablesample_sql(
-                expression, sep=sep, tablesample_keyword=tablesample_keyword
-            )
+            return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None

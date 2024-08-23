@@ -676,17 +676,25 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            """'{"a":1,"b":2}'::json->'b'""",
-            write={
-                "postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'""",
-                "redshift": """JSON_EXTRACT_PATH_TEXT('{"a":1,"b":2}', 'b')""",
-            },
-        )
-        self.validate_all(
             "TRIM(BOTH 'as' FROM 'as string as')",
             write={
                 "postgres": "TRIM(BOTH 'as' FROM 'as string as')",
                 "spark": "TRIM(BOTH 'as' FROM 'as string as')",
+            },
+        )
+        self.validate_identity(
+            """SELECT TRIM(LEADING ' XXX ' COLLATE "de_DE")""",
+            """SELECT LTRIM(' XXX ' COLLATE "de_DE")""",
+        )
+        self.validate_identity(
+            """SELECT TRIM(TRAILING ' XXX ' COLLATE "de_DE")""",
+            """SELECT RTRIM(' XXX ' COLLATE "de_DE")""",
+        )
+        self.validate_all(
+            """'{"a":1,"b":2}'::json->'b'""",
+            write={
+                "postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'""",
+                "redshift": """JSON_EXTRACT_PATH_TEXT('{"a":1,"b":2}', 'b')""",
             },
         )
         self.validate_all(

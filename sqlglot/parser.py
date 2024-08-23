@@ -140,6 +140,14 @@ def build_convert_timezone(
     return exp.ConvertTimezone.from_arg_list(args)
 
 
+def build_trim(args: t.List, is_left: bool = True):
+    return exp.Trim(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        position="LEADING" if is_left else "TRAILING",
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -200,9 +208,11 @@ class Parser(metaclass=_Parser):
         "LOWER": build_lower,
         "LPAD": lambda args: build_pad(args),
         "LEFTPAD": lambda args: build_pad(args),
+        "LTRIM": lambda args: build_trim(args),
         "MOD": build_mod,
-        "RPAD": lambda args: build_pad(args, is_left=False),
         "RIGHTPAD": lambda args: build_pad(args, is_left=False),
+        "RPAD": lambda args: build_pad(args, is_left=False),
+        "RTRIM": lambda args: build_trim(args, is_left=False),
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),

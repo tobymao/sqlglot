@@ -492,6 +492,8 @@ class TestClickhouse(Validator):
                 "postgres": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
             },
         )
+        self.validate_identity("SELECT TRIM(TRAILING ')' FROM '(   Hello, world!   )')")
+        self.validate_identity("SELECT TRIM(LEADING '(' FROM '(   Hello, world!   )')")
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

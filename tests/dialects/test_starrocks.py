@@ -35,6 +35,29 @@ class TestStarrocks(Validator):
             "SELECT student, score, t.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS t",
             "SELECT student, score, t.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS t(unnest)",
         )
+        self.validate_identity(
+            "SELECT student, score, unnest.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores)",
+            "SELECT student, score, unnest.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS unnest(unnest)",
+        )
+        self.validate_all(
+            r"""SELECT * FROM UNNEST(array['John','Jane','Jim','Jamie'], array[24,25,26,27]) AS t(name, age)""",
+            write={
+                "postgres": "SELECT * FROM UNNEST(ARRAY['John', 'Jane', 'Jim', 'Jamie'], ARRAY[24, 25, 26, 27]) AS t(name, age)",
+                "spark": "SELECT * FROM EXPLODE(ARRAY('John', 'Jane', 'Jim', 'Jamie'), ARRAY(24, 25, 26, 27)) AS "
+                "t(name, age)",
+            },
+        )
+        # Use UNNEST to convert into multiple columns
+        # see: https://docs.starrocks.io/docs/sql-reference/sql-functions/array-functions/unnest/
+        self.validate_all(
+            r"""SELECT id, t.type, t.scores FROM example_table, unnest(split(type, ";"), scores) AS t(type,scores)""",
+            write={
+                "postgres": "SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS "
+                "t(type, scores)",
+                "spark": "SELECT id, t.type, t.scores FROM example_table LATERAL VIEW EXPLODE(SPLIT(type, CONCAT"
+                r"""('\\Q', ';'))) t AS type LATERAL VIEW EXPLODE(scores) t AS scores""",
+            },
+        )
 
         lateral_explode_sqls = [
             "SELECT id, t.col FROM tbl, UNNEST(scores) AS t(col)",

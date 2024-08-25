@@ -190,6 +190,13 @@ class Spark2(Hive):
 
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                ]
+            ),
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self,
             e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",

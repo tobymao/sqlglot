@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from functools import partial
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -485,7 +486,7 @@ class Hive(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    transforms.unnest_to_explode,
+                    partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
                 ]
             ),
             exp.Property: _property_sql,

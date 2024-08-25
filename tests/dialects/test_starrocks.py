@@ -36,15 +36,14 @@ class TestStarrocks(Validator):
             "SELECT student, score, t.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS t(unnest)",
         )
         self.validate_identity(
-            "SELECT student, score, unnest.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores)",
-            "SELECT student, score, unnest.unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS unnest(unnest)",
+            "SELECT student, score, unnest FROM tests CROSS JOIN LATERAL UNNEST(scores)",
+            "SELECT student, score, unnest FROM tests CROSS JOIN LATERAL UNNEST(scores) AS unnest(unnest)",
         )
         self.validate_all(
             r"""SELECT * FROM UNNEST(array['John','Jane','Jim','Jamie'], array[24,25,26,27]) AS t(name, age)""",
             write={
                 "postgres": "SELECT * FROM UNNEST(ARRAY['John', 'Jane', 'Jim', 'Jamie'], ARRAY[24, 25, 26, 27]) AS t(name, age)",
-                "spark": "SELECT * FROM EXPLODE(ARRAY('John', 'Jane', 'Jim', 'Jamie'), ARRAY(24, 25, 26, 27)) AS "
-                "t(name, age)",
+                "spark": "SELECT * FROM EXPLODE(ARRAY('John', 'Jane', 'Jim', 'Jamie'), ARRAY(24, 25, 26, 27)) AS t(name, age)",
             },
         )
         # Use UNNEST to convert into multiple columns
@@ -52,10 +51,17 @@ class TestStarrocks(Validator):
         self.validate_all(
             r"""SELECT id, t.type, t.scores FROM example_table, unnest(split(type, ";"), scores) AS t(type,scores)""",
             write={
-                "postgres": "SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS "
-                "t(type, scores)",
-                "spark": "SELECT id, t.type, t.scores FROM example_table LATERAL VIEW EXPLODE(SPLIT(type, CONCAT"
+                "postgres": "SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS t(type, scores)",
+                "spark": r"""SELECT id, t.type, t.scores FROM example_table LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';')), scores)) t AS type, scores""",
+                "hive": "SELECT id, t.type, t.scores FROM example_table LATERAL VIEW EXPLODE(SPLIT(type, CONCAT"
                 r"""('\\Q', ';'))) t AS type LATERAL VIEW EXPLODE(scores) t AS scores""",
+                "databricks": r"""SELECT id, t.type, t.scores FROM example_table LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';')), scores)) t AS type, scores""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT id, t.type, t.scores FROM example_table CROSS JOIN LATERAL unnest(split(type, ";"), scores) AS t(type,scores)""",
+            write={
+                "spark": r"""SELECT id, t.type, t.scores FROM example_table LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';')), scores)) t AS type, scores""",
             },
         )
 

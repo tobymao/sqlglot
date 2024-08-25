@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
+from sqlglot.expressions import Func
 from sqlglot.helper import find_new_name, name_sequence
 
 if t.TYPE_CHECKING:
@@ -296,12 +297,16 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
+def unnest_to_explode(
+    expression: exp.Expression,
+    unnest_using_arrays_zip: bool = True,
+    support_unnest_func: bool = False,
+) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
     if isinstance(expression, exp.Select):
         from_ = expression.args.get("from")
 
-        if from_ and isinstance(from_.this, exp.Unnest):
+        if not support_unnest_func and from_ and isinstance(from_.this, exp.Unnest):
             unnest = from_.this
             alias = unnest.args.get("alias")
             udtf = exp.Posexplode if unnest.args.get("offset") else exp.Explode
@@ -325,17 +330,30 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
 
             if isinstance(unnest, exp.Unnest):
                 alias = join_expr.args.get("alias") if is_lateral else unnest.args.get("alias")
-                udtf = exp.Posexplode if unnest.args.get("offset") else exp.Explode
+                has_multi_expr = len(unnest.expressions) > 1
+                _udtf: type[Func] = exp.Posexplode if unnest.args.get("offset") else exp.Explode
 
                 expression.args["joins"].remove(join)
+
+                if unnest_using_arrays_zip and has_multi_expr:
+                    # Modify the logic to use arrays_zip if there are multiple expressions
+                    # Build arrays_zip with nested expressions correctly
+                    unnest.set(
+                        "expressions",
+                        [exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest.expressions)],
+                    )
+                    _udtf = exp.Inline
 
                 for e, column in zip(unnest.expressions, alias.columns if alias else []):
                     expression.append(
                         "laterals",
                         exp.Lateral(
-                            this=udtf(this=e),
+                            this=_udtf(this=e),
                             view=True,
-                            alias=exp.TableAlias(this=alias.this, columns=[column]),  # type: ignore
+                            alias=exp.TableAlias(
+                                this=alias.this,  # type: ignore
+                                columns=alias.columns if unnest_using_arrays_zip else [column],  # type: ignore
+                            ),
                         ),
                     )
 

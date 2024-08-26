@@ -243,6 +243,7 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT * FROM GLOB(x)")
         self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
         self.validate_identity("SELECT MAP {'x': 1}")
         self.validate_identity("SELECT (MAP {'x': 1})['x']")

@@ -376,6 +376,7 @@ class DuckDB(Dialect):
         }
 
         FUNCTIONS.pop("DATE_SUB")
+        FUNCTIONS.pop("GLOB")
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE")

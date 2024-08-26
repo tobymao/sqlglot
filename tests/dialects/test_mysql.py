@@ -665,12 +665,6 @@ class TestMySQL(Validator):
             write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",
         )
 
-        # Check AT TIME ZONE generates as CONVERT_TZ
-        self.validate_identity(
-            "SELECT foo AT TIME ZONE 'UTC'",
-            write_sql="SELECT CONVERT_TZ(foo, @@global.time_zone, 'UTC')",
-        )
-
     @unittest.skipUnless(
         sys.version_info >= (3, 11),
         "Python 3.11 relaxed datetime.fromisoformat() parsing with regards to microseconds",
@@ -1248,3 +1242,12 @@ COMMENT='客户账户表'"""
                             "mysql": f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', CAST('2001-02-16 20:38:40' AS DATETIME))) {unit})",
                         },
                     )
+
+    def test_at_time_zone(self):
+        with self.assertLogs() as cm:
+            # Check AT TIME ZONE doesnt discard the column name and also raises a warning
+            self.validate_identity(
+                "SELECT foo AT TIME ZONE 'UTC'",
+                write_sql="SELECT foo",
+            )
+            assert "AT TIME ZONE is not supported" in cm.output[0]

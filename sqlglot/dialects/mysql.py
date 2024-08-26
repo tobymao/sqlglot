@@ -686,9 +686,6 @@ class MySQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ArrayAgg: rename_func("GROUP_CONCAT"),
-            exp.AtTimeZone: lambda self, e: self.func(
-                "CONVERT_TZ", e.this, exp.var("@@global.time_zone"), e.args.get("zone")
-            ),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
@@ -1216,3 +1213,7 @@ class MySQL(Dialect):
             dt = expression.args.get("timestamp")
 
             return self.func("CONVERT_TZ", dt, from_tz, to_tz)
+
+        def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+            self.unsupported("AT TIME ZONE is not supported by MySQL")
+            return self.sql(expression.this)

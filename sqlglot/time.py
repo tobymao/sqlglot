@@ -1,4 +1,5 @@
 import typing as t
+import datetime
 
 # The generic time format is based on python time.strftime.
 # https://docs.python.org/3/library/time.html#time.strftime
@@ -661,3 +662,26 @@ TIMEZONES = {
         "Zulu",
     )
 }
+
+
+def subsecond_precision(timestamp_literal: str) -> int:
+    """
+    Given an ISO-8601 timestamp literal, eg '2023-01-01 12:13:14.123456+00:00'
+    figure out its subsecond precision so we can construct types like DATETIME(6)
+
+    Note that in practice, this is either 3 or 6 digits (3 = millisecond precision, 6 = microsecond precision)
+    - 6 is the maximum because strftime's '%f' formats to microseconds and almost every database supports microsecond precision in timestamps
+    - Except Presto/Trino which in most cases only supports millisecond precision but will still honour '%f' and format to microseconds (replacing the remaining 3 digits with 0's)
+    - Python prior to 3.11 only supports 0, 3 or 6 digits in a timestamp literal. Any other amounts will throw a 'ValueError: Invalid isoformat string:' error
+    """
+    try:
+        parsed = datetime.datetime.fromisoformat(timestamp_literal)
+        subsecond_digit_count = len(str(parsed.microsecond).rstrip("0"))
+        precision = 0
+        if subsecond_digit_count > 3:
+            precision = 6
+        elif subsecond_digit_count > 0:
+            precision = 3
+        return precision
+    except ValueError:
+        return 0

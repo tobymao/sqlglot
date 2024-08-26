@@ -415,6 +415,12 @@ class TestTSQL(Validator):
             },
         )
 
+        # Check that TRUE and FALSE dont get expanded to (1=1) or (1=0) when used in a VALUES expression
+        self.validate_identity(
+            "SELECT val FROM (VALUES ((TRUE), (FALSE), (NULL))) AS t(val)",
+            write_sql="SELECT val FROM (VALUES ((1), (0), (NULL))) AS t(val)",
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

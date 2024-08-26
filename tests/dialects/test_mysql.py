@@ -1,3 +1,6 @@
+import unittest
+import sys
+
 from sqlglot import expressions as exp
 from sqlglot.dialects.mysql import MySQL
 from tests.dialects.test_dialect import Validator
@@ -637,6 +640,53 @@ class TestMySQL(Validator):
             },
         )
 
+        # No timezone, make sure DATETIME captures the correct precision
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.123456+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.123456+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.123+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.123+00:00' AS DATETIME(3))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15+00:00' AS DATETIME)",
+        )
+
+        # With timezone, make sure the TIMESTAMP constructor is used
+        # also TIMESTAMP doesnt have the subsecond precision truncation issue that DATETIME does so we dont need to TIMESTAMP(6)
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15-08:00', 'America/Los_Angeles')",
+            write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15-08:00', 'America/Los_Angeles')",
+            write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",
+        )
+
+    @unittest.skipUnless(
+        sys.version_info >= (3, 11),
+        "Python 3.11 relaxed datetime.fromisoformat() parsing with regards to microseconds",
+    )
+    def test_mysql_time_python311(self):
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12345+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.12345+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1234+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.1234+00:00' AS DATETIME(6))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.12+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.12+00:00' AS DATETIME(3))",
+        )
+        self.validate_identity(
+            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15.1+00:00')",
+            write_sql="SELECT CAST('2023-01-01 13:14:15.1+00:00' AS DATETIME(3))",
+        )
+
     def test_mysql(self):
         self.validate_all(
             "SELECT CONCAT('11', '22')",
@@ -1192,3 +1242,12 @@ COMMENT='客户账户表'"""
                             "mysql": f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', CAST('2001-02-16 20:38:40' AS DATETIME))) {unit})",
                         },
                     )
+
+    def test_at_time_zone(self):
+        with self.assertLogs() as cm:
+            # Check AT TIME ZONE doesnt discard the column name and also raises a warning
+            self.validate_identity(
+                "SELECT foo AT TIME ZONE 'UTC'",
+                write_sql="SELECT foo",
+            )
+            assert "AT TIME ZONE is not supported" in cm.output[0]

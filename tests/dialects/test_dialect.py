@@ -656,13 +656,29 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "TIME_STR_TO_TIME('2020-01-01 12:13:14.123456+00:00')",
+            write={
+                "mysql": "CAST('2020-01-01 12:13:14.123456+00:00' AS DATETIME(6))",
+                "trino": "CAST('2020-01-01 12:13:14.123456+00:00' AS TIMESTAMP(6))",
+                "presto": "CAST('2020-01-01 12:13:14.123456+00:00' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_TIME('2020-01-01 12:13:14.123-08:00', 'America/Los_Angeles')",
+            write={
+                "mysql": "TIMESTAMP('2020-01-01 12:13:14.123-08:00')",
+                "trino": "CAST('2020-01-01 12:13:14.123-08:00' AS TIMESTAMP(3) WITH TIME ZONE)",
+                "presto": "CAST('2020-01-01 12:13:14.123-08:00' AS TIMESTAMP WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
             "TIME_STR_TO_TIME('2020-01-01 12:13:14-08:00', 'America/Los_Angeles')",
             write={
                 "bigquery": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
                 "databricks": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
                 "duckdb": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
                 "tsql": "CAST('2020-01-01 12:13:14-08:00' AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
-                "mysql": "CAST('2020-01-01 12:13:14-08:00' AS DATETIME)",
+                "mysql": "TIMESTAMP('2020-01-01 12:13:14-08:00')",
                 "postgres": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
                 "redshift": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP WITH TIME ZONE)",
                 "snowflake": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
@@ -683,7 +699,7 @@ class TestDialect(Validator):
                 "databricks": "CAST(col AS TIMESTAMP)",
                 "duckdb": "CAST(col AS TIMESTAMPTZ)",
                 "tsql": "CAST(col AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
-                "mysql": "CAST(col AS DATETIME)",
+                "mysql": "TIMESTAMP(col)",
                 "postgres": "CAST(col AS TIMESTAMPTZ)",
                 "redshift": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
                 "snowflake": "CAST(col AS TIMESTAMPTZ)",
@@ -720,6 +736,13 @@ class TestDialect(Validator):
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
                 "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "doris": "DATE_FORMAT(x, '%Y-%m-%d')",
+            },
+        )
+        self.validate_all(
+            "TIME_TO_STR(a, '%Y-%m-%d %H:%M:%S.%f')",
+            write={
+                "redshift": "TO_CHAR(a, 'YYYY-MM-DD HH24:MI:SS.US')",
+                "tsql": "FORMAT(a, 'yyyy-MM-dd HH:mm:ss.ffffff')",
             },
         )
         self.validate_all(

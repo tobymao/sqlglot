@@ -25,6 +25,7 @@ from sqlglot.dialects.dialect import (
     strposition_to_locate_sql,
     unit_to_var,
     trim_sql,
+    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -728,8 +729,10 @@ class MySQL(Dialect):
             ),
             exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeStrToTime: lambda self, e: self.sql(
-                exp.cast(e.this, exp.DataType.Type.DATETIME, copy=True)
+            exp.TimeStrToTime: lambda self, e: timestrtotime_sql(
+                self,
+                e,
+                include_precision=not e.args.get("zone"),
             ),
             exp.TimeToStr: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))
@@ -1210,3 +1213,7 @@ class MySQL(Dialect):
             dt = expression.args.get("timestamp")
 
             return self.func("CONVERT_TZ", dt, from_tz, to_tz)
+
+        def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+            self.unsupported("AT TIME ZONE is not supported by MySQL")
+            return self.sql(expression.this)

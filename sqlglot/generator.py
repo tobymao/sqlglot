@@ -4150,7 +4150,6 @@ class Generator(metaclass=_Generator):
         else:
             with_sql = " WITH"
 
-        unique = expression.args.get("unique")
-        unique_sql = " UNIQUE KEYS" if unique else ""
+        unique_sql = " UNIQUE KEYS" if expression.args.get("unique") else ""
 
         return f"JSON{this}{with_sql}{unique_sql}"

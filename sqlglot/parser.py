@@ -1252,6 +1252,8 @@ class Parser(metaclass=_Parser):
 
     COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS", "CREDENTIAL"}
 
+    IS_JSON_PREDICATE_KIND = {"VALUE", "SCALAR", "ARRAY", "OBJECT"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -4288,10 +4290,26 @@ class Parser(metaclass=_Parser):
             klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
             return self.expression(klass, this=this, expression=self._parse_bitwise())
 
-        expression = self._parse_null() or self._parse_boolean()
-        if not expression:
-            self._retreat(index)
-            return None
+        if self._match(TokenType.JSON):
+            kind = self._match_texts(self.IS_JSON_PREDICATE_KIND) and self._prev.text.upper()
+
+            if self._match_text_seq("WITH"):
+                _with = True
+            elif self._match_text_seq("WITHOUT"):
+                _with = False
+            else:
+                _with = None
+
+            unique = self._match(TokenType.UNIQUE)
+            self._match_text_seq("KEYS")
+            expression: t.Optional[exp.Expression] = self.expression(
+                exp.JSON, **{"this": kind, "with": _with, "unique": unique}
+            )
+        else:
+            expression = self._parse_null() or self._parse_boolean()
+            if not expression:
+                self._retreat(index)
+                return None
 
         this = self.expression(exp.Is, this=this, expression=expression)
         return self.expression(exp.Not, this=this) if negate else this

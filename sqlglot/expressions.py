@@ -5441,6 +5441,11 @@ class IsInf(Func):
     _sql_names = ["IS_INF", "ISINF"]
 
 
+# https://www.postgresql.org/docs/current/functions-json.html
+class JSON(Expression):
+    arg_types = {"this": False, "with": False, "unique": False}
+
+
 class JSONPath(Expression):
     arg_types = {"expressions": True}
 

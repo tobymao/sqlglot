@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
+from sqlglot.expressions import Func
 from sqlglot.helper import find_new_name, name_sequence
 
 if t.TYPE_CHECKING:
@@ -299,19 +300,20 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 def unnest_to_explode(
     expression: exp.Expression,
     unnest_using_arrays_zip: bool = True,
-    support_unnest_func: bool = False,
 ) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
 
-    def handle_unnest(u: exp.Unnest, _has_multi_expr: bool) -> None:
+    def _unnest_zip_exprs(
+        u: exp.Unnest, unnest_exprs: t.List[t.Any], _has_multi_expr: bool
+    ) -> t.List[Func]:
         if unnest_using_arrays_zip and _has_multi_expr:
             # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
-            u.set(
-                "expressions",
-                [exp.Anonymous(this="ARRAYS_ZIP", expressions=u.expressions)],
-            )
+            zip_exprs: t.List[Func] = [exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)]
+            u.set("expressions", zip_exprs)
+            return zip_exprs
+        return unnest_exprs
 
-    def udtf_type(u: exp.Unnest, _has_multi_expr: bool):
+    def _udtf_type(u: exp.Unnest, _has_multi_expr: bool):
         return (
             exp.Posexplode
             if u.args.get("offset")
@@ -321,16 +323,16 @@ def unnest_to_explode(
     if isinstance(expression, exp.Select):
         from_ = expression.args.get("from")
 
-        if not support_unnest_func and from_ and isinstance(from_.this, exp.Unnest):
+        if from_ and isinstance(from_.this, exp.Unnest):
             unnest = from_.this
             alias = unnest.args.get("alias")
-            has_multi_expr = len(unnest.expressions) > 1
-            handle_unnest(unnest, has_multi_expr)
-            this, *expressions = unnest.expressions
+            exprs = unnest.expressions
+            has_multi_expr = len(exprs) > 1
+            this, *expressions = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
             unnest.replace(
                 exp.Table(
-                    this=udtf_type(unnest, has_multi_expr)(
+                    this=_udtf_type(unnest, has_multi_expr)(
                         this=this,
                         expressions=expressions,
                     ),
@@ -346,26 +348,27 @@ def unnest_to_explode(
             unnest = join_expr.this if is_lateral else join_expr
 
             if isinstance(unnest, exp.Unnest):
-                alias = (
-                    join_expr.args.get("alias")
-                    if is_lateral and join_expr.args.get("alias")
-                    else unnest.args.get("alias")
-                )
+                if is_lateral:
+                    alias = join_expr.args.get("alias") or unnest.args.get("alias")
+                else:
+                    alias = unnest.args.get("alias")
+                exprs = unnest.expressions
                 # The number of unnest.expressions will be changed by handle_unnest, we need to record it here
-                has_multi_expr = len(unnest.expressions) > 1
-                handle_unnest(unnest, has_multi_expr)
+                has_multi_expr = len(exprs) > 1
+                exprs = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
                 expression.args["joins"].remove(join)
 
-                for e, column in zip(unnest.expressions, alias.columns if alias else []):
+                alias_cols = alias.columns if alias else []
+                for e, column in zip(exprs, alias_cols):
                     expression.append(
                         "laterals",
                         exp.Lateral(
-                            this=udtf_type(unnest, has_multi_expr)(this=e),
+                            this=_udtf_type(unnest, has_multi_expr)(this=e),
                             view=True,
                             alias=exp.TableAlias(
                                 this=alias.this,  # type: ignore
-                                columns=alias.columns if unnest_using_arrays_zip else [column],  # type: ignore
+                                columns=alias_cols if unnest_using_arrays_zip else [column],  # type: ignore
                             ),
                         ),
                     )

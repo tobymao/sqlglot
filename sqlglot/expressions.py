@@ -5346,8 +5346,7 @@ class Explode(Func):
 
 # https://spark.apache.org/docs/latest/api/sql/#inline
 class Inline(Func):
-    arg_types = {"this": True, "expressions": False}
-    is_var_len_args = True
+    pass
 
 
 class ExplodeOuter(Explode):

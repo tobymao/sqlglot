@@ -2888,7 +2888,12 @@ class Generator(metaclass=_Generator):
         return f"REFERENCES {this}{expressions}{options}"
 
     def anonymous_sql(self, expression: exp.Anonymous) -> str:
-        return self.func(self.sql(expression, "this"), *expression.expressions)
+        # We don't normalize qualified functions such as a.b.foo(), because they can be case-sensitive
+        parent = expression.parent
+        is_qualified = isinstance(parent, exp.Dot) and expression is parent.expression
+        return self.func(
+            self.sql(expression, "this"), *expression.expressions, normalize=not is_qualified
+        )
 
     def paren_sql(self, expression: exp.Paren) -> str:
         sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
@@ -3397,8 +3402,10 @@ class Generator(metaclass=_Generator):
         *args: t.Optional[exp.Expression | str],
         prefix: str = "(",
         suffix: str = ")",
+        normalize: bool = True,
     ) -> str:
-        return f"{self.normalize_func(name)}{prefix}{self.format_args(*args)}{suffix}"
+        name = self.normalize_func(name) if normalize else name
+        return f"{name}{prefix}{self.format_args(*args)}{suffix}"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
         arg_sqls = tuple(

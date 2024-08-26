@@ -362,7 +362,7 @@ FROM warehouses, XMLTABLE(
 FROM XMLTABLE(
   'ROWSET/ROW'
   PASSING
-    dbms_xmlgen.GETXMLTYPE('SELECT table_name, column_name, data_default FROM user_tab_columns')
+    dbms_xmlgen.getxmltype('SELECT table_name, column_name, data_default FROM user_tab_columns')
   COLUMNS
     table_name VARCHAR2(128) PATH '*[1]',
     column_name VARCHAR2(128) PATH '*[2]',

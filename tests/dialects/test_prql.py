@@ -322,13 +322,12 @@ class TestPRQL(Validator):
             },
         )
         """
-        """
         self.validate_all(
             # https://prql-lang.org/book/reference/stdlib/transforms/join.html
             "from a join b (a.c == b.c)",
             read={
                 None: "SELECT a.*, b.* FROM a INNER JOIN b ON a.c = b.c",
-                # "prql": "from a join side:inner b (a.c == b.c)", # TODO: Implement.
+                "prql": "from a join side:inner b (a.c == b.c)",
             },
             write={
                 None: "SELECT a.*, b.* FROM a INNER JOIN b ON a.c = b.c",
@@ -339,10 +338,10 @@ class TestPRQL(Validator):
             "from a join b (a.c == b.c)",
             read={
                 None: "SELECT a.*, b.* FROM a JOIN b ON a.c = b.c",
-                # "prql": "from a join b (a.c == b.c)", # TODO: Implement.
+                "prql": "from a join b (a.c == b.c)",
             },
             write={
-                None: "SELECT a.*, b.* FROM a JOIN b ON a.c = b.c",
+                None: "SELECT a.*, b.* FROM a INNER JOIN b ON a.c = b.c",
             },
         )
         self.validate_all(
@@ -350,7 +349,7 @@ class TestPRQL(Validator):
             "from a join side:left b (a.c == b.c && a.d == 'MATCH_STR')",
             read={
                 None: "SELECT a.*, b.* FROM a LEFT JOIN b ON a.c = b.c AND a.d = 'MATCH_STR'",
-                # "prql": "from a join side:left b (a.c == b.c && a.d == 'MATCH_STR')", # TODO: Implement.
+                "prql": "from a join side:left b (a.c == b.c && a.d == 'MATCH_STR')",
             },
             write={
                 None: "SELECT a.*, b.* FROM a LEFT JOIN b ON a.c = b.c AND a.d = 'MATCH_STR'",
@@ -361,7 +360,7 @@ class TestPRQL(Validator):
             "from a join side:right b (a.c == b.c && b.d == 'MATCH_STR')",
             read={
                 None: "SELECT a.*, b.* FROM a RIGHT JOIN b ON a.c = b.c AND b.d = 'MATCH_STR'",
-                "prql": "from a join side:right b (a.c == b.c && b.d == 'MATCH_STR')", # TODO: Implement.
+                "prql": "from a join side:right b (a.c == b.c && b.d == 'MATCH_STR')",
             },
             write={
                 None: "SELECT a.*, b.* FROM a RIGHT JOIN b ON a.c = b.c AND b.d = 'MATCH_STR'",
@@ -372,13 +371,23 @@ class TestPRQL(Validator):
             "from a join side:full b (a.c == b.c)",
             read={
                 None: "SELECT a.*, b.* FROM a FULL JOIN b ON a.c = b.c",
-                "prql": "from a join side:full b (a.c == b.c)", # TODO: Implement.
+                "prql": "from a join side:full b (a.c == b.c)",
             },
             write={
                 None: "SELECT a.*, b.* FROM a FULL JOIN b ON a.c = b.c",
             },
         )
-        """
+        self.validate_all(
+            # https://prql-lang.org/book/reference/stdlib/transforms/join.html
+            "from a join side:left b (a.c == b.c && a.c == 'MATCH_STR')",
+            read={
+                None: "SELECT a.*, b.* FROM a LEFT JOIN b ON a.c = b.c AND a.c = 'MATCH_STR'",
+                "prql": "from a join side:left b (a.c == b.c && a.c == 'MATCH_STR')",
+            },
+            write={
+                None: "SELECT a.*, b.* FROM a LEFT JOIN b ON a.c = b.c AND a.c = 'MATCH_STR'",
+            },
+        )
         self.validate_all(
             # https://prql-lang.org/book/reference/stdlib/transforms/append.html
             "from a append b",

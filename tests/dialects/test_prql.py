@@ -389,6 +389,16 @@ class TestPRQL(Validator):
             },
         )
         self.validate_all(
+            "from a join b (a.d == b.d && a.d == 'MATCH_STR') join c (a.e == c.e)",
+            read={
+                None: "SELECT a.*, b.*, c.* FROM a JOIN b ON a.d = b.d AND a.d = 'MATCH_STR' JOIN c ON a.e = c.e",
+                "prql": "from a join b (a.d == b.d && a.d == 'MATCH_STR') join c (a.e == c.e)",
+            },
+            write={
+                None: "SELECT a.*, b.*, c.* FROM a INNER JOIN b ON a.d = b.d AND a.d = 'MATCH_STR' INNER JOIN c ON a.e = c.e",
+            },
+        )
+        self.validate_all(
             # https://prql-lang.org/book/reference/stdlib/transforms/append.html
             "from a append b",
             read={

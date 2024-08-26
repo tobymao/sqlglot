@@ -203,6 +203,13 @@ def _ordered_sql(self: PRQL.Generator, expression: exp.Ordered) -> str:
         f"{self.sql(expression, 'this')}"
     )
 
+def _where_sql(self: PRQL.Generator, expression: exp.Where) -> str:
+    """
+    Performs a where transform.
+    """
+    
+    return f"{_tuple_if_necessary(self, 'filter', [expression.this])}"
+
 def _window_sql(self: PRQL.Generator, expression: exp.Window, alias: t.Optional[exp.Alias] = None) -> str:
     """
     Performs a window transform. May be passed an alias, which will be used.
@@ -472,7 +479,7 @@ def _requires_parenthesis(expression: exp.Expression) -> bool:
 
         # https://prql-lang.org/book/reference/syntax/operators.html#operator-precedence
         match exp_type:
-            case exp.Paren: return True
+            case exp.Paren: return True # For sake of completeness.
             case exp.Identifier: return True
             case exp.Not: return True
             case exp.RangeN: return True
@@ -498,8 +505,12 @@ def _requires_parenthesis(expression: exp.Expression) -> bool:
     match exp_type:
         case exp.Column: return False
         case exp.Identifier: return False
+        case exp.Is: return _requires_parenthesis(expression.left) \
+                    or _requires_parenthesis(expression.right)
         case exp.Literal: return False
+        case exp.Null: return False
         case exp.Ordered: return _requires_parenthesis(expression.this)
+        case exp.Paren: return False
 
     if _is_PRQL_operator(exp_type):
         match exp_type:
@@ -606,6 +617,7 @@ class PRQL(Dialect):
             "AGGREGATE": lambda self, query: self._parse_selection(
                 query, parse_method=self._parse_aggregate, append=False
             ),
+            "JOIN": lambda self, query: self._parse_join(query),
         }
 
         FUNCTIONS = {
@@ -746,6 +758,52 @@ class PRQL(Dialect):
             return self.expression(
                 exp.From, comments=self._prev_comments, this=self._parse_table(joins=joins)
             )
+        
+        def _parse_join(self, query: exp.Select) -> t.Optional[exp.Join]:
+            join_object = self._parse_expression()
+
+            join_type = None; pass # Prevent accidental assignment.
+            if isinstance(join_object, exp.Column): # Explicit `join_type`, parsed as "side".
+                if self._match(TokenType.COLON) is None: # Ignore ':'.
+                    return None
+                if not self._curr:
+                    return None
+                join_type = self._curr.text
+                self._advance()
+                
+                join_object = self._parse_expression()
+            else: # Implicit `join_type`.
+                join_type = "inner"
+
+
+            join_table = join_object.this
+
+            join_condition = getattr(join_object, "expressions", None)
+            if join_condition:
+                join_condition = " AND ".join(str(c) for c in join_condition)
+
+            prev_selects = query.selects
+            num_selects = len(prev_selects)
+            # Remove exp.Star.
+            prev_selects = [e for e in prev_selects if not e.is_star]
+            
+            # Add original table as col.
+            if num_selects != len(prev_selects):
+                if original_table := PRQL.Generator._optional_arg_chain(query, ["from", "this", "this"]):
+                    prev_selects.append(f"{original_table}.*")
+            # Add sub-joins as cols.
+            if sub_joins := query.args.get("joins", None):
+                prev_selects.extend([f"{j.this}.*" for j in sub_joins])
+            # Add join table as col.
+            prev_selects.append(f"{join_table}.*")
+            
+            # Set cols.
+            query = query.select(*prev_selects, append=False)
+            
+            return query.join( \
+                f"{join_table}", \
+                on=f"{join_condition}" if join_condition else None, \
+                join_type=f"{join_type}")
     
     class Generator(generator.Generator):
         
@@ -785,8 +843,7 @@ class PRQL(Dialect):
             exp.Sum: _unary_op_factory("sum"),
             #exp.Tuple: lambda self, e: f"", # TODO: Implement: `expression` is optional.
             exp.Union: _union_op_factory("append"),
-            exp.Where: lambda self, e: f" filter {self.sql(e, 'this')}", # TODO: Fix: Move to func & add parenthesis for args >= 2.
-            # exp.Where: lambda self, e: f" filter {_tuple_if_necessary(self, None, [e.this])}",
+            exp.Where: _where_sql,
             exp.Window: _window_sql,
             exp.WindowSpec: lambda self, e: f"{e}", # TODO: Implement.
             # TODO: Add more transforms.
@@ -804,27 +861,6 @@ class PRQL(Dialect):
             """
             
             return f"{self.sql(expression, key) if key in expression.args else ''}"
-
-        def _optional_arg_chain(self, expression: exp.Expression, keys: list[str]) -> t.Optional[exp.Expression | t.Any]:
-            """
-            Recursively retrieves the current attribute of `keys` from
-            `expression`, returning the final result. If any key doesn't exist,
-            returns `None`.
-            """
-
-            def _optional_expression_retrieve_attribute(e: t.Optional[exp.Expression], attribute_name: str) -> t.Optional[exp.Expression]:
-                """
-                Retrieves the attribute `attribute_name` of `e` iff `e` is not
-                `None` and `e` contains `attribute_name`, o/w returns `None`.
-                """
-                
-                return None if e is None else e.args.get(attribute_name, None)
-
-            return reduce( \
-                _optional_expression_retrieve_attribute, \
-                keys, \
-                expression \
-            )
 
         def _is_agg_func(self, expression: exp.Expression) -> bool:
             """
@@ -872,6 +908,28 @@ class PRQL(Dialect):
             items_stringified = [f"{self.sql(item)}" for item in items]
             
             return items_stringified if concat_with is None else f"{concat_with.join(items_stringified)}"
+
+        @staticmethod
+        def _optional_arg_chain(expression: exp.Expression, keys: list[str]) -> t.Optional[exp.Expression | t.Any]:
+            """
+            Recursively retrieves the current attribute of `keys` from
+            `expression`, returning the final result. If any key doesn't exist,
+            returns `None`.
+            """
+
+            def _optional_expression_retrieve_attribute(e: t.Optional[exp.Expression], attribute_name: str) -> t.Optional[exp.Expression]:
+                """
+                Retrieves the attribute `attribute_name` of `e` iff `e` is not
+                `None` and `e` contains `attribute_name`, o/w returns `None`.
+                """
+                
+                return None if e is None else e.args.get(attribute_name, None)
+
+            return reduce( \
+                _optional_expression_retrieve_attribute, \
+                keys, \
+                expression \
+            )
 
         _T_ListElement = t.TypeVar("_T_ListElement")
         @staticmethod
@@ -931,4 +989,4 @@ class PRQL(Dialect):
                         `_tuple_if_necessary(generator, str(key), val)`.
                 """
                 
-                return [_tuple_if_necessary(generator, str(k), v) for (k, v) in partitions.items()]    
+                return [_tuple_if_necessary(generator, str(k), v) for (k, v) in partitions.items()]

@@ -38,7 +38,7 @@ class StarRocks(MySQL):
                 if not alias:
                     alias = exp.TableAlias(columns=[exp.to_identifier("unnest")])
                     unnest.set("alias", alias)
-                if not alias.args.get("columns"):
+                elif not alias.args.get("columns"):
                     # Starrocks defaults to naming the UNNEST column as "unnest"
                     # if it's not otherwise specified
                     alias.set("columns", [exp.to_identifier("unnest")])

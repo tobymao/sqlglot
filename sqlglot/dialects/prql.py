@@ -94,13 +94,13 @@ def _join_sql(self: PRQL.Generator, expression: exp.Join) -> str:
         f"{f' ({join_condition})' if join_condition else ''}"
     )
 
-def _list_of_joins_sql(self: PRQL.Generator, expressions: list[exp.Join]) -> str:
+def _list_of_joins_sql(self: PRQL.Generator, expressions: t.Iterable[exp.Join]) -> str:
     """
     Transforms a sequence of joins.
     """
 
     # Returns "" if `expressions` is empty.
-    return f"{''.join(_join_sql(self, e) for e in expressions)}" # TODO: Implement w/ multiple levels of joins.
+    return f"{''.join(_join_sql(self, e) for e in expressions)}"
 
 def _not_sql(self: PRQL.Generator, expression: exp.Not) -> str:
     """
@@ -301,7 +301,7 @@ def _window_sql(self: PRQL.Generator, expression: exp.Window, alias: t.Optional[
     return f"{sort_by}window {all_fields}"
     """
 
-def _concat_optional_fields(fields: list[t.Tuple[t.Optional[str], t.Optional[str]]], name_delimeter: str = "", delimeter: str = " ") -> str:
+def _concat_optional_fields(fields: t.Iterable[t.Tuple[t.Optional[str], t.Optional[str]]], name_delimeter: str = "", delimeter: str = " ") -> str:
     """
     Concatenates fields, skipping `value` that are `None. Optionally, fields
     have a `name`.
@@ -868,7 +868,7 @@ class PRQL(Dialect):
             `exp.Coalesce` aggregate if any components do.
             """
 
-            def _agg_reduce_or(expression_list: list[exp.Expression]) -> bool:
+            def _agg_reduce_or(expression_list: t.Iterable[exp.Expression]) -> bool:
                 """
                 Determines if at least one `expression` in `expression_list` is
                 an aggregation function.
@@ -890,7 +890,7 @@ class PRQL(Dialect):
                 case _:
                     return False
 
-        def _to_sql_for_each(self, items: list[exp.Expression], concat_with: t.Optional[str] = None) -> list[str] | str:
+        def _to_sql_for_each(self, items: t.Iterable[exp.Expression], concat_with: t.Optional[str] = None) -> list[str] | str:
             """
             Runs `self.sql(item)` on all elements of `items`. Concats iff
             `concat_with` isn't `None`.
@@ -910,7 +910,7 @@ class PRQL(Dialect):
             return items_stringified if concat_with is None else f"{concat_with.join(items_stringified)}"
 
         @staticmethod
-        def _optional_arg_chain(expression: exp.Expression, keys: list[str]) -> t.Optional[exp.Expression | t.Any]:
+        def _optional_arg_chain(expression: exp.Expression, keys: t.Iterable[str]) -> t.Optional[exp.Expression | t.Any]:
             """
             Recursively retrieves the current attribute of `keys` from
             `expression`, returning the final result. If any key doesn't exist,
@@ -933,7 +933,7 @@ class PRQL(Dialect):
 
         _T_ListElement = t.TypeVar("_T_ListElement")
         @staticmethod
-        def _partition_list_via_filter(in_list: list[_T_ListElement], criteria: t.Callable[[_T_ListElement], bool]) \
+        def _partition_list_via_filter(in_list: t.Iterable[_T_ListElement], criteria: t.Callable[[_T_ListElement], bool]) \
             -> dict[bool, list[_T_ListElement]]:
             """
             Partitions a `list` into two lists: a `True` `list`, and a `False`

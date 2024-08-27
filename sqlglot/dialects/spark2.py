@@ -190,13 +190,6 @@ class Spark2(Hive):
 
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,
-            exp.Select: transforms.preprocess(
-                [
-                    transforms.eliminate_qualify,
-                    transforms.eliminate_distinct_on,
-                    transforms.unnest_to_explode,
-                ]
-            ),
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self,
             e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
@@ -236,6 +229,13 @@ class Spark2(Hive):
                 e.expression,
                 e.args["replacement"],
                 e.args.get("position"),
+            ),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                ]
             ),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),

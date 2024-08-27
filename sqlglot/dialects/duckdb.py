@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_var,
     unit_to_str,
+    sha256_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -40,6 +41,14 @@ from sqlglot.tokens import TokenType
 DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
 ]
+
+WINDOW_FUNCS = (
+    exp.FirstValue,
+    exp.LastValue,
+    exp.Lag,
+    exp.Lead,
+    exp.NthValue,
+)
 
 
 def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
@@ -539,6 +548,7 @@ class DuckDB(Dialect):
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
             exp.SafeDivide: no_safe_divide_sql,
+            exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: str_position_sql,
@@ -546,6 +556,7 @@ class DuckDB(Dialect):
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),
             exp.Struct: _struct_sql,
+            exp.Transform: rename_func("LIST_TRANSFORM"),
             exp.TimeAdd: _date_delta_sql,
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
@@ -907,3 +918,10 @@ class DuckDB(Dialect):
                 return self.sql(select)
 
             return super().unnest_sql(expression)
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            if isinstance(expression.this, WINDOW_FUNCS):
+                # DuckDB should render IGNORE NULLS only in window functions e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
+                return super().ignorenulls_sql(expression)
+
+            return self.sql(expression, "this")

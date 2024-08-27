@@ -710,6 +710,13 @@ TBLPROPERTIES (
         )
         self.validate_identity("DESCRIBE schema.test PARTITION(ds = '2024-01-01')")
 
+        self.validate_all(
+            "SELECT ANY_VALUE(col, true), FIRST(col, true), FIRST_VALUE(col, true) OVER ()",
+            write={
+                "duckdb": "SELECT ANY_VALUE(col), FIRST(col), FIRST_VALUE(col IGNORE NULLS) OVER ()"
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

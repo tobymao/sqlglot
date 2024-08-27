@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import expressions as exp
-from sqlglot.expressions import Func
+from sqlglot import expressions as exp, generator
 from sqlglot.helper import find_new_name, name_sequence
 
 if t.TYPE_CHECKING:
@@ -300,25 +299,33 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 def unnest_to_explode(
     expression: exp.Expression,
     unnest_using_arrays_zip: bool = True,
+    generator: t.Optional[generator.Generator] = None,
 ) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
 
     def _unnest_zip_exprs(
-        u: exp.Unnest, unnest_exprs: t.List[t.Any], _has_multi_expr: bool
-    ) -> t.List[Func]:
-        if unnest_using_arrays_zip and _has_multi_expr:
-            # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
-            zip_exprs: t.List[Func] = [exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)]
-            u.set("expressions", zip_exprs)
-            return zip_exprs
+        u: exp.Unnest, unnest_exprs: t.List[exp.Expression], has_multi_expr: bool
+    ) -> t.List[exp.Expression]:
+        if has_multi_expr:
+            if not unnest_using_arrays_zip:
+                if generator:
+                    generator.unsupported(
+                        f"Multiple expressions in UNNEST are not supported in "
+                        f"{generator.dialect.__module__.split('.')[-1].upper()}"
+                    )
+            else:
+                # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
+                zip_exprs: t.List[exp.Expression] = [
+                    exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
+                ]
+                u.set("expressions", zip_exprs)
+                return zip_exprs
         return unnest_exprs
 
-    def _udtf_type(u: exp.Unnest, _has_multi_expr: bool) -> exp.Func:
-        return (
-            exp.Posexplode
-            if u.args.get("offset")
-            else (exp.Inline if unnest_using_arrays_zip and _has_multi_expr else exp.Explode)
-        )
+    def _udtf_type(u: exp.Unnest, has_multi_expr: bool) -> t.Type[exp.Func]:
+        if u.args.get("offset"):
+            return exp.Posexplode
+        return exp.Inline if has_multi_expr else exp.Explode
 
     if isinstance(expression, exp.Select):
         from_ = expression.args.get("from")
@@ -349,11 +356,11 @@ def unnest_to_explode(
 
             if isinstance(unnest, exp.Unnest):
                 if is_lateral:
-                    alias = join_expr.args.get("alias") or unnest.args.get("alias")
+                    alias = join_expr.args.get("alias")
                 else:
                     alias = unnest.args.get("alias")
                 exprs = unnest.expressions
-                # The number of unnest.expressions will be changed by handle_unnest, we need to record it here
+                # The number of unnest.expressions will be changed by _unnest_zip_exprs, we need to record it here
                 has_multi_expr = len(exprs) > 1
                 exprs = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 

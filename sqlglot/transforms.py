@@ -313,7 +313,7 @@ def unnest_to_explode(
             return zip_exprs
         return unnest_exprs
 
-    def _udtf_type(u: exp.Unnest, _has_multi_expr: bool):
+    def _udtf_type(u: exp.Unnest, _has_multi_expr: bool) -> exp.Func:
         return (
             exp.Posexplode
             if u.args.get("offset")

@@ -1259,16 +1259,16 @@ class TestDuckDB(Validator):
 
     def test_ignore_nulls(self):
         # Note that DuckDB differentiates window functions (e.g. LEAD, LAG) from aggregate functions (e.g. SUM)
-        from sqlglot.dialects.duckdb import WINDOW_FUNCS
+        from sqlglot.dialects.duckdb import WINDOW_FUNCS_WITH_IGNORE_NULLS
 
         agg_funcs = (exp.Sum, exp.Max, exp.Min)
 
-        for func_type in WINDOW_FUNCS + agg_funcs:
+        for func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS + agg_funcs:
             func = func_type(this=exp.to_identifier("col"))
             ignore_null = exp.IgnoreNulls(this=func)
             windowed_ignore_null = exp.Window(this=ignore_null)
 
-            if func_type in WINDOW_FUNCS:
+            if func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS:
                 self.assertIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
             else:
                 self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))

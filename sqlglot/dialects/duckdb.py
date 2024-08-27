@@ -42,7 +42,7 @@ DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
 ]
 
-WINDOW_FUNCS = (
+WINDOW_FUNCS_WITH_IGNORE_NULLS = (
     exp.FirstValue,
     exp.LastValue,
     exp.Lag,
@@ -920,8 +920,9 @@ class DuckDB(Dialect):
             return super().unnest_sql(expression)
 
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
-            if isinstance(expression.this, WINDOW_FUNCS):
-                # DuckDB should render IGNORE NULLS only in window functions e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
+            if isinstance(expression.this, WINDOW_FUNCS_WITH_IGNORE_NULLS):
+                # DuckDB should render IGNORE NULLS only for the general-purpose
+                # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
                 return super().ignorenulls_sql(expression)
 
             return self.sql(expression, "this")

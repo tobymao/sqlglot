@@ -33,6 +33,15 @@ def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
     return exp.ToChar.from_arg_list(args)
 
 
+def _trim_sql(self: Oracle.Generator, expression: exp.Trim) -> str:
+    position = expression.args.get("position")
+
+    if position and position.upper() in ("LEADING", "TRAILING"):
+        return self.trim_sql(expression)
+
+    return trim_sql(self, expression)
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -272,7 +281,7 @@ class Oracle(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
-            exp.Trim: trim_sql,
+            exp.Trim: _trim_sql,
             exp.UnixToTime: lambda self,
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }

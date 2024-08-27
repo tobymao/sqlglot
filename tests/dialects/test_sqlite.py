@@ -91,6 +91,10 @@ class TestSQLite(Validator):
             read={"snowflake": "LEAST(x, y, z)"},
             write={"snowflake": "LEAST(x, y, z)"},
         )
+        self.validate_identity(
+            "SELECT * FROM station WHERE city IS NOT ''",
+            "SELECT * FROM station WHERE NOT city IS ''",
+        )
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

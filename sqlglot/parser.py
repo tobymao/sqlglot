@@ -4306,7 +4306,7 @@ class Parser(metaclass=_Parser):
                 exp.JSON, **{"this": kind, "with": _with, "unique": unique}
             )
         else:
-            expression = self._parse_null() or self._parse_boolean()
+            expression = self._parse_primary() or self._parse_null()
             if not expression:
                 self._retreat(index)
                 return None

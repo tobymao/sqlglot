@@ -716,9 +716,6 @@ class TestPresto(Validator):
         )
         self.validate_all(
             "SELECT ROW(1, 2)",
-            read={
-                "spark": "SELECT STRUCT(1, 2)",
-            },
             write={
                 "presto": "SELECT ROW(1, 2)",
                 "spark": "SELECT STRUCT(1, 2)",

@@ -2986,6 +2986,7 @@ class Parser(metaclass=_Parser):
             this=this,
             pivots=self._parse_pivots(),
             alias=self._parse_table_alias() if parse_alias else None,
+            sample=self._parse_table_sample(),
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:

@@ -1,6 +1,53 @@
 Changelog
 =========
 
+## [v25.18.0] - 2024-08-28
+### :boom: BREAKING CHANGES
+- due to [`22bb9a0`](https://github.com/tobymao/sqlglot/commit/22bb9a0e5c64ae344c9e25ed34200ed743e7b8f0) - stop normalizing qualified anonymous functions *(PR [#3969](https://github.com/tobymao/sqlglot/pull/3969) by [@georgesittas](https://github.com/georgesittas))*:
+
+  stop normalizing qualified anonymous functions (#3969)
+
+- due to [`8aec682`](https://github.com/tobymao/sqlglot/commit/8aec68253b10dcbfe7cc5b3d6e1145ae714ca346) - mysql/tsql datetime precision, formatting, exp.AtTimeZone *(PR [#3951](https://github.com/tobymao/sqlglot/pull/3951) by [@erindru](https://github.com/erindru))*:
+
+  mysql/tsql datetime precision, formatting, exp.AtTimeZone (#3951)
+
+- due to [`2f3626a`](https://github.com/tobymao/sqlglot/commit/2f3626a4fc20c46411cd91bf8beda2bdd103ca4a) - Generation of exp.SHA2, exp.Transform, exp.IgnoreNulls *(PR [#3980](https://github.com/tobymao/sqlglot/pull/3980) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Generation of exp.SHA2, exp.Transform, exp.IgnoreNulls (#3980)
+
+- due to [`905b722`](https://github.com/tobymao/sqlglot/commit/905b7226ae4a6dc505fe303bb4df3818cb586826) - preserve each distinct CUBE/ROLLUP/GROUPING SET clause *(PR [#3985](https://github.com/tobymao/sqlglot/pull/3985) by [@georgesittas](https://github.com/georgesittas))*:
+
+  preserve each distinct CUBE/ROLLUP/GROUPING SET clause (#3985)
+
+
+### :sparkles: New Features
+- [`48b214d`](https://github.com/tobymao/sqlglot/commit/48b214da7e39d36938d12059deb827d0a5f6a5a2) - **postgres**: Support for IS JSON predicate *(PR [#3971](https://github.com/tobymao/sqlglot/pull/3971) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3965](https://github.com/tobymao/sqlglot/issues/3965) opened by [@faisal-ksolves](https://github.com/faisal-ksolves)*
+- [`f7e4e4a`](https://github.com/tobymao/sqlglot/commit/f7e4e4adc64aaef73d23c2550a4bfa9958d4851b) - **duckdb**: add support for the GLOB table function closes [#3973](https://github.com/tobymao/sqlglot/pull/3973) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`a0d1377`](https://github.com/tobymao/sqlglot/commit/a0d137787885627aae07f11a9c18a4cc133baa0a) - **spark**: add support for table statement in INSERT *(PR [#3986](https://github.com/tobymao/sqlglot/pull/3986) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3984](https://github.com/tobymao/sqlglot/issues/3984) opened by [@madeirak](https://github.com/madeirak)*
+- [`f5bfd67`](https://github.com/tobymao/sqlglot/commit/f5bfd67341518d0ecb1c3693e0b41ed5c1cf0596) - **mysql**: Parse JSON_VALUE() *(PR [#3987](https://github.com/tobymao/sqlglot/pull/3987) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3983](https://github.com/tobymao/sqlglot/issues/3983) opened by [@ashishshukla19](https://github.com/ashishshukla19)*
+- [`79e92ad`](https://github.com/tobymao/sqlglot/commit/79e92ad565c42098ff7b7921fe04e6aac7859dd8) - **spark**: Default naming of STRUCT fields *(PR [#3991](https://github.com/tobymao/sqlglot/pull/3991) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3988](https://github.com/tobymao/sqlglot/issues/3988) opened by [@dor-bernstein](https://github.com/dor-bernstein)*
+
+### :bug: Bug Fixes
+- [`22bb9a0`](https://github.com/tobymao/sqlglot/commit/22bb9a0e5c64ae344c9e25ed34200ed743e7b8f0) - stop normalizing qualified anonymous functions *(PR [#3969](https://github.com/tobymao/sqlglot/pull/3969) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3967](https://github.com/tobymao/sqlglot/issues/3967) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`8aec682`](https://github.com/tobymao/sqlglot/commit/8aec68253b10dcbfe7cc5b3d6e1145ae714ca346) - mysql/tsql datetime precision, formatting, exp.AtTimeZone *(PR [#3951](https://github.com/tobymao/sqlglot/pull/3951) by [@erindru](https://github.com/erindru))*
+- [`d37a5bb`](https://github.com/tobymao/sqlglot/commit/d37a5bbfcd5732aa64a24bd83dde4abcac8b0bed) - **snowflake**: handle DIV0 case where divident is null *(PR [#3975](https://github.com/tobymao/sqlglot/pull/3975) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3974](https://github.com/tobymao/sqlglot/issues/3974) opened by [@Nathan-Fenner](https://github.com/Nathan-Fenner)*
+- [`b2f877b`](https://github.com/tobymao/sqlglot/commit/b2f877ba5fc9ec9fdafad74196dda1631fdfc0c1) - **oracle**: Use LTRIM/RTRIM unless BOTH is specified *(PR [#3977](https://github.com/tobymao/sqlglot/pull/3977) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`201b51a`](https://github.com/tobymao/sqlglot/commit/201b51a860d4db2b2e49e04f6534b7ad22ae287c) - **sqlite**: Make IS parser more lenient *(PR [#3981](https://github.com/tobymao/sqlglot/pull/3981) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3978](https://github.com/tobymao/sqlglot/issues/3978) opened by [@focafull](https://github.com/focafull)*
+- [`2f3626a`](https://github.com/tobymao/sqlglot/commit/2f3626a4fc20c46411cd91bf8beda2bdd103ca4a) - **duckdb**: Generation of exp.SHA2, exp.Transform, exp.IgnoreNulls *(PR [#3980](https://github.com/tobymao/sqlglot/pull/3980) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3972](https://github.com/tobymao/sqlglot/issues/3972) opened by [@dor-bernstein](https://github.com/dor-bernstein)*
+- [`905b722`](https://github.com/tobymao/sqlglot/commit/905b7226ae4a6dc505fe303bb4df3818cb586826) - **parser**: preserve each distinct CUBE/ROLLUP/GROUPING SET clause *(PR [#3985](https://github.com/tobymao/sqlglot/pull/3985) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3979](https://github.com/tobymao/sqlglot/issues/3979) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`ee9dc39`](https://github.com/tobymao/sqlglot/commit/ee9dc399134ad86720abe480ee2565de822336cf) - Fix binding of TABLESAMPLE to exp.Subquery instead of top-level exp.Select *(PR [#3994](https://github.com/tobymao/sqlglot/pull/3994) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3992](https://github.com/tobymao/sqlglot/issues/3992) opened by [@cpcloud](https://github.com/cpcloud)*
+
+
 ## [v25.17.0] - 2024-08-26
 ### :boom: BREAKING CHANGES
 - due to [`0a9ba05`](https://github.com/tobymao/sqlglot/commit/0a9ba0536235e10aed02d4ff5e571e435a00febc) - 0 is falsey *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -4518,3 +4565,4 @@ Changelog
 [v25.16.0]: https://github.com/tobymao/sqlglot/compare/v25.15.0...v25.16.0
 [v25.16.1]: https://github.com/tobymao/sqlglot/compare/v25.16.0...v25.16.1
 [v25.17.0]: https://github.com/tobymao/sqlglot/compare/v25.16.1...v25.17.0
+[v25.18.0]: https://github.com/tobymao/sqlglot/compare/v25.17.0...v25.18.0

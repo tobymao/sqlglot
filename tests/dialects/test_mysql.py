@@ -1251,3 +1251,15 @@ COMMENT='客户账户表'"""
                 write_sql="SELECT foo",
             )
             assert "AT TIME ZONE is not supported" in cm.output[0]
+
+    def test_json_value(self):
+        json_doc = """'{"item": "shoes", "price": "49.95"}'"""
+        self.validate_identity(f"""SELECT JSON_VALUE({json_doc}, '$.price')""")
+        self.validate_identity(
+            f"""SELECT JSON_VALUE({json_doc}, '$.price' RETURNING DECIMAL(4, 2))"""
+        )
+
+        for on_option in ("NULL", "ERROR", "DEFAULT 1"):
+            self.validate_identity(
+                f"""SELECT JSON_VALUE({json_doc}, '$.price' RETURNING DECIMAL(4, 2) {on_option} ON EMPTY {on_option} ON ERROR) AS price"""
+            )

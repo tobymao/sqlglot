@@ -5559,6 +5559,17 @@ class JSONSchema(Expression):
     arg_types = {"expressions": True}
 
 
+# https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html#function_json-value
+class JSONValue(Expression):
+    arg_types = {
+        "this": True,
+        "path": True,
+        "returning": False,
+        "on_empty": False,
+        "on_error": False,
+    }
+
+
 # # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 class JSONTable(Func):
     arg_types = {

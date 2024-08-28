@@ -892,6 +892,7 @@ class ClickHouse(Dialect):
         # There's no list in docs, but it can be found in Clickhouse code
         # see `ClickHouse/src/Parsers/ParserCreate*.cpp`
         ON_CLUSTER_TARGETS = {
+            "SCHEMA",  # Transpiled CREATE SCHEMA may have OnCluster property set
             "DATABASE",
             "TABLE",
             "VIEW",

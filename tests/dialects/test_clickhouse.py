@@ -622,6 +622,14 @@ class TestClickhouse(Validator):
         )
         self.assertEqual(create_with_cluster.sql("clickhouse"), "CREATE DATABASE foo ON CLUSTER c")
 
+        # Transpiled CREATE SCHEMA may have OnCluster property set
+        create_with_cluster = exp.Create(
+            this=db_table_expr,
+            kind="SCHEMA",
+            properties=exp.Properties(expressions=[exp.OnCluster(this=exp.to_identifier("c"))]),
+        )
+        self.assertEqual(create_with_cluster.sql("clickhouse"), "CREATE DATABASE foo ON CLUSTER c")
+
         ctas_with_comment = exp.Create(
             this=exp.table_("foo"),
             kind="TABLE",

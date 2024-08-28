@@ -521,6 +521,12 @@ class TSQL(Dialect):
                 substr=seq_get(args, 0),
                 position=seq_get(args, 2),
             ),
+            "COUNT": lambda args: exp.Count(
+                this=seq_get(args, 0), expressions=args[1:], big_int=False
+            ),
+            "COUNT_BIG": lambda args: exp.Count(
+                this=seq_get(args, 0), expressions=args[1:], big_int=True
+            ),
             "DATEADD": build_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": _build_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _build_formatted_time(exp.TimeToStr, full_format_mapping=True),
@@ -854,7 +860,6 @@ class TSQL(Dialect):
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
-            exp.Count: rename_func("COUNT_BIG"),
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
@@ -1065,6 +1070,10 @@ class TSQL(Dialect):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 
             return self.prepend_ctes(expression, sql)
+
+        def count_sql(self, expression: exp.Count) -> str:
+            func_name = "COUNT_BIG" if expression.args.get("big_int") else "COUNT"
+            return rename_func(func_name)(self, expression)
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"

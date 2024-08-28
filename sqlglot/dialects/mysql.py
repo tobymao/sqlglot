@@ -670,16 +670,16 @@ class MySQL(Dialect):
                 if self._match_texts(("NULL", "ERROR")):
                     value = self._prev.text.upper()
                 else:
-                    value = self._match(TokenType.DEFAULT) and self._parse_expression()
+                    value = self._match(TokenType.DEFAULT) and self._parse_bitwise()
 
                 self._match_text_seq("ON")
                 self._match_texts(("EMPTY", "ERROR"))
 
                 return value
 
-            this = self._parse_primary()
+            this = self._parse_bitwise()
             self._match(TokenType.COMMA)
-            path = self._parse_primary()
+            path = self._parse_bitwise()
 
             returning = self._match(TokenType.RETURNING) and self._parse_type()
 

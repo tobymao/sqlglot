@@ -1669,7 +1669,10 @@ class Generator(metaclass=_Generator):
         settings = self.sql(expression, "settings")
         settings = f" {settings}" if settings else ""
 
-        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{expression_sql}"
+        source = self.sql(expression, "source")
+        source = f"TABLE {source}" if source else ""
+
+        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{expression_sql}{source}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:

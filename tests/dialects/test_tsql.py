@@ -1882,7 +1882,7 @@ FROM OPENJSON(@json) WITH (
             "SET @count = (SELECT COUNT(1) FROM x)",
             write={
                 "databricks": "SET count = (SELECT COUNT(1) FROM x)",
-                "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
+                "tsql": "SET @count = (SELECT COUNT_BIG(1) FROM x)",
                 "spark": "SET count = (SELECT COUNT(1) FROM x)",
             },
         )

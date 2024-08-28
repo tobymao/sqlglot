@@ -2569,6 +2569,7 @@ class Parser(metaclass=_Parser):
             overwrite=overwrite,
             alternative=alternative,
             ignore=ignore,
+            source=self._match(TokenType.TABLE) and self._parse_table(),
         )
 
     def _parse_kill(self) -> exp.Kill:

@@ -2447,6 +2447,13 @@ class Generator(metaclass=_Generator):
     def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
+        sample = self.sql(expression, "sample")
+        if self.dialect.ALIAS_POST_TABLESAMPLE and sample:
+            alias = f"{sample}{alias}"
+
+            # Set to None so it's not generated again by self.query_modifiers()
+            expression.set("sample", None)
+
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         sql = self.query_modifiers(expression, self.wrap(expression), alias, pivots)
         return self.prepend_ctes(expression, sql)

@@ -370,7 +370,7 @@ LANGUAGE js AS
             },
             write={
                 "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
-                "duckdb": "SELECT SUM(x IGNORE NULLS) AS x",
+                "duckdb": "SELECT SUM(x) AS x",
                 "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
                 "spark": "SELECT SUM(x) IGNORE NULLS AS x",
                 "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
@@ -405,7 +405,7 @@ LANGUAGE js AS
             "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
             write={
                 "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
-                "duckdb": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a NULLS FIRST, b DESC LIMIT 10) AS x",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 10) AS x",
                 "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 10) IGNORE NULLS AS x",
             },
         )
@@ -413,7 +413,7 @@ LANGUAGE js AS
             "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
             write={
                 "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
-                "duckdb": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a NULLS FIRST, b DESC LIMIT 1, 10) AS x",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 1, 10) AS x",
                 "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 1, 10) IGNORE NULLS AS x",
             },
         )
@@ -814,6 +814,7 @@ LANGUAGE js AS
                 "presto": "SHA256(x)",
                 "redshift": "SHA2(x, 256)",
                 "trino": "SHA256(x)",
+                "duckdb": "SHA256(x)",
             },
         )
         self.validate_all(

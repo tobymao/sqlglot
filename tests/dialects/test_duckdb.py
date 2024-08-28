@@ -1008,6 +1008,13 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM (SELECT * FROM t) AS t1 TABLESAMPLE (1 ROWS), (SELECT * FROM t) AS t2 TABLESAMPLE (2 ROWS)",
+            write={
+                "duckdb": "SELECT * FROM (SELECT * FROM t) AS t1 TABLESAMPLE RESERVOIR (1 ROWS), (SELECT * FROM t) AS t2 TABLESAMPLE RESERVOIR (2 ROWS)",
+                "spark": "SELECT * FROM (SELECT * FROM t) TABLESAMPLE (1 ROWS) AS t1, (SELECT * FROM t) TABLESAMPLE (2 ROWS) AS t2",
+            },
+        )
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")

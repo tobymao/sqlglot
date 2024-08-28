@@ -4163,3 +4163,19 @@ class Generator(metaclass=_Generator):
         unique_sql = " UNIQUE KEYS" if expression.args.get("unique") else ""
 
         return f"JSON{this}{with_sql}{unique_sql}"
+
+    def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
+        def _generate_on_options(arg: t.Any) -> str:
+            return arg if isinstance(arg, str) else f"DEFAULT {self.sql(arg)}"
+
+        path = self.sql(expression, "path")
+        returning = self.sql(expression, "returning")
+        returning = f" RETURNING {returning}" if returning else ""
+
+        on_empty = expression.args.get("on_empty")
+        on_empty = f" {_generate_on_options(on_empty)} ON EMPTY" if on_empty else ""
+
+        on_error = expression.args.get("on_error")
+        on_error = f" {_generate_on_options(on_error)} ON ERROR" if on_error else ""
+
+        return self.func("JSON_VALUE", expression.this, f"{path}{returning}{on_empty}{on_error}")

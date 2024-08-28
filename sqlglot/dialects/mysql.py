@@ -335,6 +335,7 @@ class MySQL(Dialect):
             "VALUES": lambda self: self.expression(
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
             ),
+            "JSON_VALUE": lambda self: self._parse_json_value(),
         }
 
         STATEMENT_PARSERS = {
@@ -663,6 +664,33 @@ class MySQL(Dialect):
             separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
 
             return self.expression(exp.GroupConcat, this=this, separator=separator)
+
+        def _parse_json_value(self) -> exp.JSONValue:
+            def _parse_on_options() -> t.Optional[exp.Expression] | str:
+                if self._match_texts(("NULL", "ERROR")):
+                    value = self._prev.text.upper()
+                else:
+                    value = self._match(TokenType.DEFAULT) and self._parse_bitwise()
+
+                self._match_text_seq("ON")
+                self._match_texts(("EMPTY", "ERROR"))
+
+                return value
+
+            this = self._parse_bitwise()
+            self._match(TokenType.COMMA)
+            path = self._parse_bitwise()
+
+            returning = self._match(TokenType.RETURNING) and self._parse_type()
+
+            return self.expression(
+                exp.JSONValue,
+                this=this,
+                path=self.dialect.to_json_path(path),
+                returning=returning,
+                on_error=_parse_on_options(),
+                on_empty=_parse_on_options(),
+            )
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False

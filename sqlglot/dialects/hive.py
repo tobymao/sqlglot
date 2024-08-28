@@ -436,6 +436,14 @@ class Hive(Dialect):
             self._match(TokenType.R_BRACE)
             return self.expression(exp.Parameter, this=this, expression=expression)
 
+        def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
+            if isinstance(expression, exp.Column):
+                key = expression.this
+            else:
+                key = exp.to_identifier(f"col{index + 1}")
+
+            return self.expression(exp.PropertyEQ, this=key, expression=expression)
+
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"
         TABLESAMPLE_WITH_METHOD = False

@@ -485,7 +485,7 @@ TBLPROPERTIES (
         )
         self.validate_all(
             "SELECT CAST(STRUCT('fooo') AS STRUCT<a: VARCHAR(2)>)",
-            write={"spark": "SELECT CAST(STRUCT('fooo') AS STRUCT<a: STRING>)"},
+            write={"spark": "SELECT CAST(STRUCT('fooo' AS col1) AS STRUCT<a: STRING>)"},
         )
         self.validate_all(
             "SELECT CAST(123456 AS VARCHAR(3))",
@@ -715,6 +715,22 @@ TBLPROPERTIES (
             "SELECT ANY_VALUE(col, true), FIRST(col, true), FIRST_VALUE(col, true) OVER ()",
             write={
                 "duckdb": "SELECT ANY_VALUE(col), FIRST(col), FIRST_VALUE(col IGNORE NULLS) OVER ()"
+            },
+        )
+
+        self.validate_all(
+            "SELECT STRUCT(1, 2)",
+            write={
+                "spark": "SELECT STRUCT(1 AS col1, 2 AS col2)",
+                "presto": "SELECT CAST(ROW(1, 2) AS ROW(col1 INTEGER, col2 INTEGER))",
+                "duckdb": "SELECT {'col1': 1, 'col2': 2}",
+            },
+        )
+        self.validate_all(
+            "SELECT STRUCT(x, 1, y AS col3, STRUCT(5)) FROM t",
+            write={
+                "spark": "SELECT STRUCT(x AS x, 1 AS col2, y AS col3, STRUCT(5 AS col1) AS col4) FROM t",
+                "duckdb": "SELECT {'x': x, 'col2': 1, 'col3': y, 'col4': {'col1': 5}} FROM t",
             },
         )
 

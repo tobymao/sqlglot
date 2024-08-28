@@ -1946,6 +1946,18 @@ class Generator(metaclass=_Generator):
     def from_sql(self, expression: exp.From) -> str:
         return f"{self.seg('FROM')} {self.sql(expression, 'this')}"
 
+    def groupingsets_sql(self, expression: exp.GroupingSets) -> str:
+        grouping_sets = self.expressions(expression, indent=False)
+        return f"GROUPING SETS {self.wrap(grouping_sets)}"
+
+    def rollup_sql(self, expression: exp.Rollup) -> str:
+        expressions = self.expressions(expression, indent=False)
+        return f"ROLLUP {self.wrap(expressions)}" if expressions else "WITH ROLLUP"
+
+    def cube_sql(self, expression: exp.Cube) -> str:
+        expressions = self.expressions(expression, indent=False)
+        return f"CUBE {self.wrap(expressions)}" if expressions else "WITH CUBE"
+
     def group_sql(self, expression: exp.Group) -> str:
         group_by_all = expression.args.get("all")
         if group_by_all is True:
@@ -1957,34 +1969,23 @@ class Generator(metaclass=_Generator):
 
         group_by = self.op_expressions(f"GROUP BY{modifier}", expression)
 
-        grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
-        grouping_sets = (
-            f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""
-        )
-
-        cube = expression.args.get("cube", [])
-        if seq_get(cube, 0) is True:
-            return f"{group_by}{self.seg('WITH CUBE')}"
-        else:
-            cube_sql = self.expressions(expression, key="cube", indent=False)
-            cube_sql = f"{self.seg('CUBE')} {self.wrap(cube_sql)}" if cube_sql else ""
-
-        rollup = expression.args.get("rollup", [])
-        if seq_get(rollup, 0) is True:
-            return f"{group_by}{self.seg('WITH ROLLUP')}"
-        else:
-            rollup_sql = self.expressions(expression, key="rollup", indent=False)
-            rollup_sql = f"{self.seg('ROLLUP')} {self.wrap(rollup_sql)}" if rollup_sql else ""
+        grouping_sets = self.expressions(expression, key="grouping_sets")
+        cube = self.expressions(expression, key="cube")
+        rollup = self.expressions(expression, key="rollup")
 
         groupings = csv(
-            grouping_sets,
-            cube_sql,
-            rollup_sql,
+            self.seg(grouping_sets) if grouping_sets else "",
+            self.seg(cube) if cube else "",
+            self.seg(rollup) if rollup else "",
             self.seg("WITH TOTALS") if expression.args.get("totals") else "",
             sep=self.GROUPINGS_SEP,
         )
 
-        if expression.args.get("expressions") and groupings:
+        if (
+            expression.expressions
+            and groupings
+            and groupings.strip() not in ("WITH CUBE", "WITH ROLLUP")
+        ):
             group_by = f"{group_by}{self.GROUPINGS_SEP}"
 
         return f"{group_by}{groupings}"

@@ -99,14 +99,14 @@ WITH cte1 AS (
       FOO(CASE WHEN a AND b THEN c AND d ELSE 3 END)
     GROUP BY
       x,
-    GROUPING SETS (
-      a,
-      (b, c)
-    ),
-    CUBE (
-      y,
-      z
-    )
+      GROUPING SETS (
+        a,
+        (b, c)
+      ),
+      CUBE (
+        y,
+        z
+      )
   ) AS x
 )
 SELECT

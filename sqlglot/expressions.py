@@ -2281,6 +2281,18 @@ class Group(Expression):
     }
 
 
+class Cube(Expression):
+    arg_types = {"expressions": False}
+
+
+class Rollup(Expression):
+    arg_types = {"expressions": False}
+
+
+class GroupingSets(Expression):
+    arg_types = {"expressions": True}
+
+
 class Lambda(Expression):
     arg_types = {"this": True, "expressions": True}
 

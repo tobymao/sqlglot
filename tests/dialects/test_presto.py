@@ -634,6 +634,7 @@ class TestPresto(Validator):
                 },
             )
 
+        self.validate_identity("SELECT a FROM t GROUP BY a, ROLLUP (b), ROLLUP (c), ROLLUP (d)")
         self.validate_identity("SELECT a FROM test TABLESAMPLE BERNOULLI (50)")
         self.validate_identity("SELECT a FROM test TABLESAMPLE SYSTEM (75)")
         self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
@@ -833,12 +834,6 @@ class TestPresto(Validator):
                 "presto": "ARRAY_AGG(x ORDER BY y DESC)",
                 "spark": "COLLECT_LIST(x)",
                 "trino": "ARRAY_AGG(x ORDER BY y DESC)",
-            },
-        )
-        self.validate_all(
-            "SELECT a FROM t GROUP BY a, ROLLUP(b), ROLLUP(c), ROLLUP(d)",
-            write={
-                "presto": "SELECT a FROM t GROUP BY a, ROLLUP (b, c, d)",
             },
         )
         self.validate_all(

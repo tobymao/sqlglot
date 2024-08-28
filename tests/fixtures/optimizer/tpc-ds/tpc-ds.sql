@@ -852,10 +852,10 @@ SELECT
   SUM("x"."profit") AS "profit"
 FROM "x" AS "x"
 GROUP BY
-ROLLUP (
-  "x"."channel",
-  "x"."id"
-)
+  ROLLUP (
+    "x"."channel",
+    "x"."id"
+  )
 ORDER BY
   "channel",
   "id"
@@ -2294,12 +2294,12 @@ SELECT
   SUM("y"."number_sales") AS "_col_5"
 FROM "y" AS "y"
 GROUP BY
-ROLLUP (
-  "y"."channel",
-  "y"."i_brand_id",
-  "y"."i_class_id",
-  "y"."i_category_id"
-)
+  ROLLUP (
+    "y"."channel",
+    "y"."i_brand_id",
+    "y"."i_class_id",
+    "y"."i_category_id"
+  )
 ORDER BY
   "channel",
   "i_brand_id",
@@ -2608,12 +2608,12 @@ JOIN "customer_address" AS "customer_address"
   ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
   AND "customer_address"."ca_state" IN ('KS', 'IA', 'AL', 'UT', 'VA', 'NC', 'TX')
 GROUP BY
-ROLLUP (
-  "item"."i_item_id",
-  "customer_address"."ca_country",
-  "customer_address"."ca_state",
-  "customer_address"."ca_county"
-)
+  ROLLUP (
+    "item"."i_item_id",
+    "customer_address"."ca_country",
+    "customer_address"."ca_state",
+    "customer_address"."ca_county"
+  )
 ORDER BY
   "ca_country",
   "ca_state",
@@ -2876,12 +2876,12 @@ JOIN "item" AS "item"
 JOIN "warehouse" AS "warehouse"
   ON "inventory"."inv_warehouse_sk" = "warehouse"."w_warehouse_sk"
 GROUP BY
-ROLLUP (
-  "item"."i_product_name",
-  "item"."i_brand",
-  "item"."i_class",
-  "item"."i_category"
-)
+  ROLLUP (
+    "item"."i_product_name",
+    "item"."i_brand",
+    "item"."i_class",
+    "item"."i_category"
+  )
 ORDER BY
   "qoh",
   "i_product_name",
@@ -3347,10 +3347,10 @@ JOIN "store" AS "store"
   ON "store"."s_state" IN ('TN', 'TN', 'TN', 'TN', 'TN', 'TN')
   AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
 GROUP BY
-ROLLUP (
-  "item"."i_item_id",
-  "store"."s_state"
-)
+  ROLLUP (
+    "item"."i_item_id",
+    "store"."s_state"
+  )
 ORDER BY
   "i_item_id",
   "s_state"
@@ -4463,10 +4463,10 @@ JOIN "store" AS "store"
   ON "store"."s_state" IN ('TN', 'TN', 'TN', 'TN', 'TN', 'TN', 'TN', 'TN')
   AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
 GROUP BY
-ROLLUP (
-  "item"."i_category",
-  "item"."i_class"
-)
+  ROLLUP (
+    "item"."i_category",
+    "item"."i_class"
+  )
 ORDER BY
   "lochierarchy" DESC,
   CASE WHEN "lochierarchy" = 0 THEN "i_category" END,
@@ -9017,16 +9017,16 @@ WITH "dw1" AS (
   JOIN "store" AS "store"
     ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
   GROUP BY
-  ROLLUP (
-    "item"."i_category",
-    "item"."i_class",
-    "item"."i_brand",
-    "item"."i_product_name",
-    "date_dim"."d_year",
-    "date_dim"."d_qoy",
-    "date_dim"."d_moy",
-    "store"."s_store_id"
-  )
+    ROLLUP (
+      "item"."i_category",
+      "item"."i_class",
+      "item"."i_brand",
+      "item"."i_product_name",
+      "date_dim"."d_year",
+      "date_dim"."d_qoy",
+      "date_dim"."d_moy",
+      "store"."s_store_id"
+    )
 ), "dw2" AS (
   SELECT
     "dw1"."i_category" AS "i_category",
@@ -9396,10 +9396,10 @@ LEFT JOIN "_u_0" AS "_u_0"
 WHERE
   NOT "_u_0"."s_state" IS NULL
 GROUP BY
-ROLLUP (
-  "store"."s_state",
-  "store"."s_county"
-)
+  ROLLUP (
+    "store"."s_state",
+    "store"."s_county"
+  )
 ORDER BY
   "lochierarchy" DESC,
   CASE WHEN "lochierarchy" = 0 THEN "s_state" END,
@@ -10433,10 +10433,10 @@ SELECT
   SUM("x"."profit") AS "profit"
 FROM "x" AS "x"
 GROUP BY
-ROLLUP (
-  "x"."channel",
-  "x"."id"
-)
+  ROLLUP (
+    "x"."channel",
+    "x"."id"
+  )
 ORDER BY
   "channel",
   "id"
@@ -10937,10 +10937,10 @@ SELECT
   SUM("x"."profit") AS "profit"
 FROM "x" AS "x"
 GROUP BY
-ROLLUP (
-  "x"."channel",
-  "x"."id"
-)
+  ROLLUP (
+    "x"."channel",
+    "x"."id"
+  )
 ORDER BY
   "channel",
   "id"
@@ -11539,10 +11539,10 @@ JOIN "date_dim" AS "d1"
 JOIN "item" AS "item"
   ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
 GROUP BY
-ROLLUP (
-  "item"."i_category",
-  "item"."i_class"
-)
+  ROLLUP (
+    "item"."i_category",
+    "item"."i_class"
+  )
 ORDER BY
   "lochierarchy" DESC,
   CASE WHEN "lochierarchy" = 0 THEN "i_category" END,

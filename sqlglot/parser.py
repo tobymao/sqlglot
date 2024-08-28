@@ -5112,10 +5112,13 @@ class Parser(metaclass=_Parser):
         self._match_r_paren(this)
         return self._parse_window(this)
 
+    def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
+        return expression
+
     def _kv_to_prop_eq(self, expressions: t.List[exp.Expression]) -> t.List[exp.Expression]:
         transformed = []
 
-        for e in expressions:
+        for index, e in enumerate(expressions):
             if isinstance(e, self.KEY_VALUE_DEFINITIONS):
                 if isinstance(e, exp.Alias):
                     e = self.expression(exp.PropertyEQ, this=e.args.get("alias"), expression=e.this)
@@ -5127,6 +5130,8 @@ class Parser(metaclass=_Parser):
 
                 if isinstance(e.this, exp.Column):
                     e.this.replace(e.this.this)
+            else:
+                e = self._to_prop_eq(e, index)
 
             transformed.append(e)
 

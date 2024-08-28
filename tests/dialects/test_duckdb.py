@@ -231,10 +231,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
-        self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
-        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
-
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
         self.assertEqual(
             parse_one("a / b", read="duckdb").assert_is(exp.Div).sql(dialect="duckdb"), "a / b"
@@ -243,6 +239,9 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
+        self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
+        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
         self.validate_identity("SELECT * FROM GLOB(x)")
         self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
         self.validate_identity("SELECT MAP {'x': 1}")
@@ -278,6 +277,15 @@ class TestDuckDB(Validator):
         self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
         self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
         self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
+        self.validate_identity(
+            "SELECT species, island, COUNT(*) FROM t GROUP BY GROUPING SETS (species), GROUPING SETS (island)"
+        )
+        self.validate_identity(
+            "SELECT species, island, COUNT(*) FROM t GROUP BY CUBE (species), CUBE (island)"
+        )
+        self.validate_identity(
+            "SELECT species, island, COUNT(*) FROM t GROUP BY ROLLUP (species), ROLLUP (island)"
+        )
         self.validate_identity(
             "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
         ).assert_is(exp.Summarize)

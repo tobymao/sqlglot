@@ -3915,48 +3915,50 @@ class Parser(metaclass=_Parser):
             elements["all"] = False
 
         while True:
-            expressions = self._parse_csv(
-                lambda: None
-                if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
-                else self._parse_assignment()
-            )
-            if expressions:
-                elements["expressions"].extend(expressions)
-
-            grouping_sets = self._parse_grouping_sets()
-            if grouping_sets:
-                elements["grouping_sets"].extend(grouping_sets)
-
-            rollup = None
-            cube = None
-            totals = None
-
             index = self._index
-            with_ = self._match(TokenType.WITH)
+
+            elements["expressions"].extend(
+                self._parse_csv(
+                    lambda: None
+                    if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
+                    else self._parse_assignment()
+                )
+            )
+
+            before_with_index = self._index
+            with_prefix = self._match(TokenType.WITH)
+
             if self._match(TokenType.ROLLUP):
-                rollup = with_ or self._parse_wrapped_csv(self._parse_column)
-                elements["rollup"].extend(ensure_list(rollup))
-
-            if self._match(TokenType.CUBE):
-                cube = with_ or self._parse_wrapped_csv(self._parse_column)
-                elements["cube"].extend(ensure_list(cube))
-
-            if self._match_text_seq("TOTALS"):
-                totals = True
+                elements["rollup"].append(
+                    self._parse_cube_or_rollup(exp.Rollup, with_prefix=with_prefix)
+                )
+            elif self._match(TokenType.CUBE):
+                elements["cube"].append(
+                    self._parse_cube_or_rollup(exp.Cube, with_prefix=with_prefix)
+                )
+            elif self._match(TokenType.GROUPING_SETS):
+                elements["grouping_sets"].append(
+                    self.expression(
+                        exp.GroupingSets,
+                        expressions=self._parse_wrapped_csv(self._parse_grouping_set),
+                    )
+                )
+            elif self._match_text_seq("TOTALS"):
                 elements["totals"] = True  # type: ignore
 
-            if not (grouping_sets or rollup or cube or totals):
-                if with_:
-                    self._retreat(index)
+            if before_with_index <= self._index <= before_with_index + 1:
+                self._retreat(before_with_index)
+                break
+
+            if index == self._index:
                 break
 
         return self.expression(exp.Group, **elements)  # type: ignore
 
-    def _parse_grouping_sets(self) -> t.Optional[t.List[exp.Expression]]:
-        if not self._match(TokenType.GROUPING_SETS):
-            return None
-
-        return self._parse_wrapped_csv(self._parse_grouping_set)
+    def _parse_cube_or_rollup(self, kind: t.Type[E], with_prefix: bool = False) -> E:
+        return self.expression(
+            kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_column)
+        )
 
     def _parse_grouping_set(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):

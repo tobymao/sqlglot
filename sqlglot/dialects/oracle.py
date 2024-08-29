@@ -300,7 +300,7 @@ class Oracle(Dialect):
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
             exp.Mod: rename_func("MOD"),
-            exp.MultitableInserts: lambda self, e: self.multitable_inserts_sql(e),
+            exp.MultitableInserts: lambda self, e: self.multitableinserts_sql(e),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -365,7 +365,7 @@ class Oracle(Dialect):
             func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
             return rename_func(func_name)(self, expression)
 
-        def multitable_inserts_sql(self, expression: exp.MultitableInserts) -> str:
+        def multitableinserts_sql(self, expression: exp.MultitableInserts) -> str:
             kind = self.sql(expression, "kind").upper()
             inserts = []
             for conditional_insert in t.cast(t.List[exp.ConditionalInsert], expression.expressions):

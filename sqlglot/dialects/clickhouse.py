@@ -765,7 +765,6 @@ class ClickHouse(Dialect):
         SUPPORTS_TO_NUMBER = False
         JOIN_HINTS = False
         TABLE_HINTS = False
-        EXPLICIT_SET_OP = True
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
         SUPPORTS_TABLE_ALIAS_COLUMNS = False

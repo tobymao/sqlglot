@@ -233,7 +233,7 @@ class Oracle(Dialect):
             def conditional_insert() -> t.Optional[exp.Conditionalinsert]:
                 expression = None
                 if self._match(TokenType.WHEN):
-                    expression = self._parse_assignment()
+                    expression = self._parse_disjunction()
                     self._match(TokenType.THEN)
                 else_matched = self._match(TokenType.ELSE)
                 else_ = else_matched is not None and else_matched

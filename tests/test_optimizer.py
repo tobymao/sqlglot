@@ -1355,13 +1355,16 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 ("'str_literal'", "STRING"),
                 ("CAST('str_literal' AS BINARY)", "BINARY"),
             ):
-                expr, type = expr_type_pair
-                ast = parse_one(f"SELECT substring({expr}, 2, 3) AS x FROM tbl", read=dialect)
+                with self.subTest(
+                    f"Testing {dialect}'s SUBSTRING() result type for {expr_type_pair}"
+                ):
+                    expr, type = expr_type_pair
+                    ast = parse_one(f"SELECT substring({expr}, 2, 3) AS x FROM tbl", read=dialect)
 
-                subst_type = (
-                    optimizer.optimize(ast, schema={"tbl": {"col": type}}, dialect=dialect)
-                    .expressions[0]
-                    .type
-                )
+                    subst_type = (
+                        optimizer.optimize(ast, schema={"tbl": {"col": type}}, dialect=dialect)
+                        .expressions[0]
+                        .type
+                    )
 
-                self.assertEqual(subst_type.sql(dialect), exp.DataType.build(type).sql(dialect))
+                    self.assertEqual(subst_type.sql(dialect), exp.DataType.build(type).sql(dialect))

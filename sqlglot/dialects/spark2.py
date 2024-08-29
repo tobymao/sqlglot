@@ -4,7 +4,6 @@ import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
-    Dialect,
     binary_from_function,
     build_formatted_time,
     is_parse_json,
@@ -113,7 +112,7 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
 
 class Spark2(Hive):
     ANNOTATORS = {
-        **Dialect.ANNOTATORS,
+        **Hive.ANNOTATORS,
         exp.Substring: lambda self, e: self._annotate_by_args(e, "this"),
     }
 

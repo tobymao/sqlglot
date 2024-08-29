@@ -50,6 +50,7 @@ class TestStarrocks(Validator):
                 "starrocks": "SELECT * FROM UNNEST(['John', 'Jane', 'Jim', 'Jamie'], [24, 25, 26, 27]) AS t(name, age)",
             },
         )
+
         # Use UNNEST to convert into multiple columns
         # see: https://docs.starrocks.io/docs/sql-reference/sql-functions/array-functions/unnest/
         self.validate_all(
@@ -61,6 +62,7 @@ class TestStarrocks(Validator):
                 "starrocks": r"""SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS t(type, scores)""",
             },
         )
+
         self.validate_all(
             r"""SELECT id, t.type, t.scores FROM example_table_2 CROSS JOIN LATERAL unnest(split(type, ";"), scores) AS t(type,scores)""",
             write={

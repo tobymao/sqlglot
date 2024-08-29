@@ -2821,6 +2821,11 @@ class SampleProperty(Property):
     arg_types = {"this": True}
 
 
+# https://prestodb.io/docs/current/sql/create-view.html#synopsis
+class SecurityProperty(Property):
+    arg_types = {"this": True}
+
+
 class SchemaCommentProperty(Property):
     arg_types = {"this": True}
 

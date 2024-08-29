@@ -1297,7 +1297,9 @@ class Generator(metaclass=_Generator):
         return self.set_operations(expression)
 
     def except_op(self, expression: exp.Except) -> str:
-        return f"EXCEPT{'' if expression.args.get('distinct') else ' ALL'}"
+        kind = " DISTINCT" if self.EXPLICIT_SET_OP else ""
+        kind = kind if expression.args.get("distinct") else " ALL"
+        return f"EXCEPT{kind}"
 
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")
@@ -1679,7 +1681,9 @@ class Generator(metaclass=_Generator):
         return self.set_operations(expression)
 
     def intersect_op(self, expression: exp.Intersect) -> str:
-        return f"INTERSECT{'' if expression.args.get('distinct') else ' ALL'}"
+        kind = " DISTINCT" if self.EXPLICIT_SET_OP else ""
+        kind = kind if expression.args.get("distinct") else " ALL"
+        return f"INTERSECT{kind}"
 
     def introducer_sql(self, expression: exp.Introducer) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"

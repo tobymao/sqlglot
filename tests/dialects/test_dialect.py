@@ -1488,12 +1488,14 @@ class TestDialect(Validator):
             "SELECT * FROM a INTERSECT SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
             },
             write={
                 "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
@@ -1503,12 +1505,14 @@ class TestDialect(Validator):
             "SELECT * FROM a EXCEPT SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
                 "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
                 "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
             },
             write={
                 "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
                 "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
                 "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
@@ -1527,6 +1531,7 @@ class TestDialect(Validator):
             "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
             write={
                 "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
@@ -1536,6 +1541,7 @@ class TestDialect(Validator):
             "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
             write={
                 "bigquery": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
                 "duckdb": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
                 "presto": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
                 "spark": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
@@ -1545,6 +1551,7 @@ class TestDialect(Validator):
             "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
             write={
                 "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
                 "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
                 "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
@@ -1554,6 +1561,7 @@ class TestDialect(Validator):
             "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
                 "duckdb": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
                 "presto": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
                 "spark": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",

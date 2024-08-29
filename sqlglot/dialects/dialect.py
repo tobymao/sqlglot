@@ -388,6 +388,16 @@ class Dialect(metaclass=_Dialect):
     dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
     """
 
+    SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
+        exp.Except: True,
+        exp.Intersect: True,
+        exp.Union: True,
+    }
+    """
+    Whether a set operation uses DISTINCT by default. This is `None` when either `DISTINCT` or `ALL`
+    must be explicitly specified.
+    """
+
     CREATABLE_KIND_MAPPING: dict[str, str] = {}
     """
     Helper for dialects that use a different name for the same creatable kind. For example, the Clickhouse

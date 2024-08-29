@@ -752,6 +752,7 @@ class Snowflake(Dialect):
         SUPPORTS_EXPLODING_PROJECTIONS = False
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_CONVERT_TIMEZONE = True
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -995,16 +996,6 @@ class Snowflake(Dialect):
                 parameters,
                 group,
             )
-
-        def except_op(self, expression: exp.Except) -> str:
-            if not expression.args.get("distinct"):
-                self.unsupported("EXCEPT with All is not supported in Snowflake")
-            return super().except_op(expression)
-
-        def intersect_op(self, expression: exp.Intersect) -> str:
-            if not expression.args.get("distinct"):
-                self.unsupported("INTERSECT with All is not supported in Snowflake")
-            return super().intersect_op(expression)
 
         def describe_sql(self, expression: exp.Describe) -> str:
             # Default to table if kind is unknown

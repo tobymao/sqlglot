@@ -522,6 +522,20 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            """CREATE OR REPLACE VIEW v SECURITY DEFINER AS SELECT id FROM t""",
+            write={
+                "presto": """CREATE OR REPLACE VIEW v SECURITY DEFINER AS SELECT id FROM t""",
+            },
+        )
+
+        self.validate_all(
+            """CREATE OR REPLACE VIEW v SECURITY INVOKER AS SELECT id FROM t""",
+            write={
+                "presto": """CREATE OR REPLACE VIEW v SECURITY INVOKER AS SELECT id FROM t""",
+            },
+        )
+
     def test_quotes(self):
         self.validate_all(
             "''''",

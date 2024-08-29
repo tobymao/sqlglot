@@ -227,7 +227,7 @@ class Oracle(Dialect):
             )
 
         def _parse_multitable_inserts(self) -> exp.MultitableInserts:
-            kind = "first" if self._prev.token_type is TokenType.FIRST else "all"
+            kind = self._prev.text.upper()
             expressions = []
 
             def conditional_insert():

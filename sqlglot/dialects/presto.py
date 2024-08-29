@@ -345,10 +345,6 @@ class Presto(Dialect):
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("TRIM")
 
-        PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
-            **parser.Parser.PROPERTY_PARSERS,
-        }
-
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False

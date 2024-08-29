@@ -1347,7 +1347,6 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
 
     def test_custom_annotators(self):
-
         # In Spark hierarchy, SUBSTRING result type is dependent on input expr type
         for dialect in ("spark2", "spark", "databricks"):
             for expr_type_pair in (

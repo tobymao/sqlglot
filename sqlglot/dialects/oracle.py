@@ -381,5 +381,5 @@ class Oracle(Dialect):
                 buffer += insert_sql
                 inserts.append(buffer.strip())
 
-            res = f"INSERT {kind} {' '.join(inserts)} {self.sql(expression.args['source'])}"
+            res = f"INSERT {kind} {' '.join(inserts)} {self.sql(expression, 'source')}"
             return res

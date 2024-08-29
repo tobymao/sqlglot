@@ -528,7 +528,6 @@ class Dialect(metaclass=_Dialect):
         exp.DataType.Type.BIGINT: {
             exp.ApproxDistinct,
             exp.ArraySize,
-            exp.Count,
             exp.Length,
         },
         exp.DataType.Type.BOOLEAN: {
@@ -649,6 +648,9 @@ class Dialect(metaclass=_Dialect):
         exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
         exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.Count: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
+        ),
         exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
         exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
         exp.DateSub: lambda self, e: self._annotate_timeunit(e),

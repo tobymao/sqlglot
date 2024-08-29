@@ -230,7 +230,7 @@ class Oracle(Dialect):
             kind = self._prev.text.upper()
             expressions = []
 
-            def conditional_insert():
+            def conditional_insert() -> t.Optional[exp.Conditionalinsert]:
                 expression = None
                 if self._match(TokenType.WHEN):
                     expression = self._parse_assignment()

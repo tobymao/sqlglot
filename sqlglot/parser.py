@@ -2538,7 +2538,7 @@ class Parser(metaclass=_Parser):
                 row_format=self._parse_row_format(match_row=True),
             )
         else:
-            if self._match(TokenType.FIRST) or self._match(TokenType.ALL):
+            if self._match_set((TokenType.FIRST, TokenType.ALL)):
                 return self._parse_multitable_inserts()
 
             if self._match(TokenType.OR):

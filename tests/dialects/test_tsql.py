@@ -1976,18 +1976,20 @@ FROM OPENJSON(@json) WITH (
         self.validate_all(
             "SELECT COUNT_BIG(1) FROM x",
             read={
-                "spark": "SELECT COUNT(1) FROM x",
                 "duckdb": "SELECT COUNT(1) FROM x",
+                "spark": "SELECT COUNT(1) FROM x",
             },
             write={
-                "spark": "SELECT COUNT(1) FROM x",
                 "duckdb": "SELECT COUNT(1) FROM x",
+                "spark": "SELECT COUNT(1) FROM x",
+                "tsql": "SELECT COUNT_BIG(1) FROM x",
             },
         )
         self.validate_all(
             "SELECT COUNT(1) FROM x",
             write={
-                "spark": "SELECT COUNT(1) FROM x",
                 "duckdb": "SELECT COUNT(1) FROM x",
+                "spark": "SELECT COUNT(1) FROM x",
+                "tsql": "SELECT COUNT(1) FROM x",
             },
         )

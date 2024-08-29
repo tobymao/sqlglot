@@ -281,6 +281,9 @@ class Presto(Dialect):
             "IPPREFIX": TokenType.IPPREFIX,
             "TDIGEST": TokenType.TDIGEST,
             "HYPERLOGLOG": TokenType.HLLSKETCH,
+            "SECURITY": TokenType.SECURITY,
+            "DEFINER": TokenType.DEFINER,
+            "INVOKER": TokenType.INVOKER,
         }
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("QUALIFY")
@@ -345,6 +348,17 @@ class Presto(Dialect):
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("TRIM")
 
+        PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "SECURITY": lambda self: self._parse_security(),
+        }
+
+        def _parse_security(self) -> t.Optional[exp.SecurityProperty]:
+            if self._match_set((TokenType.DEFINER, TokenType.INVOKER)):
+                security_specifier = self._prev.text.upper()
+                return self.expression(exp.SecurityProperty, this=security_specifier)
+            return None
+
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
@@ -367,6 +381,7 @@ class Presto(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.LocationProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SecurityProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         TYPE_MAPPING = {
@@ -449,6 +464,7 @@ class Presto(Dialect):
             exp.RegexpExtract: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
             exp.SafeDivide: no_safe_divide_sql,
+            exp.SecurityProperty: lambda self, e: f"SECURITY {self.sql(e, 'this')}",
             exp.Schema: _schema_sql,
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Select: transforms.preprocess(

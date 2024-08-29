@@ -4212,7 +4212,7 @@ class Parser(metaclass=_Parser):
             else:
                 distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[operation]
                 if distinct is None:
-                    self.raise_error(f"Expected DISTINCT or ALL for {operation.__class__.__name__}")
+                    self.raise_error(f"Expected DISTINCT or ALL for {operation.__name__}")
 
             by_name = self._match_text_seq("BY", "NAME")
             expression = self._parse_select(nested=True, parse_set_operation=False)

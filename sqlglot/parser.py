@@ -941,6 +941,7 @@ class Parser(metaclass=_Parser):
             exp.SampleProperty, this=self._match_text_seq("BY") and self._parse_bitwise()
         ),
         "SECURE": lambda self: self.expression(exp.SecureProperty),
+        "SECURITY": lambda self: self._parse_security(),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SETTINGS": lambda self: self._parse_settings_property(),
         "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
@@ -2031,6 +2032,12 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
+
+    def _parse_security(self) -> t.Optional[exp.SecurityProperty]:
+        if self._match_texts(("DEFINER", "INVOKER")):
+            security_specifier = self._prev.text.upper()
+            return self.expression(exp.SecurityProperty, this=security_specifier)
+        return None
 
     def _parse_settings_property(self) -> exp.SettingsProperty:
         return self.expression(

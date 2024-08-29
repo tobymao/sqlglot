@@ -128,6 +128,7 @@ class SQLite(Dialect):
         SUPPORTS_CREATE_TABLE_LIKE = False
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
         SUPPORTS_TO_NUMBER = False
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

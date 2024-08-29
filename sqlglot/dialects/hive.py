@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from functools import partial
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -188,6 +189,16 @@ def _build_with_ignore_nulls(
         return this
 
     return _parse
+
+
+def _select_sql(self: Hive.Generator, expression: exp.Expression) -> str:
+    return transforms.preprocess(
+        [
+            transforms.eliminate_qualify,
+            transforms.eliminate_distinct_on,
+            partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False, generator=self),
+        ]
+    )(self, expression)
 
 
 class Hive(Dialect):
@@ -489,13 +500,7 @@ class Hive(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.Select: transforms.preprocess(
-                [
-                    transforms.eliminate_qualify,
-                    transforms.eliminate_distinct_on,
-                    transforms.unnest_to_explode,
-                ]
-            ),
+            exp.Select: _select_sql,
             exp.Property: _property_sql,
             exp.AnyValue: rename_func("FIRST"),
             exp.ApproxDistinct: approx_count_distinct_sql,

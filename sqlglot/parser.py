@@ -2518,6 +2518,9 @@ class Parser(metaclass=_Parser):
             partition=partition,
         )
 
+    def _parse_multitable_inserts(self) -> exp.MultitableInserts:
+        raise NotImplementedError
+    
     def _parse_insert(self) -> exp.Insert:
         comments = ensure_list(self._prev_comments)
         hint = self._parse_hint()
@@ -2535,6 +2538,9 @@ class Parser(metaclass=_Parser):
                 row_format=self._parse_row_format(match_row=True),
             )
         else:
+            if self._match(TokenType.FIRST) or self._match(TokenType.ALL):
+                return self._parse_multitable_inserts()
+
             if self._match(TokenType.OR):
                 alternative = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text
 

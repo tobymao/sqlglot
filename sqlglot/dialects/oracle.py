@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from socket import inet_aton
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
@@ -12,7 +13,8 @@ from sqlglot.dialects.dialect import (
     to_number_with_nls_param,
     trim_sql,
 )
-from sqlglot.helper import seq_get
+from sqlglot.expressions import MultitableInserts
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import OPTIONS_TYPE
 from sqlglot.tokens import TokenType
 
@@ -226,6 +228,40 @@ class Oracle(Dialect):
                 expression=self._match(TokenType.CONSTRAINT) and self._parse_field(),
             )
 
+        def _parse_multitable_inserts(self) -> exp.MultitableInserts:
+            kind = "first" if self._prev.token_type is TokenType.FIRST else "all"
+            expressions = []
+            
+            def conditional_insert():
+                expression = None
+                if self._match(TokenType.WHEN):
+                    expression = self._parse_assignment()
+                    self._match(TokenType.THEN)
+                else_ = self._match(TokenType.ELSE) == True
+                if not self._match(TokenType.INTO):
+                    return None
+                
+                return self.expression(
+                    exp.ConditionalInsert,
+                    this=self.expression(
+                        exp.Insert,
+                        this=self._parse_table(schema=True),
+                        expression=self._parse_derived_table_values(),
+                    ),
+                    expression=expression,
+                    else_=else_,
+                )
+            
+            while (expression := conditional_insert()) is not None:
+                expressions.append(expression)
+
+            return self.expression(
+                exp.MultitableInserts,
+                kind=kind,
+                expressions=expressions,
+                source=self._parse_table()
+            )
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -265,6 +301,7 @@ class Oracle(Dialect):
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
             exp.Mod: rename_func("MOD"),
+            exp.MultitableInserts: lambda self, e: self.multitable_inserts_sql(e),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -328,3 +365,22 @@ class Oracle(Dialect):
         def coalesce_sql(self, expression: exp.Coalesce) -> str:
             func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
             return rename_func(func_name)(self, expression)
+
+        def multitable_inserts_sql(self, expression: exp.MultitableInserts) -> str:
+            kind = self.sql(expression, "kind").upper()
+            inserts = []
+            for conditional_insert in t.cast(t.List[exp.ConditionalInsert], expression.expressions):
+                buffer = ""
+                if conditional_insert.expression:
+                    buffer += f"WHEN {self.sql(conditional_insert.expression)} THEN "
+                if conditional_insert.args["else_"]:
+                    buffer += "ELSE "
+                insert = t.cast(exp.Insert, conditional_insert.this)
+                insert_sql = self.sql(insert)
+                if insert_sql.startswith("INSERT "):
+                    insert_sql = insert_sql[len("INSERT "):]
+                buffer += insert_sql
+                inserts.append(buffer.strip())
+
+            res = f"INSERT {kind} {' '.join(inserts)} {self.sql(expression.args['source'])}"
+            return res

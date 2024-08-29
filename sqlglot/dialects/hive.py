@@ -599,14 +599,51 @@ class Hive(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
+            exp.DistributedByHash: exp.Properties.Location.POST_SCHEMA,
+            exp.DistributedByRandom: exp.Properties.Location.UNSUPPORTED,
+            exp.DuplicateKey: exp.Properties.Location.UNSUPPORTED,
+            exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
             exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PrimaryKey: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        # https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL
+        def distributedbyhash_sql(self, expression: exp.DistributedByHash) -> str:
+            expressions = self.expressions(expression, key="expressions", flat=True)
+            sorted_by = self.expressions(expression, key="sorted_by", flat=True)
+            sorted_by = f" SORTED BY ({sorted_by})" if sorted_by else ""
+            buckets = "1"
+            if expression.auto_bucket:
+                self.unsupported(
+                    "DistributedByHash without buckets, Spark requires a number of buckets"
+                )
+            else:
+                buckets = self.sql(expression, "buckets")
+            return f"CLUSTERED BY ({expressions}){sorted_by} INTO {buckets} BUCKETS"
+
+        def doris_or_sr_type_to_hive(self, expression: exp.DataType) -> str:
+            if expression.is_type(
+                exp.DataType.Type.SMALLINT,
+                exp.DataType.Type.INT,
+                exp.DataType.Type.BIGINT,
+                exp.DataType.Type.FLOAT,
+                exp.DataType.Type.DOUBLE,
+            ):
+                # To ignore the DataTypeParam. e.g. INT(11) -> INT
+                return expression.this.name
+            return super().datatype_sql(expression)
+
+        def property_name(self, expression: exp.Property, string_key: bool = False) -> str:
+            return super().property_name(expression, True)
+
         def unnest_sql(self, expression: exp.Unnest) -> str:
             return rename_func("EXPLODE")(self, expression)
+
+        def with_properties(self, properties: exp.Properties) -> str:
+            return self.properties(properties, prefix=self.seg("TBLPROPERTIES", sep=""))
 
         def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
             if isinstance(expression.this, exp.JSONPathWildcard):
@@ -670,6 +707,47 @@ class Hive(Dialect):
                     expression = (
                         exp.DataType.build("float") if size <= 32 else exp.DataType.build("double")
                     )
+
+            root_expression: exp.Expression = expression
+            while root_expression.parent is not None:
+                root_expression = root_expression.parent
+
+            # Only process the expression of the CREATE TABLE
+            if (
+                not isinstance(root_expression, exp.Create)
+                or not root_expression.args["kind"] == "TABLE"
+            ):
+                return super().datatype_sql(expression)
+
+            if expression.is_type(exp.DataType.Type.BIGDECIMAL):
+                all_params = expression.find_all(exp.DataTypeParam)
+                precision_expression = next(all_params, None)
+                scale_expression = next(all_params, None)
+                if precision_expression and scale_expression:
+                    precision = int(precision_expression.name)
+                    scale = int(scale_expression.name)
+                    if precision <= 38:
+                        precision_expression.this.set("this", precision)
+                    else:
+                        self.unsupported("Unsupported type of BIGDECIMAL in Spark")
+                    return f"DECIMAL({scale}, {precision})"
+                else:
+                    self.unsupported("Scale or precision is required for DECIMAL in Spark")
+            elif expression.is_type(exp.DataType.Type.CHAR):
+                size_expression = expression.find(exp.DataTypeParam)
+                if size_expression:
+                    size = int(size_expression.name)
+                    return "STRING" if size > 255 else super().datatype_sql(expression)
+            elif expression.is_type(exp.DataType.Type.VARCHAR):
+                size_expression = expression.find(exp.DataTypeParam)
+                if size_expression:
+                    size = int(size_expression.name)
+                    # In versions earlier than StarRocks 2.1 and doris 3.0, the value range of M is [1, 65533].
+                    # https://docs.starrocks.io/docs/sql-reference/data-types/string-type/VARCHAR/
+                    return "STRING" if size > 65533 else super().datatype_sql(expression)
+            dialect = root_expression.args["dialect"]
+            if dialect in ("MYSQL", "STARROCKS", "DORIS"):
+                return self.doris_or_sr_type_to_hive(expression)
 
             return super().datatype_sql(expression)
 

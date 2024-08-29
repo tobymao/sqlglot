@@ -1762,6 +1762,7 @@ class Parser(metaclass=_Parser):
         begin = None
         end = None
         clone = None
+        dialect = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
             nonlocal properties
@@ -1834,6 +1835,9 @@ class Parser(metaclass=_Parser):
                 expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
+                # source dialect
+                dialect = self.dialect.__module__.split(".")[-1].upper()
+
                 # exp.Properties.Location.POST_EXPRESSION
                 extend_props(self._parse_properties())
 
@@ -1882,6 +1886,7 @@ class Parser(metaclass=_Parser):
             clone=clone,
             concurrently=concurrently,
             clustered=clustered,
+            dialect=dialect,
         )
 
     def _parse_sequence_properties(self) -> t.Optional[exp.SequenceProperties]:

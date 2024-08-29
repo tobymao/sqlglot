@@ -1396,6 +1396,7 @@ class Create(DDL):
         "clone": False,
         "concurrently": False,
         "clustered": False,
+        "dialect": False,
     }
 
     @property
@@ -2053,6 +2054,23 @@ class Credentials(Expression):
         "iam_role": False,
         "region": False,
     }
+
+
+class DistributedByHash(Expression):
+    arg_types = {"expressions": True, "buckets": False, "sorted_by": False}
+
+    @property
+    def auto_bucket(self) -> bool:
+        return self.args.get("buckets") is None
+
+
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
+class DistributedByRandom(DistributedByHash):
+    pass
+
+
+class DuplicateKey(Expression):
+    arg_types = {"expressions": True}
 
 
 class Prior(Expression):
@@ -2924,6 +2942,8 @@ class Properties(Expression):
         "COMMENT": SchemaCommentProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
+        "DISTRIBUTED_BY_HASH": DistributedByHash,
+        "DISTRIBUTED_BY_RANDOM": DistributedByRandom,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,
         "EXECUTE AS": ExecuteAsProperty,

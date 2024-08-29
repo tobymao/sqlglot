@@ -111,6 +111,11 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
 
 
 class Spark2(Hive):
+    ANNOTATORS = {
+        **Hive.ANNOTATORS,
+        exp.Substring: lambda self, e: self._annotate_by_args(e, "this"),
+    }
+
     class Parser(Hive.Parser):
         TRIM_PATTERN_FIRST = True
 

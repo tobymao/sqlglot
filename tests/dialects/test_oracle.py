@@ -6,6 +6,7 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("1 /* /* */")
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",
             write={
@@ -15,6 +16,7 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("SYSDATE")
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("REGEXP_REPLACE('source', 'search')")
@@ -43,6 +45,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity("SELECT TO_DATE('January 15, 1989, 11:00 A.M.')")
+        self.validate_identity(
+            "SELECT * FROM test UNPIVOT INCLUDE NULLS (value FOR Description IN (col AS 'PREFIX ' || CHR(38) || ' SUFFIX'))"
+        )
         self.validate_identity(
             "SELECT last_name, employee_id, manager_id, LEVEL FROM employees START WITH employee_id = 100 CONNECT BY PRIOR employee_id = manager_id ORDER SIBLINGS BY last_name"
         )
@@ -73,10 +78,6 @@ class TestOracle(Validator):
             "SELECT JSON_OBJECTAGG(department_name: department_id) FROM dep WHERE id <= 30",
         )
         self.validate_identity(
-            "SYSDATE",
-            "CURRENT_TIMESTAMP",
-        )
-        self.validate_identity(
             "SELECT last_name, department_id, salary, MIN(salary) KEEP (DENSE_RANK FIRST ORDER BY commission_pct) "
             'OVER (PARTITION BY department_id) AS "Worst", MAX(salary) KEEP (DENSE_RANK LAST ORDER BY commission_pct) '
             'OVER (PARTITION BY department_id) AS "Best" FROM employees ORDER BY department_id, salary, last_name'
@@ -88,7 +89,6 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM T ORDER BY I OFFSET NVL(:variable1, 10) ROWS FETCH NEXT NVL(:variable2, 10) ROWS ONLY",
         )
-        self.validate_identity("NVL(x, y)").assert_is(exp.Anonymous)
         self.validate_identity(
             "SELECT * FROM t SAMPLE (.25)",
             "SELECT * FROM t SAMPLE (0.25)",
@@ -251,6 +251,37 @@ class TestOracle(Validator):
             """SELECT * FROM t ORDER BY a ASC NULLS LAST, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC NULLS FIRST""",
             """SELECT * FROM t ORDER BY a ASC, b ASC NULLS FIRST, c DESC NULLS LAST, d DESC""",
         )
+        self.validate_all(
+            "NVL(NULL, 1)",
+            write={
+                "oracle": "NVL(NULL, 1)",
+                "": "COALESCE(NULL, 1)",
+                "clickhouse": "COALESCE(NULL, 1)",
+            },
+        )
+        self.validate_all(
+            "LTRIM('Hello World', 'H')",
+            write={
+                "": "LTRIM('Hello World', 'H')",
+                "oracle": "LTRIM('Hello World', 'H')",
+                "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
+            },
+        )
+        self.validate_all(
+            "RTRIM('Hello World', 'd')",
+            write={
+                "": "RTRIM('Hello World', 'd')",
+                "oracle": "RTRIM('Hello World', 'd')",
+                "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
+            },
+        )
+        self.validate_all(
+            "TRIM(BOTH 'h' FROM 'Hello World')",
+            write={
+                "oracle": "TRIM(BOTH 'h' FROM 'Hello World')",
+                "clickhouse": "TRIM(BOTH 'h' FROM 'Hello World')",
+            },
+        )
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
@@ -338,7 +369,7 @@ FROM warehouses, XMLTABLE(
 FROM XMLTABLE(
   'ROWSET/ROW'
   PASSING
-    dbms_xmlgen.GETXMLTYPE('SELECT table_name, column_name, data_default FROM user_tab_columns')
+    dbms_xmlgen.getxmltype('SELECT table_name, column_name, data_default FROM user_tab_columns')
   COLUMNS
     table_name VARCHAR2(128) PATH '*[1]',
     column_name VARCHAR2(128) PATH '*[2]',

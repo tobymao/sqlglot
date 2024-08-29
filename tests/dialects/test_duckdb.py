@@ -8,8 +8,6 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
-
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -32,31 +30,6 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT straight_join",
                 "mysql": "SELECT `straight_join`",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
-            read={
-                "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
-                "snowflake": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMPNTZ)",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
-            read={
-                "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
-                "mysql": "SELECT DATE '2020-01-01' + INTERVAL day_offset DAY FROM t",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
-            read={
-                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
-                "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
-            },
-            write={
-                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
-                "snowflake": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2 HOUR'",
             },
         )
         self.validate_all(
@@ -112,7 +85,9 @@ class TestDuckDB(Validator):
 
         self.validate_all(
             "CREATE TEMPORARY FUNCTION f1(a, b) AS (a + b)",
-            read={"bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)"},
+            read={
+                "bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)",
+            },
         )
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
@@ -128,13 +103,17 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "{'a': 1, 'b': '2'}", write={"presto": "CAST(ROW(1, '2') AS ROW(a INTEGER, b VARCHAR))"}
+            "{'a': 1, 'b': '2'}",
+            write={
+                "presto": "CAST(ROW(1, '2') AS ROW(a INTEGER, b VARCHAR))",
+            },
         )
         self.validate_all(
             "struct_pack(a := 1, b := 2)",
-            write={"presto": "CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))"},
+            write={
+                "presto": "CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))",
+            },
         )
-
         self.validate_all(
             "struct_pack(a := 1, b := x)",
             write={
@@ -252,10 +231,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
-        self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
-        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
-
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
         self.assertEqual(
             parse_one("a / b", read="duckdb").assert_is(exp.Div).sql(dialect="duckdb"), "a / b"
@@ -264,6 +239,10 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
+        self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
+        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
+        self.validate_identity("SELECT * FROM GLOB(x)")
         self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
         self.validate_identity("SELECT MAP {'x': 1}")
         self.validate_identity("SELECT (MAP {'x': 1})['x']")
@@ -298,6 +277,15 @@ class TestDuckDB(Validator):
         self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
         self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
         self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
+        self.validate_identity(
+            "SELECT species, island, COUNT(*) FROM t GROUP BY GROUPING SETS (species), GROUPING SETS (island)"
+        )
+        self.validate_identity(
+            "SELECT species, island, COUNT(*) FROM t GROUP BY CUBE (species), CUBE (island)"
+        )
+        self.validate_identity(
+            "SELECT species, island, COUNT(*) FROM t GROUP BY ROLLUP (species), ROLLUP (island)"
+        )
         self.validate_identity(
             "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
         ).assert_is(exp.Summarize)
@@ -912,12 +900,12 @@ class TestDuckDB(Validator):
             "EPOCH_MS(x)",
             write={
                 "bigquery": "TIMESTAMP_MILLIS(x)",
+                "clickhouse": "fromUnixTimestamp64Milli(CAST(x AS Nullable(Int64)))",
                 "duckdb": "EPOCH_MS(x)",
+                "mysql": "FROM_UNIXTIME(x / POWER(10, 3))",
+                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / 10 ^ 3)",
                 "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / POW(10, 3))",
                 "spark": "TIMESTAMP_MILLIS(x)",
-                "clickhouse": "fromUnixTimestamp64Milli(CAST(x AS Int64))",
-                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / 10 ^ 3)",
-                "mysql": "FROM_UNIXTIME(x / POWER(10, 3))",
             },
         )
         self.validate_all(
@@ -961,7 +949,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
             write={
-                "bigquery": "PARSE_TIMESTAMP('%-m/%-d/%y %-I:%M %p', x)",
+                "bigquery": "PARSE_TIMESTAMP('%-m/%e/%y %-I:%M %p', x)",
                 "duckdb": "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
                 "presto": "DATE_PARSE(x, '%c/%e/%y %l:%i %p')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:mm a')) AS TIMESTAMP)",
@@ -1020,12 +1008,20 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM (SELECT * FROM t) AS t1 TABLESAMPLE (1 ROWS), (SELECT * FROM t) AS t2 TABLESAMPLE (2 ROWS)",
+            write={
+                "duckdb": "SELECT * FROM (SELECT * FROM t) AS t1 TABLESAMPLE RESERVOIR (1 ROWS), (SELECT * FROM t) AS t2 TABLESAMPLE RESERVOIR (2 ROWS)",
+                "spark": "SELECT * FROM (SELECT * FROM t) TABLESAMPLE (1 ROWS) AS t1, (SELECT * FROM t) TABLESAMPLE (2 ROWS) AS t2",
+            },
+        )
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
         self.validate_identity("ARRAY((SELECT id FROM t))")
 
     def test_cast(self):
+        self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
         self.validate_identity("CAST(x AS REAL)")
         self.validate_identity("CAST(x AS UINTEGER)")
         self.validate_identity("CAST(x AS UBIGINT)")
@@ -1078,6 +1074,39 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "STRUCT_PACK(a := 'b')::STRUCT(a TEXT)",
             "CAST(ROW('b') AS STRUCT(a TEXT))",
+        )
+
+        self.validate_all(
+            "CAST(x AS TIME)",
+            read={
+                "duckdb": "CAST(x AS TIME)",
+                "presto": "CAST(x AS TIME(6))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMP)",
+                "snowflake": "SELECT CAST('2020-01-01 12:05:01' AS TIMESTAMPNTZ)",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+                "mysql": "SELECT DATE '2020-01-01' + INTERVAL day_offset DAY FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
+            read={
+                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+                "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
+            },
+            write={
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+                "snowflake": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2 HOUR'",
+            },
         )
         self.validate_all(
             "CAST(x AS VARCHAR(5))",
@@ -1243,3 +1272,20 @@ class TestDuckDB(Validator):
             read={"bigquery": "SELECT @foo"},
             write={"bigquery": "SELECT @foo", "duckdb": "SELECT $foo"},
         )
+
+    def test_ignore_nulls(self):
+        # Note that DuckDB differentiates window functions (e.g. LEAD, LAG) from aggregate functions (e.g. SUM)
+        from sqlglot.dialects.duckdb import WINDOW_FUNCS_WITH_IGNORE_NULLS
+
+        agg_funcs = (exp.Sum, exp.Max, exp.Min)
+
+        for func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS + agg_funcs:
+            func = func_type(this=exp.to_identifier("col"))
+            ignore_null = exp.IgnoreNulls(this=func)
+            windowed_ignore_null = exp.Window(this=ignore_null)
+
+            if func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS:
+                self.assertIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+            else:
+                self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
+                self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))

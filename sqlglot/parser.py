@@ -140,6 +140,14 @@ def build_convert_timezone(
     return exp.ConvertTimezone.from_arg_list(args)
 
 
+def build_trim(args: t.List, is_left: bool = True):
+    return exp.Trim(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        position="LEADING" if is_left else "TRAILING",
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -200,9 +208,11 @@ class Parser(metaclass=_Parser):
         "LOWER": build_lower,
         "LPAD": lambda args: build_pad(args),
         "LEFTPAD": lambda args: build_pad(args),
+        "LTRIM": lambda args: build_trim(args),
         "MOD": build_mod,
-        "RPAD": lambda args: build_pad(args, is_left=False),
         "RIGHTPAD": lambda args: build_pad(args, is_left=False),
+        "RPAD": lambda args: build_pad(args, is_left=False),
+        "RTRIM": lambda args: build_trim(args, is_left=False),
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
@@ -222,6 +232,7 @@ class Parser(metaclass=_Parser):
         "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
         "VAR_MAP": build_var_map,
+        "COALESCE": lambda args: exp.Coalesce(this=seq_get(args, 0), expressions=args[1:]),
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -1241,6 +1252,8 @@ class Parser(metaclass=_Parser):
 
     COPY_INTO_VARLEN_OPTIONS = {"FILE_FORMAT", "COPY_OPTIONS", "FORMAT_OPTIONS", "CREDENTIAL"}
 
+    IS_JSON_PREDICATE_KIND = {"VALUE", "SCALAR", "ARRAY", "OBJECT"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -1665,7 +1678,7 @@ class Parser(metaclass=_Parser):
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match_text_seq("MATERIALIZED")
 
-        kind = self._match_set(self.CREATABLES) and self._prev.text
+        kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
         if not kind:
             return self._parse_as_command(start)
 
@@ -1687,7 +1700,7 @@ class Parser(metaclass=_Parser):
             exists=if_exists,
             this=table,
             expressions=expressions,
-            kind=kind.upper(),
+            kind=self.dialect.CREATABLE_KIND_MAPPING.get(kind) or kind,
             temporary=temporary,
             materialized=materialized,
             cascade=self._match_text_seq("CASCADE"),
@@ -1850,11 +1863,12 @@ class Parser(metaclass=_Parser):
         if self._curr and not self._match_set((TokenType.R_PAREN, TokenType.COMMA), advance=False):
             return self._parse_as_command(start)
 
+        create_kind_text = create_token.text.upper()
         return self.expression(
             exp.Create,
             comments=comments,
             this=this,
-            kind=create_token.text.upper(),
+            kind=self.dialect.CREATABLE_KIND_MAPPING.get(create_kind_text) or create_kind_text,
             replace=replace,
             refresh=refresh,
             unique=unique,
@@ -2494,8 +2508,14 @@ class Parser(metaclass=_Parser):
         this = self._parse_table(schema=True)
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
+        partition = self._parse_partition()
         return self.expression(
-            exp.Describe, this=this, style=style, kind=kind, expressions=expressions
+            exp.Describe,
+            this=this,
+            style=style,
+            kind=kind,
+            expressions=expressions,
+            partition=partition,
         )
 
     def _parse_insert(self) -> exp.Insert:
@@ -2549,6 +2569,7 @@ class Parser(metaclass=_Parser):
             overwrite=overwrite,
             alternative=alternative,
             ignore=ignore,
+            source=self._match(TokenType.TABLE) and self._parse_table(),
         )
 
     def _parse_kill(self) -> exp.Kill:
@@ -2965,6 +2986,7 @@ class Parser(metaclass=_Parser):
             this=this,
             pivots=self._parse_pivots(),
             alias=self._parse_table_alias() if parse_alias else None,
+            sample=self._parse_table_sample(),
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
@@ -3535,7 +3557,7 @@ class Parser(metaclass=_Parser):
             this.set("version", version)
 
         if self.dialect.ALIAS_POST_TABLESAMPLE:
-            table_sample = self._parse_table_sample()
+            this.set("sample", self._parse_table_sample())
 
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
         if alias:
@@ -3552,11 +3574,7 @@ class Parser(metaclass=_Parser):
             this.set("pivots", self._parse_pivots())
 
         if not self.dialect.ALIAS_POST_TABLESAMPLE:
-            table_sample = self._parse_table_sample()
-
-        if table_sample:
-            table_sample.set("this", this)
-            this = table_sample
+            this.set("sample", self._parse_table_sample())
 
         if joins:
             for join in self._parse_joins():
@@ -3775,8 +3793,10 @@ class Parser(metaclass=_Parser):
             this = self._parse_select_or_expression()
 
             self._match(TokenType.ALIAS)
-            alias = self._parse_field()
+            alias = self._parse_bitwise()
             if alias:
+                if isinstance(alias, exp.Column) and not alias.db:
+                    alias = alias.this
                 return self.expression(exp.PivotAlias, this=this, alias=alias)
 
             return this
@@ -3897,48 +3917,50 @@ class Parser(metaclass=_Parser):
             elements["all"] = False
 
         while True:
-            expressions = self._parse_csv(
-                lambda: None
-                if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
-                else self._parse_assignment()
-            )
-            if expressions:
-                elements["expressions"].extend(expressions)
-
-            grouping_sets = self._parse_grouping_sets()
-            if grouping_sets:
-                elements["grouping_sets"].extend(grouping_sets)
-
-            rollup = None
-            cube = None
-            totals = None
-
             index = self._index
-            with_ = self._match(TokenType.WITH)
+
+            elements["expressions"].extend(
+                self._parse_csv(
+                    lambda: None
+                    if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
+                    else self._parse_assignment()
+                )
+            )
+
+            before_with_index = self._index
+            with_prefix = self._match(TokenType.WITH)
+
             if self._match(TokenType.ROLLUP):
-                rollup = with_ or self._parse_wrapped_csv(self._parse_column)
-                elements["rollup"].extend(ensure_list(rollup))
-
-            if self._match(TokenType.CUBE):
-                cube = with_ or self._parse_wrapped_csv(self._parse_column)
-                elements["cube"].extend(ensure_list(cube))
-
-            if self._match_text_seq("TOTALS"):
-                totals = True
+                elements["rollup"].append(
+                    self._parse_cube_or_rollup(exp.Rollup, with_prefix=with_prefix)
+                )
+            elif self._match(TokenType.CUBE):
+                elements["cube"].append(
+                    self._parse_cube_or_rollup(exp.Cube, with_prefix=with_prefix)
+                )
+            elif self._match(TokenType.GROUPING_SETS):
+                elements["grouping_sets"].append(
+                    self.expression(
+                        exp.GroupingSets,
+                        expressions=self._parse_wrapped_csv(self._parse_grouping_set),
+                    )
+                )
+            elif self._match_text_seq("TOTALS"):
                 elements["totals"] = True  # type: ignore
 
-            if not (grouping_sets or rollup or cube or totals):
-                if with_:
-                    self._retreat(index)
+            if before_with_index <= self._index <= before_with_index + 1:
+                self._retreat(before_with_index)
+                break
+
+            if index == self._index:
                 break
 
         return self.expression(exp.Group, **elements)  # type: ignore
 
-    def _parse_grouping_sets(self) -> t.Optional[t.List[exp.Expression]]:
-        if not self._match(TokenType.GROUPING_SETS):
-            return None
-
-        return self._parse_wrapped_csv(self._parse_grouping_set)
+    def _parse_cube_or_rollup(self, kind: t.Type[E], with_prefix: bool = False) -> E:
+        return self.expression(
+            kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_column)
+        )
 
     def _parse_grouping_set(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):
@@ -4005,7 +4027,6 @@ class Parser(metaclass=_Parser):
             exp.Order,
             this=this,
             expressions=self._parse_csv(self._parse_ordered),
-            interpolate=self._parse_interpolate(),
             siblings=siblings,
         )
 
@@ -4050,6 +4071,7 @@ class Parser(metaclass=_Parser):
                     "from": self._match(TokenType.FROM) and self._parse_bitwise(),
                     "to": self._match_text_seq("TO") and self._parse_bitwise(),
                     "step": self._match_text_seq("STEP") and self._parse_bitwise(),
+                    "interpolate": self._parse_interpolate(),
                 },
             )
         else:
@@ -4272,10 +4294,26 @@ class Parser(metaclass=_Parser):
             klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
             return self.expression(klass, this=this, expression=self._parse_bitwise())
 
-        expression = self._parse_null() or self._parse_boolean()
-        if not expression:
-            self._retreat(index)
-            return None
+        if self._match(TokenType.JSON):
+            kind = self._match_texts(self.IS_JSON_PREDICATE_KIND) and self._prev.text.upper()
+
+            if self._match_text_seq("WITH"):
+                _with = True
+            elif self._match_text_seq("WITHOUT"):
+                _with = False
+            else:
+                _with = None
+
+            unique = self._match(TokenType.UNIQUE)
+            self._match_text_seq("KEYS")
+            expression: t.Optional[exp.Expression] = self.expression(
+                exp.JSON, **{"this": kind, "with": _with, "unique": unique}
+            )
+        else:
+            expression = self._parse_primary() or self._parse_null()
+            if not expression:
+                self._retreat(index)
+                return None
 
         this = self.expression(exp.Is, this=this, expression=expression)
         return self.expression(exp.Not, this=this) if negate else this
@@ -5077,10 +5115,13 @@ class Parser(metaclass=_Parser):
         self._match_r_paren(this)
         return self._parse_window(this)
 
+    def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
+        return expression
+
     def _kv_to_prop_eq(self, expressions: t.List[exp.Expression]) -> t.List[exp.Expression]:
         transformed = []
 
-        for e in expressions:
+        for index, e in enumerate(expressions):
             if isinstance(e, self.KEY_VALUE_DEFINITIONS):
                 if isinstance(e, exp.Alias):
                     e = self.expression(exp.PropertyEQ, this=e.args.get("alias"), expression=e.this)
@@ -5092,6 +5133,8 @@ class Parser(metaclass=_Parser):
 
                 if isinstance(e.this, exp.Column):
                     e.this.replace(e.this.this)
+            else:
+                e = self._to_prop_eq(e, index)
 
             transformed.append(e)
 

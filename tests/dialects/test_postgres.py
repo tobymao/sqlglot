@@ -676,17 +676,25 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            """'{"a":1,"b":2}'::json->'b'""",
-            write={
-                "postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'""",
-                "redshift": """JSON_EXTRACT_PATH_TEXT('{"a":1,"b":2}', 'b')""",
-            },
-        )
-        self.validate_all(
             "TRIM(BOTH 'as' FROM 'as string as')",
             write={
                 "postgres": "TRIM(BOTH 'as' FROM 'as string as')",
                 "spark": "TRIM(BOTH 'as' FROM 'as string as')",
+            },
+        )
+        self.validate_identity(
+            """SELECT TRIM(LEADING ' XXX ' COLLATE "de_DE")""",
+            """SELECT LTRIM(' XXX ' COLLATE "de_DE")""",
+        )
+        self.validate_identity(
+            """SELECT TRIM(TRAILING ' XXX ' COLLATE "de_DE")""",
+            """SELECT RTRIM(' XXX ' COLLATE "de_DE")""",
+        )
+        self.validate_all(
+            """'{"a":1,"b":2}'::json->'b'""",
+            write={
+                "postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'""",
+                "redshift": """JSON_EXTRACT_PATH_TEXT('{"a":1,"b":2}', 'b')""",
             },
         )
         self.validate_all(
@@ -778,6 +786,13 @@ class TestPostgres(Validator):
                 "duckdb": "SELECT CAST(STRPTIME('01/01/2000', '%m/%d/%Y') AS DATE)",
                 "postgres": "SELECT TO_DATE('01/01/2000', 'MM/DD/YYYY')",
             },
+        )
+
+        self.validate_identity(
+            'SELECT js, js IS JSON AS "json?", js IS JSON VALUE AS "scalar?", js IS JSON SCALAR AS "scalar?", js IS JSON OBJECT AS "object?", js IS JSON ARRAY AS "array?" FROM t'
+        )
+        self.validate_identity(
+            'SELECT js, js IS JSON ARRAY WITH UNIQUE KEYS AS "array w. UK?", js IS JSON ARRAY WITHOUT UNIQUE KEYS AS "array w/o UK?", js IS JSON ARRAY UNIQUE KEYS AS "array w UK 2?" FROM t'
         )
 
     def test_ddl(self):

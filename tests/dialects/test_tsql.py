@@ -32,6 +32,9 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
+            "SELECT TOP 10 s.RECORDID, n.c.value('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s(nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)"
+        )
+        self.validate_identity(
             "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
         )
         self.validate_identity(
@@ -410,6 +413,12 @@ class TestTSQL(Validator):
                 "": "STDDEV(x)",
                 "tsql": "STDEV(x)",
             },
+        )
+
+        # Check that TRUE and FALSE dont get expanded to (1=1) or (1=0) when used in a VALUES expression
+        self.validate_identity(
+            "SELECT val FROM (VALUES ((TRUE), (FALSE), (NULL))) AS t(val)",
+            write_sql="SELECT val FROM (VALUES ((1), (0), (NULL))) AS t(val)",
         )
 
     def test_option(self):
@@ -1527,6 +1536,15 @@ WHERE
             },
         )
 
+        # Check superfluous casts arent added. ref: https://github.com/TobikoData/sqlmesh/issues/2672
+        self.validate_all(
+            "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
+            write={
+                "tsql": "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
+                "clickhouse": "SELECT DATE_DIFF(DAY, CAST(a AS Nullable(DateTime)), CAST(b AS Nullable(DateTime))) AS x FROM foo",
+            },
+        )
+
     def test_lateral_subquery(self):
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) t(v, y)",
@@ -1568,8 +1586,8 @@ WHERE
         self.validate_all(
             "SELECT t.x, y.z FROM x OUTER APPLY a.b.tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.TVFTEST(t.x) AS y(z)",
-                "tsql": "SELECT t.x, y.z FROM x OUTER APPLY a.b.TVFTEST(t.x) AS y(z)",
+                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.tvfTest(t.x) AS y(z)",
+                "tsql": "SELECT t.x, y.z FROM x OUTER APPLY a.b.tvfTest(t.x) AS y(z)",
             },
         )
 
@@ -1664,7 +1682,7 @@ WHERE
             },
             write={
                 "bigquery": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
-                "clickhouse": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
+                "clickhouse": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS Nullable(DATE)))",
                 "duckdb": "LAST_DAY(CAST(CURRENT_TIMESTAMP AS DATE))",
                 "mysql": "LAST_DAY(DATE(CURRENT_TIMESTAMP()))",
                 "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE)) + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
@@ -1679,7 +1697,7 @@ WHERE
             "EOMONTH(GETDATE(), -1)",
             write={
                 "bigquery": "LAST_DAY(DATE_ADD(CAST(CURRENT_TIMESTAMP() AS DATE), INTERVAL -1 MONTH))",
-                "clickhouse": "LAST_DAY(DATE_ADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS DATE)))",
+                "clickhouse": "LAST_DAY(DATE_ADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS Nullable(DATE))))",
                 "duckdb": "LAST_DAY(CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL (-1) MONTH)",
                 "mysql": "LAST_DAY(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 MONTH))",
                 "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL '-1 MONTH') + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",

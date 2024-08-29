@@ -632,6 +632,7 @@ SELECT x.a + 1 AS i, x.a + 1 + 1 AS j, x.a + 1 + 1 + 1 AS k FROM x AS x;
 
 # title: noop - reference comes before alias
 # execute: false
+# validate_qualify_columns: false
 SELECT i + 1 AS j, x.a + 1 AS i FROM x;
 SELECT i + 1 AS j, x.a + 1 AS i FROM x AS x;
 
@@ -659,6 +660,16 @@ SELECT x.a + x.b AS f, x.a + x.b AS _col_1, x.a + x.b + 5 AS _col_2 FROM x AS x;
 # title: expand double agg if window func
 SELECT a, SUM(b) AS c, SUM(c) OVER(PARTITION BY a) AS d from x group by 1 ORDER BY a;
 SELECT x.a AS a, SUM(x.b) AS c, SUM(SUM(x.b)) OVER (PARTITION BY x.a) AS d FROM x AS x GROUP BY x.a ORDER BY a;
+
+# title: we can't expand aliases corresponding to recursive CTE columns (CTE names output columns)
+# execute: false
+WITH RECURSIVE t(c) AS (SELECT 1 AS c UNION ALL SELECT c + 1 AS c FROM t WHERE c <= 10) SELECT c FROM t;
+WITH RECURSIVE t(c) AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHERE t.c <= 10) SELECT t.c AS c FROM t AS t;
+
+# title: we can't expand aliases corresponding to recursive CTE columns (CTE doesn't name output columns)
+# execute: false
+WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT c + 1 AS c FROM t WHERE c <= 10) SELECT c FROM t;
+WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHERE t.c <= 10) SELECT t.c AS c FROM t AS t;
 
 --------------------------------------
 -- Wrapped tables / join constructs
@@ -694,3 +705,6 @@ SELECT _q_0.a AS a, _q_0.b AS b, _q_1.b AS b, _q_1.c AS c FROM ((SELECT x.a AS a
 
 SELECT b FROM ((SELECT a FROM x) INNER JOIN y ON a = b);
 SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _q_0 INNER JOIN y AS y ON _q_0.a = y.b);
+
+SELECT a, c FROM x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y TABLESAMPLE SYSTEM (10 ROWS);
+SELECT x.a AS a, y.c AS c FROM x AS x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y AS y TABLESAMPLE SYSTEM (10 ROWS);

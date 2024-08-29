@@ -33,6 +33,15 @@ def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
     return exp.ToChar.from_arg_list(args)
 
 
+def _trim_sql(self: Oracle.Generator, expression: exp.Trim) -> str:
+    position = expression.args.get("position")
+
+    if position and position.upper() in ("LEADING", "TRAILING"):
+        return self.trim_sql(expression)
+
+    return trim_sql(self, expression)
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -78,6 +87,8 @@ class Oracle(Dialect):
             for prefix in ("U", "u")
         ]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
@@ -90,7 +101,6 @@ class Oracle(Dialect):
             "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
-            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
         }
@@ -106,8 +116,15 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
+            "NVL": lambda args: exp.Coalesce(
+                this=seq_get(args, 0), expressions=args[1:], is_nvl=True
+            ),
         }
-        FUNCTIONS.pop("NVL")
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
+        }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
@@ -259,12 +276,12 @@ class Oracle(Dialect):
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
             exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),
-            exp.TableSample: lambda self, e: self.tablesample_sql(e, sep=" "),
+            exp.TableSample: lambda self, e: self.tablesample_sql(e),
             exp.TemporaryProperty: lambda _, e: f"{e.name or 'GLOBAL'} TEMPORARY",
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
-            exp.Trim: trim_sql,
+            exp.Trim: _trim_sql,
             exp.UnixToTime: lambda self,
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
@@ -275,6 +292,9 @@ class Oracle(Dialect):
         }
 
         def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            if expression.args.get("sysdate"):
+                return "SYSDATE"
+
             this = expression.this
             return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"
 
@@ -304,3 +324,7 @@ class Oracle(Dialect):
             value = f" CONSTRAINT {value}" if value else ""
 
             return f"{option}{value}"
+
+        def coalesce_sql(self, expression: exp.Coalesce) -> str:
+            func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
+            return rename_func(func_name)(self, expression)

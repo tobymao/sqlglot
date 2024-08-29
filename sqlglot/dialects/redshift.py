@@ -48,12 +48,9 @@ class Redshift(Postgres):
     HEX_LOWERCASE = True
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
 
-    TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
-    TIME_MAPPING = {
-        **Postgres.TIME_MAPPING,
-        "MON": "%b",
-        "HH": "%H",
-    }
+    # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
+    TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    TIME_MAPPING = {**Postgres.TIME_MAPPING, "MON": "%b", "HH24": "%H", "HH": "%I"}
 
     class Parser(Postgres.Parser):
         FUNCTIONS = {
@@ -80,7 +77,7 @@ class Redshift(Postgres):
         NO_PAREN_FUNCTION_PARSERS = {
             **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
             "APPROXIMATE": lambda self: self._parse_approximate_count(),
-            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, transaction=True),
+            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }
 
         SUPPORTS_IMPLICIT_UNNEST = True
@@ -180,7 +177,7 @@ class Redshift(Postgres):
             exp.ApproxDistinct: lambda self,
             e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
             exp.CurrentTimestamp: lambda self, e: (
-                "SYSDATE" if e.args.get("transaction") else "GETDATE()"
+                "SYSDATE" if e.args.get("sysdate") else "GETDATE()"
             ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

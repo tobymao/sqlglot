@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
@@ -7,6 +9,7 @@ from sqlglot.dialects.dialect import (
     build_timestamp_trunc,
     rename_func,
     unit_to_str,
+    inline_array_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
@@ -26,6 +29,19 @@ class StarRocks(MySQL):
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
+        def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
+            unnest = super()._parse_unnest(with_alias=with_alias)
+
+            if unnest:
+                alias = unnest.args.get("alias")
+
+                if alias and not alias.args.get("columns"):
+                    # Starrocks defaults to naming the UNNEST column as "unnest"
+                    # if it's not otherwise specified
+                    alias.set("columns", [exp.to_identifier("unnest")])
+
+            return unnest
+
     class Generator(MySQL.Generator):
         CAST_MAPPING = {}
 
@@ -38,6 +54,7 @@ class StarRocks(MySQL):
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
+            exp.Array: inline_array_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression

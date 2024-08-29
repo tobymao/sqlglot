@@ -14,6 +14,13 @@ class TestPresto(Validator):
         self.validate_identity("CAST(x AS HYPERLOGLOG)")
 
         self.validate_all(
+            "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
+            write={
+                "duckdb": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
+                "presto": "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
+            },
+        )
+        self.validate_all(
             "CAST(x AS INTERVAL YEAR TO MONTH)",
             write={
                 "oracle": "CAST(x AS INTERVAL YEAR TO MONTH)",
@@ -627,6 +634,7 @@ class TestPresto(Validator):
                 },
             )
 
+        self.validate_identity("SELECT a FROM t GROUP BY a, ROLLUP (b), ROLLUP (c), ROLLUP (d)")
         self.validate_identity("SELECT a FROM test TABLESAMPLE BERNOULLI (50)")
         self.validate_identity("SELECT a FROM test TABLESAMPLE SYSTEM (75)")
         self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
@@ -708,9 +716,6 @@ class TestPresto(Validator):
         )
         self.validate_all(
             "SELECT ROW(1, 2)",
-            read={
-                "spark": "SELECT STRUCT(1, 2)",
-            },
             write={
                 "presto": "SELECT ROW(1, 2)",
                 "spark": "SELECT STRUCT(1, 2)",
@@ -826,12 +831,6 @@ class TestPresto(Validator):
                 "presto": "ARRAY_AGG(x ORDER BY y DESC)",
                 "spark": "COLLECT_LIST(x)",
                 "trino": "ARRAY_AGG(x ORDER BY y DESC)",
-            },
-        )
-        self.validate_all(
-            "SELECT a FROM t GROUP BY a, ROLLUP(b), ROLLUP(c), ROLLUP(d)",
-            write={
-                "presto": "SELECT a FROM t GROUP BY a, ROLLUP (b, c, d)",
             },
         )
         self.validate_all(

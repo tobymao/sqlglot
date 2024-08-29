@@ -11,6 +11,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("1 /* /* */")
         self.validate_identity(
             "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )
@@ -597,12 +598,12 @@ WHERE
         self.validate_all(
             "DIV0(foo, bar)",
             write={
-                "snowflake": "IFF(bar = 0, 0, foo / bar)",
-                "sqlite": "IIF(bar = 0, 0, CAST(foo AS REAL) / bar)",
-                "presto": "IF(bar = 0, 0, CAST(foo AS DOUBLE) / bar)",
-                "spark": "IF(bar = 0, 0, foo / bar)",
-                "hive": "IF(bar = 0, 0, foo / bar)",
-                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+                "snowflake": "IFF(bar = 0 AND NOT foo IS NULL, 0, foo / bar)",
+                "sqlite": "IIF(bar = 0 AND NOT foo IS NULL, 0, CAST(foo AS REAL) / bar)",
+                "presto": "IF(bar = 0 AND NOT foo IS NULL, 0, CAST(foo AS DOUBLE) / bar)",
+                "spark": "IF(bar = 0 AND NOT foo IS NULL, 0, foo / bar)",
+                "hive": "IF(bar = 0 AND NOT foo IS NULL, 0, foo / bar)",
+                "duckdb": "CASE WHEN bar = 0 AND NOT foo IS NULL THEN 0 ELSE foo / bar END",
             },
         )
         self.validate_all(

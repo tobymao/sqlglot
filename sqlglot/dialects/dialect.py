@@ -11,7 +11,7 @@ from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
-from sqlglot.time import TIMEZONES, format_time
+from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
@@ -133,6 +133,10 @@ class _Dialect(type):
         klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
         klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
+        klass.INVERSE_CREATABLE_KIND_MAPPING = {
+            v: k for k, v in klass.CREATABLE_KIND_MAPPING.items()
+        }
+
         base = seq_get(bases, 0)
         base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
         base_jsonpath_tokenizer = (getattr(base, "jsonpath_tokenizer_class", JSONPathTokenizer),)
@@ -182,6 +186,9 @@ class _Dialect(type):
 
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
+
+        if enum not in ("", "clickhouse"):
+            klass.generator_class.SUPPORTS_NULLABLE_TYPES = False
 
         if enum not in ("", "athena", "presto", "trino"):
             klass.generator_class.TRY_SUPPORTED = False
@@ -381,6 +388,12 @@ class Dialect(metaclass=_Dialect):
     dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
     """
 
+    CREATABLE_KIND_MAPPING: dict[str, str] = {}
+    """
+    Helper for dialects that use a different name for the same creatable kind. For example, the Clickhouse
+    equivalent of CREATE SCHEMA is CREATE DATABASE.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -396,6 +409,8 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_TRIE: t.Dict = {}
     INVERSE_FORMAT_MAPPING: t.Dict[str, str] = {}
     INVERSE_FORMAT_TRIE: t.Dict = {}
+
+    INVERSE_CREATABLE_KIND_MAPPING: dict[str, str] = {}
 
     ESCAPED_SEQUENCES: t.Dict[str, str] = {}
 
@@ -1228,8 +1243,25 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
     )
 
 
-def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
-    return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
+def timestrtotime_sql(
+    self: Generator,
+    expression: exp.TimeStrToTime,
+    include_precision: bool = False,
+) -> str:
+    datatype = exp.DataType.build(
+        exp.DataType.Type.TIMESTAMPTZ
+        if expression.args.get("zone")
+        else exp.DataType.Type.TIMESTAMP
+    )
+
+    if isinstance(expression.this, exp.Literal) and include_precision:
+        precision = subsecond_precision(expression.this.name)
+        if precision > 0:
+            datatype = exp.DataType.build(
+                datatype.this, expressions=[exp.DataTypeParam(this=exp.Literal.number(precision))]
+            )
+
+    return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
@@ -1274,7 +1306,7 @@ def trim_sql(self: Generator, expression: exp.Trim) -> str:
     collation = self.sql(expression, "collation")
 
     # Use TRIM/LTRIM/RTRIM syntax if the expression isn't database-specific
-    if not remove_chars and not collation:
+    if not remove_chars:
         return self.trim_sql(expression)
 
     trim_type = f"{trim_type} " if trim_type else ""
@@ -1479,14 +1511,19 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         targets.add(normalize(alias.this))
 
     for when in expression.expressions:
-        when.transform(
-            lambda node: (
-                exp.column(node.this)
-                if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
-                else node
-            ),
-            copy=False,
-        )
+        # only remove the target names from the THEN clause
+        # theyre still valid in the <condition> part of WHEN MATCHED / WHEN NOT MATCHED
+        # ref: https://github.com/TobikoData/sqlmesh/issues/2934
+        then = when.args.get("then")
+        if then:
+            then.transform(
+                lambda node: (
+                    exp.column(node.this)
+                    if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
+                    else node
+                ),
+                copy=False,
+            )
 
     return self.merge_sql(expression)
 

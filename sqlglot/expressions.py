@@ -1437,7 +1437,13 @@ class Clone(Expression):
 
 
 class Describe(Expression):
-    arg_types = {"this": True, "style": False, "kind": False, "expressions": False}
+    arg_types = {
+        "this": True,
+        "style": False,
+        "kind": False,
+        "expressions": False,
+        "partition": False,
+    }
 
 
 # https://duckdb.org/docs/guides/meta/summarize.html
@@ -2001,6 +2007,11 @@ class Drop(Expression):
         "cluster": False,
     }
 
+    @property
+    def kind(self) -> t.Optional[str]:
+        kind = self.args.get("kind")
+        return kind and kind.upper()
+
 
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
@@ -2161,6 +2172,7 @@ class Insert(DDL, DML):
         "stored": False,
         "partition": False,
         "settings": False,
+        "source": False,
     }
 
     def with_(
@@ -2267,6 +2279,18 @@ class Group(Expression):
         "totals": False,
         "all": False,
     }
+
+
+class Cube(Expression):
+    arg_types = {"expressions": False}
+
+
+class Rollup(Expression):
+    arg_types = {"expressions": False}
+
+
+class GroupingSets(Expression):
+    arg_types = {"expressions": True}
 
 
 class Lambda(Expression):
@@ -2467,17 +2491,17 @@ class Offset(Expression):
 
 
 class Order(Expression):
-    arg_types = {
-        "this": False,
-        "expressions": True,
-        "interpolate": False,
-        "siblings": False,
-    }
+    arg_types = {"this": False, "expressions": True, "siblings": False}
 
 
 # https://clickhouse.com/docs/en/sql-reference/statements/select/order-by#order-by-expr-with-fill-modifier
 class WithFill(Expression):
-    arg_types = {"from": False, "to": False, "step": False}
+    arg_types = {
+        "from": False,
+        "to": False,
+        "step": False,
+        "interpolate": False,
+    }
 
 
 # hive specific sorts
@@ -3063,6 +3087,7 @@ class Table(Expression):
         "partition": False,
         "changes": False,
         "rows_from": False,
+        "sample": False,
     }
 
     @property
@@ -3149,11 +3174,11 @@ class SetOperation(Query):
         return self.this.unnest().selects
 
     @property
-    def left(self) -> Expression:
+    def left(self) -> Query:
         return self.this
 
     @property
-    def right(self) -> Expression:
+    def right(self) -> Query:
         return self.expression
 
 
@@ -3835,7 +3860,6 @@ class Subquery(DerivedTable, Query):
 
 class TableSample(Expression):
     arg_types = {
-        "this": False,
         "expressions": False,
         "method": False,
         "bucket_numerator": False,
@@ -3961,6 +3985,8 @@ class DataTypeParam(Expression):
         return self.this.name
 
 
+# The `nullable` arg is helpful when transpiling types from other dialects to ClickHouse, which
+# assumes non-nullable types by default. Values `None` and `True` mean the type is nullable.
 class DataType(Expression):
     arg_types = {
         "this": True,
@@ -3969,6 +3995,7 @@ class DataType(Expression):
         "values": False,
         "prefix": False,
         "kind": False,
+        "nullable": False,
     }
 
     class Type(AutoName):
@@ -4207,28 +4234,45 @@ class DataType(Expression):
 
         return DataType(**{**data_type_exp.args, **kwargs})
 
-    def is_type(self, *dtypes: DATA_TYPE) -> bool:
+    def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """
         Checks whether this DataType matches one of the provided data types. Nested types or precision
         will be compared using "structural equivalence" semantics, so e.g. array<int> != array<float>.
 
         Args:
             dtypes: the data types to compare this DataType to.
+            check_nullable: whether to take the NULLABLE type constructor into account for the comparison.
+                If false, it means that NULLABLE<INT> is equivalent to INT.
 
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
+        if (
+            not check_nullable
+            and self.this == DataType.Type.NULLABLE
+            and len(self.expressions) == 1
+        ):
+            this_type = self.expressions[0]
+        else:
+            this_type = self
+
         for dtype in dtypes:
-            other = DataType.build(dtype, copy=False, udt=True)
+            other_type = DataType.build(dtype, copy=False, udt=True)
+            if (
+                not check_nullable
+                and other_type.this == DataType.Type.NULLABLE
+                and len(other_type.expressions) == 1
+            ):
+                other_type = other_type.expressions[0]
 
             if (
-                other.expressions
-                or self.this == DataType.Type.USERDEFINED
-                or other.this == DataType.Type.USERDEFINED
+                other_type.expressions
+                or this_type.this == DataType.Type.USERDEFINED
+                or other_type.this == DataType.Type.USERDEFINED
             ):
-                matches = self == other
+                matches = this_type == other_type
             else:
-                matches = self.this == other.this
+                matches = this_type.this == other_type.this
 
             if matches:
                 return True
@@ -5056,7 +5100,7 @@ class Ceil(Func):
 
 
 class Coalesce(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "is_nvl": False}
     is_var_len_args = True
     _sql_names = ["COALESCE", "IFNULL", "NVL"]
 
@@ -5108,7 +5152,7 @@ class CurrentTime(Func):
 
 
 class CurrentTimestamp(Func):
-    arg_types = {"this": False, "transaction": False}
+    arg_types = {"this": False, "sysdate": False}
 
 
 class CurrentUser(Func):
@@ -5317,6 +5361,7 @@ class Unnest(Func, UDTF):
         "expressions": True,
         "alias": False,
         "offset": False,
+        "explode_array": False,
     }
 
     @property
@@ -5338,6 +5383,11 @@ class FromBase64(Func):
 
 class ToBase64(Func):
     pass
+
+
+# https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp
+class FromISO8601Timestamp(Func):
+    _sql_names = ["FROM_ISO8601_TIMESTAMP"]
 
 
 class GapFill(Func):
@@ -5402,6 +5452,11 @@ class IsNan(Func):
 
 class IsInf(Func):
     _sql_names = ["IS_INF", "ISINF"]
+
+
+# https://www.postgresql.org/docs/current/functions-json.html
+class JSON(Expression):
+    arg_types = {"this": False, "with": False, "unique": False}
 
 
 class JSONPath(Expression):
@@ -5514,6 +5569,17 @@ class JSONColumnDef(Expression):
 
 class JSONSchema(Expression):
     arg_types = {"expressions": True}
+
+
+# https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html#function_json-value
+class JSONValue(Expression):
+    arg_types = {
+        "this": True,
+        "path": True,
+        "returning": False,
+        "on_empty": False,
+        "on_error": False,
+    }
 
 
 # # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
@@ -5961,7 +6027,7 @@ class Time(Func):
 
 
 class TimeToStr(Func):
-    arg_types = {"this": True, "format": True, "culture": False, "timezone": False}
+    arg_types = {"this": True, "format": True, "culture": False, "zone": False}
 
 
 class TimeToTimeStr(Func):
@@ -5977,7 +6043,7 @@ class TimeStrToDate(Func):
 
 
 class TimeStrToTime(Func):
-    pass
+    arg_types = {"this": True, "zone": False}
 
 
 class TimeStrToUnix(Func):
@@ -7185,7 +7251,9 @@ def column(
     return this
 
 
-def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast:
+def cast(
+    expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, dialect: DialectType = None, **opts
+) -> Cast:
     """Cast an expression to a data type.
 
     Example:
@@ -7196,15 +7264,37 @@ def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast
         expression: The expression to cast.
         to: The datatype to cast to.
         copy: Whether to copy the supplied expressions.
+        dialect: The target dialect. This is used to prevent a re-cast in the following scenario:
+            - The expression to be cast is already a exp.Cast expression
+            - The existing cast is to a type that is logically equivalent to new type
+
+            For example, if :expression='CAST(x as DATETIME)' and :to=Type.TIMESTAMP,
+            but in the target dialect DATETIME is mapped to TIMESTAMP, then we will NOT return `CAST(x (as DATETIME) as TIMESTAMP)`
+            and instead just return the original expression `CAST(x as DATETIME)`.
+
+            This is to prevent it being output as a double cast `CAST(x (as TIMESTAMP) as TIMESTAMP)` once the DATETIME -> TIMESTAMP
+            mapping is applied in the target dialect generator.
 
     Returns:
         The new Cast instance.
     """
-    expr = maybe_parse(expression, copy=copy, **opts)
-    data_type = DataType.build(to, copy=copy, **opts)
+    expr = maybe_parse(expression, copy=copy, dialect=dialect, **opts)
+    data_type = DataType.build(to, copy=copy, dialect=dialect, **opts)
 
-    if expr.is_type(data_type):
-        return expr
+    # dont re-cast if the expression is already a cast to the correct type
+    if isinstance(expr, Cast):
+        from sqlglot.dialects.dialect import Dialect
+
+        target_dialect = Dialect.get_or_raise(dialect)
+        type_mapping = target_dialect.generator_class.TYPE_MAPPING
+
+        existing_cast_type: DataType.Type = expr.to.this
+        new_cast_type: DataType.Type = data_type.this
+        types_are_equivalent = type_mapping.get(
+            existing_cast_type, existing_cast_type
+        ) == type_mapping.get(new_cast_type, new_cast_type)
+        if expr.is_type(data_type) or types_are_equivalent:
+            return expr
 
     expr = Cast(this=expr, to=data_type)
     expr.type = data_type
@@ -7378,12 +7468,15 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
     if isinstance(value, bytes):
         return HexString(this=value.hex())
     if isinstance(value, datetime.datetime):
-        datetime_literal = Literal.string(
-            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat(
-                sep=" "
-            )
-        )
-        return TimeStrToTime(this=datetime_literal)
+        datetime_literal = Literal.string(value.isoformat(sep=" "))
+
+        tz = None
+        if value.tzinfo:
+            # this works for zoneinfo.ZoneInfo, pytz.timezone and datetime.datetime.utc to return IANA timezone names like "America/Los_Angeles"
+            # instead of abbreviations like "PDT". This is for consistency with other timezone handling functions in SQLGlot
+            tz = Literal.string(str(value.tzinfo))
+
+        return TimeStrToTime(this=datetime_literal, zone=tz)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)

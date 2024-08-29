@@ -530,6 +530,7 @@ class _Tokenizer(type):
                 },
                 heredoc_tag_is_identifier=klass.HEREDOC_TAG_IS_IDENTIFIER,
                 string_escapes_allowed_in_raw_strings=klass.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
+                nested_comments=klass.NESTED_COMMENTS,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],
@@ -608,6 +609,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     # Whether string escape characters function as such when placed within raw strings
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = True
+
+    NESTED_COMMENTS = True
 
     # Autofilled
     _COMMENTS: t.Dict[str, str] = {}
@@ -1184,7 +1187,11 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance(alnum=True)
 
                 # Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
-                if not self._end and self._chars(comment_end_size) == comment_start:
+                if (
+                    self.NESTED_COMMENTS
+                    and not self._end
+                    and self._chars(comment_end_size) == comment_start
+                ):
                     self._advance(comment_start_size)
                     comment_count += 1
 

@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_var,
     unit_to_str,
+    sha256_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -40,6 +41,14 @@ from sqlglot.tokens import TokenType
 DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
 ]
+
+WINDOW_FUNCS_WITH_IGNORE_NULLS = (
+    exp.FirstValue,
+    exp.LastValue,
+    exp.Lag,
+    exp.Lead,
+    exp.NthValue,
+)
 
 
 def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
@@ -171,8 +180,10 @@ def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
 
-    # Type TIMESTAMP / TIME WITH TIME ZONE does not support any modifiers
-    if expression.is_type("timestamptz", "timetz"):
+    # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
+    if expression.is_type(
+        exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ, exp.DataType.Type.TIMESTAMPTZ
+    ):
         return expression.this.value
 
     return self.datatype_sql(expression)
@@ -374,6 +385,7 @@ class DuckDB(Dialect):
         }
 
         FUNCTIONS.pop("DATE_SUB")
+        FUNCTIONS.pop("GLOB")
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE")
@@ -537,6 +549,7 @@ class DuckDB(Dialect):
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
             exp.SafeDivide: no_safe_divide_sql,
+            exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: str_position_sql,
@@ -544,6 +557,7 @@ class DuckDB(Dialect):
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),
             exp.Struct: _struct_sql,
+            exp.Transform: rename_func("LIST_TRANSFORM"),
             exp.TimeAdd: _date_delta_sql,
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
@@ -702,6 +716,9 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
 
+        def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))
+
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
@@ -748,7 +765,6 @@ class DuckDB(Dialect):
         def tablesample_sql(
             self,
             expression: exp.TableSample,
-            sep: str = " AS ",
             tablesample_keyword: t.Optional[str] = None,
         ) -> str:
             if not isinstance(expression.parent, exp.Select):
@@ -764,9 +780,7 @@ class DuckDB(Dialect):
                     )
                     expression.set("method", exp.var("RESERVOIR"))
 
-            return super().tablesample_sql(
-                expression, sep=sep, tablesample_keyword=tablesample_keyword
-            )
+            return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None
@@ -884,3 +898,32 @@ class DuckDB(Dialect):
                 return self.func("STRUCT_PACK", kv_sql)
 
             return self.func("STRUCT_INSERT", this, kv_sql)
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            explode_array = expression.args.get("explode_array")
+            if explode_array:
+                # In BigQuery, UNNESTing a nested array leads to explosion of the top-level array & struct
+                # This is transpiled to DDB by transforming "FROM UNNEST(...)" to "FROM (SELECT UNNEST(..., max_depth => 2))"
+                expression.expressions.append(
+                    exp.Kwarg(this=exp.var("max_depth"), expression=exp.Literal.number(2))
+                )
+
+                # If BQ's UNNEST is aliased, we transform it from a column alias to a table alias in DDB
+                alias = expression.args.get("alias")
+                if alias:
+                    expression.set("alias", None)
+                    alias = exp.TableAlias(this=seq_get(alias.args.get("columns"), 0))
+
+                unnest_sql = super().unnest_sql(expression)
+                select = exp.Select(expressions=[unnest_sql]).subquery(alias)
+                return self.sql(select)
+
+            return super().unnest_sql(expression)
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            if isinstance(expression.this, WINDOW_FUNCS_WITH_IGNORE_NULLS):
+                # DuckDB should render IGNORE NULLS only for the general-purpose
+                # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
+                return super().ignorenulls_sql(expression)
+
+            return self.sql(expression, "this")

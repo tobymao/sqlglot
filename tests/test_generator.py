@@ -43,3 +43,7 @@ class TestGenerator(unittest.TestCase):
         assert parse_one("X").sql(identify="safe") == "X"
         assert parse_one("x as 1").sql(identify="safe") == '"x" AS "1"'
         assert parse_one("X as 1").sql(identify="safe") == 'X AS "1"'
+
+    def test_generate_nested_binary(self):
+        sql = "SELECT 'foo'" + (" || 'foo'" * 1000)
+        self.assertEqual(parse_one(sql).sql(copy=False), sql)

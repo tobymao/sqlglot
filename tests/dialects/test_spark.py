@@ -10,6 +10,7 @@ class TestSpark(Validator):
     dialect = "spark"
 
     def test_ddl(self):
+        self.validate_identity("INSERT OVERWRITE TABLE db1.tb1 TABLE db2.tb2")
         self.validate_identity("CREATE TABLE foo AS WITH t AS (SELECT 1 AS col) SELECT col FROM t")
         self.validate_identity("CREATE TEMPORARY VIEW test AS SELECT 1")
         self.validate_identity("CREATE TABLE foo (col VARCHAR(50))")
@@ -484,7 +485,7 @@ TBLPROPERTIES (
         )
         self.validate_all(
             "SELECT CAST(STRUCT('fooo') AS STRUCT<a: VARCHAR(2)>)",
-            write={"spark": "SELECT CAST(STRUCT('fooo') AS STRUCT<a: STRING>)"},
+            write={"spark": "SELECT CAST(STRUCT('fooo' AS col1) AS STRUCT<a: STRING>)"},
         )
         self.validate_all(
             "SELECT CAST(123456 AS VARCHAR(3))",
@@ -574,7 +575,10 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
-            "CAST(x AS TIMESTAMP)", read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"}
+            "CAST(x AS TIMESTAMP)",
+            read={
+                "trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)",
+            },
         )
         self.validate_all(
             "SELECT DATE_ADD(my_date_column, 1)",
@@ -705,6 +709,30 @@ TBLPROPERTIES (
                 "trino": "SELECT DATE_ADD('MONTH', 20, col)",
             },
         )
+        self.validate_identity("DESCRIBE schema.test PARTITION(ds = '2024-01-01')")
+
+        self.validate_all(
+            "SELECT ANY_VALUE(col, true), FIRST(col, true), FIRST_VALUE(col, true) OVER ()",
+            write={
+                "duckdb": "SELECT ANY_VALUE(col), FIRST(col), FIRST_VALUE(col IGNORE NULLS) OVER ()"
+            },
+        )
+
+        self.validate_all(
+            "SELECT STRUCT(1, 2)",
+            write={
+                "spark": "SELECT STRUCT(1 AS col1, 2 AS col2)",
+                "presto": "SELECT CAST(ROW(1, 2) AS ROW(col1 INTEGER, col2 INTEGER))",
+                "duckdb": "SELECT {'col1': 1, 'col2': 2}",
+            },
+        )
+        self.validate_all(
+            "SELECT STRUCT(x, 1, y AS col3, STRUCT(5)) FROM t",
+            write={
+                "spark": "SELECT STRUCT(x AS x, 1 AS col2, y AS col3, STRUCT(5 AS col1) AS col4) FROM t",
+                "duckdb": "SELECT {'x': x, 'col2': 1, 'col3': y, 'col4': {'col1': 5}} FROM t",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(
@@ -822,8 +850,22 @@ TBLPROPERTIES (
                     self.assertEqual(query.sql(name), without_modifiers)
 
     def test_schema_binding_options(self):
-        for schema_binding in ("BINDING", "COMPENSATION", "TYPE EVOLUTION", "EVOLUTION"):
+        for schema_binding in (
+            "BINDING",
+            "COMPENSATION",
+            "TYPE EVOLUTION",
+            "EVOLUTION",
+        ):
             with self.subTest(f"Test roundtrip of VIEW schema binding {schema_binding}"):
                 self.validate_identity(
                     f"CREATE VIEW emp_v WITH SCHEMA {schema_binding} AS SELECT * FROM emp"
                 )
+
+    def test_minus(self):
+        self.validate_all(
+            "SELECT * FROM db.table1 MINUS SELECT * FROM db.table2",
+            write={
+                "spark": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
+                "databricks": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
+            },
+        )

@@ -160,7 +160,7 @@ class TestDialect(Validator):
             "CAST(a AS TEXT)",
             write={
                 "bigquery": "CAST(a AS STRING)",
-                "clickhouse": "CAST(a AS String)",
+                "clickhouse": "CAST(a AS Nullable(String))",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "materialize": "CAST(a AS TEXT)",
@@ -181,7 +181,7 @@ class TestDialect(Validator):
             "CAST(a AS BINARY(4))",
             write={
                 "bigquery": "CAST(a AS BYTES)",
-                "clickhouse": "CAST(a AS BINARY(4))",
+                "clickhouse": "CAST(a AS Nullable(BINARY(4)))",
                 "drill": "CAST(a AS VARBINARY(4))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "materialize": "CAST(a AS BYTEA(4))",
@@ -201,7 +201,7 @@ class TestDialect(Validator):
             "CAST(a AS VARBINARY(4))",
             write={
                 "bigquery": "CAST(a AS BYTES)",
-                "clickhouse": "CAST(a AS String)",
+                "clickhouse": "CAST(a AS Nullable(String))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "materialize": "CAST(a AS BYTEA(4))",
                 "mysql": "CAST(a AS VARBINARY(4))",
@@ -219,19 +219,19 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(MAP('a', '1') AS MAP(TEXT, TEXT))",
             write={
-                "clickhouse": "CAST(map('a', '1') AS Map(String, String))",
+                "clickhouse": "CAST(map('a', '1') AS Map(String, Nullable(String)))",
             },
         )
         self.validate_all(
             "CAST(ARRAY(1, 2) AS ARRAY<TINYINT>)",
             write={
-                "clickhouse": "CAST([1, 2] AS Array(Int8))",
+                "clickhouse": "CAST([1, 2] AS Array(Nullable(Int8)))",
             },
         )
         self.validate_all(
-            "CAST((1, 2) AS STRUCT<a: TINYINT, b: SMALLINT, c: INT, d: BIGINT>)",
+            "CAST((1, 2, 3, 4) AS STRUCT<a: TINYINT, b: SMALLINT, c: INT, d: BIGINT>)",
             write={
-                "clickhouse": "CAST((1, 2) AS Tuple(a Int8, b Int16, c Int32, d Int64))",
+                "clickhouse": "CAST((1, 2, 3, 4) AS Tuple(a Nullable(Int8), b Nullable(Int16), c Nullable(Int32), d Nullable(Int64)))",
             },
         )
         self.validate_all(
@@ -328,19 +328,9 @@ class TestDialect(Validator):
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
             write={
-                "duckdb": "CAST(a AS DOUBLE)",
-                "drill": "CAST(a AS DOUBLE)",
-                "postgres": "CAST(a AS DOUBLE PRECISION)",
-                "redshift": "CAST(a AS DOUBLE PRECISION)",
-                "doris": "CAST(a AS DOUBLE)",
-            },
-        )
-
-        self.validate_all(
-            "CAST(a AS DOUBLE)",
-            write={
                 "bigquery": "CAST(a AS FLOAT64)",
-                "clickhouse": "CAST(a AS Float64)",
+                "clickhouse": "CAST(a AS Nullable(Float64))",
+                "doris": "CAST(a AS DOUBLE)",
                 "drill": "CAST(a AS DOUBLE)",
                 "duckdb": "CAST(a AS DOUBLE)",
                 "materialize": "CAST(a AS DOUBLE PRECISION)",
@@ -592,7 +582,7 @@ class TestDialect(Validator):
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%Y-%m-%dT%T')",
                 "drill": "TO_TIMESTAMP(x, 'yyyy-MM-dd''T''HH:mm:ss')",
-                "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH:MI:SS')",
+                "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH24:MI:SS')",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
             },
         )
@@ -647,12 +637,80 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_STR_TO_TIME('2020-01-01')",
             write={
-                "drill": "CAST('2020-01-01' AS TIMESTAMP)",
+                "bigquery": "CAST('2020-01-01' AS DATETIME)",
+                "databricks": "CAST('2020-01-01' AS TIMESTAMP)",
                 "duckdb": "CAST('2020-01-01' AS TIMESTAMP)",
+                "tsql": "CAST('2020-01-01' AS DATETIME2)",
+                "mysql": "CAST('2020-01-01' AS DATETIME)",
+                "postgres": "CAST('2020-01-01' AS TIMESTAMP)",
+                "redshift": "CAST('2020-01-01' AS TIMESTAMP)",
+                "snowflake": "CAST('2020-01-01' AS TIMESTAMP)",
+                "spark": "CAST('2020-01-01' AS TIMESTAMP)",
+                "trino": "CAST('2020-01-01' AS TIMESTAMP)",
+                "clickhouse": "CAST('2020-01-01' AS Nullable(DateTime))",
+                "drill": "CAST('2020-01-01' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "CAST('2020-01-01' AS TIMESTAMP)",
                 "sqlite": "'2020-01-01'",
                 "doris": "CAST('2020-01-01' AS DATETIME)",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_TIME('2020-01-01 12:13:14.123456+00:00')",
+            write={
+                "mysql": "CAST('2020-01-01 12:13:14.123456+00:00' AS DATETIME(6))",
+                "trino": "CAST('2020-01-01 12:13:14.123456+00:00' AS TIMESTAMP(6))",
+                "presto": "CAST('2020-01-01 12:13:14.123456+00:00' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_TIME('2020-01-01 12:13:14.123-08:00', 'America/Los_Angeles')",
+            write={
+                "mysql": "TIMESTAMP('2020-01-01 12:13:14.123-08:00')",
+                "trino": "CAST('2020-01-01 12:13:14.123-08:00' AS TIMESTAMP(3) WITH TIME ZONE)",
+                "presto": "CAST('2020-01-01 12:13:14.123-08:00' AS TIMESTAMP WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_TIME('2020-01-01 12:13:14-08:00', 'America/Los_Angeles')",
+            write={
+                "bigquery": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
+                "databricks": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
+                "duckdb": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
+                "tsql": "CAST('2020-01-01 12:13:14-08:00' AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
+                "mysql": "TIMESTAMP('2020-01-01 12:13:14-08:00')",
+                "postgres": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
+                "redshift": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP WITH TIME ZONE)",
+                "snowflake": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
+                "spark": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
+                "trino": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP WITH TIME ZONE)",
+                "clickhouse": "CAST('2020-01-01 12:13:14' AS Nullable(DateTime('America/Los_Angeles')))",
+                "drill": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
+                "hive": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
+                "presto": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP WITH TIME ZONE)",
+                "sqlite": "'2020-01-01 12:13:14-08:00'",
+                "doris": "CAST('2020-01-01 12:13:14-08:00' AS DATETIME)",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_TIME(col, 'America/Los_Angeles')",
+            write={
+                "bigquery": "CAST(col AS TIMESTAMP)",
+                "databricks": "CAST(col AS TIMESTAMP)",
+                "duckdb": "CAST(col AS TIMESTAMPTZ)",
+                "tsql": "CAST(col AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
+                "mysql": "TIMESTAMP(col)",
+                "postgres": "CAST(col AS TIMESTAMPTZ)",
+                "redshift": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
+                "snowflake": "CAST(col AS TIMESTAMPTZ)",
+                "spark": "CAST(col AS TIMESTAMP)",
+                "trino": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
+                "clickhouse": "CAST(col AS Nullable(DateTime('America/Los_Angeles')))",
+                "drill": "CAST(col AS TIMESTAMP)",
+                "hive": "CAST(col AS TIMESTAMP)",
+                "presto": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
+                "sqlite": "col",
+                "doris": "CAST(col AS DATETIME)",
             },
         )
         self.validate_all(
@@ -678,6 +736,13 @@ class TestDialect(Validator):
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
                 "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "doris": "DATE_FORMAT(x, '%Y-%m-%d')",
+            },
+        )
+        self.validate_all(
+            "TIME_TO_STR(a, '%Y-%m-%d %H:%M:%S.%f')",
+            write={
+                "redshift": "TO_CHAR(a, 'YYYY-MM-DD HH24:MI:SS.US')",
+                "tsql": "FORMAT(a, 'yyyy-MM-dd HH:mm:ss.ffffff')",
             },
         )
         self.validate_all(
@@ -2112,6 +2177,17 @@ SELECT
                 "bigquery": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT DISTINCT SELECT d.name) THEN UPDATE SET b.name = d.name",
                 "snowflake": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
                 "spark": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
+            },
+        )
+
+        # needs to preserve the target alias in then WHEN condition but not in the THEN clause
+        self.validate_all(
+            """MERGE INTO foo AS target USING (SELECT a, b FROM tbl) AS src ON src.a = target.a
+            WHEN MATCHED AND target.a <> src.a THEN UPDATE SET target.b = 'FOO'
+            WHEN NOT MATCHED THEN INSERT (target.a, target.b) VALUES (src.a, src.b)""",
+            write={
+                "trino": """MERGE INTO foo AS target USING (SELECT a, b FROM tbl) AS src ON src.a = target.a WHEN MATCHED AND target.a <> src.a THEN UPDATE SET b = 'FOO' WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)""",
+                "postgres": """MERGE INTO foo AS target USING (SELECT a, b FROM tbl) AS src ON src.a = target.a WHEN MATCHED AND target.a <> src.a THEN UPDATE SET b = 'FOO' WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)""",
             },
         )
 

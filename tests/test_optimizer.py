@@ -27,11 +27,11 @@ def parse_and_optimize(func, sql, read_dialect, **kwargs):
     return func(parse_one(sql, read=read_dialect), **kwargs)
 
 
-def qualify_columns(expression, **kwargs):
+def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
     expression = optimizer.qualify.qualify(
         expression,
         infer_schema=True,
-        validate_qualify_columns=False,
+        validate_qualify_columns=validate_qualify_columns,
         identify=False,
         **kwargs,
     )
@@ -135,10 +135,16 @@ class TestOptimizer(unittest.TestCase):
                     continue
                 dialect = meta.get("dialect")
                 leave_tables_isolated = meta.get("leave_tables_isolated")
+                validate_qualify_columns = meta.get("validate_qualify_columns")
 
                 func_kwargs = {**kwargs}
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+
+                if validate_qualify_columns is not None:
+                    func_kwargs["validate_qualify_columns"] = string_to_bool(
+                        validate_qualify_columns
+                    )
 
                 if set_dialect and dialect:
                     func_kwargs["dialect"] = dialect
@@ -1059,31 +1065,14 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             concat_expr.right.expressions[0].type.this, exp.DataType.Type.VARCHAR
         )  # x.cola (arg)
 
+        # Ensures we don't raise if there are unqualified columns
         annotate_types(parse_one("select x from y lateral view explode(y) as x")).expressions[0]
 
-    def test_null_annotation(self):
-        expression = annotate_types(parse_one("SELECT NULL + 2 AS col")).expressions[0].this
-        self.assertEqual(expression.left.type.this, exp.DataType.Type.NULL)
-        self.assertEqual(expression.right.type.this, exp.DataType.Type.INT)
-
-        # NULL <op> UNKNOWN should yield NULL
-        sql = "SELECT NULL + SOME_ANONYMOUS_FUNC() AS result"
-
-        concat_expr_alias = annotate_types(parse_one(sql)).expressions[0]
-        self.assertEqual(concat_expr_alias.type.this, exp.DataType.Type.NULL)
-
-        concat_expr = concat_expr_alias.this
-        self.assertEqual(concat_expr.type.this, exp.DataType.Type.NULL)
-        self.assertEqual(concat_expr.left.type.this, exp.DataType.Type.NULL)
-        self.assertEqual(concat_expr.right.type.this, exp.DataType.Type.UNKNOWN)
-
-    def test_nullable_annotation(self):
-        nullable = exp.DataType.build("NULLABLE", expressions=exp.DataType.build("BOOLEAN"))
-        expression = annotate_types(parse_one("NULL AND FALSE"))
-
-        self.assertEqual(expression.type, nullable)
-        self.assertEqual(expression.left.type.this, exp.DataType.Type.NULL)
-        self.assertEqual(expression.right.type.this, exp.DataType.Type.BOOLEAN)
+        # NULL <op> UNKNOWN should yield UNKNOWN
+        self.assertEqual(
+            annotate_types(parse_one("SELECT NULL + ANONYMOUS_FUNC()")).expressions[0].type.this,
+            exp.DataType.Type.UNKNOWN,
+        )
 
     def test_predicate_annotation(self):
         expression = annotate_types(parse_one("x BETWEEN a AND b"))
@@ -1239,6 +1228,26 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         # VarMap annotation
         expression = annotate_types(parse_one("SELECT MAP('a', 'b')", read="spark"))
         self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, VARCHAR)"))
+
+    def test_union_annotation(self):
+        for left, right, expected_type in (
+            ("SELECT 1::INT AS c", "SELECT 2::BIGINT AS c", "BIGINT"),
+            ("SELECT 1 AS c", "SELECT NULL AS c", "INT"),
+            ("SELECT FOO() AS c", "SELECT 1 AS c", "UNKNOWN"),
+            ("SELECT FOO() AS c", "SELECT BAR() AS c", "UNKNOWN"),
+        ):
+            with self.subTest(f"left: {left}, right: {right}, expected: {expected_type}"):
+                lr = annotate_types(parse_one(f"SELECT t.c FROM ({left} UNION ALL {right}) t(c)"))
+                rl = annotate_types(parse_one(f"SELECT t.c FROM ({right} UNION ALL {left}) t(c)"))
+                assert lr.selects[0].type == rl.selects[0].type == exp.DataType.build(expected_type)
+
+        union_by_name = annotate_types(
+            parse_one(
+                "SELECT t.a, t.d FROM (SELECT 1 a, 3 d, UNION ALL BY NAME SELECT 7.0 d, 8::BIGINT a) AS t(a, d)"
+            )
+        )
+        self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.BIGINT)
+        self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.DOUBLE)
 
     def test_recursive_cte(self):
         query = parse_one(

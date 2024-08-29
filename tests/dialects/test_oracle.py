@@ -482,7 +482,7 @@ WHERE
             "SELECT * "
             "FROM pivot_source"
         )
-            
+
         self.validate_identity(
             "INSERT ALL "
             "WHEN id <= 3 THEN "

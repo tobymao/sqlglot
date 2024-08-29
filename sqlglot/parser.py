@@ -2520,8 +2520,8 @@ class Parser(metaclass=_Parser):
 
     def _parse_multitable_inserts(self) -> exp.MultitableInserts:
         raise NotImplementedError
-    
-    def _parse_insert(self) -> exp.Insert:
+
+    def _parse_insert(self) -> t.Union[exp.Insert, exp.MultitableInserts]:
         comments = ensure_list(self._prev_comments)
         hint = self._parse_hint()
         overwrite = self._match(TokenType.OVERWRITE)

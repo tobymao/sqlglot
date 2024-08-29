@@ -2211,8 +2211,10 @@ class Insert(DDL, DML):
             self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
         )
 
+
 class ConditionalInsert(Expression):
     arg_types = {"this": True, "expression": False, "else_": True}
+
 
 class MultitableInserts(Expression):
     arg_types = {"expressions": True, "kind": True, "source": True}

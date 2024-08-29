@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from socket import inet_aton
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
@@ -13,8 +12,7 @@ from sqlglot.dialects.dialect import (
     to_number_with_nls_param,
     trim_sql,
 )
-from sqlglot.expressions import MultitableInserts
-from sqlglot.helper import ensure_list, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parser import OPTIONS_TYPE
 from sqlglot.tokens import TokenType
 
@@ -231,16 +229,17 @@ class Oracle(Dialect):
         def _parse_multitable_inserts(self) -> exp.MultitableInserts:
             kind = "first" if self._prev.token_type is TokenType.FIRST else "all"
             expressions = []
-            
+
             def conditional_insert():
                 expression = None
                 if self._match(TokenType.WHEN):
                     expression = self._parse_assignment()
                     self._match(TokenType.THEN)
-                else_ = self._match(TokenType.ELSE) == True
+                else_matched = self._match(TokenType.ELSE)
+                else_ = else_matched is not None and else_matched
                 if not self._match(TokenType.INTO):
                     return None
-                
+
                 return self.expression(
                     exp.ConditionalInsert,
                     this=self.expression(
@@ -251,7 +250,7 @@ class Oracle(Dialect):
                     expression=expression,
                     else_=else_,
                 )
-            
+
             while (expression := conditional_insert()) is not None:
                 expressions.append(expression)
 
@@ -259,7 +258,7 @@ class Oracle(Dialect):
                 exp.MultitableInserts,
                 kind=kind,
                 expressions=expressions,
-                source=self._parse_table()
+                source=self._parse_table(),
             )
 
     class Generator(generator.Generator):
@@ -378,7 +377,7 @@ class Oracle(Dialect):
                 insert = t.cast(exp.Insert, conditional_insert.this)
                 insert_sql = self.sql(insert)
                 if insert_sql.startswith("INSERT "):
-                    insert_sql = insert_sql[len("INSERT "):]
+                    insert_sql = insert_sql[len("INSERT ") :]
                 buffer += insert_sql
                 inserts.append(buffer.strip())
 

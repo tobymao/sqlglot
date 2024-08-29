@@ -1965,3 +1965,29 @@ FROM OPENJSON(@json) WITH (
                 base_sql = expr.sql()
                 self.assertEqual(base_sql, f"SCOPE_RESOLUTION({lhs + ', ' if lhs else ''}{rhs})")
                 self.assertEqual(parse_one(base_sql).sql("tsql"), f"{lhs}::{rhs}")
+
+    def test_count(self):
+        count = annotate_types(self.validate_identity("SELECT COUNT(1) FROM x"))
+        self.assertEqual(count.expressions[0].type.this, exp.DataType.Type.INT)
+
+        count_big = annotate_types(self.validate_identity("SELECT COUNT_BIG(1) FROM x"))
+        self.assertEqual(count_big.expressions[0].type.this, exp.DataType.Type.BIGINT)
+
+        self.validate_all(
+            "SELECT COUNT_BIG(1) FROM x",
+            read={
+                "spark": "SELECT COUNT(1) FROM x",
+                "duckdb": "SELECT COUNT(1) FROM x",
+            },
+            write={
+                "spark": "SELECT COUNT(1) FROM x",
+                "duckdb": "SELECT COUNT(1) FROM x",
+            },
+        )
+        self.validate_all(
+            "SELECT COUNT(1) FROM x",
+            write={
+                "spark": "SELECT COUNT(1) FROM x",
+                "duckdb": "SELECT COUNT(1) FROM x",
+            },
+        )

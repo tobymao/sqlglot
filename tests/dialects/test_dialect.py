@@ -1541,7 +1541,7 @@ class TestDialect(Validator):
             "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
             write={
                 "bigquery": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-                "clickhouse": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a INTERSECT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
                 "presto": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
                 "spark": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
@@ -2728,5 +2728,28 @@ FROM subquery2""",
                 "redshift": "WITH RECURSIVE _generated_dates(date_week) AS (SELECT CAST('2020-01-01' AS DATE) AS date_week UNION ALL SELECT CAST(DATEADD(WEEK, 1, date_week) AS DATE) FROM _generated_dates WHERE CAST(DATEADD(WEEK, 1, date_week) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_week FROM _generated_dates) AS _generated_dates",
                 "snowflake": "SELECT * FROM (SELECT DATEADD(WEEK, CAST(date_week AS INT), CAST('2020-01-01' AS DATE)) AS date_week FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(WEEK, CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE)) + 1 - 1) + 1))) AS _q(seq, key, path, index, date_week, this)) AS _q(date_week)",
                 "tsql": "WITH _generated_dates(date_week) AS (SELECT CAST('2020-01-01' AS DATE) AS date_week UNION ALL SELECT CAST(DATEADD(WEEK, 1, date_week) AS DATE) FROM _generated_dates WHERE CAST(DATEADD(WEEK, 1, date_week) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_week AS date_week FROM _generated_dates) AS _generated_dates",
+            },
+        )
+
+    def test_set_operation_specifiers(self):
+        self.validate_all(
+            "SELECT 1 EXCEPT ALL SELECT 1",
+            write={
+                "": "SELECT 1 EXCEPT ALL SELECT 1",
+                "bigquery": UnsupportedError,
+                "clickhouse": "SELECT 1 EXCEPT SELECT 1",
+                "databricks": "SELECT 1 EXCEPT ALL SELECT 1",
+                "duckdb": "SELECT 1 EXCEPT ALL SELECT 1",
+                "mysql": "SELECT 1 EXCEPT ALL SELECT 1",
+                "oracle": "SELECT 1 EXCEPT ALL SELECT 1",
+                "postgres": "SELECT 1 EXCEPT ALL SELECT 1",
+                "presto": UnsupportedError,
+                "redshift": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "spark": "SELECT 1 EXCEPT ALL SELECT 1",
+                "sqlite": UnsupportedError,
+                "starrocks": UnsupportedError,
+                "trino": UnsupportedError,
+                "tsql": UnsupportedError,
             },
         )

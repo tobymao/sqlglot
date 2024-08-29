@@ -275,6 +275,9 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
+    # All set operations require either a DISTINCT or ALL specifier
+    SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
+
     def normalize_identifier(self, expression: E) -> E:
         if (
             isinstance(expression, exp.Identifier)
@@ -633,6 +636,7 @@ class BigQuery(Dialect):
         HEX_FUNC = "TO_HEX"
         WITH_PROPERTIES_PREFIX = "OPTIONS"
         SUPPORTS_EXPLODING_PROJECTIONS = False
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -971,16 +975,6 @@ class BigQuery(Dialect):
 
         def in_unnest_op(self, expression: exp.Unnest) -> str:
             return self.sql(expression)
-
-        def except_op(self, expression: exp.Except) -> str:
-            if not expression.args.get("distinct"):
-                self.unsupported("EXCEPT without DISTINCT is not supported in BigQuery")
-            return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
-
-        def intersect_op(self, expression: exp.Intersect) -> str:
-            if not expression.args.get("distinct"):
-                self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
-            return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
         def version_sql(self, expression: exp.Version) -> str:
             if expression.name == "TIMESTAMP":

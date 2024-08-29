@@ -815,6 +815,7 @@ class TSQL(Dialect):
         SET_OP_MODIFIERS = False
         COPY_PARAMS_EQ_REQUIRED = True
         PARSE_JSON_NAME = None
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Create,

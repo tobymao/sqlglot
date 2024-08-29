@@ -4204,7 +4204,16 @@ class Parser(metaclass=_Parser):
                 operation = exp.Intersect
 
             comments = self._prev.comments
-            distinct = self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL)
+
+            if self._match(TokenType.DISTINCT):
+                distinct: t.Optional[bool] = True
+            elif self._match(TokenType.ALL):
+                distinct = False
+            else:
+                distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[operation]
+                if distinct is None:
+                    self.raise_error(f"Expected DISTINCT or ALL for {operation.__class__.__name__}")
+
             by_name = self._match_text_seq("BY", "NAME")
             expression = self._parse_select(nested=True, parse_set_operation=False)
 

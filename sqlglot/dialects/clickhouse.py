@@ -146,6 +146,12 @@ class ClickHouse(Dialect):
 
     CREATABLE_KIND_MAPPING = {"DATABASE": "SCHEMA"}
 
+    SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
+        exp.Except: False,
+        exp.Intersect: False,
+        exp.Union: None,
+    }
+
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]

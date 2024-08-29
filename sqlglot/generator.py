@@ -98,6 +98,7 @@ class Generator(metaclass=_Generator):
         e: f"EPHEMERAL{(' ' + self.sql(e, 'this')) if e.this else ''}",
         exp.ExcludeColumnConstraint: lambda self, e: f"EXCLUDE {self.sql(e, 'this').lstrip()}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
+        exp.Except: lambda self, e: self.set_operations(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
         exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
@@ -105,6 +106,7 @@ class Generator(metaclass=_Generator):
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
+        exp.Intersect: lambda self, e: self.set_operations(e),
         exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
@@ -150,8 +152,9 @@ class Generator(metaclass=_Generator):
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
-        exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
+        exp.Union: lambda self, e: self.set_operations(e),
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
+        exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
@@ -171,8 +174,8 @@ class Generator(metaclass=_Generator):
     # Whether locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
     LOCKING_READS_SUPPORTED = False
 
-    # Always do <set op> distinct or <set op> all
-    EXPLICIT_SET_OP = False
+    # Whether the EXCEPT and INTERSECT operations can return duplicates
+    EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
 
     # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
@@ -1295,13 +1298,67 @@ class Generator(metaclass=_Generator):
         purge = " PURGE" if expression.args.get("purge") else ""
         return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{on_cluster}{expressions}{cascade}{constraints}{purge}"
 
-    def except_sql(self, expression: exp.Except) -> str:
-        return self.set_operations(expression)
+    def set_operation(self, expression: exp.SetOperation) -> str:
+        op_type = type(expression)
+        op_name = op_type.key.upper()
 
-    def except_op(self, expression: exp.Except) -> str:
-        kind = " DISTINCT" if self.EXPLICIT_SET_OP else ""
-        kind = kind if expression.args.get("distinct") else " ALL"
-        return f"EXCEPT{kind}"
+        distinct = expression.args.get("distinct")
+        if (
+            distinct is False
+            and op_type in (exp.Except, exp.Intersect)
+            and not self.EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE
+        ):
+            self.unsupported(f"{op_name} ALL is not supported")
+
+        default_distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[op_type]
+
+        if distinct is None:
+            distinct = default_distinct
+            if distinct is None:
+                self.unsupported(f"{op_name} requires DISTINCT or ALL to be specified")
+
+        if distinct is default_distinct:
+            kind = ""
+        else:
+            kind = " DISTINCT" if distinct else " ALL"
+
+        by_name = " BY NAME" if expression.args.get("by_name") else ""
+        return f"{op_name}{kind}{by_name}"
+
+    def set_operations(self, expression: exp.SetOperation) -> str:
+        if not self.SET_OP_MODIFIERS:
+            limit = expression.args.get("limit")
+            order = expression.args.get("order")
+
+            if limit or order:
+                select = exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+
+                if limit:
+                    select = select.limit(limit.pop(), copy=False)
+                if order:
+                    select = select.order_by(order.pop(), copy=False)
+                return self.sql(select)
+
+        sqls: t.List[str] = []
+        stack: t.List[t.Union[str, exp.Expression]] = [expression]
+
+        while stack:
+            node = stack.pop()
+
+            if isinstance(node, exp.SetOperation):
+                stack.append(node.expression)
+                stack.append(
+                    self.maybe_comment(
+                        self.set_operation(node), comments=node.comments, separated=True
+                    )
+                )
+                stack.append(node.this)
+            else:
+                sqls.append(self.sql(node))
+
+        this = self.sep().join(sqls)
+        this = self.query_modifiers(expression, this)
+        return self.prepend_ctes(expression, this)
 
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")
@@ -1678,14 +1735,6 @@ class Generator(metaclass=_Generator):
 
         sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{expression_sql}{source}"
         return self.prepend_ctes(expression, sql)
-
-    def intersect_sql(self, expression: exp.Intersect) -> str:
-        return self.set_operations(expression)
-
-    def intersect_op(self, expression: exp.Intersect) -> str:
-        kind = " DISTINCT" if self.EXPLICIT_SET_OP else ""
-        kind = kind if expression.args.get("distinct") else " ALL"
-        return f"INTERSECT{kind}"
 
     def introducer_sql(self, expression: exp.Introducer) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
@@ -2467,52 +2516,6 @@ class Generator(metaclass=_Generator):
     def qualify_sql(self, expression: exp.Qualify) -> str:
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
-
-    def set_operations(self, expression: exp.SetOperation) -> str:
-        if not self.SET_OP_MODIFIERS:
-            limit = expression.args.get("limit")
-            order = expression.args.get("order")
-
-            if limit or order:
-                select = exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
-
-                if limit:
-                    select = select.limit(limit.pop(), copy=False)
-                if order:
-                    select = select.order_by(order.pop(), copy=False)
-                return self.sql(select)
-
-        sqls: t.List[str] = []
-        stack: t.List[t.Union[str, exp.Expression]] = [expression]
-
-        while stack:
-            node = stack.pop()
-
-            if isinstance(node, exp.SetOperation):
-                stack.append(node.expression)
-                stack.append(
-                    self.maybe_comment(
-                        getattr(self, f"{node.key}_op")(node),
-                        comments=node.comments,
-                        separated=True,
-                    )
-                )
-                stack.append(node.this)
-            else:
-                sqls.append(self.sql(node))
-
-        this = self.sep().join(sqls)
-        this = self.query_modifiers(expression, this)
-        return self.prepend_ctes(expression, this)
-
-    def union_sql(self, expression: exp.Union) -> str:
-        return self.set_operations(expression)
-
-    def union_op(self, expression: exp.SetOperation) -> str:
-        kind = " DISTINCT" if self.EXPLICIT_SET_OP else ""
-        kind = kind if expression.args.get("distinct") else " ALL"
-        by_name = " BY NAME" if expression.args.get("by_name") else ""
-        return f"UNION{kind}{by_name}"
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
         args = self.expressions(expression, flat=True)

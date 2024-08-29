@@ -155,6 +155,7 @@ class Redshift(Postgres):
         PARSE_JSON_NAME = "JSON_PARSE"
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_CONVERT_TIMEZONE = True
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "

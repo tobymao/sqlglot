@@ -191,16 +191,6 @@ def _build_with_ignore_nulls(
     return _parse
 
 
-def _select_sql(self: Hive.Generator, expression: exp.Expression) -> str:
-    return transforms.preprocess(
-        [
-            transforms.eliminate_qualify,
-            transforms.eliminate_distinct_on,
-            partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False, generator=self),
-        ]
-    )(self, expression)
-
-
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -500,7 +490,6 @@ class Hive(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.Select: _select_sql,
             exp.Property: _property_sql,
             exp.AnyValue: rename_func("FIRST"),
             exp.ApproxDistinct: approx_count_distinct_sql,
@@ -561,6 +550,13 @@ class Hive(Dialect):
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: self.func(
                 "SPLIT", e.this, self.func("CONCAT", "'\\\\Q'", e.expression)
+            ),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
+                ]
             ),
             exp.StrPosition: strposition_to_locate_sql,
             exp.StrToDate: _str_to_date_sql,

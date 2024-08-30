@@ -2518,7 +2518,7 @@ class Parser(metaclass=_Parser):
             partition=partition,
         )
 
-    def _parse_multitable_inserts(self) -> exp.MultitableInserts:
+    def _parse_multitable_inserts(self, comments: t.Optional[t.List[str]]) -> exp.MultitableInserts:
         kind = self._prev.text.upper()
         expressions = []
 
@@ -2553,6 +2553,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.MultitableInserts,
             kind=kind,
+            comments=comments,
             expressions=expressions,
             source=self._parse_table(),
         )
@@ -2575,7 +2576,8 @@ class Parser(metaclass=_Parser):
             )
         else:
             if self._match_set((TokenType.FIRST, TokenType.ALL)):
-                return self._parse_multitable_inserts()
+                comments += ensure_list(self._prev_comments)
+                return self._parse_multitable_inserts(comments)
 
             if self._match(TokenType.OR):
                 alternative = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text

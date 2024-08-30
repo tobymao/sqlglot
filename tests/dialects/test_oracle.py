@@ -531,7 +531,7 @@ WHERE
         )
 
         self.validate_identity(
-            "INSERT FIRST "
+            "/* COMMENT */ INSERT FIRST "
             "WHEN salary > 4000 THEN INTO emp2 "
             "WHEN salary > 5000 THEN INTO emp3 "
             "WHEN salary > 6000 THEN INTO emp4 "

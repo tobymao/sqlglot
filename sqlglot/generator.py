@@ -534,6 +534,7 @@ class Generator(metaclass=_Generator):
         exp.From,
         exp.Insert,
         exp.Join,
+        exp.MultitableInserts,
         exp.Select,
         exp.SetOperation,
         exp.Update,
@@ -4201,9 +4202,6 @@ class Generator(metaclass=_Generator):
 
     def multitableinserts_sql(self, expression: exp.MultitableInserts) -> str:
         kind = self.sql(expression, "kind")
-        inserts = []
-        for conditional_insert in expression.expressions:
-            inserts.append(self.sql(conditional_insert))
-
-        res = f"INSERT {kind} {' '.join(inserts)} {self.sql(expression, 'source')}"
+        expressions = self.expressions(expression, new_line=True, skip_last=True, sep=" ")
+        res = f"INSERT {kind} {expressions} {self.sql(expression, 'source')}"
         return res

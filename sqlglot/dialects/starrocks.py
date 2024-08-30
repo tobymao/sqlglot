@@ -16,6 +16,8 @@ from sqlglot.helper import seq_get
 
 
 class StarRocks(MySQL):
+    STRICT_JSON_PATH_SYNTAX = False
+
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,

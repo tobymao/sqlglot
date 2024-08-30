@@ -1412,7 +1412,7 @@ class TestDialect(Validator):
             with self.subTest(f"Generating json extraction with digit-prefixed key ({dialect})"):
                 self.assertEqual(
                     parse_one("""select '{"0": "v"}' -> '0'""", read=dialect).sql(dialect=dialect),
-                    """SELECT '{"0": "v"}' -> '$."0"'""",
+                    """SELECT '{"0": "v"}' -> '0'""",
                 )
 
     def test_cross_join(self):

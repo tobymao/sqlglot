@@ -240,10 +240,7 @@ class Presto(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
 
-    TIME_MAPPING = {
-        **MySQL.TIME_MAPPING,
-        "%W": "%A",
-    }
+    TIME_MAPPING = MySQL.TIME_MAPPING
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289

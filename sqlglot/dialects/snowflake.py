@@ -910,6 +910,14 @@ class Snowflake(Dialect):
 
             return rename_func("TIMESTAMP_FROM_PARTS")(self, expression)
 
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.is_type(exp.DataType.Type.GEOGRAPHY):
+                return self.func("TO_GEOGRAPHY", expression.this)
+            if expression.is_type(exp.DataType.Type.GEOMETRY):
+                return self.func("TO_GEOMETRY", expression.this)
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
+
         def trycast_sql(self, expression: exp.TryCast) -> str:
             value = expression.this
 

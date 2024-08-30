@@ -2526,7 +2526,47 @@ class Parser(metaclass=_Parser):
             partition=partition,
         )
 
-    def _parse_insert(self) -> exp.Insert:
+    def _parse_multitable_inserts(self, comments: t.Optional[t.List[str]]) -> exp.MultitableInserts:
+        kind = self._prev.text.upper()
+        expressions = []
+
+        def parse_conditional_insert() -> t.Optional[exp.ConditionalInsert]:
+            if self._match(TokenType.WHEN):
+                expression = self._parse_disjunction()
+                self._match(TokenType.THEN)
+            else:
+                expression = None
+
+            else_ = self._match(TokenType.ELSE)
+
+            if not self._match(TokenType.INTO):
+                return None
+
+            return self.expression(
+                exp.ConditionalInsert,
+                this=self.expression(
+                    exp.Insert,
+                    this=self._parse_table(schema=True),
+                    expression=self._parse_derived_table_values(),
+                ),
+                expression=expression,
+                else_=else_,
+            )
+
+        expression = parse_conditional_insert()
+        while expression is not None:
+            expressions.append(expression)
+            expression = parse_conditional_insert()
+
+        return self.expression(
+            exp.MultitableInserts,
+            kind=kind,
+            comments=comments,
+            expressions=expressions,
+            source=self._parse_table(),
+        )
+
+    def _parse_insert(self) -> t.Union[exp.Insert, exp.MultitableInserts]:
         comments = ensure_list(self._prev_comments)
         hint = self._parse_hint()
         overwrite = self._match(TokenType.OVERWRITE)
@@ -2543,6 +2583,10 @@ class Parser(metaclass=_Parser):
                 row_format=self._parse_row_format(match_row=True),
             )
         else:
+            if self._match_set((TokenType.FIRST, TokenType.ALL)):
+                comments += ensure_list(self._prev_comments)
+                return self._parse_multitable_inserts(comments)
+
             if self._match(TokenType.OR):
                 alternative = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text
 

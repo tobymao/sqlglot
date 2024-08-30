@@ -461,3 +461,79 @@ WHERE
                     self.validate_identity(
                         f"CREATE VIEW view AS SELECT * FROM tbl WITH {restriction}{constraint_name}"
                     )
+
+    def test_multitable_inserts(self):
+        self.maxDiff = None
+        self.validate_identity(
+            "INSERT ALL "
+            "INTO dest_tab1 (id, description) VALUES (id, description) "
+            "INTO dest_tab2 (id, description) VALUES (id, description) "
+            "INTO dest_tab3 (id, description) VALUES (id, description) "
+            "SELECT id, description FROM source_tab"
+        )
+
+        self.validate_identity(
+            "INSERT ALL "
+            "INTO pivot_dest (id, day, val) VALUES (id, 'mon', mon_val) "
+            "INTO pivot_dest (id, day, val) VALUES (id, 'tue', tue_val) "
+            "INTO pivot_dest (id, day, val) VALUES (id, 'wed', wed_val) "
+            "INTO pivot_dest (id, day, val) VALUES (id, 'thu', thu_val) "
+            "INTO pivot_dest (id, day, val) VALUES (id, 'fri', fri_val) "
+            "SELECT * "
+            "FROM pivot_source"
+        )
+
+        self.validate_identity(
+            "INSERT ALL "
+            "WHEN id <= 3 THEN "
+            "INTO dest_tab1 (id, description) VALUES (id, description) "
+            "WHEN id BETWEEN 4 AND 7 THEN "
+            "INTO dest_tab2 (id, description) VALUES (id, description) "
+            "WHEN id >= 8 THEN "
+            "INTO dest_tab3 (id, description) VALUES (id, description) "
+            "SELECT id, description "
+            "FROM source_tab"
+        )
+
+        self.validate_identity(
+            "INSERT ALL "
+            "WHEN id <= 3 THEN "
+            "INTO dest_tab1 (id, description) VALUES (id, description) "
+            "WHEN id BETWEEN 4 AND 7 THEN "
+            "INTO dest_tab2 (id, description) VALUES (id, description) "
+            "WHEN 1 = 1 THEN "
+            "INTO dest_tab3 (id, description) VALUES (id, description) "
+            "SELECT id, description "
+            "FROM source_tab"
+        )
+
+        self.validate_identity(
+            "INSERT FIRST "
+            "WHEN id <= 3 THEN "
+            "INTO dest_tab1 (id, description) VALUES (id, description) "
+            "WHEN id <= 5 THEN "
+            "INTO dest_tab2 (id, description) VALUES (id, description) "
+            "ELSE "
+            "INTO dest_tab3 (id, description) VALUES (id, description) "
+            "SELECT id, description "
+            "FROM source_tab"
+        )
+
+        self.validate_identity(
+            "INSERT FIRST "
+            "WHEN id <= 3 THEN "
+            "INTO dest_tab1 (id, description) VALUES (id, description) "
+            "ELSE "
+            "INTO dest_tab2 (id, description) VALUES (id, description) "
+            "INTO dest_tab3 (id, description) VALUES (id, description) "
+            "SELECT id, description "
+            "FROM source_tab"
+        )
+
+        self.validate_identity(
+            "/* COMMENT */ INSERT FIRST "
+            "WHEN salary > 4000 THEN INTO emp2 "
+            "WHEN salary > 5000 THEN INTO emp3 "
+            "WHEN salary > 6000 THEN INTO emp4 "
+            "SELECT salary FROM employees"
+        )

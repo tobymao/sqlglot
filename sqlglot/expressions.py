@@ -2212,6 +2212,14 @@ class Insert(DDL, DML):
         )
 
 
+class ConditionalInsert(Expression):
+    arg_types = {"this": True, "expression": False, "else_": False}
+
+
+class MultitableInserts(Expression):
+    arg_types = {"expressions": True, "kind": True, "source": True}
+
+
 class OnConflict(Expression):
     arg_types = {
         "duplicate": False,

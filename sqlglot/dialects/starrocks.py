@@ -16,6 +16,8 @@ from sqlglot.helper import seq_get
 
 
 class StarRocks(MySQL):
+    STRICT_JSON_PATH_SYNTAX = False
+
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
@@ -50,6 +52,8 @@ class StarRocks(MySQL):
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
+        PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
         CAST_MAPPING = {}
 

@@ -11,28 +11,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity("1 /* /* */")
-        self.validate_identity(
-            "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
-        )
-
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),
             """SELECT PARSE_JSON('{"x: 1}')""",
-        )
-
-        self.validate_identity(
-            "transform(x, a int -> a + a + 1)",
-            "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",
-        )
-
-        self.validate_all(
-            "ARRAY_CONSTRUCT_COMPACT(1, null, 2)",
-            write={
-                "spark": "ARRAY_COMPACT(ARRAY(1, NULL, 2))",
-                "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, NULL, 2)",
-            },
         )
 
         expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
@@ -98,7 +80,6 @@ WHERE
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
-        self.validate_identity("CAST(x AS GEOMETRY)")
         self.validate_identity("OBJECT_CONSTRUCT(*)")
         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")
         self.validate_identity("SELECT HLL(*)")
@@ -115,6 +96,10 @@ WHERE
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity("SELECT MATCH_CONDITION")
         self.validate_identity("SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t")
+        self.validate_identity("1 /* /* */")
+        self.validate_identity(
+            "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
+        )
         self.validate_identity(
             "SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2', '2023_Q3', '2023_Q4', '2024_Q1') DEFAULT ON NULL (0)) ORDER BY empid"
         )
@@ -138,6 +123,18 @@ WHERE
         )
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
+        )
+        self.validate_identity(
+            "CAST(x AS GEOGRAPHY)",
+            "TO_GEOGRAPHY(x)",
+        )
+        self.validate_identity(
+            "CAST(x AS GEOMETRY)",
+            "TO_GEOMETRY(x)",
+        )
+        self.validate_identity(
+            "transform(x, a int -> a + a + 1)",
+            "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",
         )
         self.validate_identity(
             "SELECT * FROM s WHERE c NOT IN (1, 2, 3)",
@@ -308,6 +305,13 @@ WHERE
             "SELECT * RENAME (a AS b), c AS d FROM xxx",
         )
 
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT(1, null, 2)",
+            write={
+                "spark": "ARRAY_COMPACT(ARRAY(1, NULL, 2))",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, NULL, 2)",
+            },
+        )
         self.validate_all(
             "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
             read={

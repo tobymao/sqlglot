@@ -50,6 +50,8 @@ class StarRocks(MySQL):
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
+        PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
         CAST_MAPPING = {}
 

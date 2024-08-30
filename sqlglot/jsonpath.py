@@ -170,7 +170,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())
-        elif _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
+        elif _match(TokenType.VAR) or _match(TokenType.IDENTIFIER) or _match(TokenType.NUMBER):
             expressions.append(exp.JSONPathKey(this=_prev().text))
         elif _match(TokenType.STAR):
             expressions.append(exp.JSONPathWildcard())

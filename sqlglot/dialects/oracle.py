@@ -226,41 +226,6 @@ class Oracle(Dialect):
                 expression=self._match(TokenType.CONSTRAINT) and self._parse_field(),
             )
 
-        def _parse_multitable_inserts(self) -> exp.MultitableInserts:
-            kind = self._prev.text.upper()
-            expressions = []
-
-            def conditional_insert() -> t.Optional[exp.Conditionalinsert]:
-                expression = None
-                if self._match(TokenType.WHEN):
-                    expression = self._parse_disjunction()
-                    self._match(TokenType.THEN)
-                else_matched = self._match(TokenType.ELSE)
-                else_ = else_matched is not None and else_matched
-                if not self._match(TokenType.INTO):
-                    return None
-
-                return self.expression(
-                    exp.ConditionalInsert,
-                    this=self.expression(
-                        exp.Insert,
-                        this=self._parse_table(schema=True),
-                        expression=self._parse_derived_table_values(),
-                    ),
-                    expression=expression,
-                    else_=else_,
-                )
-
-            while (expression := conditional_insert()) is not None:
-                expressions.append(expression)
-
-            return self.expression(
-                exp.MultitableInserts,
-                kind=kind,
-                expressions=expressions,
-                source=self._parse_table(),
-            )
-
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -300,7 +265,6 @@ class Oracle(Dialect):
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
             exp.Mod: rename_func("MOD"),
-            exp.MultitableInserts: lambda self, e: self.multitableinserts_sql(e),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -364,22 +328,3 @@ class Oracle(Dialect):
         def coalesce_sql(self, expression: exp.Coalesce) -> str:
             func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
             return rename_func(func_name)(self, expression)
-
-        def multitableinserts_sql(self, expression: exp.MultitableInserts) -> str:
-            kind = self.sql(expression, "kind").upper()
-            inserts = []
-            for conditional_insert in t.cast(t.List[exp.ConditionalInsert], expression.expressions):
-                buffer = ""
-                if conditional_insert.expression:
-                    buffer += f"WHEN {self.sql(conditional_insert.expression)} THEN "
-                if conditional_insert.args["else_"]:
-                    buffer += "ELSE "
-                insert = t.cast(exp.Insert, conditional_insert.this)
-                insert_sql = self.sql(insert)
-                if insert_sql.startswith("INSERT "):
-                    insert_sql = insert_sql[len("INSERT ") :]
-                buffer += insert_sql
-                inserts.append(buffer.strip())
-
-            res = f"INSERT {kind} {' '.join(inserts)} {self.sql(expression, 'source')}"
-            return res

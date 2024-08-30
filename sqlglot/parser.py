@@ -2519,7 +2519,43 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_multitable_inserts(self) -> exp.MultitableInserts:
-        raise NotImplementedError
+        kind = self._prev.text.upper()
+        expressions = []
+
+        def parse_conditional_insert() -> t.Optional[exp.ConditionalInsert]:
+            if self._match(TokenType.WHEN):
+                expression = self._parse_disjunction()
+                self._match(TokenType.THEN)
+            else:
+                expression = None
+
+            else_ = self._match(TokenType.ELSE)
+
+            if not self._match(TokenType.INTO):
+                return None
+
+            return self.expression(
+                exp.ConditionalInsert,
+                this=self.expression(
+                    exp.Insert,
+                    this=self._parse_table(schema=True),
+                    expression=self._parse_derived_table_values(),
+                ),
+                expression=expression,
+                else_=else_,
+            )
+
+        expression = parse_conditional_insert()
+        while expression is not None:
+            expressions.append(expression)
+            expression = parse_conditional_insert()
+
+        return self.expression(
+            exp.MultitableInserts,
+            kind=kind,
+            expressions=expressions,
+            source=self._parse_table(),
+        )
 
     def _parse_insert(self) -> t.Union[exp.Insert, exp.MultitableInserts]:
         comments = ensure_list(self._prev_comments)

@@ -4187,3 +4187,23 @@ class Generator(metaclass=_Generator):
         on_error = f" {_generate_on_options(on_error)} ON ERROR" if on_error else ""
 
         return self.func("JSON_VALUE", expression.this, f"{path}{returning}{on_empty}{on_error}")
+
+    def conditionalinsert_sql(self, expression: exp.ConditionalInsert) -> str:
+        condition = ""
+        if expression.expression:
+            condition = f"WHEN {self.sql(expression.expression)} THEN"
+        if expression.args.get("else_"):
+            condition = "ELSE"
+        insert = self.sql(expression.this)
+        if insert.startswith("INSERT "):
+            insert = insert[len("INSERT ") :]
+        return f"{condition} {insert}".strip()
+
+    def multitableinserts_sql(self, expression: exp.MultitableInserts) -> str:
+        kind = self.sql(expression, "kind")
+        inserts = []
+        for conditional_insert in expression.expressions:
+            inserts.append(self.sql(conditional_insert))
+
+        res = f"INSERT {kind} {' '.join(inserts)} {self.sql(expression, 'source')}"
+        return res

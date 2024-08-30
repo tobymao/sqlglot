@@ -2213,7 +2213,7 @@ class Insert(DDL, DML):
 
 
 class ConditionalInsert(Expression):
-    arg_types = {"this": True, "expression": False, "else_": True}
+    arg_types = {"this": True, "expression": False, "else_": False}
 
 
 class MultitableInserts(Expression):

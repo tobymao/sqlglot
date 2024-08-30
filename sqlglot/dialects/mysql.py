@@ -173,7 +173,7 @@ class MySQL(Dialect):
         "%k": "%-H",
         "%l": "%-I",
         "%T": "%H:%M:%S",
-        "%W": "%a",
+        "%W": "%A",
     }
 
     class Tokenizer(tokens.Tokenizer):

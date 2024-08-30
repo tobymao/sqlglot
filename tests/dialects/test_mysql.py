@@ -539,9 +539,16 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%W %M %Y')",
+            "SELECT DATE_FORMAT('2024-08-22 14:53:12', '%a')",
             write={
-                "mysql": "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%W %M %Y')",
+                "mysql": "SELECT DATE_FORMAT('2024-08-22 14:53:12', '%a')",
+                "snowflake": "SELECT TO_CHAR(CAST('2024-08-22 14:53:12' AS TIMESTAMP), 'DY')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%a %M %Y')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%a %M %Y')",
                 "snowflake": "SELECT TO_CHAR(CAST('2009-10-04 22:23:00' AS TIMESTAMP), 'DY mmmm yyyy')",
             },
         )
@@ -555,7 +562,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT DATE_FORMAT('1900-10-04 22:23:00', '%d %y %a %d %m %b')",
             write={
-                "mysql": "SELECT DATE_FORMAT('1900-10-04 22:23:00', '%d %y %W %d %m %b')",
+                "mysql": "SELECT DATE_FORMAT('1900-10-04 22:23:00', '%d %y %a %d %m %b')",
                 "snowflake": "SELECT TO_CHAR(CAST('1900-10-04 22:23:00' AS TIMESTAMP), 'DD yy DY DD mm mon')",
             },
         )

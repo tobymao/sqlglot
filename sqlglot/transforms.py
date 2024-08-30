@@ -313,13 +313,13 @@ def unnest_to_explode(
         if has_multi_expr:
             if not unnest_using_arrays_zip:
                 raise UnsupportedError("Cannot transpile UNNEST with multiple input arrays")
-            else:
-                # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
-                zip_exprs: t.List[exp.Expression] = [
-                    exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
-                ]
-                u.set("expressions", zip_exprs)
-                return zip_exprs
+
+            # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
+            zip_exprs: t.List[exp.Expression] = [
+                exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
+            ]
+            u.set("expressions", zip_exprs)
+            return zip_exprs
         return unnest_exprs
 
     def _udtf_type(u: exp.Unnest, has_multi_expr: bool) -> t.Type[exp.Func]:

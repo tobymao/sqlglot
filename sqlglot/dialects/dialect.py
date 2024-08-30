@@ -388,6 +388,9 @@ class Dialect(metaclass=_Dialect):
     dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
     """
 
+    STRICT_JSON_PATH_SYNTAX = True
+    """Whether failing to parse a JSON path expression using the JSONPath dialect will log a warning."""
+
     SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
         exp.Except: True,
         exp.Intersect: True,
@@ -898,7 +901,8 @@ class Dialect(metaclass=_Dialect):
             try:
                 return parse_json_path(path_text, self)
             except ParseError as e:
-                logger.warning(f"Invalid JSON path syntax. {str(e)}")
+                if self.STRICT_JSON_PATH_SYNTAX:
+                    logger.warning(f"Invalid JSON path syntax. {str(e)}")
 
         return path
 

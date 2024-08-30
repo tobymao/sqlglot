@@ -315,7 +315,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_unary(self, expression: E) -> E:
         self._annotate_args(expression)
 
-        if isinstance(expression, exp.Condition) and not isinstance(expression, exp.Paren):
+        if isinstance(expression, exp.Not):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
         else:
             self._set_type(expression, expression.this.type)

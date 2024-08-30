@@ -8,6 +8,9 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
         self.validate_identity("SELECT [1, 2, 3]")
+        self.validate_identity(
+            """SELECT CAST(PARSE_JSON(fieldvalue) -> '00000000-0000-0000-0000-00000000' AS VARCHAR) AS `code` FROM (SELECT '{"00000000-0000-0000-0000-00000000":"code01"}') AS t(fieldvalue)"""
+        )
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")

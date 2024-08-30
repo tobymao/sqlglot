@@ -312,7 +312,7 @@ def unnest_to_explode(
     ) -> t.List[exp.Expression]:
         if has_multi_expr:
             if not unnest_using_arrays_zip:
-                raise UnsupportedError("Cannot transpile UNNEST with multiple arrays to Hive")
+                raise UnsupportedError("Cannot transpile UNNEST with multiple input arrays")
             else:
                 # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
                 zip_exprs: t.List[exp.Expression] = [

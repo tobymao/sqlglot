@@ -496,6 +496,7 @@ class DuckDB(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfWeekIso: rename_func("ISODOW"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,

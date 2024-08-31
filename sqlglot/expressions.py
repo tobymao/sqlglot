@@ -5230,6 +5230,12 @@ class DayOfWeek(Func):
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 
 
+# https://duckdb.org/docs/sql/functions/datepart.html#part-specifiers-only-usable-as-date-part-specifiers
+# ISO day of week function in duckdb is ISODOW
+class DayOfWeekIso(Func):
+    _sql_names = ["DAYOFWEEK_ISO", "ISODOW"]
+
+
 class DayOfMonth(Func):
     _sql_names = ["DAY_OF_MONTH", "DAYOFMONTH"]
 

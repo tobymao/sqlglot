@@ -2603,8 +2603,30 @@ class DistKeyProperty(Property):
     arg_types = {"this": True}
 
 
+# [starrocks distributed Doc](https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc)
+# [doris distributed Doc](https://doris.apache.org/docs/sql-manual/sql-statements/Data-Definition-Statements/Create/CREATE-TABLE?_highlight=create&_highlight=table#distribution_desc)
+class DistributedByHashProperty(Property):
+    arg_types = {"expressions": True, "buckets": False, "sorted_by": False}
+
+    @property
+    def auto_bucket(self) -> bool:
+        return self.args.get("buckets") is None
+
+
+class DistributedByRandomProperty(Property):
+    arg_types = {"expressions": True, "buckets": False, "sorted_by": False}
+
+    @property
+    def auto_bucket(self) -> bool:
+        return self.args.get("buckets") is None
+
+
 class DistStyleProperty(Property):
     arg_types = {"this": True}
+
+
+class DuplicateKeyProperty(Property):
+    arg_types = {"expressions": True}
 
 
 class EngineProperty(Property):
@@ -2937,6 +2959,8 @@ class Properties(Expression):
         "COMMENT": SchemaCommentProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
+        "DISTRIBUTED_BY_HASH": DistributedByHashProperty,
+        "DISTRIBUTED_BY_RANDOM": DistributedByRandomProperty,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,
         "EXECUTE AS": ExecuteAsProperty,

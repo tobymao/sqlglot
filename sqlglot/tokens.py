@@ -245,6 +245,7 @@ class TokenType(AutoName):
     DICTIONARY = auto()
     DISTINCT = auto()
     DISTRIBUTE_BY = auto()
+    DUPLICATE_KEY = auto()
     DIV = auto()
     DROP = auto()
     ELSE = auto()

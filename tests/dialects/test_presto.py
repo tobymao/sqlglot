@@ -331,9 +331,9 @@ class TestPresto(Validator):
         self.validate_all(
             "DAY_OF_WEEK(timestamp '2012-08-08 01:00:00')",
             write={
-                "spark": "DAYOFWEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "spark": "((DAYOFWEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP)) % 7) + 1)",
                 "presto": "DAY_OF_WEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "duckdb": "DAYOFWEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "duckdb": "ISODOW(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
 

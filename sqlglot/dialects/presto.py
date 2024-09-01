@@ -416,7 +416,7 @@ class Presto(Dialect):
             exp.DateToDi: lambda self,
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
             exp.DateSub: _date_delta_sql("DATE_ADD", negate_interval=True),
-            exp.DayOfWeekIso: lambda self, e: f"DAY_OF_WEEK({self.sql(e, 'this')})",
+            exp.DayOfWeekIso: rename_func("DAY_OF_WEEK"),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
             exp.DiToDate: lambda self,
             e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",

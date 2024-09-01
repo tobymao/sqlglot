@@ -123,6 +123,9 @@ class TokenType(AutoName):
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
+    DECIMAL32 = auto()
+    DECIMAL64 = auto()
+    DECIMAL128 = auto()
     UDECIMAL = auto()
     BIGDECIMAL = auto()
     CHAR = auto()
@@ -245,7 +248,6 @@ class TokenType(AutoName):
     DICTIONARY = auto()
     DISTINCT = auto()
     DISTRIBUTE_BY = auto()
-    DUPLICATE_KEY = auto()
     DIV = auto()
     DROP = auto()
     ELSE = auto()
@@ -827,6 +829,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "UINT": TokenType.UINT,
         "DEC": TokenType.DECIMAL,
         "DECIMAL": TokenType.DECIMAL,
+        "DECIMAL32": TokenType.DECIMAL32,
+        "DECIMAL64": TokenType.DECIMAL64,
+        "DECIMAL128": TokenType.DECIMAL128,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
         "BIGNUMERIC": TokenType.BIGDECIMAL,
         "LIST": TokenType.LIST,

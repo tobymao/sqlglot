@@ -16,37 +16,6 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _duplicate_key_sql(self, expression: exp.DuplicateKeyProperty) -> str:
-    expressions = self.expressions(expression, flat=True)
-    options = self.expressions(expression, key="options", flat=True, sep=" ")
-    options = f" {options}" if options else ""
-    return f"DUPLICATE KEY ({expressions}){options}"
-
-
-def _distributed_by_hash_sql(self, expression: exp.DistributedByHashProperty) -> str:
-    expressions = self.expressions(expression, key="expressions", flat=True)
-    sorted_by = self.expressions(expression, key="sorted_by", flat=True)
-    sorted_by = f" ORDER BY ({sorted_by})" if sorted_by else ""
-    buckets = self.sql(expression, "buckets")
-    # Since StarRocks v2.5.7, the number of buckets is AUTO by default.
-    # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
-    if expression.auto_bucket:
-        buckets = "AUTO"
-    # [DISTRIBUTED BY HASH (k1[,k2 ...]) [BUCKETS num] [ORDER BY (k1[,k2 ...])]]
-    return f"DISTRIBUTED BY HASH ({expressions}) BUCKETS {buckets}{sorted_by}"
-
-
-def _distributed_by_random_sql(self, expression: exp.DistributedByRandomProperty) -> str:
-    expressions = self.expressions(expression, flat=True)
-    sorted_by = self.expressions(expression, key="sorted_by", flat=True)
-    sorted_by = f" ORDER BY ({sorted_by})" if sorted_by else ""
-    buckets = self.sql(expression, "buckets")
-    if expression.auto_bucket:
-        buckets = "AUTO"
-    # [DISTRIBUTED BY RANDOM (k1[,k2 ...]) [BUCKETS num] [ORDER BY (k1[,k2 ...])]]
-    return f"DISTRIBUTED BY RANDOM ({expressions}) BUCKETS {buckets}{sorted_by}"
-
-
 def _property_sql(self: MySQL.Generator, expression: exp.Property) -> str:
     # [PROPERTIES (['key1'='value1', 'key2'='value2', ...])]
     return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
@@ -58,11 +27,9 @@ class StarRocks(MySQL):
     class Tokenizer(MySQL.Tokenizer):
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
-            "DECIMAL64": TokenType.DECIMAL,
-            "DECIMAL128": TokenType.BIGDECIMAL,
-            "DISTRIBUTED BY HASH": TokenType.DISTRIBUTE_BY,
-            "DISTRIBUTED BY RANDOM": TokenType.DISTRIBUTE_BY,
-            "DUPLICATE KEY": TokenType.DUPLICATE_KEY,
+            "DECIMAL32": TokenType.DECIMAL32,
+            "DECIMAL64": TokenType.DECIMAL64,
+            "DECIMAL128": TokenType.DECIMAL128,
         }
 
     class Parser(MySQL.Parser):
@@ -80,11 +47,9 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
-            "DISTRIBUTED BY HASH": lambda self: self._parse_distributed_by("HASH"),
-            "DISTRIBUTED BY RANDOM": lambda self: self._parse_distributed_by("RANDOM"),
-            "PROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
-            "DUPLICATE KEY": lambda self: self._parse_duplicate(),
-            "PARTITION BY": lambda self: self._parse_partitioned_by(),
+            "DISTRIBUTED": lambda self: self._parse_distributed_property(),
+            "DUPLICATE": lambda self: self._parse_duplicate(),
+            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
@@ -111,21 +76,19 @@ class StarRocks(MySQL):
 
             return create
 
-        def _parse_distributed_by(self, type: str) -> exp.Expression:
-            expressions = self._parse_wrapped_csv(self._parse_id_var)
+        def _parse_distributed_property(self) -> exp.Expression:
+            type: t.Optional[str] = None
+            expressions: t.Optional[t.List[exp.Expression]] = None
+            if self._match_text_seq("BY", "HASH"):
+                type = "HASH"
+                expressions = self._parse_wrapped_csv(self._parse_id_var)
+            elif self._match_text_seq("BY", "RANDOM"):
+                type = "RANDOM"
 
             # If the BUCKETS keyword not present, the number of buckets is AUTO
-            # [ BUCKETS AUTO | BUCKETS <number> ]
-            buckets = None
-            if self._match_text_seq("BUCKETS", "AUTO"):
-                pass
-            elif self._match_text_seq("BUCKETS"):
+            buckets: t.Optional[exp.Expression] = None
+            if self._match_text_seq("BUCKETS") and not self._match_text_seq("AUTO"):
                 buckets = self._parse_number()
-
-            if self._match_text_seq("ORDER BY"):
-                order_by = self._parse_wrapped_csv(self._parse_ordered)
-            else:
-                order_by = None
 
             return self.expression(
                 exp.DistributedByHashProperty
@@ -133,10 +96,11 @@ class StarRocks(MySQL):
                 else exp.DistributedByRandomProperty,
                 expressions=expressions,
                 buckets=buckets,
-                sorted_by=order_by,
+                order=self._parse_order(),
             )
 
         def _parse_duplicate(self) -> exp.DuplicateKeyProperty:
+            self._match_text_seq("KEY")
             expressions = self._parse_wrapped_csv(self._parse_id_var, optional=False)
             return self.expression(exp.DuplicateKeyProperty, expressions=expressions)
 
@@ -179,7 +143,7 @@ class StarRocks(MySQL):
             exp.DistributedByHashProperty: exp.Properties.Location.POST_SCHEMA,
             exp.DistributedByRandomProperty: exp.Properties.Location.POST_SCHEMA,
             exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.PrimaryKey: exp.Properties.Location.UNSUPPORTED,
+            exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {
@@ -189,9 +153,6 @@ class StarRocks(MySQL):
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression
             ),
-            exp.DistributedByHashProperty: _distributed_by_hash_sql,
-            exp.DistributedByRandomProperty: _distributed_by_random_sql,
-            exp.DuplicateKeyProperty: _duplicate_key_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.Property: _property_sql,
@@ -202,5 +163,28 @@ class StarRocks(MySQL):
             exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
         }
+
+        def create_sql(self, e: exp.Create) -> str:
+            # Starrocks's primary is defined outside the schema, so we need to move it into after engine properties
+            schema = e.this
+            if isinstance(schema, exp.Schema):
+                primary_key = next(
+                    (expr for expr in schema.expressions if isinstance(expr, exp.PrimaryKey)),
+                    None,
+                )
+                if primary_key:
+                    schema.expressions.remove(primary_key)
+                    props = e.args.get("properties")
+                    if props:
+                        # Verify if the first one is an engine property. Is true then insert it after the engine,
+                        # otherwise insert it at the beginning
+                        if isinstance(props.expressions[0], exp.EngineProperty):
+                            props.expressions.insert(1, primary_key)
+                        else:
+                            props.expressions.insert(0, primary_key)
+                    else:
+                        e.set("properties", exp.Properties(expressions=[primary_key]))
+
+            return super().create_sql(e)
 
         TRANSFORMS.pop(exp.DateTrunc)

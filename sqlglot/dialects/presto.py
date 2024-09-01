@@ -305,7 +305,7 @@ class Presto(Dialect):
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "presto"),
             "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
             "DATE_TRUNC": date_trunc_to_time,
-            "DAY_OF_WEEK": lambda args: exp.DayOfWeekIso(this=seq_get(args, 0)),
+            "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
             "ELEMENT_AT": lambda args: exp.Bracket(
                 this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
             ),

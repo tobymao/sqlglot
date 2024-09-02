@@ -412,6 +412,7 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SELECT * FROM t WHERE col IN ('stream')")
         self.validate_identity("SET hiveconf:some_var = 5", check_command_warning=True)
         self.validate_identity("(VALUES (1 AS a, 2 AS b, 3))")
         self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")

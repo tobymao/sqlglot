@@ -1262,6 +1262,8 @@ class Parser(metaclass=_Parser):
         "ts": exp.Timestamp,
     }
 
+    ON_CONDITION_TOKENS = {"ERROR", "NULL", "TRUE", "FALSE", "EMPTY"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -5914,11 +5916,42 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.FormatJson, this=this)
 
-    def _parse_on_handling(self, on: str, *values: str) -> t.Optional[str]:
-        # Parses the "X ON Y" syntax, i.e. NULL ON NULL (Oracle, T-SQL)
+    def _parse_on_condition(self) -> t.Optional[exp.OnCondition]:
+        # MySQL uses "X ON EMPTY Y ON ERROR" (e.g. JSON_VALUE) while Oracle uses the opposite (e.g. JSON_EXISTS)
+        if self.dialect.ON_CONDITION_EMPTY_BEFORE_ERROR:
+            empty = self._parse_on_handling("EMPTY", *self.ON_CONDITION_TOKENS)
+            error = self._parse_on_handling("ERROR", *self.ON_CONDITION_TOKENS)
+        else:
+            error = self._parse_on_handling("ERROR", *self.ON_CONDITION_TOKENS)
+            empty = self._parse_on_handling("EMPTY", *self.ON_CONDITION_TOKENS)
+
+        null = self._parse_on_handling("NULL", *self.ON_CONDITION_TOKENS)
+
+        if not empty and not error and not null:
+            return None
+
+        return self.expression(
+            exp.OnCondition,
+            empty=empty,
+            error=error,
+            null=null,
+        )
+
+    def _parse_on_handling(
+        self, on: str, *values: str
+    ) -> t.Optional[str] | t.Optional[exp.Expression]:
+        # Parses the "X ON Y" or "DEFAULT <expr> ON Y syntax, e.g. NULL ON NULL (Oracle, T-SQL, MySQL)
         for value in values:
             if self._match_text_seq(value, "ON", on):
                 return f"{value} ON {on}"
+
+        index = self._index
+        if self._match(TokenType.DEFAULT):
+            default_value = self._parse_bitwise()
+            if self._match_text_seq("ON", on):
+                return default_value
+
+            self._retreat(index)
 
         return None
 

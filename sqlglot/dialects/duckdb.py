@@ -932,7 +932,7 @@ class DuckDB(Dialect):
 
         def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
             this = self.sql(expression, "this")
-            null_text = expression.args.get("null")
+            null_text = self.sql(expression, "null")
 
             if null_text:
                 this = f"LIST_TRANSFORM({this}, x -> COALESCE(x, {null_text}))"

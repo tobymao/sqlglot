@@ -85,7 +85,7 @@ class StarRocks(MySQL):
             elif self._match_text_seq("BY", "RANDOM"):
                 type = "RANDOM"
 
-            # If the BUCKETS keyword not present, the number of buckets is AUTO
+            # If the BUCKETS keyword is not present, the number of buckets is AUTO
             buckets: t.Optional[exp.Expression] = None
             if self._match_text_seq("BUCKETS") and not self._match_text_seq("AUTO"):
                 buckets = self._parse_number()

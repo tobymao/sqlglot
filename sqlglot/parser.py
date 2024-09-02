@@ -5608,8 +5608,8 @@ class Parser(metaclass=_Parser):
     def _parse_odbc_datetime_literal(self) -> exp.Expression:
         """
         Parses a datetime column in ODBC format. We parse the column into the corresponding
-        types, for example `{d'yyyy-mm-dd'}` will be parsed as a `Date` column, isexactly
-        the same as we did for `DATE('yyyy-mm-dd')`.
+        types, for example `{d'yyyy-mm-dd'}` will be parsed as a `Date` column, exactly the
+        same as we did for `DATE('yyyy-mm-dd')`.
 
         Reference:
         https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/date-time-and-timestamp-literals

@@ -63,10 +63,7 @@ class StarRocks(MySQL):
             ):
                 props = create.args.get("properties")
                 if props:
-                    primary_key = next(
-                        (expr for expr in props.expressions if isinstance(expr, exp.PrimaryKey)),
-                        None,
-                    )
+                    primary_key = props.find(exp.PrimaryKey)
                     if primary_key:
                         create.this.append("expressions", primary_key.pop())
 

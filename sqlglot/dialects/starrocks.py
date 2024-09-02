@@ -71,9 +71,6 @@ class StarRocks(MySQL):
                     if primary_key:
                         create.this.append("expressions", primary_key.pop())
 
-                        # Remove the PrimaryKey from properties
-                        props.expressions.remove(primary_key)
-
             return create
 
         def _parse_distributed_property(self) -> exp.Expression:

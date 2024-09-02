@@ -391,6 +391,9 @@ class Dialect(metaclass=_Dialect):
     STRICT_JSON_PATH_SYNTAX = True
     """Whether failing to parse a JSON path expression using the JSONPath dialect will log a warning."""
 
+    ON_CONDITION_EMPTY_BEFORE_ERROR = True
+    """Whether "X ON EMPTY" should come before "X ON ERROR" (for dialects like T-SQL, MySQL, Oracle)"""
+
     SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
         exp.Except: True,
         exp.Intersect: True,

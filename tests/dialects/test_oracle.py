@@ -537,3 +537,17 @@ WHERE
             "WHEN salary > 6000 THEN INTO emp4 "
             "SELECT salary FROM employees"
         )
+
+    def test_json_functions(self):
+        for format_json in ("", " FORMAT JSON"):
+            for on_cond in (
+                "",
+                " TRUE ON ERROR",
+                " NULL ON EMPTY",
+                " DEFAULT 1 ON ERROR TRUE ON EMPTY",
+            ):
+                for passing in ("", " PASSING 'name1' AS \"var1\", 'name2' AS \"var2\""):
+                    with self.subTest("Testing JSON_EXISTS()"):
+                        self.validate_identity(
+                            f"SELECT * FROM t WHERE JSON_EXISTS(name{format_json}, '$[1].middle'{passing}{on_cond})"
+                        )

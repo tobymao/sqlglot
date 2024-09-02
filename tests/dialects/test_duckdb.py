@@ -1015,6 +1015,15 @@ class TestDuckDB(Validator):
                 "spark": "SELECT * FROM (SELECT * FROM t) TABLESAMPLE (1 ROWS) AS t1, (SELECT * FROM t) TABLESAMPLE (2 ROWS) AS t2",
             },
         )
+        self.validate_all(
+            "SELECT CAST('2008-12-25' AS DATE) + INTERVAL (-5) DAY",
+            read={
+                "bigquery": "SELECT DATE_ADD(DATE '2008-12-25', INTERVAL -5 DAY)",
+            },
+            write={
+                "duckdb": "SELECT CAST('2008-12-25' AS DATE) + INTERVAL (-5) DAY",
+            },
+        )
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")

@@ -793,6 +793,12 @@ class DuckDB(Dialect):
             if unit.startswith("quarter"):
                 multiplier = 90
 
+            # Wrap negative intervals as DuckDB does not parse them properly, e.g
+            # "SELECT date_col + INTERVAL -5 DAY" throws a parse error
+            this = expression.this
+            if this.is_number and this.to_py() < 0:
+                expression.set("this", exp.Paren(this=this))
+
             if multiplier:
                 return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
 

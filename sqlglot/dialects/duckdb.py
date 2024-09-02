@@ -929,3 +929,12 @@ class DuckDB(Dialect):
                 return super().ignorenulls_sql(expression)
 
             return self.sql(expression, "this")
+
+        def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+            this = self.sql(expression, "this")
+            null_text = expression.args.get("null")
+
+            if null_text:
+                this = f"LIST_TRANSFORM({this}, x -> COALESCE(x, {null_text}))"
+
+            return self.func("ARRAY_TO_STRING", this, expression.expression)

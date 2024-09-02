@@ -176,6 +176,12 @@ class Parser(metaclass=_Parser):
     FUNCTIONS: t.Dict[str, t.Callable] = {
         **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
         "ARRAY": lambda args, dialect: exp.Array(expressions=args),
+        "ARRAYAGG": lambda args, dialect: exp.ArrayAgg(
+            this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
+        ),
+        "ARRAY_AGG": lambda args, dialect: exp.ArrayAgg(
+            this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
+        ),
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(
             expressions=args,

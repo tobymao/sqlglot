@@ -196,6 +196,7 @@ class Hive(Dialect):
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
+    ARRAY_AGG_INCLUDES_NULLS = None
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -278,7 +279,7 @@ class Hive(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "BASE64": exp.ToBase64.from_arg_list,
-            "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
+            "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")

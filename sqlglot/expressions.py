@@ -4930,7 +4930,7 @@ class ExplodingGenerateSeries(GenerateSeries):
 
 
 class ArrayAgg(AggFunc):
-    pass
+    arg_types = {"this": True, "nulls_excluded": False}
 
 
 class ArrayUniqueAgg(AggFunc):

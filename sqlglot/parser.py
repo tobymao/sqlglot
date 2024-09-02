@@ -1256,6 +1256,12 @@ class Parser(metaclass=_Parser):
 
     IS_JSON_PREDICATE_KIND = {"VALUE", "SCALAR", "ARRAY", "OBJECT"}
 
+    ODBC_DATETIME_LITERALS = {
+        "d": exp.Date,
+        "t": exp.Time,
+        "ts": exp.Timestamp,
+    }
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -5599,11 +5605,35 @@ class Parser(metaclass=_Parser):
     def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
         return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
 
+    def _parse_odbc_datetime_literal(self) -> exp.Expression:
+        """
+        Parses a datetime column in ODBC format. We parse the column into the corresponding
+        types, for example `{d'yyyy-mm-dd'}` will be parsed as a `Date` column, exactly the
+        same as we did for `DATE('yyyy-mm-dd')`.
+
+        Reference:
+        https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/date-time-and-timestamp-literals
+        """
+        self._match(TokenType.VAR)
+        exp_class = self.ODBC_DATETIME_LITERALS[self._prev.text.lower()]
+        expression = self.expression(exp_class=exp_class, this=self._parse_string())
+        if not self._match(TokenType.R_BRACE):
+            self.raise_error("Expected }")
+        return expression
+
     def _parse_bracket(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
         bracket_kind = self._prev.token_type
+        if (
+            bracket_kind == TokenType.L_BRACE
+            and self._curr
+            and self._curr.token_type == TokenType.VAR
+            and self._curr.text.lower() in self.ODBC_DATETIME_LITERALS
+        ):
+            return self._parse_odbc_datetime_literal()
+
         expressions = self._parse_csv(
             lambda: self._parse_bracket_key_value(is_map=bracket_kind == TokenType.L_BRACE)
         )

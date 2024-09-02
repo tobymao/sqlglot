@@ -10,15 +10,10 @@ from sqlglot.dialects.dialect import (
     rename_func,
     unit_to_str,
     inline_array_sql,
+    property_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
-
-
-def _property_sql(self: MySQL.Generator, expression: exp.Property) -> str:
-    # [PROPERTIES (['key1'='value1', 'key2'='value2', ...])]
-    return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
 
 
 class StarRocks(MySQL):
@@ -39,20 +34,15 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
-            "DISTRIBUTED": lambda self: self._parse_distributed_property(),
-            "DUPLICATE": lambda self: self._parse_duplicate(),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
             create = super()._parse_create()
 
-            # Starrocks's primary is defined outside the schema, so we need to move it into the schema
+            # Starrocks' primary key is defined outside of the schema, so we need to move it there
             # https://docs.starrocks.io/docs/table_design/table_types/primary_key_table/#usage
-            if (
-                isinstance(create, exp.Create)
-                and isinstance(create.this, exp.Schema)
-            ):
+            if isinstance(create, exp.Create) and isinstance(create.this, exp.Schema):
                 props = create.args.get("properties")
                 if props:
                     primary_key = props.find(exp.PrimaryKey)
@@ -61,14 +51,13 @@ class StarRocks(MySQL):
 
             return create
 
-        def _parse_distributed_property(self) -> exp.Expression:
-            type: t.Optional[str] = None
+        def _parse_distributed_property(self) -> exp.DistributedByProperty:
+            kind = "HASH"
             expressions: t.Optional[t.List[exp.Expression]] = None
             if self._match_text_seq("BY", "HASH"):
-                type = "HASH"
                 expressions = self._parse_wrapped_csv(self._parse_id_var)
             elif self._match_text_seq("BY", "RANDOM"):
-                type = "RANDOM"
+                kind = "RANDOM"
 
             # If the BUCKETS keyword is not present, the number of buckets is AUTO
             buckets: t.Optional[exp.Expression] = None
@@ -76,10 +65,9 @@ class StarRocks(MySQL):
                 buckets = self._parse_number()
 
             return self.expression(
-                exp.DistributedByHashProperty
-                if type == "HASH"
-                else exp.DistributedByRandomProperty,
+                exp.DistributedByProperty,
                 expressions=expressions,
+                kind=kind,
                 buckets=buckets,
                 order=self._parse_order(),
             )
@@ -137,7 +125,7 @@ class StarRocks(MySQL):
             ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
-            exp.Property: _property_sql,
+            exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
@@ -150,19 +138,18 @@ class StarRocks(MySQL):
             # Starrocks' primary key is defined outside of the schema, so we need to move it there
             schema = e.this
             if isinstance(schema, exp.Schema):
-                primary_key = exp.find(exp.PrimaryKey)
+                primary_key = schema.find(exp.PrimaryKey)
                 if primary_key:
-                    schema.expressions.remove(primary_key)
                     props = e.args.get("properties")
                     if props:
                         # Verify if the first one is an engine property. Is true then insert it after the engine,
                         # otherwise insert it at the beginning
                         if isinstance(props.expressions[0], exp.EngineProperty):
-                            props.expressions.insert(1, primary_key)
+                            props.expressions.insert(1, primary_key.pop())
                         else:
-                            props.expressions.insert(0, primary_key)
+                            props.expressions.insert(0, primary_key.pop())
                     else:
-                        e.set("properties", exp.Properties(expressions=[primary_key]))
+                        e.set("properties", exp.Properties(expressions=[primary_key.pop()]))
 
             return super().create_sql(e)
 

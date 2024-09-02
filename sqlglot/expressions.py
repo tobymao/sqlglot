@@ -2605,12 +2605,8 @@ class DistKeyProperty(Property):
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
 # https://doris.apache.org/docs/sql-manual/sql-statements/Data-Definition-Statements/Create/CREATE-TABLE?_highlight=create&_highlight=table#distribution_desc
-class DistributedByHashProperty(Property):
-    arg_types = {"expressions": True, "buckets": False, "order": False}
-
-
-class DistributedByRandomProperty(Property):
-    arg_types = {"expressions": False, "buckets": False, "order": False}
+class DistributedByProperty(Property):
+    arg_types = {"expressions": False, "kind": True, "buckets": False, "order": False}
 
 
 class DistStyleProperty(Property):
@@ -2951,8 +2947,7 @@ class Properties(Expression):
         "COMMENT": SchemaCommentProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
-        "DISTRIBUTED_BY_HASH": DistributedByHashProperty,
-        "DISTRIBUTED_BY_RANDOM": DistributedByRandomProperty,
+        "DISTRIBUTED_BY": DistributedByProperty,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,
         "EXECUTE AS": ExecuteAsProperty,

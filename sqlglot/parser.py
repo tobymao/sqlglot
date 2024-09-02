@@ -890,6 +890,8 @@ class Parser(metaclass=_Parser):
         "DETERMINISTIC": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
+        "DISTRIBUTED": lambda self: self._parse_distributed_property(),
+        "DUPLICATE": lambda self: self._parse_duplicate(),
         "DYNAMIC": lambda self: self.expression(exp.DynamicProperty),
         "DISTKEY": lambda self: self._parse_distkey(),
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),

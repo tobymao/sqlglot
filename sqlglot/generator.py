@@ -452,8 +452,7 @@ class Generator(metaclass=_Generator):
         exp.CopyGrantsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
-        exp.DistributedByHashProperty: exp.Properties.Location.POST_SCHEMA,
-        exp.DistributedByRandomProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.DistributedByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DataDeletionProperty: exp.Properties.Location.POST_SCHEMA,
@@ -3625,21 +3624,15 @@ class Generator(metaclass=_Generator):
         options = f" {options}" if options else ""
         return f"DUPLICATE KEY ({expressions}){options}"
 
-    def distributedbyhashproperty_sql(self, expression: exp.DistributedByHashProperty) -> str:
+    # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
+    def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:
         expressions = self.expressions(expression, flat=True)
+        expressions = " (" + expressions + ")" if expressions else ""
         buckets = self.sql(expression, "buckets")
-        buckets = f"BUCKETS {buckets}" if buckets else ""
+        kind = self.sql(expression, "kind")
+        buckets = f" BUCKETS {buckets}" if buckets else ""
         order = self.sql(expression, "order")
-        # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
-        # [DISTRIBUTED BY HASH (k1[,k2 ...]) [BUCKETS num] [ORDER BY (k1[,k2 ...])]]
-        return f"DISTRIBUTED BY HASH ({expressions}) {buckets}{order}"
-
-    def distributedbyrandomproperty_sql(self, expression: exp.DistributedByRandomProperty) -> str:
-        buckets = self.sql(expression, "buckets")
-        buckets = f"BUCKETS {buckets}" if buckets else ""
-        order = self.sql(expression, "order")
-        # [DISTRIBUTED BY RANDOM [BUCKETS num] [ORDER BY (k1[,k2 ...])]]
-        return f"DISTRIBUTED BY RANDOM {buckets}{order}"
+        return f"DISTRIBUTED BY {kind}{expressions}{buckets}{order}"
 
     def oncluster_sql(self, expression: exp.OnCluster) -> str:
         return ""

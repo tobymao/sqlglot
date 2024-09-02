@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     var_map_sql,
     sequence_sql,
+    property_sql,
 )
 from sqlglot.transforms import (
     remove_unique_constraints,
@@ -133,10 +134,6 @@ def _array_sort_sql(self: Hive.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("Hive SORT_ARRAY does not support a comparator")
     return self.func("SORT_ARRAY", expression.this)
-
-
-def _property_sql(self: Hive.Generator, expression: exp.Property) -> str:
-    return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
 
 
 def _str_to_unix_sql(self: Hive.Generator, expression: exp.StrToUnix) -> str:
@@ -490,7 +487,7 @@ class Hive(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.Property: _property_sql,
+            exp.Property: property_sql,
             exp.AnyValue: rename_func("FIRST"),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),

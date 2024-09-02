@@ -855,9 +855,7 @@ class TestParser(unittest.TestCase):
             self.assertIsInstance(collate_node, exp.Collate)
             self.assertIsInstance(collate_node.expression, collate_pair[1])
 
-    def test_odbc_date_literals(
-        self,
-    ):
+    def test_odbc_date_literals(self):
         for value, cls in [
             ("{d'2024-01-01'}", exp.Date),
             ("{t'12:00:00'}", exp.Time),

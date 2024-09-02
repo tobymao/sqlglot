@@ -5616,11 +5616,7 @@ class Parser(metaclass=_Parser):
         """
         self._match(TokenType.VAR)
         exp_class = self.ODBC_DATETIME_LITERALS[self._prev.text.lower()]
-        expression = self.expression(
-            exp_class=exp_class,
-            this=exp.Literal.string(self._curr.text),
-        )
-        self._match(TokenType.STRING)
+        expression = self.expression(exp_class=exp_class, this=self._parse_string())
         if not self._match(TokenType.R_BRACE):
             self.raise_error("Expected }")
         return expression

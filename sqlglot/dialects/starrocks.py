@@ -162,7 +162,7 @@ class StarRocks(MySQL):
         }
 
         def create_sql(self, e: exp.Create) -> str:
-            # Starrocks's primary is defined outside the schema, so we need to move it into after engine properties
+            # Starrocks' primary key is defined outside of the schema, so we need to move it there
             schema = e.this
             if isinstance(schema, exp.Schema):
                 primary_key = exp.find(exp.PrimaryKey)

@@ -50,18 +50,28 @@ class TestPRQL(Validator):
         )
         self.validate_all(
             "from x take 10",
+            read={
+                None: "SELECT * FROM x LIMIT 10",
+            },
             write={
                 None: "SELECT * FROM x LIMIT 10",
             },
         )
         self.validate_all(
             "from x take 5",
+            read={
+                None: "SELECT * FROM x LIMIT 5",
+                "prql": "from x take 10 take 5",
+            },
             write={
                 None: "SELECT * FROM x LIMIT 5",
             },
         )
         self.validate_all(
             "from x filter age > 25",
+            read={
+                None: "SELECT * FROM x WHERE age > 25",
+            },
             write={
                 None: "SELECT * FROM x WHERE age > 25",
             },

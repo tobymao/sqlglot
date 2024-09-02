@@ -364,7 +364,9 @@ class PRQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.From: lambda self, e: f" from {e.this}",
+            exp.Limit: lambda self, e: f" take {self.sql(e, 'expression')}",
             exp.Select: _select_sql,
+            exp.Where: lambda self, e: f" filter {self.sql(e, 'this')}", # TODO: Fix: Move to func & add parenthesis for args >= 2.
         }
 
 

@@ -7,6 +7,7 @@ install-dev-rs-release:
 	cd sqlglotrs/ && python -m maturin develop -r
 
 install-dev-rs:
+	@unset CONDA_PREFIX && \
 	cd sqlglotrs/ && python -m maturin develop
 
 install-dev-core:

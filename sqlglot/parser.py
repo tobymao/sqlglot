@@ -2964,7 +2964,7 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Summarize, this=this, table=table)
         elif self._match(TokenType.DESCRIBE):
             this = self._parse_describe()
-        elif self._match(TokenType.VAR, advance=False) and self._match_text_seq("STREAM"):
+        elif self._match_text_seq("STREAM"):
             this = self.expression(exp.Stream, this=self._parse_function())
         else:
             this = None
@@ -7095,7 +7095,11 @@ class Parser(metaclass=_Parser):
     def _match_text_seq(self, *texts, advance=True):
         index = self._index
         for text in texts:
-            if self._curr and self._curr.text.upper() == text:
+            if (
+                self._curr
+                and self._curr.text.upper() == text
+                and self._curr.token_type != TokenType.STRING
+            ):
                 self._advance()
             else:
                 self._retreat(index)

@@ -716,8 +716,8 @@ class TestHive(Validator):
                 "presto": "ARRAY_AGG(x)",
             },
             write={
-                "duckdb": "ARRAY_AGG(x) FILTER (WHERE x IS NOT NULL)",
-                "presto": "ARRAY_AGG(x) FILTER (WHERE x IS NOT NULL)",
+                "duckdb": "ARRAY_AGG(x) FILTER(WHERE x IS NOT NULL)",
+                "presto": "ARRAY_AGG(x) FILTER(WHERE x IS NOT NULL)",
                 "hive": "COLLECT_LIST(x)",
                 "spark": "COLLECT_LIST(x)",
             },

@@ -4263,6 +4263,6 @@ class Generator(metaclass=_Generator):
                 parent_cond = parent.expression.this
                 parent_cond.replace(parent_cond.and_(expression.this.is_(exp.null()).not_()))
             else:
-                array_agg = f"{array_agg} FILTER (WHERE {self.sql(expression, 'this')} IS NOT NULL)"
+                array_agg = f"{array_agg} FILTER(WHERE {self.sql(expression, 'this')} IS NOT NULL)"
 
         return array_agg

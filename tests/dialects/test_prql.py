@@ -7,6 +7,9 @@ class TestPRQL(Validator):
     def test_prql(self):
         self.validate_all(
             "from x",
+            read={
+                None: "SELECT * FROM x",
+            },
             write={
                 None: "SELECT * FROM x",
             },

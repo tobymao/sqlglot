@@ -165,10 +165,7 @@ class StarRocks(MySQL):
             # Starrocks's primary is defined outside the schema, so we need to move it into after engine properties
             schema = e.this
             if isinstance(schema, exp.Schema):
-                primary_key = next(
-                    (expr for expr in schema.expressions if isinstance(expr, exp.PrimaryKey)),
-                    None,
-                )
+                primary_key = exp.find(exp.PrimaryKey)
                 if primary_key:
                     schema.expressions.remove(primary_key)
                     props = e.args.get("properties")

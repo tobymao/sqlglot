@@ -140,9 +140,6 @@ class StarRocks(MySQL):
 
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
-            exp.DistributedByHashProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.DistributedByRandomProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         }
 

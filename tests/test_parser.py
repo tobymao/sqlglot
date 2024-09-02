@@ -860,7 +860,6 @@ class TestParser(unittest.TestCase):
         self,
     ):
         for value, cls in [
-            ("DATE('2024-01-01')", exp.Date),
             ("{d'2024-01-01'}", exp.Date),
             ("{t'12:00:00'}", exp.Time),
             ("{ts'2024-01-01 12:00:00'}", exp.Timestamp),

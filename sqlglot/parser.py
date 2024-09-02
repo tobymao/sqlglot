@@ -1256,6 +1256,12 @@ class Parser(metaclass=_Parser):
 
     IS_JSON_PREDICATE_KIND = {"VALUE", "SCALAR", "ARRAY", "OBJECT"}
 
+    ODBC_DATETIME_LITERALS = {
+        "d": exp.Date,
+        "t": exp.Time,
+        "ts": exp.Timestamp,
+    }
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -4878,14 +4884,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_column(self) -> t.Optional[exp.Expression]:
         this = self._parse_column_reference()
-        if this:
-            column = self._parse_column_ops(this)
-        elif (
-            self._curr.token_type == TokenType.L_BRACE and self._next.token_type == TokenType.VAR
-        ):  # Lookahead instead of matching so that we don't break _parse_bracket
-            column = self._parse_odbc_datetime_literal()
-        else:
-            column = self._parse_bracket(this)
+        column = self._parse_column_ops(this) if this else self._parse_bracket(this)
 
         if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and column:
             column.set("join_mark", self._match(TokenType.JOIN_MARKER))
@@ -5606,7 +5605,7 @@ class Parser(metaclass=_Parser):
     def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
         return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
 
-    def _parse_odbc_datetime_literal(self):
+    def _parse_odbc_datetime_literal(self) -> exp.Expression:
         """
         Parses a datetime column in ODBC format. We parse the column into the corresponding
         types, for example `{d'yyyy-mm-dd'}` will be parsed as a `Date` column, isexactly
@@ -5615,17 +5614,8 @@ class Parser(metaclass=_Parser):
         Reference:
         https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/date-time-and-timestamp-literals
         """
-        self._match(TokenType.L_BRACE)
-        odbc_datetime_literals = {
-            "d": exp.Date,
-            "t": exp.Time,
-            "ts": exp.Timestamp,
-        }
-
-        exp_class = odbc_datetime_literals.get(self._curr.text.lower())
-        if exp_class is None:
-            self.raise_error(f"Unexpected ODBC datetime literal: {self._curr.text}")
         self._match(TokenType.VAR)
+        exp_class = self.ODBC_DATETIME_LITERALS[self._prev.text.lower()]
         expression = self.expression(
             exp_class=exp_class,
             this=exp.Literal.string(self._curr.text),
@@ -5640,6 +5630,14 @@ class Parser(metaclass=_Parser):
             return this
 
         bracket_kind = self._prev.token_type
+        if (
+            bracket_kind == TokenType.L_BRACE
+            and self._curr
+            and self._curr.token_type == TokenType.VAR
+            and self._curr.text.lower() in self.ODBC_DATETIME_LITERALS
+        ):
+            return self._parse_odbc_datetime_literal()
+
         expressions = self._parse_csv(
             lambda: self._parse_bracket_key_value(is_map=bracket_kind == TokenType.L_BRACE)
         )

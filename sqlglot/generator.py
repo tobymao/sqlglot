@@ -392,6 +392,9 @@ class Generator(metaclass=_Generator):
     # Whether nullable types can be constructed, e.g. `Nullable(Int64)`
     SUPPORTS_NULLABLE_TYPES = True
 
+    # Whether ArrayAgg needs to filter NULL values
+    ARRAY_AGG_INCLUDES_NULLS = True
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4250,3 +4253,16 @@ class Generator(metaclass=_Generator):
         path = f"{path}{passing}{on_condition}"
 
         return self.func("JSON_EXISTS", this, path)
+
+    def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+        array_agg = self.function_fallback_sql(expression)
+
+        if self.ARRAY_AGG_INCLUDES_NULLS and expression.args.get("nulls_excluded"):
+            parent = expression.parent
+            if isinstance(parent, exp.Filter):
+                parent_cond = parent.expression.this
+                parent_cond.replace(parent_cond.and_(expression.this.is_(exp.null()).not_()))
+            else:
+                array_agg = f"{array_agg} FILTER (WHERE {self.sql(expression, 'this')} IS NOT NULL)"
+
+        return array_agg

@@ -277,8 +277,9 @@ class Hive(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ARRAY_AGG": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "BASE64": exp.ToBase64.from_arg_list,
-            "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
+            "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
@@ -460,6 +461,7 @@ class Hive(Dialect):
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
         PARSE_JSON_NAME = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
+        ARRAY_AGG_INCLUDES_NULLS = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,

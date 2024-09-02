@@ -291,7 +291,8 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
-            "ARRAYAGG": exp.ArrayAgg.from_arg_list,
+            "ARRAYAGG": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
+            "ARRAY_AGG": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0)
@@ -753,6 +754,7 @@ class Snowflake(Dialect):
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_CONVERT_TIMEZONE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        ARRAY_AGG_INCLUDES_NULLS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

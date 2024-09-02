@@ -2,6 +2,7 @@ import time
 import unittest
 from unittest.mock import patch
 
+
 from sqlglot import Parser, exp, parse, parse_one
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.parser import logger as parser_logger
@@ -854,3 +855,17 @@ class TestParser(unittest.TestCase):
             ).find(exp.Collate)
             self.assertIsInstance(collate_node, exp.Collate)
             self.assertIsInstance(collate_node.expression, collate_pair[1])
+
+    def test_odbc_date_literals(
+        self,
+    ):
+        for value, cls in [
+            ("DATE('2024-01-01')", exp.Date),
+            ("{d'2024-01-01'}", exp.Date),
+            ("{t'12:00:00'}", exp.Time),
+            ("{ts'2024-01-01 12:00:00'}", exp.Timestamp),
+        ]:
+            sql = f"INSERT INTO tab(ds) VALUES ({value})"
+            expr = parse_one(sql)
+            self.assertIsInstance(expr, exp.Insert)
+            self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)

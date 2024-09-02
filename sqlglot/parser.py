@@ -4878,7 +4878,14 @@ class Parser(metaclass=_Parser):
 
     def _parse_column(self) -> t.Optional[exp.Expression]:
         this = self._parse_column_reference()
-        column = self._parse_column_ops(this) if this else self._parse_bracket(this)
+        if this:
+            column = self._parse_column_ops(this)
+        elif (
+            self._curr.token_type == TokenType.L_BRACE and self._next.token_type == TokenType.VAR
+        ):  # Lookahead instead of matching so that we don't break _parse_bracket
+            column = self._parse_odbc_datetime_literal()
+        else:
+            column = self._parse_bracket(this)
 
         if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and column:
             column.set("join_mark", self._match(TokenType.JOIN_MARKER))
@@ -5598,6 +5605,35 @@ class Parser(metaclass=_Parser):
 
     def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
         return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
+
+    def _parse_odbc_datetime_literal(self):
+        """
+        Parses a datetime column in ODBC format. We parse the column into the corresponding
+        types, for example `{d'yyyy-mm-dd'}` will be parsed as a `Date` column, isexactly
+        the same as we did for `DATE('yyyy-mm-dd')`.
+
+        Reference:
+        https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/date-time-and-timestamp-literals
+        """
+        self._match(TokenType.L_BRACE)
+        odbc_datetime_literals = {
+            "d": exp.Date,
+            "t": exp.Time,
+            "ts": exp.Timestamp,
+        }
+
+        exp_class = odbc_datetime_literals.get(self._curr.text.lower())
+        if exp_class is None:
+            self.raise_error(f"Unexpected ODBC datetime literal: {self._curr.text}")
+        self._match(TokenType.VAR)
+        expression = self.expression(
+            exp_class=exp_class,
+            this=exp.Literal.string(self._curr.text),
+        )
+        self._match(TokenType.STRING)
+        if not self._match(TokenType.R_BRACE):
+            self.raise_error("Expected }")
+        return expression
 
     def _parse_bracket(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):

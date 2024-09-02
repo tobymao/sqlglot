@@ -229,17 +229,14 @@ class Oracle(Dialect):
             )
 
         def _parse_json_exists(self) -> exp.JSONExists:
-            def _parse_passing_values() -> t.List[exp.Expression]:
-                # PASSING [<expr> AS <identifier>][, ...]
-                return self._parse_csv(lambda: self._parse_alias(self._parse_bitwise()))
-
             this = self._parse_format_json(self._parse_bitwise())
             self._match(TokenType.COMMA)
             return self.expression(
                 exp.JSONExists,
                 this=this,
                 path=self.dialect.to_json_path(self._parse_bitwise()),
-                passing=self._match_text_seq("PASSING") and _parse_passing_values(),
+                passing=self._match_text_seq("PASSING")
+                and self._parse_csv(lambda: self._parse_alias(self._parse_bitwise())),
                 on_condition=self._parse_on_condition(),
             )
 

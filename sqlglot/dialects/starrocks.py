@@ -24,14 +24,6 @@ def _property_sql(self: MySQL.Generator, expression: exp.Property) -> str:
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
 
-    class Tokenizer(MySQL.Tokenizer):
-        KEYWORDS = {
-            **MySQL.Tokenizer.KEYWORDS,
-            "DECIMAL32": TokenType.DECIMAL32,
-            "DECIMAL64": TokenType.DECIMAL64,
-            "DECIMAL128": TokenType.DECIMAL128,
-        }
-
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,

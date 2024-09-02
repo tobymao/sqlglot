@@ -2230,6 +2230,10 @@ class OnConflict(Expression):
     }
 
 
+class OnCondition(Expression):
+    arg_types = {"error": False, "empty": False, "null": False}
+
+
 class Returning(Expression):
     arg_types = {"expressions": True, "into": False}
 
@@ -5585,6 +5589,10 @@ class JSONArrayAgg(Func):
     }
 
 
+class JSONExists(Func):
+    arg_types = {"this": True, "path": True, "passing": False, "on_condition": False}
+
+
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 # Note: parsing of JSON column definitions is currently incomplete.
 class JSONColumnDef(Expression):
@@ -5601,8 +5609,7 @@ class JSONValue(Expression):
         "this": True,
         "path": True,
         "returning": False,
-        "on_empty": False,
-        "on_error": False,
+        "on_condition": False,
     }
 
 

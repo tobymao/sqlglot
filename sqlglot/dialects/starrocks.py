@@ -69,7 +69,7 @@ class StarRocks(MySQL):
                         None,
                     )
                     if primary_key:
-                        create.this.expressions.append(primary_key)
+                        create.this.append("expressions", primary_key.pop())
 
                         # Remove the PrimaryKey from properties
                         props.expressions.remove(primary_key)

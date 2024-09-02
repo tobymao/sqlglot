@@ -59,7 +59,6 @@ class StarRocks(MySQL):
             # https://docs.starrocks.io/docs/table_design/table_types/primary_key_table/#usage
             if (
                 isinstance(create, exp.Create)
-                and create.this
                 and isinstance(create.this, exp.Schema)
             ):
                 props = create.args.get("properties")

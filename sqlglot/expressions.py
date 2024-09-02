@@ -1195,6 +1195,7 @@ class Query(Expression):
         alias: ExpOrStr,
         as_: ExpOrStr,
         recursive: t.Optional[bool] = None,
+        materialized: t.Optional[bool] = None,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -1213,6 +1214,7 @@ class Query(Expression):
             as_: the SQL code string to parse as the table expression.
                 If an `Expression` instance is passed, it will be used as-is.
             recursive: set the RECURSIVE part of the expression. Defaults to `False`.
+            materialized: set the MATERIALIZED part of the expression.
             append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             dialect: the dialect used to parse the input expression.
@@ -1223,7 +1225,15 @@ class Query(Expression):
             The modified expression.
         """
         return _apply_cte_builder(
-            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
+            self,
+            alias,
+            as_,
+            recursive=recursive,
+            materialized=materialized,
+            append=append,
+            dialect=dialect,
+            copy=copy,
+            **opts,
         )
 
     def union(
@@ -2180,6 +2190,7 @@ class Insert(DDL, DML):
         alias: ExpOrStr,
         as_: ExpOrStr,
         recursive: t.Optional[bool] = None,
+        materialized: t.Optional[bool] = None,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2198,6 +2209,7 @@ class Insert(DDL, DML):
             as_: the SQL code string to parse as the table expression.
                 If an `Expression` instance is passed, it will be used as-is.
             recursive: set the RECURSIVE part of the expression. Defaults to `False`.
+            materialized: set the MATERIALIZED part of the expression.
             append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             dialect: the dialect used to parse the input expression.
@@ -2208,7 +2220,15 @@ class Insert(DDL, DML):
             The modified expression.
         """
         return _apply_cte_builder(
-            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
+            self,
+            alias,
+            as_,
+            recursive=recursive,
+            materialized=materialized,
+            append=append,
+            dialect=dialect,
+            copy=copy,
+            **opts,
         )
 
 
@@ -6514,6 +6534,7 @@ def _apply_cte_builder(
     alias: ExpOrStr,
     as_: ExpOrStr,
     recursive: t.Optional[bool] = None,
+    materialized: t.Optional[bool] = None,
     append: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
@@ -6521,7 +6542,7 @@ def _apply_cte_builder(
 ) -> E:
     alias_expression = maybe_parse(alias, dialect=dialect, into=TableAlias, **opts)
     as_expression = maybe_parse(as_, dialect=dialect, **opts)
-    cte = CTE(this=as_expression, alias=alias_expression)
+    cte = CTE(this=as_expression, alias=alias_expression, materialized=materialized)
     return _apply_child_list_builder(
         cte,
         instance=instance,

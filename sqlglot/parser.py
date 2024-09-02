@@ -7086,7 +7086,11 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expecting )")
 
     def _match_texts(self, texts, advance=True):
-        if self._curr and self._curr.text.upper() in texts:
+        if (
+            self._curr
+            and self._curr.token_type != TokenType.STRING
+            and self._curr.text.upper() in texts
+        ):
             if advance:
                 self._advance()
             return True
@@ -7097,8 +7101,8 @@ class Parser(metaclass=_Parser):
         for text in texts:
             if (
                 self._curr
-                and self._curr.text.upper() == text
                 and self._curr.token_type != TokenType.STRING
+                and self._curr.text.upper() == text
             ):
                 self._advance()
             else:

@@ -1023,6 +1023,18 @@ class TestPostgres(Validator):
         self.validate_identity(
             "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_table_id ON tbl USING btree(id)"
         )
+        self.validate_identity(
+            "DROP INDEX ix_table_id"
+        )
+        self.validate_identity(
+            "DROP INDEX IF EXISTS ix_table_id"
+        )
+        self.validate_identity(
+            "DROP INDEX CONCURRENTLY ix_table_id"
+        )
+        self.validate_identity(
+            "DROP INDEX CONCURRENTLY IF EXISTS ix_table_id"
+        )
 
         self.validate_identity(
             """

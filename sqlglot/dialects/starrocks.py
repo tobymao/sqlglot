@@ -134,25 +134,25 @@ class StarRocks(MySQL):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
         }
 
-        def create_sql(self, e: exp.Create) -> str:
+        TRANSFORMS.pop(exp.DateTrunc)
+
+        def create_sql(self, expression: exp.Create) -> str:
             # Starrocks' primary key is defined outside of the schema, so we need to move it there
-            schema = e.this
+            schema = expression.this
             if isinstance(schema, exp.Schema):
                 primary_key = schema.find(exp.PrimaryKey)
 
                 if primary_key:
-                    props = e.args.get("properties")
+                    props = expression.args.get("properties")
 
                     if not props:
                         props = exp.Properties(expressions=[])
-                        e.set("properties", props)
+                        expression.set("properties", props)
 
                     # Verify if the first one is an engine property. Is true then insert it after the engine,
                     # otherwise insert it at the beginning
                     engine = props.find(exp.EngineProperty)
                     engine_index = (engine.index or 0) if engine else -1
-                    props.expressions.insert(engine_index + 1, primary_key.pop())
+                    props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
-            return super().create_sql(e)
-
-        TRANSFORMS.pop(exp.DateTrunc)
+            return super().create_sql(expression)

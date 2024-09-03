@@ -155,6 +155,15 @@ class TestTeradata(Validator):
                 "tsql": "CREATE TABLE a",
             },
         )
+        self.validate_identity(
+            "CREATE TABLE db.foo (id INT NOT NULL, valid_date DATE FORMAT 'YYYY-MM-DD', measurement INT COMPRESS)"
+        )
+        self.validate_identity(
+            "CREATE TABLE db.foo (id INT NOT NULL, valid_date DATE FORMAT 'YYYY-MM-DD', measurement INT COMPRESS (1, 2, 3))"
+        )
+        self.validate_identity(
+            "CREATE TABLE db.foo (id INT NOT NULL, valid_date DATE FORMAT 'YYYY-MM-DD' COMPRESS (CAST('9999-09-09' AS DATE)), measurement INT)"
+        )
 
     def test_insert(self):
         self.validate_all(

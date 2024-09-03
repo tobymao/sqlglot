@@ -1048,6 +1048,10 @@ def no_map_from_entries_sql(self: Generator, expression: exp.MapFromEntries) -> 
     return ""
 
 
+def property_sql(self: Generator, expression: exp.Property) -> str:
+    return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
+
+
 def str_position_sql(
     self: Generator, expression: exp.StrPosition, generate_instance: bool = False
 ) -> str:

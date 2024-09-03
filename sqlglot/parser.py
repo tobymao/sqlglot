@@ -339,6 +339,9 @@ class Parser(metaclass=_Parser):
         TokenType.DATERANGE,
         TokenType.DATEMULTIRANGE,
         TokenType.DECIMAL,
+        TokenType.DECIMAL32,
+        TokenType.DECIMAL64,
+        TokenType.DECIMAL128,
         TokenType.UDECIMAL,
         TokenType.BIGDECIMAL,
         TokenType.UUID,
@@ -893,6 +896,8 @@ class Parser(metaclass=_Parser):
         "DETERMINISTIC": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
+        "DISTRIBUTED": lambda self: self._parse_distributed_property(),
+        "DUPLICATE": lambda self: self._parse_duplicate(),
         "DYNAMIC": lambda self: self.expression(exp.DynamicProperty),
         "DISTKEY": lambda self: self._parse_distkey(),
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),

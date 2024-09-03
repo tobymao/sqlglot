@@ -1788,7 +1788,7 @@ class CommentColumnConstraint(ColumnConstraintKind):
 
 
 class CompressColumnConstraint(ColumnConstraintKind):
-    pass
+    arg_types = {"this": False}
 
 
 class DateFormatColumnConstraint(ColumnConstraintKind):

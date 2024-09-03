@@ -1096,6 +1096,7 @@ class Parser(metaclass=_Parser):
         "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
         "JSON_TABLE": lambda self: self._parse_json_table(),
         "MATCH": lambda self: self._parse_match_against(),
+        "NORMALIZE": lambda self: self._parse_normalize(),
         "OPENJSON": lambda self: self._parse_open_json(),
         "POSITION": lambda self: self._parse_position(),
         "PREDICT": lambda self: self._parse_predict(),
@@ -7312,4 +7313,11 @@ class Parser(metaclass=_Parser):
             credentials=credentials,
             files=files,
             params=params,
+        )
+
+    def _parse_normalize(self) -> exp.Normalize:
+        return self.expression(
+            exp.Normalize,
+            this=self._parse_bitwise(),
+            form=self._match(TokenType.COMMA) and self._parse_var(),
         )

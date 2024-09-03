@@ -139,17 +139,19 @@ class StarRocks(MySQL):
             schema = e.this
             if isinstance(schema, exp.Schema):
                 primary_key = schema.find(exp.PrimaryKey)
+
                 if primary_key:
                     props = e.args.get("properties")
-                    if props:
-                        # Verify if the first one is an engine property. Is true then insert it after the engine,
-                        # otherwise insert it at the beginning
-                        if isinstance(props.expressions[0], exp.EngineProperty):
-                            props.expressions.insert(1, primary_key.pop())
-                        else:
-                            props.expressions.insert(0, primary_key.pop())
-                    else:
-                        e.set("properties", exp.Properties(expressions=[primary_key.pop()]))
+
+                    if not props:
+                        props = exp.Properties(expressions=[])
+                        e.set("properties", props)
+
+                    # Verify if the first one is an engine property. Is true then insert it after the engine,
+                    # otherwise insert it at the beginning
+                    engine = props.find(exp.EngineProperty)
+                    engine_index = (engine.index or 0) if engine else -1
+                    props.expressions.insert(engine_index + 1, primary_key.pop())
 
             return super().create_sql(e)
 

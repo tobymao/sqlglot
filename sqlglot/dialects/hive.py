@@ -309,7 +309,9 @@ class Hive(Dialect):
             "PERCENTILE": exp.Quantile.from_arg_list,
             "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                group=seq_get(args, 2) or exp.Literal.number(1),
             ),
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,

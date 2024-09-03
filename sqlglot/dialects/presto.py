@@ -316,7 +316,9 @@ class Presto(Dialect):
             ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                group=seq_get(args, 2) or exp.Literal.number(0),
             ),
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),

@@ -1034,6 +1034,19 @@ class TestPresto(Validator):
                 "spark": "SELECT REGEXP_EXTRACT(TO_JSON(FROM_JSON('[[1, 2, 3]]', SCHEMA_OF_JSON('[[1, 2, 3]]'))), '^.(.*).$', 1)",
             },
         )
+        self.validate_all(
+            "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+            read={
+                "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+            },
+            write={
+                "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+                "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+                "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+            },
+        )
 
     def test_encode_decode(self):
         self.validate_identity("FROM_UTF8(x, y)")

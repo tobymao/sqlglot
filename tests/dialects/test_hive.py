@@ -765,6 +765,21 @@ class TestHive(Validator):
                 "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
             },
         )
+        self.validate_all(
+            "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+            read={
+                "hive": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "spark2": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "spark": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+            },
+            write={
+                "hive": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+                "spark2": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+                "spark": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+                "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+            },
+        )
 
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")

@@ -173,7 +173,7 @@ class MySQL(Dialect):
         "%k": "%-H",
         "%l": "%-I",
         "%T": "%H:%M:%S",
-        "%W": "%a",
+        "%W": "%A",
     }
 
     class Tokenizer(tokens.Tokenizer):
@@ -666,17 +666,6 @@ class MySQL(Dialect):
             return self.expression(exp.GroupConcat, this=this, separator=separator)
 
         def _parse_json_value(self) -> exp.JSONValue:
-            def _parse_on_options() -> t.Optional[exp.Expression] | str:
-                if self._match_texts(("NULL", "ERROR")):
-                    value = self._prev.text.upper()
-                else:
-                    value = self._match(TokenType.DEFAULT) and self._parse_bitwise()
-
-                self._match_text_seq("ON")
-                self._match_texts(("EMPTY", "ERROR"))
-
-                return value
-
             this = self._parse_bitwise()
             self._match(TokenType.COMMA)
             path = self._parse_bitwise()
@@ -688,8 +677,7 @@ class MySQL(Dialect):
                 this=this,
                 path=self.dialect.to_json_path(path),
                 returning=returning,
-                on_error=_parse_on_options(),
-                on_empty=_parse_on_options(),
+                on_condition=self._parse_on_condition(),
             )
 
     class Generator(generator.Generator):
@@ -707,7 +695,7 @@ class MySQL(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         JSON_KEY_VALUE_PAIR_SEP = ","
         SUPPORTS_TO_NUMBER = False
-        PARSE_JSON_NAME = None
+        PARSE_JSON_NAME: t.Optional[str] = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
         WRAP_DERIVED_VALUES = False
 

@@ -361,8 +361,32 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x")
                 .from_("tbl")
+                .with_("tbl", as_="SELECT x FROM tbl2", materialized=True),
+                "WITH tbl AS MATERIALIZED (SELECT x FROM tbl2) SELECT x FROM tbl",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .with_("tbl", as_="SELECT x FROM tbl2", materialized=False),
+                "WITH tbl AS NOT MATERIALIZED (SELECT x FROM tbl2) SELECT x FROM tbl",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
                 .with_("tbl", as_="SELECT x FROM tbl2", recursive=True),
                 "WITH RECURSIVE tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .with_("tbl", as_=select("x").from_("tbl2"), recursive=True, materialized=True),
+                "WITH RECURSIVE tbl AS MATERIALIZED (SELECT x FROM tbl2) SELECT x FROM tbl",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .with_("tbl", as_=select("x").from_("tbl2"), recursive=True, materialized=False),
+                "WITH RECURSIVE tbl AS NOT MATERIALIZED (SELECT x FROM tbl2) SELECT x FROM tbl",
             ),
             (
                 lambda: select("x").from_("tbl").with_("tbl", as_=select("x").from_("tbl2")),
@@ -675,6 +699,18 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: exp.insert("SELECT * FROM cte", "t").with_("cte", as_="SELECT x FROM tbl"),
                 "WITH cte AS (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
+            ),
+            (
+                lambda: exp.insert("SELECT * FROM cte", "t").with_(
+                    "cte", as_="SELECT x FROM tbl", materialized=True
+                ),
+                "WITH cte AS MATERIALIZED (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
+            ),
+            (
+                lambda: exp.insert("SELECT * FROM cte", "t").with_(
+                    "cte", as_="SELECT x FROM tbl", materialized=False
+                ),
+                "WITH cte AS NOT MATERIALIZED (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
             ),
             (
                 lambda: exp.convert((exp.column("x"), exp.column("y"))).isin((1, 2), (3, 4)),

@@ -1,3 +1,4 @@
+from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -8,6 +9,9 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
         self.validate_identity("SELECT [1, 2, 3]")
+        self.validate_identity(
+            """SELECT CAST(PARSE_JSON(fieldvalue) -> '00000000-0000-0000-0000-00000000' AS VARCHAR) AS `code` FROM (SELECT '{"00000000-0000-0000-0000-00000000":"code01"}') AS t(fieldvalue)"""
+        )
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
@@ -60,6 +64,7 @@ class TestStarrocks(Validator):
                 "spark": r"""SELECT id, t.type, t.scores FROM example_table LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';')), scores)) t AS type, scores""",
                 "databricks": r"""SELECT id, t.type, t.scores FROM example_table LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';')), scores)) t AS type, scores""",
                 "starrocks": r"""SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS t(type, scores)""",
+                "hive": UnsupportedError,
             },
         )
 
@@ -68,6 +73,7 @@ class TestStarrocks(Validator):
             write={
                 "spark": r"""SELECT id, t.type, t.scores FROM example_table_2 LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';')), scores)) t AS type, scores""",
                 "starrocks": r"""SELECT id, t.type, t.scores FROM example_table_2 CROSS JOIN LATERAL UNNEST(SPLIT(type, ';'), scores) AS t(type, scores)""",
+                "hive": UnsupportedError,
             },
         )
 

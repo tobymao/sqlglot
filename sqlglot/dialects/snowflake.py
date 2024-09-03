@@ -233,6 +233,7 @@ class Snowflake(Dialect):
     PREFER_CTE_ALIAS_COLUMN = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     COPY_PARAMS_ARE_CSV = False
+    ARRAY_AGG_INCLUDES_NULLS = None
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -291,7 +292,6 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
-            "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0)
@@ -909,6 +909,14 @@ class Snowflake(Dialect):
                 expression.set("nano", milli_to_nano)
 
             return rename_func("TIMESTAMP_FROM_PARTS")(self, expression)
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.is_type(exp.DataType.Type.GEOGRAPHY):
+                return self.func("TO_GEOGRAPHY", expression.this)
+            if expression.is_type(exp.DataType.Type.GEOMETRY):
+                return self.func("TO_GEOMETRY", expression.this)
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             value = expression.this

@@ -1408,6 +1408,13 @@ class TestDialect(Validator):
             },
         )
 
+        for dialect in ("duckdb", "starrocks"):
+            with self.subTest(f"Generating json extraction with digit-prefixed key ({dialect})"):
+                self.assertEqual(
+                    parse_one("""select '{"0": "v"}' -> '0'""", read=dialect).sql(dialect=dialect),
+                    """SELECT '{"0": "v"}' -> '0'""",
+                )
+
     def test_cross_join(self):
         self.validate_all(
             "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
@@ -2753,3 +2760,22 @@ FROM subquery2""",
                 "tsql": UnsupportedError,
             },
         )
+
+    def test_normalize(self):
+        for form in ("", ", nfkc"):
+            with self.subTest(f"Testing NORMALIZE('str'{form}) roundtrip"):
+                self.validate_all(
+                    f"SELECT NORMALIZE('str'{form})",
+                    read={
+                        "presto": f"SELECT NORMALIZE('str'{form})",
+                        "trino": f"SELECT NORMALIZE('str'{form})",
+                        "bigquery": f"SELECT NORMALIZE('str'{form})",
+                    },
+                    write={
+                        "presto": f"SELECT NORMALIZE('str'{form})",
+                        "trino": f"SELECT NORMALIZE('str'{form})",
+                        "bigquery": f"SELECT NORMALIZE('str'{form})",
+                    },
+                )
+
+        self.assertIsInstance(parse_one("NORMALIZE('str', NFD)").args.get("form"), exp.Var)

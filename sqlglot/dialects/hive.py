@@ -191,21 +191,12 @@ def _build_with_ignore_nulls(
     return _parse
 
 
-def _select_sql(self: Hive.Generator, expression: exp.Expression) -> str:
-    return transforms.preprocess(
-        [
-            transforms.eliminate_qualify,
-            transforms.eliminate_distinct_on,
-            partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False, generator=self),
-        ]
-    )(self, expression)
-
-
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
+    ARRAY_AGG_INCLUDES_NULLS = None
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -288,7 +279,7 @@ class Hive(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "BASE64": exp.ToBase64.from_arg_list,
-            "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
+            "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
@@ -500,7 +491,6 @@ class Hive(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.Select: _select_sql,
             exp.Property: _property_sql,
             exp.AnyValue: rename_func("FIRST"),
             exp.ApproxDistinct: approx_count_distinct_sql,
@@ -561,6 +551,13 @@ class Hive(Dialect):
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: self.func(
                 "SPLIT", e.this, self.func("CONCAT", "'\\\\Q'", e.expression)
+            ),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
+                ]
             ),
             exp.StrPosition: strposition_to_locate_sql,
             exp.StrToDate: _str_to_date_sql,

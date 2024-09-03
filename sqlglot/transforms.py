@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import expressions as exp, generator
+from sqlglot import expressions as exp
+from sqlglot.errors import UnsupportedError
 from sqlglot.helper import find_new_name, name_sequence
+
 
 if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
@@ -27,9 +29,12 @@ def preprocess(
     def _to_sql(self, expression: exp.Expression) -> str:
         expression_type = type(expression)
 
-        expression = transforms[0](expression)
-        for transform in transforms[1:]:
-            expression = transform(expression)
+        try:
+            expression = transforms[0](expression)
+            for transform in transforms[1:]:
+                expression = transform(expression)
+        except UnsupportedError as unsupported_error:
+            self.unsupported(str(unsupported_error))
 
         _sql_handler = getattr(self, expression.key + "_sql", None)
         if _sql_handler:
@@ -299,7 +304,6 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 def unnest_to_explode(
     expression: exp.Expression,
     unnest_using_arrays_zip: bool = True,
-    generator: t.Optional[generator.Generator] = None,
 ) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
 
@@ -308,18 +312,14 @@ def unnest_to_explode(
     ) -> t.List[exp.Expression]:
         if has_multi_expr:
             if not unnest_using_arrays_zip:
-                if generator:
-                    generator.unsupported(
-                        f"Multiple expressions in UNNEST are not supported in "
-                        f"{generator.dialect.__module__.split('.')[-1].upper()}"
-                    )
-            else:
-                # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
-                zip_exprs: t.List[exp.Expression] = [
-                    exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
-                ]
-                u.set("expressions", zip_exprs)
-                return zip_exprs
+                raise UnsupportedError("Cannot transpile UNNEST with multiple input arrays")
+
+            # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
+            zip_exprs: t.List[exp.Expression] = [
+                exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
+            ]
+            u.set("expressions", zip_exprs)
+            return zip_exprs
         return unnest_exprs
 
     def _udtf_type(u: exp.Unnest, has_multi_expr: bool) -> t.Type[exp.Func]:

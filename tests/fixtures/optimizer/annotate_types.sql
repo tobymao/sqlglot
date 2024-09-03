@@ -1,13 +1,25 @@
 5;
 INT;
 
+-5;
+INT;
+
+~5;
+INT;
+
+(5);
+INT;
+
 5.3;
 DOUBLE;
 
 'bla';
 VARCHAR;
 
-True;
+true;
+bool;
+
+not true;
 bool;
 
 false;

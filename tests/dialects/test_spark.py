@@ -309,6 +309,13 @@ TBLPROPERTIES (
             )
 
         self.validate_all(
+            "SELECT ARRAY_AGG(x) FILTER (WHERE x = 5) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(x) FILTER(WHERE x = 5 AND NOT x IS NULL) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",
+                "spark": "SELECT COLLECT_LIST(x) FILTER(WHERE x = 5) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_FORMAT(DATE '2020-01-01', 'EEEE') AS weekday",
             write={
                 "presto": "SELECT DATE_FORMAT(CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP), '%W') AS weekday",

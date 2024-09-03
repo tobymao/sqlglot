@@ -263,6 +263,7 @@ class DuckDB(Dialect):
     CONCAT_COALESCE = True
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_FIXED_SIZE_ARRAYS = True
+    STRICT_JSON_PATH_SYNTAX = False
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -495,6 +496,7 @@ class DuckDB(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfWeekIso: rename_func("ISODOW"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
@@ -927,3 +929,12 @@ class DuckDB(Dialect):
                 return super().ignorenulls_sql(expression)
 
             return self.sql(expression, "this")
+
+        def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+            this = self.sql(expression, "this")
+            null_text = self.sql(expression, "null")
+
+            if null_text:
+                this = f"LIST_TRANSFORM({this}, x -> COALESCE(x, {null_text}))"
+
+            return self.func("ARRAY_TO_STRING", this, expression.expression)

@@ -363,9 +363,11 @@ class Dialect(metaclass=_Dialect):
         HAVING
             my_id = 1
 
-    In most dialects "my_id" would refer to "data.my_id" (which is done in _qualify_columns()) across the query, except:
-        - BigQuery, which will forward the alias to GROUP BY + HAVING clauses i.e it resolves to "WHERE my_id = 1 GROUP BY id HAVING id = 1"
-        - Clickhouse, which will forward the alias across the query i.e it resolves to "WHERE id = 1 GROUP BY id HAVING id = 1"
+    In most dialects, "my_id" would refer to "data.my_id" across the query, except:
+        - BigQuery, which will forward the alias to GROUP BY + HAVING clauses i.e
+          it resolves to "WHERE my_id = 1 GROUP BY id HAVING id = 1"
+        - Clickhouse, which will forward the alias across the query i.e it resolves
+        to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
     EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
@@ -384,9 +386,19 @@ class Dialect(metaclass=_Dialect):
 
     SUPPORTS_FIXED_SIZE_ARRAYS = False
     """
-    Whether expressions such as x::INT[5] should be parsed as fixed-size array defs/casts e.g. in DuckDB. In
-    dialects which don't support fixed size arrays such as Snowflake, this should be interpreted as a subscript/index operator
+    Whether expressions such as x::INT[5] should be parsed as fixed-size array defs/casts e.g.
+    in DuckDB. In dialects which don't support fixed size arrays such as Snowflake, this should
+    be interpreted as a subscript/index operator.
     """
+
+    STRICT_JSON_PATH_SYNTAX = True
+    """Whether failing to parse a JSON path expression using the JSONPath dialect will log a warning."""
+
+    ON_CONDITION_EMPTY_BEFORE_ERROR = True
+    """Whether "X ON EMPTY" should come before "X ON ERROR" (for dialects like T-SQL, MySQL, Oracle)."""
+
+    ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
+    """Whether ArrayAgg needs to filter NULL values."""
 
     SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
         exp.Except: True,
@@ -898,7 +910,8 @@ class Dialect(metaclass=_Dialect):
             try:
                 return parse_json_path(path_text, self)
             except ParseError as e:
-                logger.warning(f"Invalid JSON path syntax. {str(e)}")
+                if self.STRICT_JSON_PATH_SYNTAX:
+                    logger.warning(f"Invalid JSON path syntax. {str(e)}")
 
         return path
 

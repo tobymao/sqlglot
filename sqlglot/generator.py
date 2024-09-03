@@ -539,6 +539,7 @@ class Generator(metaclass=_Generator):
         exp.From,
         exp.Insert,
         exp.Join,
+        exp.MultitableInserts,
         exp.Select,
         exp.SetOperation,
         exp.Update,
@@ -1289,6 +1290,7 @@ class Generator(metaclass=_Generator):
         kind = expression.args["kind"]
         kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
+        concurrently_sql = " CONCURRENTLY" if expression.args.get("concurrently") else ""
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
@@ -1296,7 +1298,7 @@ class Generator(metaclass=_Generator):
         cascade = " CASCADE" if expression.args.get("cascade") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
-        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{on_cluster}{expressions}{cascade}{constraints}{purge}"
+        return f"DROP{temporary}{materialized} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{constraints}{purge}"
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)
@@ -3499,6 +3501,7 @@ class Generator(metaclass=_Generator):
             result_sql = "\n".join(s.rstrip() for s in result_sqls)
         else:
             result_sql = "".join(result_sqls)
+
         return (
             self.indent(result_sql, skip_first=skip_first, skip_last=skip_last)
             if indent
@@ -4189,10 +4192,75 @@ class Generator(metaclass=_Generator):
         returning = self.sql(expression, "returning")
         returning = f" RETURNING {returning}" if returning else ""
 
-        on_empty = expression.args.get("on_empty")
-        on_empty = f" {_generate_on_options(on_empty)} ON EMPTY" if on_empty else ""
+        on_condition = self.sql(expression, "on_condition")
+        on_condition = f" {on_condition}" if on_condition else ""
 
-        on_error = expression.args.get("on_error")
-        on_error = f" {_generate_on_options(on_error)} ON ERROR" if on_error else ""
+        return self.func("JSON_VALUE", expression.this, f"{path}{returning}{on_condition}")
 
-        return self.func("JSON_VALUE", expression.this, f"{path}{returning}{on_empty}{on_error}")
+    def conditionalinsert_sql(self, expression: exp.ConditionalInsert) -> str:
+        else_ = "ELSE " if expression.args.get("else_") else ""
+        condition = self.sql(expression, "expression")
+        condition = f"WHEN {condition} THEN " if condition else else_
+        insert = self.sql(expression, "this")[len("INSERT") :].strip()
+        return f"{condition}{insert}"
+
+    def multitableinserts_sql(self, expression: exp.MultitableInserts) -> str:
+        kind = self.sql(expression, "kind")
+        expressions = self.seg(self.expressions(expression, sep=" "))
+        res = f"INSERT {kind}{expressions}{self.seg(self.sql(expression, 'source'))}"
+        return res
+
+    def oncondition_sql(self, expression: exp.OnCondition) -> str:
+        # Static options like "NULL ON ERROR" are stored as strings, in contrast to "DEFAULT <expr> ON ERROR"
+        empty = expression.args.get("empty")
+        empty = (
+            f"DEFAULT {empty} ON EMPTY"
+            if isinstance(empty, exp.Expression)
+            else self.sql(expression, "empty")
+        )
+
+        error = expression.args.get("error")
+        error = (
+            f"DEFAULT {error} ON ERROR"
+            if isinstance(error, exp.Expression)
+            else self.sql(expression, "error")
+        )
+
+        if error and empty:
+            error = (
+                f"{empty} {error}"
+                if self.dialect.ON_CONDITION_EMPTY_BEFORE_ERROR
+                else f"{error} {empty}"
+            )
+            empty = ""
+
+        null = self.sql(expression, "null")
+
+        return f"{empty}{error}{null}"
+
+    def jsonexists_sql(self, expression: exp.JSONExists) -> str:
+        this = self.sql(expression, "this")
+        path = self.sql(expression, "path")
+
+        passing = self.expressions(expression, "passing")
+        passing = f" PASSING {passing}" if passing else ""
+
+        on_condition = self.sql(expression, "on_condition")
+        on_condition = f" {on_condition}" if on_condition else ""
+
+        path = f"{path}{passing}{on_condition}"
+
+        return self.func("JSON_EXISTS", this, path)
+
+    def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+        array_agg = self.function_fallback_sql(expression)
+
+        if self.dialect.ARRAY_AGG_INCLUDES_NULLS and expression.args.get("nulls_excluded"):
+            parent = expression.parent
+            if isinstance(parent, exp.Filter):
+                parent_cond = parent.expression.this
+                parent_cond.replace(parent_cond.and_(expression.this.is_(exp.null()).not_()))
+            else:
+                array_agg = f"{array_agg} FILTER(WHERE {self.sql(expression, 'this')} IS NOT NULL)"
+
+        return array_agg

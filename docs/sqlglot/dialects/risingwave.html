@@ -523,6 +523,10 @@
                 <dd id="RisingWave.SUPPORTS_ORDER_BY_ALL" class="variable"><a href="dialect.html#Dialect.SUPPORTS_ORDER_BY_ALL">SUPPORTS_ORDER_BY_ALL</a></dd>
                 <dd id="RisingWave.HAS_DISTINCT_ARRAY_CONSTRUCTORS" class="variable"><a href="dialect.html#Dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS">HAS_DISTINCT_ARRAY_CONSTRUCTORS</a></dd>
                 <dd id="RisingWave.SUPPORTS_FIXED_SIZE_ARRAYS" class="variable"><a href="dialect.html#Dialect.SUPPORTS_FIXED_SIZE_ARRAYS">SUPPORTS_FIXED_SIZE_ARRAYS</a></dd>
+                <dd id="RisingWave.STRICT_JSON_PATH_SYNTAX" class="variable"><a href="dialect.html#Dialect.STRICT_JSON_PATH_SYNTAX">STRICT_JSON_PATH_SYNTAX</a></dd>
+                <dd id="RisingWave.ON_CONDITION_EMPTY_BEFORE_ERROR" class="variable"><a href="dialect.html#Dialect.ON_CONDITION_EMPTY_BEFORE_ERROR">ON_CONDITION_EMPTY_BEFORE_ERROR</a></dd>
+                <dd id="RisingWave.ARRAY_AGG_INCLUDES_NULLS" class="variable"><a href="dialect.html#Dialect.ARRAY_AGG_INCLUDES_NULLS">ARRAY_AGG_INCLUDES_NULLS</a></dd>
+                <dd id="RisingWave.SET_OP_DISTINCT_BY_DEFAULT" class="variable"><a href="dialect.html#Dialect.SET_OP_DISTINCT_BY_DEFAULT">SET_OP_DISTINCT_BY_DEFAULT</a></dd>
                 <dd id="RisingWave.CREATABLE_KIND_MAPPING" class="variable"><a href="dialect.html#Dialect.CREATABLE_KIND_MAPPING">CREATABLE_KIND_MAPPING</a></dd>
                 <dd id="RisingWave.DATE_PART_MAPPING" class="variable"><a href="dialect.html#Dialect.DATE_PART_MAPPING">DATE_PART_MAPPING</a></dd>
                 <dd id="RisingWave.TYPE_TO_EXPRESSIONS" class="variable"><a href="dialect.html#Dialect.TYPE_TO_EXPRESSIONS">TYPE_TO_EXPRESSIONS</a></dd>
@@ -697,7 +701,7 @@ Default: True</li>
                                 <dd id="RisingWave.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
                 <dd id="RisingWave.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
                 <dd id="RisingWave.Generator.IGNORE_NULLS_IN_FUNC" class="variable"><a href="../generator.html#Generator.IGNORE_NULLS_IN_FUNC">IGNORE_NULLS_IN_FUNC</a></dd>
-                <dd id="RisingWave.Generator.EXPLICIT_SET_OP" class="variable"><a href="../generator.html#Generator.EXPLICIT_SET_OP">EXPLICIT_SET_OP</a></dd>
+                <dd id="RisingWave.Generator.EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE" class="variable"><a href="../generator.html#Generator.EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE">EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE</a></dd>
                 <dd id="RisingWave.Generator.WRAP_DERIVED_VALUES" class="variable"><a href="../generator.html#Generator.WRAP_DERIVED_VALUES">WRAP_DERIVED_VALUES</a></dd>
                 <dd id="RisingWave.Generator.CREATE_FUNCTION_RETURN_AS" class="variable"><a href="../generator.html#Generator.CREATE_FUNCTION_RETURN_AS">CREATE_FUNCTION_RETURN_AS</a></dd>
                 <dd id="RisingWave.Generator.MATCHED_BY_SOURCE" class="variable"><a href="../generator.html#Generator.MATCHED_BY_SOURCE">MATCHED_BY_SOURCE</a></dd>
@@ -820,8 +824,8 @@ Default: True</li>
                 <dd id="RisingWave.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>
                 <dd id="RisingWave.Generator.delete_sql" class="function"><a href="../generator.html#Generator.delete_sql">delete_sql</a></dd>
                 <dd id="RisingWave.Generator.drop_sql" class="function"><a href="../generator.html#Generator.drop_sql">drop_sql</a></dd>
-                <dd id="RisingWave.Generator.except_sql" class="function"><a href="../generator.html#Generator.except_sql">except_sql</a></dd>
-                <dd id="RisingWave.Generator.except_op" class="function"><a href="../generator.html#Generator.except_op">except_op</a></dd>
+                <dd id="RisingWave.Generator.set_operation" class="function"><a href="../generator.html#Generator.set_operation">set_operation</a></dd>
+                <dd id="RisingWave.Generator.set_operations" class="function"><a href="../generator.html#Generator.set_operations">set_operations</a></dd>
                 <dd id="RisingWave.Generator.fetch_sql" class="function"><a href="../generator.html#Generator.fetch_sql">fetch_sql</a></dd>
                 <dd id="RisingWave.Generator.filter_sql" class="function"><a href="../generator.html#Generator.filter_sql">filter_sql</a></dd>
                 <dd id="RisingWave.Generator.hint_sql" class="function"><a href="../generator.html#Generator.hint_sql">hint_sql</a></dd>
@@ -855,8 +859,6 @@ Default: True</li>
                 <dd id="RisingWave.Generator.withdataproperty_sql" class="function"><a href="../generator.html#Generator.withdataproperty_sql">withdataproperty_sql</a></dd>
                 <dd id="RisingWave.Generator.withsystemversioningproperty_sql" class="function"><a href="../generator.html#Generator.withsystemversioningproperty_sql">withsystemversioningproperty_sql</a></dd>
                 <dd id="RisingWave.Generator.insert_sql" class="function"><a href="../generator.html#Generator.insert_sql">insert_sql</a></dd>
-                <dd id="RisingWave.Generator.intersect_sql" class="function"><a href="../generator.html#Generator.intersect_sql">intersect_sql</a></dd>
-                <dd id="RisingWave.Generator.intersect_op" class="function"><a href="../generator.html#Generator.intersect_op">intersect_op</a></dd>
                 <dd id="RisingWave.Generator.introducer_sql" class="function"><a href="../generator.html#Generator.introducer_sql">introducer_sql</a></dd>
                 <dd id="RisingWave.Generator.kill_sql" class="function"><a href="../generator.html#Generator.kill_sql">kill_sql</a></dd>
                 <dd id="RisingWave.Generator.pseudotype_sql" class="function"><a href="../generator.html#Generator.pseudotype_sql">pseudotype_sql</a></dd>
@@ -922,9 +924,6 @@ Default: True</li>
                 <dd id="RisingWave.Generator.placeholder_sql" class="function"><a href="../generator.html#Generator.placeholder_sql">placeholder_sql</a></dd>
                 <dd id="RisingWave.Generator.subquery_sql" class="function"><a href="../generator.html#Generator.subquery_sql">subquery_sql</a></dd>
                 <dd id="RisingWave.Generator.qualify_sql" class="function"><a href="../generator.html#Generator.qualify_sql">qualify_sql</a></dd>
-                <dd id="RisingWave.Generator.set_operations" class="function"><a href="../generator.html#Generator.set_operations">set_operations</a></dd>
-                <dd id="RisingWave.Generator.union_sql" class="function"><a href="../generator.html#Generator.union_sql">union_sql</a></dd>
-                <dd id="RisingWave.Generator.union_op" class="function"><a href="../generator.html#Generator.union_op">union_op</a></dd>
                 <dd id="RisingWave.Generator.prewhere_sql" class="function"><a href="../generator.html#Generator.prewhere_sql">prewhere_sql</a></dd>
                 <dd id="RisingWave.Generator.where_sql" class="function"><a href="../generator.html#Generator.where_sql">where_sql</a></dd>
                 <dd id="RisingWave.Generator.window_sql" class="function"><a href="../generator.html#Generator.window_sql">window_sql</a></dd>
@@ -1061,6 +1060,8 @@ Default: True</li>
                 <dd id="RisingWave.Generator.dictproperty_sql" class="function"><a href="../generator.html#Generator.dictproperty_sql">dictproperty_sql</a></dd>
                 <dd id="RisingWave.Generator.dictrange_sql" class="function"><a href="../generator.html#Generator.dictrange_sql">dictrange_sql</a></dd>
                 <dd id="RisingWave.Generator.dictsubproperty_sql" class="function"><a href="../generator.html#Generator.dictsubproperty_sql">dictsubproperty_sql</a></dd>
+                <dd id="RisingWave.Generator.duplicatekeyproperty_sql" class="function"><a href="../generator.html#Generator.duplicatekeyproperty_sql">duplicatekeyproperty_sql</a></dd>
+                <dd id="RisingWave.Generator.distributedbyproperty_sql" class="function"><a href="../generator.html#Generator.distributedbyproperty_sql">distributedbyproperty_sql</a></dd>
                 <dd id="RisingWave.Generator.oncluster_sql" class="function"><a href="../generator.html#Generator.oncluster_sql">oncluster_sql</a></dd>
                 <dd id="RisingWave.Generator.clusteredbyproperty_sql" class="function"><a href="../generator.html#Generator.clusteredbyproperty_sql">clusteredbyproperty_sql</a></dd>
                 <dd id="RisingWave.Generator.anyvalue_sql" class="function"><a href="../generator.html#Generator.anyvalue_sql">anyvalue_sql</a></dd>
@@ -1106,6 +1107,11 @@ Default: True</li>
                 <dd id="RisingWave.Generator.converttimezone_sql" class="function"><a href="../generator.html#Generator.converttimezone_sql">converttimezone_sql</a></dd>
                 <dd id="RisingWave.Generator.json_sql" class="function"><a href="../generator.html#Generator.json_sql">json_sql</a></dd>
                 <dd id="RisingWave.Generator.jsonvalue_sql" class="function"><a href="../generator.html#Generator.jsonvalue_sql">jsonvalue_sql</a></dd>
+                <dd id="RisingWave.Generator.conditionalinsert_sql" class="function"><a href="../generator.html#Generator.conditionalinsert_sql">conditionalinsert_sql</a></dd>
+                <dd id="RisingWave.Generator.multitableinserts_sql" class="function"><a href="../generator.html#Generator.multitableinserts_sql">multitableinserts_sql</a></dd>
+                <dd id="RisingWave.Generator.oncondition_sql" class="function"><a href="../generator.html#Generator.oncondition_sql">oncondition_sql</a></dd>
+                <dd id="RisingWave.Generator.jsonexists_sql" class="function"><a href="../generator.html#Generator.jsonexists_sql">jsonexists_sql</a></dd>
+                <dd id="RisingWave.Generator.arrayagg_sql" class="function"><a href="../generator.html#Generator.arrayagg_sql">arrayagg_sql</a></dd>
 
             </div>
             <div><dt><a href="postgres.html#Postgres.Generator">sqlglot.dialects.postgres.Postgres.Generator</a></dt>

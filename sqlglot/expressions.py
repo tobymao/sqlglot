@@ -336,7 +336,13 @@ class Expression(metaclass=_Expression):
             value.index = len(values)
         values.append(value)
 
-    def set(self, arg_key: str, value: t.Any, index: t.Optional[int] = None) -> None:
+    def set(
+        self,
+        arg_key: str,
+        value: t.Any,
+        index: t.Optional[int] = None,
+        overwrite: bool = True,
+    ) -> None:
         """
         Sets arg_key to value.
 
@@ -344,6 +350,8 @@ class Expression(metaclass=_Expression):
             arg_key: name of the expression arg.
             value: value to set the arg to.
             index: if the arg is a list, this specifies what position to add the value in it.
+            overwrite: assuming an index is given, this determines whether to overwrite the
+                list entry instead of only inserting a new value (i.e., like list.insert).
         """
         if index is not None:
             expressions = self.args.get(arg_key) or []
@@ -359,8 +367,10 @@ class Expression(metaclass=_Expression):
             if isinstance(value, list):
                 expressions.pop(index)
                 expressions[index:index] = value
-            else:
+            elif overwrite:
                 expressions[index] = value
+            else:
+                expressions.insert(index, value)
 
             value = expressions
         elif value is None:

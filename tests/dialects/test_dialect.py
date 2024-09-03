@@ -2760,3 +2760,22 @@ FROM subquery2""",
                 "tsql": UnsupportedError,
             },
         )
+
+    def test_normalize(self):
+        for form in ("", ", nfkc"):
+            with self.subTest(f"Testing NORMALIZE('str'{form}) roundtrip"):
+                self.validate_all(
+                    f"SELECT NORMALIZE('str'{form})",
+                    read={
+                        "presto": f"SELECT NORMALIZE('str'{form})",
+                        "trino": f"SELECT NORMALIZE('str'{form})",
+                        "bigquery": f"SELECT NORMALIZE('str'{form})",
+                    },
+                    write={
+                        "presto": f"SELECT NORMALIZE('str'{form})",
+                        "trino": f"SELECT NORMALIZE('str'{form})",
+                        "bigquery": f"SELECT NORMALIZE('str'{form})",
+                    },
+                )
+
+        self.assertIsInstance(parse_one("NORMALIZE('str', NFD)").args.get("form"), exp.Var)

@@ -5851,6 +5851,10 @@ class Nvl2(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
 
+class Normalize(Func):
+    arg_types = {"this": True, "form": False}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function
 class Predict(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}

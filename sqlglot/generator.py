@@ -452,6 +452,8 @@ class Generator(metaclass=_Generator):
         exp.CopyGrantsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.DistributedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DataDeletionProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
@@ -3616,6 +3618,19 @@ class Generator(metaclass=_Generator):
 
     def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
+
+    def duplicatekeyproperty_sql(self, expression: exp.DuplicateKeyProperty) -> str:
+        return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"
+
+    # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
+    def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" {self.wrap(expressions)}" if expressions else ""
+        buckets = self.sql(expression, "buckets")
+        kind = self.sql(expression, "kind")
+        buckets = f" BUCKETS {buckets}" if buckets else ""
+        order = self.sql(expression, "order")
+        return f"DISTRIBUTED BY {kind}{expressions}{buckets}{order}"
 
     def oncluster_sql(self, expression: exp.OnCluster) -> str:
         return ""

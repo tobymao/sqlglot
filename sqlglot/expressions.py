@@ -2628,8 +2628,18 @@ class DistKeyProperty(Property):
     arg_types = {"this": True}
 
 
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
+# https://doris.apache.org/docs/sql-manual/sql-statements/Data-Definition-Statements/Create/CREATE-TABLE?_highlight=create&_highlight=table#distribution_desc
+class DistributedByProperty(Property):
+    arg_types = {"expressions": False, "kind": True, "buckets": False, "order": False}
+
+
 class DistStyleProperty(Property):
     arg_types = {"this": True}
+
+
+class DuplicateKeyProperty(Property):
+    arg_types = {"expressions": True}
 
 
 class EngineProperty(Property):
@@ -2962,6 +2972,7 @@ class Properties(Expression):
         "COMMENT": SchemaCommentProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
+        "DISTRIBUTED_BY": DistributedByProperty,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,
         "EXECUTE AS": ExecuteAsProperty,
@@ -4055,6 +4066,9 @@ class DataType(Expression):
         DATETIME = auto()
         DATETIME64 = auto()
         DECIMAL = auto()
+        DECIMAL32 = auto()
+        DECIMAL64 = auto()
+        DECIMAL128 = auto()
         DOUBLE = auto()
         ENUM = auto()
         ENUM8 = auto()
@@ -4200,6 +4214,9 @@ class DataType(Expression):
         *FLOAT_TYPES,
         Type.BIGDECIMAL,
         Type.DECIMAL,
+        Type.DECIMAL32,
+        Type.DECIMAL64,
+        Type.DECIMAL128,
         Type.MONEY,
         Type.SMALLMONEY,
         Type.UDECIMAL,

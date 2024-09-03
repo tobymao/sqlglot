@@ -5,6 +5,30 @@ from tests.dialects.test_dialect import Validator
 class TestStarrocks(Validator):
     dialect = "starrocks"
 
+    def test_ddl(self):
+        ddl_sqls = [
+            "DISTRIBUTED BY HASH (col1) BUCKETS 1",
+            "DISTRIBUTED BY HASH (col1)",
+            "DISTRIBUTED BY RANDOM BUCKETS 1",
+            "DISTRIBUTED BY RANDOM",
+            "DISTRIBUTED BY HASH (col1) ORDER BY (col1)",
+            "DISTRIBUTED BY HASH (col1) PROPERTIES ('replication_num'='1')",
+            "PRIMARY KEY (col1) DISTRIBUTED BY HASH (col1)",
+            "DUPLICATE KEY (col1, col2) DISTRIBUTED BY HASH (col1)",
+        ]
+
+        for properties in ddl_sqls:
+            with self.subTest(f"Testing create scheme: {properties}"):
+                self.validate_identity(f"CREATE TABLE foo (col1 BIGINT, col2 BIGINT) {properties}")
+                self.validate_identity(
+                    f"CREATE TABLE foo (col1 BIGINT, col2 BIGINT) ENGINE=OLAP {properties}"
+                )
+
+        # Test the different wider DECIMAL types
+        self.validate_identity(
+            "CREATE TABLE foo (col0 DECIMAL(9, 1), col1 DECIMAL32(9, 1), col2 DECIMAL64(18, 10), col3 DECIMAL128(38, 10)) DISTRIBUTED BY HASH (col1) BUCKETS 1"
+        )
+
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")

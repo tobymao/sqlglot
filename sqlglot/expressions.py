@@ -2015,6 +2015,7 @@ class Drop(Expression):
         "constraints": False,
         "purge": False,
         "cluster": False,
+        "concurrently": False,
     }
 
     @property

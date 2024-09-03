@@ -1698,6 +1698,7 @@ class Parser(metaclass=_Parser):
         if not kind:
             return self._parse_as_command(start)
 
+        concurrently = self._match_text_seq("CONCURRENTLY")
         if_exists = exists or self._parse_exists()
         table = self._parse_table_parts(
             schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
@@ -1723,6 +1724,7 @@ class Parser(metaclass=_Parser):
             constraints=self._match_text_seq("CONSTRAINTS"),
             purge=self._match_text_seq("PURGE"),
             cluster=cluster,
+            concurrently=concurrently,
         )
 
     def _parse_exists(self, not_: bool = False) -> t.Optional[bool]:

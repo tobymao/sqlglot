@@ -148,6 +148,10 @@ def build_trim(args: t.List, is_left: bool = True):
     )
 
 
+def build_coalesce(args: t.List, is_nvl: t.Optional[bool] = None) -> exp.Coalesce:
+    return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl)
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -175,6 +179,7 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS: t.Dict[str, t.Callable] = {
         **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
+        **dict.fromkeys(("COALESCE", "IFNULL", "NVL"), build_coalesce),
         "ARRAY": lambda args, dialect: exp.Array(expressions=args),
         "ARRAYAGG": lambda args, dialect: exp.ArrayAgg(
             this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
@@ -239,7 +244,6 @@ class Parser(metaclass=_Parser):
         "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
         "VAR_MAP": build_var_map,
-        "COALESCE": lambda args: exp.Coalesce(this=seq_get(args, 0), expressions=args[1:]),
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -4505,7 +4509,9 @@ class Parser(metaclass=_Parser):
                     safe=not self.dialect.STRICT_STRING_CONCAT,
                 )
             elif self._match(TokenType.DQMARK):
-                this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())
+                this = self.expression(
+                    exp.Coalesce, this=this, expressions=ensure_list(self._parse_term())
+                )
             elif self._match_pair(TokenType.LT, TokenType.LT):
                 this = self.expression(
                     exp.BitwiseLeftShift, this=this, expression=self._parse_term()

@@ -3619,10 +3619,7 @@ class Generator(metaclass=_Generator):
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
 
     def duplicatekeyproperty_sql(self, expression: exp.DuplicateKeyProperty) -> str:
-        expressions = self.expressions(expression, flat=True)
-        options = self.expressions(expression, key="options", flat=True, sep=" ")
-        options = f" {options}" if options else ""
-        return f"DUPLICATE KEY ({expressions}){options}"
+        return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
     def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

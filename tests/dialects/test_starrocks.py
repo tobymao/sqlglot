@@ -17,14 +17,11 @@ class TestStarrocks(Validator):
             "DUPLICATE KEY (col1, col2) DISTRIBUTED BY HASH (col1)",
         ]
 
-        for i, properties in enumerate(ddl_sqls):
-            tbl = f"foo{i}"
+        for properties in ddl_sqls:
             with self.subTest(f"Testing create scheme: {properties}"):
+                self.validate_identity(f"CREATE TABLE foo (col1 BIGINT, col2 BIGINT) {properties}")
                 self.validate_identity(
-                    f"CREATE TABLE {tbl} (col1 BIGINT, col2 BIGINT) {properties}"
-                )
-                self.validate_identity(
-                    f"CREATE TABLE {tbl} (col1 BIGINT, col2 BIGINT) ENGINE=OLAP {properties}"
+                    f"CREATE TABLE foo (col1 BIGINT, col2 BIGINT) ENGINE=OLAP {properties}"
                 )
 
         # Test the different wider DECIMAL types

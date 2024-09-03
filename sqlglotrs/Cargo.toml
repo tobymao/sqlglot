@@ -2,6 +2,7 @@
 name = "sqlglotrs"
 version = "0.2.9"
 edition = "2021"
+license = "MIT"
 
 [lib]
 name = "sqlglotrs"

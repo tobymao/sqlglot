@@ -2779,3 +2779,26 @@ FROM subquery2""",
                 )
 
         self.assertIsInstance(parse_one("NORMALIZE('str', NFD)").args.get("form"), exp.Var)
+
+    def test_coalesce(self):
+        """
+        Validate that "expressions" is a list for all the exp.Coalesce instances; This is important
+        as some optimizer rules are coalesce specific and will iterate on "expressions"
+        """
+
+        # Check the 2-arg aliases
+        for func in ("COALESCE", "IFNULL", "NVL"):
+            self.assertIsInstance(self.parse_one(f"{func}(1, 2)").expressions, list)
+
+        # Check the varlen case
+        coalesce = self.parse_one("COALESCE(x, y, z)")
+        self.assertIsInstance(coalesce.expressions, list)
+        self.assertIsNone(coalesce.args.get("is_nvl"))
+
+        # Check Oracle's NVL which is decoupled from COALESCE
+        oracle_nvl = parse_one("NVL(x, y)", read="oracle")
+        self.assertIsInstance(oracle_nvl.expressions, list)
+        self.assertTrue(oracle_nvl.args.get("is_nvl"))
+
+        # Check T-SQL's ISNULL which is parsed into exp.Coalesce
+        self.assertIsInstance(parse_one("ISNULL(x, y)", read="tsql").expressions, list)

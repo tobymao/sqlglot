@@ -21,6 +21,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import build_coalesce
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -536,7 +537,7 @@ class TSQL(Dialect):
             "FORMAT": _build_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "HASHBYTES": _build_hashbytes,
-            "ISNULL": exp.Coalesce.from_arg_list,
+            "ISNULL": build_coalesce,
             "JSON_QUERY": _build_json_query,
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),

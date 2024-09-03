@@ -13,7 +13,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
-from sqlglot.parser import OPTIONS_TYPE
+from sqlglot.parser import OPTIONS_TYPE, build_coalesce
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -117,9 +117,7 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "NVL": lambda args: exp.Coalesce(
-                this=seq_get(args, 0), expressions=args[1:], is_nvl=True
-            ),
+            "NVL": lambda args: build_coalesce(args, is_nvl=True),
         }
 
         NO_PAREN_FUNCTION_PARSERS = {

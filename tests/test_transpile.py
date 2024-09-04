@@ -3,6 +3,7 @@ import unittest
 from unittest import mock
 
 from sqlglot import parse_one, transpile
+from sqlglot.dialects import Oracle, ClickHouse
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger

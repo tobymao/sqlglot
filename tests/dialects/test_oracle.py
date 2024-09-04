@@ -99,6 +99,13 @@ class TestOracle(Validator):
         )
 
         self.validate_all(
+            "TRUNC(SYSDATE, 'YEAR')",
+            write={
+                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
+                "oracle": "TRUNC(SYSDATE, 'YEAR')",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM test WHERE MOD(col1, 4) = 3",
             read={
                 "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",

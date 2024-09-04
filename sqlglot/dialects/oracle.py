@@ -113,11 +113,12 @@ class Oracle(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "NVL": lambda args: build_coalesce(args, is_nvl=True),
+            "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
         }
 
         NO_PAREN_FUNCTION_PARSERS = {
@@ -274,6 +275,7 @@ class Oracle(Dialect):
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
+            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
             exp.Mod: rename_func("MOD"),

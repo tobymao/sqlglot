@@ -1034,6 +1034,14 @@ class TestPresto(Validator):
                 "spark": "SELECT REGEXP_EXTRACT(TO_JSON(FROM_JSON('[[1, 2, 3]]', SCHEMA_OF_JSON('[[1, 2, 3]]'))), '^.(.*).$', 1)",
             },
         )
+        self.validate_all(
+            "SELECT TIMESTAMP '2022-08-30 16:00:00.000' AT TIME ZONE 'America/Bahia_Banderas'",
+            write={
+                "presto": "SELECT AT_TIMEZONE(CAST('2022-08-30 16:00:00.000' AS TIMESTAMP), 'America/Bahia_Banderas')",
+                "trino": "SELECT AT_TIMEZONE(CAST('2022-08-30 16:00:00.000' AS TIMESTAMP), 'America/Bahia_Banderas')",
+                "bigquery": "SELECT TIMESTAMP(CAST('2022-08-30 16:00:00.000' AS DATETIME), 'America/Bahia_Banderas')",
+            },
+        )
 
     def test_encode_decode(self):
         self.validate_identity("FROM_UTF8(x, y)")

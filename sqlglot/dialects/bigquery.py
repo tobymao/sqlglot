@@ -933,9 +933,17 @@ class BigQuery(Dialect):
             # BigQuery allows CAST(.. AS {STRING|TIMESTAMP} [FORMAT <fmt> [AT TIME ZONE <tz>]]).
             # Only the TIMESTAMP one should use the below conversion, when AT TIME ZONE is included.
             if not isinstance(parent, exp.Cast) or not parent.to.is_type("text"):
-                return self.func(
-                    "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
-                )
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                this = annotate_types(expression.this)
+                zone = expression.args.get("zone")
+
+                # BigQuery will transpile "<expr> AT TIME ZONE <zone>" to "TIMESTAMP(expr, zone)"
+                # except when "expr" is a TIMESTAMP in BQ, in which case it'll first get wrapped with DATETIME()
+                if this.is_type(exp.DataType.Type.TIMESTAMPTZ):
+                    return self.func("TIMESTAMP", self.func("DATETIME", this, zone))
+
+                return self.func("TIMESTAMP", this, zone)
 
             return super().attimezone_sql(expression)
 

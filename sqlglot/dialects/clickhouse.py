@@ -885,6 +885,9 @@ class ClickHouse(Dialect):
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),
+            exp.Chr: lambda self, e: self.func("char", e.this),
+            exp.Lag: lambda self, e: self.func("lagInFrame", e.this, e.args["offset"], e.args["default"]),
+            exp.Lead: lambda self, e: self.func("leadInFrame", e.this, e.args["offset"], e.args["default"],),
         }
 
         PROPERTIES_LOCATION = {
@@ -914,22 +917,6 @@ class ClickHouse(Dialect):
             exp.DataType.Type.NULLABLE,
             exp.DataType.Type.STRUCT,
         }
-
-        def chr_sql(self, expression: exp.Chr):
-            return self.func("char", expression.this)
-
-        def lag_sql(self, expression: exp.Lag):
-            return self.func(
-                "lagInFrame", expression.this, expression.args["offset"], expression.args["default"]
-            )
-
-        def lead_sql(self, expression: exp.Lead):
-            return self.func(
-                "leadInFrame",
-                expression.this,
-                expression.args["offset"],
-                expression.args["default"],
-            )
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)

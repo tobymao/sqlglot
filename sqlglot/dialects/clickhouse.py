@@ -915,6 +915,22 @@ class ClickHouse(Dialect):
             exp.DataType.Type.STRUCT,
         }
 
+        def chr_sql(self, expression: exp.Chr):
+            return self.func("char", expression.this)
+
+        def lag_sql(self, expression: exp.Lag):
+            return self.func(
+                "lagInFrame", expression.this, expression.args["offset"], expression.args["default"]
+            )
+
+        def lead_sql(self, expression: exp.Lead):
+            return self.func(
+                "leadInFrame",
+                expression.this,
+                expression.args["offset"],
+                expression.args["default"],
+            )
+
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)
 

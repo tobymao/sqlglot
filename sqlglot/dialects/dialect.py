@@ -401,7 +401,7 @@ class Dialect(metaclass=_Dialect):
     """Whether ArrayAgg needs to filter NULL values."""
 
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
-    """The default value for the capturing group, if not otherwise specified"""
+    """The default value for the capturing group."""
 
     SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
         exp.Except: True,

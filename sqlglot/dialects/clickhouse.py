@@ -887,13 +887,10 @@ class ClickHouse(Dialect):
             exp.Stddev: rename_func("stddevSamp"),
             exp.Chr: lambda self, e: self.func("char", e.this),
             exp.Lag: lambda self, e: self.func(
-                "lagInFrame", e.this, e.args["offset"], e.args["default"]
+                "lagInFrame", e.this, e.args.get("offset"), e.args.get("default")
             ),
             exp.Lead: lambda self, e: self.func(
-                "leadInFrame",
-                e.this,
-                e.args["offset"],
-                e.args["default"],
+                "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
             ),
         }
 

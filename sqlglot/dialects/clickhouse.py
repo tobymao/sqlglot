@@ -886,8 +886,15 @@ class ClickHouse(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),
             exp.Chr: lambda self, e: self.func("char", e.this),
-            exp.Lag: lambda self, e: self.func("lagInFrame", e.this, e.args["offset"], e.args["default"]),
-            exp.Lead: lambda self, e: self.func("leadInFrame", e.this, e.args["offset"], e.args["default"],),
+            exp.Lag: lambda self, e: self.func(
+                "lagInFrame", e.this, e.args["offset"], e.args["default"]
+            ),
+            exp.Lead: lambda self, e: self.func(
+                "leadInFrame",
+                e.this,
+                e.args["offset"],
+                e.args["default"],
+            ),
         }
 
         PROPERTIES_LOCATION = {

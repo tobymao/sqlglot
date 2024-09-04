@@ -1374,7 +1374,7 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
     group = expression.args.get("group")
 
     # Do not render group if it's the default value for this dialect
-    if group and group.name == f"{self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP}":
+    if group and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP):
         group = None
 
     return self.func("REGEXP_EXTRACT", expression.this, expression.expression, group)

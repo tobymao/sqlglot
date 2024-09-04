@@ -1699,7 +1699,7 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_regexp_extract(args: t.List, dialect: DialectType) -> exp.RegexpExtract:
+def build_regexp_extract(args: t.List, dialect: Dialect) -> exp.RegexpExtract:
     return exp.RegexpExtract(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),

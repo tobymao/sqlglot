@@ -1700,8 +1700,6 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
 
 
 def build_regexp_extract(args: t.List, dialect: DialectType) -> exp.RegexpExtract:
-    dialect = Dialect.get_or_raise(dialect)
-
     return exp.RegexpExtract(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),

@@ -34,6 +34,7 @@ from sqlglot.dialects.dialect import (
     unit_to_var,
     unit_to_str,
     sha256_sql,
+    build_regexp_extract,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -360,9 +361,7 @@ class DuckDB(Dialect):
             ),
             "QUANTILE_CONT": exp.PercentileCont.from_arg_list,
             "QUANTILE_DISC": exp.PercentileDisc.from_arg_list,
-            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
-            ),
+            "REGEXP_EXTRACT": build_regexp_extract,
             "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),

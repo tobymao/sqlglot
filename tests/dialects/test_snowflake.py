@@ -1701,16 +1701,27 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_SUBSTR(subject, pattern)",
             read={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern)",
-                "hive": "REGEXP_EXTRACT(subject, pattern)",
-                "presto": "REGEXP_EXTRACT(subject, pattern)",
-                "spark": "REGEXP_EXTRACT(subject, pattern)",
+                "snowflake": "REGEXP_EXTRACT(subject, pattern)",
             },
             write={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern)",
-                "hive": "REGEXP_EXTRACT(subject, pattern)",
-                "presto": "REGEXP_EXTRACT(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', 1)",
+            read={
+                "hive": "REGEXP_EXTRACT(subject, pattern)",
+                "spark2": "REGEXP_EXTRACT(subject, pattern)",
                 "spark": "REGEXP_EXTRACT(subject, pattern)",
+                "databricks": "REGEXP_EXTRACT(subject, pattern)",
+            },
+            write={
+                "hive": "REGEXP_EXTRACT(subject, pattern)",
+                "spark2": "REGEXP_EXTRACT(subject, pattern)",
+                "spark": "REGEXP_EXTRACT(subject, pattern)",
+                "databricks": "REGEXP_EXTRACT(subject, pattern)",
+                "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', 1)",
             },
         )
         self.validate_all(

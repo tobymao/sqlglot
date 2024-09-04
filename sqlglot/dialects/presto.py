@@ -29,6 +29,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
     unit_to_str,
     sequence_sql,
+    build_regexp_extract,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -315,9 +316,7 @@ class Presto(Dialect):
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
-            ),
+            "REGEXP_EXTRACT": build_regexp_extract,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),

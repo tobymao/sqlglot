@@ -327,7 +327,14 @@ class Snowflake(Dialect):
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
             "REGEXP_REPLACE": _build_regexp_replace,
-            "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
+            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                position=seq_get(args, 2),
+                occurrence=seq_get(args, 3),
+                parameters=seq_get(args, 4),
+                group=seq_get(args, 5) or exp.Literal.number(0),
+            ),
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
@@ -991,6 +998,12 @@ class Snowflake(Dialect):
             # Other dialects don't support all of the following parameters, so we need to
             # generate default values as necessary to ensure the transpilation is correct
             group = expression.args.get("group")
+
+            # To avoid generating all these default values, we set group to None if
+            # it's 0 (also default value) which doesn't trigger the following chain
+            if group and group.name == "0":
+                group = None
+
             parameters = expression.args.get("parameters") or (group and exp.Literal.string("c"))
             occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))
             position = expression.args.get("position") or (occurrence and exp.Literal.number(1))

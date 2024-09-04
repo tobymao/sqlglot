@@ -3,7 +3,6 @@ import unittest
 from unittest import mock
 
 from sqlglot import parse_one, transpile
-from sqlglot.dialects import Oracle, ClickHouse
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
@@ -21,26 +20,6 @@ class TestTranspile(unittest.TestCase):
 
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
-
-    def test_functions(self):
-        self.validate(
-            'SELECT CHR(67)||CHR(65)||CHR(84) "Dog" FROM DUAL',
-            'SELECT char(67) || char(65) || char(84) AS "Dog" FROM DUAL',
-            read=Oracle,
-            write=ClickHouse,
-        )
-        self.validate(
-            "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
-            "SELECT lagInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
-            read=Oracle,
-            write=ClickHouse,
-        )
-        self.validate(
-            "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
-            "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
-            read=Oracle,
-            write=ClickHouse,
-        )
 
     def test_weird_chars(self):
         self.assertEqual(transpile("0Êß")[0], "0 AS Êß")

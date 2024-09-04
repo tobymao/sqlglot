@@ -160,6 +160,27 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "char(67) || char(65) || char(84)",
+            read={
+                "clickhouse": "char(67) || char(65) || char(84)",
+                "oracle": "chr(67) || chr(65) || chr(84)",
+            },
+        )
+        self.validate_all(
+            "SELECT lagInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+            read={
+                "clickhouse": "SELECT lagInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "oracle": "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+            },
+        )
+        self.validate_all(
+            "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+            read={
+                "clickhouse": "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "oracle": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+            },
+        )
+        self.validate_all(
             "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
             read={
                 "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",

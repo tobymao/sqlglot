@@ -400,6 +400,9 @@ class Dialect(metaclass=_Dialect):
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
 
+    REGEXP_EXTRACT_DEFAULT_GROUP = 0
+    """The default value for the capturing group, if not otherwise specified"""
+
     SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
         exp.Except: True,
         exp.Intersect: True,
@@ -1368,9 +1371,13 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
     if bad_args:
         self.unsupported(f"REGEXP_EXTRACT does not support the following arg(s): {bad_args}")
 
-    return self.func(
-        "REGEXP_EXTRACT", expression.this, expression.expression, expression.args.get("group")
-    )
+    group = expression.args.get("group")
+
+    # Do not render group if it's the default value for this dialect
+    if group and group.name == f"{self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP}":
+        group = None
+
+    return self.func("REGEXP_EXTRACT", expression.this, expression.expression, group)
 
 
 def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
@@ -1690,3 +1697,13 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
             start = exp.cast(start, target_type)
 
     return self.func("SEQUENCE", start, end, step)
+
+
+def build_regexp_extract(args: t.List, dialect: DialectType) -> exp.RegexpExtract:
+    dialect = Dialect.get_or_raise(dialect)
+
+    return exp.RegexpExtract(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
+    )

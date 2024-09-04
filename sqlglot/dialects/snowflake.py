@@ -1001,7 +1001,8 @@ class Snowflake(Dialect):
 
             # To avoid generating all these default values, we set group to None if
             # it's 0 (also default value) which doesn't trigger the following chain
-            group = group if not (group and group.is_number and group.to_py() == 0) else None
+            if group and group.name == "0":
+                group = None
 
             parameters = expression.args.get("parameters") or (group and exp.Literal.string("c"))
             occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))

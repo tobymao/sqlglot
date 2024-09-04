@@ -34,6 +34,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
     sequence_sql,
     property_sql,
+    build_regexp_extract,
 )
 from sqlglot.transforms import (
     remove_unique_constraints,
@@ -194,6 +195,7 @@ class Hive(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
     ARRAY_AGG_INCLUDES_NULLS = None
+    REGEXP_EXTRACT_DEFAULT_GROUP = 1
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -308,11 +310,7 @@ class Hive(Dialect):
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,
             "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
-            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                group=seq_get(args, 2) or exp.Literal.number(1),
-            ),
+            "REGEXP_EXTRACT": build_regexp_extract,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,

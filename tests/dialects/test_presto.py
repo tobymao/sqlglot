@@ -1035,16 +1035,22 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+            "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             read={
                 "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
                 "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
                 "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "snowflake": "REGEXP_SUBSTR('abc', '(a)(b)(c)')",
             },
             write={
-                "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
-                "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
-                "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+                "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "snowflake": "REGEXP_SUBSTR('abc', '(a)(b)(c)')",
+                "hive": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+                "spark2": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+                "spark": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
+                "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
             },
         )
 

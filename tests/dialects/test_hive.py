@@ -766,7 +766,7 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+            "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             read={
                 "hive": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
                 "spark2": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
@@ -774,10 +774,13 @@ class TestHive(Validator):
                 "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             },
             write={
-                "hive": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
-                "spark2": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
-                "spark": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
-                "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+                "hive": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "spark2": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "spark": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
+                "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+                "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+                "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
             },
         )
 

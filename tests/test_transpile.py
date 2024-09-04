@@ -58,6 +58,18 @@ class TestTranspile(unittest.TestCase):
         with self.assertRaises(ParseError):
             transpile("1 + (2 + 3")
             transpile("select f(")
+        self.validate(
+            "WITH core_sql AS (SELECT 1) (SELECT 2)",
+            "WITH core_sql AS (SELECT 1) SELECT 2",
+            read=Oracle,
+            write=ClickHouse,
+        )
+        self.validate(
+            "SELECT * FROM ((SELECT 1) AS EG)",
+            "SELECT * FROM (SELECT 1) AS EG",
+            read=Oracle,
+            write=ClickHouse,
+        )
 
     def test_some(self):
         self.validate(

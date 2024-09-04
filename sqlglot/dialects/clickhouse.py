@@ -1052,6 +1052,20 @@ class ClickHouse(Dialect):
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"
 
+        def subquery_sql(
+            self, expression: exp.Subquery, sep: str = " AS ", wrap_left="(", wrap_right=")"
+        ) -> str:
+            alias = self.sql(expression, "alias")
+            if not alias and isinstance(expression.this, exp.Subquery):
+                return super().subquery_sql(expression, wrap_left="", wrap_right="")
+            if (
+                not alias
+                and isinstance(expression.this, exp.Select)
+                and expression.parent_select is None
+            ):
+                return super().subquery_sql(expression, wrap_left="", wrap_right="")
+            return super().subquery_sql(expression)
+
         def oncluster_sql(self, expression: exp.OnCluster) -> str:
             return f"ON CLUSTER {self.sql(expression, 'this')}"
 

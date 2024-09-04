@@ -741,7 +741,7 @@ class Generator(metaclass=_Generator):
 
         return f"{sql} {comments_sql}"
 
-    def wrap(self, expression: exp.Expression | str) -> str:
+    def wrap(self, expression: exp.Expression | str, left="(", right=")") -> str:
         this_sql = (
             self.sql(expression)
             if isinstance(expression, exp.UNWRAPPED_QUERIES)
@@ -751,7 +751,7 @@ class Generator(metaclass=_Generator):
             return "()"
 
         this_sql = self.indent(this_sql, level=1, pad=0)
-        return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
+        return f"{left}{self.sep('')}{this_sql}{self.seg(right, sep='')}"
 
     def no_identify(self, func: t.Callable[..., str], *args, **kwargs) -> str:
         original = self.identify
@@ -2503,7 +2503,9 @@ class Generator(metaclass=_Generator):
     def placeholder_sql(self, expression: exp.Placeholder) -> str:
         return f"{self.NAMED_PLACEHOLDER_TOKEN}{expression.name}" if expression.this else "?"
 
-    def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
+    def subquery_sql(
+        self, expression: exp.Subquery, sep: str = " AS ", wrap_left="(", wrap_right=")"
+    ) -> str:
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
         sample = self.sql(expression, "sample")
@@ -2514,7 +2516,9 @@ class Generator(metaclass=_Generator):
             expression.set("sample", None)
 
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
-        sql = self.query_modifiers(expression, self.wrap(expression), alias, pivots)
+        sql = self.query_modifiers(
+            expression, self.wrap(expression, left=wrap_left, right=wrap_right), alias, pivots
+        )
         return self.prepend_ctes(expression, sql)
 
     def qualify_sql(self, expression: exp.Qualify) -> str:

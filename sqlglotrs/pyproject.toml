@@ -4,6 +4,8 @@ build-backend = "maturin"
 
 [project]
 name = "sqlglotrs"
+description = "An easily customizable SQL parser and transpiler"
+readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Rust",
@@ -11,7 +13,14 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
     "License :: OSI Approved :: MIT License",
 ]
+authors = [
+  { name="Toby Mao", email="toby.mao@gmail.com" },
+]
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/tobymao/sqlglot"
+Issues = "https://github.com/tobymao/sqlglot/issues"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

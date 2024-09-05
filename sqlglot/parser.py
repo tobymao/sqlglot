@@ -4343,14 +4343,32 @@ class Parser(metaclass=_Parser):
         if this and this.is_number:
             this = exp.Literal.string(this.to_py())
         elif this and this.is_string:
-            parts = exp.INTERVAL_STRING_RE.findall(this.name)
+            parts = exp.INTERVAL_STRING_RE_three.findall(this.name)
             if len(parts) == 1:
                 if unit:
                     # Unconsume the eagerly-parsed unit, since the real unit was part of the string
                     self._retreat(self._index - 1)
 
-                this = exp.Literal.string(parts[0][0])
-                unit = self.expression(exp.Var, this=parts[0][1].upper())
+                this = exp.Literal.string(parts[0][1])
+                unit = self.expression(exp.Var, this=parts[0][2].upper())
+            elif len(parts) > 1:
+                interval_expr = None
+
+                for value_with_sign, value, unit_name in parts:
+                    sign = '+' if not value_with_sign.strip() or value_with_sign.strip()[0] != '-' else '-'
+                    interval_value = exp.Literal.string(value)
+                    interval_unit = self.expression(exp.Var, this=unit_name.upper())
+                    current_interval = self.expression(exp.Interval, this=interval_value, unit=interval_unit)
+
+                    if interval_expr is None:
+                        interval_expr = current_interval
+                    else:
+                        if sign == '+':
+                            interval_expr = self.expression(exp.Sub, this=interval_expr, expression=current_interval)
+                        else:
+                            interval_expr = self.expression(exp.Add, this=interval_expr, expression=current_interval)
+
+                return interval_expr
 
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(

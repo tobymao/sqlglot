@@ -421,7 +421,10 @@ class TestTSQL(Validator):
             write_sql="SELECT val FROM (VALUES ((1), (0), (NULL))) AS t(val)",
         )
         self.validate_identity("'a' + 'b'")
-        self.validate_all("'a' || 'b'", write={"tsql": "'a' + 'b'"})
+        self.validate_identity(
+            "'a' || 'b'",
+            "'a' + 'b'",
+        )
 
     def test_option(self):
         possible_options = [

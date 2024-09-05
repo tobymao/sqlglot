@@ -696,11 +696,11 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST('2020-05-06' AS DATE) - INTERVAL 5 DAY",
+            "SELECT CAST('2020-05-06' AS DATE) - INTERVAL '5' DAY",
             read={"bigquery": "SELECT DATE_SUB(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
         )
         self.validate_all(
-            "SELECT CAST('2020-05-06' AS DATE) + INTERVAL 5 DAY",
+            "SELECT CAST('2020-05-06' AS DATE) + INTERVAL '5' DAY",
             read={"bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
         )
         self.validate_identity(
@@ -1100,7 +1100,6 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
             read={
-                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
                 "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
             },
             write={

@@ -1165,11 +1165,7 @@ def build_date_delta_with_interval(
         if not isinstance(interval, exp.Interval):
             raise ParseError(f"INTERVAL expression expected but got '{interval}'")
 
-        expression = interval.this
-        if expression and expression.is_string:
-            expression = exp.Literal.number(expression.this)
-
-        return expression_class(this=args[0], expression=expression, unit=unit_to_str(interval))
+        return expression_class(this=args[0], expression=interval.this, unit=unit_to_str(interval))
 
     return _builder
 

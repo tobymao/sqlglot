@@ -630,9 +630,9 @@ LANGUAGE js AS
             self.validate_all(
                 "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
                 write={
-                    "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
-                    "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1, '2023-01-01T00:00:00')",
-                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) + INTERVAL 1 MILLISECOND",
+                    "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
+                    "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
+                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) + INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -640,9 +640,9 @@ LANGUAGE js AS
             self.validate_all(
                 "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
                 write={
-                    "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
-                    "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1 * -1, '2023-01-01T00:00:00')",
-                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) - INTERVAL 1 MILLISECOND",
+                    "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
+                    "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1' * -1, '2023-01-01T00:00:00')",
+                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) - INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -660,17 +660,24 @@ LANGUAGE js AS
         self.validate_all(
             'SELECT TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
-                "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
-                "databricks": "SELECT DATE_ADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
-                "mysql": "SELECT DATE_ADD(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL 10 MINUTE)",
-                "spark": "SELECT DATE_ADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
+                "databricks": "SELECT DATE_ADD(MINUTE, '10', CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "mysql": "SELECT DATE_ADD(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
+                "spark": "SELECT DATE_ADD(MINUTE, '10', CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             'SELECT TIMESTAMP_SUB(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
-                "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
-                "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL 10 MINUTE)",
+                "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
+                "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+            write={
+                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL '2' HOUR)",
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
             },
         )
         self.validate_all(
@@ -1236,19 +1243,19 @@ LANGUAGE js AS
             "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             write={
                 "postgres": "CURRENT_DATE - INTERVAL '1 DAY'",
-                "bigquery": "DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY)",
+                "bigquery": "DATE_SUB(CURRENT_DATE, INTERVAL '1' DAY)",
             },
         )
         self.validate_all(
-            "DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY)",
+            "DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)",
             write={
-                "bigquery": "DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)",
-                "duckdb": "CURRENT_DATE + INTERVAL 1 DAY",
-                "mysql": "DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)",
-                "postgres": "CURRENT_DATE + INTERVAL '1 DAY'",
-                "presto": "DATE_ADD('DAY', 1, CURRENT_DATE)",
-                "hive": "DATE_ADD(CURRENT_DATE, 1)",
-                "spark": "DATE_ADD(CURRENT_DATE, 1)",
+                "bigquery": "DATE_ADD(CURRENT_DATE, INTERVAL '-1' DAY)",
+                "duckdb": "CURRENT_DATE + INTERVAL '-1' DAY",
+                "mysql": "DATE_ADD(CURRENT_DATE, INTERVAL '-1' DAY)",
+                "postgres": "CURRENT_DATE + INTERVAL '-1 DAY'",
+                "presto": "DATE_ADD('DAY', CAST('-1' AS BIGINT), CURRENT_DATE)",
+                "hive": "DATE_ADD(CURRENT_DATE, '-1')",
+                "spark": "DATE_ADD(CURRENT_DATE, '-1')",
             },
         )
         self.validate_all(

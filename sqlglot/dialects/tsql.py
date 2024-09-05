@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import re
 import typing as t
-from functools import partial
+from functools import partial, reduce
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -1192,3 +1192,8 @@ class TSQL(Dialect):
         def options_modifier(self, expression: exp.Expression) -> str:
             options = self.expressions(expression, key="options")
             return f" OPTION{self.wrap(options)}" if options else ""
+
+        def dpipe_sql(self, expression: exp.DPipe) -> str:
+            return self.sql(
+                reduce(lambda x, y: exp.Add(this=x, expression=y), expression.flatten())
+            )

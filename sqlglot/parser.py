@@ -4355,18 +4355,28 @@ class Parser(metaclass=_Parser):
                 interval_expr = None
 
                 for value_with_sign, value, unit_name in parts:
-                    sign = '+' if not value_with_sign.strip() or value_with_sign.strip()[0] != '-' else '-'
+                    sign = (
+                        "+"
+                        if not value_with_sign.strip() or value_with_sign.strip()[0] != "-"
+                        else "-"
+                    )
                     interval_value = exp.Literal.string(value)
                     interval_unit = self.expression(exp.Var, this=unit_name.upper())
-                    current_interval = self.expression(exp.Interval, this=interval_value, unit=interval_unit)
+                    current_interval = self.expression(
+                        exp.Interval, this=interval_value, unit=interval_unit
+                    )
 
                     if interval_expr is None:
                         interval_expr = current_interval
                     else:
-                        if sign == '+':
-                            interval_expr = self.expression(exp.Sub, this=interval_expr, expression=current_interval)
+                        if sign == "+":
+                            interval_expr = self.expression(
+                                exp.Sub, this=interval_expr, expression=current_interval
+                            )
                         else:
-                            interval_expr = self.expression(exp.Add, this=interval_expr, expression=current_interval)
+                            interval_expr = self.expression(
+                                exp.Add, this=interval_expr, expression=current_interval
+                            )
 
                 return interval_expr
 

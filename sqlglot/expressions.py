@@ -6946,7 +6946,7 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
 
 
 INTERVAL_STRING_RE = re.compile(r"\s*([0-9]+)\s*([a-zA-Z]+)\s*")
-INTERVAL_STRING_RE_three = re.compile(r"([+-]?)\s*([0-9]+)\s*([a-zA-Z]+)")
+INTERVAL_STRING_RE_triple = re.compile(r"\s*([+-]?)\s*([0-9]+)\s*([a-zA-Z]+)\s*")
 
 
 def to_interval(interval: str | Literal) -> Interval:

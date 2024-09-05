@@ -85,10 +85,10 @@ class TestDoris(Validator):
             },
         )
         self.validate_all(
-            """SELECT NOW() - INTERVAL '1' YEAR - INTERVAL '1' MONTH""",
+            """SELECT NOW() - INTERVAL '1' YEAR + INTERVAL '1' MONTH""",
             read={
-                "doris": """SELECT NOW() - INTERVAL '1' YEAR - INTERVAL '1' MONTH""",
-                "postgres": """SELECT NOW() - INTERVAL '1 YEAR + 1 MONTH'""",
+                "doris": """SELECT NOW() - INTERVAL '1' YEAR + INTERVAL '1' MONTH""",
+                "postgres": """SELECT NOW() - INTERVAL '1 YEAR - 1 MONTH'""",
             },
         )
 

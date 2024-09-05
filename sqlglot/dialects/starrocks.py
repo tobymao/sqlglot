@@ -51,32 +51,6 @@ class StarRocks(MySQL):
 
             return create
 
-        def _parse_distributed_property(self) -> exp.DistributedByProperty:
-            kind = "HASH"
-            expressions: t.Optional[t.List[exp.Expression]] = None
-            if self._match_text_seq("BY", "HASH"):
-                expressions = self._parse_wrapped_csv(self._parse_id_var)
-            elif self._match_text_seq("BY", "RANDOM"):
-                kind = "RANDOM"
-
-            # If the BUCKETS keyword is not present, the number of buckets is AUTO
-            buckets: t.Optional[exp.Expression] = None
-            if self._match_text_seq("BUCKETS") and not self._match_text_seq("AUTO"):
-                buckets = self._parse_number()
-
-            return self.expression(
-                exp.DistributedByProperty,
-                expressions=expressions,
-                kind=kind,
-                buckets=buckets,
-                order=self._parse_order(),
-            )
-
-        def _parse_duplicate(self) -> exp.DuplicateKeyProperty:
-            self._match_text_seq("KEY")
-            expressions = self._parse_wrapped_csv(self._parse_id_var, optional=False)
-            return self.expression(exp.DuplicateKeyProperty, expressions=expressions)
-
         def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
             unnest = super()._parse_unnest(with_alias=with_alias)
 

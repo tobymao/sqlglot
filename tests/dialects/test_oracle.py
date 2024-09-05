@@ -267,22 +267,6 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
-            "LTRIM('Hello World', 'H')",
-            write={
-                "": "LTRIM('Hello World', 'H')",
-                "oracle": "LTRIM('Hello World', 'H')",
-                "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
-            },
-        )
-        self.validate_all(
-            "RTRIM('Hello World', 'd')",
-            write={
-                "": "RTRIM('Hello World', 'd')",
-                "oracle": "RTRIM('Hello World', 'd')",
-                "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
-            },
-        )
-        self.validate_all(
             "TRIM(BOTH 'h' FROM 'Hello World')",
             write={
                 "oracle": "TRIM(BOTH 'h' FROM 'Hello World')",

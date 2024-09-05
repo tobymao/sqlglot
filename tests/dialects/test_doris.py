@@ -105,6 +105,13 @@ class TestDoris(Validator):
                 "postgres": """SELECT '{"a":[1,2,3],"b":[4,5,6]}'::json#>>'{a,2}'""",
             },
         )
+        self.validate_all(
+            """SELECT NOW() - INTERVAL '1' YEAR - INTERVAL '1' MONTH""",
+            read={
+                "doris": """SELECT NOW() - INTERVAL '1' YEAR - INTERVAL '1' MONTH""",
+                "postgres": """SELECT NOW() - INTERVAL '1 YEAR + 1 MONTH'""",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("COALECSE(a, b, c, d)")

@@ -2802,3 +2802,50 @@ FROM subquery2""",
 
         # Check T-SQL's ISNULL which is parsed into exp.Coalesce
         self.assertIsInstance(parse_one("ISNULL(x, y)", read="tsql").expressions, list)
+
+    def test_trim(self):
+        self.validate_all(
+            "TRIM('abc', 'a')",
+            read={
+                "bigquery": "TRIM('abc', 'a')",
+                "snowflake": "TRIM('abc', 'a')",
+            },
+            write={
+                "bigquery": "TRIM('abc', 'a')",
+                "snowflake": "TRIM('abc', 'a')",
+            },
+        )
+
+        self.validate_all(
+            "LTRIM('Hello World', 'H')",
+            read={
+                "oracle": "LTRIM('Hello World', 'H')",
+                "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "snowflake": "LTRIM('Hello World', 'H')",
+                "bigquery": "LTRIM('Hello World', 'H')",
+                "": "LTRIM('Hello World', 'H')",
+            },
+            write={
+                "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "oracle": "LTRIM('Hello World', 'H')",
+                "snowflake": "LTRIM('Hello World', 'H')",
+                "bigquery": "LTRIM('Hello World', 'H')",
+            },
+        )
+
+        self.validate_all(
+            "RTRIM('Hello World', 'd')",
+            read={
+                "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "oracle": "RTRIM('Hello World', 'd')",
+                "snowflake": "RTRIM('Hello World', 'd')",
+                "bigquery": "RTRIM('Hello World', 'd')",
+                "": "RTRIM('Hello World', 'd')",
+            },
+            write={
+                "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "oracle": "RTRIM('Hello World', 'd')",
+                "snowflake": "RTRIM('Hello World', 'd')",
+                "bigquery": "RTRIM('Hello World', 'd')",
+            },
+        )

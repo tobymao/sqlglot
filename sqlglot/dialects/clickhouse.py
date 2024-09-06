@@ -888,7 +888,7 @@ class ClickHouse(Dialect):
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),
-            exp.Chr: lambda self, e: self.func("char", e.this),
+            exp.Chr: rename_func("CHAR"),
             exp.Lag: lambda self, e: self.func(
                 "lagInFrame", e.this, e.args.get("offset"), e.args.get("default")
             ),

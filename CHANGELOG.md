@@ -1,6 +1,45 @@
 Changelog
 =========
 
+## [v25.20.0] - 2024-09-06
+### :boom: BREAKING CHANGES
+- due to [`3e1af21`](https://github.com/tobymao/sqlglot/commit/3e1af21787ee81df5cbb5eb8b4b7f808b404c870) - Canonicalize exp.RegexpExtract group default value *(PR [#4051](https://github.com/tobymao/sqlglot/pull/4051) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Canonicalize exp.RegexpExtract group default value (#4051)
+
+- due to [`c8e2eae`](https://github.com/tobymao/sqlglot/commit/c8e2eaecad0b3b0fff725512ef571de41c5be0a1) - do not canonicalize INTERVAL values to number literals *(commit by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  do not canonicalize INTERVAL values to number literals
+
+
+### :sparkles: New Features
+- [`d3ee5ea`](https://github.com/tobymao/sqlglot/commit/d3ee5ea6abd0dfb6e5216bf212e9e737c163eeb9) - **oracle**: parse TRUNC to facilitate transpilation closes [#4054](https://github.com/tobymao/sqlglot/pull/4054) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`143f176`](https://github.com/tobymao/sqlglot/commit/143f176a893f060eecc1fbf4a5b5c54d35a3acc7) - **clickhouse**: transpile oracle functions chr, lag, lead *(PR [#4053](https://github.com/tobymao/sqlglot/pull/4053) by [@sleshJdev](https://github.com/sleshJdev))*
+- [`d89757e`](https://github.com/tobymao/sqlglot/commit/d89757e21665913d49a3ccc19deeea86ab59820c) - **postgres**: add support for the NOT VALID clause in ALTER TABLE fixes [#4077](https://github.com/tobymao/sqlglot/pull/4077) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`3e1af21`](https://github.com/tobymao/sqlglot/commit/3e1af21787ee81df5cbb5eb8b4b7f808b404c870) - Canonicalize exp.RegexpExtract group default value *(PR [#4051](https://github.com/tobymao/sqlglot/pull/4051) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4039](https://github.com/tobymao/sqlglot/issues/4039) opened by [@hellozepp](https://github.com/hellozepp)*
+- [`75cafad`](https://github.com/tobymao/sqlglot/commit/75cafad45fec02eb27f42676ddca4d1777e800f7) - **starrocks**: Move the parse distribute and duplicate to Parser *(PR [#4062](https://github.com/tobymao/sqlglot/pull/4062) by [@hellozepp](https://github.com/hellozepp))*
+- [`74352d5`](https://github.com/tobymao/sqlglot/commit/74352d523333e5eff464f97b49a1bcfb11ec291b) - **tsql**: use plus operator for string concat to support more systems that use tsql *(PR [#4067](https://github.com/tobymao/sqlglot/pull/4067) by [@cpcloud](https://github.com/cpcloud))*
+  - :arrow_lower_right: *fixes issue [#4066](https://github.com/tobymao/sqlglot/issues/4066) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`c8e2eae`](https://github.com/tobymao/sqlglot/commit/c8e2eaecad0b3b0fff725512ef571de41c5be0a1) - do not canonicalize INTERVAL values to number literals *(commit by [@VaggelisD](https://github.com/VaggelisD))*
+- [`532a024`](https://github.com/tobymao/sqlglot/commit/532a024e1a1dbc422e603dc0336149362c5763df) - **snowflake, bigquery**: Remove exp.Trim generation *(PR [#4070](https://github.com/tobymao/sqlglot/pull/4070) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3095](https://github.com/TobikoData/sqlmesh/issues/3095) opened by [@plaflamme](https://github.com/plaflamme)*
+- [`ad7e582`](https://github.com/tobymao/sqlglot/commit/ad7e582504955c5dba84566994e81873a46d1c28) - **athena**: Apply correct quoting to queries depending on type (DML or DDL) *(PR [#4073](https://github.com/tobymao/sqlglot/pull/4073) by [@erindru](https://github.com/erindru))*
+- [`cc5b877`](https://github.com/tobymao/sqlglot/commit/cc5b8774c469250fd403ca3379f1c2dcab9d4017) - **parser**: Wrap column constraints in _parse_column_def() *(PR [#4078](https://github.com/tobymao/sqlglot/pull/4078) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4065](https://github.com/tobymao/sqlglot/issues/4065) opened by [@ajuszczak](https://github.com/ajuszczak)*
+- [`4eb384a`](https://github.com/tobymao/sqlglot/commit/4eb384a799b3ad0f152893eb6217131a3a698ff1) - **clickhouse**: Remove CURRENT_TIMESTAMP from NO_PAREN_FUNCTIONS *(PR [#4079](https://github.com/tobymao/sqlglot/pull/4079) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4076](https://github.com/tobymao/sqlglot/issues/4076) opened by [@hellozepp](https://github.com/hellozepp)*
+
+### :recycle: Refactors
+- [`534f882`](https://github.com/tobymao/sqlglot/commit/534f88280a895d9f7503e48eedf600628d34aa82) - **clickhouse**: clean up chr, lag, lead generation *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`b986ebe`](https://github.com/tobymao/sqlglot/commit/b986ebe99c95ce6f76a76bfd0ea79ee4ac3757f0) - fill in more details for sqlglotrs pypi page *(PR [#4071](https://github.com/tobymao/sqlglot/pull/4071) by [@georgesittas](https://github.com/georgesittas))*
+- [`0310926`](https://github.com/tobymao/sqlglot/commit/0310926297b18714a02873b649061b50c7080ac9) - bump sqlglotrs to 0.2.11 (update pypi details) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.19.0] - 2024-09-03
 ### :boom: BREAKING CHANGES
 - due to [`6da9328`](https://github.com/tobymao/sqlglot/commit/6da932889c2d60c82be118842f4edee031009f8a) - refactor SET OPERATION handling to set correct defaults *(PR [#4009](https://github.com/tobymao/sqlglot/pull/4009) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4637,3 +4676,4 @@ Changelog
 [v25.17.0]: https://github.com/tobymao/sqlglot/compare/v25.16.1...v25.17.0
 [v25.18.0]: https://github.com/tobymao/sqlglot/compare/v25.17.0...v25.18.0
 [v25.19.0]: https://github.com/tobymao/sqlglot/compare/v25.18.0...v25.19.0
+[v25.20.0]: https://github.com/tobymao/sqlglot/compare/v25.19.0...v25.20.0

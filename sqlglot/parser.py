@@ -5359,18 +5359,19 @@ class Parser(metaclass=_Parser):
             ("ALIAS", "MATERIALIZED")
         ):
             persisted = self._prev.text.upper() == "MATERIALIZED"
-            constraints.append(
-                self.expression(
-                    exp.ComputedColumnConstraint,
-                    this=self._parse_assignment(),
-                    persisted=persisted or self._match_text_seq("PERSISTED"),
-                    not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
-                )
+            constraint_kind = exp.ComputedColumnConstraint(
+                this=self._parse_assignment(),
+                persisted=persisted or self._match_text_seq("PERSISTED"),
+                not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
+            constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
         elif kind and self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False):
             self._match(TokenType.ALIAS)
             constraints.append(
-                self.expression(exp.TransformColumnConstraint, this=self._parse_field())
+                self.expression(
+                    exp.ColumnConstraint,
+                    kind=exp.TransformColumnConstraint(this=self._parse_field()),
+                )
             )
 
         while True:

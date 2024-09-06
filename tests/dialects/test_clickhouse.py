@@ -1016,6 +1016,12 @@ LIFETIME(MIN 0 MAX 0)""",
             pretty=True,
         )
 
+        self.assertIsNotNone(
+            self.validate_identity("CREATE TABLE t1 (a String MATERIALIZED func())").find(
+                exp.ColumnConstraint
+            )
+        )
+
     def test_agg_functions(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this

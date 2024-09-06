@@ -846,6 +846,9 @@ class TestPostgres(Validator):
         self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
         self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
         self.validate_identity(
+            "ALTER TABLE tested_table ADD CONSTRAINT unique_example UNIQUE (column_name) NOT VALID"
+        )
+        self.validate_identity(
             "CREATE FUNCTION pymax(a INT, b INT) RETURNS INT LANGUAGE plpython3u AS $$\n  if a > b:\n    return a\n  return b\n$$",
         )
         self.validate_identity(

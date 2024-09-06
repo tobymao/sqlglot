@@ -5482,6 +5482,9 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.CaseSpecificColumnConstraint, not_=True)
         if self._match_text_seq("FOR", "REPLICATION"):
             return self.expression(exp.NotForReplicationColumnConstraint)
+
+        # Unconsume the `NOT` token
+        self._retreat(self._index - 1)
         return None
 
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
@@ -6784,6 +6787,7 @@ class Parser(metaclass=_Parser):
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
             actions = ensure_list(parser(self))
+            not_valid = self._match_text_seq("NOT", "VALID")
             options = self._parse_csv(self._parse_property)
 
             if not self._curr and actions:
@@ -6796,6 +6800,7 @@ class Parser(metaclass=_Parser):
                     only=only,
                     options=options,
                     cluster=cluster,
+                    not_valid=not_valid,
                 )
 
         return self._parse_as_command(start)

@@ -4343,7 +4343,7 @@ class Parser(metaclass=_Parser):
         if this and this.is_number:
             this = exp.Literal.string(this.to_py())
         elif this and this.is_string:
-            parts = exp.INTERVAL_STRING_RE_triple.findall(this.name)
+            parts = exp.INTERVAL_STRING_RE_TRIPLE.findall(this.name)
             if len(parts) == 1:
                 if unit:
                     # Unconsume the eagerly-parsed unit, since the real unit was part of the string

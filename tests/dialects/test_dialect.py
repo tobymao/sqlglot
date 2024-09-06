@@ -20,7 +20,9 @@ class Validator(unittest.TestCase):
     def parse_one(self, sql, **kwargs):
         return parse_one(sql, read=self.dialect, **kwargs)
 
-    def validate_identity(self, sql, write_sql=None, pretty=False, check_command_warning=False):
+    def validate_identity(
+        self, sql, write_sql=None, pretty=False, check_command_warning=False, identify=False
+    ):
         if check_command_warning:
             with self.assertLogs(parser_logger) as cm:
                 expression = self.parse_one(sql)
@@ -28,7 +30,9 @@ class Validator(unittest.TestCase):
         else:
             expression = self.parse_one(sql)
 
-        self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect, pretty=pretty))
+        self.assertEqual(
+            write_sql or sql, expression.sql(dialect=self.dialect, pretty=pretty, identify=identify)
+        )
         return expression
 
     def validate_all(self, sql, read=None, write=None, pretty=False, identify=False):

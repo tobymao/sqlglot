@@ -23,3 +23,49 @@ class TestAthena(Validator):
             some_function(1)""",
             check_command_warning=True,
         )
+
+    def test_ddl_quoting(self):
+        self.validate_identity("CREATE SCHEMA `foo`")
+        self.validate_identity("CREATE SCHEMA foo")
+        self.validate_identity("CREATE SCHEMA foo", write_sql="CREATE SCHEMA `foo`", identify=True)
+
+        self.validate_identity("CREATE EXTERNAL TABLE `foo` (`id` INTEGER) LOCATION 's3://foo/'")
+        self.validate_identity("CREATE EXTERNAL TABLE foo (id INTEGER) LOCATION 's3://foo/'")
+        self.validate_identity(
+            "CREATE EXTERNAL TABLE foo (id INTEGER) LOCATION 's3://foo/'",
+            write_sql="CREATE EXTERNAL TABLE `foo` (`id` INTEGER) LOCATION 's3://foo/'",
+            identify=True,
+        )
+
+        self.validate_identity("DROP TABLE `foo`")
+        self.validate_identity("DROP TABLE foo")
+        self.validate_identity("DROP TABLE foo", write_sql="DROP TABLE `foo`", identify=True)
+
+        self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
+        self.validate_identity("CREATE VIEW foo AS SELECT id FROM tbl")
+        self.validate_identity(
+            "CREATE VIEW foo AS SELECT id FROM tbl",
+            write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
+            identify=True,
+        )
+
+        # As a side effect of being able to parse both quote types, we can also fix the quoting on incorrectly quoted source queries
+        self.validate_identity('CREATE SCHEMA "foo"', write_sql="CREATE SCHEMA `foo`")
+        self.validate_identity(
+            'CREATE EXTERNAL TABLE "foo" ("id" INTEGER) LOCATION \'s3://foo/\'',
+            write_sql="CREATE EXTERNAL TABLE `foo` (`id` INTEGER) LOCATION 's3://foo/'",
+        )
+        self.validate_identity('DROP TABLE "foo"', write_sql="DROP TABLE `foo`")
+        self.validate_identity(
+            'CREATE VIEW `foo` AS SELECT "id" FROM `tbl`',
+            write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
+        )
+
+    def test_dml_quoting(self):
+        self.validate_identity("SELECT a AS foo FROM tbl")
+        self.validate_identity('SELECT "a" AS "foo" FROM "tbl"')
+        self.validate_identity(
+            'SELECT `a` AS `foo` FROM "tbl"',
+            write_sql='SELECT "a" AS "foo" FROM "tbl"',
+            identify=True,
+        )

@@ -4353,12 +4353,26 @@ class Parser(metaclass=_Parser):
                 unit = self.expression(exp.Var, this=parts[0][2].upper())
             elif len(parts) > 1:
                 interval_expr = None
+                initial_sign = "+"
 
+                operator_index = index - 1
+                while operator_index >= 0:
+                    token = self._tokens[operator_index]
+                    if token.token_type == TokenType.PLUS:
+                        initial_sign = "+"
+                        break
+                    elif token.token_type == TokenType.DASH:
+                        initial_sign = "-"
+                        break
+                    operator_index -= 1
                 for value_with_sign, value, unit_name in parts:
                     sign = (
                         "+"
                         if not value_with_sign.strip() or value_with_sign.strip()[0] != "-"
                         else "-"
+                    )
+                    effective_sign = (
+                        initial_sign if sign == "+" else "-" if initial_sign == "+" else "+"
                     )
                     interval_value = exp.Literal.string(value)
                     interval_unit = self.expression(exp.Var, this=unit_name.upper())
@@ -4369,13 +4383,13 @@ class Parser(metaclass=_Parser):
                     if interval_expr is None:
                         interval_expr = current_interval
                     else:
-                        if sign == "+":
+                        if effective_sign == "+":
                             interval_expr = self.expression(
-                                exp.Sub, this=interval_expr, expression=current_interval
+                                exp.Add, this=interval_expr, expression=current_interval
                             )
                         else:
                             interval_expr = self.expression(
-                                exp.Add, this=interval_expr, expression=current_interval
+                                exp.Sub, this=interval_expr, expression=current_interval
                             )
 
                 return interval_expr

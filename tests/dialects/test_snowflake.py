@@ -63,7 +63,7 @@ WHERE
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
-        self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
+        self.validate_identity("INTERVAL '4 YEARS' + INTERVAL '5 MONTHS' + INTERVAL '3 HOURS'")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
@@ -1151,8 +1151,8 @@ WHERE
         self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
 
         self.validate_identity(
-            "SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'",
-            "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
+            "SELECT TO_DATE('2019-02-28') + INTERVAL '1 DAY' + INTERVAL '1 YEAR'",
+            "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 DAY' + INTERVAL '1 YEAR'",
         )
 
         self.validate_identity("TO_DATE(x)").assert_is(exp.TsOrDsToDate)

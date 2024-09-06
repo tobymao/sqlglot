@@ -1423,6 +1423,12 @@ WHERE
                     },
                 )
 
+        self.assertIsNotNone(
+            self.validate_identity("CREATE TABLE foo (bar INT AS (foo))").find(
+                exp.TransformColumnConstraint
+            )
+        )
+
     def test_user_defined_functions(self):
         self.validate_all(
             "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",

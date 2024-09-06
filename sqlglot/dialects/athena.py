@@ -7,6 +7,7 @@ from sqlglot.tokens import TokenType
 
 class Athena(Trino):
     class Tokenizer(Trino.Tokenizer):
+        IDENTIFIERS = ['"', "`"]
         KEYWORDS = {
             **Trino.Tokenizer.KEYWORDS,
             "UNLOAD": TokenType.COMMAND,
@@ -36,7 +37,29 @@ class Athena(Trino):
             exp.FileFormatProperty: lambda self, e: f"'FORMAT'={self.sql(e, 'this')}",
         }
 
+        def generate(self, expression: exp.Expression, copy: bool = True) -> str:
+            if isinstance(expression, exp.DDL) or isinstance(expression, exp.Drop):
+                # Athena DDL uses backticks for quoting, unlike Athena DML which uses double quotes
+                # ...unless the DDL is CREATE VIEW, then it uses DML quoting, I guess because the view is based on a SELECT query
+                # ref: https://docs.aws.amazon.com/athena/latest/ug/reserved-words.html
+                # ref: https://docs.aws.amazon.com/athena/latest/ug/tables-databases-columns-names.html#table-names-that-include-numbers
+                if not (isinstance(expression, exp.Create) and expression.kind == "VIEW"):
+
+                    def _transformer(node):
+                        if isinstance(node, exp.Identifier):
+                            node.meta["quote_ddl"] = True
+                        return node
+
+                    expression = expression.transform(_transformer, copy=copy)
+
+            return super().generate(expression, copy)
+
         def property_sql(self, expression: exp.Property) -> str:
             return (
                 f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
             )
+
+        def identifier_sql(self, expression: exp.Identifier) -> str:
+            if expression.meta.get("quote_ddl", False):
+                return super()._identifier_sql(expression, identifier_start="`", identifier_end="`")
+            return super().identifier_sql(expression)

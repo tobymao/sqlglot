@@ -1428,17 +1428,24 @@ class Generator(metaclass=_Generator):
         return f"{unique}{primary}{amp}{index}{name}{table}{params}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
+        return self._identifier_sql(
+            expression, self.dialect.IDENTIFIER_START, self.dialect.IDENTIFIER_END
+        )
+
+    def _identifier_sql(
+        self, expression: exp.Identifier, identifier_start: str, identifier_end: str
+    ):
         text = expression.name
         lower = text.lower()
         text = lower if self.normalize and not expression.quoted else text
-        text = text.replace(self.dialect.IDENTIFIER_END, self._escaped_identifier_end)
+        text = text.replace(identifier_end, self._escaped_identifier_end)
         if (
             expression.quoted
             or self.dialect.can_identify(text, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):
-            text = f"{self.dialect.IDENTIFIER_START}{text}{self.dialect.IDENTIFIER_END}"
+            text = f"{identifier_start}{text}{identifier_end}"
         return text
 
     def hex_sql(self, expression: exp.Hex) -> str:

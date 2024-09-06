@@ -403,6 +403,9 @@ class ClickHouse(Dialect):
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
         NO_PAREN_FUNCTION_PARSERS.pop("ANY")
 
+        NO_PAREN_FUNCTIONS = parser.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIMESTAMP)
+
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.GLOBAL: lambda self, this: self._match(TokenType.IN)

@@ -44,22 +44,16 @@ class Athena(Trino):
                 # ref: https://docs.aws.amazon.com/athena/latest/ug/reserved-words.html
                 # ref: https://docs.aws.amazon.com/athena/latest/ug/tables-databases-columns-names.html#table-names-that-include-numbers
                 if not (isinstance(expression, exp.Create) and expression.kind == "VIEW"):
+                    self._identifier_start = "`"
+                    self._identifier_end = "`"
 
-                    def _transformer(node):
-                        if isinstance(node, exp.Identifier):
-                            node.meta["quote_ddl"] = True
-                        return node
-
-                    expression = expression.transform(_transformer, copy=copy)
-
-            return super().generate(expression, copy)
+            try:
+                return super().generate(expression, copy)
+            finally:
+                self._identifier_start = self.dialect.IDENTIFIER_START
+                self._identifier_end = self.dialect.IDENTIFIER_END
 
         def property_sql(self, expression: exp.Property) -> str:
             return (
                 f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
             )
-
-        def identifier_sql(self, expression: exp.Identifier) -> str:
-            if expression.meta.get("quote_ddl", False):
-                return super()._identifier_sql(expression, identifier_start="`", identifier_end="`")
-            return super().identifier_sql(expression)

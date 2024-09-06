@@ -592,6 +592,8 @@ class Generator(metaclass=_Generator):
         "_escaped_quote_end",
         "_escaped_identifier_end",
         "_next_name",
+        "_identifier_start",
+        "_identifier_end",
     )
 
     def __init__(
@@ -638,6 +640,9 @@ class Generator(metaclass=_Generator):
         )
 
         self._next_name = name_sequence("_t")
+
+        self._identifier_start = self.dialect.IDENTIFIER_START
+        self._identifier_end = self.dialect.IDENTIFIER_END
 
     def generate(self, expression: exp.Expression, copy: bool = True) -> str:
         """
@@ -1428,24 +1433,17 @@ class Generator(metaclass=_Generator):
         return f"{unique}{primary}{amp}{index}{name}{table}{params}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
-        return self._identifier_sql(
-            expression, self.dialect.IDENTIFIER_START, self.dialect.IDENTIFIER_END
-        )
-
-    def _identifier_sql(
-        self, expression: exp.Identifier, identifier_start: str, identifier_end: str
-    ):
         text = expression.name
         lower = text.lower()
         text = lower if self.normalize and not expression.quoted else text
-        text = text.replace(identifier_end, self._escaped_identifier_end)
+        text = text.replace(self._identifier_end, self._escaped_identifier_end)
         if (
             expression.quoted
             or self.dialect.can_identify(text, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):
-            text = f"{identifier_start}{text}{identifier_end}"
+            text = f"{self._identifier_start}{text}{self._identifier_end}"
         return text
 
     def hex_sql(self, expression: exp.Hex) -> str:

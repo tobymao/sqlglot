@@ -515,6 +515,7 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("SELECT TRIM(TRAILING ')' FROM '(   Hello, world!   )')")
         self.validate_identity("SELECT TRIM(LEADING '(' FROM '(   Hello, world!   )')")
+        self.validate_identity("current_timestamp").assert_is(exp.Column)
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

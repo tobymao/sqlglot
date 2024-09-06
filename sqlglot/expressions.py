@@ -4408,10 +4408,6 @@ class AddConstraint(Expression):
     arg_types = {"expressions": True}
 
 
-class AddPartition(Expression):
-    arg_types = {"expressions": True, "exists": False}
-
-
 class DropPartition(Expression):
     arg_types = {"expressions": True, "exists": False}
 

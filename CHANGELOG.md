@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.20.1] - 2024-09-06
+### :wrench: Chores
+- [`8a357cc`](https://github.com/tobymao/sqlglot/commit/8a357ccbcf2301f6a8d60c237a6397bf6547de14) - bump sqlglotrs to 0.2.12 -- remove relative readme path *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.20.0] - 2024-09-06
 ### :boom: BREAKING CHANGES
 - due to [`3e1af21`](https://github.com/tobymao/sqlglot/commit/3e1af21787ee81df5cbb5eb8b4b7f808b404c870) - Canonicalize exp.RegexpExtract group default value *(PR [#4051](https://github.com/tobymao/sqlglot/pull/4051) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -4677,3 +4682,4 @@ Changelog
 [v25.18.0]: https://github.com/tobymao/sqlglot/compare/v25.17.0...v25.18.0
 [v25.19.0]: https://github.com/tobymao/sqlglot/compare/v25.18.0...v25.19.0
 [v25.20.0]: https://github.com/tobymao/sqlglot/compare/v25.19.0...v25.20.0
+[v25.20.1]: https://github.com/tobymao/sqlglot/compare/v25.20.0...v25.20.1

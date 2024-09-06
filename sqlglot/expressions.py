@@ -4401,6 +4401,7 @@ class Alter(Expression):
         "only": False,
         "options": False,
         "cluster": False,
+        "not_valid": False,
     }
 
 

@@ -30,6 +30,7 @@ from sqlglot.expressions import (
     except_ as except_,
     from_ as from_,
     func as func,
+    insert as insert,
     intersect as intersect,
     maybe_parse as maybe_parse,
     not_ as not_,

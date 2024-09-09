@@ -1788,6 +1788,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "FILTER(the_array, x -> x > 0)",
+            write={
+                "presto": "FILTER(the_array, x -> x > 0)",
+                "starrocks": "ARRAY_FILTER(the_array, x -> x > 0)",
+            },
+        )
+        self.validate_all(
             "a / b",
             write={
                 "bigquery": "a / b",

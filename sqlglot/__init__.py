@@ -33,6 +33,7 @@ from sqlglot.expressions import (
     insert as insert,
     intersect as intersect,
     maybe_parse as maybe_parse,
+    merge as merge,
     not_ as not_,
     or_ as or_,
     select as select,

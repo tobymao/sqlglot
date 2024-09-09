@@ -731,6 +731,36 @@ class TestBuild(unittest.TestCase):
                 lambda: exp.rename_column("table1", "c1", "c2"),
                 "ALTER TABLE table1 RENAME COLUMN c1 TO c2",
             ),
+            (
+                lambda: exp.merge(
+                    "WHEN MATCHED THEN UPDATE SET col1 = source.col1",
+                    "WHEN NOT MATCHED THEN INSERT (col1) VALUES (source.col1)",
+                    into="target_table",
+                    using="source_table",
+                    on="target_table.id = source_table.id",
+                ),
+                "MERGE INTO target_table USING source_table ON target_table.id = source_table.id WHEN MATCHED THEN UPDATE SET col1 = source.col1 WHEN NOT MATCHED THEN INSERT (col1) VALUES (source.col1)",
+            ),
+            (
+                lambda: exp.merge(
+                    "WHEN MATCHED AND source.is_deleted = 1 THEN DELETE",
+                    "WHEN MATCHED THEN UPDATE SET val = source.val",
+                    "WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)",
+                    into="target_table",
+                    using="source_table",
+                    on="target_table.id = source_table.id",
+                ),
+                "MERGE INTO target_table USING source_table ON target_table.id = source_table.id WHEN MATCHED AND source.is_deleted = 1 THEN DELETE WHEN MATCHED THEN UPDATE SET val = source.val WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)",
+            ),
+            (
+                lambda: exp.merge(
+                    "WHEN MATCHED THEN UPDATE SET target.name = source.name",
+                    into=exp.table_("target_table").as_("target"),
+                    using=exp.table_("source_table").as_("source"),
+                    on="target.id = source.id",
+                ),
+                "MERGE INTO target_table AS target USING source_table AS source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.name = source.name",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

@@ -474,12 +474,12 @@ class ClickHouse(Dialect):
             dtype = super()._parse_types(
                 check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
             )
-            if isinstance(dtype, exp.DataType):
-                # Mark every type as non-nullable which is ClickHouse's default. This marker
-                # helps us transpile types from other dialects to ClickHouse, so that we can
-                # e.g. produce `CAST(x AS Nullable(String))` from `CAST(x AS TEXT)`. If there
-                # is a `NULL` value in `x`, the former would fail in ClickHouse without the
-                # `Nullable` type constructor
+            if isinstance(dtype, exp.DataType) and dtype.args.get("nullable") is not True:
+                # Mark every type as non-nullable which is ClickHouse's default, unless it's
+                # already marked as nullable. This marker helps us transpile types from other
+                # dialects to ClickHouse, so that we can e.g. produce `CAST(x AS Nullable(String))`
+                # from `CAST(x AS TEXT)`. If there is a `NULL` value in `x`, the former would
+                # fail in ClickHouse without the `Nullable` type constructor.
                 dtype.set("nullable", False)
 
             return dtype
@@ -815,7 +815,6 @@ class ClickHouse(Dialect):
             exp.DataType.Type.LOWCARDINALITY: "LowCardinality",
             exp.DataType.Type.MAP: "Map",
             exp.DataType.Type.NESTED: "Nested",
-            exp.DataType.Type.NULLABLE: "Nullable",
             exp.DataType.Type.SMALLINT: "Int16",
             exp.DataType.Type.STRUCT: "Tuple",
             exp.DataType.Type.TINYINT: "Int8",
@@ -921,7 +920,6 @@ class ClickHouse(Dialect):
         NON_NULLABLE_TYPES = {
             exp.DataType.Type.ARRAY,
             exp.DataType.Type.MAP,
-            exp.DataType.Type.NULLABLE,
             exp.DataType.Type.STRUCT,
         }
 
@@ -1004,8 +1002,9 @@ class ClickHouse(Dialect):
             #   String or FixedString (possibly LowCardinality) or UUID or IPv6"
             # - It's not a composite type, e.g. `Nullable(Array(...))` is not a valid type
             parent = expression.parent
-            if (
-                expression.args.get("nullable") is not False
+            nullable = expression.args.get("nullable")
+            if nullable is True or (
+                nullable is None
                 and not (
                     isinstance(parent, exp.DataType)
                     and parent.is_type(exp.DataType.Type.MAP, check_nullable=True)

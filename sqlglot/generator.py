@@ -390,9 +390,6 @@ class Generator(metaclass=_Generator):
     # Whether CONVERT_TIMEZONE() is supported; if not, it will be generated as exp.AtTimeZone
     SUPPORTS_CONVERT_TIMEZONE = False
 
-    # Whether nullable types can be constructed, e.g. `Nullable(Int64)`
-    SUPPORTS_NULLABLE_TYPES = True
-
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -1239,14 +1236,12 @@ class Generator(metaclass=_Generator):
         type_value = expression.this
         if type_value == exp.DataType.Type.USERDEFINED and expression.args.get("kind"):
             type_sql = self.sql(expression, "kind")
-        elif type_value != exp.DataType.Type.NULLABLE or self.SUPPORTS_NULLABLE_TYPES:
+        else:
             type_sql = (
                 self.TYPE_MAPPING.get(type_value, type_value.value)
                 if isinstance(type_value, exp.DataType.Type)
                 else type_value
             )
-        else:
-            return interior
 
         if interior:
             if expression.args.get("nested"):

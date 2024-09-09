@@ -2860,3 +2860,34 @@ FROM subquery2""",
                 "bigquery": "RTRIM('Hello World', 'd')",
             },
         )
+
+    def test_uuid(self):
+        self.validate_all(
+            "UUID()",
+            read={
+                "hive": "UUID()",
+                "spark2": "UUID()",
+                "spark": "UUID()",
+                "databricks": "UUID()",
+                "duckdb": "UUID()",
+                "presto": "UUID()",
+                "trino": "UUID()",
+                "mysql": "UUID()",
+                "postgres": "GEN_RANDOM_UUID()",
+                "bigquery": "GENERATE_UUID()",
+                "snowflake": "UUID_STRING()",
+            },
+            write={
+                "hive": "UUID()",
+                "spark2": "UUID()",
+                "spark": "UUID()",
+                "databricks": "UUID()",
+                "duckdb": "UUID()",
+                "presto": "UUID()",
+                "trino": "UUID()",
+                "mysql": "UUID()",
+                "postgres": "GEN_RANDOM_UUID()",
+                "bigquery": "GENERATE_UUID()",
+                "snowflake": "UUID_STRING()",
+            },
+        )

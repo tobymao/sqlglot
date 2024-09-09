@@ -6825,6 +6825,7 @@ class Parser(metaclass=_Parser):
             using=using,
             on=on,
             expressions=self._parse_when_matched(),
+            returning=self._match(TokenType.RETURNING) and self._parse_csv(self._parse_bitwise),
         )
 
     def _parse_when_matched(self) -> t.List[exp.When]:
@@ -6865,7 +6866,7 @@ class Parser(metaclass=_Parser):
             elif self._match(TokenType.DELETE):
                 then = self.expression(exp.Var, this=self._prev.text)
             else:
-                then = None
+                then = self._parse_var_from_options(self.CONFLICT_ACTIONS)
 
             whens.append(
                 self.expression(

@@ -3587,9 +3587,12 @@ class Generator(metaclass=_Generator):
         on = f"ON {self.sql(expression, 'on')}"
         expressions = self.expressions(expression, sep=" ", indent=False)
         sep = self.sep()
+        returning = self.expressions(expression, key="returning", indent=False)
+        returning = f"RETURNING {returning}" if returning else ""
 
         return self.prepend_ctes(
-            expression, f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}"
+            expression,
+            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}{sep}{returning}",
         )
 
     def tochar_sql(self, expression: exp.ToChar) -> str:

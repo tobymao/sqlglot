@@ -40,6 +40,7 @@ class Doris(MySQL):
 
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
+        VARCHAR_REQUIRES_SIZE = False
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,

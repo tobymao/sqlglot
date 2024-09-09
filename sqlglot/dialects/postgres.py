@@ -557,6 +557,7 @@ class Postgres(Dialect):
             exp.TsOrDsAdd: _date_add_sql("+"),
             exp.TsOrDsDiff: _date_diff_sql,
             exp.UnixToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this),
+            exp.Uuid: lambda *_: "GEN_RANDOM_UUID()",
             exp.TimeToUnix: lambda self, e: self.func(
                 "DATE_PART", exp.Literal.string("epoch"), e.this
             ),

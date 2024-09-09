@@ -904,6 +904,28 @@ WHERE
             },
         )
 
+        self.validate_identity(
+            "SELECT UUID_STRING(), UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')"
+        )
+
+        self.validate_all(
+            "UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')",
+            read={
+                "snowflake": "UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')",
+            },
+            write={
+                "hive": "UUID()",
+                "spark2": "UUID()",
+                "spark": "UUID()",
+                "databricks": "UUID()",
+                "duckdb": "UUID()",
+                "presto": "UUID()",
+                "trino": "UUID()",
+                "postgres": "GEN_RANDOM_UUID()",
+                "bigquery": "GENERATE_UUID()",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

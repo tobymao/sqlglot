@@ -6217,6 +6217,12 @@ class UnixToTimeStr(Func):
     pass
 
 
+class Uuid(Func):
+    _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
+
+    arg_types = {"this": False, "name": False}
+
+
 class TimestampFromParts(Func):
     _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {

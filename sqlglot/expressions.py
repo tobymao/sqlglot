@@ -5172,7 +5172,7 @@ class Coalesce(Func):
 
 
 class Chr(Func):
-    arg_types = {"this": True, "charset": False, "expressions": False}
+    arg_types = {"expressions": True, "charset": False}
     is_var_len_args = True
     _sql_names = ["CHR", "CHAR"]
 

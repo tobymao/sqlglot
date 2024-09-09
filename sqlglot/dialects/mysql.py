@@ -329,7 +329,11 @@ class MySQL(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "CHAR": lambda self: self._parse_chr(),
+            "CHAR": lambda self: self.expression(
+                exp.Chr,
+                expressions=self._parse_csv(self._parse_assignment),
+                charset=self._match(TokenType.USING) and self._parse_var(),
+            ),
             "GROUP_CONCAT": lambda self: self._parse_group_concat(),
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
@@ -619,18 +623,6 @@ class MySQL(Dialect):
             return super()._parse_type(
                 parse_interval=parse_interval, fallback_to_identifier=fallback_to_identifier
             )
-
-        def _parse_chr(self) -> t.Optional[exp.Expression]:
-            expressions = self._parse_csv(self._parse_assignment)
-            kwargs: t.Dict[str, t.Any] = {"this": seq_get(expressions, 0)}
-
-            if len(expressions) > 1:
-                kwargs["expressions"] = expressions[1:]
-
-            if self._match(TokenType.USING):
-                kwargs["charset"] = self._parse_var()
-
-            return self.expression(exp.Chr, **kwargs)
 
         def _parse_group_concat(self) -> t.Optional[exp.Expression]:
             def concat_exprs(

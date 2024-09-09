@@ -187,9 +187,6 @@ class _Dialect(type):
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
-        if enum not in ("", "clickhouse"):
-            klass.generator_class.SUPPORTS_NULLABLE_TYPES = False
-
         if enum not in ("", "athena", "presto", "trino"):
             klass.generator_class.TRY_SUPPORTED = False
             klass.generator_class.SUPPORTS_UESCAPE = False

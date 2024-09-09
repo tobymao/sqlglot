@@ -1035,7 +1035,6 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("GEOGRAPHY").sql(), "GEOGRAPHY")
         self.assertEqual(exp.DataType.build("GEOMETRY").sql(), "GEOMETRY")
         self.assertEqual(exp.DataType.build("STRUCT").sql(), "STRUCT")
-        self.assertEqual(exp.DataType.build("NULLABLE").sql(), "NULLABLE")
         self.assertEqual(exp.DataType.build("HLLSKETCH", dialect="redshift").sql(), "HLLSKETCH")
         self.assertEqual(exp.DataType.build("HSTORE", dialect="postgres").sql(), "HSTORE")
         self.assertEqual(exp.DataType.build("NULL").sql(), "NULL")

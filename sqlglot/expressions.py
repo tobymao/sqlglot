@@ -6885,6 +6885,49 @@ def insert(
     return insert
 
 
+def merge(
+    *when_exprs: ExpOrStr,
+    into: ExpOrStr,
+    using: ExpOrStr,
+    on: ExpOrStr,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
+) -> Merge:
+    """
+    Builds a MERGE statement.
+
+    Example:
+        >>> merge("WHEN MATCHED THEN UPDATE SET col1 = source_table.col1",
+        ...       "WHEN NOT MATCHED THEN INSERT (col1) VALUES (source_table.col1)",
+        ...       into="my_table",
+        ...       using="source_table",
+        ...       on="my_table.id = source_table.id").sql()
+        'MERGE INTO my_table USING source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET col1 = source_table.col1 WHEN NOT MATCHED THEN INSERT (col1) VALUES (source_table.col1)'
+
+    Args:
+        *when_exprs: The WHEN clauses specifying actions for matched and unmatched rows.
+        into: The target table to merge data into.
+        using: The source table to merge data from.
+        on: The join condition for the merge.
+        dialect: The dialect used to parse the input expressions.
+        copy: Whether to copy the expression.
+        **opts: Other options to use to parse the input expressions.
+
+    Returns:
+        Merge: The syntax tree for the MERGE statement.
+    """
+    return Merge(
+        this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
+        using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
+        on=maybe_parse(on, dialect=dialect, copy=copy, **opts),
+        expressions=[
+            maybe_parse(when_expr, dialect=dialect, copy=copy, into=When, **opts)
+            for when_expr in when_exprs
+        ],
+    )
+
+
 def condition(
     expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
 ) -> Condition:

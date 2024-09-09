@@ -6279,6 +6279,7 @@ class Merge(Expression):
         "on": True,
         "expressions": True,
         "with": False,
+        "returning": False,
     }
 
 

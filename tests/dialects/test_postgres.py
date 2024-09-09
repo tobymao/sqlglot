@@ -794,6 +794,9 @@ class TestPostgres(Validator):
         self.validate_identity(
             'SELECT js, js IS JSON ARRAY WITH UNIQUE KEYS AS "array w. UK?", js IS JSON ARRAY WITHOUT UNIQUE KEYS AS "array w/o UK?", js IS JSON ARRAY UNIQUE KEYS AS "array w UK 2?" FROM t'
         )
+        self.validate_identity(
+            "MERGE INTO target_table USING source_table AS source ON target.id = source.id WHEN MATCHED THEN DO NOTHING WHEN NOT MATCHED THEN DO NOTHING RETURNING MERGE_ACTION(), *"
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

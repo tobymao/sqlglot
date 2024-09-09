@@ -4118,7 +4118,6 @@ class DataType(Expression):
         NCHAR = auto()
         NESTED = auto()
         NULL = auto()
-        NULLABLE = auto()
         NUMMULTIRANGE = auto()
         NUMRANGE = auto()
         NVARCHAR = auto()
@@ -4312,32 +4311,19 @@ class DataType(Expression):
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
-        if (
-            not check_nullable
-            and self.this == DataType.Type.NULLABLE
-            and len(self.expressions) == 1
-        ):
-            this_type = self.expressions[0]
-        else:
-            this_type = self
-
+        self_is_nullable = self.args.get("nullable")
         for dtype in dtypes:
             other_type = DataType.build(dtype, copy=False, udt=True)
-            if (
-                not check_nullable
-                and other_type.this == DataType.Type.NULLABLE
-                and len(other_type.expressions) == 1
-            ):
-                other_type = other_type.expressions[0]
-
+            other_is_nullable = other_type.args.get("nullable")
             if (
                 other_type.expressions
-                or this_type.this == DataType.Type.USERDEFINED
+                or (check_nullable and (self_is_nullable or other_is_nullable))
+                or self.this == DataType.Type.USERDEFINED
                 or other_type.this == DataType.Type.USERDEFINED
             ):
-                matches = this_type == other_type
+                matches = self == other_type
             else:
-                matches = this_type.this == other_type.this
+                matches = self.this == other_type.this
 
             if matches:
                 return True

@@ -19,6 +19,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "CAST(x AS UUID)",
+            write={
+                "bigquery": "CAST(x AS STRING)",
+                "duckdb": "CAST(x AS UUID)",
+            },
+        )
+        self.validate_all(
             """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
             read={
                 "duckdb": """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",

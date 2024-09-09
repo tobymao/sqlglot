@@ -753,8 +753,9 @@ class BigQuery(Dialect):
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",
-            exp.DataType.Type.VARBINARY: "BYTES",
             exp.DataType.Type.ROWVERSION: "BYTES",
+            exp.DataType.Type.UUID: "STRING",
+            exp.DataType.Type.VARBINARY: "BYTES",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",
         }

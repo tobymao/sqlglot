@@ -6851,13 +6851,13 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.THEN)
 
             if self._match(TokenType.INSERT):
-                _this = self._parse_star()
-                if _this:
-                    then: t.Optional[exp.Expression] = self.expression(exp.Insert, this=_this)
+                this = self._parse_star()
+                if this:
+                    then: t.Optional[exp.Expression] = self.expression(exp.Insert, this=this)
                 else:
                     then = self.expression(
                         exp.Insert,
-                        this=self._parse_value(),
+                        this=exp.var("ROW") if self._match_text_seq("ROW") else self._parse_value(),
                         expression=self._match_text_seq("VALUES") and self._parse_value(),
                     )
             elif self._match(TokenType.UPDATE):

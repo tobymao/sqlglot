@@ -106,6 +106,7 @@ class StarRocks(MySQL):
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+            exp.ArrayFilter: rename_func("ARRAY_FILTER"),
         }
 
         TRANSFORMS.pop(exp.DateTrunc)

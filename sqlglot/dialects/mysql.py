@@ -690,6 +690,7 @@ class MySQL(Dialect):
         PARSE_JSON_NAME: t.Optional[str] = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
         WRAP_DERIVED_VALUES = False
+        VARCHAR_REQUIRES_SIZE = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1117,10 +1118,19 @@ class MySQL(Dialect):
             return super().extract_sql(expression)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
+            if (
+                self.VARCHAR_REQUIRES_SIZE
+                and expression.is_type(exp.DataType.Type.VARCHAR)
+                and not expression.expressions
+            ):
+                # `VARCHAR` must always have a size - if it doesn't, we always generate `TEXT`
+                return "TEXT"
+
             # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
             result = super().datatype_sql(expression)
             if expression.this in self.UNSIGNED_TYPE_MAPPING:
                 result = f"{result} UNSIGNED"
+
             return result
 
         def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:

@@ -82,6 +82,10 @@ class TestMySQL(Validator):
             "CREATE OR REPLACE VIEW my_view AS SELECT column1 AS `boo`, column2 AS `foo` FROM my_table WHERE column3 = 'some_value' UNION SELECT q.* FROM fruits_table, JSON_TABLE(Fruits, '$[*]' COLUMNS(id VARCHAR(255) PATH '$.$id', value VARCHAR(255) PATH '$.value')) AS q",
         )
         self.validate_identity(
+            "CREATE TABLE t (name VARCHAR)",
+            "CREATE TABLE t (name TEXT)",
+        )
+        self.validate_identity(
             "ALTER TABLE t ADD KEY `i` (`c`)",
             "ALTER TABLE t ADD INDEX `i` (`c`)",
         )
@@ -174,6 +178,10 @@ class TestMySQL(Validator):
         )
         self.validate_identity(
             "REPLACE INTO table SELECT id FROM table2 WHERE cnt > 100", check_command_warning=True
+        )
+        self.validate_identity(
+            "CAST(x AS VARCHAR)",
+            "CAST(x AS CHAR)",
         )
         self.validate_identity(
             """SELECT * FROM foo WHERE 3 MEMBER OF(info->'$.value')""",

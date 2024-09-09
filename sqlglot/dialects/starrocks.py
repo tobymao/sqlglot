@@ -73,6 +73,7 @@ class StarRocks(MySQL):
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
+        VARCHAR_REQUIRES_SIZE = False
         PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
 

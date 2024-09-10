@@ -841,14 +841,7 @@ class Parser(metaclass=_Parser):
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
         TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
-        TokenType.STAR: lambda self, _: self.expression(
-            exp.Star,
-            **{
-                "except": self._parse_star_op("EXCEPT", "EXCLUDE"),
-                "replace": self._parse_star_op("REPLACE"),
-                "rename": self._parse_star_op("RENAME"),
-            },
-        ),
+        TokenType.STAR: lambda self, _: self._parse_star_ops(),
     }
 
     PLACEHOLDER_PARSERS = {
@@ -7374,4 +7367,17 @@ class Parser(metaclass=_Parser):
             exp.Normalize,
             this=self._parse_bitwise(),
             form=self._match(TokenType.COMMA) and self._parse_var(),
+        )
+
+    def _parse_star_ops(self) -> exp.Star | exp.UnpackColumns:
+        if self._match_text_seq("COLUMNS", "(", advance=False):
+            return exp.UnpackColumns(this=self._parse_function())
+
+        return self.expression(
+            exp.Star,
+            **{  # type: ignore
+                "except": self._parse_star_op("EXCEPT", "EXCLUDE"),
+                "replace": self._parse_star_op("REPLACE"),
+                "rename": self._parse_star_op("RENAME"),
+            },
         )

@@ -817,6 +817,15 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT * FROM (DESCRIBE t)")
 
+        self.validate_identity("SELECT UNNEST([*COLUMNS('alias_.*')]) AS column_name")
+        self.validate_identity(
+            "SELECT COALESCE(*COLUMNS(*)) FROM (SELECT NULL, 2, 3) AS t(a, b, c)"
+        )
+        self.validate_identity(
+            "SELECT id, STRUCT_PACK(*COLUMNS('m\d')) AS measurements FROM many_measurements",
+            """SELECT id, {'_0': *COLUMNS('m\d')} AS measurements FROM many_measurements""",
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

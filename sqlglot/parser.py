@@ -432,6 +432,7 @@ class Parser(metaclass=_Parser):
     }
 
     ALTERABLES = {
+        TokenType.INDEX,
         TokenType.TABLE,
         TokenType.VIEW,
     }

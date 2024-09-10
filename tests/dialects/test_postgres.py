@@ -814,6 +814,7 @@ class TestPostgres(Validator):
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
+        self.validate_identity('ALTER INDEX "IX_Ratings_Column1" RENAME TO "IX_Ratings_Column2"')
         self.validate_identity('CREATE TABLE x (a TEXT COLLATE "de_DE")')
         self.validate_identity('CREATE TABLE x (a TEXT COLLATE pg_catalog."default")')
         self.validate_identity("CREATE TABLE t (col INT[3][5])")

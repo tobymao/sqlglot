@@ -2137,6 +2137,16 @@ SINGLE = TRUE""",
         self.validate_identity("SELECT t.$23:a.b", "SELECT GET_PATH(t.$23, 'a.b')")
         self.validate_identity("SELECT t.$17:a[0].b[0].c", "SELECT GET_PATH(t.$17, 'a[0].b[0].c')")
 
+        self.validate_all(
+            """
+            SELECT col:"customer's department"
+            """,
+            write={
+                "snowflake": """SELECT GET_PATH(col, '["customer\\'s department"]')""",
+                "postgres": "SELECT JSON_EXTRACT_PATH(col, 'customer\\'s department')",
+            },
+        )
+
     def test_alter_set_unset(self):
         self.validate_identity("ALTER TABLE tbl SET DATA_RETENTION_TIME_IN_DAYS=1")
         self.validate_identity("ALTER TABLE tbl SET DEFAULT_DDL_COLLATION='test'")

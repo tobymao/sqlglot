@@ -23,10 +23,9 @@ def _parse_as_hive(raw_tokens: t.List[Token]) -> bool:
 def _generate_as_hive(expression: exp.Expression) -> bool:
     if isinstance(expression, exp.Create):
         if expression.kind == "TABLE":
-            properties: t.Optional[exp.Properties]
-            if properties := expression.args.get("properties"):
-                if properties.find(exp.ExternalProperty):
-                    return True  # CREATE EXTERNAL TABLE is Hive
+            properties: t.Optional[exp.Properties] = expression.args.get("properties")
+            if properties and properties.find(exp.ExternalProperty):
+                return True  # CREATE EXTERNAL TABLE is Hive
 
             if not isinstance(expression.expression, exp.Select):
                 return True  # any CREATE TABLE other than CREATE TABLE AS SELECT is Hive

@@ -24,6 +24,17 @@ class TestAthena(Validator):
             check_command_warning=True,
         )
 
+        self.validate_identity(
+            "/* leading comment */CREATE SCHEMA foo",
+            write_sql="/* leading comment */ CREATE SCHEMA `foo`",
+            identify=True,
+        )
+        self.validate_identity(
+            "/* leading comment */SELECT * FROM foo",
+            write_sql='/* leading comment */ SELECT * FROM "foo"',
+            identify=True,
+        )
+
     def test_ddl(self):
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")
@@ -53,11 +64,13 @@ class TestAthena(Validator):
         self.validate_identity(
             "CREATE TABLE foo WITH (table_type='ICEBERG', external_location='s3://foo/') AS SELECT * FROM a"
         )
+        self.validate_identity(
+            "CREATE TABLE foo AS WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo"
+        )
 
     def test_ddl_quoting(self):
         self.validate_identity("CREATE SCHEMA `foo`")
         self.validate_identity("CREATE SCHEMA foo")
-        self.validate_identity("CREATE SCHEMA foo", write_sql="CREATE SCHEMA `foo`", identify=True)
 
         self.validate_identity("CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'")
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'")
@@ -107,6 +120,14 @@ class TestAthena(Validator):
             'ALTER TABLE "foo" DROP COLUMN "id"', write_sql="ALTER TABLE `foo` DROP COLUMN `id`"
         )
 
+        self.validate_identity(
+            'CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"'
+        )
+        self.validate_identity(
+            'CREATE TABLE `foo` AS WITH `foo` AS (SELECT "a", `b` FROM "bar") SELECT * FROM "foo"',
+            write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
+        )
+
     def test_dml_quoting(self):
         self.validate_identity("SELECT a AS foo FROM tbl")
         self.validate_identity('SELECT "a" AS "foo" FROM "tbl"')
@@ -137,5 +158,12 @@ class TestAthena(Validator):
         self.validate_identity(
             "DELETE FROM `foo` WHERE `id` > 10",
             write_sql='DELETE FROM "foo" WHERE "id" > 10',
+            identify=True,
+        )
+
+        self.validate_identity("WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo")
+        self.validate_identity(
+            "WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo",
+            write_sql='WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
             identify=True,
         )

@@ -5,19 +5,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.trino import Trino
 from sqlglot.dialects.hive import Hive
-from sqlglot.tokens import Token, TokenType
-
-
-def _parse_as_hive(raw_tokens: t.List[Token]) -> bool:
-    if len(raw_tokens) > 0:
-        first_token = raw_tokens[0]
-        if first_token.token_type == TokenType.CREATE:
-            # CREATE is Hive (except for CREATE VIEW and CREATE TABLE... AS SELECT)
-            return not any(t.token_type in (TokenType.VIEW, TokenType.SELECT) for t in raw_tokens)
-
-        # ALTER and DROP are Hive
-        return first_token.token_type in (TokenType.ALTER, TokenType.DROP)
-    return False
+from sqlglot.tokens import TokenType
 
 
 def _generate_as_hive(expression: exp.Expression) -> bool:
@@ -81,13 +69,6 @@ class Athena(Trino):
             "UNLOAD": TokenType.COMMAND,
         }
 
-    class HiveParser(Hive.Parser):
-        """
-        Parse queries for the Athena Hive execution engine
-        """
-
-        pass
-
     class Parser(Trino.Parser):
         """
         Parse queries for the Athena Trino execution engine
@@ -97,30 +78,6 @@ class Athena(Trino):
             **Trino.Parser.STATEMENT_PARSERS,
             TokenType.USING: lambda self: self._parse_as_command(self._prev),
         }
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
-            self._hive_parser = Athena.HiveParser(*args, **kwargs)
-
-        def parse(
-            self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-        ) -> t.List[t.Optional[exp.Expression]]:
-            if _parse_as_hive(raw_tokens):
-                return self._hive_parser.parse(raw_tokens, sql)
-
-            return super().parse(raw_tokens, sql)
-
-    class HiveGenerator(Hive.Generator):
-        """
-        Generating queries for the Athena Hive execution engine
-        """
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
-            self._identifier_start = "`"
-            self._identifier_end = "`"
 
     class Generator(Trino.Generator):
         """
@@ -139,7 +96,10 @@ class Athena(Trino):
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self._hive_generator = Athena.HiveGenerator(*args, **kwargs)
+
+            hive_kwargs = {**kwargs, "dialect": "hive"}
+
+            self._hive_generator = Hive.Generator(*args, **hive_kwargs)
 
         def generate(self, expression: exp.Expression, copy: bool = True) -> str:
             if _generate_as_hive(expression):

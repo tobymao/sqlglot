@@ -154,6 +154,7 @@ class Generator(metaclass=_Generator):
         exp.TransientProperty: lambda *_: "TRANSIENT",
         exp.Union: lambda self, e: self.set_operations(e),
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
+        exp.UnpackColumns: lambda self, e: f"*{self.sql(e.this)}",
         exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),

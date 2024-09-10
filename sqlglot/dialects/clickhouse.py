@@ -870,7 +870,7 @@ class ClickHouse(Dialect):
                 "position", e.this, e.args.get("substr"), e.args.get("position")
             ),
             exp.TimeToStr: lambda self, e: self.func(
-                "DATE_FORMAT", e.this, self.format_time(e), e.args.get("zone")
+                "formatDateTime", e.this, self.format_time(e), e.args.get("zone")
             ),
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),

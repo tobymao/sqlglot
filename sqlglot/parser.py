@@ -4998,7 +4998,10 @@ class Parser(metaclass=_Parser):
                 # Escape single quotes from Snowflake's colon extraction (e.g. col:"a'b") as
                 # it'll roundtrip to a string literal in GET_PATH
                 if path_sql[0] == '"':
-                    path_sql = path_sql.replace("'", "\\'")
+                    quote_end = self.dialect.QUOTE_END
+                    path_sql = path_sql.replace(
+                        quote_end, self.dialect.tokenizer_class.STRING_ESCAPES[0] + quote_end
+                    )
 
                 json_path.append(path_sql)
 

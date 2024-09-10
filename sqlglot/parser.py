@@ -4993,7 +4993,14 @@ class Parser(metaclass=_Parser):
                 end_token = self._prev
 
             if path:
-                json_path.append(self._find_sql(self._tokens[start_index], end_token))
+                path_sql = self._find_sql(self._tokens[start_index], end_token)
+
+                # Escape single quotes from Snowflake's colon extraction (e.g. col:"a'b") as
+                # it'll roundtrip to a string literal in GET_PATH
+                if path_sql[0] == '"':
+                    path_sql = path_sql.replace("'", "\\'")
+
+                json_path.append(path_sql)
 
         # The VARIANT extract in Snowflake/Databricks is parsed as a JSONExtract; Snowflake uses the json_path in GET_PATH() while
         # Databricks transforms it back to the colon/dot notation

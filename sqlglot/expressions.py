@@ -5523,7 +5523,7 @@ class JSON(Expression):
 
 
 class JSONPath(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "escape": False}
 
     @property
     def output_name(self) -> str:

@@ -2739,6 +2739,10 @@ class Generator(metaclass=_Generator):
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
         path = self.expressions(expression, sep="", flat=True).lstrip(".")
+
+        if expression.args.get("escape"):
+            path = self.escape_str(path)
+
         if self.QUOTE_JSON_PATH:
             path = f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 

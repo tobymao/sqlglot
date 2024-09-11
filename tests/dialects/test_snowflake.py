@@ -2143,7 +2143,7 @@ SINGLE = TRUE""",
             """,
             write={
                 "snowflake": """SELECT GET_PATH(col, '["customer\\'s department"]')""",
-                "postgres": "SELECT JSON_EXTRACT_PATH(col, 'customer\\'s department')",
+                "postgres": "SELECT JSON_EXTRACT_PATH(col, 'customer''s department')",
             },
         )
 

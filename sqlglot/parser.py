@@ -3907,13 +3907,12 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expecting IN (")
 
         if self._match(TokenType.ANY):
-            expr: exp.PivotAny | exp.In = self.expression(exp.PivotAny, this=self._parse_order())
+            exprs: t.List[exp.Expression] = ensure_list(exp.PivotAny(this=self._parse_order()))
         else:
-            aliased_expressions = self._parse_csv(_parse_aliased_expression)
-            expr = self.expression(exp.In, this=value, expressions=aliased_expressions)
+            exprs = self._parse_csv(_parse_aliased_expression)
 
         self._match_r_paren()
-        return expr
+        return self.expression(exp.In, this=value, expressions=exprs)
 
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index

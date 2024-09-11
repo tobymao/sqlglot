@@ -102,9 +102,8 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
+@generator.unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
-    if expression.expression:
-        self.unsupported("DuckDB ARRAY_SORT does not support a comparator")
     return self.func("ARRAY_SORT", expression.this)
 
 

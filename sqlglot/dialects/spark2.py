@@ -13,13 +13,18 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
-from sqlglot.helper import seq_get
+from sqlglot.helper import seq_get, ensure_list
 from sqlglot.transforms import (
     preprocess,
     remove_unique_constraints,
     ctas_with_tmp_tables_to_create_tmp_view,
     move_schema_columns_to_partitioned_by,
 )
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
 def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
@@ -110,10 +115,41 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _annotate_by_same_args(
+    self: TypeAnnotator, expression: E, *args: str, target_type: exp.DataType | exp.DataType.Type
+) -> E:
+    """
+    Infers the type of the expression if all the param @args are of that type,
+    otherwise defaults to param @target_type
+    """
+    self._annotate_args(expression)
+
+    expressions: t.List[exp.Expression] = []
+    for arg in args:
+        arg_expr = expression.args.get(arg)
+        expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+
+    last_datatype = expressions[0].type if expressions else None
+
+    for expr in expressions:
+        if not expr.is_type(last_datatype):
+            last_datatype = None
+            break
+
+    self._set_type(expression, last_datatype or target_type)
+    return expression
+
+
 class Spark2(Hive):
     ANNOTATORS = {
         **Hive.ANNOTATORS,
         exp.Substring: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Concat: lambda self, e: _annotate_by_same_args(
+            self, e, "expressions", target_type=exp.DataType.Type.TEXT
+        ),
+        exp.Pad: lambda self, e: _annotate_by_same_args(
+            self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
+        ),
     }
 
     class Parser(Hive.Parser):

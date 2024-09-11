@@ -47,7 +47,7 @@ def unsupported_args(
             dialect_name = generator.dialect.__class__.__name__
 
             for arg_name, diagnostic in diagnostic_by_arg.items():
-                if arg_name in expression.args:
+                if expression.args.get(arg_name):
                     diagnostic = diagnostic or UNSUPPORTED_TEMPLATE.format(
                         arg_name, expression_name, dialect_name
                     )

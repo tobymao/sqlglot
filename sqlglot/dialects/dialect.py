@@ -7,7 +7,7 @@ from functools import reduce
 
 from sqlglot import exp
 from sqlglot.errors import ParseError
-from sqlglot.generator import Generator
+from sqlglot.generator import Generator, unsupported_args
 from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
@@ -957,9 +957,8 @@ def rename_func(name: str) -> t.Callable[[Generator, exp.Expression], str]:
     return lambda self, expression: self.func(name, *flatten(expression.args.values()))
 
 
+@unsupported_args("accuracy")
 def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -> str:
-    if expression.args.get("accuracy"):
-        self.unsupported("APPROX_COUNT_DISTINCT does not support accuracy")
     return self.func("APPROX_COUNT_DISTINCT", expression.this)
 
 
@@ -1359,11 +1358,8 @@ def concat_ws_to_dpipe_sql(self: Generator, expression: exp.ConcatWs) -> str:
     )
 
 
+@unsupported_args("position", "occurrence", "parameters")
 def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
-    bad_args = list(filter(expression.args.get, ("position", "occurrence", "parameters")))
-    if bad_args:
-        self.unsupported(f"REGEXP_EXTRACT does not support the following arg(s): {bad_args}")
-
     group = expression.args.get("group")
 
     # Do not render group if it's the default value for this dialect
@@ -1373,11 +1369,8 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
     return self.func("REGEXP_EXTRACT", expression.this, expression.expression, group)
 
 
+@unsupported_args("position", "occurrence", "modifiers")
 def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
-    bad_args = list(filter(expression.args.get, ("position", "occurrence", "modifiers")))
-    if bad_args:
-        self.unsupported(f"REGEXP_REPLACE does not support the following arg(s): {bad_args}")
-
     return self.func(
         "REGEXP_REPLACE", expression.this, expression.expression, expression.args["replacement"]
     )
@@ -1445,10 +1438,8 @@ def generatedasidentitycolumnconstraint_sql(
 
 
 def arg_max_or_min_no_count(name: str) -> t.Callable[[Generator, exp.ArgMax | exp.ArgMin], str]:
+    @unsupported_args("count")
     def _arg_max_or_min_sql(self: Generator, expression: exp.ArgMax | exp.ArgMin) -> str:
-        if expression.args.get("count"):
-            self.unsupported(f"Only two arguments are supported in function {name}.")
-
         return self.func(name, expression.this, expression.expression)
 
     return _arg_max_or_min_sql

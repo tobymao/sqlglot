@@ -1059,12 +1059,8 @@ class Snowflake(Dialect):
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
 
+        @generator.unsupported_args("weight", "accuracy")
         def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
-            if expression.args.get("weight") or expression.args.get("accuracy"):
-                self.unsupported(
-                    "APPROX_PERCENTILE with weight and/or accuracy arguments are not supported in Snowflake"
-                )
-
             return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:

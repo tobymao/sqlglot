@@ -1917,8 +1917,6 @@ class Generator(metaclass=_Generator):
         direction = self.seg("UNPIVOT" if expression.unpivot else "PIVOT")
 
         field = self.sql(expression, "field")
-        if field and isinstance(expression.args.get("field"), exp.PivotAny):
-            field = f"IN ({field})"
 
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:

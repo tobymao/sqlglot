@@ -1595,6 +1595,8 @@ def json_extract_segments(
         if not isinstance(path, exp.JSONPath):
             return rename_func(name)(self, expression)
 
+        escape = path.args.get("escape")
+
         segments = []
         for segment in path.expressions:
             path = self.sql(segment)
@@ -1602,6 +1604,9 @@ def json_extract_segments(
                 if isinstance(segment, exp.JSONPathPart) and (
                     quoted_index or not isinstance(segment, exp.JSONPathSubscript)
                 ):
+                    if escape:
+                        path = self.escape_str(path)
+
                     path = f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 
                 segments.append(path)

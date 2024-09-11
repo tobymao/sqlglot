@@ -142,6 +142,13 @@ class TestDatabricks(Validator):
             """SELECT raw:`zip code`, raw:`fb:testid`, raw:store['bicycle'], raw:store["zip code"]""",
             """SELECT raw:["zip code"], raw:["fb:testid"], raw:store.bicycle, raw:store["zip code"]""",
         )
+        self.validate_all(
+            "SELECT col:`fr'uit`",
+            write={
+                "databricks": """SELECT col:["fr'uit"]""",
+                "postgres": "SELECT JSON_EXTRACT_PATH(col, 'fr''uit')",
+            },
+        )
 
     def test_datediff(self):
         self.validate_all(

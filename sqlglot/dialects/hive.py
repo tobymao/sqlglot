@@ -131,9 +131,8 @@ def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
     return self.func("TO_JSON", this, expression.args.get("options"))
 
 
+@generator.unsupported_args(("expression", "Hive's SORT_ARRAY does not support a comparator."))
 def _array_sort_sql(self: Hive.Generator, expression: exp.ArraySort) -> str:
-    if expression.expression:
-        self.unsupported("Hive SORT_ARRAY does not support a comparator")
     return self.func("SORT_ARRAY", expression.this)
 
 

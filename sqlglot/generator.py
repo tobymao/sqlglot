@@ -4,7 +4,7 @@ import logging
 import re
 import typing as t
 from collections import defaultdict
-from functools import reduce
+from functools import reduce, wraps
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
@@ -17,9 +17,47 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from sqlglot.dialects.dialect import DialectType
 
+    G = t.TypeVar("G", bound="Generator")
+    GeneratorMethod = t.Callable[[G, E], str]
+
 logger = logging.getLogger("sqlglot")
 
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
+UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
+
+
+def unsupported_args(
+    *args: t.Union[str, t.Tuple[str, str]],
+) -> t.Callable[[GeneratorMethod], GeneratorMethod]:
+    """
+    Decorator that can be used to mark certain args of an `Expression` subclass as unsupported.
+    It expects a sequence of argument names or pairs of the form (argument_name, diagnostic_msg).
+    """
+    diagnostic_by_arg: t.Dict[str, t.Optional[str]] = {}
+    for arg in args:
+        if isinstance(arg, str):
+            diagnostic_by_arg[arg] = None
+        else:
+            diagnostic_by_arg[arg[0]] = arg[1]
+
+    def decorator(func: GeneratorMethod) -> GeneratorMethod:
+        @wraps(func)
+        def _func(generator: G, expression: E) -> str:
+            expression_name = expression.__class__.__name__
+            dialect_name = generator.dialect.__class__.__name__
+
+            for arg_name, diagnostic in diagnostic_by_arg.items():
+                if arg_name in expression.args:
+                    diagnostic = diagnostic or UNSUPPORTED_TEMPLATE.format(
+                        arg_name, expression_name, dialect_name
+                    )
+                    generator.unsupported(diagnostic)
+
+            return func(generator, expression)
+
+        return _func
+
+    return decorator
 
 
 class _Generator(type):
@@ -3594,10 +3632,8 @@ class Generator(metaclass=_Generator):
             f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}{sep}{returning}",
         )
 
+    @unsupported_args("format")
     def tochar_sql(self, expression: exp.ToChar) -> str:
-        if expression.args.get("format"):
-            self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
-
         return self.sql(exp.cast(expression.this, exp.DataType.Type.TEXT))
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:

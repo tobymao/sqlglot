@@ -4752,12 +4752,12 @@ class TimeUnit(Expression):
 
 
 class IntervalOp(TimeUnit):
-    arg_types = {"unit": True, "expression": True}
+    arg_types = {"unit": False, "expression": True}
 
     def interval(self):
         return Interval(
             this=self.expression.copy(),
-            unit=self.unit.copy(),
+            unit=self.unit.copy() if self.unit else None,
         )
 
 

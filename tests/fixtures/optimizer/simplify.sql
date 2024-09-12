@@ -552,6 +552,9 @@ CAST('2023-01-01 22:00:00' AS DATETIME);
 DATE_ADD(x, 1, 'MONTH');
 DATE_ADD(x, 1, 'MONTH');
 
+DATE_ADD(x, 1);
+DATE_ADD(x, 1, 'DAY');
+
 --------------------------------------
 -- Comparisons
 --------------------------------------

@@ -1,6 +1,53 @@
 Changelog
 =========
 
+## [v25.21.0] - 2024-09-12
+### :boom: BREAKING CHANGES
+- due to [`da51ea5`](https://github.com/tobymao/sqlglot/commit/da51ea5c8f405859d877a25176e8e48ef8b4b112) - refactor exp.Chr *(PR [#4081](https://github.com/tobymao/sqlglot/pull/4081) by [@georgesittas](https://github.com/georgesittas))*:
+
+  refactor exp.Chr (#4081)
+
+- due to [`9c527b5`](https://github.com/tobymao/sqlglot/commit/9c527b549cc56db9d8f44579397d9f9fe1440573) - treat Nullable as an arg instead of a DataType.TYPE *(PR [#4094](https://github.com/tobymao/sqlglot/pull/4094) by [@georgesittas](https://github.com/georgesittas))*:
+
+  treat Nullable as an arg instead of a DataType.TYPE (#4094)
+
+
+### :sparkles: New Features
+- [`5771d8d`](https://github.com/tobymao/sqlglot/commit/5771d8da94aff104206f93482e7b248d725f1843) - add merge expression builder *(PR [#4084](https://github.com/tobymao/sqlglot/pull/4084) by [@max-muoto](https://github.com/max-muoto))*
+- [`1d52709`](https://github.com/tobymao/sqlglot/commit/1d5270915d14f3f92341d5057b88b58fff6c0d97) - **postgres**: Parse DO NOTHING and RETURNING in MERGE statement *(PR [#4087](https://github.com/tobymao/sqlglot/pull/4087) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4083](https://github.com/tobymao/sqlglot/issues/4083) opened by [@max-muoto](https://github.com/max-muoto)*
+- [`1615bad`](https://github.com/tobymao/sqlglot/commit/1615bad98eeddc8e67e8002c3b1fe93bd7c3b690) - Add support for UUID function *(PR [#4089](https://github.com/tobymao/sqlglot/pull/4089) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`5733600`](https://github.com/tobymao/sqlglot/commit/57336006795d32e9253a9df4813d3029d1d32ef1) - **bigquery**: transpile UUID type to STRING *(PR [#4093](https://github.com/tobymao/sqlglot/pull/4093) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4091](https://github.com/tobymao/sqlglot/issues/4091) opened by [@gigatexal](https://github.com/gigatexal)*
+- [`75230f5`](https://github.com/tobymao/sqlglot/commit/75230f5970c240add1cff7349fc65fb67541fa34) - **bigquery**: add support for the MERGE ... THEN INSERT ROW syntax *(PR [#4096](https://github.com/tobymao/sqlglot/pull/4096) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4095](https://github.com/tobymao/sqlglot/issues/4095) opened by [@ericist](https://github.com/ericist)*
+- [`f8d4dc4`](https://github.com/tobymao/sqlglot/commit/f8d4dc4bab90cd369eef090c23b81160a7ae78fc) - **parser**: add support for ALTER INDEX closes [#4105](https://github.com/tobymao/sqlglot/pull/4105) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`28c6f27`](https://github.com/tobymao/sqlglot/commit/28c6f27291d57d85917c62b387b86a598ee3c1d6) - **duckdb**: Support *COLUMNS() function *(PR [#4106](https://github.com/tobymao/sqlglot/pull/4106) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4101](https://github.com/tobymao/sqlglot/issues/4101) opened by [@aersam](https://github.com/aersam)*
+- [`3cb0041`](https://github.com/tobymao/sqlglot/commit/3cb00417f45624f012e5ce8ababfe3250e813b80) - **snowflake**: Fix exp.Pivot FOR IN clause *(PR [#4109](https://github.com/tobymao/sqlglot/pull/4109) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4108](https://github.com/tobymao/sqlglot/issues/4108) opened by [@kharigardner](https://github.com/kharigardner)*
+- [`7ac21a0`](https://github.com/tobymao/sqlglot/commit/7ac21a07c73cdf156ae4dc6a848b9f781b265d16) - **athena**: Improve DDL query support *(PR [#4099](https://github.com/tobymao/sqlglot/pull/4099) by [@erindru](https://github.com/erindru))*
+
+### :bug: Bug Fixes
+- [`da51ea5`](https://github.com/tobymao/sqlglot/commit/da51ea5c8f405859d877a25176e8e48ef8b4b112) - **parser**: refactor exp.Chr *(PR [#4081](https://github.com/tobymao/sqlglot/pull/4081) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4080](https://github.com/tobymao/sqlglot/issues/4080) opened by [@EugeneTorap](https://github.com/EugeneTorap)*
+- [`6294f9e`](https://github.com/tobymao/sqlglot/commit/6294f9e6d08111c6088f5ed9846e7a64f7724801) - **starrocks**: generate ARRAY_FILTER for exp.ArrayFilter *(PR [#4088](https://github.com/tobymao/sqlglot/pull/4088) by [@gauravsagar483](https://github.com/gauravsagar483))*
+- [`1e02c02`](https://github.com/tobymao/sqlglot/commit/1e02c0221ea8445ccb5537b0a77e120c0b2c108c) - **mysql**: convert VARCHAR without size to TEXT for DDLs *(PR [#4092](https://github.com/tobymao/sqlglot/pull/4092) by [@georgesittas](https://github.com/georgesittas))*
+- [`cb5bcff`](https://github.com/tobymao/sqlglot/commit/cb5bcfff1f96972e75681bb2411bca8b60a4bff1) - **clickhouse**: generate formatDateTime instead of DATE_FORMAT fixes [#4098](https://github.com/tobymao/sqlglot/pull/4098) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`b10255e`](https://github.com/tobymao/sqlglot/commit/b10255eb8b6b73bf5084fdf6bffd5a7fa351b1ec) - **snowflake**: Manually escape single quotes in colon operator *(PR [#4104](https://github.com/tobymao/sqlglot/pull/4104) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4090](https://github.com/tobymao/sqlglot/issues/4090) opened by [@jussihe-rec](https://github.com/jussihe-rec)*
+- [`67a9ad8`](https://github.com/tobymao/sqlglot/commit/67a9ad89abfce84f78dd1a34caa9dc8143233609) - Move JSON path escape to generation *(PR [#4110](https://github.com/tobymao/sqlglot/pull/4110) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4090](https://github.com/tobymao/sqlglot/issues/4090) opened by [@jussihe-rec](https://github.com/jussihe-rec)*
+
+### :recycle: Refactors
+- [`9c527b5`](https://github.com/tobymao/sqlglot/commit/9c527b549cc56db9d8f44579397d9f9fe1440573) - treat Nullable as an arg instead of a DataType.TYPE *(PR [#4094](https://github.com/tobymao/sqlglot/pull/4094) by [@georgesittas](https://github.com/georgesittas))*
+- [`2961049`](https://github.com/tobymao/sqlglot/commit/296104950f2e679aea37810a48eb490e170518d3) - implement decorator to easily mark args as unsupported *(PR [#4111](https://github.com/tobymao/sqlglot/pull/4111) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`75e6406`](https://github.com/tobymao/sqlglot/commit/75e640672eef0ddf752ee36dbc6f904f8e06510f) - **prql**: rewrite tests to use `validate_all()` *(PR [#4097](https://github.com/tobymao/sqlglot/pull/4097) by [@JJHCool](https://github.com/JJHCool))*
+- [`e1f6ae3`](https://github.com/tobymao/sqlglot/commit/e1f6ae393fa2857dbbb9a14b03cbe39910207233) - **prql**: use validate_all instead of validate_identity *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.20.1] - 2024-09-06
 ### :wrench: Chores
 - [`8a357cc`](https://github.com/tobymao/sqlglot/commit/8a357ccbcf2301f6a8d60c237a6397bf6547de14) - bump sqlglotrs to 0.2.12 -- remove relative readme path *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -4683,3 +4730,4 @@ Changelog
 [v25.19.0]: https://github.com/tobymao/sqlglot/compare/v25.18.0...v25.19.0
 [v25.20.0]: https://github.com/tobymao/sqlglot/compare/v25.19.0...v25.20.0
 [v25.20.1]: https://github.com/tobymao/sqlglot/compare/v25.20.0...v25.20.1
+[v25.21.0]: https://github.com/tobymao/sqlglot/compare/v25.20.1...v25.21.0

@@ -155,9 +155,6 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     for i, join in enumerate(joins):
         using = join.args.get("using")
 
-        if not using:
-            continue
-
         join_table = join.alias_or_name
 
         columns = {}
@@ -170,6 +167,10 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
 
         source_table = ordered[-1]
         ordered.append(join_table)
+
+        if not using:
+            continue
+
         join_columns = resolver.get_source_columns(join_table)
         conditions = []
         using_identifier_count = len(using)

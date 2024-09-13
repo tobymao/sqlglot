@@ -397,6 +397,22 @@ class TestOptimizer(unittest.TestCase):
             "SELECT u.user_id AS user_id, l.log_date AS log_date FROM users AS u CROSS JOIN LATERAL (SELECT l1.log_date AS log_date FROM (SELECT l.log_date AS log_date FROM logs AS l WHERE l.user_id = u.user_id AND l.log_date <= 100 ORDER BY l.log_date LIMIT 1) AS l1) AS l",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT A.b_id FROM A JOIN B ON A.b_id=B.b_id JOIN C USING(c_id)",
+                    dialect="postgres",
+                ),
+                schema={
+                    "A": {"b_id": "int"},
+                    "B": {"b_id": "int", "c_id": "int"},
+                    "C": {"c_id": "int"},
+                },
+                quote_identifiers=False,
+            ).sql("postgres"),
+            "SELECT a.b_id AS b_id FROM a AS a JOIN b AS b ON a.b_id = b.b_id JOIN c AS c ON b.c_id = c.c_id",
+        )
+
         self.check_file(
             "qualify_columns",
             qualify_columns,

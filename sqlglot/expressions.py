@@ -4173,9 +4173,14 @@ class DataType(Expression):
         Type.STRUCT,
     }
 
+    ARRAY_TYPES = {
+        Type.ARRAY,
+        Type.LIST,
+    }
+
     NESTED_TYPES = {
         *STRUCT_TYPES,
-        Type.ARRAY,
+        *ARRAY_TYPES,
         Type.MAP,
     }
 

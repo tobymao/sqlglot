@@ -153,23 +153,22 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     column_tables: t.Dict[str, t.Dict[str, t.Any]] = {}
 
     for i, join in enumerate(joins):
-        using = join.args.get("using")
+        source_table = ordered[-1]
+        join_table = join.alias_or_name
+        ordered.append(join_table)
 
+        using = join.args.get("using")
         if not using:
             continue
-
-        join_table = join.alias_or_name
 
         columns = {}
 
         for source_name in scope.selected_sources:
-            if source_name in ordered:
+            if source_name in ordered[:-1]:
                 for column_name in resolver.get_source_columns(source_name):
                     if column_name not in columns:
                         columns[column_name] = source_name
 
-        source_table = ordered[-1]
-        ordered.append(join_table)
         join_columns = resolver.get_source_columns(join_table)
         conditions = []
         using_identifier_count = len(using)

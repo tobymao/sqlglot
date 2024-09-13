@@ -147,7 +147,7 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
 def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     columns = {}
 
-    def _gather_source_columns(source_name: str) -> None:
+    def _update_source_columns(source_name: str) -> None:
         for column_name in resolver.get_source_columns(source_name):
             if column_name not in columns:
                 columns[column_name] = source_name
@@ -160,12 +160,12 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     column_tables: t.Dict[str, t.Dict[str, t.Any]] = {}
 
     for source_name in ordered:
-        _gather_source_columns(source_name)
+        _update_source_columns(source_name)
 
     for i, join in enumerate(joins):
         source_table = ordered[-1]
         if source_table:
-            _gather_source_columns(source_table)
+            _update_source_columns(source_table)
 
         join_table = join.alias_or_name
         ordered.append(join_table)

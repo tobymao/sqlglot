@@ -70,6 +70,10 @@ class TestOracle(Validator):
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
         )
         self.validate_identity(
+            "SELECT TRUNC(SYSDATE)",
+            "SELECT TRUNC(SYSDATE, 'DD')",
+        )
+        self.validate_identity(
             """SELECT JSON_OBJECT(KEY 'key1' IS emp.column1, KEY 'key2' IS emp.column1) "emp_key" FROM emp""",
             """SELECT JSON_OBJECT('key1': emp.column1, 'key2': emp.column1) AS "emp_key" FROM emp""",
         )

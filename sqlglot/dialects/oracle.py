@@ -118,7 +118,9 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
+            "TRUNC": lambda args: exp.DateTrunc(
+                unit=seq_get(args, 1) or exp.Literal.string("DD"), this=seq_get(args, 0)
+            ),
         }
 
         NO_PAREN_FUNCTION_PARSERS = {

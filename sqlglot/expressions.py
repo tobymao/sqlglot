@@ -1918,6 +1918,7 @@ class Delete(DML):
         "returning": False,
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
+        "cluster": False,  # Clickhouse
     }
 
     def delete(

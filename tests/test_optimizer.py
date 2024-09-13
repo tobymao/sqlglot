@@ -412,6 +412,22 @@ class TestOptimizer(unittest.TestCase):
             ).sql("postgres"),
             "SELECT a.b_id AS b_id FROM a AS a JOIN b AS b ON a.b_id = b.b_id JOIN c AS c ON b.c_id = c.c_id",
         )
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT A.b_id FROM A JOIN B ON A.b_id=B.b_id JOIN C ON B.b_id = C.b_id JOIN D USING(d_id)",
+                    dialect="postgres",
+                ),
+                schema={
+                    "A": {"b_id": "int"},
+                    "B": {"b_id": "int", "d_id": "int"},
+                    "C": {"b_id": "int"},
+                    "D": {"d_id": "int"},
+                },
+                quote_identifiers=False,
+            ).sql("postgres"),
+            "SELECT a.b_id AS b_id FROM a AS a JOIN b AS b ON a.b_id = b.b_id JOIN c AS c ON b.b_id = c.b_id JOIN d AS d ON b.d_id = d.d_id",
+        )
 
         self.check_file(
             "qualify_columns",

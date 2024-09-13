@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v25.21.2] - 2024-09-13
+### :sparkles: New Features
+- [`a34f8b6`](https://github.com/tobymao/sqlglot/commit/a34f8b6ff9b0aa8595214da75fe7cbfbc8285476) - **oracle**: support TRUNC without fmt argument fixes [#4116](https://github.com/tobymao/sqlglot/pull/4116) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`66c3295`](https://github.com/tobymao/sqlglot/commit/66c32958a9e46642077813adf90079098e41c87e) - **optimizer**: Enable USING expansion with multiple joins *(PR [#4113](https://github.com/tobymao/sqlglot/pull/4113) by [@dg-hellotwin](https://github.com/dg-hellotwin))*
+  - :arrow_lower_right: *fixes issue [#4112](https://github.com/tobymao/sqlglot/issues/4112) opened by [@dg-hellotwin](https://github.com/dg-hellotwin)*
+
+### :recycle: Refactors
+- [`7cf1d70`](https://github.com/tobymao/sqlglot/commit/7cf1d70e909ae319ff659e1455e6fcad1e8cf905) - **optimizer**: Optimize USING expansion *(PR [#4115](https://github.com/tobymao/sqlglot/pull/4115) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :wrench: Chores
+- [`2dc0b86`](https://github.com/tobymao/sqlglot/commit/2dc0b8620e16b3cdf85f6bb6bea10c2527497933) - **optimizer**: rename helper function in expand_using *(PR [#4117](https://github.com/tobymao/sqlglot/pull/4117) by [@georgesittas](https://github.com/georgesittas))*
+- [`fd8b8ba`](https://github.com/tobymao/sqlglot/commit/fd8b8ba7dedaee5d237b080db5c4f7e83ba079e9) - create ARRAY_TYPES set under DataType *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.21.1] - 2024-09-13
 ### :bug: Bug Fixes
 - [`06c76f7`](https://github.com/tobymao/sqlglot/commit/06c76f7471cdb679a7a7a35064204d94841fd929) - calling interval without unit *(commit by [@tobymao](https://github.com/tobymao))*
@@ -4737,3 +4753,4 @@ Changelog
 [v25.20.1]: https://github.com/tobymao/sqlglot/compare/v25.20.0...v25.20.1
 [v25.21.0]: https://github.com/tobymao/sqlglot/compare/v25.20.1...v25.21.0
 [v25.21.1]: https://github.com/tobymao/sqlglot/compare/v25.21.0...v25.21.1
+[v25.21.2]: https://github.com/tobymao/sqlglot/compare/v25.21.1...v25.21.2

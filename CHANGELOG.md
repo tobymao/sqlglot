@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.21.1] - 2024-09-13
+### :bug: Bug Fixes
+- [`06c76f7`](https://github.com/tobymao/sqlglot/commit/06c76f7471cdb679a7a7a35064204d94841fd929) - calling interval without unit *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v25.21.0] - 2024-09-12
 ### :boom: BREAKING CHANGES
 - due to [`da51ea5`](https://github.com/tobymao/sqlglot/commit/da51ea5c8f405859d877a25176e8e48ef8b4b112) - refactor exp.Chr *(PR [#4081](https://github.com/tobymao/sqlglot/pull/4081) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4731,3 +4736,4 @@ Changelog
 [v25.20.0]: https://github.com/tobymao/sqlglot/compare/v25.19.0...v25.20.0
 [v25.20.1]: https://github.com/tobymao/sqlglot/compare/v25.20.0...v25.20.1
 [v25.21.0]: https://github.com/tobymao/sqlglot/compare/v25.20.1...v25.21.0
+[v25.21.1]: https://github.com/tobymao/sqlglot/compare/v25.21.0...v25.21.1

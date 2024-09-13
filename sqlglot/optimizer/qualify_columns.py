@@ -145,13 +145,6 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
 
 
 def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
-    columns = {}
-
-    def _gather_source_columns(source_name: str) -> None:
-        for column_name in resolver.get_source_columns(source_name):
-            if column_name not in columns:
-                columns[column_name] = source_name
-
     joins = list(scope.find_all(exp.Join))
     names = {join.alias_or_name for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
@@ -159,13 +152,13 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables: t.Dict[str, t.Dict[str, t.Any]] = {}
 
-    for source_name in ordered:
-        _gather_source_columns(source_name)
-
+    columns = {}
     for i, join in enumerate(joins):
         source_table = ordered[-1]
         if source_table:
-            _gather_source_columns(source_table)
+            for column_name in resolver.get_source_columns(source_table):
+                if column_name not in columns:
+                    columns[column_name] = source_table
 
         join_table = join.alias_or_name
         ordered.append(join_table)

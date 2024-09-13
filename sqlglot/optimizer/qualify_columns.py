@@ -147,7 +147,7 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
 def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     columns = {}
 
-    def _gather_source_columns(source_name: str):
+    def _gather_source_columns(source_name: str) -> None:
         for column_name in resolver.get_source_columns(source_name):
             if column_name not in columns:
                 columns[column_name] = source_name

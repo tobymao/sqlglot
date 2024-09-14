@@ -4796,7 +4796,11 @@ class Parser(metaclass=_Parser):
 
             if self._match_set((TokenType.L_BRACKET, TokenType.L_PAREN)):
                 values = self._parse_csv(self._parse_assignment)
-                self._match_set((TokenType.R_BRACKET, TokenType.R_PAREN))
+                if not values and is_struct:
+                    values = None
+                    self._retreat(self._index - 1)
+                else:
+                    self._match_set((TokenType.R_BRACKET, TokenType.R_PAREN))
 
         if type_token in self.TIMESTAMPS:
             if self._match_text_seq("WITH", "TIME", "ZONE"):

@@ -497,6 +497,7 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
         self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
+        self.validate_identity("DELETE FROM tbl ON CLUSTER test_cluster WHERE date = '2019-01-01'")
 
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType

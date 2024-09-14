@@ -18,6 +18,16 @@ class TestDuckDB(Validator):
             "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT col.b FROM _data, UNNEST(_data.col) AS col WHERE col.a = 1",
         )
 
+        struct_array_type = exp.maybe_parse(
+            "STRUCT(k TEXT, v STRUCT(v_str TEXT, v_int INT, v_int_arr INT[]))[]",
+            into=exp.DataType,
+            dialect="duckdb",
+        )
+        self.assertEqual(
+            struct_array_type.sql("duckdb"),
+            "STRUCT(k TEXT, v STRUCT(v_str TEXT, v_int INT, v_int_arr INT[]))[]",
+        )
+
         self.validate_all(
             "CAST(x AS UUID)",
             write={

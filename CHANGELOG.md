@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v25.21.3] - 2024-09-14
+### :sparkles: New Features
+- [`bd8e050`](https://github.com/tobymao/sqlglot/commit/bd8e050e7df905082fd32e26c4ee0c6e2d36c897) - **clickhouse**: support ON CLUSTER clause in DELETE *(PR [#4119](https://github.com/tobymao/sqlglot/pull/4119) by [@treysp](https://github.com/treysp))*
+
+### :bug: Bug Fixes
+- [`21f5bcd`](https://github.com/tobymao/sqlglot/commit/21f5bcd13eb9c567c711cec5879c4d08a052b91c) - parse struct(...)[] type properly *(PR [#4123](https://github.com/tobymao/sqlglot/pull/4123) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.21.2] - 2024-09-13
 ### :sparkles: New Features
 - [`a34f8b6`](https://github.com/tobymao/sqlglot/commit/a34f8b6ff9b0aa8595214da75fe7cbfbc8285476) - **oracle**: support TRUNC without fmt argument fixes [#4116](https://github.com/tobymao/sqlglot/pull/4116) *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -4754,3 +4762,4 @@ Changelog
 [v25.21.0]: https://github.com/tobymao/sqlglot/compare/v25.20.1...v25.21.0
 [v25.21.1]: https://github.com/tobymao/sqlglot/compare/v25.21.0...v25.21.1
 [v25.21.2]: https://github.com/tobymao/sqlglot/compare/v25.21.1...v25.21.2
+[v25.21.3]: https://github.com/tobymao/sqlglot/compare/v25.21.2...v25.21.3

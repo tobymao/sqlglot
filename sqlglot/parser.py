@@ -260,6 +260,7 @@ class Parser(metaclass=_Parser):
         TokenType.NESTED,
         TokenType.OBJECT,
         TokenType.STRUCT,
+        TokenType.UNION,
     }
 
     NESTED_TYPE_TOKENS = {
@@ -522,6 +523,7 @@ class Parser(metaclass=_Parser):
         *TYPE_TOKENS,
         *NO_PAREN_FUNCTIONS,
     }
+    ID_VAR_TOKENS.remove(TokenType.UNION)
 
     INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.END}
 

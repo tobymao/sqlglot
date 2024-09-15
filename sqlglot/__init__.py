@@ -27,6 +27,7 @@ from sqlglot.expressions import (
     cast as cast,
     column as column,
     condition as condition,
+    delete as delete,
     except_ as except_,
     from_ as from_,
     func as func,

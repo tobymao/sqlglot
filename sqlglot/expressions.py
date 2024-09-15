@@ -6838,9 +6838,7 @@ def delete(
     if where:
         delete_expr = delete_expr.where(where, dialect=dialect, copy=False, **opts)
     if returning:
-        delete_expr = t.cast(
-            Delete, delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
-        )
+        delete_expr = delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
     return delete_expr
 
 
@@ -6922,7 +6920,7 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
-    merge_expr = Merge(
+    merge = Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
         using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
         on=maybe_parse(on, dialect=dialect, copy=copy, **opts),
@@ -6932,9 +6930,9 @@ def merge(
         ],
     )
     if returning:
-        merge_expr = merge_expr.returning(returning, dialect=dialect, copy=False, **opts)
+        merge = merge.returning(returning, dialect=dialect, copy=False, **opts)
 
-    return merge_expr
+    return merge
 
 
 def condition(

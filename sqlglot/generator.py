@@ -3625,13 +3625,15 @@ class Generator(metaclass=_Generator):
         using = f"USING {self.sql(expression, 'using')}"
         on = f"ON {self.sql(expression, 'on')}"
         expressions = self.expressions(expression, sep=" ", indent=False)
+        returning = self.sql(expression, "returning")
+        if returning:
+            expressions = f"{expressions}{returning}"
+
         sep = self.sep()
-        returning = self.expressions(expression, key="returning", indent=False)
-        returning = f"RETURNING {returning}" if returning else ""
 
         return self.prepend_ctes(
             expression,
-            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}{sep}{returning}",
+            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}",
         )
 
     @unsupported_args("format")

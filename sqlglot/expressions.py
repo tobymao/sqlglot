@@ -11,7 +11,7 @@ SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
-
+from typing_extensions import Self
 import datetime
 import math
 import numbers
@@ -1368,7 +1368,7 @@ class DML(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> DML:
+    ) -> Self:
         """
         Set the RETURNING expression. Not supported by all dialects.
 
@@ -6274,7 +6274,7 @@ class Use(Expression):
     arg_types = {"this": True, "kind": False}
 
 
-class Merge(Expression):
+class Merge(DML):
     arg_types = {
         "this": True,
         "using": True,
@@ -6883,7 +6883,7 @@ def insert(
     insert = Insert(this=this, expression=expr, overwrite=overwrite)
 
     if returning:
-        insert = t.cast(Insert, insert.returning(returning, dialect=dialect, copy=False, **opts))
+        insert = insert.returning(returning, dialect=dialect, copy=False, **opts)
 
     return insert
 
@@ -6922,10 +6922,7 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
-    returning_expr = (
-        maybe_parse(returning, dialect=dialect, copy=copy, **opts) if returning else None
-    )
-    return Merge(
+    merge_expr = Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
         using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
         on=maybe_parse(on, dialect=dialect, copy=copy, **opts),
@@ -6933,8 +6930,11 @@ def merge(
             maybe_parse(when_expr, dialect=dialect, copy=copy, into=When, **opts)
             for when_expr in when_exprs
         ],
-        returning=returning_expr,
     )
+    if returning:
+        merge_expr = merge_expr.returning(returning, dialect=dialect, copy=False, **opts)
+
+    return merge_expr
 
 
 def condition(

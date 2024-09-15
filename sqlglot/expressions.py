@@ -6893,6 +6893,7 @@ def merge(
     into: ExpOrStr,
     using: ExpOrStr,
     on: ExpOrStr,
+    returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
@@ -6913,6 +6914,7 @@ def merge(
         into: The target table to merge data into.
         using: The source table to merge data from.
         on: The join condition for the merge.
+        returning: The columns to return from the merge.
         dialect: The dialect used to parse the input expressions.
         copy: Whether to copy the expression.
         **opts: Other options to use to parse the input expressions.
@@ -6920,6 +6922,9 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
+    returning_expr = (
+        maybe_parse(returning, dialect=dialect, copy=copy, **opts) if returning else None
+    )
     return Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
         using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
@@ -6928,6 +6933,7 @@ def merge(
             maybe_parse(when_expr, dialect=dialect, copy=copy, into=When, **opts)
             for when_expr in when_exprs
         ],
+        returning=returning_expr,
     )
 
 

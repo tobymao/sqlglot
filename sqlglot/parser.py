@@ -4343,7 +4343,7 @@ class Parser(metaclass=_Parser):
             )
 
         while self._match_set(self.ASSIGNMENT):
-            if isinstance(this, exp.Column) and len(this.parts) == 1 and not this.this.quoted:
+            if isinstance(this, exp.Column) and len(this.parts) == 1:
                 this = this.this
 
             this = self.expression(

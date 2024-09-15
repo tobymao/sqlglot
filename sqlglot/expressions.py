@@ -11,7 +11,6 @@ SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
-from typing_extensions import Self
 import datetime
 import math
 import numbers
@@ -36,6 +35,7 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token, TokenError
 
 if t.TYPE_CHECKING:
+    from typing_extensions import Self
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import DialectType
 
@@ -1368,7 +1368,7 @@ class DML(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> Self:
+    ) -> "Self":
         """
         Set the RETURNING expression. Not supported by all dialects.
 

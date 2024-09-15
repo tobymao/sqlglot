@@ -4343,6 +4343,9 @@ class Parser(metaclass=_Parser):
             )
 
         while self._match_set(self.ASSIGNMENT):
+            if isinstance(this, exp.Column) and len(this.parts) == 1 and not this.this.quoted:
+                this = exp.var(this.name)
+
             this = self.expression(
                 self.ASSIGNMENT[self._prev.token_type],
                 this=this,

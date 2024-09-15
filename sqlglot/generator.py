@@ -3899,7 +3899,10 @@ class Generator(metaclass=_Generator):
         expression.set(
             "expressions",
             [
-                exp.alias_(e.expression, e.name if e.this.is_string else e.this)
+                exp.alias_(
+                    e.expression,
+                    e.name if e.this.is_string or isinstance(e.this, exp.Var) else e.this,
+                )
                 if isinstance(e, exp.PropertyEQ)
                 else e
                 for e in expression.expressions

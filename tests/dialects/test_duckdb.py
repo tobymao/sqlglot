@@ -256,6 +256,7 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("UNION_VALUE(k1 := 1)").expressions[0].this.assert_is(exp.Var)
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")

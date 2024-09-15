@@ -6841,7 +6841,7 @@ class Parser(metaclass=_Parser):
             using=using,
             on=on,
             expressions=self._parse_when_matched(),
-            returning=self._parse_returning()        
+            returning=self._parse_returning(),
         )
 
     def _parse_when_matched(self) -> t.List[exp.When]:

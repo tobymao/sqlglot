@@ -6841,7 +6841,7 @@ class Parser(metaclass=_Parser):
             using=using,
             on=on,
             expressions=self._parse_when_matched(),
-            returning=self._match(TokenType.RETURNING) and self._parse_csv(self._parse_bitwise),
+            returning=self._parse_returning()        
         )
 
     def _parse_when_matched(self) -> t.List[exp.When]:

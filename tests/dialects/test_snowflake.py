@@ -755,6 +755,8 @@ WHERE
             write={
                 "spark": "SELECT COLLECT_LIST(DISTINCT a)",
                 "snowflake": "SELECT ARRAY_AGG(DISTINCT a)",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT a) FILTER(WHERE a IS NOT NULL)",
+                "presto": "SELECT ARRAY_AGG(DISTINCT a) FILTER(WHERE a IS NOT NULL)",
             },
         )
         self.validate_all(

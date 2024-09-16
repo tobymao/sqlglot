@@ -761,6 +761,16 @@ class TestBuild(unittest.TestCase):
                 ),
                 "MERGE INTO target_table AS target USING source_table AS source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.name = source.name",
             ),
+            (
+                lambda: exp.merge(
+                    "WHEN MATCHED THEN UPDATE SET target.name = source.name",
+                    into=exp.table_("target_table").as_("target"),
+                    using=exp.table_("source_table").as_("source"),
+                    on="target.id = source.id",
+                    returning="target.*",
+                ),
+                "MERGE INTO target_table AS target USING source_table AS source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.name = source.name RETURNING target.*",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

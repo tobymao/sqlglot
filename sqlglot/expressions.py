@@ -11,7 +11,6 @@ SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
-
 import datetime
 import math
 import numbers
@@ -36,6 +35,7 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token, TokenError
 
 if t.TYPE_CHECKING:
+    from typing_extensions import Self
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import DialectType
 
@@ -1368,7 +1368,7 @@ class DML(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> DML:
+    ) -> "Self":
         """
         Set the RETURNING expression. Not supported by all dialects.
 
@@ -6276,7 +6276,7 @@ class Use(Expression):
     arg_types = {"this": True, "kind": False}
 
 
-class Merge(Expression):
+class Merge(DML):
     arg_types = {
         "this": True,
         "using": True,
@@ -6840,9 +6840,7 @@ def delete(
     if where:
         delete_expr = delete_expr.where(where, dialect=dialect, copy=False, **opts)
     if returning:
-        delete_expr = t.cast(
-            Delete, delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
-        )
+        delete_expr = delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
     return delete_expr
 
 
@@ -6885,7 +6883,7 @@ def insert(
     insert = Insert(this=this, expression=expr, overwrite=overwrite)
 
     if returning:
-        insert = t.cast(Insert, insert.returning(returning, dialect=dialect, copy=False, **opts))
+        insert = insert.returning(returning, dialect=dialect, copy=False, **opts)
 
     return insert
 
@@ -6895,6 +6893,7 @@ def merge(
     into: ExpOrStr,
     using: ExpOrStr,
     on: ExpOrStr,
+    returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
@@ -6915,6 +6914,7 @@ def merge(
         into: The target table to merge data into.
         using: The source table to merge data from.
         on: The join condition for the merge.
+        returning: The columns to return from the merge.
         dialect: The dialect used to parse the input expressions.
         copy: Whether to copy the expression.
         **opts: Other options to use to parse the input expressions.
@@ -6922,7 +6922,7 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
-    return Merge(
+    merge = Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
         using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
         on=maybe_parse(on, dialect=dialect, copy=copy, **opts),
@@ -6931,6 +6931,10 @@ def merge(
             for when_expr in when_exprs
         ],
     )
+    if returning:
+        merge = merge.returning(returning, dialect=dialect, copy=False, **opts)
+
+    return merge
 
 
 def condition(

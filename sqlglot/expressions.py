@@ -4154,6 +4154,7 @@ class DataType(Expression):
         UINT256 = auto()
         UMEDIUMINT = auto()
         UDECIMAL = auto()
+        UNION = auto()
         UNIQUEIDENTIFIER = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
         USERDEFINED = "USER-DEFINED"
@@ -4172,6 +4173,7 @@ class DataType(Expression):
         Type.NESTED,
         Type.OBJECT,
         Type.STRUCT,
+        Type.UNION,
     }
 
     ARRAY_TYPES = {

@@ -1998,3 +1998,10 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SELECT COUNT(1) FROM x",
             },
         )
+
+    def test_grant(self):
+        self.validate_identity("GRANT EXECUTE ON TestProc TO User2")
+        self.validate_identity("GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION")
+        self.validate_identity(
+            "GRANT EXECUTE ON TestProc TO User2 AS TesterRole", check_command_warning=True
+        )

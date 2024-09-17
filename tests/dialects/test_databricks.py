@@ -271,3 +271,9 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "CREATE OR REFRESH STREAMING TABLE csv_data (id INT, ts TIMESTAMP, event STRING) AS SELECT * FROM STREAM READ_FILES('s3://bucket/path', format => 'csv', schema => 'id int, ts timestamp, event string')"
         )
+
+    def test_grant(self):
+        self.validate_identity("GRANT CREATE ON SCHEMA my_schema TO `alf@melmak.et`")
+        self.validate_identity("GRANT SELECT ON TABLE sample_data TO `alf@melmak.et`")
+        self.validate_identity("GRANT ALL PRIVILEGES ON TABLE forecasts TO finance")
+        self.validate_identity("GRANT SELECT ON TABLE t TO `fab9e00e-ca35-11ec-9d64-0242ac120002`")

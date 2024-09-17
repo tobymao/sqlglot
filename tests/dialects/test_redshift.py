@@ -626,3 +626,36 @@ FROM (
             "TIME_TO_STR(a, '%Y-%m-%d %H:%M:%S.%f')",
             write={"redshift": "TO_CHAR(a, 'YYYY-MM-DD HH24:MI:SS.US')"},
         )
+
+    def test_grant(self):
+        grant_cmds = [
+            "GRANT SELECT ON ALL TABLES IN SCHEMA qa_tickit TO fred",
+            "GRANT USAGE ON DATASHARE salesshare TO NAMESPACE '13b8833d-17c6-4f16-8fe4-1a018f5ed00d'",
+            "GRANT USAGE FOR SCHEMAS IN DATABASE Sales_db TO ROLE Sales",
+            "GRANT EXECUTE FOR FUNCTIONS IN SCHEMA Sales_schema TO bob",
+            "GRANT SELECT FOR TABLES IN DATABASE Sales_db TO alice WITH GRANT OPTION",
+            "GRANT ALL FOR TABLES IN SCHEMA ShareSchema DATABASE ShareDb TO ROLE Sales",
+            "GRANT ASSUMEROLE ON 'arn:aws:iam::123456789012:role/Redshift-Exfunc' TO reg_user1 FOR EXTERNAL FUNCTION",
+            "GRANT ROLE sample_role1 TO ROLE sample_role2",
+        ]
+
+        for sql in grant_cmds:
+            with self.subTest(f"Testing Redshift's GRANT command statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)
+
+        self.validate_identity("GRANT SELECT ON TABLE sales TO fred")
+        self.validate_identity("GRANT ALL ON SCHEMA qa_tickit TO GROUP qa_users")
+        self.validate_identity("GRANT ALL ON TABLE qa_tickit.sales TO GROUP qa_users")
+        self.validate_identity(
+            "GRANT ALL ON TABLE qa_tickit.sales TO GROUP qa_users, GROUP ro_users"
+        )
+        self.validate_identity("GRANT ALL ON view_date TO view_user")
+        self.validate_identity(
+            "GRANT SELECT(cust_name, cust_phone), UPDATE(cust_contact_preference) ON cust_profile TO GROUP sales_group"
+        )
+        self.validate_identity(
+            "GRANT ALL(cust_name, cust_phone, cust_contact_preference) ON cust_profile TO GROUP sales_admin"
+        )
+        self.validate_identity("GRANT USAGE ON DATABASE sales_db TO Bob")
+        self.validate_identity("GRANT USAGE ON SCHEMA sales_schema TO ROLE Analyst_role")
+        self.validate_identity("GRANT SELECT ON sales_db.sales_schema.tickit_sales_redshift TO Bob")

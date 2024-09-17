@@ -780,6 +780,7 @@ class Parser(metaclass=_Parser):
         TokenType.DESC: lambda self: self._parse_describe(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
+        TokenType.GRANT: lambda self: self._parse_grant(),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.KILL: lambda self: self._parse_kill(),
         TokenType.LOAD: lambda self: self._parse_load(),
@@ -7408,4 +7409,63 @@ class Parser(metaclass=_Parser):
                 "replace": self._parse_star_op("REPLACE"),
                 "rename": self._parse_star_op("RENAME"),
             },
+        )
+
+    def _parse_grant_privilage(self) -> t.Optional[exp.GrantPrivilage]:
+        privilage_parts = []
+
+        # Keep consuming consecutive keywords until comma (end of this privilage) or ON
+        # (end of privilage list) or L_PAREN (start of column list) are met
+        while self._curr and not self._match_set(
+            (TokenType.ON, TokenType.COMMA, TokenType.L_PAREN), advance=False
+        ):
+            privilage_parts.append(self._curr.text.upper())
+            self._advance()
+
+        this = exp.var(" ".join(privilage_parts))
+        expressions = (
+            self._parse_csv(self._parse_column) if self._match(TokenType.L_PAREN) else None
+        )
+        self._match(TokenType.R_PAREN)
+
+        return self.expression(exp.GrantPrivilage, this=this, expressions=expressions)
+
+    def _parse_grant_principal(self) -> t.Optional[exp.GrantPrincipal]:
+        kind = self._match_texts(("ROLE", "GROUP")) and self._prev.text.upper()
+        principal = self._try_parse(self._parse_id_var)
+
+        if not principal:
+            return None
+
+        return self.expression(exp.GrantPrincipal, this=principal, kind=kind)
+
+    def _parse_grant(self) -> exp.Grant | exp.Command:
+        start = self._prev
+
+        privilages = self._parse_csv(self._parse_grant_privilage)
+
+        self._match(TokenType.ON)
+        securable_kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+
+        # Attempt to parse the securable e.g. MySQL allows names
+        # such as "foo.*", "*.*" which are not easily parseable yet
+        securable = self._try_parse(self._parse_table_parts)
+
+        if not securable or not self._match_text_seq("TO"):
+            return self._parse_as_command(start)
+
+        principals = self._parse_csv(self._parse_grant_principal)
+
+        grant_option = self._match_text_seq("WITH", "GRANT", "OPTION")
+
+        if self._curr:
+            return self._parse_as_command(start)
+
+        return self.expression(
+            exp.Grant,
+            privilages=privilages,
+            securable_kind=securable_kind,
+            securable=securable,
+            principals=principals,
+            grant_option=grant_option,
         )

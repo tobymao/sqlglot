@@ -546,3 +546,21 @@ WHERE
                         self.validate_identity(
                             f"SELECT * FROM t WHERE JSON_EXISTS(name{format_json}, '$[1].middle'{passing}{on_cond})"
                         )
+
+    def test_grant(self):
+        grant_cmds = [
+            "GRANT purchases_reader_role TO george, maria",
+            "GRANT USAGE ON TYPE price TO finance_role",
+            "GRANT USAGE ON DERBY AGGREGATE types.maxPrice TO sales_role",
+        ]
+
+        for sql in grant_cmds:
+            with self.subTest(f"Testing Oracles's GRANT command statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)
+
+        self.validate_identity("GRANT SELECT ON TABLE t TO maria, harry")
+        self.validate_identity("GRANT SELECT ON TABLE s.v TO PUBLIC")
+        self.validate_identity("GRANT SELECT ON TABLE t TO purchases_reader_role")
+        self.validate_identity("GRANT UPDATE, TRIGGER ON TABLE t TO anita, zhi")
+        self.validate_identity("GRANT EXECUTE ON PROCEDURE p TO george")
+        self.validate_identity("GRANT USAGE ON SEQUENCE order_id TO sales_role")

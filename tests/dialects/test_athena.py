@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -68,6 +69,23 @@ class TestAthena(Validator):
             "CREATE TABLE foo AS WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo"
         )
 
+        # ALTER TABLE ADD COLUMN not supported, it needs to be generated as ALTER TABLE ADD COLUMNS
+        self.validate_identity(
+            "ALTER TABLE `foo`.`bar` ADD COLUMN `end_ts` BIGINT",
+            write_sql="ALTER TABLE `foo`.`bar` ADD COLUMNS (`end_ts` BIGINT)",
+        )
+
+    def test_dml(self):
+        self.validate_all(
+            "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
+            read={"": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)"},
+            write={
+                "hive": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
+                "trino": "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
+                "athena": "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
+            },
+        )
+
     def test_ddl_quoting(self):
         self.validate_identity("CREATE SCHEMA `foo`")
         self.validate_identity("CREATE SCHEMA foo")
@@ -111,6 +129,10 @@ class TestAthena(Validator):
             'CREATE VIEW `foo` AS SELECT "id" FROM `tbl`',
             write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
         )
+        self.validate_identity(
+            "DROP VIEW IF EXISTS `foo`.`bar`",
+            write_sql='DROP VIEW IF EXISTS "foo"."bar"',
+        )
 
         self.validate_identity(
             'ALTER TABLE "foo" ADD COLUMNS ("id" STRING)',
@@ -127,6 +149,8 @@ class TestAthena(Validator):
             'CREATE TABLE `foo` AS WITH `foo` AS (SELECT "a", `b` FROM "bar") SELECT * FROM "foo"',
             write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
         )
+
+        self.validate_identity("DESCRIBE foo.bar", write_sql="DESCRIBE `foo`.`bar`", identify=True)
 
     def test_dml_quoting(self):
         self.validate_identity("SELECT a AS foo FROM tbl")
@@ -166,4 +190,40 @@ class TestAthena(Validator):
             "WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo",
             write_sql='WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
             identify=True,
+        )
+
+    def test_ctas(self):
+        # Hive tables use 'external_location' to specify the table location, Iceberg tables use 'location' to specify the table location
+        # The 'table_type' property is used to determine if it's a Hive or an Iceberg table
+        # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
+        ctas_hive = exp.Create(
+            this=exp.to_table("foo.bar"),
+            kind="TABLE",
+            properties=exp.Properties(
+                expressions=[
+                    exp.FileFormatProperty(this=exp.Literal.string("parquet")),
+                    exp.LocationProperty(this=exp.Literal.string("s3://foo")),
+                ]
+            ),
+            expression=exp.select("1"),
+        )
+        self.assertEqual(
+            ctas_hive.sql(dialect=self.dialect, identify=True),
+            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo') AS SELECT 1",
+        )
+
+        ctas_iceberg = exp.Create(
+            this=exp.to_table("foo.bar"),
+            kind="TABLE",
+            properties=exp.Properties(
+                expressions=[
+                    exp.Property(this=exp.var("table_type"), value=exp.Literal.string("iceberg")),
+                    exp.LocationProperty(this=exp.Literal.string("s3://foo")),
+                ]
+            ),
+            expression=exp.select("1"),
+        )
+        self.assertEqual(
+            ctas_iceberg.sql(dialect=self.dialect, identify=True),
+            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo') AS SELECT 1",
         )

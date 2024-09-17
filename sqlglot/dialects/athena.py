@@ -20,10 +20,35 @@ def _generate_as_hive(expression: exp.Expression) -> bool:
         else:
             return expression.kind != "VIEW"  # CREATE VIEW is never Hive but CREATE SCHEMA etc is
 
-    elif isinstance(expression, exp.Alter) or isinstance(expression, exp.Drop):
-        return True  # all ALTER and DROP statements are Hive
+    # https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html
+    elif isinstance(expression, (exp.Alter, exp.Drop, exp.Describe)):
+        if isinstance(expression, exp.Drop) and expression.kind == "VIEW":
+            # DROP VIEW is Trino (I guess because CREATE VIEW is)
+            return False
+
+        # Everything else is Hive
+        return True
 
     return False
+
+
+def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
+    # If table_type='iceberg', the LocationProperty is called 'location'
+    # Otherwise, it's called 'external_location'
+    # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html
+
+    is_iceberg = False
+    if isinstance(e.parent, exp.Properties):
+        for rendered_prop in [
+            p.sql(dialect=self.dialect) for p in e.parent.expressions if isinstance(p, exp.Property)
+        ]:
+            if "table_type" and "iceberg" in rendered_prop:
+                is_iceberg = True
+                break
+
+    prop_name = "location" if is_iceberg else "external_location"
+
+    return f"{prop_name}={self.sql(e, 'this')}"
 
 
 class Athena(Trino):
@@ -48,7 +73,7 @@ class Athena(Trino):
     Trino:
       - Uses double quotes to quote identifiers
       - Used for DDL operations that involve SELECT queries, eg:
-        - CREATE VIEW
+        - CREATE VIEW / DROP VIEW
         - CREATE TABLE... AS SELECT
       - Used for DML operations
         - SELECT, INSERT, UPDATE, DELETE, MERGE
@@ -79,19 +104,32 @@ class Athena(Trino):
             TokenType.USING: lambda self: self._parse_as_command(self._prev),
         }
 
+    class _HiveGenerator(Hive.Generator):
+        def preprocess(self, expression: exp.Expression) -> exp.Expression:
+            # package any ALTER TABLE ADD actions into a Schema object
+            # so it gets generated as `ALTER TABLE .. ADD COLUMNS(...)`
+            # instead of `ALTER TABLE ... ADD COLUMN` which is invalid syntax on Athena
+            if isinstance(expression, exp.Alter) and expression.kind == "TABLE":
+                if expression.actions and isinstance(expression.actions[0], exp.ColumnDef):
+                    new_actions = exp.Schema(expressions=expression.actions)
+                    expression.set("actions", [new_actions])
+
+            return super().preprocess(expression)
+
     class Generator(Trino.Generator):
         """
         Generate queries for the Athena Trino execution engine
         """
 
-        TYPE_MAPPING = {
-            **Trino.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TEXT: "STRING",
+        PROPERTIES_LOCATION = {
+            **Trino.Generator.PROPERTIES_LOCATION,
+            exp.LocationProperty: exp.Properties.Location.POST_WITH,
         }
 
         TRANSFORMS = {
             **Trino.Generator.TRANSFORMS,
-            exp.FileFormatProperty: lambda self, e: f"'FORMAT'={self.sql(e, 'this')}",
+            exp.FileFormatProperty: lambda self, e: f"format={self.sql(e, 'this')}",
+            exp.LocationProperty: _location_property_sql,
         }
 
         def __init__(self, *args, **kwargs):
@@ -99,7 +137,7 @@ class Athena(Trino):
 
             hive_kwargs = {**kwargs, "dialect": "hive"}
 
-            self._hive_generator = Hive.Generator(*args, **hive_kwargs)
+            self._hive_generator = Athena._HiveGenerator(*args, **hive_kwargs)
 
         def generate(self, expression: exp.Expression, copy: bool = True) -> str:
             if _generate_as_hive(expression):

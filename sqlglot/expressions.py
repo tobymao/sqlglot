@@ -4396,6 +4396,15 @@ class Alter(Expression):
         "not_valid": False,
     }
 
+    @property
+    def kind(self) -> t.Optional[str]:
+        kind = self.args.get("kind")
+        return kind and kind.upper()
+
+    @property
+    def actions(self) -> t.List[Expression]:
+        return self.args.get("actions") or []
+
 
 class AddConstraint(Expression):
     arg_types = {"expressions": True}

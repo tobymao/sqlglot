@@ -37,16 +37,19 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
     # Otherwise, it's called 'external_location'
     # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html
 
-    is_iceberg = False
-    if isinstance(e.parent, exp.Properties):
-        for rendered_prop in [
-            p.sql(dialect=self.dialect) for p in e.parent.expressions if isinstance(p, exp.Property)
-        ]:
-            if "table_type" and "iceberg" in rendered_prop:
-                is_iceberg = True
-                break
+    prop_name = "external_location"
 
-    prop_name = "location" if is_iceberg else "external_location"
+    if isinstance(e.parent, exp.Properties):
+        table_type_property = next(
+            (
+                p
+                for p in e.parent.expressions
+                if isinstance(p, exp.Property) and p.name == "table_type"
+            ),
+            None,
+        )
+        if table_type_property and table_type_property.text("value") == "iceberg":
+            prop_name = "location"
 
     return f"{prop_name}={self.sql(e, 'this')}"
 
@@ -105,7 +108,7 @@ class Athena(Trino):
         }
 
     class _HiveGenerator(Hive.Generator):
-        def preprocess(self, expression: exp.Expression) -> exp.Expression:
+        def alter_sql(self, expression: exp.Alter) -> str:
             # package any ALTER TABLE ADD actions into a Schema object
             # so it gets generated as `ALTER TABLE .. ADD COLUMNS(...)`
             # instead of `ALTER TABLE ... ADD COLUMN` which is invalid syntax on Athena
@@ -114,7 +117,7 @@ class Athena(Trino):
                     new_actions = exp.Schema(expressions=expression.actions)
                     expression.set("actions", [new_actions])
 
-            return super().preprocess(expression)
+            return super().alter_sql(expression)
 
     class Generator(Trino.Generator):
         """

@@ -214,6 +214,21 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
+def _build_regexp_extract(args: t.List) -> exp.RegexpExtract:
+    try:
+        group = re.compile(args[1].name).groups == 1
+    except re.error:
+        group = False
+
+    return exp.RegexpExtract(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        position=seq_get(args, 2),
+        occurrence=seq_get(args, 3),
+        group=exp.Literal.number(1) if group else None,
+    )
+
+
 def _str_to_datetime_sql(
     self: BigQuery.Generator, expression: exp.StrToDate | exp.StrToTime
 ) -> str:
@@ -377,13 +392,7 @@ class BigQuery(Dialect):
             ),
             "PARSE_TIMESTAMP": _build_parse_timestamp,
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
-            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                position=seq_get(args, 2),
-                occurrence=seq_get(args, 3),
-                group=exp.Literal.number(1) if re.compile(args[1].name).groups == 1 else None,
-            ),
+            "REGEXP_EXTRACT": _build_regexp_extract,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "SPLIT": lambda args: exp.Split(

@@ -2002,7 +2002,8 @@ class Generator(metaclass=_Generator):
             values = f"VALUES{self.seg('')}{args}"
             values = (
                 f"({values})"
-                if self.WRAP_DERIVED_VALUES and (alias or isinstance(expression.parent, exp.From))
+                if self.WRAP_DERIVED_VALUES
+                and (alias or isinstance(expression.parent, (exp.From, exp.Table)))
                 else values
             )
             return f"{values} AS {alias}" if alias else values

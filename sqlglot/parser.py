@@ -2987,9 +2987,8 @@ class Parser(metaclass=_Parser):
 
                 # Transform exp.Values into a exp.Table to pass through parse_query_modifiers
                 # in case a modifier (e.g. join) is following
-                if table and isinstance(this, exp.Values):
-                    alias = this.args.get("alias")
-                    this.set("alias", None)
+                if table and isinstance(this, exp.Values) and this.alias:
+                    alias = this.args["alias"].pop()
                     this = exp.Table(this=this, alias=alias)
 
                 this = self._parse_query_modifiers(self._parse_set_operations(this))

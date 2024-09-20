@@ -5046,7 +5046,7 @@ class Parser(metaclass=_Parser):
                 if not field:
                     self.raise_error("Expected type")
             elif op and self._curr:
-                field = self._parse_column_reference()
+                field = self._parse_column_reference() or self._parse_bracket()
             else:
                 field = self._parse_field(any_token=True, anonymous_func=True)
 

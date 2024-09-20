@@ -2316,8 +2316,8 @@ class Fetch(Expression):
 
 class Grant(Expression):
     arg_types = {
-        "privilages": True,
-        "securable_kind": False,
+        "privileges": True,
+        "kind": False,
         "securable": True,
         "principals": True,
         "grant_option": False,
@@ -2580,7 +2580,7 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
-class GrantPrivilage(Expression):
+class GrantPrivilege(Expression):
     arg_types = {"this": True, "expressions": False}
 
 

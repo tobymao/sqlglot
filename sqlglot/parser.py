@@ -7411,24 +7411,25 @@ class Parser(metaclass=_Parser):
             },
         )
 
-    def _parse_grant_privilage(self) -> t.Optional[exp.GrantPrivilage]:
-        privilage_parts = []
+    def _parse_grant_privilege(self) -> t.Optional[exp.GrantPrivilege]:
+        privilege_parts = []
 
-        # Keep consuming consecutive keywords until comma (end of this privilage) or ON
-        # (end of privilage list) or L_PAREN (start of column list) are met
+        # Keep consuming consecutive keywords until comma (end of this privilege) or ON
+        # (end of privilege list) or L_PAREN (start of column list) are met
         while self._curr and not self._match_set(
             (TokenType.ON, TokenType.COMMA, TokenType.L_PAREN), advance=False
         ):
-            privilage_parts.append(self._curr.text.upper())
+            privilege_parts.append(self._curr.text.upper())
             self._advance()
 
-        this = exp.var(" ".join(privilage_parts))
+        this = exp.var(" ".join(privilege_parts))
         expressions = (
-            self._parse_csv(self._parse_column) if self._match(TokenType.L_PAREN) else None
+            self._parse_wrapped_csv(self._parse_column)
+            if self._match(TokenType.L_PAREN, advance=False)
+            else None
         )
-        self._match(TokenType.R_PAREN)
 
-        return self.expression(exp.GrantPrivilage, this=this, expressions=expressions)
+        return self.expression(exp.GrantPrivilege, this=this, expressions=expressions)
 
     def _parse_grant_principal(self) -> t.Optional[exp.GrantPrincipal]:
         kind = self._match_texts(("ROLE", "GROUP")) and self._prev.text.upper()
@@ -7442,10 +7443,10 @@ class Parser(metaclass=_Parser):
     def _parse_grant(self) -> exp.Grant | exp.Command:
         start = self._prev
 
-        privilages = self._parse_csv(self._parse_grant_privilage)
+        privileges = self._parse_csv(self._parse_grant_privilege)
 
         self._match(TokenType.ON)
-        securable_kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+        kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
 
         # Attempt to parse the securable e.g. MySQL allows names
         # such as "foo.*", "*.*" which are not easily parseable yet
@@ -7463,8 +7464,8 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Grant,
-            privilages=privilages,
-            securable_kind=securable_kind,
+            privileges=privileges,
+            kind=kind,
             securable=securable,
             principals=principals,
             grant_option=grant_option,

@@ -3103,6 +3103,7 @@ QUERY_MODIFIERS = {
     "settings": False,
     "format": False,
     "options": False,
+    "apply": False,
 }
 
 

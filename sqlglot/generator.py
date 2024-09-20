@@ -2491,9 +2491,12 @@ class Generator(metaclass=_Generator):
         # are the only dialects that use LIMIT_IS_TOP and both place DISTINCT first.
         top_distinct = f"{distinct}{hint}{top}" if self.LIMIT_IS_TOP else f"{top}{hint}{distinct}"
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
+        apply = self.expressions(expression, key="apply", sep=" ")
+        apply = f"{self.sep()}{apply}" if apply else ""
+
         sql = self.query_modifiers(
             expression,
-            f"SELECT{top_distinct}{kind}{expressions}",
+            f"SELECT{top_distinct}{kind}{expressions}{apply}",
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )

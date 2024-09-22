@@ -179,7 +179,7 @@ class TestTSQL(Validator):
                 "hive": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "spark2": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
                 "spark": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
-                "databricks": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
+                "databricks": "CREATE TEMPORARY TABLE mytemptable (a INT)",
             },
         )
         self.validate_all(

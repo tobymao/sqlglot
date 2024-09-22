@@ -10,6 +10,11 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
+from sqlglot.transforms import (
+    remove_unique_constraints,
+    preprocess,
+    move_partitioned_by_to_schema_columns,
+)
 
 
 def _build_json_extract(args: t.List) -> exp.JSONExtract:
@@ -69,6 +74,12 @@ class Databricks(Spark):
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
+            exp.Create: preprocess(
+                [
+                    remove_unique_constraints,
+                    move_partitioned_by_to_schema_columns,
+                ]
+            ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(

@@ -766,15 +766,15 @@ class ClickHouse(Dialect):
 
             return super()._parse_alias(this=this, explicit=explicit)
 
-        def _parse_projections(self) -> t.List[exp.Expression]:
-            exprs = self._parse_expressions()
+        def _parse_expression(self) -> t.Optional[exp.Expression]:
+            this = super()._parse_expression()
 
-            # Clickhouse allows "SELECT <expr> APPLY(func) [...,]" modifier
+            # Clickhouse allows "SELECT <expr> [APPLY(func)] [...]]" modifier
             while self._match_pair(TokenType.APPLY, TokenType.L_PAREN):
-                exprs[-1] = exp.Apply(this=exprs[-1], expression=self._parse_var(any_token=True))
+                this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
                 self._match(TokenType.R_PAREN)
 
-            return exprs
+            return this
 
     class Generator(generator.Generator):
         QUERY_HINTS = False

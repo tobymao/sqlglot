@@ -4336,3 +4336,9 @@ class Generator(metaclass=_Generator):
                 array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
 
         return array_agg
+
+    def apply_sql(self, expression: exp.Apply) -> str:
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+
+        return f"{this} APPLY({expr})"

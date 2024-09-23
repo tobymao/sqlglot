@@ -4922,6 +4922,10 @@ class ApproxDistinct(AggFunc):
     _sql_names = ["APPROX_DISTINCT", "APPROX_COUNT_DISTINCT"]
 
 
+class Apply(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Array(Func):
     arg_types = {"expressions": False, "bracket_notation": False}
     is_var_len_args = True

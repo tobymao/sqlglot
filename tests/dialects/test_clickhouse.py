@@ -519,6 +519,14 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT TRIM(LEADING '(' FROM '(   Hello, world!   )')")
         self.validate_identity("current_timestamp").assert_is(exp.Column)
 
+        self.validate_identity("SELECT * APPLY(sum) FROM columns_transformers")
+        self.validate_identity("SELECT COLUMNS('[jk]') APPLY(toString) FROM columns_transformers")
+        self.validate_identity(
+            "SELECT COLUMNS('[jk]') APPLY(toString) APPLY(length) APPLY(max) FROM columns_transformers"
+        )
+        self.validate_identity("SELECT * APPLY(sum), COLUMNS('col') APPLY(sum) APPLY(avg) FROM t")
+        self.validate_identity("SELECT col apply", "SELECT col AS apply")
+
     def test_clickhouse_values(self):
         values = exp.select("*").from_(
             exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])

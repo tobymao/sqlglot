@@ -480,7 +480,7 @@ class BigQuery(Dialect):
                 table_name = this.name
                 while self._match(TokenType.DASH, advance=False) and self._next:
                     text = ""
-                    while self._curr and self._curr.token_type != TokenType.DOT:
+                    while self._is_connected() and self._curr.token_type != TokenType.DOT:
                         self._advance()
                         text += self._prev.text
                     table_name += text

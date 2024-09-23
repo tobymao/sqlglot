@@ -524,6 +524,7 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT COLUMNS('[jk]') APPLY(toString) APPLY(length) APPLY(max) FROM columns_transformers"
         )
+        self.validate_identity("SELECT col apply", "SELECT col AS apply")
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

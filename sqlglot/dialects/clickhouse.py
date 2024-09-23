@@ -756,6 +756,26 @@ class ClickHouse(Dialect):
         def _parse_constraint(self) -> t.Optional[exp.Expression]:
             return super()._parse_constraint() or self._parse_projection_def()
 
+        def _parse_alias(
+            self, this: t.Optional[exp.Expression], explicit: bool = False
+        ) -> t.Optional[exp.Expression]:
+            # In clickhouse "SELECT <expr> APPLY(...)" is a query modifier,
+            # so "APPLY" shouldn't be parsed as <expr>'s alias. However, "SELECT <expr> apply" is a valid alias
+            if self._match_pair(TokenType.APPLY, TokenType.L_PAREN, advance=False):
+                return this
+
+            return super()._parse_alias(this=this, explicit=explicit)
+
+        def _parse_expression(self) -> t.Optional[exp.Expression]:
+            this = super()._parse_expression()
+
+            # Clickhouse allows "SELECT <expr> [APPLY(func)] [...]]" modifier
+            while self._match_pair(TokenType.APPLY, TokenType.L_PAREN):
+                this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
+                self._match(TokenType.R_PAREN)
+
+            return this
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")

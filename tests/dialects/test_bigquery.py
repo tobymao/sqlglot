@@ -1504,6 +1504,8 @@ WHERE
             },
         )
 
+        self.validate_identity("SELECT * FROM a-b c", "SELECT * FROM a-b AS c")
+
     def test_errors(self):
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")

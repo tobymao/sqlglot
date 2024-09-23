@@ -3103,7 +3103,6 @@ QUERY_MODIFIERS = {
     "settings": False,
     "format": False,
     "options": False,
-    "apply": False,
 }
 
 
@@ -4921,6 +4920,10 @@ class Hll(AggFunc):
 class ApproxDistinct(AggFunc):
     arg_types = {"this": True, "accuracy": False}
     _sql_names = ["APPROX_DISTINCT", "APPROX_COUNT_DISTINCT"]
+
+
+class Apply(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class Array(Func):

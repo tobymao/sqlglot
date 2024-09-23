@@ -555,7 +555,6 @@ class Parser(metaclass=_Parser):
     TRIM_TYPES = {"LEADING", "TRAILING", "BOTH"}
 
     FUNC_TOKENS = {
-        TokenType.APPLY,
         TokenType.COLLATE,
         TokenType.COMMAND,
         TokenType.CURRENT_DATE,
@@ -2960,9 +2959,6 @@ class Parser(metaclass=_Parser):
                 limit=limit,
             )
             this.comments = comments
-
-            while self._match_pair(TokenType.APPLY, TokenType.L_PAREN, advance=False):
-                this.append("apply", self._parse_function())
 
             into = self._parse_into()
             if into:

@@ -1280,6 +1280,8 @@ class Parser(metaclass=_Parser):
 
     ON_CONDITION_TOKENS = {"ERROR", "NULL", "TRUE", "FALSE", "EMPTY"}
 
+    PRIVILEGE_FOLLOW_TOKENS = {TokenType.ON, TokenType.COMMA, TokenType.L_PAREN}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -7416,9 +7418,7 @@ class Parser(metaclass=_Parser):
 
         # Keep consuming consecutive keywords until comma (end of this privilege) or ON
         # (end of privilege list) or L_PAREN (start of column list) are met
-        while self._curr and not self._match_set(
-            (TokenType.ON, TokenType.COMMA, TokenType.L_PAREN), advance=False
-        ):
+        while self._curr and not self._match_set(self.PRIVILEGE_FOLLOW_TOKENS, advance=False):
             privilege_parts.append(self._curr.text.upper())
             self._advance()
 
@@ -7433,7 +7433,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_grant_principal(self) -> t.Optional[exp.GrantPrincipal]:
         kind = self._match_texts(("ROLE", "GROUP")) and self._prev.text.upper()
-        principal = self._try_parse(self._parse_id_var)
+        principal = self._parse_id_var()
 
         if not principal:
             return None

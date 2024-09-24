@@ -137,6 +137,9 @@ FALSE;
 TRUE AND TRUE OR TRUE AND FALSE;
 TRUE;
 
+COALESCE(x, y) <> ALL (SELECT z FROM w);
+COALESCE(x, y) <> ALL (SELECT z FROM w);
+
 --------------------------------------
 -- Absorption
 --------------------------------------

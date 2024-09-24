@@ -131,7 +131,7 @@ x[ORDINAL(1)][SAFE_OFFSET(2)]
 x GLOB '??-*'
 x GLOB y
 ILIKE(x, 'z')
-x LIKE SUBSTR('abc', 1, 1)
+x LIKE SUBSTRING('abc', 1, 1)
 x LIKE y
 x LIKE a.y
 x LIKE '%y%'

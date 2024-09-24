@@ -1093,3 +1093,7 @@ LIFETIME(MIN 0 MAX 0)""",
         self.assertEqual(
             convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
         )
+
+    def test_grant(self):
+        self.validate_identity("GRANT SELECT(x, y) ON db.table TO john WITH GRANT OPTION")
+        self.validate_identity("GRANT INSERT(x, y) ON db.table TO john")

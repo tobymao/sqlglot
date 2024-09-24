@@ -2177,3 +2177,20 @@ SINGLE = TRUE""",
             """SELECT 1 FROM some_table CHANGES (INFORMATION => APPEND_ONLY) AT (TIMESTAMP => TO_TIMESTAMP_TZ('2024-07-01 00:00:00+00:00')) END (TIMESTAMP => TO_TIMESTAMP_TZ('2024-07-01 14:28:59.999999+00:00'))""",
             """SELECT 1 FROM some_table CHANGES (INFORMATION => APPEND_ONLY) AT (TIMESTAMP => CAST('2024-07-01 00:00:00+00:00' AS TIMESTAMPTZ)) END (TIMESTAMP => CAST('2024-07-01 14:28:59.999999+00:00' AS TIMESTAMPTZ))""",
         )
+
+    def test_grant(self):
+        grant_cmds = [
+            "GRANT SELECT ON FUTURE TABLES IN DATABASE d1 TO ROLE r1",
+            "GRANT INSERT, DELETE ON FUTURE TABLES IN SCHEMA d1.s1 TO ROLE r2",
+            "GRANT SELECT ON ALL TABLES IN SCHEMA mydb.myschema to ROLE analyst",
+            "GRANT SELECT, INSERT ON FUTURE TABLES IN SCHEMA mydb.myschema TO ROLE role1",
+            "GRANT CREATE MATERIALIZED VIEW ON SCHEMA mydb.myschema TO DATABASE ROLE mydb.dr1",
+        ]
+
+        for sql in grant_cmds:
+            with self.subTest(f"Testing Snowflake's GRANT command statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)
+
+        self.validate_identity(
+            "GRANT ALL PRIVILEGES ON FUNCTION mydb.myschema.ADD5(number) TO ROLE analyst"
+        )

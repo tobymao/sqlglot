@@ -139,10 +139,10 @@ class TestClickhouse(Validator):
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple() AS SELECT * FROM test_data"
         )
         self.validate_identity(
-            "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 (id UInt8) TO table1 AS SELECT * FROM test_data"
+            "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 TO table1 AS SELECT * FROM test_data"
         )
         self.validate_identity(
-            "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
+            "CREATE MATERIALIZED VIEW test_view TO db.table1 (id UInt8) AS SELECT * FROM test_data"
         )
         self.validate_identity(
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
@@ -678,6 +678,7 @@ class TestClickhouse(Validator):
             "CREATE TABLE foo ENGINE=Memory AS (SELECT * FROM db.other_table) COMMENT 'foo'",
         )
 
+        self.validate_identity("CREATE MATERIALIZED VIEW a.b TO a.c (c Int32) AS SELECT * FROM a.d")
         self.validate_identity("""CREATE TABLE ip_data (ip4 IPv4, ip6 IPv6) ENGINE=TinyLog()""")
         self.validate_identity("""CREATE TABLE dates (dt1 Date32) ENGINE=TinyLog()""")
         self.validate_identity("CREATE TABLE named_tuples (a Tuple(select String, i Int64))")

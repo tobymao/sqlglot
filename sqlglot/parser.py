@@ -269,6 +269,7 @@ class Parser(metaclass=_Parser):
         TokenType.LOWCARDINALITY,
         TokenType.MAP,
         TokenType.NULLABLE,
+        TokenType.RANGE,
         *STRUCT_TYPE_TOKENS,
     }
 

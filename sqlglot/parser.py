@@ -368,7 +368,6 @@ class Parser(metaclass=_Parser):
         TokenType.USERDEFINED,
         TokenType.MONEY,
         TokenType.SMALLMONEY,
-        TokenType.RANGE,
         TokenType.ROWVERSION,
         TokenType.IMAGE,
         TokenType.VARIANT,

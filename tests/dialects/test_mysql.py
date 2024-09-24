@@ -1278,3 +1278,18 @@ COMMENT='客户账户表'"""
             self.validate_identity(
                 f"""SELECT JSON_VALUE({json_doc}, '$.price' RETURNING DECIMAL(4, 2) {on_option} ON EMPTY {on_option} ON ERROR) AS price"""
             )
+
+    def test_grant(self):
+        grant_cmds = [
+            "GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost'",
+            "GRANT SELECT ON world.* TO 'role3'",
+            "GRANT SELECT ON db2.invoice TO 'jeffrey'@'localhost'",
+            "GRANT INSERT ON `d%`.* TO u",
+            "GRANT ALL ON test.* TO ''@'localhost'",
+            "GRANT SELECT (col1), INSERT (col1, col2) ON mydb.mytbl TO 'someuser'@'somehost'",
+            "GRANT SELECT, INSERT, UPDATE ON *.* TO u2",
+        ]
+
+        for sql in grant_cmds:
+            with self.subTest(f"Testing MySQL's GRANT command statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)

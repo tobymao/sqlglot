@@ -4342,3 +4342,33 @@ class Generator(metaclass=_Generator):
         expr = self.sql(expression, "expression")
 
         return f"{this} APPLY({expr})"
+
+    def grant_sql(self, expression: exp.Grant) -> str:
+        privileges_sql = self.expressions(expression, key="privileges", flat=True)
+
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+
+        securable = self.sql(expression, "securable")
+        securable = f" {securable}" if securable else ""
+
+        principals = self.expressions(expression, key="principals", flat=True)
+
+        grant_option = " WITH GRANT OPTION" if expression.args.get("grant_option") else ""
+
+        return f"GRANT {privileges_sql} ON{kind}{securable} TO {principals}{grant_option}"
+
+    def grantprivilege_sql(self, expression: exp.GrantPrivilege):
+        this = self.sql(expression, "this")
+        columns = self.expressions(expression, flat=True)
+        columns = f"({columns})" if columns else ""
+
+        return f"{this}{columns}"
+
+    def grantprincipal_sql(self, expression: exp.GrantPrincipal):
+        this = self.sql(expression, "this")
+
+        kind = self.sql(expression, "kind")
+        kind = f"{kind} " if kind else ""
+
+        return f"{kind}{this}"

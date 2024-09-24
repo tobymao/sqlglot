@@ -2314,6 +2314,16 @@ class Fetch(Expression):
     }
 
 
+class Grant(Expression):
+    arg_types = {
+        "privileges": True,
+        "kind": False,
+        "securable": True,
+        "principals": True,
+        "grant_option": False,
+    }
+
+
 class Group(Expression):
     arg_types = {
         "expressions": False,
@@ -2568,6 +2578,14 @@ class Ordered(Expression):
 
 class Property(Expression):
     arg_types = {"this": True, "value": True}
+
+
+class GrantPrivilege(Expression):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GrantPrincipal(Expression):
+    arg_types = {"this": True, "kind": False}
 
 
 class AllowedValuesProperty(Expression):

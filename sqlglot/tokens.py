@@ -270,6 +270,7 @@ class TokenType(AutoName):
     FUNCTION = auto()
     GLOB = auto()
     GLOBAL = auto()
+    GRANT = auto()
     GROUP_BY = auto()
     GROUPING_SETS = auto()
     HAVING = auto()
@@ -903,7 +904,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CALL": TokenType.COMMAND,
         "COMMENT": TokenType.COMMENT,
         "EXPLAIN": TokenType.COMMAND,
-        "GRANT": TokenType.COMMAND,
+        "GRANT": TokenType.GRANT,
         "OPTIMIZE": TokenType.COMMAND,
         "PREPARE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,

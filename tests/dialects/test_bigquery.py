@@ -1962,3 +1962,26 @@ OPTIONS (
                 "duckdb": "WITH Races AS (SELECT '800M' AS race) SELECT race, participant FROM Races AS r CROSS JOIN (SELECT UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}], max_depth => 2)) AS participant",
             },
         )
+
+    def test_range_type(self):
+        for type, value in (
+            ("RANGE<DATE>", "'[2020-01-01, 2020-12-31)'"),
+            ("RANGE<DATE>", "'[UNBOUNDED, 2020-12-31)'"),
+            ("RANGE<DATETIME>", "'[2020-01-01 12:00:00, 2020-12-31 12:00:00)'"),
+            ("RANGE<TIMESTAMP>", "'[2020-10-01 12:00:00+08, 2020-12-31 12:00:00+08)'"),
+        ):
+            with self.subTest(f"Testing BigQuery's RANGE<T> type: {type} {value}"):
+                self.validate_identity(f"SELECT {type} {value}", f"SELECT CAST({value} AS {type})")
+
+                self.assertEqual(self.parse_one(type), exp.DataType.build(type, dialect="bigquery"))
+
+        self.validate_identity(
+            "SELECT RANGE(CAST('2022-12-01' AS DATE), CAST('2022-12-31' AS DATE))"
+        )
+        self.validate_identity("SELECT RANGE(NULL, CAST('2022-12-31' AS DATE))")
+        self.validate_identity(
+            "SELECT RANGE(CAST('2022-10-01 14:53:27' AS DATETIME), CAST('2022-10-01 16:00:00' AS DATETIME))"
+        )
+        self.validate_identity(
+            "SELECT RANGE(CAST('2022-10-01 14:53:27 America/Los_Angeles' AS TIMESTAMP), CAST('2022-10-01 16:00:00 America/Los_Angeles' AS TIMESTAMP))"
+        )

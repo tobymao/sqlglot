@@ -2221,9 +2221,9 @@ SELECT
         self.validate_all(
             "SUBSTR('123456', 2, 3)",
             write={
-                "bigquery": "SUBSTR('123456', 2, 3)",
+                "bigquery": "SUBSTRING('123456', 2, 3)",
                 "oracle": "SUBSTR('123456', 2, 3)",
-                "postgres": "SUBSTR('123456', 2, 3)",
+                "postgres": "SUBSTRING('123456' FROM 2 FOR 3)",
             },
         )
         self.validate_all(

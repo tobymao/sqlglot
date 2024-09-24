@@ -991,9 +991,9 @@ FROM   store_sales,
        date_dim,
        store,
        (SELECT ca_zip
-        FROM   (SELECT Substr(ca_zip, 1, 5) ca_zip
+        FROM   (SELECT SUBSTRING(ca_zip, 1, 5) ca_zip
                 FROM   customer_address
-                WHERE  Substr(ca_zip, 1, 5) IN ( '67436', '26121', '38443',
+                WHERE  SUBSTRING(ca_zip, 1, 5) IN ( '67436', '26121', '38443',
                                                  '63157',
                                                  '68856', '19485', '86425',
                                                  '26741',
@@ -1195,7 +1195,7 @@ FROM   store_sales,
                                                  '92564' )
                 INTERSECT
                 SELECT ca_zip
-                FROM   (SELECT Substr(ca_zip, 1, 5) ca_zip,
+                FROM   (SELECT SUBSTRING(ca_zip, 1, 5) ca_zip,
                                Count(*)             cnt
                         FROM   customer_address,
                                customer
@@ -1207,13 +1207,13 @@ WHERE  ss_store_sk = s_store_sk
        AND ss_sold_date_sk = d_date_sk
        AND d_qoy = 2
        AND d_year = 2000
-       AND ( Substr(s_zip, 1, 2) = Substr(V1.ca_zip, 1, 2) )
+       AND ( SUBSTRING(s_zip, 1, 2) = SUBSTRING(V1.ca_zip, 1, 2) )
 GROUP  BY s_store_name
 ORDER  BY s_store_name
 LIMIT 100;
 WITH "a1" AS (
   SELECT
-    SUBSTR("customer_address"."ca_zip", 1, 5) AS "ca_zip"
+    SUBSTRING("customer_address"."ca_zip", 1, 5) AS "ca_zip"
   FROM "customer_address" AS "customer_address"
   JOIN "customer" AS "customer"
     ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
@@ -1224,10 +1224,10 @@ WITH "a1" AS (
     COUNT(*) > 10
 ), "a2" AS (
   SELECT
-    SUBSTR("customer_address"."ca_zip", 1, 5) AS "ca_zip"
+    SUBSTRING("customer_address"."ca_zip", 1, 5) AS "ca_zip"
   FROM "customer_address" AS "customer_address"
   WHERE
-    SUBSTR("customer_address"."ca_zip", 1, 5) IN ('67436', '26121', '38443', '63157', '68856', '19485', '86425', '26741', '70991', '60899', '63573', '47556', '56193', '93314', '87827', '62017', '85067', '95390', '48091', '10261', '81845', '41790', '42853', '24675', '12840', '60065', '84430', '57451', '24021', '91735', '75335', '71935', '34482', '56943', '70695', '52147', '56251', '28411', '86653', '23005', '22478', '29031', '34398', '15365', '42460', '33337', '59433', '73943', '72477', '74081', '74430', '64605', '39006', '11226', '49057', '97308', '42663', '18187', '19768', '43454', '32147', '76637', '51975', '11181', '45630', '33129', '45995', '64386', '55522', '26697', '20963', '35154', '64587', '49752', '66386', '30586', '59286', '13177', '66646', '84195', '74316', '36853', '32927', '12469', '11904', '36269', '17724', '55346', '12595', '53988', '65439', '28015', '63268', '73590', '29216', '82575', '69267', '13805', '91678', '79460', '94152', '14961', '15419', '48277', '62588', '55493', '28360', '14152', '55225', '18007', '53705', '56573', '80245', '71769', '57348', '36845', '13039', '17270', '22363', '83474', '25294', '43269', '77666', '15488', '99146', '64441', '43338', '38736', '62754', '48556', '86057', '23090', '38114', '66061', '18910', '84385', '23600', '19975', '27883', '65719', '19933', '32085', '49731', '40473', '27190', '46192', '23949', '44738', '12436', '64794', '68741', '15333', '24282', '49085', '31844', '71156', '48441', '17100', '98207', '44982', '20277', '71496', '96299', '37583', '22206', '89174', '30589', '61924', '53079', '10976', '13104', '42794', '54772', '15809', '56434', '39975', '13874', '30753', '77598', '78229', '59478', '12345', '55547', '57422', '42600', '79444', '29074', '29752', '21676', '32096', '43044', '39383', '37296', '36295', '63077', '16572', '31275', '18701', '40197', '48242', '27219', '49865', '84175', '30446', '25165', '13807', '72142', '70499', '70464', '71429', '18111', '70857', '29545', '36425', '52706', '36194', '42963', '75068', '47921', '74763', '90990', '89456', '62073', '88397', '73963', '75885', '62657', '12530', '81146', '57434', '25099', '41429', '98441', '48713', '52552', '31667', '14072', '13903', '44709', '85429', '58017', '38295', '44875', '73541', '30091', '12707', '23762', '62258', '33247', '78722', '77431', '14510', '35656', '72428', '92082', '35267', '43759', '24354', '90952', '11512', '21242', '22579', '56114', '32339', '52282', '41791', '24484', '95020', '28408', '99710', '11899', '43344', '72915', '27644', '62708', '74479', '17177', '32619', '12351', '91339', '31169', '57081', '53522', '16712', '34419', '71779', '44187', '46206', '96099', '61910', '53664', '12295', '31837', '33096', '10813', '63048', '31732', '79118', '73084', '72783', '84952', '46965', '77956', '39815', '32311', '75329', '48156', '30826', '49661', '13736', '92076', '74865', '88149', '92397', '52777', '68453', '32012', '21222', '52721', '24626', '18210', '42177', '91791', '75251', '82075', '44372', '45542', '20609', '60115', '17362', '22750', '90434', '31852', '54071', '33762', '14705', '40718', '56433', '30996', '40657', '49056', '23585', '66455', '41021', '74736', '72151', '37007', '21729', '60177', '84558', '59027', '93855', '60022', '86443', '19541', '86886', '30532', '39062', '48532', '34713', '52077', '22564', '64638', '15273', '31677', '36138', '62367', '60261', '80213', '42818', '25113', '72378', '69802', '69096', '55443', '28820', '13848', '78258', '37490', '30556', '77380', '28447', '44550', '26791', '70609', '82182', '33306', '43224', '22322', '86959', '68519', '14308', '46501', '81131', '34056', '61991', '19896', '87804', '65774', '92564')
+    SUBSTRING("customer_address"."ca_zip", 1, 5) IN ('67436', '26121', '38443', '63157', '68856', '19485', '86425', '26741', '70991', '60899', '63573', '47556', '56193', '93314', '87827', '62017', '85067', '95390', '48091', '10261', '81845', '41790', '42853', '24675', '12840', '60065', '84430', '57451', '24021', '91735', '75335', '71935', '34482', '56943', '70695', '52147', '56251', '28411', '86653', '23005', '22478', '29031', '34398', '15365', '42460', '33337', '59433', '73943', '72477', '74081', '74430', '64605', '39006', '11226', '49057', '97308', '42663', '18187', '19768', '43454', '32147', '76637', '51975', '11181', '45630', '33129', '45995', '64386', '55522', '26697', '20963', '35154', '64587', '49752', '66386', '30586', '59286', '13177', '66646', '84195', '74316', '36853', '32927', '12469', '11904', '36269', '17724', '55346', '12595', '53988', '65439', '28015', '63268', '73590', '29216', '82575', '69267', '13805', '91678', '79460', '94152', '14961', '15419', '48277', '62588', '55493', '28360', '14152', '55225', '18007', '53705', '56573', '80245', '71769', '57348', '36845', '13039', '17270', '22363', '83474', '25294', '43269', '77666', '15488', '99146', '64441', '43338', '38736', '62754', '48556', '86057', '23090', '38114', '66061', '18910', '84385', '23600', '19975', '27883', '65719', '19933', '32085', '49731', '40473', '27190', '46192', '23949', '44738', '12436', '64794', '68741', '15333', '24282', '49085', '31844', '71156', '48441', '17100', '98207', '44982', '20277', '71496', '96299', '37583', '22206', '89174', '30589', '61924', '53079', '10976', '13104', '42794', '54772', '15809', '56434', '39975', '13874', '30753', '77598', '78229', '59478', '12345', '55547', '57422', '42600', '79444', '29074', '29752', '21676', '32096', '43044', '39383', '37296', '36295', '63077', '16572', '31275', '18701', '40197', '48242', '27219', '49865', '84175', '30446', '25165', '13807', '72142', '70499', '70464', '71429', '18111', '70857', '29545', '36425', '52706', '36194', '42963', '75068', '47921', '74763', '90990', '89456', '62073', '88397', '73963', '75885', '62657', '12530', '81146', '57434', '25099', '41429', '98441', '48713', '52552', '31667', '14072', '13903', '44709', '85429', '58017', '38295', '44875', '73541', '30091', '12707', '23762', '62258', '33247', '78722', '77431', '14510', '35656', '72428', '92082', '35267', '43759', '24354', '90952', '11512', '21242', '22579', '56114', '32339', '52282', '41791', '24484', '95020', '28408', '99710', '11899', '43344', '72915', '27644', '62708', '74479', '17177', '32619', '12351', '91339', '31169', '57081', '53522', '16712', '34419', '71779', '44187', '46206', '96099', '61910', '53664', '12295', '31837', '33096', '10813', '63048', '31732', '79118', '73084', '72783', '84952', '46965', '77956', '39815', '32311', '75329', '48156', '30826', '49661', '13736', '92076', '74865', '88149', '92397', '52777', '68453', '32012', '21222', '52721', '24626', '18210', '42177', '91791', '75251', '82075', '44372', '45542', '20609', '60115', '17362', '22750', '90434', '31852', '54071', '33762', '14705', '40718', '56433', '30996', '40657', '49056', '23585', '66455', '41021', '74736', '72151', '37007', '21729', '60177', '84558', '59027', '93855', '60022', '86443', '19541', '86886', '30532', '39062', '48532', '34713', '52077', '22564', '64638', '15273', '31677', '36138', '62367', '60261', '80213', '42818', '25113', '72378', '69802', '69096', '55443', '28820', '13848', '78258', '37490', '30556', '77380', '28447', '44550', '26791', '70609', '82182', '33306', '43224', '22322', '86959', '68519', '14308', '46501', '81131', '34056', '61991', '19896', '87804', '65774', '92564')
   INTERSECT
   SELECT
     "a1"."ca_zip" AS "ca_zip"
@@ -1244,7 +1244,7 @@ JOIN "date_dim" AS "date_dim"
 JOIN "store" AS "store"
   ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
 JOIN "a2" AS "a2"
-  ON SUBSTR("a2"."ca_zip", 1, 2) = SUBSTR("store"."s_zip", 1, 2)
+  ON SUBSTRING("a2"."ca_zip", 1, 2) = SUBSTRING("store"."s_zip", 1, 2)
 GROUP BY
   "store"."s_store_name"
 ORDER BY
@@ -2319,7 +2319,7 @@ FROM   catalog_sales,
        date_dim
 WHERE  cs_bill_customer_sk = c_customer_sk
        AND c_current_addr_sk = ca_address_sk
-       AND ( Substr(ca_zip, 1, 5) IN ( '85669', '86197', '88274', '83405',
+       AND ( SUBSTRING(ca_zip, 1, 5) IN ( '85669', '86197', '88274', '83405',
                                        '86475', '85392', '85460', '80348',
                                        '81792' )
               OR ca_state IN ( 'CA', 'WA', 'GA' )
@@ -2344,7 +2344,7 @@ JOIN "customer_address" AS "customer_address"
   ON (
     "catalog_sales"."cs_sales_price" > 500
     OR "customer_address"."ca_state" IN ('CA', 'WA', 'GA')
-    OR SUBSTR("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
+    OR SUBSTRING("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
   )
   AND "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
 GROUP BY
@@ -2643,7 +2643,7 @@ WHERE  d_date_sk = ss_sold_date_sk
        AND d_year = 1998
        AND ss_customer_sk = c_customer_sk
        AND c_current_addr_sk = ca_address_sk
-       AND Substr(ca_zip, 1, 5) <> Substr(s_zip, 1, 5)
+       AND SUBSTRING(ca_zip, 1, 5) <> SUBSTRING(s_zip, 1, 5)
        AND ss_store_sk = s_store_sk
 GROUP  BY i_brand,
           i_brand_id,
@@ -2672,7 +2672,7 @@ JOIN "customer_address" AS "customer_address"
   ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
 JOIN "store" AS "store"
   ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
-  AND SUBSTR("customer_address"."ca_zip", 1, 5) <> SUBSTR("store"."s_zip", 1, 5)
+  AND SUBSTRING("customer_address"."ca_zip", 1, 5) <> SUBSTRING("store"."s_zip", 1, 5)
 WHERE
   "date_dim"."d_moy" = 12 AND "date_dim"."d_year" = 1998
 GROUP BY
@@ -2895,7 +2895,7 @@ LIMIT 100;
 --------------------------------------
 # execute: true
 WITH frequent_ss_items
-     AS (SELECT Substr(i_item_desc, 1, 30) itemdesc,
+     AS (SELECT SUBSTRING(i_item_desc, 1, 30) itemdesc,
                 i_item_sk                  item_sk,
                 d_date                     solddate,
                 Count(*)                   cnt
@@ -2905,7 +2905,7 @@ WITH frequent_ss_items
          WHERE  ss_sold_date_sk = d_date_sk
                 AND ss_item_sk = i_item_sk
                 AND d_year IN ( 1998, 1998 + 1, 1998 + 2, 1998 + 3 )
-         GROUP  BY Substr(i_item_desc, 1, 30),
+         GROUP  BY SUBSTRING(i_item_desc, 1, 30),
                    i_item_sk,
                    d_date
          HAVING Count(*) > 4),
@@ -2962,7 +2962,7 @@ WITH "frequent_ss_items" AS (
   JOIN "item" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
   GROUP BY
-    SUBSTR("item"."i_item_desc", 1, 30),
+    SUBSTRING("item"."i_item_desc", 1, 30),
     "item"."i_item_sk",
     "date_dim"."d_date"
   HAVING
@@ -5296,7 +5296,7 @@ FROM   web_sales,
 WHERE  ws_bill_customer_sk = c_customer_sk
        AND c_current_addr_sk = ca_address_sk
        AND ws_item_sk = i_item_sk
-       AND ( Substr(ca_zip, 1, 5) IN ( '85669', '86197', '88274', '83405',
+       AND ( SUBSTRING(ca_zip, 1, 5) IN ( '85669', '86197', '88274', '83405',
                                        '86475', '85392', '85460', '80348',
                                        '81792' )
               OR i_item_id IN (SELECT i_item_id
@@ -5340,7 +5340,7 @@ JOIN "customer_address" AS "customer_address"
   ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
 WHERE
   NOT "_u_0"."i_item_id" IS NULL
-  OR SUBSTR("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
+  OR SUBSTRING("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
 GROUP BY
   "customer_address"."ca_zip",
   "customer_address"."ca_state"
@@ -7585,7 +7585,7 @@ LIMIT 100;
 -- TPC-DS 62
 --------------------------------------
 # execute: true
-SELECT Substr(w_warehouse_name, 1, 20) AS "_col_0",
+SELECT SUBSTRING(w_warehouse_name, 1, 20) AS "_col_0",
                sm_type,
                web_name,
                Sum(CASE
@@ -7622,15 +7622,15 @@ WHERE  d_month_seq BETWEEN 1222 AND 1222 + 11
        AND ws_warehouse_sk = w_warehouse_sk
        AND ws_ship_mode_sk = sm_ship_mode_sk
        AND ws_web_site_sk = web_site_sk
-GROUP  BY Substr(w_warehouse_name, 1, 20),
+GROUP  BY SUBSTRING(w_warehouse_name, 1, 20),
           sm_type,
           web_name
-ORDER  BY Substr(w_warehouse_name, 1, 20),
+ORDER  BY SUBSTRING(w_warehouse_name, 1, 20),
           sm_type,
           web_name
 LIMIT 100;
 SELECT
-  SUBSTR("warehouse"."w_warehouse_name", 1, 20) AS "_col_0",
+  SUBSTRING("warehouse"."w_warehouse_name", 1, 20) AS "_col_0",
   "ship_mode"."sm_type" AS "sm_type",
   "web_site"."web_name" AS "web_name",
   SUM(
@@ -7683,7 +7683,7 @@ JOIN "warehouse" AS "warehouse"
 JOIN "web_site" AS "web_site"
   ON "web_sales"."ws_web_site_sk" = "web_site"."web_site_sk"
 GROUP BY
-  SUBSTR("warehouse"."w_warehouse_name", 1, 20),
+  SUBSTRING("warehouse"."w_warehouse_name", 1, 20),
   "ship_mode"."sm_type",
   "web_site"."web_name"
 ORDER BY
@@ -10638,7 +10638,7 @@ LIMIT 100;
 # execute: true
 SELECT c_last_name,
                c_first_name,
-               Substr(s_city, 1, 30) AS "_col_2",
+               SUBSTRING(s_city, 1, 30) AS "_col_2",
                ss_ticket_number,
                amt,
                profit
@@ -10667,7 +10667,7 @@ FROM   (SELECT ss_ticket_number,
 WHERE  ss_customer_sk = c_customer_sk
 ORDER  BY c_last_name,
           c_first_name,
-          Substr(s_city, 1, 30),
+          SUBSTRING(s_city, 1, 30),
           profit
 LIMIT 100;
 WITH "ms" AS (
@@ -10701,7 +10701,7 @@ WITH "ms" AS (
 SELECT
   "customer"."c_last_name" AS "c_last_name",
   "customer"."c_first_name" AS "c_first_name",
-  SUBSTR("ms"."s_city", 1, 30) AS "_col_2",
+  SUBSTRING("ms"."s_city", 1, 30) AS "_col_2",
   "ms"."ss_ticket_number" AS "ss_ticket_number",
   "ms"."amt" AS "amt",
   "ms"."profit" AS "profit"
@@ -10711,7 +10711,7 @@ JOIN "customer" AS "customer"
 ORDER BY
   "c_last_name",
   "c_first_name",
-  SUBSTR("ms"."s_city", 1, 30),
+  SUBSTRING("ms"."s_city", 1, 30),
   "profit"
 LIMIT 100;
 
@@ -11371,7 +11371,7 @@ LIMIT 100;
 -- TPC-DS 85
 --------------------------------------
 # execute: true
-SELECT Substr(r_reason_desc, 1, 20) AS "_col_0",
+SELECT SUBSTRING(r_reason_desc, 1, 20) AS "_col_0",
                Avg(ws_quantity) AS "_col_1",
                Avg(wr_refunded_cash) AS "_col_2",
                Avg(wr_fee) AS "_col_3"
@@ -11417,13 +11417,13 @@ WHERE  ws_web_page_sk = wp_web_page_sk
                    AND ca_state IN ( 'FL', 'WI', 'KS' )
                    AND ws_net_profit BETWEEN 50 AND 250 ) )
 GROUP  BY r_reason_desc
-ORDER  BY Substr(r_reason_desc, 1, 20),
+ORDER  BY SUBSTRING(r_reason_desc, 1, 20),
           Avg(ws_quantity),
           Avg(wr_refunded_cash),
           Avg(wr_fee)
 LIMIT 100;
 SELECT
-  SUBSTR("reason"."r_reason_desc", 1, 20) AS "_col_0",
+  SUBSTRING("reason"."r_reason_desc", 1, 20) AS "_col_0",
   AVG("web_sales"."ws_quantity") AS "_col_1",
   AVG("web_returns"."wr_refunded_cash") AS "_col_2",
   AVG("web_returns"."wr_fee") AS "_col_3"
@@ -12617,7 +12617,7 @@ ORDER BY
 -- TPC-DS 99
 --------------------------------------
 # execute: true
-SELECT Substr(w_warehouse_name, 1, 20) AS "_col_0",
+SELECT SUBSTRING(w_warehouse_name, 1, 20) AS "_col_0",
                sm_type,
                cc_name,
                Sum(CASE
@@ -12654,15 +12654,15 @@ WHERE  d_month_seq BETWEEN 1200 AND 1200 + 11
        AND cs_warehouse_sk = w_warehouse_sk
        AND cs_ship_mode_sk = sm_ship_mode_sk
        AND cs_call_center_sk = cc_call_center_sk
-GROUP  BY Substr(w_warehouse_name, 1, 20),
+GROUP  BY SUBSTRING(w_warehouse_name, 1, 20),
           sm_type,
           cc_name
-ORDER  BY Substr(w_warehouse_name, 1, 20),
+ORDER  BY SUBSTRING(w_warehouse_name, 1, 20),
           sm_type,
           cc_name
 LIMIT 100;
 SELECT
-  SUBSTR("warehouse"."w_warehouse_name", 1, 20) AS "_col_0",
+  SUBSTRING("warehouse"."w_warehouse_name", 1, 20) AS "_col_0",
   "ship_mode"."sm_type" AS "sm_type",
   "call_center"."cc_name" AS "cc_name",
   SUM(
@@ -12715,7 +12715,7 @@ JOIN "ship_mode" AS "ship_mode"
 JOIN "warehouse" AS "warehouse"
   ON "catalog_sales"."cs_warehouse_sk" = "warehouse"."w_warehouse_sk"
 GROUP BY
-  SUBSTR("warehouse"."w_warehouse_name", 1, 20),
+  SUBSTRING("warehouse"."w_warehouse_name", 1, 20),
   "ship_mode"."sm_type",
   "call_center"."cc_name"
 ORDER BY

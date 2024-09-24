@@ -918,9 +918,10 @@ class ClickHouse(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
-            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
-            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.ToTableProperty: exp.Properties.Location.POST_NAME,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         # There's no list in docs, but it can be found in Clickhouse code
@@ -1089,7 +1090,9 @@ class ClickHouse(Dialect):
                     [self.sql(prop) for prop in locations[exp.Properties.Location.POST_NAME]]
                 )
                 this_schema = self.schema_columns_sql(expression.this)
-                return f"{this_name}{self.sep()}{this_properties}{self.sep()}{this_schema}"
+                this_schema = f"{self.sep()}{this_schema}" if this_schema else ""
+
+                return f"{this_name}{self.sep()}{this_properties}{this_schema}"
 
             return super().createable_sql(expression, locations)
 

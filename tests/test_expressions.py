@@ -674,6 +674,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("STR_POSITION(a, 'test')"), exp.StrPosition)
         self.assertIsInstance(parse_one("STR_TO_UNIX(a, 'format')"), exp.StrToUnix)
         self.assertIsInstance(parse_one("STRUCT_EXTRACT(a, 'test')"), exp.StructExtract)
+        self.assertIsInstance(parse_one("SUBSTR('a', 1, 1)"), exp.Substring)
+        self.assertIsInstance(parse_one("SUBSTRING('a', 1, 1)"), exp.Substring)
         self.assertIsInstance(parse_one("SUM(a)"), exp.Sum)
         self.assertIsInstance(parse_one("SQRT(a)"), exp.Sqrt)
         self.assertIsInstance(parse_one("STDDEV(a)"), exp.Stddev)

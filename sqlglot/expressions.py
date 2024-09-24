@@ -4123,6 +4123,7 @@ class DataType(Expression):
         NUMRANGE = auto()
         NVARCHAR = auto()
         OBJECT = auto()
+        RANGE = auto()
         ROWVERSION = auto()
         SERIAL = auto()
         SET = auto()

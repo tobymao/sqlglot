@@ -1070,7 +1070,11 @@ def sort_comparison(expression: exp.Expression) -> exp.Expression:
         l_const = _is_constant(l)
         r_const = _is_constant(r)
 
-        if (l_column and not r_column) or (r_const and not l_const):
+        if (
+            (l_column and not r_column)
+            or (r_const and not l_const)
+            or isinstance(r, exp.SubqueryPredicate)
+        ):
             return expression
         if (r_column and not l_column) or (l_const and not r_const) or (gen(l) > gen(r)):
             return INVERSE_COMPARISONS.get(expression.__class__, expression.__class__)(

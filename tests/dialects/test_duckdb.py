@@ -535,8 +535,8 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",
-                "hive": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
-                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
+                "hive": "SPLIT(x, CONCAT('\\\\Q', 'a', '\\\\E'))",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a', '\\\\E'))",
             },
         )
         self.validate_all(
@@ -544,8 +544,8 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",
-                "hive": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
-                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
+                "hive": "SPLIT(x, CONCAT('\\\\Q', 'a', '\\\\E'))",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a', '\\\\E'))",
             },
         )
         self.validate_all(

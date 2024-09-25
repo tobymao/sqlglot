@@ -4984,6 +4984,10 @@ class ToNumber(Func):
     }
 
 
+class Columns(Func):
+    pass
+
+
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
 class Convert(Func):
     arg_types = {"this": True, "expression": True, "style": False}

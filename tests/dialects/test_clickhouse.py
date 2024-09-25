@@ -525,6 +525,9 @@ class TestClickhouse(Validator):
             "SELECT COLUMNS('[jk]') APPLY(toString) APPLY(length) APPLY(max) FROM columns_transformers"
         )
         self.validate_identity("SELECT * APPLY(sum), COLUMNS('col') APPLY(sum) APPLY(avg) FROM t")
+        self.validate_identity(
+            "SELECT * FROM ABC WHERE hasAny(COLUMNS('.*field') APPLY(toUInt64) APPLY(to), (SELECT groupUniqArray(toUInt64(field))))"
+        )
         self.validate_identity("SELECT col apply", "SELECT col AS apply")
 
     def test_clickhouse_values(self):

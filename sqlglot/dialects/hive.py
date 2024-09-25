@@ -546,7 +546,7 @@ class Hive(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: self.func(
-                "SPLIT", e.this, self.func("CONCAT", "'\\\\Q'", e.expression)
+                "SPLIT", e.this, self.func("CONCAT", "'\\\\Q'", e.expression, "'\\\\E'")
             ),
             exp.Select: transforms.preprocess(
                 [

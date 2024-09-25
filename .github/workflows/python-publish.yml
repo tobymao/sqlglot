@@ -19,12 +19,9 @@ jobs:
           fetch-depth: 0
       - id: check_deploy
         run: |
-          bash ./.github/workflows/should_deploy_sqlglotrs.sh || exit_code=$?
-          if [ $exit_code -eq 0 ]; then
-            echo "deploy=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy=false" >> $GITHUB_OUTPUT
-          fi
+          bash ./.github/workflows/should_deploy_sqlglotrs.sh \
+          && echo "deploy=true" >> $GITHUB_OUTPUT \
+          || echo "deploy=false" >> $GITHUB_OUTPUT
 
   build-rs:
     needs: should-deploy-rs

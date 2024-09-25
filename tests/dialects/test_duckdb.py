@@ -846,6 +846,18 @@ class TestDuckDB(Validator):
             "SELECT id, STRUCT_PACK(*COLUMNS('m\\d')) AS measurements FROM many_measurements",
             """SELECT id, {'_0': *COLUMNS('m\\d')} AS measurements FROM many_measurements""",
         )
+        self.validate_identity("SELECT COLUMNS(c -> c LIKE '%num%') FROM numbers")
+        self.validate_identity(
+            "SELECT MIN(COLUMNS(* REPLACE (number + id AS number))), COUNT(COLUMNS(* EXCLUDE (number))) FROM numbers"
+        )
+        self.validate_identity("SELECT COLUMNS(*) + COLUMNS(*) FROM numbers")
+        self.validate_identity("SELECT COLUMNS('(id|numbers?)') FROM numbers")
+        self.validate_identity(
+            "SELECT COALESCE(COLUMNS(['a', 'b', 'c'])) AS result FROM (SELECT NULL AS a, 42 AS b, TRUE AS c)"
+        )
+        self.validate_identity(
+            "SELECT COALESCE(*COLUMNS(['a', 'b', 'c'])) AS result FROM (SELECT NULL AS a, 42 AS b, TRUE AS c)"
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

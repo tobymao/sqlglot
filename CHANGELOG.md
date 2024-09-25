@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.23.1] - 2024-09-25
+### :wrench: Chores
+- [`349b8f8`](https://github.com/tobymao/sqlglot/commit/349b8f81ed69a3708e1afd15816b3b58e2bf8b3f) - fetch all history to allow workflow script to skip sqlglotrs deployments *(PR [#4162](https://github.com/tobymao/sqlglot/pull/4162) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.23.0] - 2024-09-25
 ### :boom: BREAKING CHANGES
 - due to [`da51ea5`](https://github.com/tobymao/sqlglot/commit/da51ea5c8f405859d877a25176e8e48ef8b4b112) - refactor exp.Chr *(PR [#4081](https://github.com/tobymao/sqlglot/pull/4081) by [@georgesittas](https://github.com/georgesittas))*:
@@ -4869,3 +4874,4 @@ Changelog
 [v25.21.3]: https://github.com/tobymao/sqlglot/compare/v25.21.2...v25.21.3
 [v25.22.0]: https://github.com/tobymao/sqlglot/compare/v25.21.3...v25.22.0
 [v25.23.0]: https://github.com/tobymao/sqlglot/compare/v25.20.2...v25.23.0
+[v25.23.1]: https://github.com/tobymao/sqlglot/compare/v25.23.0...v25.23.1

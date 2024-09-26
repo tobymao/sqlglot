@@ -7400,9 +7400,12 @@ class Parser(metaclass=_Parser):
             form=self._match(TokenType.COMMA) and self._parse_var(),
         )
 
-    def _parse_star_ops(self) -> exp.Star | exp.UnpackColumns:
+    def _parse_star_ops(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("COLUMNS", "(", advance=False):
-            return exp.UnpackColumns(this=self._parse_function())
+            this = self._parse_function()
+            if isinstance(this, exp.Columns):
+                this.set("unpack", True)
+            return this
 
         return self.expression(
             exp.Star,

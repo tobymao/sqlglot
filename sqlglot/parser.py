@@ -1107,6 +1107,7 @@ class Parser(metaclass=_Parser):
         "MATCH": lambda self: self._parse_match_against(),
         "NORMALIZE": lambda self: self._parse_normalize(),
         "OPENJSON": lambda self: self._parse_open_json(),
+        "OVERLAY": lambda self: self._parse_overlay(),
         "POSITION": lambda self: self._parse_position(),
         "PREDICT": lambda self: self._parse_predict(),
         "SAFE_CAST": lambda self: self._parse_cast(False, safe=True),
@@ -7472,4 +7473,15 @@ class Parser(metaclass=_Parser):
             securable=securable,
             principals=principals,
             grant_option=grant_option,
+        )
+
+    def _parse_overlay(self) -> exp.Overlay:
+        return self.expression(
+            exp.Overlay,
+            **{  # type: ignore
+                "this": self._parse_bitwise(),
+                "expression": self._match_text_seq("PLACING") and self._parse_bitwise(),
+                "from": self._match_text_seq("FROM") and self._parse_bitwise(),
+                "for": self._match_text_seq("FOR") and self._parse_bitwise(),
+            },
         )

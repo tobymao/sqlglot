@@ -115,12 +115,13 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _annotate_by_same_args(
+def _annotate_by_similar_args(
     self: TypeAnnotator, expression: E, *args: str, target_type: exp.DataType | exp.DataType.Type
 ) -> E:
     """
-    Infers the type of the expression if all the param @args are of that type,
-    otherwise defaults to param @target_type
+    Infers the type of the expression according to the following rules:
+    - If all args are of the same type OR any arg is of target_type, the expr is inferred as such
+    - If any arg is of UNKNOWN type and none of target_type, the expr is inferred as UNKNOWN
     """
     self._annotate_args(expression)
 
@@ -129,14 +130,20 @@ def _annotate_by_same_args(
         arg_expr = expression.args.get(arg)
         expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
 
-    last_datatype = expressions[0].type if expressions else None
+    last_datatype = None
 
+    has_unknown = False
     for expr in expressions:
-        if not expr.is_type(last_datatype):
-            last_datatype = None
+        if expr.is_type(exp.DataType.Type.UNKNOWN):
+            has_unknown = True
+        elif expr.is_type(target_type):
+            has_unknown = False
+            last_datatype = target_type
             break
+        else:
+            last_datatype = expr.type
 
-    self._set_type(expression, last_datatype or target_type)
+    self._set_type(expression, exp.DataType.Type.UNKNOWN if has_unknown else last_datatype)
     return expression
 
 
@@ -144,10 +151,10 @@ class Spark2(Hive):
     ANNOTATORS = {
         **Hive.ANNOTATORS,
         exp.Substring: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Concat: lambda self, e: _annotate_by_same_args(
+        exp.Concat: lambda self, e: _annotate_by_similar_args(
             self, e, "expressions", target_type=exp.DataType.Type.TEXT
         ),
-        exp.Pad: lambda self, e: _annotate_by_same_args(
+        exp.Pad: lambda self, e: _annotate_by_similar_args(
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         ),
     }

@@ -1,14 +1,18 @@
 import unittest
 
 from sqlglot import exp, parse_one
-from sqlglot.diff import Insert, Keep, Move, Remove, Update, diff
+from sqlglot.diff import Insert, Move, Remove, Update, diff
 from sqlglot.expressions import Join, to_table
+
+
+def diff_delta_only(source, target, matchings=None, delta_only=True, **kwargs):
+    return diff(source, target, matchings=matchings, delta_only=delta_only, **kwargs)
 
 
 class TestDiff(unittest.TestCase):
     def test_simple(self):
         self._validate_delta_only(
-            diff(parse_one("SELECT a + b"), parse_one("SELECT a - b")),
+            diff_delta_only(parse_one("SELECT a + b"), parse_one("SELECT a - b")),
             [
                 Remove(parse_one("a + b")),  # the Add node
                 Insert(parse_one("a - b")),  # the Sub node
@@ -16,21 +20,21 @@ class TestDiff(unittest.TestCase):
         )
 
         self._validate_delta_only(
-            diff(parse_one("SELECT a, b, c"), parse_one("SELECT a, c")),
+            diff_delta_only(parse_one("SELECT a, b, c"), parse_one("SELECT a, c")),
             [
                 Remove(parse_one("b")),  # the Column node
             ],
         )
 
         self._validate_delta_only(
-            diff(parse_one("SELECT a, b"), parse_one("SELECT a, b, c")),
+            diff_delta_only(parse_one("SELECT a, b"), parse_one("SELECT a, b, c")),
             [
                 Insert(parse_one("c")),  # the Column node
             ],
         )
 
         self._validate_delta_only(
-            diff(
+            diff_delta_only(
                 parse_one("SELECT a FROM table_one"),
                 parse_one("SELECT a FROM table_two"),
             ),
@@ -44,7 +48,9 @@ class TestDiff(unittest.TestCase):
 
     def test_lambda(self):
         self._validate_delta_only(
-            diff(parse_one("SELECT a, b, c, x(a -> a)"), parse_one("SELECT a, b, c, x(b -> b)")),
+            diff_delta_only(
+                parse_one("SELECT a, b, c, x(a -> a)"), parse_one("SELECT a, b, c, x(b -> b)")
+            ),
             [
                 Update(
                     exp.Lambda(this=exp.to_identifier("a"), expressions=[exp.to_identifier("a")]),
@@ -55,14 +61,16 @@ class TestDiff(unittest.TestCase):
 
     def test_udf(self):
         self._validate_delta_only(
-            diff(parse_one('SELECT a, b, "my.udf1"()'), parse_one('SELECT a, b, "my.udf2"()')),
+            diff_delta_only(
+                parse_one('SELECT a, b, "my.udf1"()'), parse_one('SELECT a, b, "my.udf2"()')
+            ),
             [
                 Insert(parse_one('"my.udf2"()')),
                 Remove(parse_one('"my.udf1"()')),
             ],
         )
         self._validate_delta_only(
-            diff(
+            diff_delta_only(
                 parse_one('SELECT a, b, "my.udf"(x, y, z)'),
                 parse_one('SELECT a, b, "my.udf"(x, y, w)'),
             ),
@@ -74,28 +82,28 @@ class TestDiff(unittest.TestCase):
 
     def test_node_position_changed(self):
         self._validate_delta_only(
-            diff(parse_one("SELECT a, b, c"), parse_one("SELECT c, a, b")),
+            diff_delta_only(parse_one("SELECT a, b, c"), parse_one("SELECT c, a, b")),
             [
                 Move(parse_one("c")),  # the Column node
             ],
         )
 
         self._validate_delta_only(
-            diff(parse_one("SELECT a + b"), parse_one("SELECT b + a")),
+            diff_delta_only(parse_one("SELECT a + b"), parse_one("SELECT b + a")),
             [
                 Move(parse_one("a")),  # the Column node
             ],
         )
 
         self._validate_delta_only(
-            diff(parse_one("SELECT aaaa AND bbbb"), parse_one("SELECT bbbb AND aaaa")),
+            diff_delta_only(parse_one("SELECT aaaa AND bbbb"), parse_one("SELECT bbbb AND aaaa")),
             [
                 Move(parse_one("aaaa")),  # the Column node
             ],
         )
 
         self._validate_delta_only(
-            diff(
+            diff_delta_only(
                 parse_one("SELECT aaaa OR bbbb OR cccc"),
                 parse_one("SELECT cccc OR bbbb OR aaaa"),
             ),
@@ -120,7 +128,7 @@ class TestDiff(unittest.TestCase):
         """
 
         self._validate_delta_only(
-            diff(parse_one(expr_src), parse_one(expr_tgt)),
+            diff_delta_only(parse_one(expr_src), parse_one(expr_tgt)),
             [
                 Remove(parse_one("LOWER(c) AS c")),  # the Alias node
                 Remove(parse_one("LOWER(c)")),  # the Lower node
@@ -133,8 +141,7 @@ class TestDiff(unittest.TestCase):
         expr_src = "SELECT a, b FROM t1 LEFT JOIN t2 ON t1.key = t2.key"
         expr_tgt = "SELECT a, b FROM t1 RIGHT JOIN t2 ON t1.key = t2.key"
 
-        changes = diff(parse_one(expr_src), parse_one(expr_tgt))
-        changes = _delta_only(changes)
+        changes = diff_delta_only(parse_one(expr_src), parse_one(expr_tgt))
 
         self.assertEqual(len(changes), 2)
         self.assertTrue(isinstance(changes[0], Remove))
@@ -145,10 +152,10 @@ class TestDiff(unittest.TestCase):
         expr_src = parse_one("SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b)")
         expr_tgt = parse_one("SELECT RANK() OVER (PARTITION BY a ORDER BY b)")
 
-        self._validate_delta_only(diff(expr_src, expr_src), [])
+        self._validate_delta_only(diff_delta_only(expr_src, expr_src), [])
 
         self._validate_delta_only(
-            diff(expr_src, expr_tgt),
+            diff_delta_only(expr_src, expr_tgt),
             [
                 Remove(parse_one("ROW_NUMBER()")),  # the Anonymous node
                 Insert(parse_one("RANK()")),  # the Anonymous node
@@ -160,7 +167,7 @@ class TestDiff(unittest.TestCase):
         expr_tgt = parse_one("SELECT 1, 2, 3, 4")
 
         self._validate_delta_only(
-            diff(expr_src, expr_tgt),
+            diff_delta_only(expr_src, expr_tgt),
             [
                 Remove(expr_src),
                 Insert(expr_tgt),
@@ -171,7 +178,7 @@ class TestDiff(unittest.TestCase):
         )
 
         self._validate_delta_only(
-            diff(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt)]),
+            diff_delta_only(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt)]),
             [
                 Insert(exp.Literal.number(2)),
                 Insert(exp.Literal.number(3)),
@@ -180,23 +187,20 @@ class TestDiff(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            diff(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)])
+            diff_delta_only(
+                expr_src, expr_tgt, matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)]
+            )
 
     def test_identifier(self):
         expr_src = parse_one("SELECT a FROM tbl")
         expr_tgt = parse_one("SELECT a, tbl.b from tbl")
 
         self._validate_delta_only(
-            diff(expr_src, expr_tgt),
+            diff_delta_only(expr_src, expr_tgt),
             [
                 Insert(expression=exp.to_column("tbl.b")),
             ],
         )
 
-    def _validate_delta_only(self, actual_diff, expected_delta):
-        actual_delta = _delta_only(actual_diff)
+    def _validate_delta_only(self, actual_delta, expected_delta):
         self.assertEqual(set(actual_delta), set(expected_delta))
-
-
-def _delta_only(changes):
-    return [d for d in changes if not isinstance(d, Keep)]

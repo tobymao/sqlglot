@@ -1,6 +1,31 @@
 Changelog
 =========
 
+## [v25.24.0] - 2024-09-26
+### :boom: BREAKING CHANGES
+- due to [`3ab6dfb`](https://github.com/tobymao/sqlglot/commit/3ab6dfb486f18d036bfac6a90d5f81b0ce7a91ea) - Generalize COLUMNS(...) APPLY *(PR [#4161](https://github.com/tobymao/sqlglot/pull/4161) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Generalize COLUMNS(...) APPLY (#4161)
+
+
+### :sparkles: New Features
+- [`93cef30`](https://github.com/tobymao/sqlglot/commit/93cef30bc534a155bce06f35d441d20e5dd78cf6) - **postgres**: Support OVERLAY function *(PR [#4165](https://github.com/tobymao/sqlglot/pull/4165) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4159](https://github.com/tobymao/sqlglot/issues/4159) opened by [@s1101010110](https://github.com/s1101010110)*
+- [`0a5444d`](https://github.com/tobymao/sqlglot/commit/0a5444dc822b7c53c008bc946eb3b54ca2147f3c) - expose a flag to automatically exclude Keep diff nodes *(PR [#4168](https://github.com/tobymao/sqlglot/pull/4168) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`9c17264`](https://github.com/tobymao/sqlglot/commit/9c172643aa3f3f0ffcc2e62242b62ba9c6141925) - **hive**: Enclose exp.Split with \E *(PR [#4163](https://github.com/tobymao/sqlglot/pull/4163) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4158](https://github.com/tobymao/sqlglot/issues/4158) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`3ab6dfb`](https://github.com/tobymao/sqlglot/commit/3ab6dfb486f18d036bfac6a90d5f81b0ce7a91ea) - **clickhouse**: Generalize COLUMNS(...) APPLY *(PR [#4161](https://github.com/tobymao/sqlglot/pull/4161) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4157](https://github.com/tobymao/sqlglot/issues/4157) opened by [@elchyn-cheliabiyeu](https://github.com/elchyn-cheliabiyeu)*
+
+### :recycle: Refactors
+- [`2540e50`](https://github.com/tobymao/sqlglot/commit/2540e50d2b0df12f940c68acc574e540d19546cf) - simplify check_deploy job *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`f6d3bdd`](https://github.com/tobymao/sqlglot/commit/f6d3bdd740d0fe128d4d5dd99833a6f71c890ed3) - update supported dialect count (21 -> 23) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.23.2] - 2024-09-25
 ### :wrench: Chores
 - [`eca05d3`](https://github.com/tobymao/sqlglot/commit/eca05d3b08645d7a984ee65b438282b35cb41960) - tweak should_deploy_rs script to avoid marking CI as failed *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -4881,3 +4906,4 @@ Changelog
 [v25.23.0]: https://github.com/tobymao/sqlglot/compare/v25.20.2...v25.23.0
 [v25.23.1]: https://github.com/tobymao/sqlglot/compare/v25.23.0...v25.23.1
 [v25.23.2]: https://github.com/tobymao/sqlglot/compare/v25.23.1...v25.23.2
+[v25.24.0]: https://github.com/tobymao/sqlglot/compare/v25.23.2...v25.24.0

@@ -396,6 +396,7 @@ class ClickHouse(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
             "QUANTILE": lambda self: self._parse_quantile(),
+            "COLUMNS": lambda self: self._parse_columns(),
         }
 
         FUNCTION_PARSERS.pop("MATCH")
@@ -774,6 +775,14 @@ class ClickHouse(Dialect):
                 this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
                 self._match(TokenType.R_PAREN)
 
+            return this
+
+        def _parse_columns(self) -> exp.Expression:
+            this: exp.Expression = self.expression(exp.Columns, this=self._parse_lambda())
+
+            while self._next and self._match_text_seq(")", "APPLY", "("):
+                self._match(TokenType.R_PAREN)
+                this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
             return this
 
     class Generator(generator.Generator):

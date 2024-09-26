@@ -4984,6 +4984,10 @@ class ToNumber(Func):
     }
 
 
+class Columns(Func):
+    arg_types = {"this": True, "unpack": False}
+
+
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
 class Convert(Func):
     arg_types = {"this": True, "expression": True, "style": False}
@@ -6241,10 +6245,6 @@ class UnixToTime(Func):
 
 
 class UnixToTimeStr(Func):
-    pass
-
-
-class UnpackColumns(Func):
     pass
 
 

@@ -800,6 +800,8 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT 1 FROM ((VALUES (1)) AS vals(id) LEFT OUTER JOIN tbl ON vals.id = tbl.id)"
         )
+        self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1)")
+        self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1 FOR 1)")
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

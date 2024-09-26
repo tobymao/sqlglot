@@ -5913,6 +5913,10 @@ class Normalize(Func):
     arg_types = {"this": True, "form": False}
 
 
+class Overlay(Func):
+    arg_types = {"this": True, "expression": True, "from": True, "for": False}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function
 class Predict(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}

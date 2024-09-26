@@ -4378,3 +4378,12 @@ class Generator(metaclass=_Generator):
             func = f"*{func}"
 
         return func
+
+    def overlay_sql(self, expression: exp.Overlay):
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        from_sql = self.sql(expression, "from")
+        for_sql = self.sql(expression, "for")
+        for_sql = f" FOR {for_sql}" if for_sql else ""
+
+        return f"OVERLAY({this} PLACING {expr} FROM {from_sql}{for_sql})"

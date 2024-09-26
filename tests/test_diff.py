@@ -5,8 +5,8 @@ from sqlglot.diff import Insert, Move, Remove, Update, diff
 from sqlglot.expressions import Join, to_table
 
 
-def diff_delta_only(source, target, matchings=None, delta_only=True, **kwargs):
-    return diff(source, target, matchings=matchings, delta_only=delta_only, **kwargs)
+def diff_delta_only(source, target, matchings=None, **kwargs):
+    return diff(source, target, matchings=matchings, delta_only=True, **kwargs)
 
 
 class TestDiff(unittest.TestCase):

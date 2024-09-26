@@ -62,6 +62,7 @@ def diff(
     source: exp.Expression,
     target: exp.Expression,
     matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+    delta_only: bool = False,
     **kwargs: t.Any,
 ) -> t.List[Edit]:
     """
@@ -89,6 +90,8 @@ def diff(
             heuristics produce better results for subtrees that are known by a caller to be matching.
             Note: expression references in this list must refer to the same node objects that are
             referenced in source / target trees.
+        delta_only: excludes all `Keep` nodes from the diff.
+        kwargs: additional arguments to pass to the ChangeDistiller instance.
 
     Returns:
         the list of Insert, Remove, Move, Update and Keep objects for each node in the source and the
@@ -116,7 +119,12 @@ def diff(
     }
     matchings_copy = [(node_mappings[id(s)], node_mappings[id(t)]) for s, t in matchings]
 
-    return ChangeDistiller(**kwargs).diff(source_copy, target_copy, matchings=matchings_copy)
+    return ChangeDistiller(**kwargs).diff(
+        source_copy,
+        target_copy,
+        matchings=matchings_copy,
+        delta_only=delta_only,
+    )
 
 
 # The expression types for which Update edits are allowed.
@@ -149,6 +157,7 @@ class ChangeDistiller:
         source: exp.Expression,
         target: exp.Expression,
         matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+        delta_only: bool = False,
     ) -> t.List[Edit]:
         matchings = matchings or []
         pre_matched_nodes = {id(s): id(t) for s, t in matchings}
@@ -168,9 +177,13 @@ class ChangeDistiller:
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
         matching_set = self._compute_matching_set() | {(s, t) for s, t in pre_matched_nodes.items()}
-        return self._generate_edit_script(matching_set)
+        return self._generate_edit_script(matching_set, delta_only)
 
-    def _generate_edit_script(self, matching_set: t.Set[t.Tuple[int, int]]) -> t.List[Edit]:
+    def _generate_edit_script(
+        self,
+        matching_set: t.Set[t.Tuple[int, int]],
+        delta_only: bool,
+    ) -> t.List[Edit]:
         edit_script: t.List[Edit] = []
         for removed_node_id in self._unmatched_source_nodes:
             edit_script.append(Remove(self._source_index[removed_node_id]))
@@ -186,7 +199,8 @@ class ChangeDistiller:
                 edit_script.extend(
                     self._generate_move_edits(source_node, target_node, matching_set)
                 )
-                edit_script.append(Keep(source_node, target_node))
+                if not delta_only:
+                    edit_script.append(Keep(source_node, target_node))
             else:
                 edit_script.append(Update(source_node, target_node))
 

@@ -251,7 +251,7 @@ class SQLite(Dialect):
             elif unit == "NANOSECOND":
                 sql = f"{sql} * 8640000000000.0"
             else:
-                self.unsupported("DATEDIFF unsupported for '{unit}'.")
+                self.unsupported(f"DATEDIFF unsupported for '{unit}'.")
 
             return f"CAST({sql} AS INTEGER)"
 

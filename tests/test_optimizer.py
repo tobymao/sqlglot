@@ -1378,25 +1378,41 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
 
-    def test_custom_annotators(self):
+    def test_spark_annotators(self):
+        """Test Spark annotators, mainly built-in string/binary functions"""
+
+        spark_schema = {"tbl": {"bin_col": "BINARY", "str_col": "STRING"}}
+
+        from sqlglot.dialects import Dialect
+
+        def _assert_func_return_type(func: str, dialect: str, target_type: str):
+            ast = parse_one(f"SELECT {func} FROM tbl", read=dialect)
+            annotators = Dialect.get_or_raise(dialect).ANNOTATORS
+            annotated = annotate_types(ast, annotators=annotators, schema=spark_schema)
+
+            self.assertEqual(
+                annotated.expressions[0].type.sql(dialect),
+                exp.DataType.build(target_type).sql(dialect),
+            )
+
+        str_col, bin_col = "tbl.str_col", "tbl.bin_col"
+
         # In Spark hierarchy, SUBSTRING result type is dependent on input expr type
         for dialect in ("spark2", "spark", "databricks"):
-            for expr_type_pair in (
-                ("col", "STRING"),
-                ("col", "BINARY"),
-                ("'str_literal'", "STRING"),
-                ("CAST('str_literal' AS BINARY)", "BINARY"),
-            ):
-                with self.subTest(
-                    f"Testing {dialect}'s SUBSTRING() result type for {expr_type_pair}"
-                ):
-                    expr, type = expr_type_pair
-                    ast = parse_one(f"SELECT substring({expr}, 2, 3) AS x FROM tbl", read=dialect)
+            _assert_func_return_type(f"SUBSTRING({str_col}, 0, 0)", dialect, "STRING")
+            _assert_func_return_type(f"SUBSTRING({bin_col}, 0, 0)", dialect, "BINARY")
 
-                    subst_type = (
-                        optimizer.optimize(ast, schema={"tbl": {"col": type}}, dialect=dialect)
-                        .expressions[0]
-                        .type
-                    )
+            _assert_func_return_type(f"CONCAT({bin_col}, {bin_col})", dialect, "BINARY")
+            _assert_func_return_type(f"CONCAT({bin_col}, {str_col})", dialect, "STRING")
+            _assert_func_return_type(f"CONCAT({str_col}, {bin_col})", dialect, "STRING")
+            _assert_func_return_type(f"CONCAT({str_col}, {str_col})", dialect, "STRING")
 
-                    self.assertEqual(subst_type.sql(dialect), exp.DataType.build(type).sql(dialect))
+            _assert_func_return_type(f"CONCAT({str_col}, foo)", dialect, "STRING")
+            _assert_func_return_type(f"CONCAT({bin_col}, bar)", dialect, "UNKNOWN")
+            _assert_func_return_type("CONCAT(foo, bar)", dialect, "UNKNOWN")
+
+            for func in ("LPAD", "RPAD"):
+                _assert_func_return_type(f"{func}({bin_col}, 1, {bin_col})", dialect, "BINARY")
+                _assert_func_return_type(f"{func}({bin_col}, 1, {str_col})", dialect, "STRING")
+                _assert_func_return_type(f"{func}({str_col}, 1, {bin_col})", dialect, "STRING")
+                _assert_func_return_type(f"{func}({str_col}, 1, {str_col})", dialect, "STRING")

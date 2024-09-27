@@ -2348,12 +2348,10 @@ class Generator(metaclass=_Generator):
                 nulls_sort_change = ""
             elif (
                 self.NULL_ORDERING_SUPPORTED is False
-                and expression.find_ancestor(exp.AggFunc)
+                and (isinstance(expression.find_ancestor(exp.AggFunc, exp.Select), exp.AggFunc))
                 and (
-                    asc
-                    and nulls_sort_change == " NULLS LAST"
-                    or desc
-                    and nulls_sort_change == " NULLS FIRST"
+                    (asc and nulls_sort_change == " NULLS LAST")
+                    or (desc and nulls_sort_change == " NULLS FIRST")
                 )
             ):
                 self.unsupported(

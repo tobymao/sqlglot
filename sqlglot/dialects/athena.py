@@ -48,7 +48,7 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
             ),
             None,
         )
-        if table_type_property and table_type_property.text("value") == "iceberg":
+        if table_type_property and table_type_property.text("value").lower() == "iceberg":
             prop_name = "location"
 
     return f"{prop_name}={self.sql(e, 'this')}"
@@ -132,6 +132,7 @@ class Athena(Trino):
         TRANSFORMS = {
             **Trino.Generator.TRANSFORMS,
             exp.FileFormatProperty: lambda self, e: f"format={self.sql(e, 'this')}",
+            exp.PartitionedByProperty: lambda self, e: f"partitioned_by={self.sql(e, 'this')}",
             exp.LocationProperty: _location_property_sql,
         }
 

@@ -184,6 +184,7 @@ class Redshift(Postgres):
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DistKeyProperty: lambda self, e: self.func("DISTKEY", e.this),
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
+            exp.Explode: lambda self, e: self.explode_sql(e),
             exp.FromBase: rename_func("STRTOL"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.JSONExtract: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
@@ -388,13 +389,28 @@ class Redshift(Postgres):
             args = expression.expressions
             num_args = len(args)
 
-            if num_args > 1:
+            if not num_args == 1:
                 self.unsupported(f"Unsupported number of arguments in UNNEST: {num_args}")
                 return ""
 
-            arg = self.sql(seq_get(args, 0))
+            if not expression.find_ancestor(exp.From, exp.Join):
+                self.unsupported("Unsupported UNNEST when not used in FROM/JOIN clauses")
+                return ""
+
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            arg = t.cast(exp.Expression, seq_get(args, 0))
+            annotated_arg = annotate_types(arg)
+            if not annotated_arg.is_type(exp.DataType.Type.UNKNOWN) and not annotated_arg.is_type(
+                exp.DataType.Type.ARRAY
+            ):
+                self.unsupported("Unsupported UNNEST without ARRAY argument")
+                return ""
+
+            arg_sql = self.sql(arg)
+
             alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
-            return f"{arg} AS {alias}" if alias else arg
+            return f"{arg_sql} AS {alias}" if alias else arg_sql
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type(exp.DataType.Type.JSON):
@@ -434,3 +450,7 @@ class Redshift(Postgres):
                 return super().array_sql(expression)
 
             return rename_func("ARRAY")(self, expression)
+
+        def explode_sql(self, expression: exp.Explode) -> str:
+            self.unsupported("Unsupported EXPLODE() function")
+            return ""

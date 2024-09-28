@@ -62,7 +62,7 @@ class TestAthena(Validator):
 
         # CTAS goes to the Trino engine, where the table properties cant be encased in single quotes like they can for Hive
         # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
-        # They're also case sentitive and need to be lowercase, otherwise you get eg "Table properties [FORMAT] are not supported."
+        # They're also case sensitive and need to be lowercase, otherwise you get eg "Table properties [FORMAT] are not supported."
         self.validate_identity(
             "CREATE TABLE foo WITH (table_type='ICEBERG', location='s3://foo/', format='orc', partitioning=ARRAY['bucket(id, 5)']) AS SELECT * FROM a"
         )

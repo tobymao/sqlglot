@@ -624,15 +624,31 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             if join.side == "FULL"
         ]
 
+        
+
         if len(full_outer_joins) == 1:
+
             expression_copy = expression.copy()
             expression.set("limit", None)
             index, full_outer_join = full_outer_joins[0]
+
+            tables = (full_outer_join.find(exp.Table), expression.args.get("from").this)
+            join_conditions = full_outer_join.args.get("on") or exp.And(expressions=[
+                exp.EQ(this=exp.Column(this=col, table=tables[0]), expression=exp.Column(this=col, table=tables[1]))
+                for col in full_outer_join.args.get("using")
+            ])
+
             full_outer_join.set("side", "left")
+            anti_join_clause = (
+                exp.Select(expressions=[exp.Literal(this=1, is_string=False)])
+                .from_(expression.args.get("from"))
+                .where(join_conditions)
+                )
             expression_copy.args["joins"][index].set("side", "right")
+            expression_copy.args["where"] = exp.Where(this=exp.Exists(this=anti_join_clause).not_())
             expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
 
-            return exp.union(expression, expression_copy, copy=False)
+            return exp.union(expression, expression_copy, copy=False, distinct=False)
 
     return expression
 

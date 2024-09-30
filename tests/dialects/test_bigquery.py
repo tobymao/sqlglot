@@ -1985,3 +1985,17 @@ OPTIONS (
         self.validate_identity(
             "SELECT RANGE(CAST('2022-10-01 14:53:27 America/Los_Angeles' AS TIMESTAMP), CAST('2022-10-01 16:00:00 America/Los_Angeles' AS TIMESTAMP))"
         )
+
+    def test_null_ordering(self):
+        # Aggregate functions allow "NULLS FIRST" only with ascending order and
+        # "NULLS LAST" only with descending
+        for sort_order, null_order in (("ASC", "NULLS LAST"), ("DESC", "NULLS FIRST")):
+            self.validate_all(
+                f"SELECT color, ARRAY_AGG(id ORDER BY id {sort_order}) AS ids FROM colors GROUP BY 1",
+                read={
+                    "": f"SELECT color, ARRAY_AGG(id ORDER BY id {sort_order} {null_order}) AS ids FROM colors GROUP BY 1"
+                },
+                write={
+                    "bigquery": f"SELECT color, ARRAY_AGG(id ORDER BY id {sort_order}) AS ids FROM colors GROUP BY 1",
+                },
+            )

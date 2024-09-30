@@ -652,7 +652,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             expression_copy.args["joins"][index].set("side", "right")
             expression_copy.args["where"] = exp.Where(this=exp.Exists(this=anti_join_clause).not_())
             expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
-            expression.args.pop("order", None)  # remove order by from RIGHT side
+            expression.args.pop("order", None)  # remove order by from LEFT side
 
             return exp.union(expression, expression_copy, copy=False, distinct=False)
 

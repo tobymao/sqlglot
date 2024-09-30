@@ -389,28 +389,18 @@ class Redshift(Postgres):
             args = expression.expressions
             num_args = len(args)
 
-            if not num_args == 1:
+            if num_args != 1:
                 self.unsupported(f"Unsupported number of arguments in UNNEST: {num_args}")
                 return ""
 
-            if not expression.find_ancestor(exp.From, exp.Join):
+            if isinstance(expression.find_ancestor(exp.From, exp.Join, exp.Select), exp.Select):
                 self.unsupported("Unsupported UNNEST when not used in FROM/JOIN clauses")
                 return ""
 
-            from sqlglot.optimizer.annotate_types import annotate_types
-
-            arg = t.cast(exp.Expression, seq_get(args, 0))
-            annotated_arg = annotate_types(arg)
-            if not annotated_arg.is_type(exp.DataType.Type.UNKNOWN) and not annotated_arg.is_type(
-                exp.DataType.Type.ARRAY
-            ):
-                self.unsupported("Unsupported UNNEST without ARRAY argument")
-                return ""
-
-            arg_sql = self.sql(arg)
+            arg = self.sql(seq_get(args, 0))
 
             alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
-            return f"{arg_sql} AS {alias}" if alias else arg_sql
+            return f"{arg} AS {alias}" if alias else arg
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type(exp.DataType.Type.JSON):

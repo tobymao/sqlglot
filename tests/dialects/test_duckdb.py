@@ -859,12 +859,6 @@ class TestDuckDB(Validator):
             "SELECT COALESCE(*COLUMNS(['a', 'b', 'c'])) AS result FROM (SELECT NULL AS a, 42 AS b, TRUE AS c)"
         )
         self.validate_all(
-            "SELECT * FROM UNNEST(STRUCT(123 AS a))",
-            write={
-                "redshift": UnsupportedError,
-            },
-        )
-        self.validate_all(
             "SELECT UNNEST(foo) AS x",
             write={
                 "redshift": UnsupportedError,

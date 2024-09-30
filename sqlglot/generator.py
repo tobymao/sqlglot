@@ -203,7 +203,8 @@ class Generator(metaclass=_Generator):
     }
 
     # Whether null ordering is supported in order by
-    # True: Full Support, None: No support, False: No support in window specifications
+    # True: Full Support, None: No support, False: No support for certain cases
+    # such as window specifications, aggregate functions etc
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
     # Whether ignore nulls is inside the agg or outside.
@@ -2343,6 +2344,18 @@ class Generator(metaclass=_Generator):
             if isinstance(window, exp.Window) and window.args.get("spec"):
                 self.unsupported(
                     f"'{nulls_sort_change.strip()}' translation not supported in window functions"
+                )
+                nulls_sort_change = ""
+            elif (
+                self.NULL_ORDERING_SUPPORTED is False
+                and (isinstance(expression.find_ancestor(exp.AggFunc, exp.Select), exp.AggFunc))
+                and (
+                    (asc and nulls_sort_change == " NULLS LAST")
+                    or (desc and nulls_sort_change == " NULLS FIRST")
+                )
+            ):
+                self.unsupported(
+                    f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
                 )
                 nulls_sort_change = ""
             elif self.NULL_ORDERING_SUPPORTED is None:

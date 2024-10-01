@@ -286,7 +286,6 @@ class Postgres(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "~~": TokenType.LIKE,
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,

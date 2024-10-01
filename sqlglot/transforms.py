@@ -630,15 +630,12 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             index, full_outer_join = full_outer_joins[0]
 
             tables = (
-                full_outer_join.find(exp.Table).alias_or_name,
+                full_outer_join.alias_or_name,
                 expression.args["from"].alias_or_name,
             )
-            join_conditions = full_outer_join.args.get("on") or exp.And(
-                expressions=[
-                    exp.EQ(
-                        this=exp.Column(this=col, table=tables[0]),
-                        expression=exp.Column(this=col, table=tables[1]),
-                    )
+            join_conditions = full_outer_join.args.get("on") or exp.and_(
+                *[
+                    exp.column(col, tables[0]).eq(exp.column(col, tables[1]))
                     for col in full_outer_join.args.get("using")
                 ]
             )

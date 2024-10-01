@@ -350,6 +350,7 @@ class TestExpressions(unittest.TestCase):
         )
 
         self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
+        self.assertIsInstance(exp.func("instr", "x", "b", dialect="sqlite"), exp.StrPosition)
         self.assertIsInstance(exp.func("bla", 1, "foo"), exp.Anonymous)
         self.assertIsInstance(
             exp.func("cast", this=exp.Literal.number(5), to=exp.DataType.build("DOUBLE")),

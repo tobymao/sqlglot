@@ -1250,6 +1250,12 @@ def strposition_to_locate_sql(self: Generator, expression: exp.StrPosition) -> s
     )
 
 
+def strposition_to_instr_sql(self: Generator, expression: exp.StrPosition) -> str:
+    return self.func(
+        "INSTR", expression.args.get("substr"), expression.this, expression.args.get("position")
+    )
+
+
 def left_to_substring_sql(self: Generator, expression: exp.Left) -> str:
     return self.sql(
         exp.Substring(

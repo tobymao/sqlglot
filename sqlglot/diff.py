@@ -129,12 +129,14 @@ def diff(
 
 # The expression types for which Update edits are allowed.
 UPDATABLE_EXPRESSION_TYPES = (
+    exp.Alias,
     exp.Boolean,
+    exp.Column,
     exp.DataType,
+    exp.Lambda,
     exp.Literal,
     exp.Table,
-    exp.Column,
-    exp.Lambda,
+    exp.Window,
 )
 
 IGNORED_LEAF_EXPRESSION_TYPES = (exp.Identifier,)

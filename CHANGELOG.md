@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v25.24.1] - 2024-10-01
+### :sparkles: New Features
+- [`7af33a2`](https://github.com/tobymao/sqlglot/commit/7af33a2f74dd1300bcd45f1974b7fd28abe66b8e) - **spark**: Custom annotation for more string functions *(PR [#4156](https://github.com/tobymao/sqlglot/pull/4156) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :bug: Bug Fixes
+- [`81df4e1`](https://github.com/tobymao/sqlglot/commit/81df4e104ff3d60e3c23d3ac321e719b1f0962c0) - **athena**: Case sensitivity in CTAS property names *(PR [#4171](https://github.com/tobymao/sqlglot/pull/4171) by [@erindru](https://github.com/erindru))*
+- [`0703152`](https://github.com/tobymao/sqlglot/commit/0703152a25afced183dc5efd5f62311a48545420) - **bigquery**: Do not generate null ordering on agg funcs *(PR [#4172](https://github.com/tobymao/sqlglot/pull/4172) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4170](https://github.com/tobymao/sqlglot/issues/4170) opened by [@yjabri](https://github.com/yjabri)*
+
+
 ## [v25.24.0] - 2024-09-26
 ### :boom: BREAKING CHANGES
 - due to [`3ab6dfb`](https://github.com/tobymao/sqlglot/commit/3ab6dfb486f18d036bfac6a90d5f81b0ce7a91ea) - Generalize COLUMNS(...) APPLY *(PR [#4161](https://github.com/tobymao/sqlglot/pull/4161) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -4907,3 +4917,4 @@ Changelog
 [v25.23.1]: https://github.com/tobymao/sqlglot/compare/v25.23.0...v25.23.1
 [v25.23.2]: https://github.com/tobymao/sqlglot/compare/v25.23.1...v25.23.2
 [v25.24.0]: https://github.com/tobymao/sqlglot/compare/v25.23.2...v25.24.0
+[v25.24.1]: https://github.com/tobymao/sqlglot/compare/v25.24.0...v25.24.1

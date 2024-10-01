@@ -54,6 +54,18 @@ def simplify(expression, **kwargs):
     return optimizer.simplify.simplify(expression, constant_propagation=True, **kwargs)
 
 
+def annotate_functions(expression, **kwargs):
+    from sqlglot.dialects import Dialect
+
+    dialect = kwargs["dialect"]
+    schema = kwargs["schema"]
+
+    annotators = Dialect.get_or_raise(dialect).ANNOTATORS
+    annotated = annotate_types(expression, annotators=annotators, schema=schema)
+
+    return annotated.expressions[0]
+
+
 class TestOptimizer(unittest.TestCase):
     maxDiff = None
 
@@ -787,6 +799,26 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             with self.subTest(title):
                 self.assertEqual(result.type.sql(), exp.DataType.build(expected).sql())
 
+    def test_annotate_funcs(self):
+        test_schema = {"tbl": {"bin_col": "BINARY", "str_col": "STRING"}}
+
+        for i, (meta, sql, expected) in enumerate(
+            load_sql_fixture_pairs("optimizer/annotate_functions.sql"), start=1
+        ):
+            title = meta.get("title") or f"{i}, {sql}"
+            dialects = meta.get("dialect").split(", ")
+            sql = f"SELECT {sql} FROM tbl"
+
+            for dialect in dialects:
+                result = parse_and_optimize(
+                    annotate_functions, sql, dialect, schema=test_schema, dialect=dialect
+                )
+
+                with self.subTest(title):
+                    self.assertEqual(
+                        result.type.sql(dialect), exp.DataType.build(expected).sql(dialect)
+                    )
+
     def test_cast_type_annotation(self):
         expression = annotate_types(parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))"))
         self.assertEqual(expression.type.this, exp.DataType.Type.TIMESTAMPTZ)
@@ -1377,42 +1409,3 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
         self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
-
-    def test_spark_annotators(self):
-        """Test Spark annotators, mainly built-in string/binary functions"""
-
-        spark_schema = {"tbl": {"bin_col": "BINARY", "str_col": "STRING"}}
-
-        from sqlglot.dialects import Dialect
-
-        def _assert_func_return_type(func: str, dialect: str, target_type: str):
-            ast = parse_one(f"SELECT {func} FROM tbl", read=dialect)
-            annotators = Dialect.get_or_raise(dialect).ANNOTATORS
-            annotated = annotate_types(ast, annotators=annotators, schema=spark_schema)
-
-            self.assertEqual(
-                annotated.expressions[0].type.sql(dialect),
-                exp.DataType.build(target_type).sql(dialect),
-            )
-
-        str_col, bin_col = "tbl.str_col", "tbl.bin_col"
-
-        # In Spark hierarchy, SUBSTRING result type is dependent on input expr type
-        for dialect in ("spark2", "spark", "databricks"):
-            _assert_func_return_type(f"SUBSTRING({str_col}, 0, 0)", dialect, "STRING")
-            _assert_func_return_type(f"SUBSTRING({bin_col}, 0, 0)", dialect, "BINARY")
-
-            _assert_func_return_type(f"CONCAT({bin_col}, {bin_col})", dialect, "BINARY")
-            _assert_func_return_type(f"CONCAT({bin_col}, {str_col})", dialect, "STRING")
-            _assert_func_return_type(f"CONCAT({str_col}, {bin_col})", dialect, "STRING")
-            _assert_func_return_type(f"CONCAT({str_col}, {str_col})", dialect, "STRING")
-
-            _assert_func_return_type(f"CONCAT({str_col}, foo)", dialect, "STRING")
-            _assert_func_return_type(f"CONCAT({bin_col}, bar)", dialect, "UNKNOWN")
-            _assert_func_return_type("CONCAT(foo, bar)", dialect, "UNKNOWN")
-
-            for func in ("LPAD", "RPAD"):
-                _assert_func_return_type(f"{func}({bin_col}, 1, {bin_col})", dialect, "BINARY")
-                _assert_func_return_type(f"{func}({bin_col}, 1, {str_col})", dialect, "STRING")
-                _assert_func_return_type(f"{func}({str_col}, 1, {bin_col})", dialect, "STRING")
-                _assert_func_return_type(f"{func}({str_col}, 1, {str_col})", dialect, "STRING")

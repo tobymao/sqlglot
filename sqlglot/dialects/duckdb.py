@@ -289,6 +289,7 @@ class DuckDB(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "//": TokenType.DIV,
+            "**": TokenType.DSTAR,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
             "BITSTRING": TokenType.BIT,
@@ -324,6 +325,13 @@ class DuckDB(Dialect):
         BITWISE = {
             **parser.Parser.BITWISE,
             TokenType.TILDA: exp.RegexpLike,
+        }
+        BITWISE.pop(TokenType.CARET)
+
+        EXPONENT = {
+            **parser.Parser.EXPONENT,
+            TokenType.CARET: exp.Pow,
+            TokenType.DSTAR: exp.Pow,
         }
 
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "STRUCT_PACK"}

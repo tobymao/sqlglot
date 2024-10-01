@@ -242,6 +242,17 @@ class Oracle(Dialect):
                 on_condition=self._parse_on_condition(),
             )
 
+        def _parse_into(self) -> t.Optional[exp.Into]:
+            # https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/SELECT-INTO-statement.html
+            bulk_collect_into = self._match(TokenType.BULK_COLLECT_INTO)
+
+            if not bulk_collect_into and not self._match(TokenType.INTO):
+                return None
+
+            return self.expression(
+                exp.Into, bulk_collect=bulk_collect_into, expressions=self._parse_expressions()
+            )
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -345,3 +356,7 @@ class Oracle(Dialect):
         def coalesce_sql(self, expression: exp.Coalesce) -> str:
             func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
             return rename_func(func_name)(self, expression)
+
+        def into_sql(self, expression: exp.Into) -> str:
+            into = "INTO" if not expression.args.get("bulk_collect") else "BULK COLLECT INTO"
+            return f"{self.seg(into)} {self.expressions(expression)}"

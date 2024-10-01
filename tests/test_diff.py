@@ -157,9 +157,18 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff_delta_only(expr_src, expr_tgt),
             [
-                Remove(parse_one("ROW_NUMBER()")),  # the Anonymous node
-                Insert(parse_one("RANK()")),  # the Anonymous node
+                Remove(parse_one("ROW_NUMBER()")),
+                Insert(parse_one("RANK()")),
+                Update(source=expr_src.selects[0], target=expr_tgt.selects[0]),
             ],
+        )
+
+        expr_src = parse_one("SELECT MAX(x) OVER (ORDER BY y) FROM z", "oracle")
+        expr_tgt = parse_one("SELECT MAX(x) KEEP (DENSE_RANK LAST ORDER BY y) FROM z", "oracle")
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [Update(source=expr_src.selects[0], target=expr_tgt.selects[0])],
         )
 
     def test_pre_matchings(self):
@@ -199,6 +208,20 @@ class TestDiff(unittest.TestCase):
             diff_delta_only(expr_src, expr_tgt),
             [
                 Insert(expression=exp.to_column("tbl.b")),
+            ],
+        )
+
+        expr_src = parse_one("SELECT 1 AS c1, 2 AS c2")
+        expr_tgt = parse_one("SELECT 2 AS c1, 3 AS c2")
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [
+                Remove(expression=exp.alias_(1, "c1")),
+                Remove(expression=exp.Literal.number(1)),
+                Insert(expression=exp.alias_(3, "c2")),
+                Insert(expression=exp.Literal.number(3)),
+                Update(source=exp.alias_(2, "c2"), target=exp.alias_(2, "c1")),
             ],
         )
 

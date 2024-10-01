@@ -864,6 +864,8 @@ class TestDuckDB(Validator):
                 "redshift": UnsupportedError,
             },
         )
+        self.validate_identity("a ^ b", "POWER(a, b)")
+        self.validate_identity("a ** b", "POWER(a, b)")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

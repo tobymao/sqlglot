@@ -818,6 +818,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SMALLINT": TokenType.SMALLINT,
         "INT128": TokenType.INT128,
         "HUGEINT": TokenType.INT128,
+        "UHUGEINT": TokenType.UINT128,
         "INT2": TokenType.SMALLINT,
         "INTEGER": TokenType.INT,
         "INT": TokenType.INT,

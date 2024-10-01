@@ -249,8 +249,16 @@ class Oracle(Dialect):
             if not bulk_collect_into and not self._match(TokenType.INTO):
                 return None
 
+            expressions = self._parse_expressions()
+            this = None
+            if len(expressions) == 1:
+                self._advance(-1)
+                expressions = []
+                self._match(TokenType.TABLE)
+                this = self._parse_table(schema=True)
+
             return self.expression(
-                exp.Into, bulk_collect=bulk_collect_into, expressions=self._parse_expressions()
+                exp.Into, this=this, bulk_collect=bulk_collect_into, expressions=expressions
             )
 
     class Generator(generator.Generator):
@@ -359,4 +367,7 @@ class Oracle(Dialect):
 
         def into_sql(self, expression: exp.Into) -> str:
             into = "INTO" if not expression.args.get("bulk_collect") else "BULK COLLECT INTO"
+            if expression.this:
+                return f"{self.seg(into)} {self.sql(expression, 'this')}"
+
             return f"{self.seg(into)} {self.expressions(expression)}"

@@ -866,6 +866,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("a ^ b", "POWER(a, b)")
         self.validate_identity("a ** b", "POWER(a, b)")
+        self.validate_identity("a ~~~ b", "a GLOB b")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

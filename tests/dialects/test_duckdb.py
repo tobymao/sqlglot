@@ -858,6 +858,12 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT COALESCE(*COLUMNS(['a', 'b', 'c'])) AS result FROM (SELECT NULL AS a, 42 AS b, TRUE AS c)"
         )
+        self.validate_all(
+            "SELECT UNNEST(foo) AS x",
+            write={
+                "redshift": UnsupportedError,
+            },
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

@@ -650,6 +650,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "&&": TokenType.DAMP,
         "??": TokenType.DQMARK,
         "~~~": TokenType.GLOB,
+        "~~": TokenType.LIKE,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,

@@ -3185,7 +3185,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_into(self) -> t.Optional[exp.Into]:
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/SELECT-INTO-statement.html
-        bulk_collect_into = self._match_text_seq("BULK", "COLLECT", "INTO")
+        bulk_collect_into = self._match(TokenType.BULK_COLLECT_INTO)
 
         if not bulk_collect_into and not self._match(TokenType.INTO):
             return None
@@ -3199,7 +3199,7 @@ class Parser(metaclass=_Parser):
             this=self._parse_table(schema=True),
             temporary=temp,
             unlogged=unlogged,
-            bulk_collect_into=bulk_collect_into,
+            bulk_collect=bulk_collect_into,
         )
 
     def _parse_from(

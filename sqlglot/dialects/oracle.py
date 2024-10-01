@@ -95,6 +95,7 @@ class Oracle(Dialect):
             "(+)": TokenType.JOIN_MARKER,
             "BINARY_DOUBLE": TokenType.DOUBLE,
             "BINARY_FLOAT": TokenType.FLOAT,
+            "BULK COLLECT INTO": TokenType.BULK_COLLECT_INTO,
             "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,

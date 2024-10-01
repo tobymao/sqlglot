@@ -221,6 +221,7 @@ class TokenType(AutoName):
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
+    BULK_COLLECT_INTO = auto()
     CACHE = auto()
     CASE = auto()
     CHARACTER_SET = auto()

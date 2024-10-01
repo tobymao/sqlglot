@@ -2041,7 +2041,7 @@ class Generator(metaclass=_Generator):
     def into_sql(self, expression: exp.Into) -> str:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         unlogged = " UNLOGGED" if expression.args.get("unlogged") else ""
-        into = "INTO" if not expression.args.get("bulk_collect_into") else "BULK COLLECT INTO"
+        into = "INTO" if not expression.args.get("bulk_collect") else "BULK COLLECT INTO"
         return f"{self.seg(into)}{temporary or unlogged} {self.sql(expression, 'this')}"
 
     def from_sql(self, expression: exp.From) -> str:

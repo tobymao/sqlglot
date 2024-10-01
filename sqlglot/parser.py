@@ -2969,6 +2969,10 @@ class Parser(metaclass=_Parser):
             if into:
                 this.set("into", into)
 
+            bulk_collect_into = self._parse_bulk_collect_into()
+            if bulk_collect_into:
+                this.set("bulk_collect_into", bulk_collect_into)
+
             if not from_:
                 from_ = self._parse_from()
 
@@ -3194,6 +3198,12 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
         )
+
+    def _parse_bulk_collect_into(self) -> t.Optional[exp.BulkCollectInto]:
+        if not self._match(TokenType.BULK_COLLECT_INTO):
+            return None
+
+        return self.expression(exp.BulkCollectInto, this=self._parse_table(schema=True))
 
     def _parse_from(
         self, joins: bool = False, skip_from_token: bool = False

@@ -221,6 +221,7 @@ class TokenType(AutoName):
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
+    BULK_COLLECT_INTO = auto()
     CACHE = auto()
     CASE = auto()
     CHARACTER_SET = auto()
@@ -661,6 +662,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
+        "BULK COLLECT INTO": TokenType.BULK_COLLECT_INTO,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,

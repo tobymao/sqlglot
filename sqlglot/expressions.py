@@ -2109,6 +2109,10 @@ class Into(Expression):
     arg_types = {"this": True, "temporary": False, "unlogged": False}
 
 
+class BulkCollectInto(Expression):
+    arg_types = {"this": True}
+
+
 class From(Expression):
     @property
     def name(self) -> str:

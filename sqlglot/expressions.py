@@ -2106,11 +2106,7 @@ class PrimaryKey(Expression):
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html
 # https://docs.aws.amazon.com/redshift/latest/dg/r_SELECT_INTO.html#r_SELECT_INTO-examples
 class Into(Expression):
-    arg_types = {"this": True, "temporary": False, "unlogged": False}
-
-
-class BulkCollectInto(Expression):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "temporary": False, "unlogged": False, "bulk_collect_into": False}
 
 
 class From(Expression):

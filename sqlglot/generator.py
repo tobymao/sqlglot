@@ -354,9 +354,6 @@ class Generator(metaclass=_Generator):
     # Whether the SELECT .. INTO syntax is used instead of CTAS
     SUPPORTS_SELECT_INTO = False
 
-    # Whether the SELECT .. BULK COLLECT INTO syntax is supported
-    SUPPORTS_SELECT_BULK_COLLECT_INTO = False
-
     # Whether UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
 
@@ -2044,10 +2041,8 @@ class Generator(metaclass=_Generator):
     def into_sql(self, expression: exp.Into) -> str:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         unlogged = " UNLOGGED" if expression.args.get("unlogged") else ""
-        return f"{self.seg('INTO')}{temporary or unlogged} {self.sql(expression, 'this')}"
-
-    def bulkcollectinto_sql(self, expression: exp.BulkCollectInto) -> str:
-        return f"{self.seg('BULK COLLECT INTO')} {self.sql(expression, 'this')}"
+        into = "INTO" if not expression.args.get("bulk_collect_into") else "BULK COLLECT INTO"
+        return f"{self.seg(into)}{temporary or unlogged} {self.sql(expression, 'this')}"
 
     def from_sql(self, expression: exp.From) -> str:
         return f"{self.seg('FROM')} {self.sql(expression, 'this')}"
@@ -2470,10 +2465,6 @@ class Generator(metaclass=_Generator):
         if not self.SUPPORTS_SELECT_INTO and into:
             into.pop()
 
-        bulk_collect_into = expression.args.get("bulk_collect_into")
-        if not self.SUPPORTS_SELECT_BULK_COLLECT_INTO and bulk_collect_into:
-            bulk_collect_into.pop()
-
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
@@ -2517,7 +2508,6 @@ class Generator(metaclass=_Generator):
             expression,
             f"SELECT{top_distinct}{kind}{expressions}",
             self.sql(expression, "into", comment=False),
-            self.sql(expression, "bulk_collect_into", comment=False),
             self.sql(expression, "from", comment=False),
         )
 

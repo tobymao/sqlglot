@@ -251,7 +251,6 @@ class Oracle(Dialect):
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_SELECT_INTO = True
-        SUPPORTS_SELECT_BULK_COLLECT_INTO = True
         TZ_TO_WITH_TIME_ZONE = True
 
         TYPE_MAPPING = {

@@ -649,6 +649,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "<->": TokenType.LR_ARROW,
         "&&": TokenType.DAMP,
         "??": TokenType.DQMARK,
+        "~~~": TokenType.GLOB,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,

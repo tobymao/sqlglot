@@ -2657,11 +2657,13 @@ class Generator(metaclass=_Generator):
         high = self.sql(expression, "high")
         return f"{this} BETWEEN {low} AND {high}"
 
-    def bracket_offset_expressions(self, expression: exp.Bracket) -> t.List[exp.Expression]:
+    def bracket_offset_expressions(
+        self, expression: exp.Bracket, index_offset: t.Optional[int] = None
+    ) -> t.List[exp.Expression]:
         return apply_index_offset(
             expression.this,
             expression.expressions,
-            self.dialect.INDEX_OFFSET - expression.args.get("offset", 0),
+            (index_offset or self.dialect.INDEX_OFFSET) - expression.args.get("offset", 0),
         )
 
     def bracket_sql(self, expression: exp.Bracket) -> str:

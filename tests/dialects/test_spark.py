@@ -2,7 +2,6 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
-from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -294,19 +293,19 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3')",
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
-
-        with self.assertLogs(helper_logger):
-            self.validate_all(
-                "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
-                read={
-                    "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
-                },
-                write={
-                    "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
-                    "duckdb": "SELECT ([1, 2, 3])[3]",
-                    "spark": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
-                },
-            )
+        self.validate_all(
+            "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+            read={
+                "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 2)",
+            },
+            write={
+                "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                "spark": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                "duckdb": "SELECT ([1, 2, 3])[2]",
+                "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 2)",
+            },
+        )
 
         self.validate_all(
             "SELECT ARRAY_AGG(x) FILTER (WHERE x = 5) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",

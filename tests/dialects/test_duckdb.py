@@ -973,6 +973,15 @@ class TestDuckDB(Validator):
                 "spark": "DATE_FORMAT(x, 'yy-M-ss')",
             },
         )
+
+        self.validate_all(
+            "SHA1(x)",
+            write={
+                "duckdb": "SHA1(x)",
+                "": "SHA(x)",
+            },
+        )
+
         self.validate_all(
             "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
             write={

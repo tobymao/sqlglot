@@ -549,6 +549,7 @@ class DuckDB(Dialect):
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
             exp.SafeDivide: no_safe_divide_sql,
+            exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,

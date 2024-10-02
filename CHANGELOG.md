@@ -1,6 +1,33 @@
 Changelog
 =========
 
+## [v25.24.2] - 2024-10-02
+### :sparkles: New Features
+- [`c8b7c1e`](https://github.com/tobymao/sqlglot/commit/c8b7c1ef7c6070a51638af18833c649a77e735cb) - **optimizer**: Fixture file for function annotations *(PR [#4182](https://github.com/tobymao/sqlglot/pull/4182) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`0adbbf7`](https://github.com/tobymao/sqlglot/commit/0adbbf7ad8f16700adc48c6757c07768199860d9) - **duckdb**: Parse ** and ^ operators as POW *(PR [#4193](https://github.com/tobymao/sqlglot/pull/4193) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4186](https://github.com/tobymao/sqlglot/issues/4186) opened by [@rustyconover](https://github.com/rustyconover)*
+- [`4949906`](https://github.com/tobymao/sqlglot/commit/4949906e9dd0c3039a161e06ddb970f37067b88f) - **duckdb**: Parse ~~~ as GLOB *(PR [#4194](https://github.com/tobymao/sqlglot/pull/4194) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4187](https://github.com/tobymao/sqlglot/issues/4187) opened by [@rustyconover](https://github.com/rustyconover)*
+- [`6ba2bb0`](https://github.com/tobymao/sqlglot/commit/6ba2bb03f973c30788508768c3ba716aa94b0299) - **oracle**: Add support for BULK COLLECT INTO *(PR [#4181](https://github.com/tobymao/sqlglot/pull/4181) by [@mkmoisen](https://github.com/mkmoisen))*
+- [`0de59ce`](https://github.com/tobymao/sqlglot/commit/0de59cebe550b33ac34a92c1ded1d3f9b8f679c4) - mark `expressions` as unsupported in Into generator *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`475f7a3`](https://github.com/tobymao/sqlglot/commit/475f7a3c639c7b8c5f3af1b2e5fcce9174be39ec) - **redshift**: Add unsupported warnings for UNNEST *(PR [#4173](https://github.com/tobymao/sqlglot/pull/4173) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4169](https://github.com/tobymao/sqlglot/issues/4169) opened by [@bjabes](https://github.com/bjabes)*
+- [`d38e023`](https://github.com/tobymao/sqlglot/commit/d38e023966c32b208fe5ae9843bbd716e2181521) - **spark**: Offset TRY_ELEMENT_AT by one *(PR [#4183](https://github.com/tobymao/sqlglot/pull/4183) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3d1c643`](https://github.com/tobymao/sqlglot/commit/3d1c6430791dcce05f1a71f17311e294d9fc9d3d) - rename SHA function to SHA1 for DuckDB *(PR [#4191](https://github.com/tobymao/sqlglot/pull/4191) by [@rustyconover](https://github.com/rustyconover))*
+- [`0388a51`](https://github.com/tobymao/sqlglot/commit/0388a519dba63636a9aac3e3272cdea0f0b8312d) - add support for UHUGEINT for duckdb *(PR [#4190](https://github.com/tobymao/sqlglot/pull/4190) by [@rustyconover](https://github.com/rustyconover))*
+  - :arrow_lower_right: *fixes issue [#4184](https://github.com/tobymao/sqlglot/issues/4184) opened by [@rustyconover](https://github.com/rustyconover)*
+- [`9eba00d`](https://github.com/tobymao/sqlglot/commit/9eba00dca517efe7df171b09ed916af3ea5e350d) - **duckdb**: Parse ~~ as LIKE *(PR [#4195](https://github.com/tobymao/sqlglot/pull/4195) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4188](https://github.com/tobymao/sqlglot/issues/4188) opened by [@rustyconover](https://github.com/rustyconover)*
+- [`6a65973`](https://github.com/tobymao/sqlglot/commit/6a659736f3a176e335c68fdd07d8265c3d0421dc) - expand UPDATABLE_EXPRESSION_TYPES to account for Identifier changes *(PR [#4197](https://github.com/tobymao/sqlglot/pull/4197) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4192](https://github.com/tobymao/sqlglot/issues/4192) opened by [@mkmoisen](https://github.com/mkmoisen)*
+- [`a6c28c6`](https://github.com/tobymao/sqlglot/commit/a6c28c63f4e44bb62ba8df30f1407c728eb215f2) - **sqlite**: generate StrPosition as INSTR *(PR [#4198](https://github.com/tobymao/sqlglot/pull/4198) by [@pruzko](https://github.com/pruzko))*
+  - :arrow_lower_right: *fixes issue [#4196](https://github.com/tobymao/sqlglot/issues/4196) opened by [@pruzko](https://github.com/pruzko)*
+- [`5a123a5`](https://github.com/tobymao/sqlglot/commit/5a123a54ecd033c0a104e33476b17d816a09caac) - **oracle**: retreat properly when parsing BULK COLLECT INTO *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`f935e42`](https://github.com/tobymao/sqlglot/commit/f935e42130724e032b294074f3b552f21e20bc57) - properly escape closing identifier delimiters *(PR [#4202](https://github.com/tobymao/sqlglot/pull/4202) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.24.1] - 2024-10-01
 ### :sparkles: New Features
 - [`7af33a2`](https://github.com/tobymao/sqlglot/commit/7af33a2f74dd1300bcd45f1974b7fd28abe66b8e) - **spark**: Custom annotation for more string functions *(PR [#4156](https://github.com/tobymao/sqlglot/pull/4156) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -4918,3 +4945,4 @@ Changelog
 [v25.23.2]: https://github.com/tobymao/sqlglot/compare/v25.23.1...v25.23.2
 [v25.24.0]: https://github.com/tobymao/sqlglot/compare/v25.23.2...v25.24.0
 [v25.24.1]: https://github.com/tobymao/sqlglot/compare/v25.24.0...v25.24.1
+[v25.24.2]: https://github.com/tobymao/sqlglot/compare/v25.24.1...v25.24.2

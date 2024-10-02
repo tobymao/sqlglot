@@ -292,6 +292,8 @@ class DuckDB(Dialect):
             "//": TokenType.DIV,
             "**": TokenType.DSTAR,
             "^@": TokenType.CARET_AMP,
+            "@>": TokenType.AT_GT,
+            "<@": TokenType.LT_AT,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
             "BITSTRING": TokenType.BIT,

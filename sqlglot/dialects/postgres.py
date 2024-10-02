@@ -288,6 +288,8 @@ class Postgres(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,
             "@@": TokenType.DAT,
+            "@>": TokenType.AT_GT,
+            "<@": TokenType.LT_AT,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
             "BEGIN": TokenType.COMMAND,

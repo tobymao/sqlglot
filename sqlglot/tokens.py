@@ -652,8 +652,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "??": TokenType.DQMARK,
         "~~~": TokenType.GLOB,
         "~~": TokenType.LIKE,
-        "@>": TokenType.AT_GT,
-        "<@": TokenType.LT_AT,
         "~~*": TokenType.ILIKE,
         "~*": TokenType.IRLIKE,
         "ALL": TokenType.ALL,

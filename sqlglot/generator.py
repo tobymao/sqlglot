@@ -2038,6 +2038,7 @@ class Generator(metaclass=_Generator):
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")
 
+    @unsupported_args("expressions")
     def into_sql(self, expression: exp.Into) -> str:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         unlogged = " UNLOGGED" if expression.args.get("unlogged") else ""

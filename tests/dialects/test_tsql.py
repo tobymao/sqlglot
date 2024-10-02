@@ -46,6 +46,10 @@ class TestTSQL(Validator):
         self.validate_identity(
             "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
         )
+        self.validate_identity(
+            'SELECT 1 AS "[x]"',
+            "SELECT 1 AS [[x]]]",
+        )
         self.assertEqual(
             annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
             "SELECT 1 WHERE EXISTS(SELECT 1)",

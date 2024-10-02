@@ -244,22 +244,21 @@ class Oracle(Dialect):
 
         def _parse_into(self) -> t.Optional[exp.Into]:
             # https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/SELECT-INTO-statement.html
-            bulk_collect_into = self._match(TokenType.BULK_COLLECT_INTO)
-
-            if not bulk_collect_into and not self._match(TokenType.INTO):
+            bulk_collect = self._match(TokenType.BULK_COLLECT_INTO)
+            if not bulk_collect and not self._match(TokenType.INTO):
                 return None
 
-            expressions = self._parse_expressions()
-            this = None
-            if len(expressions) == 1:
-                self._advance(-1)
-                expressions = []
-                self._match(TokenType.TABLE)
-                this = self._parse_table(schema=True)
+            index = self._index
 
-            return self.expression(
-                exp.Into, this=this, bulk_collect=bulk_collect_into, expressions=expressions
-            )
+            expressions = self._parse_expressions()
+            if len(expressions) == 1:
+                self._retreat(index)
+                self._match(TokenType.TABLE)
+                return self.expression(
+                    exp.Into, this=self._parse_table(schema=True), bulk_collect=bulk_collect
+                )
+
+            return self.expression(exp.Into, bulk_collect=bulk_collect, expressions=expressions)
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

@@ -672,9 +672,7 @@ class Generator(metaclass=_Generator):
         self._escaped_quote_end: str = (
             self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.QUOTE_END
         )
-        self._escaped_identifier_end: str = (
-            self.dialect.tokenizer_class.IDENTIFIER_ESCAPES[0] + self.dialect.IDENTIFIER_END
-        )
+        self._escaped_identifier_end = self.dialect.IDENTIFIER_END * 2
 
         self._next_name = name_sequence("_t")
 

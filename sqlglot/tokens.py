@@ -60,7 +60,7 @@ class TokenType(AutoName):
     PIPE_SLASH = auto()
     DPIPE_SLASH = auto()
     CARET = auto()
-    CARET_AMP = auto()
+    CARET_AT = auto()
     TILDA = auto()
     ARROW = auto()
     DARROW = auto()

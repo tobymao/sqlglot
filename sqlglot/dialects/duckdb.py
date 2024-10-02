@@ -291,7 +291,7 @@ class DuckDB(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "//": TokenType.DIV,
             "**": TokenType.DSTAR,
-            "^@": TokenType.CARET_AMP,
+            "^@": TokenType.CARET_AT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
             "ATTACH": TokenType.COMMAND,
@@ -335,7 +335,7 @@ class DuckDB(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
-            TokenType.CARET_AMP: binary_range_parser(exp.StartsWith),
+            TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
         }
 
         EXPONENT = {

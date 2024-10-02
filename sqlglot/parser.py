@@ -859,6 +859,7 @@ class Parser(metaclass=_Parser):
     }
 
     RANGE_PARSERS = {
+        TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
         TokenType.BETWEEN: lambda self, this: self._parse_between(this),
         TokenType.GLOB: binary_range_parser(exp.Glob),
         TokenType.ILIKE: binary_range_parser(exp.ILike),
@@ -866,6 +867,7 @@ class Parser(metaclass=_Parser):
         TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: binary_range_parser(exp.Like),
+        TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
         TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),

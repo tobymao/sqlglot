@@ -38,6 +38,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.parser import binary_range_parser
 
 DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
@@ -290,6 +291,7 @@ class DuckDB(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "//": TokenType.DIV,
             "**": TokenType.DSTAR,
+            "^@": TokenType.CARET_AMP,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
             "BITSTRING": TokenType.BIT,
@@ -327,6 +329,12 @@ class DuckDB(Dialect):
             TokenType.TILDA: exp.RegexpLike,
         }
         BITWISE.pop(TokenType.CARET)
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.CARET_AMP: binary_range_parser(exp.StartsWith),
+        }
 
         EXPONENT = {
             **parser.Parser.EXPONENT,
@@ -488,7 +496,6 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
-            exp.ArrayContainsAll: rename_func("ARRAY_HAS_ALL"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),

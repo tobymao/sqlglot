@@ -286,12 +286,8 @@ class Postgres(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "~~*": TokenType.ILIKE,
-            "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
             "@@": TokenType.DAT,
-            "@>": TokenType.AT_GT,
-            "<@": TokenType.LT_AT,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
             "BEGIN": TokenType.COMMAND,
@@ -385,12 +381,10 @@ class Postgres(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
-            TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),
-            TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
             TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         }
 
@@ -488,8 +482,6 @@ class Postgres(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
-            exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
-            exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: lambda self, e: self.func("ARRAY_LENGTH", e.this, e.expression or "1"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),

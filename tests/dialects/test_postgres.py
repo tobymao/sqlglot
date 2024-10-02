@@ -354,10 +354,10 @@ class TestPostgres(Validator):
         self.validate_all(
             "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
             read={
-                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2, 3], [1, 2])",
+                "duckdb": "SELECT [1, 2, 3] @> [1, 2]",
             },
             write={
-                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2, 3], [1, 2])",
+                "duckdb": "SELECT [1, 2, 3] @> [1, 2]",
                 "mysql": UnsupportedError,
                 "postgres": "SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]",
             },
@@ -396,13 +396,6 @@ class TestPostgres(Validator):
             write={
                 "duckdb": """SELECT (data ->> '$."en-US"') AS acat FROM my_table""",
                 "postgres": "SELECT (data ->> 'en-US') AS acat FROM my_table",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
-            write={
-                "": "SELECT ARRAY_OVERLAPS(ARRAY(1, 2, 3), ARRAY(1, 2))",
-                "postgres": "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
             },
         )
         self.validate_all(
@@ -802,6 +795,7 @@ class TestPostgres(Validator):
         )
         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1)")
         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1 FOR 1)")
+        self.validate_identity("ARRAY[1, 2, 3] && ARRAY[1, 2]").assert_is(exp.ArrayOverlaps)
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

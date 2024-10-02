@@ -1052,7 +1052,10 @@ def property_sql(self: Generator, expression: exp.Property) -> str:
 
 
 def str_position_sql(
-    self: Generator, expression: exp.StrPosition, generate_instance: bool = False
+    self: Generator,
+    expression: exp.StrPosition,
+    generate_instance: bool = False,
+    str_position_func_name: str = "STRPOS",
 ) -> str:
     this = self.sql(expression, "this")
     substr = self.sql(expression, "substr")
@@ -1065,7 +1068,7 @@ def str_position_sql(
         this = self.func("SUBSTR", this, position)
         position_offset = f" + {position} - 1"
 
-    return self.func("STRPOS", this, substr, instance) + position_offset
+    return self.func(str_position_func_name, this, substr, instance) + position_offset
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
@@ -1247,12 +1250,6 @@ def locate_to_strposition(args: t.List) -> exp.Expression:
 def strposition_to_locate_sql(self: Generator, expression: exp.StrPosition) -> str:
     return self.func(
         "LOCATE", expression.args.get("substr"), expression.this, expression.args.get("position")
-    )
-
-
-def strposition_to_instr_sql(self: Generator, expression: exp.StrPosition) -> str:
-    return self.func(
-        "INSTR", expression.args.get("substr"), expression.this, expression.args.get("position")
     )
 
 

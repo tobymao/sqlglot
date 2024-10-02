@@ -15,9 +15,8 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
-    strposition_to_instr_sql,
+    str_position_sql,
 )
-from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -118,7 +117,6 @@ class SQLite(Dialect):
             "STRFTIME": _build_strftime,
             "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
             "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
-            "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
         }
         STRING_ALIASES = True
 
@@ -189,7 +187,7 @@ class SQLite(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
-            exp.StrPosition: strposition_to_instr_sql,
+            exp.StrPosition: lambda self, e: str_position_sql(self, e, str_position_func_name="INSTR"),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.args.get("format"), e.this),

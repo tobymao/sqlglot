@@ -577,7 +577,6 @@ class Dialect(metaclass=_Dialect):
         exp.DataType.Type.DOUBLE: {
             exp.ApproxQuantile,
             exp.Avg,
-            exp.Div,
             exp.Exp,
             exp.Ln,
             exp.Log,

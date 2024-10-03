@@ -688,9 +688,10 @@ class Dialect(metaclass=_Dialect):
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>")
         ),
+        exp.Greatest: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
         exp.Interval: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
-        exp.Least: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Least: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Literal: lambda self, e: self._annotate_literal(e),
         exp.Map: lambda self, e: self._annotate_map(e),
         exp.Max: lambda self, e: self._annotate_by_args(e, "this", "expressions"),

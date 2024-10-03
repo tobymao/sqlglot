@@ -295,10 +295,7 @@ class BigQuery(Dialect):
 
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
-        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Greatest: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Least: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
     }
 
     def normalize_identifier(self, expression: E) -> E:

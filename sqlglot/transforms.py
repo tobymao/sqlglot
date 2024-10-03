@@ -629,10 +629,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             expression.set("limit", None)
             index, full_outer_join = full_outer_joins[0]
 
-            tables = (
-                full_outer_join.alias_or_name,
-                expression.args["from"].alias_or_name,
-            )
+            tables = (expression.args["from"].alias_or_name, full_outer_join.alias_or_name)
             join_conditions = full_outer_join.args.get("on") or exp.and_(
                 *[
                     exp.column(col, tables[0]).eq(exp.column(col, tables[1]))
@@ -647,7 +644,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
                 .where(join_conditions)
             )
             expression_copy.args["joins"][index].set("side", "right")
-            expression_copy.args["where"] = exp.Where(this=exp.Exists(this=anti_join_clause).not_())
+            expression_copy = expression_copy.where(exp.Exists(this=anti_join_clause).not_())
             expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
             expression.args.pop("order", None)  # remove order by from LEFT side
 

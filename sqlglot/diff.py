@@ -14,6 +14,9 @@ from heapq import heappop, heappush
 from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import ensure_list
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
 
 @dataclass(frozen=True)
 class Insert:
@@ -63,6 +66,7 @@ def diff(
     target: exp.Expression,
     matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
     delta_only: bool = False,
+    copy: bool = True,
     **kwargs: t.Any,
 ) -> t.List[Edit]:
     """
@@ -91,6 +95,9 @@ def diff(
             Note: expression references in this list must refer to the same node objects that are
             referenced in source / target trees.
         delta_only: excludes all `Keep` nodes from the diff.
+        copy: whether to copy the input expressions.
+            Note: if this is set to false, the caller must ensure that there are no shared references
+            in the two ASTs, otherwise the diffing algorithm may produce unexpected behavior.
         kwargs: additional arguments to pass to the ChangeDistiller instance.
 
     Returns:
@@ -110,8 +117,8 @@ def diff(
             if id(old_node) in matching_ids
         }
 
-    source_copy = source.copy()
-    target_copy = target.copy()
+    source_copy = source.copy() if copy else source
+    target_copy = target.copy() if copy else target
 
     node_mappings = {
         **compute_node_mappings(source, source_copy),
@@ -149,10 +156,10 @@ class ChangeDistiller:
     Chawathe et al. described in http://ilpubs.stanford.edu:8090/115/1/1995-46.pdf.
     """
 
-    def __init__(self, f: float = 0.6, t: float = 0.6) -> None:
+    def __init__(self, f: float = 0.6, t: float = 0.6, dialect: DialectType = None) -> None:
         self.f = f
         self.t = t
-        self._sql_generator = Dialect().generator()
+        self._sql_generator = Dialect.get_or_raise(dialect).generator()
 
     def diff(
         self,

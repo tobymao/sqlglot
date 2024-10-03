@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql, timestrtotime_sql
-from sqlglot.dialects.presto import Presto, jsonextract_sql
+from sqlglot.dialects.presto import Presto
 from sqlglot.tokens import TokenType
 
 
@@ -30,14 +30,12 @@ class Trino(Presto):
         }
 
         def _parse_json_query(self):
-            this = self._parse_bitwise()
-            self._match(TokenType.COMMA)
-
-            expr = self._parse_bitwise()
-            option = self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False)
-
             return self.expression(
-                exp.JSONExtract, this=this, expression=expr, expressions=[option], json_query=True
+                exp.JSONExtract,
+                this=self._parse_bitwise(),
+                expression=self._match(TokenType.COMMA) and self._parse_bitwise(),
+                option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
+                json_query=True,
             )
 
     class Generator(Presto.Generator):
@@ -48,7 +46,7 @@ class Trino(Presto):
             exp.Merge: merge_without_target_sql,
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
-            exp.JSONExtract: lambda self, e: self._jsonextract_sql(e),
+            exp.JSONExtract: lambda self, e: self.jsonextract_sql(e),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -57,17 +55,15 @@ class Trino(Presto):
             exp.JSONPathSubscript,
         }
 
-        def _jsonextract_sql(self, expression: exp.JSONExtract) -> str:
+        def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
             if not expression.args.get("json_query"):
-                return jsonextract_sql(self, expression)
+                return super().jsonextract_sql(expression)
 
-            this = self.sql(expression, "this")
             json_path = self.sql(expression, "expression")
-
-            option = self.expressions(expression, flat=True)
+            option = self.sql(expression, "option")
             option = f" {option}" if option else ""
 
-            return self.func("JSON_QUERY", this, json_path + option)
+            return self.func("JSON_QUERY", expression.this, json_path + option)
 
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

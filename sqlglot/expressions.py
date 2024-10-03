@@ -5739,6 +5739,7 @@ class JSONExtract(Binary, Func):
         "expressions": False,
         "variant_extract": False,
         "json_query": False,
+        "option": False,
     }
     _sql_names = ["JSON_EXTRACT"]
     is_var_len_args = True

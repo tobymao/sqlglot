@@ -7,7 +7,8 @@ class TestTrino(Validator):
     def test_trino(self):
         self.validate_identity("JSON_EXTRACT(content, json_path)")
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
-        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT UNCONDITIONAL WRAPPER)")
+        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
+        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
 
     def test_trim(self):
         self.validate_identity("SELECT TRIM('!' FROM '!foo!')")

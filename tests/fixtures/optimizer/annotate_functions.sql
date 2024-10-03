@@ -1,5 +1,26 @@
 --------------------------------------
--- Spark2 / Spark3 / Databricks functions
+-- Dialect
+--------------------------------------
+ABS(1);
+INT;
+
+ABS(1.5);
+DOUBLE;
+
+GREATEST(1, 2, 3);
+INT;
+
+GREATEST(1, 2.5, 3);
+DOUBLE;
+
+LEAST(1, 2, 3);
+INT;
+
+LEAST(1, 2.5, 3);
+DOUBLE;
+
+--------------------------------------
+-- Spark2 / Spark3 / Databricks
 --------------------------------------
 
 # dialect: spark2, spark, databricks
@@ -69,3 +90,16 @@ STRING;
 # dialect: spark2, spark, databricks
 RPAD(tbl.str_col, 1, tbl.str_col);
 STRING;
+
+
+--------------------------------------
+-- BigQuery
+--------------------------------------
+
+# dialect: bigquery
+SIGN(1);
+INT;
+
+# dialect: bigquery
+SIGN(1.5);
+DOUBLE;

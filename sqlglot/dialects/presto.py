@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.generator import Generator
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
@@ -166,7 +167,7 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / POW(10, {scale}))"
 
 
-def _jsonextract_sql(self: Presto.Generator, expression: exp.JSONExtract) -> str:
+def jsonextract_sql(self: Generator, expression: exp.JSONExtract) -> str:
     is_json_extract = self.dialect.settings.get("variant_extract_is_json_extract", True)
 
     # Generate JSON_EXTRACT unless the user has configured that a Snowflake / Databricks
@@ -435,7 +436,7 @@ class Presto(Dialect):
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
-            exp.JSONExtract: _jsonextract_sql,
+            exp.JSONExtract: jsonextract_sql,
             exp.Last: _first_last_sql,
             exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),

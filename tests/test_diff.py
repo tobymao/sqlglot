@@ -225,5 +225,20 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
+    def test_dialect_aware_diff(self):
+        from sqlglot.generator import logger
+
+        with self.assertLogs(logger) as cm:
+            # We want to assert there are no warnings, but the 'assertLogs' method does not support that.
+            # Therefore, we are adding a dummy warning, and then we will assert it is the only warning.
+            logger.warning("Dummy warning")
+
+            expression = parse_one("SELECT foo FROM bar FOR UPDATE", dialect="oracle")
+            self._validate_delta_only(
+                diff_delta_only(expression, expression.copy(), dialect="oracle"), []
+            )
+
+        self.assertEqual(["WARNING:sqlglot:Dummy warning"], cm.output)
+
     def _validate_delta_only(self, actual_delta, expected_delta):
         self.assertEqual(set(actual_delta), set(expected_delta))

@@ -60,6 +60,7 @@ class TokenType(AutoName):
     PIPE_SLASH = auto()
     DPIPE_SLASH = auto()
     CARET = auto()
+    CARET_AT = auto()
     TILDA = auto()
     ARROW = auto()
     DARROW = auto()
@@ -652,6 +653,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "??": TokenType.DQMARK,
         "~~~": TokenType.GLOB,
         "~~": TokenType.LIKE,
+        "~~*": TokenType.ILIKE,
+        "~*": TokenType.IRLIKE,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,

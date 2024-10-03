@@ -114,6 +114,8 @@ class Generator(metaclass=_Generator):
         **JSON_PATH_PART_TRANSFORMS,
         exp.AllowedValuesProperty: lambda self,
         e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
+        exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
+        exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda _,

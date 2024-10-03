@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v25.24.3] - 2024-10-03
+### :sparkles: New Features
+- [`25b18d2`](https://github.com/tobymao/sqlglot/commit/25b18d28e5ad7b3687e2848ff92a0a1fc17b06fa) - **trino**: Support JSON_QUERY *(PR [#4206](https://github.com/tobymao/sqlglot/pull/4206) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4200](https://github.com/tobymao/sqlglot/issues/4200) opened by [@Harmuth94](https://github.com/Harmuth94)*
+- [`5781b45`](https://github.com/tobymao/sqlglot/commit/5781b455fa3ec495b65f3f3f4a959192389bd816) - **duckdb**: Add more Postgres operators *(PR [#4199](https://github.com/tobymao/sqlglot/pull/4199) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4189](https://github.com/tobymao/sqlglot/issues/4189) opened by [@rustyconover](https://github.com/rustyconover)*
+- [`89c0703`](https://github.com/tobymao/sqlglot/commit/89c07039da402fb2ad77e00edb4f09079ecbb41d) - **bigquery**: Native math function annotations *(PR [#4201](https://github.com/tobymao/sqlglot/pull/4201) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`977d9e5`](https://github.com/tobymao/sqlglot/commit/977d9e5a854b58b4469be1af6aa14a5bf5a4b8c6) - allow supplying dialect in diff, conditionally copy ASTs *(PR [#4208](https://github.com/tobymao/sqlglot/pull/4208) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4203](https://github.com/tobymao/sqlglot/issues/4203) opened by [@mkmoisen](https://github.com/mkmoisen)*
+
+### :bug: Bug Fixes
+- [`332c74b`](https://github.com/tobymao/sqlglot/commit/332c74b881487cd9ce711ca3bd065a8992872098) - attach comments to subquery predicates properly, fix comment case *(PR [#4207](https://github.com/tobymao/sqlglot/pull/4207) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4205](https://github.com/tobymao/sqlglot/issues/4205) opened by [@mkmoisen](https://github.com/mkmoisen)*
+- [`55da21d`](https://github.com/tobymao/sqlglot/commit/55da21dd043dfcbefa3653fe168eb9cae5dc5bf5) - Unexpected row deduplication using eliminate_full_outer_join *(PR [#4178](https://github.com/tobymao/sqlglot/pull/4178) by [@liaco](https://github.com/liaco))*
+
+
 ## [v25.24.2] - 2024-10-02
 ### :sparkles: New Features
 - [`c8b7c1e`](https://github.com/tobymao/sqlglot/commit/c8b7c1ef7c6070a51638af18833c649a77e735cb) - **optimizer**: Fixture file for function annotations *(PR [#4182](https://github.com/tobymao/sqlglot/pull/4182) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -4946,3 +4962,4 @@ Changelog
 [v25.24.0]: https://github.com/tobymao/sqlglot/compare/v25.23.2...v25.24.0
 [v25.24.1]: https://github.com/tobymao/sqlglot/compare/v25.24.0...v25.24.1
 [v25.24.2]: https://github.com/tobymao/sqlglot/compare/v25.24.1...v25.24.2
+[v25.24.3]: https://github.com/tobymao/sqlglot/compare/v25.24.2...v25.24.3

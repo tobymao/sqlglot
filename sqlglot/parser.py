@@ -5078,6 +5078,7 @@ class Parser(metaclass=_Parser):
             elif isinstance(this, exp.Column) and not this.args.get("catalog"):
                 this = self.expression(
                     exp.Column,
+                    comments=this.comments,
                     this=field,
                     table=this.this,
                     db=this.args.get("table"),
@@ -5229,7 +5230,9 @@ class Parser(metaclass=_Parser):
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
 
             if subquery_predicate and self._curr.token_type in (TokenType.SELECT, TokenType.WITH):
-                this = self.expression(subquery_predicate, this=self._parse_select())
+                this = self.expression(
+                    subquery_predicate, comments=comments, this=self._parse_select()
+                )
                 self._match_r_paren()
                 return this
 

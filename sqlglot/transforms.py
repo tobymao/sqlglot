@@ -638,11 +638,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             )
 
             full_outer_join.set("side", "left")
-            anti_join_clause = (
-                exp.Select(expressions=[exp.Literal(this=1, is_string=False)])
-                .from_(expression.args["from"])
-                .where(join_conditions)
-            )
+            anti_join_clause = exp.select("1").from_(expression.args["from"]).where(join_conditions)
             expression_copy.args["joins"][index].set("side", "right")
             expression_copy = expression_copy.where(exp.Exists(this=anti_join_clause).not_())
             expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side

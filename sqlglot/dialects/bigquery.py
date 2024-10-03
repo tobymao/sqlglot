@@ -293,6 +293,11 @@ class BigQuery(Dialect):
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
 
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
+    }
+
     def normalize_identifier(self, expression: E) -> E:
         if (
             isinstance(expression, exp.Identifier)

@@ -418,3 +418,34 @@ INSERT FIRST
 SELECT
   salary
 FROM employees;
+
+SELECT *
+FROM foo
+wHERE 1=1
+    AND
+        -- my comment
+        EXISTS (
+            SELECT 1
+            FROM bar
+        );
+SELECT
+  *
+FROM foo
+WHERE
+  1 = 1 AND EXISTS(
+    SELECT
+      1
+    FROM bar
+  ) /* my comment */;
+
+SELECT 1
+FROM foo
+WHERE 1=1
+AND -- first comment
+    -- second comment
+    foo.a = 1;
+SELECT
+  1
+FROM foo
+WHERE
+  1 = 1 AND /* first comment */ foo.a /* second comment */ = 1;

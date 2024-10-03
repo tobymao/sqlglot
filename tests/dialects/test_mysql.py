@@ -766,6 +766,12 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "WITH t1 AS (SELECT 1) SELECT * FROM t1 LEFT OUTER JOIN t2 USING (x, y) UNION ALL SELECT * FROM t1 RIGHT OUTER JOIN t2 USING (x, y) WHERE NOT EXISTS(SELECT 1 FROM t1 WHERE t1.x = t2.x AND t1.y = t2.y)",
+            read={
+                "postgres": "WITH t1 AS (SELECT 1) SELECT * FROM t1 FULL OUTER JOIN t2 USING (x, y) ",
+            },
+        )
+        self.validate_all(
             "a XOR b",
             read={
                 "mysql": "a XOR b",

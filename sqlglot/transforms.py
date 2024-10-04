@@ -8,6 +8,7 @@ from sqlglot.helper import find_new_name, name_sequence
 
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import E
     from sqlglot.generator import Generator
 
 
@@ -649,7 +650,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def move_ctes_to_top_level(expression: exp.Expression) -> exp.Expression:
+def move_ctes_to_top_level(expression: E) -> E:
     """
     Some dialects (e.g. Hive, T-SQL, Spark prior to version 3) only allow CTEs to be
     defined at the top-level, so for example queries like:

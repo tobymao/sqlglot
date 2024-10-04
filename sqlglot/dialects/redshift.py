@@ -134,6 +134,7 @@ class Redshift(Postgres):
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
+            "BINARY VARYING": TokenType.VARBINARY,
         }
         KEYWORDS.pop("VALUES")
 

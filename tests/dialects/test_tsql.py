@@ -8,6 +8,11 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity(
+            "with x as (select 1) select * from x union select * from x order by 1 limit 0",
+            "WITH x AS (SELECT 1 AS [1]) SELECT TOP 0 * FROM (SELECT * FROM x UNION SELECT * FROM x) AS _l_0 ORDER BY 1",
+        )
+
         # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")

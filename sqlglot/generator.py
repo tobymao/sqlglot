@@ -717,6 +717,16 @@ class Generator(metaclass=_Generator):
 
     def preprocess(self, expression: exp.Expression) -> exp.Expression:
         """Apply generic preprocessing transformations to a given expression."""
+        expression = self._move_ctes_to_top_level(expression)
+
+        if self.ENSURE_BOOLS:
+            from sqlglot.transforms import ensure_bools
+
+            expression = ensure_bools(expression)
+
+        return expression
+
+    def _move_ctes_to_top_level(self, expression: E) -> E:
         if (
             not expression.parent
             and type(expression) in self.EXPRESSIONS_WITHOUT_NESTED_CTES
@@ -725,12 +735,6 @@ class Generator(metaclass=_Generator):
             from sqlglot.transforms import move_ctes_to_top_level
 
             expression = move_ctes_to_top_level(expression)
-
-        if self.ENSURE_BOOLS:
-            from sqlglot.transforms import ensure_bools
-
-            expression = ensure_bools(expression)
-
         return expression
 
     def unsupported(self, message: str) -> None:
@@ -1377,7 +1381,9 @@ class Generator(metaclass=_Generator):
             order = expression.args.get("order")
 
             if limit or order:
-                select = exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+                select = self._move_ctes_to_top_level(
+                    exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+                )
 
                 if limit:
                     select = select.limit(limit.pop(), copy=False)

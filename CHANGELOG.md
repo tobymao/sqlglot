@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.24.4] - 2024-10-04
+### :bug: Bug Fixes
+- [`484df7d`](https://github.com/tobymao/sqlglot/commit/484df7d50df5cb314943e1810db18a7d7d5bb3eb) - tsql union with limit *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v25.24.3] - 2024-10-03
 ### :sparkles: New Features
 - [`25b18d2`](https://github.com/tobymao/sqlglot/commit/25b18d28e5ad7b3687e2848ff92a0a1fc17b06fa) - **trino**: Support JSON_QUERY *(PR [#4206](https://github.com/tobymao/sqlglot/pull/4206) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -4963,3 +4968,4 @@ Changelog
 [v25.24.1]: https://github.com/tobymao/sqlglot/compare/v25.24.0...v25.24.1
 [v25.24.2]: https://github.com/tobymao/sqlglot/compare/v25.24.1...v25.24.2
 [v25.24.3]: https://github.com/tobymao/sqlglot/compare/v25.24.2...v25.24.3
+[v25.24.4]: https://github.com/tobymao/sqlglot/compare/v25.24.3...v25.24.4

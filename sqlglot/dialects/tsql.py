@@ -324,6 +324,34 @@ def _build_with_arg_as_text(
     return _parse
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/parsename-transact-sql?view=sql-server-ver16
+def _build_parsename(args: t.List) -> t.Optional[exp.SplitPart]:
+    if len(args) != 2:
+        return None
+    arg_this: exp.Literal = seq_get(args, 0) or exp.Literal.string("")
+    arg_partnum: exp.Literal = seq_get(args, 1) or exp.Literal.number(1)
+    text = arg_this.this
+    part_num = int(arg_partnum.this)
+    length = 1 if isinstance(arg_this, exp.Null) else len(text.split(".")) + 1  # Reverse index
+    idx = 0 if isinstance(arg_this, exp.Null) else int(part_num)
+    return exp.SplitPart(
+        this=arg_this, delimiter=exp.Literal.string("."), part_num=exp.Literal.number(length - idx)
+    )
+
+
+def _parsename_sql(self: TSQL.Generator, expression: exp.SplitPart) -> str:
+    delimiter: exp.Literal = expression.args.get("delimiter") or exp.Literal.string(".")
+    if delimiter.this != ".":
+        return str(expression)
+    arg_this: exp.Literal = expression.args.get("this") or exp.Literal.string("")
+    arg_part_num: exp.Literal = expression.args.get("part_num") or exp.Literal.number(1)
+    text = arg_this.this
+    part_num = int(arg_part_num.this)
+    length = 1 if isinstance(arg_this, exp.Null) else len(text.split(".")) + 1  # Reverse index
+    idx = 0 if isinstance(arg_this, exp.Null) else part_num
+    return self.func("PARSENAME", arg_this, exp.Literal.number(length - idx))
+
+
 def _build_json_query(args: t.List, dialect: Dialect) -> exp.JSONExtract:
     if len(args) == 1:
         # The default value for path is '$'. As a result, if you don't provide a
@@ -542,7 +570,7 @@ class TSQL(Dialect):
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),
             "LEFT": _build_with_arg_as_text(exp.Left),
-            "RIGHT": _build_with_arg_as_text(exp.Right),
+            "PARSENAME": _build_parsename,
             "REPLICATE": exp.Repeat.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
@@ -886,6 +914,7 @@ class TSQL(Dialect):
                     transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
+            exp.SplitPart: _parsename_sql,
             exp.Stddev: rename_func("STDEV"),
             exp.StrPosition: lambda self, e: self.func(
                 "CHARINDEX", e.args.get("substr"), e.this, e.args.get("position")

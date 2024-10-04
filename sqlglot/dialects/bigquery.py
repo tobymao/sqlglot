@@ -260,11 +260,11 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     """
     self._annotate_args(expression)
 
-    this = expression.args.get("this")
-    input_type = this.type if this else exp.DataType.Type.UNKNOWN
+    this: exp.Expression = expression.this
+
     self._set_type(
         expression,
-        exp.DataType.Type.DOUBLE if input_type.is_type(exp.DataType.Type.INT) else input_type,
+        exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
     )
     return expression
 

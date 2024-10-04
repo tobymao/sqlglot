@@ -33,6 +33,8 @@ from sqlglot.tokens import TokenType
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
 
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
 logger = logging.getLogger("sqlglot")
 
 
@@ -247,6 +249,26 @@ def _str_to_datetime_sql(
     return self.func(f"PARSE_{dtype}", fmt, this, expression.args.get("zone"))
 
 
+def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
+    """
+    Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
+    +---------+---------+---------+------------+---------+
+    |  INPUT  | INT64   | NUMERIC | BIGNUMERIC | FLOAT64 |
+    +---------+---------+---------+------------+---------+
+    |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
+    +---------+---------+---------+------------+---------+
+    """
+    self._annotate_args(expression)
+
+    this = expression.args.get("this")
+    input_type = this.type if this else exp.DataType.Type.UNKNOWN
+    self._set_type(
+        expression,
+        exp.DataType.Type.DOUBLE if input_type.is_type(exp.DataType.Type.INT) else input_type,
+    )
+    return expression
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -295,6 +317,10 @@ class BigQuery(Dialect):
 
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
+        **{
+            expr_type: lambda self, e: _annotate_math_functions(self, e)
+            for expr_type in (exp.Floor, exp.Ceil, exp.Log, exp.Ln, exp.Sqrt, exp.Exp, exp.Round)
+        },
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
     }
 

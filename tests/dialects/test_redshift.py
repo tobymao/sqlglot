@@ -214,6 +214,12 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            "CREATE TABLE a (b BINARY VARYING(10))",
+            write={
+                "redshift": "CREATE TABLE a (b VARBYTE(10))",
+            },
+        )
+        self.validate_all(
             "SELECT 'abc'::CHARACTER",
             write={
                 "redshift": "SELECT CAST('abc' AS CHAR)",

@@ -3284,7 +3284,9 @@ class Update(Expression):
         "limit": False,
     }
 
-    def table(self, expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Update:
+    def table(
+        self, expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Update:
         """
         Set the table to update.
 
@@ -3313,8 +3315,10 @@ class Update(Expression):
             copy=copy,
             **opts,
         )
-    
-    def set_(self, *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Update:
+
+    def set_(
+        self, *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Update:
         """
         Set the SET expressions.
 
@@ -3380,7 +3384,11 @@ class Update(Expression):
         )
 
     def from_(
-        self, expression: t.Optional[ExpOrStr] = None, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        expression: t.Optional[ExpOrStr] = None,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Update:
         """
         Set the FROM expression.
@@ -3403,7 +3411,7 @@ class Update(Expression):
         """
         if not expression:
             return self if not copy else self.copy()
-            
+
         return _apply_builder(
             expression=expression,
             instance=self,
@@ -3414,7 +3422,7 @@ class Update(Expression):
             copy=copy,
             **opts,
         )
-  
+
     def with_(
         self,
         alias: ExpOrStr,
@@ -3460,8 +3468,8 @@ class Update(Expression):
             copy=copy,
             **opts,
         )
-    
-    
+
+
 class Values(UDTF):
     arg_types = {"expressions": True, "alias": False}
 
@@ -6983,7 +6991,7 @@ def update(
     properties: t.Optional[dict] = None,
     where: t.Optional[ExpOrStr] = None,
     from_: t.Optional[ExpOrStr] = None,
-    with_: t.Optional[t.Dict[str, ExpOrStr]] = None,    
+    with_: t.Optional[t.Dict[str, ExpOrStr]] = None,
     dialect: DialectType = None,
     **opts,
 ) -> Update:
@@ -7028,7 +7036,10 @@ def update(
             maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts),
         )
     if with_:
-        cte_list = [CTE(this=maybe_parse(qry, into=Select, dialect=dialect, **opts), alias=alias) for alias, qry in with_.items()]
+        cte_list = [
+            CTE(this=maybe_parse(qry, into=Select, dialect=dialect, **opts), alias=alias)
+            for alias, qry in with_.items()
+        ]
         update_expr.set(
             "with",
             With(expressions=cte_list),

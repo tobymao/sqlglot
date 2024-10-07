@@ -2517,6 +2517,11 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "from", comment=False),
         )
 
+        # If both the CTE and SELECT clauses have comments, generate the latter earlier
+        if expression.args.get("with"):
+            sql = self.maybe_comment(sql, expression)
+            expression.pop_comments()
+
         sql = self.prepend_ctes(expression, sql)
 
         if not self.SUPPORTS_SELECT_INTO and into:

@@ -565,6 +565,35 @@ FROM x""",
             """with a as /* comment */ ( select * from b) select * from a""",
             """WITH a AS (SELECT * FROM b) /* comment */ SELECT * FROM a""",
         )
+        self.validate(
+            """
+  -- comment at the top
+WITH
+-- comment for tbl1
+tbl1 AS (SELECT 1)
+-- comment for tbl2
+, tbl2 AS (SELECT 2)
+-- comment for tbl3
+, tbl3 AS (SELECT 3)
+-- comment for final select
+SELECT * FROM tbl1""",
+            """/* comment at the top */
+WITH tbl1 /* comment for tbl1 */ AS (
+  SELECT
+    1
+), tbl2 AS (
+  SELECT
+    2
+) /* comment for tbl2 */, tbl3 AS (
+  SELECT
+    3
+) /* comment for tbl3 */
+/* comment for final select */
+SELECT
+  *
+FROM tbl1""",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

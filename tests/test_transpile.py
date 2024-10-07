@@ -563,7 +563,7 @@ FROM x""",
         )
         self.validate(
             """with a as /* comment */ ( select * from b) select * from a""",
-            """WITH a AS (SELECT * FROM b) /* comment */ SELECT * FROM a""",
+            """WITH a /* comment */ AS (SELECT * FROM b) SELECT * FROM a""",
         )
         self.validate(
             """
@@ -581,13 +581,13 @@ SELECT * FROM tbl1""",
 WITH tbl1 /* comment for tbl1 */ AS (
   SELECT
     1
-), tbl2 AS (
+), tbl2 /* comment for tbl2 */ AS (
   SELECT
     2
-) /* comment for tbl2 */, tbl3 AS (
+), tbl3 /* comment for tbl3 */ AS (
   SELECT
     3
-) /* comment for tbl3 */
+)
 /* comment for final select */
 SELECT
   *

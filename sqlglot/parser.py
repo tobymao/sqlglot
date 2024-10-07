@@ -3030,14 +3030,19 @@ class Parser(metaclass=_Parser):
         comments = self._prev_comments
         recursive = self._match(TokenType.RECURSIVE)
 
+        last_comments = None
         expressions = []
         while True:
             expressions.append(self._parse_cte())
+            if last_comments:
+                expressions[-1].add_comments(last_comments)
 
             if not self._match(TokenType.COMMA) and not self._match(TokenType.WITH):
                 break
             else:
                 self._match(TokenType.WITH)
+
+            last_comments = self._prev_comments
 
         return self.expression(
             exp.With, comments=comments, expressions=expressions, recursive=recursive

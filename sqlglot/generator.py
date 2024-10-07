@@ -1196,7 +1196,11 @@ class Generator(metaclass=_Generator):
         return f"WITH {recursive}{sql}"
 
     def cte_sql(self, expression: exp.CTE) -> str:
-        alias = self.sql(expression, "alias")
+        alias = expression.args.get("alias")
+        if alias:
+            alias.add_comments(expression.pop_comments())
+
+        alias_sql = self.sql(expression, "alias")
 
         materialized = expression.args.get("materialized")
         if materialized is False:
@@ -1204,7 +1208,7 @@ class Generator(metaclass=_Generator):
         elif materialized:
             materialized = "MATERIALIZED "
 
-        return f"{alias} AS {materialized or ''}{self.wrap(expression)}"
+        return f"{alias_sql} AS {materialized or ''}{self.wrap(expression)}"
 
     def tablealias_sql(self, expression: exp.TableAlias) -> str:
         alias = self.sql(expression, "this")
@@ -2516,6 +2520,11 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )
+
+        # If both the CTE and SELECT clauses have comments, generate the latter earlier
+        if expression.args.get("with"):
+            sql = self.maybe_comment(sql, expression)
+            expression.pop_comments()
 
         sql = self.prepend_ctes(expression, sql)
 

@@ -583,9 +583,9 @@ class TestBuild(unittest.TestCase):
                     {"x": 1},
                     from_="baz",
                     where="my_table.id = baz.id",
-                    with_={"baz": "SELECT id FROM foo"},
+                    with_={"baz": "SELECT id FROM foo UNION SELECT id FROM bar"},
                 ),
-                "WITH baz AS (SELECT id FROM foo) UPDATE my_table SET x = 1 FROM baz WHERE my_table.id = baz.id",
+                "WITH baz AS (SELECT id FROM foo UNION SELECT id FROM bar) UPDATE my_table SET x = 1 FROM baz WHERE my_table.id = baz.id",
             ),
             (
                 lambda: exp.update("my_table").set_("x = 1"),
@@ -594,6 +594,10 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: exp.update("my_table").set_("x = 1").where("y = 2"),
                 "UPDATE my_table SET x = 1 WHERE y = 2",
+            ),
+            (
+                lambda: exp.update("my_table").set_("a = 1").set_("b = 2"),
+                "UPDATE my_table SET a = 1, b = 2",
             ),
             (
                 lambda: exp.update("my_table")

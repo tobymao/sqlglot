@@ -3317,10 +3317,15 @@ class Update(Expression):
         )
 
     def set_(
-        self, *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        *expressions: ExpOrStr,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Update:
         """
-        Set the SET expressions.
+        Append to or set the SET expressions.
 
         Example:
             >>> Update().table("my_table").set_("x = 1").sql()
@@ -3328,7 +3333,10 @@ class Update(Expression):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instances are passed, they will be used as-is.
+                If `Expression` instance(s) are passed, they will be used as-is.
+                Multiple expressions are combined with a comma.
+            append: if `True`, add the new expressions to any existing SET expressions.
+                Otherwise, this resets the expressions.
             dialect: the dialect used to parse the input expressions.
             copy: if `False`, modify this expression instance in-place.
             opts: other options to use to parse the input expressions.
@@ -3337,6 +3345,7 @@ class Update(Expression):
             *expressions,
             instance=self,
             arg="expressions",
+            append=append,
             into=Expression,
             prefix=None,
             dialect=dialect,
@@ -3410,7 +3419,7 @@ class Update(Expression):
             The modified Update expression.
         """
         if not expression:
-            return self if not copy else self.copy()
+            return maybe_copy(self, copy)
 
         return _apply_builder(
             expression=expression,
@@ -7037,7 +7046,7 @@ def update(
         )
     if with_:
         cte_list = [
-            CTE(this=maybe_parse(qry, into=Select, dialect=dialect, **opts), alias=alias)
+            CTE(this=maybe_parse(qry, dialect=dialect, **opts), alias=alias)
             for alias, qry in with_.items()
         ]
         update_expr.set(

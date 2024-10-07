@@ -1197,10 +1197,8 @@ class Generator(metaclass=_Generator):
 
     def cte_sql(self, expression: exp.CTE) -> str:
         alias = expression.args.get("alias")
-        comments = expression.comments
-        if alias and comments:
-            alias.add_comments(comments)
-            expression.pop_comments()
+        if alias:
+            alias.add_comments(expression.pop_comments())
 
         alias_sql = self.sql(expression, "alias")
 

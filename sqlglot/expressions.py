@@ -7054,7 +7054,7 @@ def update(
         )
     if with_:
         cte_list = [
-            CTE(this=maybe_parse(qry, dialect=dialect, **opts), alias=alias)
+            alias_(CTE(this=maybe_parse(qry, dialect=dialect, **opts)), alias, table=True)
             for alias, qry in with_.items()
         ]
         update_expr.set(

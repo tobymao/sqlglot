@@ -800,7 +800,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 self.assertEqual(result.type.sql(), exp.DataType.build(expected).sql())
 
     def test_annotate_funcs(self):
-        test_schema = {"tbl": {"bin_col": "BINARY", "str_col": "STRING"}}
+        test_schema = {
+            "tbl": {"bin_col": "BINARY", "str_col": "STRING", "bignum_col": "BIGNUMERIC"}
+        }
 
         for i, (meta, sql, expected) in enumerate(
             load_sql_fixture_pairs("optimizer/annotate_functions.sql"), start=1

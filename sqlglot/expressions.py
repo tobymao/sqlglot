@@ -6250,7 +6250,7 @@ class Split(Func):
 
 # https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.split_part.html
 class SplitPart(Func):
-    arg_types = {"this": True, "delimiter": True, "part_num": True}
+    arg_types = {"this": True, "delimiter": True, "part_index": True}
 
 
 # Start may be omitted in the case of postgres

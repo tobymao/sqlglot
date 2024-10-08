@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v25.24.5] - 2024-10-08
+### :sparkles: New Features
+- [`22a1684`](https://github.com/tobymao/sqlglot/commit/22a16848d80a2fa6d310f99d21f7d81f90eb9440) - **bigquery**: Native annotations for more math functions *(PR [#4212](https://github.com/tobymao/sqlglot/pull/4212) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`354cfff`](https://github.com/tobymao/sqlglot/commit/354cfff13ab30d01c6123fca74eed0669d238aa0) - add builder methods to exp.Update and add with_ arg to exp.update *(PR [#4217](https://github.com/tobymao/sqlglot/pull/4217) by [@brdbry](https://github.com/brdbry))*
+
+### :bug: Bug Fixes
+- [`2c513b7`](https://github.com/tobymao/sqlglot/commit/2c513b71c7d4b1ff5c7c4e12d6c38694210b1a12) - Attach CTE comments before commas *(PR [#4218](https://github.com/tobymao/sqlglot/pull/4218) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4216](https://github.com/tobymao/sqlglot/issues/4216) opened by [@ajfriend](https://github.com/ajfriend)*
+
+
 ## [v25.24.4] - 2024-10-04
 ### :bug: Bug Fixes
 - [`484df7d`](https://github.com/tobymao/sqlglot/commit/484df7d50df5cb314943e1810db18a7d7d5bb3eb) - tsql union with limit *(commit by [@tobymao](https://github.com/tobymao))*
@@ -4969,3 +4979,4 @@ Changelog
 [v25.24.2]: https://github.com/tobymao/sqlglot/compare/v25.24.1...v25.24.2
 [v25.24.3]: https://github.com/tobymao/sqlglot/compare/v25.24.2...v25.24.3
 [v25.24.4]: https://github.com/tobymao/sqlglot/compare/v25.24.3...v25.24.4
+[v25.24.5]: https://github.com/tobymao/sqlglot/compare/v25.24.4...v25.24.5

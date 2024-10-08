@@ -779,6 +779,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 self.assertEqual(scopes[2].expression.sql(), f"SELECT a FROM foo CROSS JOIN {udtf}")
                 self.assertEqual(set(scopes[2].sources), {"", "foo"})
 
+        # Check DML statement scopes
+        sql = (
+            "UPDATE customers SET total_spent = (SELECT 1 FROM t1) WHERE EXISTS (SELECT 1 FROM t2)"
+        )
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 3)
+
+        sql = "UPDATE tbl1 SET col = 1 WHERE EXISTS (SELECT 1 FROM tbl2 WHERE tbl1.id = tbl2.id)"
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 1)
+
+        sql = "UPDATE tbl1 SET col = 0"
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)

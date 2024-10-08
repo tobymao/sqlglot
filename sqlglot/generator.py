@@ -3225,12 +3225,12 @@ class Generator(metaclass=_Generator):
         expressions = f"({expressions})" if expressions else ""
         return f"ALTER{compound} SORTKEY {this or expressions}"
 
-    def renametable_sql(self, expression: exp.RenameTable) -> str:
+    def alterrename_sql(self, expression: exp.AlterRename) -> str:
         if not self.RENAME_TABLE_WITH_DB:
             # Remove db from tables
             expression = expression.transform(
                 lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
-            ).assert_is(exp.RenameTable)
+            ).assert_is(exp.AlterRename)
         this = self.sql(expression, "this")
         return f"RENAME TO {this}"
 

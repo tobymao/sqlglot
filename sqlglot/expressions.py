@@ -1697,7 +1697,7 @@ class RenameColumn(Expression):
     arg_types = {"this": True, "to": True, "exists": False}
 
 
-class RenameTable(Expression):
+class AlterRename(Expression):
     pass
 
 
@@ -7795,7 +7795,7 @@ def rename_table(
         this=old_table,
         kind="TABLE",
         actions=[
-            RenameTable(this=new_table),
+            AlterRename(this=new_table),
         ],
     )
 

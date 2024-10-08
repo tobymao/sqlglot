@@ -1247,7 +1247,7 @@ class Query(Expression):
         )
 
     def union(
-        self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+        self, *expressions: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
     ) -> Union:
         """
         Builds a UNION expression.
@@ -1258,8 +1258,8 @@ class Query(Expression):
             'SELECT * FROM foo UNION SELECT * FROM bla'
 
         Args:
-            expression: the SQL code string.
-                If an `Expression` instance is passed, it will be used as-is.
+            expressions: the SQL code strings.
+                If `Expression` instances are passed, they will be used as-is.
             distinct: set the DISTINCT flag if and only if this is true.
             dialect: the dialect used to parse the input expression.
             opts: other options to use to parse the input expressions.
@@ -1267,10 +1267,10 @@ class Query(Expression):
         Returns:
             The new Union expression.
         """
-        return union(left=self, right=expression, distinct=distinct, dialect=dialect, **opts)
+        return union(self, *expressions, distinct=distinct, dialect=dialect, **opts)
 
     def intersect(
-        self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+        self, *expressions: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
     ) -> Intersect:
         """
         Builds an INTERSECT expression.
@@ -1281,8 +1281,8 @@ class Query(Expression):
             'SELECT * FROM foo INTERSECT SELECT * FROM bla'
 
         Args:
-            expression: the SQL code string.
-                If an `Expression` instance is passed, it will be used as-is.
+            expressions: the SQL code strings.
+                If `Expression` instances are passed, they will be used as-is.
             distinct: set the DISTINCT flag if and only if this is true.
             dialect: the dialect used to parse the input expression.
             opts: other options to use to parse the input expressions.
@@ -1290,10 +1290,10 @@ class Query(Expression):
         Returns:
             The new Intersect expression.
         """
-        return intersect(left=self, right=expression, distinct=distinct, dialect=dialect, **opts)
+        return intersect(self, *expressions, distinct=distinct, dialect=dialect, **opts)
 
     def except_(
-        self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+        self, *expressions: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
     ) -> Except:
         """
         Builds an EXCEPT expression.
@@ -1304,8 +1304,8 @@ class Query(Expression):
             'SELECT * FROM foo EXCEPT SELECT * FROM bla'
 
         Args:
-            expression: the SQL code string.
-                If an `Expression` instance is passed, it will be used as-is.
+            expressions: the SQL code strings.
+                If `Expression` instance are passed, they will be used as-is.
             distinct: set the DISTINCT flag if and only if this is true.
             dialect: the dialect used to parse the input expression.
             opts: other options to use to parse the input expressions.
@@ -1313,7 +1313,7 @@ class Query(Expression):
         Returns:
             The new Except expression.
         """
-        return except_(left=self, right=expression, distinct=distinct, dialect=dialect, **opts)
+        return except_(self, *expressions, distinct=distinct, dialect=dialect, **opts)
 
 
 class UDTF(DerivedTable):
@@ -6862,26 +6862,37 @@ def _wrap(expression: E, kind: t.Type[Expression]) -> E | Paren:
     return Paren(this=expression) if isinstance(expression, kind) else expression
 
 
+def _apply_set_operation(
+    *expressions: ExpOrStr,
+    set_operation: t.Type[S],
+    distinct: bool = True,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
+) -> S:
+    return reduce(
+        lambda x, y: set_operation(this=x, expression=y, distinct=distinct),
+        (maybe_parse(e, dialect=dialect, copy=copy, **opts) for e in expressions),
+    )
+
+
 def union(
-    left: ExpOrStr,
-    right: ExpOrStr,
+    *expressions: ExpOrStr,
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
 ) -> Union:
     """
-    Initializes a syntax tree from one UNION expression.
+    Initializes a syntax tree for the `UNION` operation.
 
     Example:
         >>> union("SELECT * FROM foo", "SELECT * FROM bla").sql()
         'SELECT * FROM foo UNION SELECT * FROM bla'
 
     Args:
-        left: the SQL code string corresponding to the left-hand side.
-            If an `Expression` instance is passed, it will be used as-is.
-        right: the SQL code string corresponding to the right-hand side.
-            If an `Expression` instance is passed, it will be used as-is.
+        expressions: the SQL code strings, corresponding to the `UNION`'s operands.
+            If `Expression` instances are passed, they will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression.
@@ -6890,32 +6901,29 @@ def union(
     Returns:
         The new Union instance.
     """
-    left = maybe_parse(sql_or_expression=left, dialect=dialect, copy=copy, **opts)
-    right = maybe_parse(sql_or_expression=right, dialect=dialect, copy=copy, **opts)
-
-    return Union(this=left, expression=right, distinct=distinct)
+    assert len(expressions) >= 2, "At least two expressions are required by `union`."
+    return _apply_set_operation(
+        *expressions, set_operation=Union, distinct=distinct, dialect=dialect, copy=copy, **opts
+    )
 
 
 def intersect(
-    left: ExpOrStr,
-    right: ExpOrStr,
+    *expressions: ExpOrStr,
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
 ) -> Intersect:
     """
-    Initializes a syntax tree from one INTERSECT expression.
+    Initializes a syntax tree for the `INTERSECT` operation.
 
     Example:
         >>> intersect("SELECT * FROM foo", "SELECT * FROM bla").sql()
         'SELECT * FROM foo INTERSECT SELECT * FROM bla'
 
     Args:
-        left: the SQL code string corresponding to the left-hand side.
-            If an `Expression` instance is passed, it will be used as-is.
-        right: the SQL code string corresponding to the right-hand side.
-            If an `Expression` instance is passed, it will be used as-is.
+        expressions: the SQL code strings, corresponding to the `INTERSECT`'s operands.
+            If `Expression` instances are passed, they will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression.
@@ -6924,32 +6932,29 @@ def intersect(
     Returns:
         The new Intersect instance.
     """
-    left = maybe_parse(sql_or_expression=left, dialect=dialect, copy=copy, **opts)
-    right = maybe_parse(sql_or_expression=right, dialect=dialect, copy=copy, **opts)
-
-    return Intersect(this=left, expression=right, distinct=distinct)
+    assert len(expressions) >= 2, "At least two expressions are required by `intersect`."
+    return _apply_set_operation(
+        *expressions, set_operation=Intersect, distinct=distinct, dialect=dialect, copy=copy, **opts
+    )
 
 
 def except_(
-    left: ExpOrStr,
-    right: ExpOrStr,
+    *expressions: ExpOrStr,
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
 ) -> Except:
     """
-    Initializes a syntax tree from one EXCEPT expression.
+    Initializes a syntax tree for the `EXCEPT` operation.
 
     Example:
         >>> except_("SELECT * FROM foo", "SELECT * FROM bla").sql()
         'SELECT * FROM foo EXCEPT SELECT * FROM bla'
 
     Args:
-        left: the SQL code string corresponding to the left-hand side.
-            If an `Expression` instance is passed, it will be used as-is.
-        right: the SQL code string corresponding to the right-hand side.
-            If an `Expression` instance is passed, it will be used as-is.
+        expressions: the SQL code strings, corresponding to the `EXCEPT`'s operands.
+            If `Expression` instances are passed, they will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression.
@@ -6958,10 +6963,10 @@ def except_(
     Returns:
         The new Except instance.
     """
-    left = maybe_parse(sql_or_expression=left, dialect=dialect, copy=copy, **opts)
-    right = maybe_parse(sql_or_expression=right, dialect=dialect, copy=copy, **opts)
-
-    return Except(this=left, expression=right, distinct=distinct)
+    assert len(expressions) >= 2, "At least two expressions are required by `except_`."
+    return _apply_set_operation(
+        *expressions, set_operation=Except, distinct=distinct, dialect=dialect, copy=copy, **opts
+    )
 
 
 def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts) -> Select:

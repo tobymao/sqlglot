@@ -325,31 +325,25 @@ def _build_with_arg_as_text(
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/parsename-transact-sql?view=sql-server-ver16
-def _build_parsename(args: t.List) -> t.Optional[exp.SplitPart]:
-    if len(args) != 2:
-        return None
-    arg_this: exp.Literal = seq_get(args, 0) or exp.Literal.string("")
-    arg_partnum: exp.Literal = seq_get(args, 1) or exp.Literal.number(1)
-    text = arg_this.this
-    part_num = int(arg_partnum.this)
-    length = 1 if isinstance(arg_this, exp.Null) else len(text.split(".")) + 1  # Reverse index
-    idx = 0 if isinstance(arg_this, exp.Null) else int(part_num)
+def _build_parsename(args: t.List) -> exp.SplitPart | exp.Anonymous:
+    anonymous = exp.Anonymous(this="PARSENAME", expressions=args)
+    # Not correct number of arguments or
+    # any argument is not literal
+    if len(args) != 2 or isinstance(args[0], exp.Column) or isinstance(args[1], exp.Column):
+        return anonymous
+    arg_this: exp.Expression = args[0]
+    text = arg_this.name
+    part_count = len(text.split("."))
+    if part_count > 4:
+        return anonymous
+
+    arg_partnum: exp.Expression = args[1]
+    part_num = int(arg_partnum.name)
+    length = 1 if isinstance(arg_this, exp.Null) else part_count + 1  # Reverse index
+    idx = 0 if isinstance(arg_this, exp.Null) else part_num
     return exp.SplitPart(
         this=arg_this, delimiter=exp.Literal.string("."), part_num=exp.Literal.number(length - idx)
     )
-
-
-def _parsename_sql(self: TSQL.Generator, expression: exp.SplitPart) -> str:
-    delimiter: exp.Literal = expression.args.get("delimiter") or exp.Literal.string(".")
-    if delimiter.this != ".":
-        return str(expression)
-    arg_this: exp.Literal = expression.args.get("this") or exp.Literal.string("")
-    arg_part_num: exp.Literal = expression.args.get("part_num") or exp.Literal.number(1)
-    text = arg_this.this
-    part_num = int(arg_part_num.this)
-    length = 1 if isinstance(arg_this, exp.Null) else len(text.split(".")) + 1  # Reverse index
-    idx = 0 if isinstance(arg_this, exp.Null) else part_num
-    return self.func("PARSENAME", arg_this, exp.Literal.number(length - idx))
 
 
 def _build_json_query(args: t.List, dialect: Dialect) -> exp.JSONExtract:
@@ -915,7 +909,6 @@ class TSQL(Dialect):
                     transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
-            exp.SplitPart: _parsename_sql,
             exp.Stddev: rename_func("STDEV"),
             exp.StrPosition: lambda self, e: self.func(
                 "CHARINDEX", e.args.get("substr"), e.this, e.args.get("position")
@@ -983,6 +976,29 @@ class TSQL(Dialect):
             # TODO: perhaps we can check if the parent is a Join and transpile it appropriately
             self.unsupported("LATERAL clause is not supported.")
             return "LATERAL"
+
+        def splitpart_sql(self: TSQL.Generator, expression: exp.SplitPart) -> str:
+            delimiter: exp.Expression = expression.args["delimiter"]
+            if delimiter.name != ".":
+                self.unsupported("PARSENAME only supports '.' delimiter")
+                return self.sql(expression.this)
+
+            arg_this: exp.Expression = expression.args["this"]
+            arg_partnum: exp.Expression = expression.args["part_num"]
+            if isinstance(arg_this, exp.Column) or isinstance(arg_partnum, exp.Column):
+                self.unsupported(
+                    "PARSENAME cannot calculate object_piece based on column-type arguments"
+                )
+                return self.sql(expression.this)
+
+            text = arg_this.name
+            part_count = len(text.split("."))
+
+            part_num = int(arg_partnum.name)
+
+            length = 1 if isinstance(arg_this, exp.Null) else part_count + 1  # Reverse index
+            idx = 0 if isinstance(arg_this, exp.Null) else part_num
+            return self.func("PARSENAME", arg_this, exp.Literal.number(length - idx))
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

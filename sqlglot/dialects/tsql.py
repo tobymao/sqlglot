@@ -326,24 +326,21 @@ def _build_with_arg_as_text(
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/parsename-transact-sql?view=sql-server-ver16
 def _build_parsename(args: t.List) -> exp.SplitPart | exp.Anonymous:
-    anonymous = exp.Anonymous(this="PARSENAME", expressions=args)
-    # Not correct number of arguments or
-    # any argument is not literal
-    if len(args) != 2 or isinstance(args[0], exp.Column) or isinstance(args[1], exp.Column):
-        return anonymous
-    arg_this: exp.Expression = args[0]
-    text = arg_this.name
-    part_count = len(text.split("."))
-    if part_count > 4:
-        return anonymous
+    # PARSENAME(...) will be stored into exp.SplitPart if:
+    # - All args are literals
+    # - The part index (2nd arg) is <= 4 (max valid value, otherwise TSQL returns NULL)
+    if len(args) == 2 and all(isinstance(arg, exp.Literal) for arg in args):
+        this = args[0]
+        part_index = args[1]
+        split_count = len(this.name.split("."))
+        if split_count <= 4:
+            return exp.SplitPart(
+                this=this,
+                delimiter=exp.Literal.string("."),
+                part_index=exp.Literal.number(split_count + 1 - part_index.to_py()),
+            )
 
-    arg_partnum: exp.Expression = args[1]
-    part_num = int(arg_partnum.name)
-    length = 1 if isinstance(arg_this, exp.Null) else part_count + 1  # Reverse index
-    idx = 0 if isinstance(arg_this, exp.Null) else part_num
-    return exp.SplitPart(
-        this=arg_this, delimiter=exp.Literal.string("."), part_num=exp.Literal.number(length - idx)
-    )
+    return exp.Anonymous(this="PARSENAME", expressions=args)
 
 
 def _build_json_query(args: t.List, dialect: Dialect) -> exp.JSONExtract:
@@ -978,27 +975,25 @@ class TSQL(Dialect):
             return "LATERAL"
 
         def splitpart_sql(self: TSQL.Generator, expression: exp.SplitPart) -> str:
-            delimiter: exp.Expression = expression.args["delimiter"]
-            if delimiter.name != ".":
-                self.unsupported("PARSENAME only supports '.' delimiter")
-                return self.sql(expression.this)
+            this = expression.this
+            split_count = len(this.name.split("."))
+            delimiter = expression.args.get("delimiter")
+            part_index = expression.args.get("part_index")
 
-            arg_this: exp.Expression = expression.args["this"]
-            arg_partnum: exp.Expression = expression.args["part_num"]
-            if isinstance(arg_this, exp.Column) or isinstance(arg_partnum, exp.Column):
+            if (
+                not all(isinstance(arg, exp.Literal) for arg in (this, delimiter, part_index))
+                or (delimiter and delimiter.name != ".")
+                or not part_index
+                or split_count > 4
+            ):
                 self.unsupported(
-                    "PARSENAME cannot calculate object_piece based on column-type arguments"
+                    "SPLIT_PART can be transpiled to PARSENAME only for '.' delimiter and literal values"
                 )
-                return self.sql(expression.this)
+                return ""
 
-            text = arg_this.name
-            part_count = len(text.split("."))
-
-            part_num = int(arg_partnum.name)
-
-            length = 1 if isinstance(arg_this, exp.Null) else part_count + 1  # Reverse index
-            idx = 0 if isinstance(arg_this, exp.Null) else part_num
-            return self.func("PARSENAME", arg_this, exp.Literal.number(length - idx))
+            return self.func(
+                "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
+            )
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

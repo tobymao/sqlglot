@@ -2016,45 +2016,21 @@ FROM OPENJSON(@json) WITH (
         )
 
     def test_parsename(self):
-        # Test default case
-        self.validate_all(
-            "SELECT PARSENAME('1.2.3', 1)",
-            read={
-                "spark": "SELECT SPLIT_PART('1.2.3', '.', 3)",
-                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 3)",
-            },
-            write={
-                "spark": "SELECT SPLIT_PART('1.2.3', '.', 3)",
-                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 3)",
-                "tsql": "SELECT PARSENAME('1.2.3', 1)",
-            },
-        )
-        # Test zero index
-        self.validate_all(
-            "SELECT PARSENAME('1.2.3', 0)",
-            read={
-                "spark": "SELECT SPLIT_PART('1.2.3', '.', 4)",
-                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 4)",
-            },
-            write={
-                "spark": "SELECT SPLIT_PART('1.2.3', '.', 4)",
-                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 4)",
-                "tsql": "SELECT PARSENAME('1.2.3', 0)",
-            },
-        )
-        # Test null value
-        self.validate_all(
-            "SELECT PARSENAME(NULL, 1)",
-            read={
-                "spark": "SELECT SPLIT_PART(NULL, '.', 1)",
-                "databricks": "SELECT SPLIT_PART(NULL, '.', 1)",
-            },
-            write={
-                "spark": "SELECT SPLIT_PART(NULL, '.', 1)",
-                "databricks": "SELECT SPLIT_PART(NULL, '.', 1)",
-                "tsql": "SELECT PARSENAME(NULL, 1)",
-            },
-        )
+        for i in range(4):
+            with self.subTest("Testing PARSENAME <-> SPLIT_PART"):
+                self.validate_all(
+                    f"SELECT PARSENAME('1.2.3', {i})",
+                    read={
+                        "spark": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                        "databricks": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                    },
+                    write={
+                        "spark": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                        "databricks": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                        "tsql": f"SELECT PARSENAME('1.2.3', {i})",
+                    },
+                )
+
         # Test non-dot delimiter
         self.validate_all(
             "SELECT SPLIT_PART('1,2,3', ',', 1)",
@@ -2064,15 +2040,7 @@ FROM OPENJSON(@json) WITH (
                 "tsql": UnsupportedError,
             },
         )
-        # Test non-dot delimiter
-        self.validate_all(
-            "SELECT SPLIT_PART('1.2.3.4.5', '.', 1)",
-            write={
-                "spark": "SELECT SPLIT_PART('1.2.3.4.5', '.', 1)",
-                "databricks": "SELECT SPLIT_PART('1.2.3.4.5', '.', 1)",
-                "tsql": "SELECT PARSENAME('1.2.3.4.5', 5)",
-            },
-        )
+
         # Test column-type parameters
         self.validate_all(
             "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",

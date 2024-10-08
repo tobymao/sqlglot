@@ -6248,6 +6248,11 @@ class Split(Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
+# https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.split_part.html
+class SplitPart(Func):
+    arg_types = {"this": True, "delimiter": True, "part_num": True}
+
+
 # Start may be omitted in the case of postgres
 # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 class Substring(Func):

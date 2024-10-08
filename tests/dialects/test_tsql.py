@@ -1,6 +1,6 @@
 from sqlglot import exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
-from sqlglot.errors import ParseError
+from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
 
 
@@ -2013,4 +2013,72 @@ FROM OPENJSON(@json) WITH (
         self.validate_identity("GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION")
         self.validate_identity(
             "GRANT EXECUTE ON TestProc TO User2 AS TesterRole", check_command_warning=True
+        )
+
+    def test_parsename(self):
+        # Test default case
+        self.validate_all(
+            "SELECT PARSENAME('1.2.3', 1)",
+            read={
+                "spark": "SELECT SPLIT_PART('1.2.3', '.', 3)",
+                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 3)",
+            },
+            write={
+                "spark": "SELECT SPLIT_PART('1.2.3', '.', 3)",
+                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 3)",
+                "tsql": "SELECT PARSENAME('1.2.3', 1)",
+            },
+        )
+        # Test zero index
+        self.validate_all(
+            "SELECT PARSENAME('1.2.3', 0)",
+            read={
+                "spark": "SELECT SPLIT_PART('1.2.3', '.', 4)",
+                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 4)",
+            },
+            write={
+                "spark": "SELECT SPLIT_PART('1.2.3', '.', 4)",
+                "databricks": "SELECT SPLIT_PART('1.2.3', '.', 4)",
+                "tsql": "SELECT PARSENAME('1.2.3', 0)",
+            },
+        )
+        # Test null value
+        self.validate_all(
+            "SELECT PARSENAME(NULL, 1)",
+            read={
+                "spark": "SELECT SPLIT_PART(NULL, '.', 1)",
+                "databricks": "SELECT SPLIT_PART(NULL, '.', 1)",
+            },
+            write={
+                "spark": "SELECT SPLIT_PART(NULL, '.', 1)",
+                "databricks": "SELECT SPLIT_PART(NULL, '.', 1)",
+                "tsql": "SELECT PARSENAME(NULL, 1)",
+            },
+        )
+        # Test non-dot delimiter
+        self.validate_all(
+            "SELECT SPLIT_PART('1,2,3', ',', 1)",
+            write={
+                "spark": "SELECT SPLIT_PART('1,2,3', ',', 1)",
+                "databricks": "SELECT SPLIT_PART('1,2,3', ',', 1)",
+                "tsql": UnsupportedError,
+            },
+        )
+        # Test non-dot delimiter
+        self.validate_all(
+            "SELECT SPLIT_PART('1.2.3.4.5', '.', 1)",
+            write={
+                "spark": "SELECT SPLIT_PART('1.2.3.4.5', '.', 1)",
+                "databricks": "SELECT SPLIT_PART('1.2.3.4.5', '.', 1)",
+                "tsql": "SELECT PARSENAME('1.2.3.4.5', 5)",
+            },
+        )
+        # Test column-type parameters
+        self.validate_all(
+            "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
+            write={
+                "spark": "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
+                "databricks": "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
+                "tsql": UnsupportedError,
+            },
         )

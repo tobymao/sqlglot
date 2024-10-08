@@ -801,6 +801,10 @@ class TestBuild(unittest.TestCase):
                 ),
                 "MERGE INTO target_table AS target USING source_table AS source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.name = source.name RETURNING target.*",
             ),
+            (
+                lambda: exp.union("SELECT 1", "SELECT 2", "SELECT 3", "SELECT 4"),
+                "SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

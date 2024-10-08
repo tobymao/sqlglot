@@ -3278,7 +3278,7 @@ class Intersect(SetOperation):
     pass
 
 
-class Update(Expression):
+class Update(DML):
     arg_types = {
         "with": False,
         "this": False,

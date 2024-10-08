@@ -762,6 +762,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             )
             self.assertEqual(set(scopes[3].sources), {""})
 
+        sql = (
+            "UPDATE customers SET total_spent = (SELECT 1 FROM t1) WHERE EXISTS (SELECT 1 FROM t2)"
+        )
+        expression = parse_one(sql)
+        self.assertEqual(len(traverse_scope(expression)), 3)
+
         inner_query = "SELECT bar FROM baz"
         for udtf in (f"UNNEST(({inner_query}))", f"LATERAL ({inner_query})"):
             sql = f"SELECT a FROM foo CROSS JOIN {udtf}"

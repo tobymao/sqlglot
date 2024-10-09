@@ -825,6 +825,7 @@ class ClickHouse(Dialect):
             **generator.Generator.TYPE_MAPPING,
             **STRING_TYPE_MAPPING,
             exp.DataType.Type.ARRAY: "Array",
+            exp.DataType.Type.BOOLEAN: "Bool",
             exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.DATE32: "Date32",
             exp.DataType.Type.DATETIME: "DateTime",

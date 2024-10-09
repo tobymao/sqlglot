@@ -321,7 +321,19 @@ class BigQuery(Dialect):
             expr_type: lambda self, e: _annotate_math_functions(self, e)
             for expr_type in (exp.Floor, exp.Ceil, exp.Log, exp.Ln, exp.Sqrt, exp.Exp, exp.Round)
         },
+        **{
+            expr_type: lambda self, e: self._annotate_by_args(e, "this")
+            for expr_type in (
+                exp.Left,
+                exp.Right,
+                exp.Lower,
+                exp.Upper,
+                exp.Pad,
+                exp.Trim,
+            )
+        },
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Concat: lambda self, e: self._annotate_by_args(e, "expressions"),
     }
 
     def normalize_identifier(self, expression: E) -> E:

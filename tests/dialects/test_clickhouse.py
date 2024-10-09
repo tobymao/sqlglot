@@ -425,6 +425,9 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
         )
+        self.validate_identity(
+            "SELECT * FROM tbl ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
+        )
         self.validate_all(
             "SELECT quantile(0.5)(a)",
             read={"duckdb": "SELECT quantile(a, 0.5)"},

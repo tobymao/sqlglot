@@ -2144,6 +2144,10 @@ class Generator(metaclass=_Generator):
         this = expression.this
         this_sql = self.sql(this)
 
+        exprs = self.expressions(expression)
+        if expression.args.get("expressions"):
+            this_sql = f"{this_sql},{self.seg(exprs)}"
+
         if on_sql:
             on_sql = self.indent(on_sql, skip_first=True)
             space = self.seg(" " * self.pad) if self.pretty else " "

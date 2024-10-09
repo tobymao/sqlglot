@@ -3424,9 +3424,7 @@ class Parser(metaclass=_Parser):
         elif (
             not (outer_apply or cross_apply)
             and not isinstance(kwargs["this"], exp.Unnest)
-            and not (
-                kind and (kind.token_type == TokenType.CROSS or kind.token_type == TokenType.ARRAY)
-            )
+            and not (kind and kind.token_type in (TokenType.CROSS, TokenType.ARRAY))
         ):
             index = self._index
             joins: t.Optional[list] = list(self._parse_joins())

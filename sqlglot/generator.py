@@ -2145,7 +2145,7 @@ class Generator(metaclass=_Generator):
         this_sql = self.sql(this)
 
         exprs = self.expressions(expression)
-        if expression.args.get("expressions"):
+        if exprs:
             this_sql = f"{this_sql},{self.seg(exprs)}"
 
         if on_sql:

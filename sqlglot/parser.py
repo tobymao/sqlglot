@@ -3400,6 +3400,10 @@ class Parser(metaclass=_Parser):
             return None
 
         kwargs: t.Dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
+        if kind and kind.token_type == TokenType.ARRAY and self._match(TokenType.COMMA):
+            kwargs["expressions"] = self._parse_csv(
+                lambda: self._parse_table(parse_bracket=parse_bracket)
+            )
 
         if method:
             kwargs["method"] = method.text
@@ -3420,7 +3424,7 @@ class Parser(metaclass=_Parser):
         elif (
             not (outer_apply or cross_apply)
             and not isinstance(kwargs["this"], exp.Unnest)
-            and not (kind and kind.token_type == TokenType.CROSS)
+            and not (kind and kind.token_type in (TokenType.CROSS, TokenType.ARRAY))
         ):
             index = self._index
             joins: t.Optional[list] = list(self._parse_joins())

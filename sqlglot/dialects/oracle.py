@@ -95,6 +95,7 @@ class Oracle(Dialect):
             "(+)": TokenType.JOIN_MARKER,
             "BINARY_DOUBLE": TokenType.DOUBLE,
             "BINARY_FLOAT": TokenType.FLOAT,
+            "BULK COLLECT INTO": TokenType.BULK_COLLECT_INTO,
             "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
@@ -241,6 +242,24 @@ class Oracle(Dialect):
                 on_condition=self._parse_on_condition(),
             )
 
+        def _parse_into(self) -> t.Optional[exp.Into]:
+            # https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/SELECT-INTO-statement.html
+            bulk_collect = self._match(TokenType.BULK_COLLECT_INTO)
+            if not bulk_collect and not self._match(TokenType.INTO):
+                return None
+
+            index = self._index
+
+            expressions = self._parse_expressions()
+            if len(expressions) == 1:
+                self._retreat(index)
+                self._match(TokenType.TABLE)
+                return self.expression(
+                    exp.Into, this=self._parse_table(schema=True), bulk_collect=bulk_collect
+                )
+
+            return self.expression(exp.Into, bulk_collect=bulk_collect, expressions=expressions)
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -344,3 +363,10 @@ class Oracle(Dialect):
         def coalesce_sql(self, expression: exp.Coalesce) -> str:
             func_name = "NVL" if expression.args.get("is_nvl") else "COALESCE"
             return rename_func(func_name)(self, expression)
+
+        def into_sql(self, expression: exp.Into) -> str:
+            into = "INTO" if not expression.args.get("bulk_collect") else "BULK COLLECT INTO"
+            if expression.this:
+                return f"{self.seg(into)} {self.sql(expression, 'this')}"
+
+            return f"{self.seg(into)} {self.expressions(expression)}"

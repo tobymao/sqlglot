@@ -860,6 +860,7 @@ class Parser(metaclass=_Parser):
     }
 
     RANGE_PARSERS = {
+        TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
         TokenType.BETWEEN: lambda self, this: self._parse_between(this),
         TokenType.GLOB: binary_range_parser(exp.Glob),
         TokenType.ILIKE: binary_range_parser(exp.ILike),
@@ -867,6 +868,7 @@ class Parser(metaclass=_Parser):
         TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: binary_range_parser(exp.Like),
+        TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
         TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
@@ -3028,14 +3030,19 @@ class Parser(metaclass=_Parser):
         comments = self._prev_comments
         recursive = self._match(TokenType.RECURSIVE)
 
+        last_comments = None
         expressions = []
         while True:
             expressions.append(self._parse_cte())
+            if last_comments:
+                expressions[-1].add_comments(last_comments)
 
             if not self._match(TokenType.COMMA) and not self._match(TokenType.WITH):
                 break
             else:
                 self._match(TokenType.WITH)
+
+            last_comments = self._prev_comments
 
         return self.expression(
             exp.With, comments=comments, expressions=expressions, recursive=recursive
@@ -3393,6 +3400,10 @@ class Parser(metaclass=_Parser):
             return None
 
         kwargs: t.Dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
+        if kind and kind.token_type == TokenType.ARRAY and self._match(TokenType.COMMA):
+            kwargs["expressions"] = self._parse_csv(
+                lambda: self._parse_table(parse_bracket=parse_bracket)
+            )
 
         if method:
             kwargs["method"] = method.text
@@ -3413,7 +3424,7 @@ class Parser(metaclass=_Parser):
         elif (
             not (outer_apply or cross_apply)
             and not isinstance(kwargs["this"], exp.Unnest)
-            and not (kind and kind.token_type == TokenType.CROSS)
+            and not (kind and kind.token_type in (TokenType.CROSS, TokenType.ARRAY))
         ):
             index = self._index
             joins: t.Optional[list] = list(self._parse_joins())
@@ -5076,6 +5087,7 @@ class Parser(metaclass=_Parser):
             elif isinstance(this, exp.Column) and not this.args.get("catalog"):
                 this = self.expression(
                     exp.Column,
+                    comments=this.comments,
                     this=field,
                     table=this.this,
                     db=this.args.get("table"),
@@ -5227,7 +5239,9 @@ class Parser(metaclass=_Parser):
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
 
             if subquery_predicate and self._curr.token_type in (TokenType.SELECT, TokenType.WITH):
-                this = self.expression(subquery_predicate, this=self._parse_select())
+                this = self.expression(
+                    subquery_predicate, comments=comments, this=self._parse_select()
+                )
                 self._match_r_paren()
                 return this
 
@@ -6754,7 +6768,7 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         return self._parse_csv(self._parse_drop_column)
 
-    def _parse_alter_table_rename(self) -> t.Optional[exp.RenameTable | exp.RenameColumn]:
+    def _parse_alter_table_rename(self) -> t.Optional[exp.AlterRename | exp.RenameColumn]:
         if self._match(TokenType.COLUMN):
             exists = self._parse_exists()
             old_column = self._parse_column()
@@ -6767,7 +6781,7 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.RenameColumn, this=old_column, to=new_column, exists=exists)
 
         self._match_text_seq("TO")
-        return self.expression(exp.RenameTable, this=self._parse_table(schema=True))
+        return self.expression(exp.AlterRename, this=self._parse_table(schema=True))
 
     def _parse_alter_table_set(self) -> exp.AlterSet:
         alter_set = self.expression(exp.AlterSet)

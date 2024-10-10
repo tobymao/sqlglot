@@ -562,8 +562,8 @@ def _traverse_scope(scope):
     elif isinstance(expression, exp.DML):
         yield from _traverse_ctes(scope)
         for query in find_all_in_scope(expression, exp.Query):
-            # This check ensures we don't yield the CTE queries twice
-            if not isinstance(query.parent, exp.CTE):
+            # This check ensures we don't yield the CTE/nested queries twice
+            if not isinstance(query.parent, (exp.CTE, exp.Subquery)):
                 yield from _traverse_scope(Scope(query, cte_sources=scope.cte_sources))
         return
     else:

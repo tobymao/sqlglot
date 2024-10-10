@@ -324,6 +324,25 @@ def _build_with_arg_as_text(
     return _parse
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/parsename-transact-sql?view=sql-server-ver16
+def _build_parsename(args: t.List) -> exp.SplitPart | exp.Anonymous:
+    # PARSENAME(...) will be stored into exp.SplitPart if:
+    # - All args are literals
+    # - The part index (2nd arg) is <= 4 (max valid value, otherwise TSQL returns NULL)
+    if len(args) == 2 and all(isinstance(arg, exp.Literal) for arg in args):
+        this = args[0]
+        part_index = args[1]
+        split_count = len(this.name.split("."))
+        if split_count <= 4:
+            return exp.SplitPart(
+                this=this,
+                delimiter=exp.Literal.string("."),
+                part_index=exp.Literal.number(split_count + 1 - part_index.to_py()),
+            )
+
+    return exp.Anonymous(this="PARSENAME", expressions=args)
+
+
 def _build_json_query(args: t.List, dialect: Dialect) -> exp.JSONExtract:
     if len(args) == 1:
         # The default value for path is '$'. As a result, if you don't provide a
@@ -543,6 +562,7 @@ class TSQL(Dialect):
             "LEN": _build_with_arg_as_text(exp.Length),
             "LEFT": _build_with_arg_as_text(exp.Left),
             "RIGHT": _build_with_arg_as_text(exp.Right),
+            "PARSENAME": _build_parsename,
             "REPLICATE": exp.Repeat.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
@@ -954,6 +974,27 @@ class TSQL(Dialect):
             self.unsupported("LATERAL clause is not supported.")
             return "LATERAL"
 
+        def splitpart_sql(self: TSQL.Generator, expression: exp.SplitPart) -> str:
+            this = expression.this
+            split_count = len(this.name.split("."))
+            delimiter = expression.args.get("delimiter")
+            part_index = expression.args.get("part_index")
+
+            if (
+                not all(isinstance(arg, exp.Literal) for arg in (this, delimiter, part_index))
+                or (delimiter and delimiter.name != ".")
+                or not part_index
+                or split_count > 4
+            ):
+                self.unsupported(
+                    "SPLIT_PART can be transpiled to PARSENAME only for '.' delimiter and literal values"
+                )
+                return ""
+
+            return self.func(
+                "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
+            )
+
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")
             if nano is not None:
@@ -1166,7 +1207,7 @@ class TSQL(Dialect):
 
         def alter_sql(self, expression: exp.Alter) -> str:
             action = seq_get(expression.args.get("actions") or [], 0)
-            if isinstance(action, exp.RenameTable):
+            if isinstance(action, exp.AlterRename):
                 return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
             return super().alter_sql(expression)
 

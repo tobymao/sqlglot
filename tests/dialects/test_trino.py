@@ -4,6 +4,12 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_trino(self):
+        self.validate_identity("JSON_EXTRACT(content, json_path)")
+        self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
+        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
+        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
+
     def test_trim(self):
         self.validate_identity("SELECT TRIM('!' FROM '!foo!')")
         self.validate_identity("SELECT TRIM(BOTH '$' FROM '$var$')")

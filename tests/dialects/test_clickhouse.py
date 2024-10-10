@@ -28,6 +28,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("CAST(1 AS Bool)")
         self.validate_identity("SELECT toString(CHAR(104.1, 101, 108.9, 108.9, 111, 32))")
         self.validate_identity("@macro").assert_is(exp.Parameter).this.assert_is(exp.Var)
         self.validate_identity("SELECT toFloat(like)")
@@ -424,6 +425,9 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
         self.validate_identity(
             "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
+        )
+        self.validate_identity(
+            "SELECT * FROM tbl ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
         )
         self.validate_all(
             "SELECT quantile(0.5)(a)",

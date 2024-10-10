@@ -1,6 +1,6 @@
 from sqlglot import exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
-from sqlglot.errors import ParseError
+from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
 
 
@@ -8,6 +8,11 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity(
+            "with x as (select 1) select * from x union select * from x order by 1 limit 0",
+            "WITH x AS (SELECT 1 AS [1]) SELECT TOP 0 * FROM (SELECT * FROM x UNION SELECT * FROM x) AS _l_0 ORDER BY 1",
+        )
+
         # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
@@ -45,6 +50,10 @@ class TestTSQL(Validator):
         )
         self.validate_identity(
             "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
+        )
+        self.validate_identity(
+            'SELECT 1 AS "[x]"',
+            "SELECT 1 AS [[x]]]",
         )
         self.assertEqual(
             annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
@@ -2004,4 +2013,40 @@ FROM OPENJSON(@json) WITH (
         self.validate_identity("GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION")
         self.validate_identity(
             "GRANT EXECUTE ON TestProc TO User2 AS TesterRole", check_command_warning=True
+        )
+
+    def test_parsename(self):
+        for i in range(4):
+            with self.subTest("Testing PARSENAME <-> SPLIT_PART"):
+                self.validate_all(
+                    f"SELECT PARSENAME('1.2.3', {i})",
+                    read={
+                        "spark": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                        "databricks": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                    },
+                    write={
+                        "spark": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                        "databricks": f"SELECT SPLIT_PART('1.2.3', '.', {4 - i})",
+                        "tsql": f"SELECT PARSENAME('1.2.3', {i})",
+                    },
+                )
+
+        # Test non-dot delimiter
+        self.validate_all(
+            "SELECT SPLIT_PART('1,2,3', ',', 1)",
+            write={
+                "spark": "SELECT SPLIT_PART('1,2,3', ',', 1)",
+                "databricks": "SELECT SPLIT_PART('1,2,3', ',', 1)",
+                "tsql": UnsupportedError,
+            },
+        )
+
+        # Test column-type parameters
+        self.validate_all(
+            "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
+            write={
+                "spark": "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
+                "databricks": "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
+                "tsql": UnsupportedError,
+            },
         )

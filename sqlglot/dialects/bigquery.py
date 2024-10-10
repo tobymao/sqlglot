@@ -33,6 +33,8 @@ from sqlglot.tokens import TokenType
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
 
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
 logger = logging.getLogger("sqlglot")
 
 
@@ -247,6 +249,26 @@ def _str_to_datetime_sql(
     return self.func(f"PARSE_{dtype}", fmt, this, expression.args.get("zone"))
 
 
+def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
+    """
+    Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
+    +---------+---------+---------+------------+---------+
+    |  INPUT  | INT64   | NUMERIC | BIGNUMERIC | FLOAT64 |
+    +---------+---------+---------+------------+---------+
+    |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
+    +---------+---------+---------+------------+---------+
+    """
+    self._annotate_args(expression)
+
+    this: exp.Expression = expression.this
+
+    self._set_type(
+        expression,
+        exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
+    )
+    return expression
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -292,6 +314,27 @@ class BigQuery(Dialect):
 
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
+
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        **{
+            expr_type: lambda self, e: _annotate_math_functions(self, e)
+            for expr_type in (exp.Floor, exp.Ceil, exp.Log, exp.Ln, exp.Sqrt, exp.Exp, exp.Round)
+        },
+        **{
+            expr_type: lambda self, e: self._annotate_by_args(e, "this")
+            for expr_type in (
+                exp.Left,
+                exp.Right,
+                exp.Lower,
+                exp.Upper,
+                exp.Pad,
+                exp.Trim,
+            )
+        },
+        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Concat: lambda self, e: self._annotate_by_args(e, "expressions"),
+    }
 
     def normalize_identifier(self, expression: E) -> E:
         if (

@@ -779,6 +779,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 self.assertEqual(scopes[2].expression.sql(), f"SELECT a FROM foo CROSS JOIN {udtf}")
                 self.assertEqual(set(scopes[2].sources), {"", "foo"})
 
+        # Check DML statement scopes
+        sql = (
+            "UPDATE customers SET total_spent = (SELECT 1 FROM t1) WHERE EXISTS (SELECT 1 FROM t2)"
+        )
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 3)
+
+        sql = "UPDATE tbl1 SET col = 1 WHERE EXISTS (SELECT 1 FROM tbl2 WHERE tbl1.id = tbl2.id)"
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 1)
+
+        sql = "UPDATE tbl1 SET col = 0"
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)
@@ -800,16 +812,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 self.assertEqual(result.type.sql(), exp.DataType.build(expected).sql())
 
     def test_annotate_funcs(self):
-        test_schema = {"tbl": {"bin_col": "BINARY", "str_col": "STRING"}}
+        test_schema = {
+            "tbl": {"bin_col": "BINARY", "str_col": "STRING", "bignum_col": "BIGNUMERIC"}
+        }
 
         for i, (meta, sql, expected) in enumerate(
             load_sql_fixture_pairs("optimizer/annotate_functions.sql"), start=1
         ):
             title = meta.get("title") or f"{i}, {sql}"
-            dialects = meta.get("dialect").split(", ")
+            dialect = meta.get("dialect") or ""
             sql = f"SELECT {sql} FROM tbl"
 
-            for dialect in dialects:
+            for dialect in dialect.split(", "):
                 result = parse_and_optimize(
                     annotate_functions, sql, dialect, schema=test_schema, dialect=dialect
                 )

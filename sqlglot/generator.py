@@ -114,6 +114,8 @@ class Generator(metaclass=_Generator):
         **JSON_PATH_PART_TRANSFORMS,
         exp.AllowedValuesProperty: lambda self,
         e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
+        exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
+        exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda _,
@@ -672,9 +674,7 @@ class Generator(metaclass=_Generator):
         self._escaped_quote_end: str = (
             self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.QUOTE_END
         )
-        self._escaped_identifier_end: str = (
-            self.dialect.tokenizer_class.IDENTIFIER_ESCAPES[0] + self.dialect.IDENTIFIER_END
-        )
+        self._escaped_identifier_end = self.dialect.IDENTIFIER_END * 2
 
         self._next_name = name_sequence("_t")
 
@@ -717,6 +717,16 @@ class Generator(metaclass=_Generator):
 
     def preprocess(self, expression: exp.Expression) -> exp.Expression:
         """Apply generic preprocessing transformations to a given expression."""
+        expression = self._move_ctes_to_top_level(expression)
+
+        if self.ENSURE_BOOLS:
+            from sqlglot.transforms import ensure_bools
+
+            expression = ensure_bools(expression)
+
+        return expression
+
+    def _move_ctes_to_top_level(self, expression: E) -> E:
         if (
             not expression.parent
             and type(expression) in self.EXPRESSIONS_WITHOUT_NESTED_CTES
@@ -725,12 +735,6 @@ class Generator(metaclass=_Generator):
             from sqlglot.transforms import move_ctes_to_top_level
 
             expression = move_ctes_to_top_level(expression)
-
-        if self.ENSURE_BOOLS:
-            from sqlglot.transforms import ensure_bools
-
-            expression = ensure_bools(expression)
-
         return expression
 
     def unsupported(self, message: str) -> None:
@@ -1192,7 +1196,11 @@ class Generator(metaclass=_Generator):
         return f"WITH {recursive}{sql}"
 
     def cte_sql(self, expression: exp.CTE) -> str:
-        alias = self.sql(expression, "alias")
+        alias = expression.args.get("alias")
+        if alias:
+            alias.add_comments(expression.pop_comments())
+
+        alias_sql = self.sql(expression, "alias")
 
         materialized = expression.args.get("materialized")
         if materialized is False:
@@ -1200,7 +1208,7 @@ class Generator(metaclass=_Generator):
         elif materialized:
             materialized = "MATERIALIZED "
 
-        return f"{alias} AS {materialized or ''}{self.wrap(expression)}"
+        return f"{alias_sql} AS {materialized or ''}{self.wrap(expression)}"
 
     def tablealias_sql(self, expression: exp.TableAlias) -> str:
         alias = self.sql(expression, "this")
@@ -1377,7 +1385,9 @@ class Generator(metaclass=_Generator):
             order = expression.args.get("order")
 
             if limit or order:
-                select = exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+                select = self._move_ctes_to_top_level(
+                    exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+                )
 
                 if limit:
                     select = select.limit(limit.pop(), copy=False)
@@ -2038,6 +2048,7 @@ class Generator(metaclass=_Generator):
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")
 
+    @unsupported_args("expressions")
     def into_sql(self, expression: exp.Into) -> str:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         unlogged = " UNLOGGED" if expression.args.get("unlogged") else ""
@@ -2132,6 +2143,10 @@ class Generator(metaclass=_Generator):
 
         this = expression.this
         this_sql = self.sql(this)
+
+        exprs = self.expressions(expression)
+        if exprs:
+            this_sql = f"{this_sql},{self.seg(exprs)}"
 
         if on_sql:
             on_sql = self.indent(on_sql, skip_first=True)
@@ -2509,6 +2524,11 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )
+
+        # If both the CTE and SELECT clauses have comments, generate the latter earlier
+        if expression.args.get("with"):
+            sql = self.maybe_comment(sql, expression)
+            expression.pop_comments()
 
         sql = self.prepend_ctes(expression, sql)
 
@@ -3209,12 +3229,12 @@ class Generator(metaclass=_Generator):
         expressions = f"({expressions})" if expressions else ""
         return f"ALTER{compound} SORTKEY {this or expressions}"
 
-    def renametable_sql(self, expression: exp.RenameTable) -> str:
+    def alterrename_sql(self, expression: exp.AlterRename) -> str:
         if not self.RENAME_TABLE_WITH_DB:
             # Remove db from tables
             expression = expression.transform(
                 lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
-            ).assert_is(exp.RenameTable)
+            ).assert_is(exp.AlterRename)
         this = self.sql(expression, "this")
         return f"RENAME TO {this}"
 

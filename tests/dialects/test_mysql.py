@@ -1307,9 +1307,10 @@ COMMENT='客户账户表'"""
                 self.validate_identity(sql, check_command_warning=True)
 
     def test_explain(self):
-        self.validate_identity("EXPLAIN ANALYZE SELECT * FROM t", write_sql="DESCRIBE ANALYZE SELECT * FROM t")
+        self.validate_identity(
+            "EXPLAIN ANALYZE SELECT * FROM t", write_sql="DESCRIBE ANALYZE SELECT * FROM t"
+        )
 
         expression = self.parse_one("EXPLAIN ANALYZE SELECT * FROM t")
         self.assertIsInstance(expression, exp.Describe)
         self.assertEqual(expression.text("style"), "ANALYZE")
-

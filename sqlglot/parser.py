@@ -1286,7 +1286,8 @@ class Parser(metaclass=_Parser):
 
     PRIVILEGE_FOLLOW_TOKENS = {TokenType.ON, TokenType.COMMA, TokenType.L_PAREN}
 
-    DESCRIBE_STATEMENT_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
+    # The style options for the DESCRIBE statement
+    DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
 
     STRICT_CAST = True
 

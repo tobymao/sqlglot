@@ -1286,6 +1286,8 @@ class Parser(metaclass=_Parser):
 
     PRIVILEGE_FOLLOW_TOKENS = {TokenType.ON, TokenType.COMMA, TokenType.L_PAREN}
 
+    DESCRIBE_STATEMENT_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -1336,8 +1338,6 @@ class Parser(metaclass=_Parser):
 
     # Whether a PARTITION clause can follow a table reference
     SUPPORTS_PARTITION_SELECTION = False
-
-    DESCRIBE_STATEMENT_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
 
     __slots__ = (
         "error_level",

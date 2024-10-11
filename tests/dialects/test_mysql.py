@@ -1308,8 +1308,7 @@ COMMENT='客户账户表'"""
 
     def test_explain(self):
         self.validate_identity(
-            "EXPLAIN ANALYZE SELECT * FROM t",
-            "DESCRIBE ANALYZE SELECT * FROM t"
+            "EXPLAIN ANALYZE SELECT * FROM t", "DESCRIBE ANALYZE SELECT * FROM t"
         )
 
         expression = self.parse_one("EXPLAIN ANALYZE SELECT * FROM t")

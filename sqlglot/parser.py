@@ -1337,6 +1337,8 @@ class Parser(metaclass=_Parser):
     # Whether a PARTITION clause can follow a table reference
     SUPPORTS_PARTITION_SELECTION = False
 
+    DESCRIBE_STATEMENT_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2567,10 +2569,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        style = (
-            self._match_texts(("ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"))
-            and self._prev.text.upper()
-        )
+        style = self._match_texts(self.DESCRIBE_STATEMENT_STYLES) and self._prev.text.upper()
         if self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)

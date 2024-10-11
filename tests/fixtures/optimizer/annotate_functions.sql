@@ -267,3 +267,43 @@ STRING;
 # dialect: bigquery
 TRIM(tbl.bin_col, tbl.bin_col);
 BINARY;
+
+# dialect: bigquery
+REGEXP_EXTRACT(tbl.str_col, pattern);
+STRING;
+
+# dialect: bigquery
+REGEXP_EXTRACT(tbl.bin_col, pattern);
+BINARY;
+
+# dialect: bigquery
+REGEXP_REPLACE(tbl.str_col, pattern, replacement);
+STRING;
+
+# dialect: bigquery
+REGEXP_REPLACE(tbl.bin_col, pattern, replacement);
+BINARY;
+
+# dialect: bigquery
+REPEAT(tbl.str_col, 1);
+STRING;
+
+# dialect: bigquery
+REPEAT(tbl.bin_col, 1);
+BINARY;
+
+# dialect: bigquery
+SUBSTRING(tbl.str_col, 1);
+STRING;
+
+# dialect: bigquery
+SUBSTRING(tbl.bin_col, 1);
+BINARY;
+
+# dialect: bigquery
+SPLIT(tbl.str_col, delim);
+ARRAY<STRING>;
+
+# dialect: bigquery
+SPLIT(tbl.bin_col, delim);
+ARRAY<BINARY>;

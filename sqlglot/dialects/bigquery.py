@@ -330,10 +330,15 @@ class BigQuery(Dialect):
                 exp.Upper,
                 exp.Pad,
                 exp.Trim,
+                exp.RegexpExtract,
+                exp.RegexpReplace,
+                exp.Repeat,
+                exp.Substring,
             )
         },
-        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Concat: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
     }
 
     def normalize_identifier(self, expression: E) -> E:

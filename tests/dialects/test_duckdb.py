@@ -257,6 +257,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("'red' IN flags").args["field"].assert_is(exp.Column)
+        self.validate_identity("'red' IN tbl.flags")
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")

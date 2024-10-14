@@ -456,6 +456,17 @@ class MySQL(Dialect):
             TokenType.SET,
         }
 
+        # SELECT [ ALL | DISTINCT | DISTINCTROW ] [ <OPERATION_MODIFIERS> ]
+        OPERATION_MODIFIERS = {
+            "HIGH_PRIORITY",
+            "STRAIGHT_JOIN",
+            "SQL_SMALL_RESULT",
+            "SQL_BIG_RESULT",
+            "SQL_BUFFER_RESULT",
+            "SQL_NO_CACHE",
+            "SQL_CALC_FOUND_ROWS",
+        }
+
         LOG_DEFAULTS_TO_LN = True
         STRING_ALIASES = True
         VALUES_FOLLOWED_BY_PAREN = False

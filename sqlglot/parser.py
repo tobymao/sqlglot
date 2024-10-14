@@ -1289,6 +1289,8 @@ class Parser(metaclass=_Parser):
     # The style options for the DESCRIBE statement
     DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
 
+    OPERATION_MODIFIERS: t.Set[str] = set()
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -2958,6 +2960,10 @@ class Parser(metaclass=_Parser):
             if all_ and distinct:
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
+            operation_modifiers = []
+            while self._curr and self._match_texts(self.OPERATION_MODIFIERS):
+                operation_modifiers.append(exp.var(self._prev.text.upper()))
+
             limit = self._parse_limit(top=True)
             projections = self._parse_projections()
 
@@ -2968,6 +2974,7 @@ class Parser(metaclass=_Parser):
                 distinct=distinct,
                 expressions=projections,
                 limit=limit,
+                operation_modifiers=operation_modifiers or None,
             )
             this.comments = comments
 

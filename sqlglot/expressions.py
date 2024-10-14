@@ -5643,7 +5643,7 @@ class Exp(Func):
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/flatten
-class Explode(Func):
+class Explode(Func, UDTF):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 

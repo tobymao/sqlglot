@@ -627,15 +627,18 @@ class ClickHouse(Dialect):
             )
 
             if parts:
-                params = self._parse_func_params(func)
+                anon_func: exp.Anonymous = t.cast(exp.Anonymous, func)
+                params = self._parse_func_params(anon_func)
 
                 kwargs = {
-                    "this": func.this,
-                    "expressions": func.expressions,
+                    "this": anon_func.this,
+                    "expressions": anon_func.expressions,
                 }
                 if parts[1]:
                     kwargs["parts"] = parts
-                    exp_class = exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
+                    exp_class: t.Type[exp.Expression] = (
+                        exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
+                    )
                 else:
                     exp_class = exp.ParameterizedAgg if params else exp.AnonymousAggFunc
 

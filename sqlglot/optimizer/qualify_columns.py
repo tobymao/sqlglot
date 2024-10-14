@@ -526,7 +526,7 @@ def _expand_stars(
 ) -> None:
     """Expand stars to lists of column selections"""
 
-    new_selections = []
+    new_selections: t.List[exp.Expression] = []
     except_columns: t.Dict[int, t.Set[str]] = {}
     replace_columns: t.Dict[int, t.Dict[str, exp.Alias]] = {}
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}

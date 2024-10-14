@@ -4477,7 +4477,11 @@ class Parser(metaclass=_Parser):
             elif not self._match(TokenType.R_BRACKET, expression=this):
                 self.raise_error("Expecting ]")
         else:
-            this = self.expression(exp.In, this=this, field=self._parse_field())
+            field = self._parse_field()
+            if isinstance(field, exp.Identifier):
+                field = exp.Column(this=field)
+
+            this = self.expression(exp.In, this=this, field=field)
 
         return this
 

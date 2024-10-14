@@ -187,6 +187,9 @@ class MySQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CHARSET": TokenType.CHARACTER_SET,
+            # The DESCRIBE and EXPLAIN statements are synonyms.
+            # https://dev.mysql.com/doc/refman/8.4/en/explain.html
+            "EXPLAIN": TokenType.DESCRIBE,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
             "KEY": TokenType.KEY,

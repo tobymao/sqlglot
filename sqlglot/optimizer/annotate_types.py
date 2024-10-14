@@ -287,15 +287,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _maybe_coerce(
         self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
-    ) -> exp.DataType:
+    ) -> exp.DataType.Type:
         type1_value = type1.this if isinstance(type1, exp.DataType) else type1
         type2_value = type2.this if isinstance(type2, exp.DataType) else type2
 
         # We propagate the UNKNOWN type upwards if found
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
-            return exp.DataType.build("unknown")
+            return exp.DataType.Type.UNKNOWN
 
-        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
+        return t.cast(
+            exp.DataType.Type,
+            type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value,
+        )
 
     def _annotate_binary(self, expression: B) -> B:
         self._annotate_args(expression)

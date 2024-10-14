@@ -206,6 +206,11 @@ COMPLEMENT_COMPARISONS = {
     exp.NEQ: exp.EQ,
 }
 
+COMPLEMENT_SUBQUERY_PREDICATES = {
+    exp.All: exp.Any,
+    exp.Any: exp.All,
+}
+
 
 def simplify_not(expression):
     """
@@ -218,9 +223,12 @@ def simplify_not(expression):
         if is_null(this):
             return exp.null()
         if this.__class__ in COMPLEMENT_COMPARISONS:
-            return COMPLEMENT_COMPARISONS[this.__class__](
-                this=this.this, expression=this.expression
-            )
+            right = this.expression
+            complement_subquery_predicate = COMPLEMENT_SUBQUERY_PREDICATES.get(right.__class__)
+            if complement_subquery_predicate:
+                right = complement_subquery_predicate(this=right.this)
+
+            return COMPLEMENT_COMPARISONS[this.__class__](this=this.this, expression=right)
         if isinstance(this, exp.Paren):
             condition = this.unnest()
             if isinstance(condition, exp.And):

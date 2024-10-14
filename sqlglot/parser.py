@@ -2962,7 +2962,7 @@ class Parser(metaclass=_Parser):
 
             operation_modifiers = []
             while self._curr and self._match_texts(self.OPERATION_MODIFIERS):
-                operation_modifiers.append(self._prev.text.upper())
+                operation_modifiers.append(exp.var(self._prev.text.upper()))
 
             limit = self._parse_limit(top=True)
             projections = self._parse_projections()

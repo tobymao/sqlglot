@@ -1286,6 +1286,9 @@ class Parser(metaclass=_Parser):
 
     PRIVILEGE_FOLLOW_TOKENS = {TokenType.ON, TokenType.COMMA, TokenType.L_PAREN}
 
+    # The style options for the DESCRIBE statement
+    DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -2567,7 +2570,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        style = self._match_texts(("EXTENDED", "FORMATTED", "HISTORY")) and self._prev.text.upper()
+        style = self._match_texts(self.DESCRIBE_STYLES) and self._prev.text.upper()
         if self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)

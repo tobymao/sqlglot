@@ -3527,6 +3527,7 @@ class Select(Query):
         "distinct": False,
         "into": False,
         "from": False,
+        "operation_modifiers": False,
         **QUERY_MODIFIERS,
     }
 

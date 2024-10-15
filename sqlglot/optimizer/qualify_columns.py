@@ -248,7 +248,10 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bo
             if not isinstance(column, exp.Column):
                 continue
 
-            # BigQuery should expand aliased expressions only if the alias is used as a standalone name
+            # BigQuery's GROUP BY allows alias expansion only for standalone names, e.g:
+            #   SELECT FUNC(col) AS col FROM t GROUP BY col --> Can be expanded
+            #   SELECT FUNC(col) AS col FROM t GROUP BY FUNC(col)  --> Shouldn't be expanded, will result to FUNC(FUNC(col))
+            # This not required for the HAVING clause as it can evaluate expressions using both the alias & the table columns
             if expand_only_groupby and is_group_by and column.parent is not node:
                 continue
 

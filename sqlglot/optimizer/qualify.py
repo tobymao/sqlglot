@@ -90,6 +90,7 @@ def qualify(
             expand_alias_refs=expand_alias_refs,
             expand_stars=expand_stars,
             infer_schema=infer_schema,
+            validate_qualify_columns=validate_qualify_columns,
         )
 
     if quote_identifiers:

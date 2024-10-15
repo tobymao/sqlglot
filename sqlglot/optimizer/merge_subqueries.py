@@ -1,11 +1,18 @@
+from __future__ import annotations
+
+import typing as t
+
 from collections import defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
+if t.TYPE_CHECKING:
+    FromOrJoin = t.Union[exp.From, exp.Join]
 
-def merge_subqueries(expression, leave_tables_isolated=False):
+
+def merge_subqueries(expression: exp.Expression, leave_tables_isolated=False):
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -58,7 +65,7 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
-def merge_ctes(expression, leave_tables_isolated=False):
+def merge_ctes(expression: exp.Expression, leave_tables_isolated=False) -> exp.Expression:
     scopes = traverse_scope(expression)
 
     # All places where we select from CTEs.
@@ -92,7 +99,7 @@ def merge_ctes(expression, leave_tables_isolated=False):
     return expression
 
 
-def merge_derived_tables(expression, leave_tables_isolated=False):
+def merge_derived_tables(expression: exp.Expression, leave_tables_isolated=False):
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
@@ -111,17 +118,11 @@ def merge_derived_tables(expression, leave_tables_isolated=False):
     return expression
 
 
-def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
+def _mergeable(
+    outer_scope: Scope, inner_scope: Scope, leave_tables_isolated: bool, from_or_join: FromOrJoin
+) -> bool:
     """
     Return True if `inner_select` can be merged into outer query.
-
-    Args:
-        outer_scope (Scope)
-        inner_scope (Scope)
-        leave_tables_isolated (bool)
-        from_or_join (exp.From|exp.Join)
-    Returns:
-        bool: True if can be merged
     """
     inner_select = inner_scope.expression.unnest()
 
@@ -195,7 +196,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         and not outer_scope.expression.is_star
         and isinstance(inner_select, exp.Select)
         and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
-        and inner_select.args.get("from")
+        and inner_select.args.get("from") is not None
         and not outer_scope.pivots
         and not any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions)
         and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
@@ -218,18 +219,16 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
     )
 
 
-def _rename_inner_sources(outer_scope, inner_scope, alias):
+def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) -> None:
     """
     Renames any sources in the inner query that conflict with names in the outer query.
-
-    Args:
-        outer_scope (sqlglot.optimizer.scope.Scope)
-        inner_scope (sqlglot.optimizer.scope.Scope)
-        alias (str)
     """
-    taken = set(outer_scope.selected_sources)
-    conflicts = taken.intersection(set(inner_scope.selected_sources))
+    inner_selected_sources_set = set(inner_scope.selected_sources)
+    outer_selected_sources_set = set(outer_scope.selected_sources)
+    conflicts = outer_selected_sources_set.intersection(inner_selected_sources_set)
     conflicts -= {alias}
+
+    taken = outer_selected_sources_set.union(inner_selected_sources_set)
 
     for conflict in conflicts:
         new_name = find_new_name(taken, conflict)
@@ -250,15 +249,14 @@ def _rename_inner_sources(outer_scope, inner_scope, alias):
         inner_scope.rename_source(conflict, new_name)
 
 
-def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
+def _merge_from(
+    outer_scope: Scope,
+    inner_scope: Scope,
+    node_to_replace: t.Union[exp.Subquery, exp.Table],
+    alias: str,
+) -> None:
     """
     Merge FROM clause of inner query into outer query.
-
-    Args:
-        outer_scope (sqlglot.optimizer.scope.Scope)
-        inner_scope (sqlglot.optimizer.scope.Scope)
-        node_to_replace (exp.Subquery|exp.Table)
-        alias (str)
     """
     new_subquery = inner_scope.expression.args["from"].this
     new_subquery.set("joins", node_to_replace.args.get("joins"))
@@ -274,14 +272,9 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
     )
 
 
-def _merge_joins(outer_scope, inner_scope, from_or_join):
+def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:
     """
     Merge JOIN clauses of inner query into outer query.
-
-    Args:
-        outer_scope (sqlglot.optimizer.scope.Scope)
-        inner_scope (sqlglot.optimizer.scope.Scope)
-        from_or_join (exp.From|exp.Join)
     """
 
     new_joins = []
@@ -338,7 +331,7 @@ def _merge_expressions(outer_scope, inner_scope, alias):
             column.replace(expression.copy())
 
 
-def _merge_where(outer_scope, inner_scope, from_or_join):
+def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:
     """
     Merge WHERE clause of inner query into outer query.
 
@@ -357,7 +350,7 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
         # Merge predicates from an outer join to the ON clause
         # if it only has columns that are already joined
         from_ = expression.args.get("from")
-        sources = {from_.alias_or_name} if from_ else {}
+        sources = {from_.alias_or_name} if from_ else set()
 
         for join in expression.args["joins"]:
             source = join.alias_or_name
@@ -373,7 +366,7 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
     expression.where(where.this, copy=False)
 
 
-def _merge_order(outer_scope, inner_scope):
+def _merge_order(outer_scope: Scope, inner_scope: Scope) -> None:
     """
     Merge ORDER clause of inner query into outer query.
 
@@ -393,7 +386,7 @@ def _merge_order(outer_scope, inner_scope):
     outer_scope.expression.set("order", inner_scope.expression.args.get("order"))
 
 
-def _merge_hints(outer_scope, inner_scope):
+def _merge_hints(outer_scope: Scope, inner_scope: Scope) -> None:
     inner_scope_hint = inner_scope.expression.args.get("hint")
     if not inner_scope_hint:
         return
@@ -405,7 +398,7 @@ def _merge_hints(outer_scope, inner_scope):
         outer_scope.expression.set("hint", inner_scope_hint)
 
 
-def _pop_cte(inner_scope):
+def _pop_cte(inner_scope: Scope) -> None:
     """
     Remove CTE from the AST.
 

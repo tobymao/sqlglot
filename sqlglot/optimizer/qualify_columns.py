@@ -240,11 +240,19 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bo
     def replace_columns(
         node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
     ) -> None:
-        if not node or (expand_only_groupby and not isinstance(node, exp.Group)):
+        is_group_by = isinstance(node, exp.Group)
+        if not node or (expand_only_groupby and not is_group_by):
             return
 
         for column in walk_in_scope(node, prune=lambda node: node.is_star):
             if not isinstance(column, exp.Column):
+                continue
+
+            # BigQuery's GROUP BY allows alias expansion only for standalone names, e.g:
+            #   SELECT FUNC(col) AS col FROM t GROUP BY col --> Can be expanded
+            #   SELECT FUNC(col) AS col FROM t GROUP BY FUNC(col)  --> Shouldn't be expanded, will result to FUNC(FUNC(col))
+            # This not required for the HAVING clause as it can evaluate expressions using both the alias & the table columns
+            if expand_only_groupby and is_group_by and column.parent is not node:
                 continue
 
             table = resolver.get_table(column.name) if resolve_table and not column.table else None
@@ -273,9 +281,8 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bo
                     if simplified is not column:
                         column.replace(simplified)
 
-    for i, projection in enumerate(scope.expression.selects):
+    for i, projection in enumerate(expression.selects):
         replace_columns(projection)
-
         if isinstance(projection, exp.Alias):
             alias_to_expression[projection.alias] = (projection.this, i + 1)
 

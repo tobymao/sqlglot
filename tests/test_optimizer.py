@@ -800,6 +800,13 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             level="warning",
         )
 
+    def test_scope_circular_dependency(self):
+        scope = build_scope(parse_one("WITH w AS (SELECT * FROM q) SELECT * FROM w"))
+        cte_scope = scope.cte_scopes[0]
+        cte_scope.cte_scopes.append(cte_scope)
+        with self.assertRaisesRegex(OptimizeError, "circular scope dependency"):
+            list(scope.traverse())
+
     def test_annotate_types(self):
         for i, (meta, sql, expected) in enumerate(
             load_sql_fixture_pairs("optimizer/annotate_types.sql"), start=1

@@ -140,6 +140,9 @@ TRUE;
 COALESCE(x, y) <> ALL (SELECT z FROM w);
 COALESCE(x, y) <> ALL (SELECT z FROM w);
 
+SELECT NOT (2 <> ALL (SELECT 2 UNION ALL SELECT 3));
+SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
+
 --------------------------------------
 -- Absorption
 --------------------------------------

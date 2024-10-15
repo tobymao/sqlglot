@@ -139,6 +139,7 @@ class TestMySQL(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")
         self.validate_identity("SELECT CAST(COALESCE(`id`, 'NULL') AS CHAR CHARACTER SET binary)")
         self.validate_identity("SELECT e.* FROM e STRAIGHT_JOIN p ON e.x = p.y")
         self.validate_identity("ALTER TABLE test_table ALTER COLUMN test_column SET DEFAULT 1")
@@ -1305,3 +1306,12 @@ COMMENT='客户账户表'"""
         for sql in grant_cmds:
             with self.subTest(f"Testing MySQL's GRANT command statement: {sql}"):
                 self.validate_identity(sql, check_command_warning=True)
+
+    def test_explain(self):
+        self.validate_identity(
+            "EXPLAIN ANALYZE SELECT * FROM t", "DESCRIBE ANALYZE SELECT * FROM t"
+        )
+
+        expression = self.parse_one("EXPLAIN ANALYZE SELECT * FROM t")
+        self.assertIsInstance(expression, exp.Describe)
+        self.assertEqual(expression.text("style"), "ANALYZE")

@@ -1286,6 +1286,11 @@ class Parser(metaclass=_Parser):
 
     PRIVILEGE_FOLLOW_TOKENS = {TokenType.ON, TokenType.COMMA, TokenType.L_PAREN}
 
+    # The style options for the DESCRIBE statement
+    DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
+
+    OPERATION_MODIFIERS: t.Set[str] = set()
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -2567,7 +2572,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        style = self._match_texts(("EXTENDED", "FORMATTED", "HISTORY")) and self._prev.text.upper()
+        style = self._match_texts(self.DESCRIBE_STYLES) and self._prev.text.upper()
         if self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)
@@ -2955,6 +2960,10 @@ class Parser(metaclass=_Parser):
             if all_ and distinct:
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
+            operation_modifiers = []
+            while self._curr and self._match_texts(self.OPERATION_MODIFIERS):
+                operation_modifiers.append(exp.var(self._prev.text.upper()))
+
             limit = self._parse_limit(top=True)
             projections = self._parse_projections()
 
@@ -2965,6 +2974,7 @@ class Parser(metaclass=_Parser):
                 distinct=distinct,
                 expressions=projections,
                 limit=limit,
+                operation_modifiers=operation_modifiers or None,
             )
             this.comments = comments
 
@@ -4474,7 +4484,7 @@ class Parser(metaclass=_Parser):
             elif not self._match(TokenType.R_BRACKET, expression=this):
                 self.raise_error("Expecting ]")
         else:
-            this = self.expression(exp.In, this=this, field=self._parse_field())
+            this = self.expression(exp.In, this=this, field=self._parse_column())
 
         return this
 

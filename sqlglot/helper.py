@@ -57,6 +57,10 @@ def ensure_list(value: t.Collection[T]) -> t.List[T]: ...
 
 
 @t.overload
+def ensure_list(value: None) -> t.List: ...
+
+
+@t.overload
 def ensure_list(value: T) -> t.List[T]: ...
 
 

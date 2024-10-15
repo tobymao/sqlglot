@@ -404,9 +404,9 @@ class Expression(metaclass=_Expression):
     def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
         # remove tuple when python 3.7 is deprecated
-        for vs in reversed(tuple(self.args.values())) if reverse else self.args.values():
+        for vs in reversed(tuple(self.args.values())) if reverse else self.args.values():  # type: ignore
             if type(vs) is list:
-                for v in reversed(vs) if reverse else vs:
+                for v in reversed(vs) if reverse else vs:  # type: ignore
                     if hasattr(v, "parent"):
                         yield v
             else:
@@ -3527,6 +3527,7 @@ class Select(Query):
         "distinct": False,
         "into": False,
         "from": False,
+        "operation_modifiers": False,
         **QUERY_MODIFIERS,
     }
 
@@ -5642,7 +5643,7 @@ class Exp(Func):
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/flatten
-class Explode(Func):
+class Explode(Func, UDTF):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 

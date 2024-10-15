@@ -187,6 +187,9 @@ class MySQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CHARSET": TokenType.CHARACTER_SET,
+            # The DESCRIBE and EXPLAIN statements are synonyms.
+            # https://dev.mysql.com/doc/refman/8.4/en/explain.html
+            "EXPLAIN": TokenType.DESCRIBE,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
             "KEY": TokenType.KEY,
@@ -451,6 +454,17 @@ class MySQL(Dialect):
         ENUM_TYPE_TOKENS = {
             *parser.Parser.ENUM_TYPE_TOKENS,
             TokenType.SET,
+        }
+
+        # SELECT [ ALL | DISTINCT | DISTINCTROW ] [ <OPERATION_MODIFIERS> ]
+        OPERATION_MODIFIERS = {
+            "HIGH_PRIORITY",
+            "STRAIGHT_JOIN",
+            "SQL_SMALL_RESULT",
+            "SQL_BIG_RESULT",
+            "SQL_BUFFER_RESULT",
+            "SQL_NO_CACHE",
+            "SQL_CALC_FOUND_ROWS",
         }
 
         LOG_DEFAULTS_TO_LN = True

@@ -22,7 +22,7 @@ def qualify_columns(
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
-    validate_qualify_columns: bool = True,
+    allow_partial_qualification: bool = False,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have fully qualified columns.
@@ -42,7 +42,7 @@ def qualify_columns(
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
         infer_schema: Whether to infer the schema if missing.
-        validate_qualify_columns: Whether to validate columns.
+        allow_partial_qualification: Whether to allow partial qualification.
 
     Returns:
         The qualified expression.
@@ -70,7 +70,7 @@ def qualify_columns(
             )
 
         _convert_columns_to_dots(scope, resolver)
-        _qualify_columns(scope, resolver, validate_qualify_columns=validate_qualify_columns)
+        _qualify_columns(scope, resolver, allow_partial_qualification=allow_partial_qualification)
 
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver)
@@ -436,7 +436,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _qualify_columns(scope: Scope, resolver: Resolver, validate_qualify_columns: bool) -> None:
+def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualification: bool) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
         column_table = column.table
@@ -445,7 +445,7 @@ def _qualify_columns(scope: Scope, resolver: Resolver, validate_qualify_columns:
         if column_table and column_table in scope.sources:
             source_columns = resolver.get_source_columns(column_table)
             if (
-                validate_qualify_columns
+                not allow_partial_qualification
                 and source_columns
                 and column_name not in source_columns
                 and "*" not in source_columns

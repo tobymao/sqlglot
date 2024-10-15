@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from heapq import heappop, heappush
 
 from sqlglot import Dialect, expressions as exp
-from sqlglot.helper import ensure_list
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -372,16 +371,12 @@ def _parent_similarity_score(
     return 1 + _parent_similarity_score(source.parent, target.parent)
 
 
-def _expression_only_args(expression: exp.Expression) -> t.List[exp.Expression]:
-    args: t.List[t.Union[exp.Expression, t.List]] = []
-    if expression:
-        for a in expression.args.values():
-            args.extend(ensure_list(a))
-    return [
-        a
-        for a in args
-        if isinstance(a, exp.Expression) and not isinstance(a, IGNORED_LEAF_EXPRESSION_TYPES)
-    ]
+def _expression_only_args(expression: exp.Expression) -> t.Iterator[exp.Expression]:
+    yield from (
+        arg
+        for arg in expression.iter_expressions()
+        if not isinstance(arg, IGNORED_LEAF_EXPRESSION_TYPES)
+    )
 
 
 def _lcs(

@@ -461,9 +461,16 @@ class Scope:
             Scope: scope instances in depth-first-search post-order
         """
         stack = [self]
+        seen_scopes = set()
         result = []
         while stack:
             scope = stack.pop()
+
+            # Scopes aren't hashable, so we use id(scope) instead.
+            if id(scope) in seen_scopes:
+                raise OptimizeError(f"Scope {scope} has a circular scope dependency")
+            seen_scopes.add(id(scope))
+
             result.append(scope)
             stack.extend(
                 itertools.chain(

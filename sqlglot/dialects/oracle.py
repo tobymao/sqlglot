@@ -437,7 +437,7 @@ class Oracle(Dialect):
             for expression in expression.expressions:
                 if isinstance(expression, exp.Anonymous):
                     formatted_args = self._format_hint_function_args(*expression.expressions)
-                    expressions.append(f'{self.sql(expression, 'this')}({formatted_args})')
+                    expressions.append(f"{self.sql(expression, 'this')}({formatted_args})")
                 else:
                     expressions.append(self.sql(expression))
 

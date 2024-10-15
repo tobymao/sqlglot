@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.25.1] - 2024-10-15
+### :bug: Bug Fixes
+- [`e6567ae`](https://github.com/tobymao/sqlglot/commit/e6567ae11650834874808a844a19836fbb9ee753) - small overload fix for ensure list taking None *(PR [#4248](https://github.com/tobymao/sqlglot/pull/4248) by [@benfdking](https://github.com/benfdking))*
+
+
 ## [v25.25.0] - 2024-10-14
 ### :boom: BREAKING CHANGES
 - due to [`275b64b`](https://github.com/tobymao/sqlglot/commit/275b64b6a28722232a24870e443b249994220d54) - refactor set operation builders so they can work with N expressions *(PR [#4226](https://github.com/tobymao/sqlglot/pull/4226) by [@georgesittas](https://github.com/georgesittas))*:
@@ -5032,3 +5037,4 @@ Changelog
 [v25.24.4]: https://github.com/tobymao/sqlglot/compare/v25.24.3...v25.24.4
 [v25.24.5]: https://github.com/tobymao/sqlglot/compare/v25.24.4...v25.24.5
 [v25.25.0]: https://github.com/tobymao/sqlglot/compare/v25.24.5...v25.25.0
+[v25.25.1]: https://github.com/tobymao/sqlglot/compare/v25.25.0...v25.25.1

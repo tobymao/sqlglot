@@ -235,22 +235,15 @@ class Oracle(Dialect):
             return self.expression(exp.Hint, expressions=hints)
 
         def _parse_hint_function_call(self) -> t.Optional[exp.Expression]:
-            if not self._curr:
+            if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
                 return None
 
             this = self._curr.text
 
-            if not self._next or self._next.token_type != TokenType.L_PAREN:
-                return None
-
             self._advance(2)
-
             args = self._parse_hint_args()
-
             this = self.expression(exp.Anonymous, this=this, expressions=args)
-
             self._match_r_paren(this)
-
             return this
 
         def _parse_hint_args(self):
@@ -444,11 +437,9 @@ class Oracle(Dialect):
             return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"
 
         def _format_hint_function_args(self, *args: t.Optional[str | exp.Expression]) -> str:
-            arg_sqls = tuple(
-                self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
-            )
+            arg_sqls = tuple(self.sql(arg) for arg in args)
             if self.pretty and self.too_wide(arg_sqls):
                 return self.indent(
-                    "\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True
+                    "\n" + "\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True
                 )
             return " ".join(arg_sqls)

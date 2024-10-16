@@ -331,7 +331,7 @@ class TestOracle(Validator):
         self.validate_identity("INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')")
         self.validate_identity(
             "SELECT /*+ LEADING(departments employees) USE_NL(employees) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
-            write_sql="""SELECT /*+ LEADING(departments employees)
+            """SELECT /*+ LEADING(departments employees)
   USE_NL(employees) */
   *
 FROM employees
@@ -339,10 +339,33 @@ JOIN departments
   ON employees.department_id = departments.department_id""",
             pretty=True,
         )
+        self.validate_identity(
+            "SELECT /*+ USE_NL(bbbbbbbbbbbbbbbbbbbbbbbb) LEADING(aaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbb cccccccccccccccccccccccc dddddddddddddddddddddddd) INDEX(cccccccccccccccccccccccc) */ * FROM aaaaaaaaaaaaaaaaaaaaaaaa JOIN bbbbbbbbbbbbbbbbbbbbbbbb ON aaaaaaaaaaaaaaaaaaaaaaaa.id = bbbbbbbbbbbbbbbbbbbbbbbb.a_id JOIN cccccccccccccccccccccccc ON bbbbbbbbbbbbbbbbbbbbbbbb.id = cccccccccccccccccccccccc.b_id JOIN dddddddddddddddddddddddd ON cccccccccccccccccccccccc.id = dddddddddddddddddddddddd.c_id",
+        )
+        self.validate_identity(
+            "SELECT /*+ USE_NL(bbbbbbbbbbbbbbbbbbbbbbbb) LEADING(aaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbb cccccccccccccccccccccccc dddddddddddddddddddddddd) INDEX(cccccccccccccccccccccccc) */ * FROM aaaaaaaaaaaaaaaaaaaaaaaa JOIN bbbbbbbbbbbbbbbbbbbbbbbb ON aaaaaaaaaaaaaaaaaaaaaaaa.id = bbbbbbbbbbbbbbbbbbbbbbbb.a_id JOIN cccccccccccccccccccccccc ON bbbbbbbbbbbbbbbbbbbbbbbb.id = cccccccccccccccccccccccc.b_id JOIN dddddddddddddddddddddddd ON cccccccccccccccccccccccc.id = dddddddddddddddddddddddd.c_id",
+            """SELECT /*+ USE_NL(bbbbbbbbbbbbbbbbbbbbbbbb)
+  LEADING(
+    aaaaaaaaaaaaaaaaaaaaaaaa
+    bbbbbbbbbbbbbbbbbbbbbbbb
+    cccccccccccccccccccccccc
+    dddddddddddddddddddddddd
+  )
+  INDEX(cccccccccccccccccccccccc) */
+  *
+FROM aaaaaaaaaaaaaaaaaaaaaaaa
+JOIN bbbbbbbbbbbbbbbbbbbbbbbb
+  ON aaaaaaaaaaaaaaaaaaaaaaaa.id = bbbbbbbbbbbbbbbbbbbbbbbb.a_id
+JOIN cccccccccccccccccccccccc
+  ON bbbbbbbbbbbbbbbbbbbbbbbb.id = cccccccccccccccccccccccc.b_id
+JOIN dddddddddddddddddddddddd
+  ON cccccccccccccccccccccccc.id = dddddddddddddddddddddddd.c_id""",
+            pretty=True,
+        )
         # Test that parsing error with keywords like select where etc falls back
         self.validate_identity(
             "SELECT /*+ LEADING(departments employees) USE_NL(employees) select where group by is order by */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
-            write_sql="""SELECT /*+ LEADING(departments employees) USE_NL(employees) select where group by is order by */
+            """SELECT /*+ LEADING(departments employees) USE_NL(employees) select where group by is order by */
   *
 FROM employees
 JOIN departments

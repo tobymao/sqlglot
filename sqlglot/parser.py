@@ -1222,6 +1222,14 @@ class Parser(metaclass=_Parser):
         **dict.fromkeys(("BINDING", "COMPENSATION", "EVOLUTION"), tuple()),
     }
 
+    PROCEDURE_OPTIONS: OPTIONS_TYPE = dict.fromkeys(
+        ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
+    )
+
+    EXECUTE_AS_OPTIONS: OPTIONS_TYPE = dict.fromkeys(
+        ("CALLER", "SELF", "OWNER"), tuple()
+    )
+
     KEY_CONSTRAINT_OPTIONS: OPTIONS_TYPE = {
         "NOT": ("ENFORCED",),
         "MATCH": (
@@ -2200,10 +2208,25 @@ class Parser(metaclass=_Parser):
                 this=self._parse_var_from_options(self.SCHEMA_BINDING_OPTIONS),
             )
 
+        if self._match_texts(self.PROCEDURE_OPTIONS, advance=False):
+            return self.expression(
+                exp.WithProcedureOptions,
+                expressions=self._parse_csv(self._parse_procedure_option)
+            )
+
         if not self._next:
             return None
 
         return self._parse_withisolatedloading()
+
+    def _parse_procedure_option(self) -> exp.Expression:
+        if self._match_text_seq("EXECUTE", "AS"):
+            return self.expression(
+                exp.ExecuteAsProperty,
+                this=self._parse_var_from_options(self.EXECUTE_AS_OPTIONS, raise_unmatched=False) or self._parse_string()
+            )
+        else:
+            return self._parse_var_from_options(self.PROCEDURE_OPTIONS)
 
     # https://dev.mysql.com/doc/refman/8.0/en/create-view.html
     def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:

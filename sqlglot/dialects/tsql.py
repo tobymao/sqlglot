@@ -719,8 +719,18 @@ class TSQL(Dialect):
             ):
                 return this
 
-            expressions = self._parse_csv(self._parse_function_parameter)
+            expressions = None
+            if self._curr.token_type != TokenType.WITH:
+                expressions = self._parse_csv(self._parse_function_parameter)
+
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+
+        def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
+            id_var = self._parse_id_var()
+            kind = self._parse_types(schema=True)
+            if not kind:
+                return id_var
+            return self.expression(exp.ColumnDef, this=id_var, kind=kind)
 
         def _parse_id_var(
             self,

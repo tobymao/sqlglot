@@ -30,6 +30,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     sequence_sql,
     build_regexp_extract,
+    explode_to_unnest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -38,21 +39,6 @@ from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
-
-
-def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
-    if isinstance(expression.this, exp.Explode):
-        return self.sql(
-            exp.Join(
-                this=exp.Unnest(
-                    expressions=[expression.this.this],
-                    alias=expression.args.get("alias"),
-                    offset=isinstance(expression.this, exp.Posexplode),
-                ),
-                kind="cross",
-            )
-        )
-    return self.lateral_sql(expression)
 
 
 def _initcap_sql(self: Presto.Generator, expression: exp.Initcap) -> str:
@@ -410,7 +396,7 @@ class Presto(Dialect):
             exp.Last: _first_last_sql,
             exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
-            exp.Lateral: _explode_to_unnest_sql,
+            exp.Lateral: explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.LogicalAnd: rename_func("BOOL_AND"),

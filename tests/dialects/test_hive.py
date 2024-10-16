@@ -187,6 +187,7 @@ class TestHive(Validator):
             "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",
             write={
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a) CROSS JOIN UNNEST(z) AS u(b)",
+                "duckdb": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a) CROSS JOIN UNNEST(z) AS u(b)",
                 "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",
                 "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",
             },
@@ -195,6 +196,7 @@ class TestHive(Validator):
             "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
             write={
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
+                "duckdb": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
                 "hive": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
                 "spark": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
             },
@@ -211,6 +213,7 @@ class TestHive(Validator):
             "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
             write={
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(ARRAY[y]) AS t(a)",
+                "duckdb": "SELECT a FROM x CROSS JOIN UNNEST([y]) AS t(a)",
                 "hive": "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
                 "spark": "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
             },

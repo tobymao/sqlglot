@@ -35,6 +35,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     sha256_sql,
     build_regexp_extract,
+    explode_to_unnest_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -538,6 +539,7 @@ class DuckDB(Dialect):
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractScalar: _arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
+            exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),

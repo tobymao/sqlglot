@@ -10,11 +10,15 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
 
+    class Tokenizer(Presto.Tokenizer):
+        HEX_STRINGS = [("X'", "'")]
+
     class Parser(Presto.Parser):
         FUNCTION_PARSERS = {
             **Presto.Parser.FUNCTION_PARSERS,
             "TRIM": lambda self: self._parse_trim(),
             "JSON_QUERY": lambda self: self._parse_json_query(),
+            "LISTAGG": lambda self: self._parse_string_agg(),
         }
 
         JSON_QUERY_OPTIONS: parser.OPTIONS_TYPE = {
@@ -65,5 +69,14 @@ class Trino(Presto):
 
             return self.func("JSON_QUERY", expression.this, json_path + option)
 
-    class Tokenizer(Presto.Tokenizer):
-        HEX_STRINGS = [("X'", "'")]
+        def groupconcat_sql(self, expression: exp.Expression) -> str:
+            this = expression.this
+            separator = expression.args.get("separator") or exp.Literal.string(",")
+
+            if isinstance(this, exp.Order):
+                if this.this:
+                    this = this.this.pop()
+
+                return f"LISTAGG({self.format_args(this, separator)}) WITHIN GROUP ({self.sql(expression.this)[1:]})"
+
+            return super().groupconcat_sql(expression)

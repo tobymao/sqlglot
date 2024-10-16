@@ -9,6 +9,9 @@ class TestTrino(Validator):
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
+        self.validate_identity(
+            "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
 
     def test_trim(self):
         self.validate_identity("SELECT TRIM('!' FROM '!foo!')")

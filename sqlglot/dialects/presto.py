@@ -386,9 +386,7 @@ class Presto(Dialect):
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.GroupConcat: lambda self, e: self.func(
-                "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
-            ),
+            exp.GroupConcat: lambda self, e: self.groupconcat_sql(e),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
@@ -680,3 +678,10 @@ class Presto(Dialect):
             expr = "".join(segments)
 
             return f"{this}{expr}"
+
+        def groupconcat_sql(self, expression: exp.Expression) -> str:
+            return self.func(
+                "ARRAY_JOIN",
+                self.func("ARRAY_AGG", expression.this),
+                expression.args.get("separator"),
+            )

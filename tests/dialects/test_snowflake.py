@@ -1085,6 +1085,20 @@ WHERE
                 "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1 PERCENT)",
             },
         )
+        self.validate_all(
+            "TO_DOUBLE(expr)",
+            write={
+                "snowflake": "TO_DOUBLE(expr)",
+                "duckdb": "CAST(expr AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "TO_DOUBLE(expr, fmt)",
+            write={
+                "snowflake": "TO_DOUBLE(expr, fmt)",
+                "duckdb": UnsupportedError,
+            },
+        )
 
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")

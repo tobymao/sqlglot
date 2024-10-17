@@ -185,6 +185,7 @@ class Generator(metaclass=_Generator):
         exp.Stream: lambda self, e: f"STREAM {self.sql(e, 'this')}",
         exp.StreamingTableProperty: lambda *_: "STREAMING",
         exp.StrictProperty: lambda *_: "STRICT",
+        exp.SwapTable: lambda self, e: f"SWAP WITH {self.sql(e, 'this')}",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
@@ -3517,13 +3518,15 @@ class Generator(metaclass=_Generator):
         name = self.normalize_func(name) if normalize else name
         return f"{name}{prefix}{self.format_args(*args)}{suffix}"
 
-    def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
+    def format_args(self, *args: t.Optional[str | exp.Expression], sep: str = ", ") -> str:
         arg_sqls = tuple(
             self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
         )
         if self.pretty and self.too_wide(arg_sqls):
-            return self.indent("\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
-        return ", ".join(arg_sqls)
+            return self.indent(
+                "\n" + f"{sep.strip()}\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True
+            )
+        return sep.join(arg_sqls)
 
     def too_wide(self, args: t.Iterable) -> bool:
         return sum(len(arg) for arg in args) > self.max_text_width
@@ -4252,7 +4255,7 @@ class Generator(metaclass=_Generator):
         else:
             rhs = self.expressions(expression)
 
-        return self.func(name, expression.this, rhs)
+        return self.func(name, expression.this, rhs or None)
 
     def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
         if self.SUPPORTS_CONVERT_TIMEZONE:
@@ -4427,3 +4430,7 @@ class Generator(metaclass=_Generator):
         for_sql = f" FOR {for_sql}" if for_sql else ""
 
         return f"OVERLAY({this} PLACING {expr} FROM {from_sql}{for_sql})"
+
+    @unsupported_args("format")
+    def todouble_sql(self, expression: exp.ToDouble) -> str:
+        return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))

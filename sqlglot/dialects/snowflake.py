@@ -41,15 +41,23 @@ def _build_datetime(
         if isinstance(value, exp.Literal):
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
-                return exp.cast(value, kind)
+                return (
+                    exp.TryCast(this=value, to=exp.DataType.build(kind))
+                    if safe
+                    else exp.cast(value, kind)
+                )
 
             # Handles `TO_TIMESTAMP(str, fmt)` and `TO_TIMESTAMP(num, scale)` as special
             # cases so we can transpile them, since they're relatively common
             if kind == exp.DataType.Type.TIMESTAMP:
-                if int_value:
+                if int_value and not safe:
+                    # TRY_TO_TIMESTAMP('integer') is not parsed into exp.UnixToTime as
+                    # it's not easily transpilable
                     return exp.UnixToTime(this=value, scale=seq_get(args, 1))
                 if not is_float(value.this):
-                    return build_formatted_time(exp.StrToTime, "snowflake")(args)
+                    expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
+                    expr.set("safe", safe)
+                    return expr
 
         if kind == exp.DataType.Type.DATE and not int_value:
             formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
@@ -345,6 +353,9 @@ class Snowflake(Dialect):
             "TIMESTAMP_FROM_PARTS": build_timestamp_from_parts,
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
+            "TRY_TO_TIMESTAMP": _build_datetime(
+                "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
+            ),
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(
                 this=seq_get(args, 0),
@@ -384,7 +395,6 @@ class Snowflake(Dialect):
                 expressions=self._parse_csv(self._parse_id_var),
                 unset=True,
             ),
-            "SWAP": lambda self: self._parse_alter_table_swap(),
         }
 
         STATEMENT_PARSERS = {
@@ -654,10 +664,6 @@ class Snowflake(Dialect):
                 },
             )
 
-        def _parse_alter_table_swap(self) -> exp.SwapTable:
-            self._match_text_seq("WITH")
-            return self.expression(exp.SwapTable, this=self._parse_table(schema=True))
-
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
@@ -828,7 +834,6 @@ class Snowflake(Dialect):
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),
-            exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.Stuff: rename_func("INSERT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
             exp.TimestampDiff: lambda self, e: self.func(
@@ -842,6 +847,7 @@ class Snowflake(Dialect):
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.ToArray: rename_func("TO_ARRAY"),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.ToDouble: rename_func("TO_DOUBLE"),
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: lambda self, e: self.func(
@@ -1036,10 +1042,6 @@ class Snowflake(Dialect):
             increment = f" INCREMENT {increment}" if increment else ""
             return f"AUTOINCREMENT{start}{increment}"
 
-        def swaptable_sql(self, expression: exp.SwapTable) -> str:
-            this = self.sql(expression, "this")
-            return f"SWAP WITH {this}"
-
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
 
@@ -1074,3 +1076,9 @@ class Snowflake(Dialect):
             tag = f" TAG {tag}" if tag else ""
 
             return f"SET{exprs}{file_format}{copy_options}{tag}"
+
+        def strtotime_sql(self, expression: exp.StrToTime):
+            safe_prefix = "TRY_" if expression.args.get("safe") else ""
+            return self.func(
+                f"{safe_prefix}TO_TIMESTAMP", expression.this, self.format_time(expression)
+            )

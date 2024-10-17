@@ -588,6 +588,7 @@ class Dialect(metaclass=_Dialect):
             exp.Stddev,
             exp.StddevPop,
             exp.StddevSamp,
+            exp.ToDouble,
             exp.Variance,
             exp.VariancePop,
         },
@@ -1697,3 +1698,18 @@ def build_regexp_extract(args: t.List, dialect: Dialect) -> exp.RegexpExtract:
         expression=seq_get(args, 1),
         group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
     )
+
+
+def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
+    if isinstance(expression.this, exp.Explode):
+        return self.sql(
+            exp.Join(
+                this=exp.Unnest(
+                    expressions=[expression.this.this],
+                    alias=expression.args.get("alias"),
+                    offset=isinstance(expression.this, exp.Posexplode),
+                ),
+                kind="cross",
+            )
+        )
+    return self.lateral_sql(expression)

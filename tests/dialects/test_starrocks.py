@@ -5,6 +5,9 @@ from tests.dialects.test_dialect import Validator
 class TestStarrocks(Validator):
     dialect = "starrocks"
 
+    def test_starrocks(self):
+        self.validate_identity("ALTER TABLE a SWAP WITH b")
+
     def test_ddl(self):
         ddl_sqls = [
             "DISTRIBUTED BY HASH (col1) BUCKETS 1",

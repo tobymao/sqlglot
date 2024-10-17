@@ -5190,6 +5190,14 @@ class ToNumber(Func):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/to_double
+class ToDouble(Func):
+    arg_types = {
+        "this": True,
+        "format": False,
+    }
+
+
 class Columns(Func):
     arg_types = {"this": True, "unpack": False}
 
@@ -7426,15 +7434,9 @@ def to_interval(interval: str | Literal) -> Interval:
 
         interval = interval.this
 
-    interval_parts = INTERVAL_STRING_RE.match(interval)  # type: ignore
-
-    if not interval_parts:
-        raise ValueError("Invalid interval string.")
-
-    return Interval(
-        this=Literal.string(interval_parts.group(1)),
-        unit=Var(this=interval_parts.group(2).upper()),
-    )
+    interval = maybe_parse(f"INTERVAL {interval}")
+    assert isinstance(interval, Interval)
+    return interval
 
 
 def to_table(

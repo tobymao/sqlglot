@@ -927,6 +927,29 @@ WHERE
                 "bigquery": "GENERATE_UUID()",
             },
         )
+        self.validate_identity("TRY_TO_TIMESTAMP(foo)").assert_is(exp.Anonymous)
+        self.validate_identity("TRY_TO_TIMESTAMP('12345')").assert_is(exp.Anonymous)
+        self.validate_all(
+            "SELECT TRY_TO_TIMESTAMP('2024-01-15 12:30:00.000')",
+            write={
+                "snowflake": "SELECT TRY_CAST('2024-01-15 12:30:00.000' AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST('2024-01-15 12:30:00.000' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIMESTAMP('invalid')",
+            write={
+                "snowflake": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
+            write={
+                "snowflake": "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
+                "duckdb": "SELECT CAST(TRY_STRPTIME('04/05/2013 01:02:03', '%m/%d/%Y %H:%M:%S') AS TIMESTAMP)",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(
@@ -1083,6 +1106,20 @@ WHERE
             write={
                 "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE BERNOULLI (1)",
                 "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1 PERCENT)",
+            },
+        )
+        self.validate_all(
+            "TO_DOUBLE(expr)",
+            write={
+                "snowflake": "TO_DOUBLE(expr)",
+                "duckdb": "CAST(expr AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "TO_DOUBLE(expr, fmt)",
+            write={
+                "snowflake": "TO_DOUBLE(expr, fmt)",
+                "duckdb": UnsupportedError,
             },
         )
 

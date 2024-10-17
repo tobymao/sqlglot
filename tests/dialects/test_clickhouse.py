@@ -2,6 +2,7 @@ from datetime import date
 from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
+from sqlglot.optimizer import traverse_scope
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
 
@@ -1123,3 +1124,9 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT * FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
         )
+
+    def test_traverse_scope(self):
+        sql = "SELECT * FROM t FINAL"
+        scopes = traverse_scope(parse_one(sql, dialect=self.dialect))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"t"})

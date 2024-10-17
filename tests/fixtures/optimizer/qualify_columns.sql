@@ -196,6 +196,11 @@ SELECT SOME_UDF(t.data).* FROM t AS t;
 SELECT a + 1 AS i, missing_column FROM x;
 SELECT x.a + 1 AS i, missing_column AS missing_column FROM x AS x;
 
+# execute: false
+# dialect: clickhouse
+SELECT s, arr FROM arrays_test LEFT ARRAY JOIN arr;
+SELECT arrays_test.s AS s, arrays_test.arr AS arr FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

@@ -4253,7 +4253,7 @@ class Generator(metaclass=_Generator):
         else:
             rhs = self.expressions(expression)
 
-        return self.func(name, expression.this, rhs)
+        return self.func(name, expression.this, rhs or None)
 
     def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
         if self.SUPPORTS_CONVERT_TIMEZONE:

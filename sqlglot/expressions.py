@@ -5186,6 +5186,14 @@ class ToNumber(Func):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/to_double
+class ToDouble(Func):
+    arg_types = {
+        "this": True,
+        "format": False,
+    }
+
+
 class Columns(Func):
     arg_types = {"this": True, "unpack": False}
 

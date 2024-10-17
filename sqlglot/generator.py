@@ -4428,3 +4428,7 @@ class Generator(metaclass=_Generator):
         for_sql = f" FOR {for_sql}" if for_sql else ""
 
         return f"OVERLAY({this} PLACING {expr} FROM {from_sql}{for_sql})"
+
+    @unsupported_args("format")
+    def todouble_sql(self, expression: exp.ToDouble) -> str:
+        return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))

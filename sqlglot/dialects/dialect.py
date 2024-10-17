@@ -588,6 +588,7 @@ class Dialect(metaclass=_Dialect):
             exp.Stddev,
             exp.StddevPop,
             exp.StddevSamp,
+            exp.ToDouble,
             exp.Variance,
             exp.VariancePop,
         },

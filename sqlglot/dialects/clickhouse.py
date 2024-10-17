@@ -603,6 +603,12 @@ class ClickHouse(Dialect):
             if join:
                 join.set("global", join.args.pop("method", None))
 
+                # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
+                # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join
+                if join.kind == "ARRAY":
+                    for table in join.find_all(exp.Table):
+                        table.replace(table.to_column())
+
             return join
 
         def _parse_function(

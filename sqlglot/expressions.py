@@ -3214,10 +3214,18 @@ class Table(Expression):
 
     def to_column(self, copy: bool = True) -> Alias | Column | Dot:
         parts = self.parts
-        col = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
+        last_part = parts[-1]
+
+        if isinstance(last_part, Identifier):
+            col = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
+        else:
+            # This branch will be reached if a function or array is wrapped in a `Table`
+            col = last_part
+
         alias = self.args.get("alias")
         if alias:
             col = alias_(col, alias.this, copy=copy)
+
         return col
 
 

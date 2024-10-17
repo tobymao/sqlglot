@@ -1099,7 +1099,7 @@ LIFETIME(MIN 0 MAX 0)""",
 
     def test_array_join(self):
         expr = self.validate_identity(
-            "SELECT * FROM arrays_test ARRAY JOIN arr1, arr2 AS foo, ['a', 'b', 'c'] AS elem"
+            "SELECT * FROM arrays_test ARRAY JOIN arr1, arrays_test.arr2 AS foo, ['a', 'b', 'c'] AS elem"
         )
         joins = expr.args["joins"]
         self.assertEqual(len(joins), 1)

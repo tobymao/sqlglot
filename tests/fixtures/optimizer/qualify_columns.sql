@@ -198,8 +198,8 @@ SELECT x.a + 1 AS i, missing_column AS missing_column FROM x AS x;
 
 # execute: false
 # dialect: clickhouse
-SELECT s, arr FROM arrays_test LEFT ARRAY JOIN arr;
-SELECT arrays_test.s AS s, arrays_test.arr AS arr FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr;
+SELECT s, arr1, arr2 FROM arrays_test LEFT ARRAY JOIN arr1, arrays_test.arr2;
+SELECT arrays_test.s AS s, arrays_test.arr1 AS arr1, arrays_test.arr2 AS arr2 FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr1, arrays_test.arr2;
 
 --------------------------------------
 -- Derived tables

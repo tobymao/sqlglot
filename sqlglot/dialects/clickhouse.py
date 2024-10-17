@@ -607,17 +607,7 @@ class ClickHouse(Dialect):
                 # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join
                 if join.kind == "ARRAY":
                     for table in join.find_all(exp.Table):
-                        if not table.db:
-                            this = table.this
-                            if isinstance(this, exp.Identifier):
-                                this = exp.column(this)
-
-                            # If they RHS is aliased, we'll produce `Alias(Column(...))`
-                            alias = table.args.get("alias")
-                            if isinstance(alias, exp.TableAlias):
-                                this = exp.alias_(this, alias.this)
-
-                            table.replace(this)
+                        table.replace(table.to_column())
 
             return join
 

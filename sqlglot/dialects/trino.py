@@ -69,7 +69,7 @@ class Trino(Presto):
 
             return self.func("JSON_QUERY", expression.this, json_path + option)
 
-        def groupconcat_sql(self, expression: exp.Expression) -> str:
+        def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
             this = expression.this
             separator = expression.args.get("separator") or exp.Literal.string(",")
 
@@ -77,6 +77,6 @@ class Trino(Presto):
                 if this.this:
                     this = this.this.pop()
 
-                return f"LISTAGG({self.format_args(this, separator)}) WITHIN GROUP ({self.sql(expression.this)[1:]})"
+                return f"LISTAGG({self.format_args(this, separator)}) WITHIN GROUP ({self.sql(expression.this).lstrip()})"
 
             return super().groupconcat_sql(expression)

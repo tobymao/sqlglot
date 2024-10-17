@@ -2222,7 +2222,7 @@ class Parser(metaclass=_Parser):
 
         return self._parse_withisolatedloading()
 
-    def _parse_procedure_option(self) -> exp.Expression:
+    def _parse_procedure_option(self) -> exp.Expression | None:
         if self._match_text_seq("EXECUTE", "AS"):
             return self.expression(
                 exp.ExecuteAsProperty,

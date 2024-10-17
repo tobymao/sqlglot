@@ -1229,9 +1229,7 @@ class Parser(metaclass=_Parser):
         ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
     )
 
-    EXECUTE_AS_OPTIONS: OPTIONS_TYPE = dict.fromkeys(
-        ("CALLER", "SELF", "OWNER"), tuple()
-    )
+    EXECUTE_AS_OPTIONS: OPTIONS_TYPE = dict.fromkeys(("CALLER", "SELF", "OWNER"), tuple())
 
     KEY_CONSTRAINT_OPTIONS: OPTIONS_TYPE = {
         "NOT": ("ENFORCED",),
@@ -2213,8 +2211,7 @@ class Parser(metaclass=_Parser):
 
         if self._match_texts(self.PROCEDURE_OPTIONS, advance=False):
             return self.expression(
-                exp.WithProcedureOptions,
-                expressions=self._parse_csv(self._parse_procedure_option)
+                exp.WithProcedureOptions, expressions=self._parse_csv(self._parse_procedure_option)
             )
 
         if not self._next:
@@ -2226,7 +2223,8 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("EXECUTE", "AS"):
             return self.expression(
                 exp.ExecuteAsProperty,
-                this=self._parse_var_from_options(self.EXECUTE_AS_OPTIONS, raise_unmatched=False) or self._parse_string()
+                this=self._parse_var_from_options(self.EXECUTE_AS_OPTIONS, raise_unmatched=False)
+                or self._parse_string(),
             )
         else:
             return self._parse_var_from_options(self.PROCEDURE_OPTIONS)

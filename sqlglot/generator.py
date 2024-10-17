@@ -3624,7 +3624,7 @@ class Generator(metaclass=_Generator):
         expressions = (
             self.wrap(expressions) if expression.args.get("wrapped") else f" {expressions}"
         )
-        return f"{this}{expressions}" if expressions.strip() != '' else this
+        return f"{this}{expressions}" if expressions.strip() != "" else this
 
     def joinhint_sql(self, expression: exp.JoinHint) -> str:
         this = self.sql(expression, "this")

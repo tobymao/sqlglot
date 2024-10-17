@@ -333,6 +333,9 @@ class Hive(Dialect):
             "TRANSFORM": lambda self: self._parse_transform(),
         }
 
+        NO_PAREN_FUNCTIONS = parser.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIME)
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "SERDEPROPERTIES": lambda self: exp.SerdeProperties(

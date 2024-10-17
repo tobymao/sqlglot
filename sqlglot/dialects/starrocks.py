@@ -32,6 +32,11 @@ class StarRocks(MySQL):
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
+        ALTER_PARSERS = {
+            **MySQL.Parser.ALTER_PARSERS,
+            "SWAP": lambda self: self._parse_alter_table_swap(),
+        }
+
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
@@ -69,6 +74,10 @@ class StarRocks(MySQL):
                     alias.set("columns", [exp.to_identifier("unnest")])
 
             return unnest
+
+        def _parse_alter_table_swap(self) -> exp.SwapTable:
+            self._match_text_seq("WITH")
+            return self.expression(exp.SwapTable, this=self._parse_table(schema=True))
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -132,3 +141,7 @@ class StarRocks(MySQL):
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
             return super().create_sql(expression)
+
+        def swaptable_sql(self, expression: exp.SwapTable) -> str:
+            this = self.sql(expression, "this")
+            return f"SWAP WITH {this}"

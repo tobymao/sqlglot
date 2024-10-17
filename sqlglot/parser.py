@@ -1053,13 +1053,16 @@ class Parser(metaclass=_Parser):
 
     ALTER_PARSERS = {
         "ADD": lambda self: self._parse_alter_table_add(),
+        "AS": lambda self: self._parse_select(),
         "ALTER": lambda self: self._parse_alter_table_alter(),
         "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
         "DELETE": lambda self: self.expression(exp.Delete, where=self._parse_where()),
         "DROP": lambda self: self._parse_alter_table_drop(),
         "RENAME": lambda self: self._parse_alter_table_rename(),
         "SET": lambda self: self._parse_alter_table_set(),
-        "AS": lambda self: self._parse_select(),
+        "SWAP": lambda self: self.expression(
+            exp.SwapTable, this=self._match(TokenType.WITH) and self._parse_table(schema=True)
+        ),
     }
 
     ALTER_ALTER_PARSERS = {

@@ -185,6 +185,7 @@ class Generator(metaclass=_Generator):
         exp.Stream: lambda self, e: f"STREAM {self.sql(e, 'this')}",
         exp.StreamingTableProperty: lambda *_: "STREAMING",
         exp.StrictProperty: lambda *_: "STRICT",
+        exp.SwapTable: lambda self, e: f"SWAP WITH {self.sql(e, 'this')}",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",

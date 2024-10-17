@@ -429,17 +429,9 @@ class Oracle(Dialect):
 
             for expression in expression.expressions:
                 if isinstance(expression, exp.Anonymous):
-                    formatted_args = self._format_hint_function_args(*expression.expressions)
+                    formatted_args = self.format_args(*expression.expressions, sep=" ")
                     expressions.append(f"{self.sql(expression, 'this')}({formatted_args})")
                 else:
                     expressions.append(self.sql(expression))
 
             return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"
-
-        def _format_hint_function_args(self, *args: t.Optional[str | exp.Expression]) -> str:
-            arg_sqls = tuple(self.sql(arg) for arg in args)
-            if self.pretty and self.too_wide(arg_sqls):
-                return self.indent(
-                    "\n" + "\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True
-                )
-            return " ".join(arg_sqls)

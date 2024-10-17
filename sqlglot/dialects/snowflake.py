@@ -42,9 +42,9 @@ def _build_datetime(
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return (
-                    exp.cast(value, kind)
-                    if not safe
-                    else exp.TryCast(this=value, to=exp.DataType.build(kind))
+                    exp.TryCast(this=value, to=exp.DataType.build(kind))
+                    if safe
+                    else exp.cast(value, kind)
                 )
 
             # Handles `TO_TIMESTAMP(str, fmt)` and `TO_TIMESTAMP(num, scale)` as special

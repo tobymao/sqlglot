@@ -3515,13 +3515,15 @@ class Generator(metaclass=_Generator):
         name = self.normalize_func(name) if normalize else name
         return f"{name}{prefix}{self.format_args(*args)}{suffix}"
 
-    def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
+    def format_args(self, *args: t.Optional[str | exp.Expression], sep: str = ", ") -> str:
         arg_sqls = tuple(
             self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
         )
         if self.pretty and self.too_wide(arg_sqls):
-            return self.indent("\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
-        return ", ".join(arg_sqls)
+            return self.indent(
+                "\n" + f"{sep.strip()}\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True
+            )
+        return sep.join(arg_sqls)
 
     def too_wide(self, args: t.Iterable) -> bool:
         return sum(len(arg) for arg in args) > self.max_text_width

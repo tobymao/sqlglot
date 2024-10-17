@@ -421,14 +421,6 @@ class TestClickhouse(Validator):
                 " GROUP BY loyalty ORDER BY loyalty ASC"
             },
         )
-        self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")
-        self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
-        self.validate_identity(
-            "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
-        )
-        self.validate_identity(
-            "SELECT * FROM tbl ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
-        )
         self.validate_all(
             "SELECT quantile(0.5)(a)",
             read={"duckdb": "SELECT quantile(a, 0.5)"},
@@ -1104,3 +1096,30 @@ LIFETIME(MIN 0 MAX 0)""",
     def test_grant(self):
         self.validate_identity("GRANT SELECT(x, y) ON db.table TO john WITH GRANT OPTION")
         self.validate_identity("GRANT INSERT(x, y) ON db.table TO john")
+
+    def test_array_join(self):
+        expr = self.validate_identity(
+            "SELECT * FROM arrays_test ARRAY JOIN arr1, arrays_test.arr2 AS foo, ['a', 'b', 'c'] AS elem"
+        )
+        joins = expr.args["joins"]
+        self.assertEqual(len(joins), 1)
+
+        join = joins[0]
+        self.assertEqual(join.kind, "ARRAY")
+        self.assertIsInstance(join.this, exp.Column)
+
+        self.assertEqual(len(join.expressions), 2)
+        self.assertIsInstance(join.expressions[0], exp.Alias)
+        self.assertIsInstance(join.expressions[0].this, exp.Column)
+
+        self.assertIsInstance(join.expressions[1], exp.Alias)
+        self.assertIsInstance(join.expressions[1].this, exp.Array)
+
+        self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")
+        self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
+        self.validate_identity(
+            "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
+        )
+        self.validate_identity(
+            "SELECT * FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
+        )

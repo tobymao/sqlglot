@@ -2226,8 +2226,8 @@ class Parser(metaclass=_Parser):
                 this=self._parse_var_from_options(self.EXECUTE_AS_OPTIONS, raise_unmatched=False)
                 or self._parse_string(),
             )
-        else:
-            return self._parse_var_from_options(self.PROCEDURE_OPTIONS)
+
+        return self._parse_var_from_options(self.PROCEDURE_OPTIONS)
 
     # https://dev.mysql.com/doc/refman/8.0/en/create-view.html
     def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:

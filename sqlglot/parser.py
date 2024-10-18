@@ -1225,9 +1225,7 @@ class Parser(metaclass=_Parser):
         **dict.fromkeys(("BINDING", "COMPENSATION", "EVOLUTION"), tuple()),
     }
 
-    PROCEDURE_OPTIONS: OPTIONS_TYPE = dict.fromkeys(
-        ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
-    )
+    PROCEDURE_OPTIONS: OPTIONS_TYPE = {}
 
     EXECUTE_AS_OPTIONS: OPTIONS_TYPE = dict.fromkeys(("CALLER", "SELF", "OWNER"), tuple())
 
@@ -5571,12 +5569,15 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.CONSTRAINT):
-            this = self._parse_id_var()
-        else:
-            this = None
+        this = self._match(TokenType.CONSTRAINT) and self._parse_id_var()
 
-        if self._match_texts(self.CONSTRAINT_PARSERS):
+        index = self._index
+        procedure_property_follows = self._match(TokenType.WITH) and self._match_texts(
+            self.PROCEDURE_OPTIONS
+        )
+        self._retreat(index)
+
+        if not procedure_property_follows and self._match_texts(self.CONSTRAINT_PARSERS):
             return self.expression(
                 exp.ColumnConstraint,
                 this=this,

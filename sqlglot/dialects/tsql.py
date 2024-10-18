@@ -574,6 +574,10 @@ class TSQL(Dialect):
 
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
 
+        PROCEDURE_OPTIONS = dict.fromkeys(
+            ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
+        )
+
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,
@@ -725,23 +729,6 @@ class TSQL(Dialect):
                 expressions = None
 
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
-
-        def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
-            if self._match(TokenType.CONSTRAINT):
-                this = self._parse_id_var()
-            else:
-                this = None
-
-            if not self._match(TokenType.WITH, advance=False) and self._match_texts(
-                self.CONSTRAINT_PARSERS
-            ):
-                return self.expression(
-                    exp.ColumnConstraint,
-                    this=this,
-                    kind=self.CONSTRAINT_PARSERS[self._prev.text.upper()](self),
-                )
-
-            return this
 
         def _parse_id_var(
             self,

@@ -14,6 +14,16 @@ class TestPresto(Validator):
         self.validate_identity("CAST(x AS HYPERLOGLOG)")
 
         self.validate_all(
+            "CAST(x AS BOOLEAN)",
+            read={
+                "tsql": "CAST(x AS BIT)",
+            },
+            write={
+                "presto": "CAST(x AS BOOLEAN)",
+                "tsql": "CAST(x AS BIT)",
+            },
+        )
+        self.validate_all(
             "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
             write={
                 "duckdb": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",

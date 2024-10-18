@@ -326,16 +326,17 @@ class Presto(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.STRUCT: "ROW",
+            exp.DataType.Type.BIT: "BOOLEAN",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.DATETIME64: "TIMESTAMP",
+            exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.HLLSKETCH: "HYPERLOGLOG",
+            exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.STRUCT: "ROW",
+            exp.DataType.Type.TEXT: "VARCHAR",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMETZ: "TIME",
         }
 
         TRANSFORMS = {

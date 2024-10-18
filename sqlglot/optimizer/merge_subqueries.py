@@ -9,10 +9,12 @@ from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
     FromOrJoin = t.Union[exp.From, exp.Join]
 
 
-def merge_subqueries(expression: exp.Expression, leave_tables_isolated=False):
+def merge_subqueries(expression: E, leave_tables_isolated=False) -> E:
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -65,7 +67,7 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
-def merge_ctes(expression: exp.Expression, leave_tables_isolated=False) -> exp.Expression:
+def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
     scopes = traverse_scope(expression)
 
     # All places where we select from CTEs.
@@ -99,7 +101,7 @@ def merge_ctes(expression: exp.Expression, leave_tables_isolated=False) -> exp.E
     return expression
 
 
-def merge_derived_tables(expression: exp.Expression, leave_tables_isolated=False):
+def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> E:
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
@@ -297,7 +299,7 @@ def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
         outer_scope.expression.set("joins", outer_joins)
 
 
-def _merge_expressions(outer_scope, inner_scope, alias):
+def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> None:
     """
     Merge projections of inner query into outer query.
 

@@ -240,5 +240,43 @@ class TestDiff(unittest.TestCase):
 
         self.assertEqual(["WARNING:sqlglot:Dummy warning"], cm.output)
 
+    def test_non_expression_leaf_delta(self):
+        expr_src = parse_one("SELECT a UNION SELECT b")
+        expr_tgt = parse_one("SELECT a UNION ALL SELECT b")
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [
+                Update(source=expr_src, target=expr_tgt),
+            ],
+        )
+
+        expr_src = parse_one("SELECT a FROM t ORDER BY b ASC")
+        expr_tgt = parse_one("SELECT a FROM t ORDER BY b DESC")
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [
+                Update(
+                    source=expr_src.find(exp.Order).expressions[0],
+                    target=expr_tgt.find(exp.Order).expressions[0],
+                ),
+            ],
+        )
+
+        expr_src = parse_one("SELECT a, b FROM t ORDER BY c ASC")
+        expr_tgt = parse_one("SELECT b, a FROM t ORDER BY c DESC")
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [
+                Update(
+                    source=expr_src.find(exp.Order).expressions[0],
+                    target=expr_tgt.find(exp.Order).expressions[0],
+                ),
+                Move(parse_one("a")),
+            ],
+        )
+
     def _validate_delta_only(self, actual_delta, expected_delta):
         self.assertEqual(set(actual_delta), set(expected_delta))

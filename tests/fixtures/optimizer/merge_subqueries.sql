@@ -446,3 +446,21 @@ SELECT
   1 AS a;
 WITH q AS (SELECT x.a AS a FROM x AS x ORDER BY x.a) SELECT q.a AS a FROM q AS q UNION ALL SELECT 1 AS a;
 
+# title: Consecutive inner - outer conflicting names
+WITH tbl AS (select 1 as id)
+SELECT
+  id
+FROM (
+  SELECT OTBL.id
+  FROM (
+    SELECT OTBL.id
+    FROM (
+      SELECT OTBL.id
+      FROM tbl AS OTBL
+      LEFT OUTER JOIN tbl AS ITBL ON OTBL.id = ITBL.id
+    ) AS OTBL
+    LEFT OUTER JOIN tbl AS ITBL ON OTBL.id = ITBL.id
+  ) AS OTBL
+  LEFT OUTER JOIN tbl AS ITBL ON OTBL.id = ITBL.id
+) AS ITBL;
+WITH tbl AS (SELECT 1 AS id) SELECT OTBL.id AS id FROM tbl AS OTBL LEFT OUTER JOIN tbl AS ITBL_2 ON OTBL.id = ITBL_2.id LEFT OUTER JOIN tbl AS ITBL_3 ON OTBL.id = ITBL_3.id LEFT OUTER JOIN tbl AS ITBL ON OTBL.id = ITBL.id;

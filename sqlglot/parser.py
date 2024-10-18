@@ -5571,12 +5571,13 @@ class Parser(metaclass=_Parser):
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
         this = self._match(TokenType.CONSTRAINT) and self._parse_id_var()
 
-        procedure_property_follows = (
+        procedure_option_follows = (
             self._match(TokenType.WITH, advance=False)
+            and self._next
             and self._next.text.upper() in self.PROCEDURE_OPTIONS
         )
 
-        if not procedure_property_follows and self._match_texts(self.CONSTRAINT_PARSERS):
+        if not procedure_option_follows and self._match_texts(self.CONSTRAINT_PARSERS):
             return self.expression(
                 exp.ColumnConstraint,
                 this=this,

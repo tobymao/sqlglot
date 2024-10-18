@@ -2996,6 +2996,10 @@ class WithSystemVersioningProperty(Property):
     }
 
 
+class WithProcedureOptions(Property):
+    arg_types = {"expressions": True}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 

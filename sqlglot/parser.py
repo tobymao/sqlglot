@@ -1225,6 +1225,10 @@ class Parser(metaclass=_Parser):
         **dict.fromkeys(("BINDING", "COMPENSATION", "EVOLUTION"), tuple()),
     }
 
+    PROCEDURE_OPTIONS: OPTIONS_TYPE = {}
+
+    EXECUTE_AS_OPTIONS: OPTIONS_TYPE = dict.fromkeys(("CALLER", "SELF", "OWNER"), tuple())
+
     KEY_CONSTRAINT_OPTIONS: OPTIONS_TYPE = {
         "NOT": ("ENFORCED",),
         "MATCH": (
@@ -2203,10 +2207,25 @@ class Parser(metaclass=_Parser):
                 this=self._parse_var_from_options(self.SCHEMA_BINDING_OPTIONS),
             )
 
+        if self._match_texts(self.PROCEDURE_OPTIONS, advance=False):
+            return self.expression(
+                exp.WithProcedureOptions, expressions=self._parse_csv(self._parse_procedure_option)
+            )
+
         if not self._next:
             return None
 
         return self._parse_withisolatedloading()
+
+    def _parse_procedure_option(self) -> exp.Expression | None:
+        if self._match_text_seq("EXECUTE", "AS"):
+            return self.expression(
+                exp.ExecuteAsProperty,
+                this=self._parse_var_from_options(self.EXECUTE_AS_OPTIONS, raise_unmatched=False)
+                or self._parse_string(),
+            )
+
+        return self._parse_var_from_options(self.PROCEDURE_OPTIONS)
 
     # https://dev.mysql.com/doc/refman/8.0/en/create-view.html
     def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:
@@ -5550,12 +5569,15 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.CONSTRAINT):
-            this = self._parse_id_var()
-        else:
-            this = None
+        this = self._match(TokenType.CONSTRAINT) and self._parse_id_var()
 
-        if self._match_texts(self.CONSTRAINT_PARSERS):
+        procedure_option_follows = (
+            self._match(TokenType.WITH, advance=False)
+            and self._next
+            and self._next.text.upper() in self.PROCEDURE_OPTIONS
+        )
+
+        if not procedure_option_follows and self._match_texts(self.CONSTRAINT_PARSERS):
             return self.expression(
                 exp.ColumnConstraint,
                 this=this,

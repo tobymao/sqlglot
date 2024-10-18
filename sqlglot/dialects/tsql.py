@@ -574,6 +574,10 @@ class TSQL(Dialect):
 
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
 
+        PROCEDURE_OPTIONS = dict.fromkeys(
+            ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
+        )
+
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,
@@ -719,7 +723,11 @@ class TSQL(Dialect):
             ):
                 return this
 
-            expressions = self._parse_csv(self._parse_function_parameter)
+            if not self._match(TokenType.WITH, advance=False):
+                expressions = self._parse_csv(self._parse_function_parameter)
+            else:
+                expressions = None
+
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
         def _parse_id_var(

@@ -719,8 +719,29 @@ class TSQL(Dialect):
             ):
                 return this
 
-            expressions = self._parse_csv(self._parse_function_parameter)
+            if not self._match(TokenType.WITH, advance=False):
+                expressions = self._parse_csv(self._parse_function_parameter)
+            else:
+                expressions = None
+
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+
+        def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
+            if self._match(TokenType.CONSTRAINT):
+                this = self._parse_id_var()
+            else:
+                this = None
+
+            if not self._match(TokenType.WITH, advance=False) and self._match_texts(
+                self.CONSTRAINT_PARSERS
+            ):
+                return self.expression(
+                    exp.ColumnConstraint,
+                    this=this,
+                    kind=self.CONSTRAINT_PARSERS[self._prev.text.upper()](self),
+                )
+
+            return this
 
         def _parse_id_var(
             self,

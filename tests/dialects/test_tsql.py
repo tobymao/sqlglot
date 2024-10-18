@@ -1001,6 +1001,17 @@ class TestTSQL(Validator):
         )
         self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
         self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
+
+        self.validate_identity("CREATE PROCEDURE foo WITH ENCRYPTION AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH RECOMPILE AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH SCHEMABINDING AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH NATIVE_COMPILATION AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS OWNER AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS 'username' AS SELECT 1")
+        self.validate_identity(
+            "CREATE PROCEDURE foo WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS SELECT 1"
+        )
+
         self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
         self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
 
@@ -1059,6 +1070,7 @@ WHERE
             CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
                 @Loadid INTEGER
                ,@NumberOfRows INTEGER
+            WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION
             AS
             BEGIN
                 SET XACT_ABORT ON;
@@ -1074,7 +1086,7 @@ WHERE
         """
 
         expected_sqls = [
-            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON",
+            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
             "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
             "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
             "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",

@@ -11,7 +11,7 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
     ExistingCTEsMapping = t.Dict[E, str]
-    TakenNameMaping = t.Dict[t.Any, t.Union[Scope, E]]
+    TakenNameMapping = t.Dict[str, t.Union[Scope, E]]
 
 
 def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
@@ -47,7 +47,7 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
     # Map of alias->Scope|Table
     # These are all aliases that are already used in the expression.
     # We don't want to create new CTEs that conflict with these names.
-    taken: TakenNameMaping = {}
+    taken: TakenNameMapping = {}
 
     # All CTE aliases in the root scope are taken
     for scope in root.cte_scopes:
@@ -104,16 +104,20 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _eliminate(scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMaping):
+def _eliminate(
+    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
+) -> t.Optional[exp.Expression]:
     if scope.is_derived_table:
         return _eliminate_derived_table(scope, existing_ctes, taken)
 
     if scope.is_cte:
         return _eliminate_cte(scope, existing_ctes, taken)
 
+    return None
+
 
 def _eliminate_derived_table(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMaping
+    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
 ) -> t.Optional[exp.Expression]:
     # This makes sure that we don't:
     # - drop the "pivot" arg from a pivoted subquery
@@ -133,7 +137,7 @@ def _eliminate_derived_table(
 
 
 def _eliminate_cte(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMaping
+    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
 ) -> t.Optional[exp.Expression]:
     parent = scope.expression.parent
     name, cte = _new_cte(scope, existing_ctes, taken)
@@ -154,7 +158,7 @@ def _eliminate_cte(
 
 
 def _new_cte(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMaping
+    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
 ) -> t.Tuple[str, t.Optional[exp.Expression]]:
     """
     Returns:

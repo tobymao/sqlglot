@@ -122,8 +122,6 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
     # Clickhouse will error if a timestamp with fractional seconds is cast to DateTime,
     # so we conditionally cast to DateTime64
     has_microseconds = False
-    if isinstance(ts, datetime.datetime):
-        has_microseconds = bool(ts.microsecond)
     if isinstance(ts, exp.Literal):
         has_microseconds = bool(datetime.datetime.fromisoformat(ts.name).microsecond)
 

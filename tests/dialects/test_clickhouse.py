@@ -1094,6 +1094,7 @@ LIFETIME(MIN 0 MAX 0)""",
             convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
         )
 
+        # no fractional seconds
         self.assertEqual(
             convert(datetime(2020, 1, 1, 0, 0, 1)).sql(dialect=self.dialect),
             "CAST('2020-01-01 00:00:01' AS DateTime)",
@@ -1103,16 +1104,73 @@ LIFETIME(MIN 0 MAX 0)""",
             "CAST('2020-01-01 00:00:01' AS DateTime('UTC'))",
         )
 
+        # with fractional seconds
         self.assertEqual(
             convert(datetime(2020, 1, 1, 0, 0, 1, 1)).sql(dialect=self.dialect),
-            "CAST('2020-01-01 00:00:01.000001' AS DateTime64)",
+            "CAST('2020-01-01 00:00:01.000001' AS DateTime64(6))",
         )
         self.assertEqual(
             convert(datetime(2020, 1, 1, 0, 0, 1, 1, tzinfo=timezone.utc)).sql(
                 dialect=self.dialect
             ),
-            "CAST('2020-01-01 00:00:01.000001' AS DateTime64('UTC'))",
+            "CAST('2020-01-01 00:00:01.000001' AS DateTime64(6, 'UTC'))",
         )
+
+    def test_timestr_to_time(self):
+        # no fractional seconds
+        time_strings = [
+            "2020-01-01 00:00:01",
+            "2020-01-01 00:00:01+01:00",
+            " 2020-01-01 00:00:01-01:00 ",
+            "2020-01-01T00:00:01+01:00",
+        ]
+        for time_string in time_strings:
+            self.assertEqual(
+                exp.TimeStrToTime(this=exp.Literal.string(time_string)).sql(dialect=self.dialect),
+                f"CAST('{time_string}' AS DateTime)",
+            )
+
+        time_strings_no_utc = ["2020-01-01 00:00:01" for i in range(4)]
+        for utc, no_utc in zip(time_strings, time_strings_no_utc):
+            self.assertEqual(
+                exp.TimeStrToTime(this=exp.Literal.string(utc), zone=exp.Literal.string("UTC")).sql(
+                    dialect=self.dialect
+                ),
+                f"CAST('{no_utc}' AS DateTime('UTC'))",
+            )
+
+        # with fractional seconds
+        time_strings = [
+            ("2020-01-01 00:00:01.0", 3),
+            ("2020-01-01 00:00:01.0001", 4),
+            ("2020-01-01 00:00:01.000001", 6),
+            ("2020-01-01 00:00:01.1+00:00", 3),
+            (" 2020-01-01 00:00:01.0-00:00 ", 3),
+            ("2020-01-01T00:00:01.1+00:00", 3),
+        ]
+        for time_string in time_strings:
+            self.assertEqual(
+                exp.TimeStrToTime(this=exp.Literal.string(time_string[0])).sql(
+                    dialect=self.dialect
+                ),
+                f"CAST('{time_string[0]}' AS DateTime64({time_string[1]}))",
+            )
+
+        time_strings_no_utc = [
+            "2020-01-01 00:00:01",
+            "2020-01-01 00:00:01.000100",
+            "2020-01-01 00:00:01.000001",
+            "2020-01-01 00:00:01.100000",
+            "2020-01-01 00:00:01",
+            "2020-01-01 00:00:01.100000",
+        ]
+        for utc, no_utc in zip(time_strings, time_strings_no_utc):
+            self.assertEqual(
+                exp.TimeStrToTime(
+                    this=exp.Literal.string(utc[0]), zone=exp.Literal.string("UTC")
+                ).sql(dialect=self.dialect),
+                f"CAST('{no_utc}' AS DateTime64({utc[1]}, 'UTC'))",
+            )
 
     def test_grant(self):
         self.validate_identity("GRANT SELECT(x, y) ON db.table TO john WITH GRANT OPTION")

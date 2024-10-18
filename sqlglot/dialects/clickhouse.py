@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 import datetime
-
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -108,23 +107,33 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
 
 
 def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime):
-    tz = expression.args.get("zone")
-    datatype = exp.DataType.build(exp.DataType.Type.TIMESTAMP)
     ts = expression.this
-    if tz:
-        # build a datatype that encodes the timezone as a type parameter, eg DateTime('America/Los_Angeles')
-        datatype = exp.DataType.build(
-            exp.DataType.Type.TIMESTAMPTZ,  # Type.TIMESTAMPTZ maps to DateTime
-            expressions=[exp.DataTypeParam(this=tz)],
-        )
 
-        if isinstance(ts, exp.Literal):
-            # strip the timezone out of the literal, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
-            # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if it's part of the timestamp string
-            ts_without_tz = (
-                datetime.datetime.fromisoformat(ts.name).replace(tzinfo=None).isoformat(sep=" ")
-            )
-            ts = exp.Literal.string(ts_without_tz)
+    tz = expression.args.get("zone")
+    if tz and isinstance(ts, exp.Literal):
+        # return literal with no timezone, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
+        # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if
+        # it's part of the timestamp string
+        ts_without_tz = (
+            datetime.datetime.fromisoformat(ts.name).replace(tzinfo=None).isoformat(sep=" ")
+        )
+        ts = exp.Literal.string(ts_without_tz)
+
+    # Clickhouse will error if a timestamp with fractional seconds is cast to DateTime,
+    # so we conditionally cast to DateTime64
+    has_microseconds = False
+    if isinstance(ts, datetime.datetime):
+        has_microseconds = bool(ts.microsecond)
+    if isinstance(ts, exp.Literal):
+        has_microseconds = bool(datetime.datetime.fromisoformat(ts.name).microsecond)
+
+    # We cannot know if the eventual datatype is nullable, but we know the string isn't NULL
+    # and within Clickhouse we generally default to non-nullable
+    datatype = exp.DataType.build(
+        exp.DataType.Type.DATETIME64 if has_microseconds else exp.DataType.Type.DATETIME,
+        expressions=[exp.DataTypeParam(this=tz)] if tz else [],
+        nullable=False,
+    )
 
     return self.sql(exp.cast(ts, datatype, dialect=self.dialect))
 

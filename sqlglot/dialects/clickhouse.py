@@ -149,12 +149,13 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
             *expressions,
         ]
 
-    # We cannot know if the eventual datatype is nullable, but we know the string isn't NULL
-    # and generally default to non-nullable
+    # We cannot know if the eventual datatype is nullable, but string literals are often
+    # used in contexts where nullable types cause errors (e.g., WHERE clauses). Therefore, we
+    # use non-nullable if passed a string literal and nullable if passed a column/identifier.
     datatype = exp.DataType.build(
         datatype,
         expressions=expressions,
-        nullable=False,
+        nullable=isinstance(ts, (exp.Identifier, exp.Column)),
     )
 
     return self.sql(exp.cast(ts, datatype, dialect=self.dialect))

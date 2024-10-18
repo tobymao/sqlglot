@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
@@ -1092,6 +1092,26 @@ LIFETIME(MIN 0 MAX 0)""",
     def test_convert(self):
         self.assertEqual(
             convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
+        )
+
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1)).sql(dialect=self.dialect),
+            "CAST('2020-01-01 00:00:01' AS DateTime)",
+        )
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1, tzinfo=timezone.utc)).sql(dialect=self.dialect),
+            "CAST('2020-01-01 00:00:01' AS DateTime('UTC'))",
+        )
+
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1, 1)).sql(dialect=self.dialect),
+            "CAST('2020-01-01 00:00:01.000001' AS DateTime64)",
+        )
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1, 1, tzinfo=timezone.utc)).sql(
+                dialect=self.dialect
+            ),
+            "CAST('2020-01-01 00:00:01.000001' AS DateTime64('UTC'))",
         )
 
     def test_grant(self):

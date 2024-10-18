@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from heapq import heappop, heappush
 
 from sqlglot import Dialect, expressions as exp
+from sqlglot.helper import seq_get
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -184,7 +185,7 @@ class ChangeDistiller:
         self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
-        matching_set = self._compute_matching_set() | {(s, t) for s, t in pre_matched_nodes.items()}
+        matching_set = self._compute_matching_set() | set(pre_matched_nodes.items())
         return self._generate_edit_script(matching_set, delta_only)
 
     def _generate_edit_script(
@@ -200,6 +201,7 @@ class ChangeDistiller:
         for kept_source_node_id, kept_target_node_id in matching_set:
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
+
             if (
                 not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES)
                 or source_node == target_node
@@ -207,7 +209,13 @@ class ChangeDistiller:
                 edit_script.extend(
                     self._generate_move_edits(source_node, target_node, matching_set)
                 )
-                if not delta_only:
+
+                source_non_expression_leaves = dict(_get_non_expression_leaves(source_node))
+                target_non_expression_leaves = dict(_get_non_expression_leaves(target_node))
+
+                if source_non_expression_leaves != target_non_expression_leaves:
+                    edit_script.append(Update(source_node, target_node))
+                elif not delta_only:
                     edit_script.append(Keep(source_node, target_node))
             else:
                 edit_script.append(Update(source_node, target_node))
@@ -245,8 +253,8 @@ class ChangeDistiller:
                 source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
                 if _is_same_type(source_node, target_node):
-                    source_leaf_ids = {id(l) for l in _get_leaves(source_node)}
-                    target_leaf_ids = {id(l) for l in _get_leaves(target_node)}
+                    source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
+                    target_leaf_ids = {id(l) for l in _get_expression_leaves(target_node)}
 
                     max_leaves_num = max(len(source_leaf_ids), len(target_leaf_ids))
                     if max_leaves_num:
@@ -276,10 +284,10 @@ class ChangeDistiller:
 
     def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
         candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expression, exp.Expression]] = []
-        source_leaves = list(_get_leaves(self._source))
-        target_leaves = list(_get_leaves(self._target))
-        for source_leaf in source_leaves:
-            for target_leaf in target_leaves:
+        source_expression_leaves = list(_get_expression_leaves(self._source))
+        target_expression_leaves = list(_get_expression_leaves(self._target))
+        for source_leaf in source_expression_leaves:
+            for target_leaf in target_expression_leaves:
                 if _is_same_type(source_leaf, target_leaf):
                     similarity_score = self._dice_coefficient(source_leaf, target_leaf)
                     if similarity_score >= self.f:
@@ -337,16 +345,26 @@ class ChangeDistiller:
         return bigram_histo
 
 
-def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
+def _get_expression_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
     has_child_exprs = False
 
     for node in expression.iter_expressions():
         if not isinstance(node, IGNORED_LEAF_EXPRESSION_TYPES):
             has_child_exprs = True
-            yield from _get_leaves(node)
+            yield from _get_expression_leaves(node)
 
     if not has_child_exprs:
         yield expression
+
+
+def _get_non_expression_leaves(expression: exp.Expression) -> t.Iterator[t.Tuple[str, t.Any]]:
+    for arg, value in expression.args.items():
+        if isinstance(value, exp.Expression) or (
+            isinstance(value, list) and isinstance(seq_get(value, 0), exp.Expression)
+        ):
+            continue
+
+        yield (arg, value)
 
 
 def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:

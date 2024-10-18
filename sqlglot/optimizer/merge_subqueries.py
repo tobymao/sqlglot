@@ -227,9 +227,12 @@ def _rename_inner_sources(outer_scope, inner_scope, alias):
         inner_scope (sqlglot.optimizer.scope.Scope)
         alias (str)
     """
-    taken = set(outer_scope.selected_sources)
-    conflicts = taken.intersection(set(inner_scope.selected_sources))
+    inner_taken = set(inner_scope.selected_sources)
+    outer_taken = set(outer_scope.selected_sources)
+    conflicts = outer_taken.intersection(inner_taken)
     conflicts -= {alias}
+
+    taken = outer_taken.union(inner_taken)
 
     for conflict in conflicts:
         new_name = find_new_name(taken, conflict)

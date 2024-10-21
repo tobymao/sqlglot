@@ -231,22 +231,37 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):
-                if expression.args.get("by_name"):
-                    r_type_by_select = {s.alias_or_name: s.type for s in expression.right.selects}
-                    selects[name] = {
-                        s.alias_or_name: self._maybe_coerce(
-                            t.cast(exp.DataType, s.type),
-                            r_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
+                col_types: t.Dict[str, exp.DataType.Type] = {}
+
+                # Process a chain of set operations
+                for set_op in expression.walk(prune=lambda n: not isinstance(n, exp.SetOperation)):
+                    if not isinstance(set_op, exp.SetOperation):
+                        continue
+                    setop_cols = {}
+                    if set_op.args.get("by_name"):
+                        r_type_by_select = {s.alias_or_name: s.type for s in set_op.right.selects}
+                        setop_cols = {
+                            s.alias_or_name: self._maybe_coerce(
+                                t.cast(exp.DataType, s.type),
+                                r_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
+                            )
+                            for s in set_op.left.selects
+                        }
+                    else:
+                        setop_cols = {
+                            ls.alias_or_name: self._maybe_coerce(
+                                t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                            )
+                            for ls, rs in zip(set_op.left.selects, set_op.right.selects)
+                        }
+
+                    # Coerce intermediate results with the previously registered types, if they exist
+                    for col_name, col_type in setop_cols.items():
+                        col_types[col_name] = self._maybe_coerce(
+                            col_type, col_types.get(col_name, exp.DataType.Type.NULL)
                         )
-                        for s in expression.left.selects
-                    }
-                else:
-                    selects[name] = {
-                        ls.alias_or_name: self._maybe_coerce(
-                            t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
-                        )
-                        for ls, rs in zip(expression.left.selects, expression.right.selects)
-                    }
+
+                selects[name] = col_types
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 

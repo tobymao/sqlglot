@@ -1762,6 +1762,7 @@ class TestDialect(Validator):
         self.validate_all(
             "LEVENSHTEIN(col1, col2)",
             write={
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
                 "duckdb": "LEVENSHTEIN(col1, col2)",
                 "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
                 "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
@@ -1772,6 +1773,7 @@ class TestDialect(Validator):
         self.validate_all(
             "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
             write={
+                "bigquery": "EDIT_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "duckdb": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "drill": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "presto": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",

@@ -14,7 +14,7 @@ if t.TYPE_CHECKING:
     FromOrJoin = t.Union[exp.From, exp.Join]
 
 
-def merge_subqueries(expression: E, leave_tables_isolated=False) -> E:
+def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 

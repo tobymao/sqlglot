@@ -8,10 +8,8 @@ from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, build_scope
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
-
-    ExistingCTEsMapping = t.Dict[E, str]
-    TakenNameMapping = t.Dict[str, t.Union[Scope, E]]
+    ExistingCTEsMapping = t.Dict[exp.Expression, str]
+    TakenNameMapping = t.Dict[str, t.Union[Scope, exp.Expression]]
 
 
 def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:

@@ -1,5 +1,4 @@
 from __future__ import annotations
-import re
 import typing as t
 import datetime
 from sqlglot import exp, generator, parser, tokens
@@ -114,48 +113,38 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
 
     # Clickhouse will error if a timestamp string with fractional seconds is cast to DateTime instead of
     # DateTime64, so we must determine if they are present.
-    #
-    # `datetime` objects cannot differentiate between no microseconds specified (eg '2020-01-01 12:13:14')
-    # and 0 microseconds specified (eg '2020-01-01 12:13:14.0'), so we must check the string directly
-    # rather than using datetime.strptime().
     microseconds = None
     if isinstance(ts, exp.Literal):
-        microseconds = re.search(
-            "^ *?\d{4}\-\d{2}-\d{2}[ |T]\d{2}:\d{2}:\d{2}\.(\d{1,6})( ?[\+|\-]\d{2}:\d{2})? *$",
-            ts.name,
-        )
+        # NOTE: in python <3.11, `fromisoformat()` is less flexible and can only parse timestamps of
+        # millisecond (3 digit) or microsecond (6 digit) precision. It will error if passed any other
+        # number of fractional digits.
+        ts_datetime = datetime.datetime.fromisoformat(ts.name.strip())
+        microseconds = ts_datetime.microsecond
 
     tz = expression.args.get("zone")
     if tz and isinstance(ts, exp.Literal):
         # return literal with no timezone, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
         # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if
         # it's part of the timestamp string
-        ts_without_tz = (
-            datetime.datetime.fromisoformat(ts.name.strip()).replace(tzinfo=None).isoformat(sep=" ")
-        )
+        ts_without_tz = ts_datetime.replace(tzinfo=None).isoformat(sep=" ")
         ts = exp.Literal.string(ts_without_tz)
 
-    # Use DateTime64 if microseconds are present. If we detect <=3 digits, we use precision 3
-    # since that is the implicit value for the bare type "DateTime64". Otherwise, we use the
-    # number of digits detected.
+    # Use DateTime64 with microsecond precision if fractional seconds are present
     datatype: DATA_TYPE = exp.DataType.Type.DATETIME
     expressions = [exp.DataTypeParam(this=tz)] if tz else []
     if microseconds:
         datatype = exp.DataType.Type.DATETIME64
         expressions = [
-            exp.DataTypeParam(
-                this=exp.Literal(this=max(3, len(microseconds.group(1))), is_string=False)
-            ),
+            exp.DataTypeParam(this=exp.Literal.number(6)),
             *expressions,
         ]
 
-    # We cannot know if the eventual datatype is nullable, but string literals are often
-    # used in contexts where nullable types cause errors (e.g., WHERE clauses). Therefore, we
-    # use non-nullable if passed a string literal and nullable if passed a column/identifier.
+    # Non-nullable because string literals are often used in contexts where nullable types can cause
+    # errors. Users may cast to nullable if necessary.
     datatype = exp.DataType.build(
         datatype,
         expressions=expressions,
-        nullable=isinstance(ts, (exp.Identifier, exp.Column)),
+        nullable=False,
     )
 
     return self.sql(exp.cast(ts, datatype, dialect=self.dialect))

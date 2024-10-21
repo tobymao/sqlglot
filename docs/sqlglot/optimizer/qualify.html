@@ -85,78 +85,81 @@
 </span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>    <span class="n">infer_schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>    <span class="n">isolate_tables</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>    <span class="n">qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>    <span class="n">validate_qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>    <span class="n">quote_identifiers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>    <span class="n">identify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>    <span class="n">infer_csv_schemas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">    Rewrite sqlglot AST to have normalized and qualified tables and columns.</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
-</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="sd">    This step is necessary for all further SQLGlot optimizations.</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>
-</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a><span class="sd">    Example:</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="sd">        &gt;&gt;&gt; schema = {&quot;tbl&quot;: {&quot;col&quot;: &quot;INT&quot;}}</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT col FROM tbl&quot;)</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="sd">        &gt;&gt;&gt; qualify(expression, schema=schema).sql()</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">        &#39;SELECT &quot;tbl&quot;.&quot;col&quot; AS &quot;col&quot; FROM &quot;tbl&quot; AS &quot;tbl&quot;&#39;</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a><span class="sd">    Args:</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="sd">        expression: Expression to qualify.</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="sd">        db: Default database name for tables.</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="sd">        catalog: Default catalog name for tables.</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="sd">        schema: Schema to infer column names and types.</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">        expand_alias_refs: Whether to expand references to aliases.</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="sd">        expand_stars: Whether to expand star queries. This is a necessary step</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="sd">            for most of the optimizer&#39;s rules to work; do not set to False unless you</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a><span class="sd">            know what you&#39;re doing!</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="sd">        infer_schema: Whether to infer the schema if missing.</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="sd">        isolate_tables: Whether to isolate table selects.</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a><span class="sd">        qualify_columns: Whether to qualify columns.</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a><span class="sd">        validate_qualify_columns: Whether to validate columns.</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="sd">        quote_identifiers: Whether to run the quote_identifiers step.</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="sd">            This step is necessary to ensure correctness for case sensitive queries.</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">            But this flag is provided in case this step is performed at a later time.</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">        identify: If True, quote all identifiers, else only necessary ones.</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a><span class="sd">        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs&#39; schemas.</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
-</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="sd">    Returns:</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="sd">        The qualified expression.</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="n">expression</span><span class="p">,</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>    <span class="p">)</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="k">if</span> <span class="n">isolate_tables</span><span class="p">:</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>    <span class="k">if</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">PREFER_CTE_ALIAS_COLUMN</span><span class="p">:</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">pushdown_cte_alias_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>
-</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>    <span class="k">if</span> <span class="n">qualify_columns</span><span class="p">:</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_columns_func</span><span class="p">(</span>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>            <span class="n">expression</span><span class="p">,</span>
-</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>            <span class="n">schema</span><span class="p">,</span>
-</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>            <span class="n">expand_alias_refs</span><span class="o">=</span><span class="n">expand_alias_refs</span><span class="p">,</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>            <span class="n">expand_stars</span><span class="o">=</span><span class="n">expand_stars</span><span class="p">,</span>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>            <span class="n">infer_schema</span><span class="o">=</span><span class="n">infer_schema</span><span class="p">,</span>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>        <span class="p">)</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>    <span class="k">if</span> <span class="n">quote_identifiers</span><span class="p">:</span>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">quote_identifiers_func</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="n">identify</span><span class="p">)</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>    <span class="n">allow_partial_qualification</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>    <span class="n">validate_qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>    <span class="n">quote_identifiers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>    <span class="n">identify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>    <span class="n">infer_csv_schemas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">    Rewrite sqlglot AST to have normalized and qualified tables and columns.</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="sd">    This step is necessary for all further SQLGlot optimizations.</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="sd">    Example:</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a><span class="sd">        &gt;&gt;&gt; schema = {&quot;tbl&quot;: {&quot;col&quot;: &quot;INT&quot;}}</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT col FROM tbl&quot;)</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">        &gt;&gt;&gt; qualify(expression, schema=schema).sql()</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="sd">        &#39;SELECT &quot;tbl&quot;.&quot;col&quot; AS &quot;col&quot; FROM &quot;tbl&quot; AS &quot;tbl&quot;&#39;</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="sd">    Args:</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="sd">        expression: Expression to qualify.</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="sd">        db: Default database name for tables.</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="sd">        catalog: Default catalog name for tables.</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">        schema: Schema to infer column names and types.</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="sd">        expand_alias_refs: Whether to expand references to aliases.</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="sd">        expand_stars: Whether to expand star queries. This is a necessary step</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a><span class="sd">            for most of the optimizer&#39;s rules to work; do not set to False unless you</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="sd">            know what you&#39;re doing!</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="sd">        infer_schema: Whether to infer the schema if missing.</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a><span class="sd">        isolate_tables: Whether to isolate table selects.</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a><span class="sd">        qualify_columns: Whether to qualify columns.</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="sd">        allow_partial_qualification: Whether to allow partial qualification.</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="sd">        validate_qualify_columns: Whether to validate columns.</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">        quote_identifiers: Whether to run the quote_identifiers step.</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">            This step is necessary to ensure correctness for case sensitive queries.</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a><span class="sd">            But this flag is provided in case this step is performed at a later time.</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a><span class="sd">        identify: If True, quote all identifiers, else only necessary ones.</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="sd">        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs&#39; schemas.</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">    Returns:</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">        The qualified expression.</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="n">expression</span><span class="p">,</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="p">)</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="k">if</span> <span class="n">isolate_tables</span><span class="p">:</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>    <span class="k">if</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">PREFER_CTE_ALIAS_COLUMN</span><span class="p">:</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">pushdown_cte_alias_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>    <span class="k">if</span> <span class="n">qualify_columns</span><span class="p">:</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_columns_func</span><span class="p">(</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>            <span class="n">expression</span><span class="p">,</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>            <span class="n">schema</span><span class="p">,</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>            <span class="n">expand_alias_refs</span><span class="o">=</span><span class="n">expand_alias_refs</span><span class="p">,</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>            <span class="n">expand_stars</span><span class="o">=</span><span class="n">expand_stars</span><span class="p">,</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>            <span class="n">infer_schema</span><span class="o">=</span><span class="n">infer_schema</span><span class="p">,</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>            <span class="n">allow_partial_qualification</span><span class="o">=</span><span class="n">allow_partial_qualification</span><span class="p">,</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>        <span class="p">)</span>
 </span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>    <span class="k">if</span> <span class="n">validate_qualify_columns</span><span class="p">:</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>        <span class="n">validate_qualify_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>    <span class="k">if</span> <span class="n">quote_identifiers</span><span class="p">:</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">quote_identifiers_func</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="n">identify</span><span class="p">)</span>
 </span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>    <span class="k">if</span> <span class="n">validate_qualify_columns</span><span class="p">:</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>        <span class="n">validate_qualify_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span></pre></div>
 
 
@@ -166,7 +169,7 @@
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">qualify</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">catalog</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">schema</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n"><a href="../schema.html#Schema">sqlglot.schema.Schema</a></span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">expand_alias_refs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">expand_stars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">infer_schema</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">isolate_tables</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">validate_qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">quote_identifiers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">identify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">infer_csv_schemas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span>:</span></span>
+        <span class="name">qualify</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">catalog</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">schema</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n"><a href="../schema.html#Schema">sqlglot.schema.Schema</a></span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">expand_alias_refs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">expand_stars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">infer_schema</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">isolate_tables</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">allow_partial_qualification</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">validate_qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">quote_identifiers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">identify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">infer_csv_schemas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span>:</span></span>
 
                 <label class="view-source-button" for="qualify-view-source"><span>View Source</span></label>
 
@@ -183,78 +186,81 @@
 </span><span id="qualify-28"><a href="#qualify-28"><span class="linenos"> 28</span></a>    <span class="n">infer_schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="qualify-29"><a href="#qualify-29"><span class="linenos"> 29</span></a>    <span class="n">isolate_tables</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="qualify-30"><a href="#qualify-30"><span class="linenos"> 30</span></a>    <span class="n">qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="qualify-31"><a href="#qualify-31"><span class="linenos"> 31</span></a>    <span class="n">validate_qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="qualify-32"><a href="#qualify-32"><span class="linenos"> 32</span></a>    <span class="n">quote_identifiers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="qualify-33"><a href="#qualify-33"><span class="linenos"> 33</span></a>    <span class="n">identify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="qualify-34"><a href="#qualify-34"><span class="linenos"> 34</span></a>    <span class="n">infer_csv_schemas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="qualify-35"><a href="#qualify-35"><span class="linenos"> 35</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="qualify-36"><a href="#qualify-36"><span class="linenos"> 36</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="qualify-37"><a href="#qualify-37"><span class="linenos"> 37</span></a><span class="sd">    Rewrite sqlglot AST to have normalized and qualified tables and columns.</span>
-</span><span id="qualify-38"><a href="#qualify-38"><span class="linenos"> 38</span></a>
-</span><span id="qualify-39"><a href="#qualify-39"><span class="linenos"> 39</span></a><span class="sd">    This step is necessary for all further SQLGlot optimizations.</span>
-</span><span id="qualify-40"><a href="#qualify-40"><span class="linenos"> 40</span></a>
-</span><span id="qualify-41"><a href="#qualify-41"><span class="linenos"> 41</span></a><span class="sd">    Example:</span>
-</span><span id="qualify-42"><a href="#qualify-42"><span class="linenos"> 42</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="qualify-43"><a href="#qualify-43"><span class="linenos"> 43</span></a><span class="sd">        &gt;&gt;&gt; schema = {&quot;tbl&quot;: {&quot;col&quot;: &quot;INT&quot;}}</span>
-</span><span id="qualify-44"><a href="#qualify-44"><span class="linenos"> 44</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT col FROM tbl&quot;)</span>
-</span><span id="qualify-45"><a href="#qualify-45"><span class="linenos"> 45</span></a><span class="sd">        &gt;&gt;&gt; qualify(expression, schema=schema).sql()</span>
-</span><span id="qualify-46"><a href="#qualify-46"><span class="linenos"> 46</span></a><span class="sd">        &#39;SELECT &quot;tbl&quot;.&quot;col&quot; AS &quot;col&quot; FROM &quot;tbl&quot; AS &quot;tbl&quot;&#39;</span>
-</span><span id="qualify-47"><a href="#qualify-47"><span class="linenos"> 47</span></a>
-</span><span id="qualify-48"><a href="#qualify-48"><span class="linenos"> 48</span></a><span class="sd">    Args:</span>
-</span><span id="qualify-49"><a href="#qualify-49"><span class="linenos"> 49</span></a><span class="sd">        expression: Expression to qualify.</span>
-</span><span id="qualify-50"><a href="#qualify-50"><span class="linenos"> 50</span></a><span class="sd">        db: Default database name for tables.</span>
-</span><span id="qualify-51"><a href="#qualify-51"><span class="linenos"> 51</span></a><span class="sd">        catalog: Default catalog name for tables.</span>
-</span><span id="qualify-52"><a href="#qualify-52"><span class="linenos"> 52</span></a><span class="sd">        schema: Schema to infer column names and types.</span>
-</span><span id="qualify-53"><a href="#qualify-53"><span class="linenos"> 53</span></a><span class="sd">        expand_alias_refs: Whether to expand references to aliases.</span>
-</span><span id="qualify-54"><a href="#qualify-54"><span class="linenos"> 54</span></a><span class="sd">        expand_stars: Whether to expand star queries. This is a necessary step</span>
-</span><span id="qualify-55"><a href="#qualify-55"><span class="linenos"> 55</span></a><span class="sd">            for most of the optimizer&#39;s rules to work; do not set to False unless you</span>
-</span><span id="qualify-56"><a href="#qualify-56"><span class="linenos"> 56</span></a><span class="sd">            know what you&#39;re doing!</span>
-</span><span id="qualify-57"><a href="#qualify-57"><span class="linenos"> 57</span></a><span class="sd">        infer_schema: Whether to infer the schema if missing.</span>
-</span><span id="qualify-58"><a href="#qualify-58"><span class="linenos"> 58</span></a><span class="sd">        isolate_tables: Whether to isolate table selects.</span>
-</span><span id="qualify-59"><a href="#qualify-59"><span class="linenos"> 59</span></a><span class="sd">        qualify_columns: Whether to qualify columns.</span>
-</span><span id="qualify-60"><a href="#qualify-60"><span class="linenos"> 60</span></a><span class="sd">        validate_qualify_columns: Whether to validate columns.</span>
-</span><span id="qualify-61"><a href="#qualify-61"><span class="linenos"> 61</span></a><span class="sd">        quote_identifiers: Whether to run the quote_identifiers step.</span>
-</span><span id="qualify-62"><a href="#qualify-62"><span class="linenos"> 62</span></a><span class="sd">            This step is necessary to ensure correctness for case sensitive queries.</span>
-</span><span id="qualify-63"><a href="#qualify-63"><span class="linenos"> 63</span></a><span class="sd">            But this flag is provided in case this step is performed at a later time.</span>
-</span><span id="qualify-64"><a href="#qualify-64"><span class="linenos"> 64</span></a><span class="sd">        identify: If True, quote all identifiers, else only necessary ones.</span>
-</span><span id="qualify-65"><a href="#qualify-65"><span class="linenos"> 65</span></a><span class="sd">        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs&#39; schemas.</span>
-</span><span id="qualify-66"><a href="#qualify-66"><span class="linenos"> 66</span></a>
-</span><span id="qualify-67"><a href="#qualify-67"><span class="linenos"> 67</span></a><span class="sd">    Returns:</span>
-</span><span id="qualify-68"><a href="#qualify-68"><span class="linenos"> 68</span></a><span class="sd">        The qualified expression.</span>
-</span><span id="qualify-69"><a href="#qualify-69"><span class="linenos"> 69</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="qualify-70"><a href="#qualify-70"><span class="linenos"> 70</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="qualify-71"><a href="#qualify-71"><span class="linenos"> 71</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="qualify-72"><a href="#qualify-72"><span class="linenos"> 72</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
-</span><span id="qualify-73"><a href="#qualify-73"><span class="linenos"> 73</span></a>        <span class="n">expression</span><span class="p">,</span>
-</span><span id="qualify-74"><a href="#qualify-74"><span class="linenos"> 74</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
-</span><span id="qualify-75"><a href="#qualify-75"><span class="linenos"> 75</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
-</span><span id="qualify-76"><a href="#qualify-76"><span class="linenos"> 76</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
-</span><span id="qualify-77"><a href="#qualify-77"><span class="linenos"> 77</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
-</span><span id="qualify-78"><a href="#qualify-78"><span class="linenos"> 78</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
-</span><span id="qualify-79"><a href="#qualify-79"><span class="linenos"> 79</span></a>    <span class="p">)</span>
-</span><span id="qualify-80"><a href="#qualify-80"><span class="linenos"> 80</span></a>
-</span><span id="qualify-81"><a href="#qualify-81"><span class="linenos"> 81</span></a>    <span class="k">if</span> <span class="n">isolate_tables</span><span class="p">:</span>
-</span><span id="qualify-82"><a href="#qualify-82"><span class="linenos"> 82</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
-</span><span id="qualify-83"><a href="#qualify-83"><span class="linenos"> 83</span></a>
-</span><span id="qualify-84"><a href="#qualify-84"><span class="linenos"> 84</span></a>    <span class="k">if</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">PREFER_CTE_ALIAS_COLUMN</span><span class="p">:</span>
-</span><span id="qualify-85"><a href="#qualify-85"><span class="linenos"> 85</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">pushdown_cte_alias_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="qualify-86"><a href="#qualify-86"><span class="linenos"> 86</span></a>
-</span><span id="qualify-87"><a href="#qualify-87"><span class="linenos"> 87</span></a>    <span class="k">if</span> <span class="n">qualify_columns</span><span class="p">:</span>
-</span><span id="qualify-88"><a href="#qualify-88"><span class="linenos"> 88</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_columns_func</span><span class="p">(</span>
-</span><span id="qualify-89"><a href="#qualify-89"><span class="linenos"> 89</span></a>            <span class="n">expression</span><span class="p">,</span>
-</span><span id="qualify-90"><a href="#qualify-90"><span class="linenos"> 90</span></a>            <span class="n">schema</span><span class="p">,</span>
-</span><span id="qualify-91"><a href="#qualify-91"><span class="linenos"> 91</span></a>            <span class="n">expand_alias_refs</span><span class="o">=</span><span class="n">expand_alias_refs</span><span class="p">,</span>
-</span><span id="qualify-92"><a href="#qualify-92"><span class="linenos"> 92</span></a>            <span class="n">expand_stars</span><span class="o">=</span><span class="n">expand_stars</span><span class="p">,</span>
-</span><span id="qualify-93"><a href="#qualify-93"><span class="linenos"> 93</span></a>            <span class="n">infer_schema</span><span class="o">=</span><span class="n">infer_schema</span><span class="p">,</span>
-</span><span id="qualify-94"><a href="#qualify-94"><span class="linenos"> 94</span></a>        <span class="p">)</span>
-</span><span id="qualify-95"><a href="#qualify-95"><span class="linenos"> 95</span></a>
-</span><span id="qualify-96"><a href="#qualify-96"><span class="linenos"> 96</span></a>    <span class="k">if</span> <span class="n">quote_identifiers</span><span class="p">:</span>
-</span><span id="qualify-97"><a href="#qualify-97"><span class="linenos"> 97</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">quote_identifiers_func</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="n">identify</span><span class="p">)</span>
+</span><span id="qualify-31"><a href="#qualify-31"><span class="linenos"> 31</span></a>    <span class="n">allow_partial_qualification</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="qualify-32"><a href="#qualify-32"><span class="linenos"> 32</span></a>    <span class="n">validate_qualify_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="qualify-33"><a href="#qualify-33"><span class="linenos"> 33</span></a>    <span class="n">quote_identifiers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="qualify-34"><a href="#qualify-34"><span class="linenos"> 34</span></a>    <span class="n">identify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="qualify-35"><a href="#qualify-35"><span class="linenos"> 35</span></a>    <span class="n">infer_csv_schemas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="qualify-36"><a href="#qualify-36"><span class="linenos"> 36</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="qualify-37"><a href="#qualify-37"><span class="linenos"> 37</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="qualify-38"><a href="#qualify-38"><span class="linenos"> 38</span></a><span class="sd">    Rewrite sqlglot AST to have normalized and qualified tables and columns.</span>
+</span><span id="qualify-39"><a href="#qualify-39"><span class="linenos"> 39</span></a>
+</span><span id="qualify-40"><a href="#qualify-40"><span class="linenos"> 40</span></a><span class="sd">    This step is necessary for all further SQLGlot optimizations.</span>
+</span><span id="qualify-41"><a href="#qualify-41"><span class="linenos"> 41</span></a>
+</span><span id="qualify-42"><a href="#qualify-42"><span class="linenos"> 42</span></a><span class="sd">    Example:</span>
+</span><span id="qualify-43"><a href="#qualify-43"><span class="linenos"> 43</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
+</span><span id="qualify-44"><a href="#qualify-44"><span class="linenos"> 44</span></a><span class="sd">        &gt;&gt;&gt; schema = {&quot;tbl&quot;: {&quot;col&quot;: &quot;INT&quot;}}</span>
+</span><span id="qualify-45"><a href="#qualify-45"><span class="linenos"> 45</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT col FROM tbl&quot;)</span>
+</span><span id="qualify-46"><a href="#qualify-46"><span class="linenos"> 46</span></a><span class="sd">        &gt;&gt;&gt; qualify(expression, schema=schema).sql()</span>
+</span><span id="qualify-47"><a href="#qualify-47"><span class="linenos"> 47</span></a><span class="sd">        &#39;SELECT &quot;tbl&quot;.&quot;col&quot; AS &quot;col&quot; FROM &quot;tbl&quot; AS &quot;tbl&quot;&#39;</span>
+</span><span id="qualify-48"><a href="#qualify-48"><span class="linenos"> 48</span></a>
+</span><span id="qualify-49"><a href="#qualify-49"><span class="linenos"> 49</span></a><span class="sd">    Args:</span>
+</span><span id="qualify-50"><a href="#qualify-50"><span class="linenos"> 50</span></a><span class="sd">        expression: Expression to qualify.</span>
+</span><span id="qualify-51"><a href="#qualify-51"><span class="linenos"> 51</span></a><span class="sd">        db: Default database name for tables.</span>
+</span><span id="qualify-52"><a href="#qualify-52"><span class="linenos"> 52</span></a><span class="sd">        catalog: Default catalog name for tables.</span>
+</span><span id="qualify-53"><a href="#qualify-53"><span class="linenos"> 53</span></a><span class="sd">        schema: Schema to infer column names and types.</span>
+</span><span id="qualify-54"><a href="#qualify-54"><span class="linenos"> 54</span></a><span class="sd">        expand_alias_refs: Whether to expand references to aliases.</span>
+</span><span id="qualify-55"><a href="#qualify-55"><span class="linenos"> 55</span></a><span class="sd">        expand_stars: Whether to expand star queries. This is a necessary step</span>
+</span><span id="qualify-56"><a href="#qualify-56"><span class="linenos"> 56</span></a><span class="sd">            for most of the optimizer&#39;s rules to work; do not set to False unless you</span>
+</span><span id="qualify-57"><a href="#qualify-57"><span class="linenos"> 57</span></a><span class="sd">            know what you&#39;re doing!</span>
+</span><span id="qualify-58"><a href="#qualify-58"><span class="linenos"> 58</span></a><span class="sd">        infer_schema: Whether to infer the schema if missing.</span>
+</span><span id="qualify-59"><a href="#qualify-59"><span class="linenos"> 59</span></a><span class="sd">        isolate_tables: Whether to isolate table selects.</span>
+</span><span id="qualify-60"><a href="#qualify-60"><span class="linenos"> 60</span></a><span class="sd">        qualify_columns: Whether to qualify columns.</span>
+</span><span id="qualify-61"><a href="#qualify-61"><span class="linenos"> 61</span></a><span class="sd">        allow_partial_qualification: Whether to allow partial qualification.</span>
+</span><span id="qualify-62"><a href="#qualify-62"><span class="linenos"> 62</span></a><span class="sd">        validate_qualify_columns: Whether to validate columns.</span>
+</span><span id="qualify-63"><a href="#qualify-63"><span class="linenos"> 63</span></a><span class="sd">        quote_identifiers: Whether to run the quote_identifiers step.</span>
+</span><span id="qualify-64"><a href="#qualify-64"><span class="linenos"> 64</span></a><span class="sd">            This step is necessary to ensure correctness for case sensitive queries.</span>
+</span><span id="qualify-65"><a href="#qualify-65"><span class="linenos"> 65</span></a><span class="sd">            But this flag is provided in case this step is performed at a later time.</span>
+</span><span id="qualify-66"><a href="#qualify-66"><span class="linenos"> 66</span></a><span class="sd">        identify: If True, quote all identifiers, else only necessary ones.</span>
+</span><span id="qualify-67"><a href="#qualify-67"><span class="linenos"> 67</span></a><span class="sd">        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs&#39; schemas.</span>
+</span><span id="qualify-68"><a href="#qualify-68"><span class="linenos"> 68</span></a>
+</span><span id="qualify-69"><a href="#qualify-69"><span class="linenos"> 69</span></a><span class="sd">    Returns:</span>
+</span><span id="qualify-70"><a href="#qualify-70"><span class="linenos"> 70</span></a><span class="sd">        The qualified expression.</span>
+</span><span id="qualify-71"><a href="#qualify-71"><span class="linenos"> 71</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="qualify-72"><a href="#qualify-72"><span class="linenos"> 72</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="qualify-73"><a href="#qualify-73"><span class="linenos"> 73</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="qualify-74"><a href="#qualify-74"><span class="linenos"> 74</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
+</span><span id="qualify-75"><a href="#qualify-75"><span class="linenos"> 75</span></a>        <span class="n">expression</span><span class="p">,</span>
+</span><span id="qualify-76"><a href="#qualify-76"><span class="linenos"> 76</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
+</span><span id="qualify-77"><a href="#qualify-77"><span class="linenos"> 77</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
+</span><span id="qualify-78"><a href="#qualify-78"><span class="linenos"> 78</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
+</span><span id="qualify-79"><a href="#qualify-79"><span class="linenos"> 79</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
+</span><span id="qualify-80"><a href="#qualify-80"><span class="linenos"> 80</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
+</span><span id="qualify-81"><a href="#qualify-81"><span class="linenos"> 81</span></a>    <span class="p">)</span>
+</span><span id="qualify-82"><a href="#qualify-82"><span class="linenos"> 82</span></a>
+</span><span id="qualify-83"><a href="#qualify-83"><span class="linenos"> 83</span></a>    <span class="k">if</span> <span class="n">isolate_tables</span><span class="p">:</span>
+</span><span id="qualify-84"><a href="#qualify-84"><span class="linenos"> 84</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
+</span><span id="qualify-85"><a href="#qualify-85"><span class="linenos"> 85</span></a>
+</span><span id="qualify-86"><a href="#qualify-86"><span class="linenos"> 86</span></a>    <span class="k">if</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">PREFER_CTE_ALIAS_COLUMN</span><span class="p">:</span>
+</span><span id="qualify-87"><a href="#qualify-87"><span class="linenos"> 87</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">pushdown_cte_alias_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="qualify-88"><a href="#qualify-88"><span class="linenos"> 88</span></a>
+</span><span id="qualify-89"><a href="#qualify-89"><span class="linenos"> 89</span></a>    <span class="k">if</span> <span class="n">qualify_columns</span><span class="p">:</span>
+</span><span id="qualify-90"><a href="#qualify-90"><span class="linenos"> 90</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_columns_func</span><span class="p">(</span>
+</span><span id="qualify-91"><a href="#qualify-91"><span class="linenos"> 91</span></a>            <span class="n">expression</span><span class="p">,</span>
+</span><span id="qualify-92"><a href="#qualify-92"><span class="linenos"> 92</span></a>            <span class="n">schema</span><span class="p">,</span>
+</span><span id="qualify-93"><a href="#qualify-93"><span class="linenos"> 93</span></a>            <span class="n">expand_alias_refs</span><span class="o">=</span><span class="n">expand_alias_refs</span><span class="p">,</span>
+</span><span id="qualify-94"><a href="#qualify-94"><span class="linenos"> 94</span></a>            <span class="n">expand_stars</span><span class="o">=</span><span class="n">expand_stars</span><span class="p">,</span>
+</span><span id="qualify-95"><a href="#qualify-95"><span class="linenos"> 95</span></a>            <span class="n">infer_schema</span><span class="o">=</span><span class="n">infer_schema</span><span class="p">,</span>
+</span><span id="qualify-96"><a href="#qualify-96"><span class="linenos"> 96</span></a>            <span class="n">allow_partial_qualification</span><span class="o">=</span><span class="n">allow_partial_qualification</span><span class="p">,</span>
+</span><span id="qualify-97"><a href="#qualify-97"><span class="linenos"> 97</span></a>        <span class="p">)</span>
 </span><span id="qualify-98"><a href="#qualify-98"><span class="linenos"> 98</span></a>
-</span><span id="qualify-99"><a href="#qualify-99"><span class="linenos"> 99</span></a>    <span class="k">if</span> <span class="n">validate_qualify_columns</span><span class="p">:</span>
-</span><span id="qualify-100"><a href="#qualify-100"><span class="linenos">100</span></a>        <span class="n">validate_qualify_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="qualify-99"><a href="#qualify-99"><span class="linenos"> 99</span></a>    <span class="k">if</span> <span class="n">quote_identifiers</span><span class="p">:</span>
+</span><span id="qualify-100"><a href="#qualify-100"><span class="linenos">100</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">quote_identifiers_func</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="n">identify</span><span class="p">)</span>
 </span><span id="qualify-101"><a href="#qualify-101"><span class="linenos">101</span></a>
-</span><span id="qualify-102"><a href="#qualify-102"><span class="linenos">102</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span><span id="qualify-102"><a href="#qualify-102"><span class="linenos">102</span></a>    <span class="k">if</span> <span class="n">validate_qualify_columns</span><span class="p">:</span>
+</span><span id="qualify-103"><a href="#qualify-103"><span class="linenos">103</span></a>        <span class="n">validate_qualify_columns_func</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="qualify-104"><a href="#qualify-104"><span class="linenos">104</span></a>
+</span><span id="qualify-105"><a href="#qualify-105"><span class="linenos">105</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span></pre></div>
 
 
@@ -289,6 +295,7 @@ know what you're doing!</li>
 <li><strong>infer_schema:</strong>  Whether to infer the schema if missing.</li>
 <li><strong>isolate_tables:</strong>  Whether to isolate table selects.</li>
 <li><strong>qualify_columns:</strong>  Whether to qualify columns.</li>
+<li><strong>allow_partial_qualification:</strong>  Whether to allow partial qualification.</li>
 <li><strong>validate_qualify_columns:</strong>  Whether to validate columns.</li>
 <li><strong>quote_identifiers:</strong>  Whether to run the quote_identifiers step.
 This step is necessary to ensure correctness for case sensitive queries.

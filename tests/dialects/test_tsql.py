@@ -1573,7 +1573,7 @@ WHERE
             "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
             write={
                 "tsql": "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
-                "clickhouse": "SELECT DATE_DIFF(DAY, CAST(a AS Nullable(DateTime)), CAST(b AS Nullable(DateTime))) AS x FROM foo",
+                "clickhouse": "SELECT DATE_DIFF(DAY, CAST(CAST(a AS Nullable(DateTime)) AS DateTime64(6)), CAST(CAST(b AS Nullable(DateTime)) AS DateTime64(6))) AS x FROM foo",
             },
         )
 

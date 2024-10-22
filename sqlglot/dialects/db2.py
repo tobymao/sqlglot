@@ -5,7 +5,6 @@ from sqlglot import exp, generator, parser, tokens
 
 from sqlglot.dialects.dialect import Dialect
 
-# from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
 
 from sqlglot.helper import seq_get
@@ -13,39 +12,13 @@ from sqlglot.helper import seq_get
 
 from sqlglot.dialects.dialect import (
     build_date_delta_with_interval,
-    unit_to_var,
     build_formatted_time,
     NormalizationStrategy,
+    date_add_sql,
 )
 
 
-def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
-    this = seq_get(args, 0)
-
-    if this and not this.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
-        annotate_types(this)
-        if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            return build_formatted_time(exp.TimeToStr, "db2", default=True)(args)
-
-    return exp.ToChar.from_arg_list(args)
-
-
-def date_add_sql(
-    kind: str,
-) -> t.Callable[[generator.Generator, exp.Expression], str]:
-    def func(self: generator.Generator, expression: exp.Expression) -> str:
-        return self.func(
-            f"DATE_{kind}",
-            expression.this,
-            exp.Interval(this=expression.expression, unit=unit_to_var(expression)),
-        )
-
-    return func
-
-
-class Db2(Dialect):
+class DB2(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
 
@@ -127,12 +100,6 @@ class Db2(Dialect):
             ),
         }
 
-        NO_PAREN_FUNCTIONS = {
-            **parser.Parser.NO_PAREN_FUNCTIONS,
-            TokenType.CURRENT_DATE: exp.CurrentDate,
-            TokenType.CURRENT_TIME: exp.CurrentTime,
-            TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
-        }
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
             "JSON_ARRAY": lambda self: self._parse_json_array(
@@ -150,15 +117,9 @@ class Db2(Dialect):
             ),
             "XMLTABLE": lambda self: self._parse_xml_table(),
         }
-        DISTINCT_TOKENS = {TokenType.DISTINCT}
 
-        QUERY_MODIFIER_PARSERS = {
-            **parser.Parser.QUERY_MODIFIER_PARSERS,
-            TokenType.ORDER_BY: lambda self: ("order", self._parse_order()),
-        }
 
     class Generator(generator.Generator):
-        # Specifies how AST nodes, i.e. subclasses of exp.Expression, should be converted into SQL
         SINGLE_STRING_INTERVAL = True
         RENAME_TABLE_WITH_DB = False
         LOCKING_READS_SUPPORTED = True

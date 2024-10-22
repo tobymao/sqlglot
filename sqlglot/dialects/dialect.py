@@ -1714,3 +1714,27 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
             )
         )
     return self.lateral_sql(expression)
+
+def build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
+    this = seq_get(args, 0)
+
+    if this and not this.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        annotate_types(this)
+        if this.is_type(*exp.DataType.TEMPORAL_TYPES):
+            return build_formatted_time(exp.TimeToStr, "db2", default=True)(args)
+
+    return exp.ToChar.from_arg_list(args)
+
+def date_add_sql(
+    kind: str,
+) -> t.Callable[[Generator, exp.Expression], str]:
+    def func(self: Generator, expression: exp.Expression) -> str:
+        return self.func(
+            f"DATE_{kind}",
+            expression.this,
+            exp.Interval(this=expression.expression, unit=unit_to_var(expression)),
+        )
+
+    return func

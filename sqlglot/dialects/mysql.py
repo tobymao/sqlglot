@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     unit_to_var,
     trim_sql,
     timestrtotime_sql,
+    date_add_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -109,19 +110,6 @@ def _unix_to_time_sql(self: MySQL.Generator, expression: exp.UnixToTime) -> str:
         exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)),
         self.format_time(expression),
     )
-
-
-def date_add_sql(
-    kind: str,
-) -> t.Callable[[generator.Generator, exp.Expression], str]:
-    def func(self: generator.Generator, expression: exp.Expression) -> str:
-        return self.func(
-            f"DATE_{kind}",
-            expression.this,
-            exp.Interval(this=expression.expression, unit=unit_to_var(expression)),
-        )
-
-    return func
 
 
 def _ts_or_ds_to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -> str:

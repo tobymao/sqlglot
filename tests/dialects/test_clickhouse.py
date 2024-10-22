@@ -655,9 +655,8 @@ class TestClickhouse(Validator):
             "MultiPolygon"
         ]
         for data_type in data_types:
-            self.validate_all(
-                f"SELECT val::{data_type}",
-            )
+            with self.subTest(f"Casting to ClickHouse {data_type}"):
+                self.validate_identity(f"SELECT CAST(val AS {data_type})")
 
     def test_ddl(self):
         db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)

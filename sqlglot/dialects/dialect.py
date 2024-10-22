@@ -1715,6 +1715,7 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
         )
     return self.lateral_sql(expression)
 
+
 def build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
     this = seq_get(args, 0)
 
@@ -1726,6 +1727,7 @@ def build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
             return build_formatted_time(exp.TimeToStr, "db2", default=True)(args)
 
     return exp.ToChar.from_arg_list(args)
+
 
 def date_add_sql(
     kind: str,

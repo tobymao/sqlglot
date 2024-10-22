@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     NormalizationStrategy,
     date_add_sql,
+    build_timetostr_or_tochar,
 )
 
 
@@ -79,7 +80,7 @@ class DB2(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
-            "TO_CHAR": _build_timetostr_or_tochar,
+            "TO_CHAR": build_timetostr_or_tochar,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
             "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
             "CHAR": lambda self: self._parse_chr(),
@@ -117,7 +118,6 @@ class DB2(Dialect):
             ),
             "XMLTABLE": lambda self: self._parse_xml_table(),
         }
-
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True

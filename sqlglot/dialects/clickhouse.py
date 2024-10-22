@@ -124,18 +124,17 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
             # separate fractional seconds and UTC offset
             offset_sep = "+" if "+" in ts_parts[1] else "-"
             ts_frac_parts = ts_parts[1].split(offset_sep)
+            num_frac_parts = len(ts_frac_parts)
 
             # pad to 6 digits if fractional seconds present
-            ts_frac_parts[0] = ts_frac_parts[0] + "0" * (
-                6 - (len(ts_frac_parts[0]) if len(ts_frac_parts[0]) < 6 else 6)
-            )
+            ts_frac_parts[0] = ts_frac_parts[0].ljust(6, "0")
             ts_string = "".join(
                 [
                     ts_parts[0],  # date and time
                     ".",
                     ts_frac_parts[0],  # fractional seconds
-                    offset_sep if len(ts_frac_parts) > 1 else "",
-                    ts_frac_parts[1] if len(ts_frac_parts) > 1 else "",  # utc offset (if present)
+                    offset_sep if num_frac_parts > 1 else "",
+                    ts_frac_parts[1] if num_frac_parts > 1 else "",  # utc offset (if present)
                 ]
             )
 

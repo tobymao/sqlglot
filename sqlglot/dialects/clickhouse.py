@@ -187,6 +187,12 @@ class ClickHouse(Dialect):
             "UINT8": TokenType.UTINYINT,
             "IPV4": TokenType.IPV4,
             "IPV6": TokenType.IPV6,
+            "POINT": TokenType.POINT,
+            "RING": TokenType.RING,
+            "LINESTRING": TokenType.LINESTRING,
+            "MULTILINESTRING": TokenType.MULTILINESTRING,
+            "POLYGON": TokenType.POLYGON,
+            "MULTIPOLYGON": TokenType.MULTIPOLYGON,
             "AGGREGATEFUNCTION": TokenType.AGGREGATEFUNCTION,
             "SIMPLEAGGREGATEFUNCTION": TokenType.SIMPLEAGGREGATEFUNCTION,
             "SYSTEM": TokenType.COMMAND,
@@ -865,6 +871,12 @@ class ClickHouse(Dialect):
             exp.DataType.Type.UTINYINT: "UInt8",
             exp.DataType.Type.IPV4: "IPv4",
             exp.DataType.Type.IPV6: "IPv6",
+            exp.DataType.Type.POINT: "Point",
+            exp.DataType.Type.RING: "Ring",
+            exp.DataType.Type.LINESTRING: "LineString",
+            exp.DataType.Type.MULTILINESTRING: "MultiLineString",
+            exp.DataType.Type.POLYGON: "Polygon",
+            exp.DataType.Type.MULTIPOLYGON: "MultiPolygon",
             exp.DataType.Type.AGGREGATEFUNCTION: "AggregateFunction",
             exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
         }
@@ -961,6 +973,12 @@ class ClickHouse(Dialect):
             exp.DataType.Type.ARRAY,
             exp.DataType.Type.MAP,
             exp.DataType.Type.STRUCT,
+            exp.DataType.Type.POINT,
+            exp.DataType.Type.RING,
+            exp.DataType.Type.LINESTRING,
+            exp.DataType.Type.MULTILINESTRING,
+            exp.DataType.Type.POLYGON,
+            exp.DataType.Type.MULTIPOLYGON,
         }
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:

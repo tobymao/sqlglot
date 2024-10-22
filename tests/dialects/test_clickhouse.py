@@ -645,6 +645,20 @@ class TestClickhouse(Validator):
                 write={"clickhouse": f"CAST(pow(2, 32) AS {data_type})"},
             )
 
+    def test_geom_types(self):
+        data_types = [
+            "Point",
+            "Ring",
+            "LineString",
+            "MultiLineString",
+            "Polygon",
+            "MultiPolygon"
+        ]
+        for data_type in data_types:
+            self.validate_all(
+                f"SELECT val::{data_type}",
+            )
+
     def test_ddl(self):
         db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
         create_with_cluster = exp.Create(

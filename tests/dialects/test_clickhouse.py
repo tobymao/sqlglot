@@ -646,14 +646,7 @@ class TestClickhouse(Validator):
             )
 
     def test_geom_types(self):
-        data_types = [
-            "Point",
-            "Ring",
-            "LineString",
-            "MultiLineString",
-            "Polygon",
-            "MultiPolygon"
-        ]
+        data_types = ["Point", "Ring", "LineString", "MultiLineString", "Polygon", "MultiPolygon"]
         for data_type in data_types:
             with self.subTest(f"Casting to ClickHouse {data_type}"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")

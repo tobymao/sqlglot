@@ -1,6 +1,33 @@
 Changelog
 =========
 
+## [v25.27.0] - 2024-10-22
+### :boom: BREAKING CHANGES
+- due to [`4d86499`](https://github.com/tobymao/sqlglot/commit/4d8649940d02ac319f2fec372a52674488f01de5) - include the target node for Move edits *(PR [#4277](https://github.com/tobymao/sqlglot/pull/4277) by [@georgesittas](https://github.com/georgesittas))*:
+
+  include the target node for Move edits (#4277)
+
+- due to [`9771965`](https://github.com/tobymao/sqlglot/commit/97719657d1b2074dabfbe54af0e1ea3acd6d4744) - Add support for TIMESTAMP_NTZ_FROM_PARTS *(PR [#4280](https://github.com/tobymao/sqlglot/pull/4280) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Add support for TIMESTAMP_NTZ_FROM_PARTS (#4280)
+
+- due to [`768adb3`](https://github.com/tobymao/sqlglot/commit/768adb3d85ed88931d761e5ecc8fb4a3a40d0dc5) - time string literals containing fractional seconds *(PR [#4269](https://github.com/tobymao/sqlglot/pull/4269) by [@treysp](https://github.com/treysp))*:
+
+  time string literals containing fractional seconds (#4269)
+
+
+### :sparkles: New Features
+- [`9771965`](https://github.com/tobymao/sqlglot/commit/97719657d1b2074dabfbe54af0e1ea3acd6d4744) - **snowflake**: Add support for TIMESTAMP_NTZ_FROM_PARTS *(PR [#4280](https://github.com/tobymao/sqlglot/pull/4280) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`9e11654`](https://github.com/tobymao/sqlglot/commit/9e11654c6ebf7451f14d46c006070effe452519a) - **clickhouse**: add geometry types *(PR [#4278](https://github.com/tobymao/sqlglot/pull/4278) by [@jwhitaker-gridcog](https://github.com/jwhitaker-gridcog))*
+
+### :bug: Bug Fixes
+- [`c25a9ab`](https://github.com/tobymao/sqlglot/commit/c25a9ab577d7f0a1056e8afab680ca7801c47fff) - **tsql**: Keep CTE's attached to the query when emulating IF NOT EXISTS *(PR [#4279](https://github.com/tobymao/sqlglot/pull/4279) by [@erindru](https://github.com/erindru))*
+- [`768adb3`](https://github.com/tobymao/sqlglot/commit/768adb3d85ed88931d761e5ecc8fb4a3a40d0dc5) - **clickhouse**: time string literals containing fractional seconds *(PR [#4269](https://github.com/tobymao/sqlglot/pull/4269) by [@treysp](https://github.com/treysp))*
+
+### :recycle: Refactors
+- [`4d86499`](https://github.com/tobymao/sqlglot/commit/4d8649940d02ac319f2fec372a52674488f01de5) - **diff**: include the target node for Move edits *(PR [#4277](https://github.com/tobymao/sqlglot/pull/4277) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.26.0] - 2024-10-21
 ### :boom: BREAKING CHANGES
 - due to [`142c3e7`](https://github.com/tobymao/sqlglot/commit/142c3e75b25374ba9259f21b51cd728bbeb280ef) - Support TO_DOUBLE function *(PR [#4255](https://github.com/tobymao/sqlglot/pull/4255) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -5093,3 +5120,4 @@ Changelog
 [v25.25.0]: https://github.com/tobymao/sqlglot/compare/v25.24.5...v25.25.0
 [v25.25.1]: https://github.com/tobymao/sqlglot/compare/v25.25.0...v25.25.1
 [v25.26.0]: https://github.com/tobymao/sqlglot/compare/v25.25.1...v25.26.0
+[v25.27.0]: https://github.com/tobymao/sqlglot/compare/v25.26.0...v25.27.0

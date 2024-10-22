@@ -6488,7 +6488,12 @@ class Uuid(Func):
 
 
 class TimestampFromParts(Func):
-    _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
+    _sql_names = [
+        "TIMESTAMP_FROM_PARTS",
+        "TIMESTAMPFROMPARTS",
+        "TIMESTAMP_NTZ_FROM_PARTS",
+        "TIMESTAMPNTZFROMPARTS",
+    ]
     arg_types = {
         "year": True,
         "month": True,

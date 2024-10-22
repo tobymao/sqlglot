@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 import typing as t
 import datetime
-
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -108,23 +106,53 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
 
 
 def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime):
-    tz = expression.args.get("zone")
-    datatype = exp.DataType.build(exp.DataType.Type.TIMESTAMP)
     ts = expression.this
-    if tz:
-        # build a datatype that encodes the timezone as a type parameter, eg DateTime('America/Los_Angeles')
-        datatype = exp.DataType.build(
-            exp.DataType.Type.TIMESTAMPTZ,  # Type.TIMESTAMPTZ maps to DateTime
-            expressions=[exp.DataTypeParam(this=tz)],
-        )
 
-        if isinstance(ts, exp.Literal):
-            # strip the timezone out of the literal, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
-            # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if it's part of the timestamp string
-            ts_without_tz = (
-                datetime.datetime.fromisoformat(ts.name).replace(tzinfo=None).isoformat(sep=" ")
+    tz = expression.args.get("zone")
+    if tz and isinstance(ts, exp.Literal):
+        # Clickhouse will not accept timestamps that include a UTC offset, so we must remove them.
+        # The first step to removing is parsing the string with `datetime.datetime.fromisoformat`.
+        #
+        # In python <3.11, `fromisoformat()` can only parse timestamps of millisecond (3 digit)
+        # or microsecond (6 digit) precision. It will error if passed any other number of fractional
+        # digits, so we extract the fractional seconds and pad to 6 digits before parsing.
+        ts_string = ts.name.strip()
+
+        # separate [date and time] from [fractional seconds and UTC offset]
+        ts_parts = ts_string.split(".")
+        if len(ts_parts) == 2:
+            # separate fractional seconds and UTC offset
+            offset_sep = "+" if "+" in ts_parts[1] else "-"
+            ts_frac_parts = ts_parts[1].split(offset_sep)
+            num_frac_parts = len(ts_frac_parts)
+
+            # pad to 6 digits if fractional seconds present
+            ts_frac_parts[0] = ts_frac_parts[0].ljust(6, "0")
+            ts_string = "".join(
+                [
+                    ts_parts[0],  # date and time
+                    ".",
+                    ts_frac_parts[0],  # fractional seconds
+                    offset_sep if num_frac_parts > 1 else "",
+                    ts_frac_parts[1] if num_frac_parts > 1 else "",  # utc offset (if present)
+                ]
             )
-            ts = exp.Literal.string(ts_without_tz)
+
+        # return literal with no timezone, eg turn '2020-01-01 12:13:14-08:00' into '2020-01-01 12:13:14'
+        # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if
+        # it's part of the timestamp string
+        ts_without_tz = (
+            datetime.datetime.fromisoformat(ts_string).replace(tzinfo=None).isoformat(sep=" ")
+        )
+        ts = exp.Literal.string(ts_without_tz)
+
+    # Non-nullable DateTime64 with microsecond precision
+    expressions = [exp.DataTypeParam(this=tz)] if tz else []
+    datatype = exp.DataType.build(
+        exp.DataType.Type.DATETIME64,
+        expressions=[exp.DataTypeParam(this=exp.Literal.number(6)), *expressions],
+        nullable=False,
+    )
 
     return self.sql(exp.cast(ts, datatype, dialect=self.dialect))
 

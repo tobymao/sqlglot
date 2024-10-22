@@ -36,7 +36,8 @@ class Remove:
 class Move:
     """Indicates that an existing node's position within the tree has changed"""
 
-    expression: exp.Expression
+    source: exp.Expression
+    target: exp.Expression
 
 
 @dataclass(frozen=True)
@@ -93,11 +94,11 @@ def diff(
         matchings: the list of pre-matched node pairs which is used to help the algorithm's
             heuristics produce better results for subtrees that are known by a caller to be matching.
             Note: expression references in this list must refer to the same node objects that are
-            referenced in source / target trees.
+            referenced in the source / target trees.
         delta_only: excludes all `Keep` nodes from the diff.
         copy: whether to copy the input expressions.
             Note: if this is set to false, the caller must ensure that there are no shared references
-            in the two ASTs, otherwise the diffing algorithm may produce unexpected behavior.
+            in the two trees, otherwise the diffing algorithm may produce unexpected behavior.
         kwargs: additional arguments to pass to the ChangeDistiller instance.
 
     Returns:
@@ -186,19 +187,15 @@ class ChangeDistiller:
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
         matching_set = self._compute_matching_set() | set(pre_matched_nodes.items())
-        return self._generate_edit_script(matching_set, delta_only)
+        return self._generate_edit_script(dict(matching_set), delta_only)
 
-    def _generate_edit_script(
-        self,
-        matching_set: t.Set[t.Tuple[int, int]],
-        delta_only: bool,
-    ) -> t.List[Edit]:
+    def _generate_edit_script(self, matchings: t.Dict[int, int], delta_only: bool) -> t.List[Edit]:
         edit_script: t.List[Edit] = []
         for removed_node_id in self._unmatched_source_nodes:
             edit_script.append(Remove(self._source_index[removed_node_id]))
         for inserted_node_id in self._unmatched_target_nodes:
             edit_script.append(Insert(self._target_index[inserted_node_id]))
-        for kept_source_node_id, kept_target_node_id in matching_set:
+        for kept_source_node_id, kept_target_node_id in matchings.items():
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
 
@@ -206,9 +203,7 @@ class ChangeDistiller:
                 not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES)
                 or source_node == target_node
             ):
-                edit_script.extend(
-                    self._generate_move_edits(source_node, target_node, matching_set)
-                )
+                edit_script.extend(self._generate_move_edits(source_node, target_node, matchings))
 
                 source_non_expression_leaves = dict(_get_non_expression_leaves(source_node))
                 target_non_expression_leaves = dict(_get_non_expression_leaves(target_node))
@@ -223,17 +218,21 @@ class ChangeDistiller:
         return edit_script
 
     def _generate_move_edits(
-        self, source: exp.Expression, target: exp.Expression, matching_set: t.Set[t.Tuple[int, int]]
+        self, source: exp.Expression, target: exp.Expression, matchings: t.Dict[int, int]
     ) -> t.List[Move]:
         source_args = [id(e) for e in _expression_only_args(source)]
         target_args = [id(e) for e in _expression_only_args(target)]
 
-        args_lcs = set(_lcs(source_args, target_args, lambda l, r: (l, r) in matching_set))
+        args_lcs = set(
+            _lcs(source_args, target_args, lambda l, r: matchings.get(t.cast(int, l)) == r)
+        )
 
         move_edits = []
         for a in source_args:
             if a not in args_lcs and a not in self._unmatched_source_nodes:
-                move_edits.append(Move(self._source_index[a]))
+                move_edits.append(
+                    Move(source=self._source_index[a], target=self._target_index[matchings[a]])
+                )
 
         return move_edits
 

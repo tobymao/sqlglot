@@ -1844,7 +1844,7 @@ class Parser(metaclass=_Parser):
                         expression = self._parse_string()
                         extend_props(self._parse_properties())
                     else:
-                        expression = self._parse_statement()
+                        expression = self._parse_user_defined_function_expression()
 
                     end = self._match_text_seq("END")
 
@@ -5340,6 +5340,9 @@ class Parser(metaclass=_Parser):
             transformed.append(e)
 
         return transformed
+
+    def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expression]:
+        return self._parse_statement()
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
         return self._parse_column_def(self._parse_id_var())

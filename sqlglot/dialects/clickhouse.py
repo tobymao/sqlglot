@@ -503,6 +503,10 @@ class ClickHouse(Dialect):
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
+        # https://clickhouse.com/docs/en/sql-reference/statements/create/function
+        def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expression]:
+            return self._parse_lambda()
+
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:

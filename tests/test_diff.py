@@ -81,35 +81,54 @@ class TestDiff(unittest.TestCase):
         )
 
     def test_node_position_changed(self):
+        expr_src = parse_one("SELECT a, b, c")
+        expr_tgt = parse_one("SELECT c, a, b")
+
         self._validate_delta_only(
-            diff_delta_only(parse_one("SELECT a, b, c"), parse_one("SELECT c, a, b")),
+            diff_delta_only(expr_src, expr_tgt),
             [
-                Move(parse_one("c")),  # the Column node
+                Move(source=expr_src.selects[2], target=expr_tgt.selects[0]),
             ],
         )
 
+        expr_src = parse_one("SELECT a + b")
+        expr_tgt = parse_one("SELECT b + a")
+
         self._validate_delta_only(
-            diff_delta_only(parse_one("SELECT a + b"), parse_one("SELECT b + a")),
+            diff_delta_only(expr_src, expr_tgt),
             [
-                Move(parse_one("a")),  # the Column node
+                Move(source=expr_src.selects[0].left, target=expr_tgt.selects[0].right),
             ],
         )
 
+        expr_src = parse_one("SELECT aaaa AND bbbb")
+        expr_tgt = parse_one("SELECT bbbb AND aaaa")
+
         self._validate_delta_only(
-            diff_delta_only(parse_one("SELECT aaaa AND bbbb"), parse_one("SELECT bbbb AND aaaa")),
+            diff_delta_only(expr_src, expr_tgt),
             [
-                Move(parse_one("aaaa")),  # the Column node
+                Move(source=expr_src.selects[0].left, target=expr_tgt.selects[0].right),
             ],
         )
 
+        expr_src = parse_one("SELECT aaaa OR bbbb OR cccc")
+        expr_tgt = parse_one("SELECT cccc OR bbbb OR aaaa")
+
         self._validate_delta_only(
-            diff_delta_only(
-                parse_one("SELECT aaaa OR bbbb OR cccc"),
-                parse_one("SELECT cccc OR bbbb OR aaaa"),
-            ),
+            diff_delta_only(expr_src, expr_tgt),
             [
-                Move(parse_one("aaaa")),  # the Column node
-                Move(parse_one("cccc")),  # the Column node
+                Move(source=expr_src.selects[0].left.left, target=expr_tgt.selects[0].right),
+                Move(source=expr_src.selects[0].right, target=expr_tgt.selects[0].left.left),
+            ],
+        )
+
+        expr_src = parse_one("SELECT a, b FROM t WHERE CONCAT('a', 'b') = 'ab'")
+        expr_tgt = parse_one("SELECT a FROM t WHERE CONCAT('a', 'b', b) = 'ab'")
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [
+                Move(source=expr_src.selects[1], target=expr_tgt.find(exp.Concat).expressions[-1]),
             ],
         )
 
@@ -274,7 +293,7 @@ class TestDiff(unittest.TestCase):
                     source=expr_src.find(exp.Order).expressions[0],
                     target=expr_tgt.find(exp.Order).expressions[0],
                 ),
-                Move(parse_one("a")),
+                Move(source=expr_src.selects[0], target=expr_tgt.selects[1]),
             ],
         )
 

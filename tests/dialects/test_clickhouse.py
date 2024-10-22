@@ -1097,11 +1097,11 @@ LIFETIME(MIN 0 MAX 0)""",
         # no fractional seconds
         self.assertEqual(
             convert(datetime(2020, 1, 1, 0, 0, 1)).sql(dialect=self.dialect),
-            "CAST('2020-01-01 00:00:01' AS DateTime)",
+            "CAST('2020-01-01 00:00:01' AS DateTime64(6))",
         )
         self.assertEqual(
             convert(datetime(2020, 1, 1, 0, 0, 1, tzinfo=timezone.utc)).sql(dialect=self.dialect),
-            "CAST('2020-01-01 00:00:01' AS DateTime('UTC'))",
+            "CAST('2020-01-01 00:00:01' AS DateTime64(6, 'UTC'))",
         )
 
         # with fractional seconds
@@ -1127,7 +1127,7 @@ LIFETIME(MIN 0 MAX 0)""",
         for time_string in time_strings:
             self.assertEqual(
                 exp.TimeStrToTime(this=exp.Literal.string(time_string)).sql(dialect=self.dialect),
-                f"CAST('{time_string}' AS DateTime)",
+                f"CAST('{time_string}' AS DateTime64(6))",
             )
 
         time_strings_no_utc = ["2020-01-01 00:00:01" for i in range(4)]
@@ -1136,26 +1136,18 @@ LIFETIME(MIN 0 MAX 0)""",
                 exp.TimeStrToTime(this=exp.Literal.string(utc), zone=exp.Literal.string("UTC")).sql(
                     dialect=self.dialect
                 ),
-                f"CAST('{no_utc}' AS DateTime('UTC'))",
+                f"CAST('{no_utc}' AS DateTime64(6, 'UTC'))",
             )
 
         # with fractional seconds
-        import sys
-
-        py_version = tuple(int(part) for part in sys.version.split(".")[0:2])
-
         time_strings = [
-            ("2020-01-01 00:00:01.001", 6),
-            ("2020-01-01 00:00:01.000001", 6),
-            ("2020-01-01 00:00:01.001+00:00", 6),
-            (" 2020-01-01 00:00:01.000001-00:00 ", 6),
+            "2020-01-01 00:00:01.001",
+            "2020-01-01 00:00:01.000001",
+            "2020-01-01 00:00:01.001+00:00",
+            "2020-01-01 00:00:01.000001-00:00",
+            "2020-01-01 00:00:01.0001",
+            "2020-01-01 00:00:01.1+00:00",
         ]
-        if py_version >= (3, 11):
-            time_strings = [
-                *time_strings,
-                ("2020-01-01 00:00:01.0001", 6),
-                ("2020-01-01 00:00:01.1+00:00", 6),
-            ]
 
         for time_string in time_strings:
             self.assertEqual(
@@ -1170,18 +1162,15 @@ LIFETIME(MIN 0 MAX 0)""",
             "2020-01-01 00:00:01.000001",
             "2020-01-01 00:00:01.001000",
             "2020-01-01 00:00:01.000001",
+            "2020-01-01 00:00:01.000100",
+            "2020-01-01 00:00:01.100000",
         ]
-        if py_version >= (3, 11):
-            time_strings_no_utc = [
-                *time_strings_no_utc,
-                "2020-01-01 00:00:01.000100",
-                "2020-01-01 00:00:01.100000",
-            ]
+
         for utc, no_utc in zip(time_strings, time_strings_no_utc):
             self.assertEqual(
-                exp.TimeStrToTime(
-                    this=exp.Literal.string(utc[0]), zone=exp.Literal.string("UTC")
-                ).sql(dialect=self.dialect),
+                exp.TimeStrToTime(this=exp.Literal.string(utc), zone=exp.Literal.string("UTC")).sql(
+                    dialect=self.dialect
+                ),
                 f"CAST('{no_utc}' AS DateTime64(6, 'UTC'))",
             )
 

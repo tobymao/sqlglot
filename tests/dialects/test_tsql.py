@@ -921,6 +921,12 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT * INTO foo.bar.baz FROM (SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2) AS temp')",
+            read={
+                "": "CREATE TABLE IF NOT EXISTS foo.bar.baz AS WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2"
+            },
+        )
+        self.validate_all(
             "CREATE OR ALTER VIEW a.b AS SELECT 1",
             read={
                 "": "CREATE OR REPLACE VIEW a.b AS SELECT 1",

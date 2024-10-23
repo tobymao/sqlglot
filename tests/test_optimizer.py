@@ -1337,6 +1337,47 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.BIGINT)
         self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.DOUBLE)
 
+        # Test chained UNIONs
+        sql = """
+            WITH t AS
+            (
+                SELECT NULL AS col
+                UNION
+                SELECT NULL AS col
+                UNION
+                SELECT 'a' AS col
+                UNION
+                SELECT NULL AS col
+                UNION
+                SELECT NULL AS col
+            )
+            SELECT col FROM t;
+        """
+        self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        # Test UNIONs with nested subqueries
+        sql = """
+            WITH t AS
+            (
+                SELECT NULL AS col
+                UNION
+                (SELECT NULL AS col UNION ALL SELECT 'a' AS col)
+            )
+            SELECT col FROM t;
+        """
+        self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        sql = """
+            WITH t AS
+            (
+                (SELECT NULL AS col UNION ALL SELECT 'a' AS col)
+                UNION
+                SELECT NULL AS col
+            )
+            SELECT col FROM t;
+        """
+        self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
     def test_recursive_cte(self):
         query = parse_one(
             """

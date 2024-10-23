@@ -241,7 +241,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 if not col_types:
                     # Process a chain / sub-tree of set operations
                     for set_op in expression.walk(
-                        prune=lambda n: not isinstance(n, exp.SetOperation)
+                        prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
                     ):
                         if not isinstance(set_op, exp.SetOperation):
                             continue

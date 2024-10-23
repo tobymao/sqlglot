@@ -236,7 +236,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):
-                col_types: t.Dict[str, exp.DataType.Type] = self._setop_cols.get(id(expression), {})
+                selects[name] = col_types = self._setop_column_types.get(id(expression), {})
 
                 if not col_types:
                     # Process a chain / sub-tree of set operations
@@ -272,9 +272,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                                 col_type, col_types.get(col_name, exp.DataType.Type.NULL)
                             )
 
-                    self._setop_cols[id(expression)] = col_types
-
-                selects[name] = col_types
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 

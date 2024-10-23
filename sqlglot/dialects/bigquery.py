@@ -425,6 +425,9 @@ class BigQuery(Dialect):
             "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
             "DIV": binary_from_function(exp.IntDiv),
+            "EDIT_DISTANCE": lambda args: exp.Levenshtein(
+                this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
+            ),
             "FORMAT_DATE": lambda args: exp.TimeToStr(
                 this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
             ),

@@ -6031,6 +6031,7 @@ class Levenshtein(Func):
         "ins_cost": False,
         "del_cost": False,
         "sub_cost": False,
+        "max_dist": False,
     }
 
 

@@ -194,6 +194,9 @@ LANGUAGE js AS
         self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS STRING)")
         self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
         self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
+        self.validate_identity("EDIT_DISTANCE('a', 'a', max_distance => 2)").assert_is(
+            exp.Levenshtein
+        )
         self.validate_identity(
             "MERGE INTO dataset.NewArrivals USING (SELECT * FROM UNNEST([('microwave', 10, 'warehouse #1'), ('dryer', 30, 'warehouse #1'), ('oven', 20, 'warehouse #2')])) ON FALSE WHEN NOT MATCHED THEN INSERT ROW WHEN NOT MATCHED BY SOURCE THEN DELETE"
         )
@@ -302,6 +305,13 @@ LANGUAGE js AS
             "SELECT CAST(1 AS INT64)",
         )
 
+        self.validate_all(
+            "EDIT_DISTANCE(a, b)",
+            write={
+                "bigquery": "EDIT_DISTANCE(a, b)",
+                "duckdb": "LEVENSHTEIN(a, b)",
+            },
+        )
         self.validate_all(
             "SAFE_CAST(some_date AS DATE FORMAT 'DD MONTH YYYY')",
             write={

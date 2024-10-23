@@ -236,7 +236,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):
-                selects[name] = col_types = self._setop_column_types.get(id(expression), {})
+                selects[name] = col_types = self._setop_column_types.setdefault(id(expression), {})
 
                 if not col_types:
                     # Process a chain / sub-tree of set operations

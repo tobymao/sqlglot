@@ -192,9 +192,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
         self._visited: t.Set[int] = set()
 
-        # Maps an exp.SetOperation's id (e.g. UNION) to it's annotated selected columns. This is done if the exp.SetOperation is
-        # the main expression of a source scope, as selecting from it multiple times would reprocess the entire subtree
-        self._setop_cols: t.Dict[int, t.Dict[str, exp.DataType.Type]] = dict()
+        # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
+        # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
+        # would reprocess the entire subtree to coerce the types of its operands' projections
+        self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType.Type]] = {}
 
     def _set_type(
         self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]

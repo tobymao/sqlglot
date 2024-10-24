@@ -1212,3 +1212,12 @@ class ClickHouse(Dialect):
 
         def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
             return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"
+
+        def is_sql(self, expression: exp.Is) -> str:
+            is_sql = super().is_sql(expression)
+
+            if isinstance(expression.parent, exp.Not) and isinstance(expression.this, exp.Subquery):
+                # WHERE (SELECT ...) IS NOT NULL -> NOT ((SELECT ...) IS NULL)
+                is_sql = self.wrap(is_sql)
+
+            return is_sql

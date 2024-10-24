@@ -4440,7 +4440,9 @@ class Generator(metaclass=_Generator):
         zone = expression.args.get("zone")
 
         if zone:
-            # BigQuery stores timestamps internally as UTC, so it's used as a default source timezone
+            # This is a BigQuery specific argument for STRING(<timestamp_expr>, <time_zone>)
+            # BigQuery stores timestamps internally as UTC, so ConvertTimezone is used with UTC
+            # set for source_tz to transpile the time conversion before the STRING cast
             this = exp.ConvertTimezone(
                 source_tz=exp.Literal.string("UTC"), target_tz=zone, timestamp=this
             )

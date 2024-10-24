@@ -875,3 +875,9 @@ TBLPROPERTIES (
                 "databricks": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
             },
         )
+
+    def test_string(self):
+        for dialect in ("hive", "spark2", "spark", "databricks"):
+            with self.subTest(f"Testing STRING() for {dialect}"):
+                query = parse_one("STRING(a)", dialect=dialect)
+                self.assertEqual(query.sql(dialect), "CAST(a AS STRING)")

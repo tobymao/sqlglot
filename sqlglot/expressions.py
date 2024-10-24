@@ -5282,6 +5282,11 @@ class ArrayToString(Func):
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string
+class String(Func):
+    arg_types = {"this": True, "zone": False}
+
+
 class StringToArray(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]

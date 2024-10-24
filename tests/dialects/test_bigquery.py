@@ -1514,6 +1514,22 @@ WHERE
                 "duckdb": "SELECT ARRAY_TO_STRING(LIST_TRANSFORM(['cake', 'pie', NULL], x -> COALESCE(x, 'MISSING')), '--') AS text",
             },
         )
+        self.validate_all(
+            "STRING(a)",
+            write={
+                "bigquery": "STRING(a)",
+                "snowflake": "CAST(a AS VARCHAR)",
+                "duckdb": "CAST(a AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "STRING('2008-12-25 15:30:00', 'America/New_York')",
+            write={
+                "bigquery": "STRING('2008-12-25 15:30:00', 'America/New_York')",
+                "snowflake": "CAST(CONVERT_TIMEZONE('UTC', 'America/New_York', '2008-12-25 15:30:00') AS VARCHAR)",
+                "duckdb": "CAST(CAST('2008-12-25 15:30:00' AS TIMESTAMP) AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' AS TEXT)",
+            },
+        )
 
         self.validate_identity("SELECT * FROM a-b c", "SELECT * FROM a-b AS c")
 

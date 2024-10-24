@@ -4434,3 +4434,17 @@ class Generator(metaclass=_Generator):
     @unsupported_args("format")
     def todouble_sql(self, expression: exp.ToDouble) -> str:
         return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
+
+    def string_sql(self, expression: exp.String) -> str:
+        this = expression.this
+        zone = expression.args.get("zone")
+
+        if zone:
+            # This is a BigQuery specific argument for STRING(<timestamp_expr>, <time_zone>)
+            # BigQuery stores timestamps internally as UTC, so ConvertTimezone is used with UTC
+            # set for source_tz to transpile the time conversion before the STRING cast
+            this = exp.ConvertTimezone(
+                source_tz=exp.Literal.string("UTC"), target_tz=zone, timestamp=this
+            )
+
+        return self.sql(exp.cast(this, exp.DataType.Type.VARCHAR))

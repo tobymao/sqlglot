@@ -183,7 +183,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         and isinstance(expression.args["distinct"].args["on"], exp.Tuple)
     ):
         distinct_cols = expression.args["distinct"].pop().args["on"].expressions
-        outer_selects = expression.selects
+        outer_selects = [field.name for field in expression.selects]
         row_number = find_new_name(expression.named_selects, "_row_number")
         window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
         order = expression.args.get("order")

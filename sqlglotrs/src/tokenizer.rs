@@ -609,8 +609,11 @@ impl<'a> TokenizerState<'a> {
         let mut text = String::from("");
 
         loop {
+            let mut new_identifier_escapes;
             let escapes = if use_identifier_escapes {
-                &self.settings.identifier_escapes
+                new_identifier_escapes = self.settings.identifier_escapes.clone();
+                new_identifier_escapes.extend(delimiter.chars());
+                &new_identifier_escapes
             } else {
                 &self.settings.string_escapes
             };

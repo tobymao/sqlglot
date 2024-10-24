@@ -2893,3 +2893,94 @@ FROM subquery2""",
                 "snowflake": "UUID_STRING()",
             },
         )
+
+    def test_escaped_identifier_delimiter(self):
+        for dialect in ("databricks", "hive", "mysql", "spark2", "spark"):
+            with self.subTest(f"Testing escaped backtick in identifier name for {dialect}"):
+                self.validate_all(
+                    'SELECT 1 AS "x`"',
+                    read={
+                        dialect: "SELECT 1 AS `x```",
+                    },
+                    write={
+                        dialect: "SELECT 1 AS `x```",
+                    },
+                )
+
+        for dialect in (
+            "",
+            "clickhouse",
+            "duckdb",
+            "postgres",
+            "presto",
+            "trino",
+            "redshift",
+            "snowflake",
+            "sqlite",
+        ):
+            with self.subTest(f"Testing escaped double-quote in identifier name for {dialect}"):
+                self.validate_all(
+                    'SELECT 1 AS "x"""',
+                    read={
+                        dialect: 'SELECT 1 AS "x"""',
+                    },
+                    write={
+                        dialect: 'SELECT 1 AS "x"""',
+                    },
+                )
+
+        for dialect in ("clickhouse", "sqlite"):
+            with self.subTest(f"Testing escaped backtick in identifier name for {dialect}"):
+                self.validate_all(
+                    'SELECT 1 AS "x`"',
+                    read={
+                        dialect: "SELECT 1 AS `x```",
+                    },
+                    write={
+                        dialect: 'SELECT 1 AS "x`"',
+                    },
+                )
+
+        self.validate_all(
+            'SELECT 1 AS "x`"',
+            read={
+                "clickhouse": "SELECT 1 AS `x\\``",
+            },
+            write={
+                "clickhouse": 'SELECT 1 AS "x`"',
+            },
+        )
+        for name in ('"x\\""', '`x"`'):
+            with self.subTest(f"Testing ClickHouse delimiter escaping: {name}"):
+                self.validate_all(
+                    'SELECT 1 AS "x"""',
+                    read={
+                        "clickhouse": f"SELECT 1 AS {name}",
+                    },
+                    write={
+                        "clickhouse": 'SELECT 1 AS "x"""',
+                    },
+                )
+
+        for name in ("[[x]]]", '"[x]"'):
+            with self.subTest(f"Testing T-SQL delimiter escaping: {name}"):
+                self.validate_all(
+                    'SELECT 1 AS "[x]"',
+                    read={
+                        "tsql": f"SELECT 1 AS {name}",
+                    },
+                    write={
+                        "tsql": "SELECT 1 AS [[x]]]",
+                    },
+                )
+        for name in ('[x"]', '"x"""'):
+            with self.subTest(f"Testing T-SQL delimiter escaping: {name}"):
+                self.validate_all(
+                    'SELECT 1 AS "x"""',
+                    read={
+                        "tsql": f"SELECT 1 AS {name}",
+                    },
+                    write={
+                        "tsql": 'SELECT 1 AS [x"]',
+                    },
+                )

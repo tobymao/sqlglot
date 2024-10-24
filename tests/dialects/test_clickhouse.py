@@ -526,6 +526,10 @@ class TestClickhouse(Validator):
             "SELECT * FROM ABC WHERE hasAny(COLUMNS('.*field') APPLY(toUInt64) APPLY(to), (SELECT groupUniqArray(toUInt64(field))))"
         )
         self.validate_identity("SELECT col apply", "SELECT col AS apply")
+        self.validate_identity(
+            "SELECT name FROM data WHERE (SELECT DISTINCT name FROM data) IS NOT NULL",
+            "SELECT name FROM data WHERE NOT ((SELECT DISTINCT name FROM data) IS NULL)",
+        )
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

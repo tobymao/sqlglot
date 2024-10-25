@@ -1533,6 +1533,21 @@ WHERE
 
         self.validate_identity("SELECT * FROM a-b c", "SELECT * FROM a-b AS c")
 
+        self.validate_all(
+            "SAFE_DIVIDE(x, y)",
+            write={
+                "bigquery": "SAFE_DIVIDE(x, y)",
+                "duckdb": "IF((y) <> 0, (x) / (y), NULL)",
+                "presto": "IF((y) <> 0, (x) / (y), NULL)",
+                "trino": "IF((y) <> 0, (x) / (y), NULL)",
+                "hive": "IF((y) <> 0, (x) / (y), NULL)",
+                "spark2": "IF((y) <> 0, (x) / (y), NULL)",
+                "spark": "IF((y) <> 0, (x) / (y), NULL)",
+                "databricks": "IF((y) <> 0, (x) / (y), NULL)",
+                "snowflake": "IFF((y) <> 0, (x) / (y), NULL)",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")

@@ -120,16 +120,6 @@ class SQLite(Dialect):
         }
         STRING_ALIASES = True
 
-        def _parse_field_def(self) -> t.Optional[exp.Expression]:
-            field_def = self._parse_field(any_token=True)
-
-            if not self._match_set(self.TYPE_TOKENS, advance=False):
-                # SQLite allows implicit aliases in DDLs, e.g
-                # CREATE TABLE foo (bar baz TEXT)
-                field_def = self._parse_alias(field_def)
-
-            return self._parse_column_def(field_def)
-
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
             # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
@@ -306,14 +296,3 @@ class SQLite(Dialect):
             this = expression.this
             this = f" {this}" if this else ""
             return f"BEGIN{this} TRANSACTION"
-
-        def alias_sql(self, expression: exp.Alias) -> str:
-            if not isinstance(expression.parent, exp.ColumnDef):
-                return super().alias_sql(expression)
-
-            # If this is a ColumnDef alias (part of DDL) then we must not
-            # generate the "AS" prefix:
-            #  - CREATE TABLE foo (bar baz TEXT) -> fine
-            #  - CREATE TABLE foo (bar AS baz TEXT) -> error
-            alias = self.sql(expression, "alias")
-            return f"{self.sql(expression, 'this')} {alias}"

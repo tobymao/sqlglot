@@ -226,6 +226,3 @@ class TestSQLite(Validator):
         self.validate_identity(
             "CREATE TABLE store (store_id INTEGER PRIMARY KEY AUTOINCREMENT, mgr_id INTEGER NOT NULL UNIQUE REFERENCES staff ON UPDATE CASCADE)"
         )
-        self.validate_identity(
-            "CREATE TABLE tbl (col1 TEXT, col2 col2_alias TEXT, CONSTRAINT pk_cons PRIMARY KEY (col1, carcol2), CONSTRAINT fk_cons FOREIGN KEY (col2) REFERENCES tbl2 (id) ON UPDATE CASCADE ON DELETE CASCADE)"
-        )

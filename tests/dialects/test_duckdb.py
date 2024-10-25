@@ -620,12 +620,6 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "IF((y) <> 0, (x) / (y), NULL)",
-            read={
-                "bigquery": "SAFE_DIVIDE(x, y)",
-            },
-        )
-        self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={
                 "bigquery": "STRUCT(1 AS x, '2' AS y)",

@@ -127,6 +127,7 @@ class TokenType(AutoName):
     DECIMAL32 = auto()
     DECIMAL64 = auto()
     DECIMAL128 = auto()
+    DECIMAL256 = auto()
     UDECIMAL = auto()
     BIGDECIMAL = auto()
     CHAR = auto()
@@ -846,6 +847,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DECIMAL32": TokenType.DECIMAL32,
         "DECIMAL64": TokenType.DECIMAL64,
         "DECIMAL128": TokenType.DECIMAL128,
+        "DECIMAL256": TokenType.DECIMAL256,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
         "BIGNUMERIC": TokenType.BIGDECIMAL,
         "LIST": TokenType.LIST,

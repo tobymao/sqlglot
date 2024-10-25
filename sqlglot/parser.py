@@ -351,6 +351,7 @@ class Parser(metaclass=_Parser):
         TokenType.DECIMAL32,
         TokenType.DECIMAL64,
         TokenType.DECIMAL128,
+        TokenType.DECIMAL256,
         TokenType.UDECIMAL,
         TokenType.BIGDECIMAL,
         TokenType.UUID,

@@ -4312,6 +4312,7 @@ class DataType(Expression):
         DECIMAL32 = auto()
         DECIMAL64 = auto()
         DECIMAL128 = auto()
+        DECIMAL256 = auto()
         DOUBLE = auto()
         ENUM = auto()
         ENUM8 = auto()
@@ -4473,6 +4474,7 @@ class DataType(Expression):
         Type.DECIMAL32,
         Type.DECIMAL64,
         Type.DECIMAL128,
+        Type.DECIMAL256,
         Type.MONEY,
         Type.SMALLMONEY,
         Type.UDECIMAL,

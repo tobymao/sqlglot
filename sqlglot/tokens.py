@@ -609,10 +609,14 @@ class Tokenizer(metaclass=_Tokenizer):
     HEREDOC_STRINGS: t.List[str | t.Tuple[str, str]] = []
     UNICODE_STRINGS: t.List[str | t.Tuple[str, str]] = []
     IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
-    IDENTIFIER_ESCAPES = ['"']
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
     STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
+
+    # The strings in this list can always be used as escapes, regardless of the surrounding
+    # identifier delimiters. By default, the closing delimiter is assumed to also act as an
+    # identifier escape, e.g. if we use double-quotes, then they also act as escapes: "x"""
+    IDENTIFIER_ESCAPES: t.List[str] = []
 
     # Whether the heredoc tags follow the same lexical rules as unquoted identifiers
     HEREDOC_TAG_IS_IDENTIFIER = False
@@ -1363,7 +1367,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_identifier(self, identifier_end: str) -> None:
         self._advance()
-        text = self._extract_string(identifier_end, escapes=self._IDENTIFIER_ESCAPES)
+        text = self._extract_string(
+            identifier_end, escapes=self._IDENTIFIER_ESCAPES | {identifier_end}
+        )
         self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:

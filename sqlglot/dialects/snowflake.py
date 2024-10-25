@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     var_map_sql,
     map_date_part,
+    no_safe_divide_sql,
 )
 from sqlglot.helper import flatten, is_float, is_int, seq_get
 from sqlglot.tokens import TokenType
@@ -830,6 +831,7 @@ class Snowflake(Dialect):
                     _unnest_generate_date_array,
                 ]
             ),
+            exp.SafeDivide: lambda self, e: no_safe_divide_sql(self, e, "IFF"),
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

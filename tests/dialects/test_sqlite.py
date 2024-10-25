@@ -222,3 +222,7 @@ class TestSQLite(Validator):
                 "mysql": "CREATE TABLE `x` (`Name` VARCHAR(200) NOT NULL)",
             },
         )
+
+        self.validate_identity(
+            "CREATE TABLE store (store_id INTEGER PRIMARY KEY AUTOINCREMENT, mgr_id INTEGER NOT NULL UNIQUE REFERENCES staff ON UPDATE CASCADE)"
+        )

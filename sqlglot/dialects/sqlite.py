@@ -120,6 +120,14 @@ class SQLite(Dialect):
         }
         STRING_ALIASES = True
 
+        def _parse_unique(self) -> exp.UniqueColumnConstraint:
+            # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
+            # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
+            if self._curr.text.upper() in self.CONSTRAINT_PARSERS:
+                return self.expression(exp.UniqueColumnConstraint)
+
+            return super()._parse_unique()
+
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False

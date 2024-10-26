@@ -176,32 +176,21 @@ class TestDiff(unittest.TestCase):
         )
 
     def test_join(self):
-        expr_src = "SELECT a, b FROM t1 LEFT JOIN t2 ON t1.key = t2.key"
-        expr_tgt = "SELECT a, b FROM t1 RIGHT JOIN t2 ON t1.key = t2.key"
+        expr_src = parse_one("SELECT a, b FROM t1 LEFT JOIN t2 ON t1.key = t2.key")
+        expr_tgt = parse_one("SELECT a, b FROM t1 RIGHT JOIN t2 ON t1.key = t2.key")
 
-        changes = diff_delta_only(parse_one(expr_src), parse_one(expr_tgt))
+        src_join = expr_src.find(exp.Join)
+        tgt_join = expr_tgt.find(exp.Join)
 
-        self.assertEqual(len(changes), 4)
-
-        c1, c2, c3, c4 = changes
-
-        self.assertIsInstance(c1, Remove)
-        self.assertIsInstance(c1.expression, exp.Join)
-
-        self.assertIsInstance(c2, Insert)
-        self.assertIsInstance(c2.expression, exp.Join)
-
-        self.assertIsInstance(c3, Move)
-        self.assertIsInstance(c3.source, exp.Table)
-        self.assertIsInstance(c3.target, exp.Table)
-
-        assert c3.source == c3.target == exp.to_table("t2")
-
-        self.assertIsInstance(c4, Move)
-        self.assertIsInstance(c4.source, exp.EQ)
-        self.assertIsInstance(c4.target, exp.EQ)
-
-        assert c4.source == c4.target == exp.to_column("t1.key").eq(exp.to_column("t2.key"))
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt),
+            [
+                Remove(expression=src_join),
+                Insert(expression=tgt_join),
+                Move(source=exp.to_table("t2"), target=exp.to_table("t2")),
+                Move(source=src_join.args["on"], target=tgt_join.args["on"]),
+            ],
+        )
 
     def test_window_functions(self):
         expr_src = parse_one("SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b)")

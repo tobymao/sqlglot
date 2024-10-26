@@ -221,9 +221,14 @@ class ChangeDistiller:
                     source_parent = source_node.parent
                     target_parent = target_node.parent
 
-                    if source_parent != target_parent or (
-                        source_parent is not None
-                        and matchings.get(id(source_parent)) != id(target_parent)
+                    if (
+                        (source_parent and not target_parent)
+                        or (not source_parent and target_parent)
+                        or (
+                            source_parent
+                            and target_parent
+                            and matchings.get(id(source_parent)) != id(target_parent)
+                        )
                     ):
                         edit_script.append(Move(source=source_node, target=target_node))
                 else:

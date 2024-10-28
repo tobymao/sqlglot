@@ -797,6 +797,14 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1 FOR 1)")
         self.validate_identity("ARRAY[1, 2, 3] && ARRAY[1, 2]").assert_is(exp.ArrayOverlaps)
 
+        self.validate_all(
+            """SELECT JSONB_EXISTS('{"a": [1,2,3]}', 'a')""",
+            write={
+                "postgres": """SELECT JSONB_EXISTS('{"a": [1,2,3]}', 'a')""",
+                "duckdb": """SELECT JSON_EXISTS('{"a": [1,2,3]}', '$.a')""",
+            },
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

@@ -370,6 +370,7 @@ class Postgres(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
+            "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
         }
 
         BITWISE = {
@@ -442,6 +443,14 @@ class Postgres(Dialect):
 
         def _parse_unique_key(self) -> t.Optional[exp.Expression]:
             return None
+
+        def _parse_jsonb_exists(self) -> exp.JSONBExists:
+            return self.expression(
+                exp.JSONBExists,
+                this=self._parse_bitwise(),
+                path=self._match(TokenType.COMMA)
+                and self.dialect.to_json_path(self._parse_bitwise()),
+            )
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True

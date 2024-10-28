@@ -5960,6 +5960,11 @@ class JSONBContains(Binary, Func):
     _sql_names = ["JSONB_CONTAINS"]
 
 
+class JSONBExists(Func):
+    arg_types = {"this": True, "path": True}
+    _sql_names = ["JSONB_EXISTS"]
+
+
 class JSONExtract(Binary, Func):
     arg_types = {
         "this": True,

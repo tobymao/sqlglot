@@ -4362,20 +4362,25 @@ class Generator(metaclass=_Generator):
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         array_agg = self.function_fallback_sql(expression)
 
+        # Add a NULL FILTER on the column to mimic the results going from a dialect that excludes nulls
+        # on ARRAY_AGG (e.g Spark) to one that doesn't (e.g. DuckDB)
         if self.dialect.ARRAY_AGG_INCLUDES_NULLS and expression.args.get("nulls_excluded"):
             parent = expression.parent
             if isinstance(parent, exp.Filter):
                 parent_cond = parent.expression.this
                 parent_cond.replace(parent_cond.and_(expression.this.is_(exp.null()).not_()))
             else:
-                # DISTINCT is already present in the agg function, do not propagate it to FILTER as well
                 this = expression.this
-                this_sql = (
-                    self.expressions(this)
-                    if isinstance(this, exp.Distinct)
-                    else self.sql(expression, "this")
-                )
-                array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
+                # Do not add the filter if the input is not a column (e.g. literal, struct etc)
+                if this.find(exp.Column):
+                    # DISTINCT is already present in the agg function, do not propagate it to FILTER as well
+                    this_sql = (
+                        self.expressions(this)
+                        if isinstance(this, exp.Distinct)
+                        else self.sql(expression, "this")
+                    )
+
+                    array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
 
         return array_agg
 

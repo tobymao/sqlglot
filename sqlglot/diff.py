@@ -10,6 +10,7 @@ import typing as t
 from collections import defaultdict
 from dataclasses import dataclass
 from heapq import heappop, heappush
+from itertools import chain
 
 from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import seq_get
@@ -112,11 +113,19 @@ def diff(
     def compute_node_mappings(
         original: exp.Expression, copy: exp.Expression
     ) -> t.Dict[int, exp.Expression]:
-        return {
-            id(old_node): new_node
-            for old_node, new_node in zip(original.walk(), copy.walk())
-            if id(old_node) in matching_ids
-        }
+        node_mapping = {}
+        for old_node, new_node in zip(
+            reversed(tuple(original.walk())), reversed(tuple(copy.walk()))
+        ):
+            # We cache the hash of each new node here to speed up equality comparisons. If the input
+            # trees aren't copied, these hashes will be evicted before returning the edit script.
+            new_node._hash = hash(new_node)
+
+            old_node_id = id(old_node)
+            if old_node_id in matching_ids:
+                node_mapping[old_node_id] = new_node
+
+        return node_mapping
 
     source_copy = source.copy() if copy else source
     target_copy = target.copy() if copy else target
@@ -127,12 +136,18 @@ def diff(
     }
     matchings_copy = [(node_mappings[id(s)], node_mappings[id(t)]) for s, t in matchings]
 
-    return ChangeDistiller(**kwargs).diff(
+    edit_script = ChangeDistiller(**kwargs).diff(
         source_copy,
         target_copy,
         matchings=matchings_copy,
         delta_only=delta_only,
     )
+
+    if not copy:
+        for node in chain(source.walk(), target.walk()):
+            node._hash = None
+
+    return edit_script
 
 
 # The expression types for which Update edits are allowed.
@@ -199,11 +214,27 @@ class ChangeDistiller:
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
 
-            if (
-                not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES)
-                or source_node == target_node
-            ):
-                edit_script.extend(self._generate_move_edits(source_node, target_node, matchings))
+            identical_nodes = source_node == target_node
+
+            if not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES) or identical_nodes:
+                if identical_nodes:
+                    source_parent = source_node.parent
+                    target_parent = target_node.parent
+
+                    if (
+                        (source_parent and not target_parent)
+                        or (not source_parent and target_parent)
+                        or (
+                            source_parent
+                            and target_parent
+                            and matchings.get(id(source_parent)) != id(target_parent)
+                        )
+                    ):
+                        edit_script.append(Move(source=source_node, target=target_node))
+                else:
+                    edit_script.extend(
+                        self._generate_move_edits(source_node, target_node, matchings)
+                    )
 
                 source_non_expression_leaves = dict(_get_non_expression_leaves(source_node))
                 target_non_expression_leaves = dict(_get_non_expression_leaves(target_node))

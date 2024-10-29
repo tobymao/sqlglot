@@ -556,6 +556,7 @@ class Hive(Dialect):
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
+                    transforms.any_to_exists,
                 ]
             ),
             exp.StrPosition: strposition_to_locate_sql,
@@ -709,3 +710,9 @@ class Hive(Dialect):
             exprs = self.expressions(expression, flat=True)
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"
+
+        def exists_sql(self, expression: exp.Exists):
+            if expression.expression:
+                return self.function_fallback_sql(expression)
+
+            return super().exists_sql(expression)

@@ -87,6 +87,7 @@ class Databricks(Spark):
                 [
                     transforms.eliminate_distinct_on,
                     transforms.unnest_to_explode,
+                    transforms.any_to_exists,
                 ]
             ),
             exp.JSONExtract: _jsonextract_sql,

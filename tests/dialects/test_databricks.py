@@ -116,6 +116,17 @@ class TestDatabricks(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT ANY(col) FROM VALUES (TRUE), (FALSE) AS tab(col)",
+            read={
+                "databricks": "SELECT ANY(col) FROM VALUES (TRUE), (FALSE) AS tab(col)",
+                "spark": "SELECT ANY(col) FROM VALUES (TRUE), (FALSE) AS tab(col)",
+            },
+            write={
+                "spark": "SELECT ANY(col) FROM VALUES (TRUE), (FALSE) AS tab(col)",
+            },
+        )
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")

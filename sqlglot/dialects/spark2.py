@@ -285,6 +285,7 @@ class Spark2(Hive):
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     transforms.unnest_to_explode,
+                    transforms.any_to_exists,
                 ]
             ),
             exp.StrToDate: _str_to_date,

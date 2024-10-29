@@ -4605,10 +4605,6 @@ class Any(SubqueryPredicate):
     pass
 
 
-class Exists(SubqueryPredicate):
-    pass
-
-
 # Commands to interact with the databases or engines. For most of the command
 # expressions we parse whatever comes after the command's name as a string.
 class Command(Expression):
@@ -5581,6 +5577,10 @@ class LastDay(Func, TimeUnit):
 
 class Extract(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Exists(Func, SubqueryPredicate):
+    arg_types = {"this": True, "expression": False}
 
 
 class Timestamp(Func):

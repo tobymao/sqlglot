@@ -914,3 +914,30 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             where.pop()
 
     return expression
+
+
+def any_to_exists(expression: exp.Expression) -> exp.Expression:
+    """
+    Transform ANY operator to Spark's EXISTS
+
+    For example,
+        - Postgres: SELECT * FROM tbl WHERE 5 > ANY(tbl.col)
+        - Spark: SELECT * FROM tbl WHERE EXISTS(tbl.col, x -> x < 5)
+
+    Both ANY and EXISTS accept queries but currently only array expressions are supported for this
+    transformation
+    """
+    if isinstance(expression, exp.Select):
+        for any in expression.find_all(exp.Any):
+            this = any.this
+            if isinstance(this, exp.Query):
+                continue
+
+            binop = any.parent
+            if isinstance(binop, exp.Binary):
+                lambda_arg = exp.to_identifier("x")
+                any.replace(lambda_arg)
+                lambda_expr = exp.Lambda(this=binop.copy(), expressions=[lambda_arg])
+                binop.replace(exp.Exists(this=this.unnest(), expression=lambda_expr))
+
+    return expression

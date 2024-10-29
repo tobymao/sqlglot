@@ -336,6 +336,7 @@ class Presto(Dialect):
             exp.DataType.Type.STRUCT: "ROW",
             exp.DataType.Type.TEXT: "VARCHAR",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMETZ: "TIME",
         }
 

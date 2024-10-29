@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
     map_date_part,
     no_safe_divide_sql,
+    no_timestamp_sql,
 )
 from sqlglot.helper import flatten, is_float, is_int, seq_get
 from sqlglot.tokens import TokenType
@@ -840,6 +841,7 @@ class Snowflake(Dialect):
             ),
             exp.Stuff: rename_func("INSERT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
+            exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
                 "TIMESTAMPDIFF", e.unit, e.expression, e.this
             ),

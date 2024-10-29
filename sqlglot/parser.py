@@ -4166,12 +4166,11 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Connect, start=start, connect=connect, nocycle=nocycle)
 
-    def _parse_name_as_expression(self) -> exp.Alias:
-        return self.expression(
-            exp.Alias,
-            alias=self._parse_id_var(any_token=True),
-            this=self._match(TokenType.ALIAS) and self._parse_assignment(),
-        )
+    def _parse_name_as_expression(self) -> t.Optional[exp.Expression]:
+        this = self._parse_id_var(any_token=True)
+        if self._match(TokenType.ALIAS):
+            this = self.expression(exp.Alias, alias=this, this=self._parse_assignment())
+        return this
 
     def _parse_interpolate(self) -> t.Optional[t.List[exp.Expression]]:
         if self._match_text_seq("INTERPOLATE"):

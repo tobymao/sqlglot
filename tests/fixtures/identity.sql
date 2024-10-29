@@ -250,7 +250,6 @@ SELECT LEAD(a, 1) OVER (PARTITION BY a ORDER BY a) AS x
 SELECT LEAD(a, 1, b) OVER (PARTITION BY a ORDER BY a) AS x
 SELECT X((a, b) -> a + b, z -> z) AS x
 SELECT X(a -> a + ("z" - 1))
-SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)
 SELECT test.* FROM test
 SELECT a AS b FROM test
 SELECT "a"."b" FROM "a"

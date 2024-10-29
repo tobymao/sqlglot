@@ -938,8 +938,6 @@ def any_to_exists(expression: exp.Expression) -> exp.Expression:
                 lambda_arg = exp.to_identifier("x")
                 any.replace(lambda_arg)
                 lambda_expr = exp.Lambda(this=binop.copy(), expressions=[lambda_arg])
-                binop.replace(
-                    exp.Anonymous(this="EXISTS", expressions=[this.unnest(), lambda_expr])
-                )
+                binop.replace(exp.Exists(this=this.unnest(), expression=lambda_expr))
 
     return expression

@@ -710,3 +710,9 @@ class Hive(Dialect):
             exprs = self.expressions(expression, flat=True)
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"
+
+        def exists_sql(self, expression: exp.Exists):
+            if expression.expression:
+                return self.function_fallback_sql(expression)
+
+            return super().exists_sql(expression)

@@ -1,5 +1,7 @@
 from tests.dialects.test_dialect import Validator
 
+from sqlglot import exp
+
 
 class TestHive(Validator):
     dialect = "hive"
@@ -784,6 +786,23 @@ class TestHive(Validator):
                 "presto": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
                 "trino": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
                 "duckdb": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 1)",
+            },
+        )
+
+        self.validate_identity("EXISTS(col, x -> x % 2 = 0)").assert_is(exp.Exists)
+
+        self.validate_all(
+            "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+            read={
+                "hive": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+                "spark2": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+                "spark": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+                "databricks": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+            },
+            write={
+                "spark2": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+                "spark": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+                "databricks": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
             },
         )
 

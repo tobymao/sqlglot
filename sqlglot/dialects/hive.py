@@ -556,6 +556,7 @@ class Hive(Dialect):
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
+                    transforms.any_to_exists,
                 ]
             ),
             exp.StrPosition: strposition_to_locate_sql,

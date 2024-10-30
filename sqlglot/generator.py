@@ -433,6 +433,9 @@ class Generator(metaclass=_Generator):
     # Whether CONVERT_TIMEZONE() is supported; if not, it will be generated as exp.AtTimeZone
     SUPPORTS_CONVERT_TIMEZONE = False
 
+    # Whether MEDIAN(expr) is supported; if not, it will be generated as PERCENTILE_CONT(expr, 0.5)
+    SUPPORTS_MEDIAN = True
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4455,3 +4458,11 @@ class Generator(metaclass=_Generator):
             )
 
         return self.sql(exp.cast(this, exp.DataType.Type.VARCHAR))
+
+    def median_sql(self, expression: exp.Median):
+        if not self.SUPPORTS_MEDIAN:
+            return self.sql(
+                exp.PercentileCont(this=expression.this, expression=exp.Literal.number(0.5))
+            )
+
+        return self.function_fallback_sql(expression)

@@ -136,6 +136,7 @@ class Spark(Spark2):
         SUPPORTS_TO_NUMBER = True
         PAD_FILL_PATTERN_IS_REQUIRED = False
         SUPPORTS_CONVERT_TIMEZONE = True
+        SUPPORTS_MEDIAN = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,

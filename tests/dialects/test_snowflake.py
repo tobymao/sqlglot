@@ -524,21 +524,11 @@ WHERE
             self.validate_all(
                 f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 read={
-                    "snowflake": f"SELECT MEDIAN(x){suffix}",
                     "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
                 write={
                     "": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x NULLS LAST){suffix}",
                     "duckdb": f"SELECT QUANTILE_CONT(x, 0.5 ORDER BY x){suffix}",
-                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
-                    "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
-                },
-            )
-            self.validate_all(
-                f"SELECT MEDIAN(x){suffix}",
-                write={
-                    "": f"SELECT PERCENTILE_CONT(x, 0.5){suffix}",
-                    "duckdb": f"SELECT QUANTILE_CONT(x, 0.5){suffix}",
                     "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                     "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },

@@ -471,6 +471,7 @@ class Postgres(Dialect):
         CAN_IMPLEMENT_ARRAY_ANY = True
         COPY_HAS_INTO_KEYWORD = False
         ARRAY_CONCAT_IS_VAR_LEN = False
+        SUPPORTS_MEDIAN = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

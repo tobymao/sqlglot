@@ -704,6 +704,7 @@ class MySQL(Dialect):
         PAD_FILL_PATTERN_IS_REQUIRED = True
         WRAP_DERIVED_VALUES = False
         VARCHAR_REQUIRES_SIZE = True
+        SUPPORTS_MEDIAN = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

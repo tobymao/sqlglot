@@ -460,6 +460,7 @@ class Hive(Dialect):
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
         PARSE_JSON_NAME = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
+        SUPPORTS_MEDIAN = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,

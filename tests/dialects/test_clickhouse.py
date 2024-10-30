@@ -428,8 +428,13 @@ class TestClickhouse(Validator):
         )
         self.validate_all(
             "SELECT quantile(0.5)(a)",
-            read={"duckdb": "SELECT quantile(a, 0.5)"},
-            write={"clickhouse": "SELECT quantile(0.5)(a)"},
+            read={
+                "duckdb": "SELECT quantile(a, 0.5)",
+                "clickhouse": "SELECT median(a)",
+            },
+            write={
+                "clickhouse": "SELECT quantile(0.5)(a)",
+            },
         )
         self.validate_all(
             "SELECT quantiles(0.5, 0.4)(a)",

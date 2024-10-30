@@ -411,6 +411,7 @@ class TestTSQL(Validator):
             },
         )
         self.validate_identity("HASHBYTES('MD2', 'x')")
+        self.validate_identity("LOG(n)")
         self.validate_identity("LOG(n, b)")
 
         self.validate_all(

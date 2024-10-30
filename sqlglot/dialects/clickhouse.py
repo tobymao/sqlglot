@@ -431,6 +431,7 @@ class ClickHouse(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
             "QUANTILE": lambda self: self._parse_quantile(),
+            "MEDIAN": lambda self: self._parse_quantile(),
             "COLUMNS": lambda self: self._parse_columns(),
         }
 
@@ -950,6 +951,9 @@ class ClickHouse(Dialect):
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Nullif: rename_func("nullIf"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.PercentileCont: lambda self, e: self.sql(
+                exp.Quantile(this=e.this, quantile=e.expression)
+            ),
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),

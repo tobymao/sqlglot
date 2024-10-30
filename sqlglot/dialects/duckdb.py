@@ -374,9 +374,6 @@ class DuckDB(Dialect):
             "LIST_VALUE": lambda args: exp.Array(expressions=args),
             "MAKE_TIME": exp.TimeFromParts.from_arg_list,
             "MAKE_TIMESTAMP": _build_make_timestamp,
-            "MEDIAN": lambda args: exp.PercentileCont(
-                this=seq_get(args, 0), expression=exp.Literal.number(0.5)
-            ),
             "QUANTILE_CONT": exp.PercentileCont.from_arg_list,
             "QUANTILE_DISC": exp.PercentileDisc.from_arg_list,
             "REGEXP_EXTRACT": build_regexp_extract,
@@ -494,6 +491,7 @@ class DuckDB(Dialect):
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
         ARRAY_CONCAT_IS_VAR_LEN = False
+        SUPPORTS_MEDIAN = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

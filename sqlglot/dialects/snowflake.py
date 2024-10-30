@@ -331,9 +331,6 @@ class Snowflake(Dialect):
             "LEN": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LISTAGG": exp.GroupConcat.from_arg_list,
-            "MEDIAN": lambda args: exp.PercentileCont(
-                this=seq_get(args, 0), expression=exp.Literal.number(0.5)
-            ),
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
             "REGEXP_REPLACE": _build_regexp_replace,
@@ -770,6 +767,7 @@ class Snowflake(Dialect):
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_CONVERT_TIMEZONE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        SUPPORTS_MEDIAN = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

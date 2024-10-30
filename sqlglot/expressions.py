@@ -6135,6 +6135,10 @@ class MD5Digest(Func):
     _sql_names = ["MD5_DIGEST"]
 
 
+class Median(AggFunc):
+    pass
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

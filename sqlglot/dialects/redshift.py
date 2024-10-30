@@ -157,6 +157,7 @@ class Redshift(Postgres):
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_CONVERT_TIMEZONE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        SUPPORTS_MEDIAN = True
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "

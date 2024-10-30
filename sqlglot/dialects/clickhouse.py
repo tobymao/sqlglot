@@ -431,6 +431,7 @@ class ClickHouse(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
             "QUANTILE": lambda self: self._parse_quantile(),
+            "MEDIAN": lambda self: self._parse_quantile(),
             "COLUMNS": lambda self: self._parse_columns(),
         }
 

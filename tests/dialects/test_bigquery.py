@@ -371,7 +371,16 @@ LANGUAGE js AS
             write={
                 "bigquery": "TIMESTAMP(x)",
                 "duckdb": "CAST(x AS TIMESTAMPTZ)",
+                "snowflake": "CAST(x AS TIMESTAMPTZ)",
                 "presto": "CAST(x AS TIMESTAMP WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP('2008-12-25 15:30:00', 'America/Los_Angeles')",
+            write={
+                "bigquery": "SELECT TIMESTAMP('2008-12-25 15:30:00', 'America/Los_Angeles')",
+                "duckdb": "SELECT CAST('2008-12-25 15:30:00' AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+                "snowflake": "SELECT CONVERT_TIMEZONE('America/Los_Angeles', CAST('2008-12-25 15:30:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(

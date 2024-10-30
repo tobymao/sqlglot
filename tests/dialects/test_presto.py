@@ -414,13 +414,6 @@ class TestPresto(Validator):
             "CAST(x AS TIMESTAMP)",
             read={"mysql": "TIMESTAMP(x)"},
         )
-        self.validate_all(
-            "TIMESTAMP(x, 'America/Los_Angeles')",
-            write={
-                "duckdb": "CAST(x AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
-                "presto": "AT_TIMEZONE(CAST(x AS TIMESTAMP), 'America/Los_Angeles')",
-            },
-        )
         # this case isn't really correct, but it's a fall back for mysql's version
         self.validate_all(
             "TIMESTAMP(x, '12:00:00')",

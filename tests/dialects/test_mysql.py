@@ -388,7 +388,7 @@ class TestMySQL(Validator):
             "sqlite": "SELECT x'CC'",
             "starrocks": "SELECT x'CC'",
             "tableau": "SELECT 204",
-            "teradata": "SELECT 204",
+            "teradata": "SELECT X'CC'",
             "trino": "SELECT X'CC'",
             "tsql": "SELECT 0xCC",
         }
@@ -409,7 +409,7 @@ class TestMySQL(Validator):
             "sqlite": "SELECT x'0000CC'",
             "starrocks": "SELECT x'0000CC'",
             "tableau": "SELECT 204",
-            "teradata": "SELECT 204",
+            "teradata": "SELECT X'0000CC'",
             "trino": "SELECT X'0000CC'",
             "tsql": "SELECT 0x0000CC",
         }

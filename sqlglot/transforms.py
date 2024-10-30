@@ -376,9 +376,10 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
                     alias_cols = ["t_struct"]
 
                     # [Optional] Do Update the Column reference in AST for table with current alias
-                    for column in expression.find_all(exp.Column):
-                        if alias and column.table == alias.name:
-                            column.set("table", "t_struct")
+                    if alias:
+                        for column in expression.find_all(exp.Column):
+                            if column.table == alias.name:
+                                column.set("table", "t_struct")
 
                 for e, column in zip(exprs, alias_cols):
                     expression.append(

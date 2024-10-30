@@ -491,7 +491,6 @@ class DuckDB(Dialect):
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
         ARRAY_CONCAT_IS_VAR_LEN = False
-        SUPPORTS_MEDIAN = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

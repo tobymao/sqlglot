@@ -324,7 +324,6 @@ class Oracle(Dialect):
         SUPPORTS_SELECT_INTO = True
         TZ_TO_WITH_TIME_ZONE = True
         QUERY_HINT_SEP = " "
-        SUPPORTS_MEDIAN = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

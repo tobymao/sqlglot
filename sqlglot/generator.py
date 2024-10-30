@@ -434,7 +434,7 @@ class Generator(metaclass=_Generator):
     SUPPORTS_CONVERT_TIMEZONE = False
 
     # Whether MEDIAN(expr) is supported; if not, it will be generated as PERCENTILE_CONT(expr, 0.5)
-    SUPPORTS_MEDIAN = False
+    SUPPORTS_MEDIAN = True
 
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"

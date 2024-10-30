@@ -317,6 +317,7 @@ class Presto(Dialect):
         PARSE_JSON_NAME = "JSON_PARSE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        SUPPORTS_MEDIAN = False
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

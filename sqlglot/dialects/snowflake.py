@@ -842,6 +842,7 @@ class Snowflake(Dialect):
             exp.Stuff: rename_func("INSERT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
             exp.Timestamp: no_timestamp_sql,
+            exp.TimestampAdd: date_delta_sql("TIMESTAMPADD"),
             exp.TimestampDiff: lambda self, e: self.func(
                 "TIMESTAMPDIFF", e.unit, e.expression, e.this
             ),

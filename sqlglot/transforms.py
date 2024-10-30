@@ -302,16 +302,13 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def unnest_to_explode(
-    expression: exp.Expression
-) -> exp.Expression:
+def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
 
     def _unnest_zip_exprs(
         u: exp.Unnest, unnest_exprs: t.List[exp.Expression], has_multi_expr: bool
     ) -> t.List[exp.Expression]:
         if has_multi_expr:
-
             # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
             zip_exprs: t.List[exp.Expression] = [
                 exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
@@ -365,8 +362,7 @@ def unnest_to_explode(
                 expression.args["joins"].remove(join)
 
                 alias_cols = alias.columns if alias else []
-                
-                
+
                 """
                 Handle Presto CROSS JOIN UNNEST to LATERAL VIEW EXPLODE for Multiple or No Exploded table column alias.
                 
@@ -383,7 +379,7 @@ def unnest_to_explode(
                     for column in expression.find_all(exp.Column):
                         if alias and column.table == alias.name:
                             column.set("table", "t_struct")
-                
+
                 for e, column in zip(exprs, alias_cols):
                     expression.append(
                         "laterals",
@@ -392,7 +388,7 @@ def unnest_to_explode(
                             view=True,
                             alias=exp.TableAlias(
                                 this=alias.this,  # type: ignore
-                                columns=alias_cols
+                                columns=alias_cols,
                             ),
                         ),
                     )

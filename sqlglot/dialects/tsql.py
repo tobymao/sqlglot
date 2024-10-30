@@ -901,6 +901,7 @@ class TSQL(Dialect):
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: _json_extract_sql,
             exp.LastDay: lambda self, e: self.func("EOMONTH", e.this),
+            exp.Ln: rename_func("LOG"),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,

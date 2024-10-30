@@ -3056,7 +3056,11 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.DESCRIBE):
             this = self._parse_describe()
         elif self._match_text_seq("STREAM"):
-            this = self.expression(exp.Stream, this=self._parse_function())
+            this = self._parse_function()
+            if this:
+                this = self.expression(exp.Stream, this=this)
+            else:
+                self._retreat(self._index - 1)
         else:
             this = None
 

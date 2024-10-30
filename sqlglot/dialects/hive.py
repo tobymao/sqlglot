@@ -555,7 +555,7 @@ class Hive(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
+                    partial(transforms.unnest_to_explode),
                     transforms.any_to_exists,
                 ]
             ),

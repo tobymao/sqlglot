@@ -303,8 +303,7 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 
 
 def unnest_to_explode(
-    expression: exp.Expression,
-    unnest_using_arrays_zip: bool = True,
+    expression: exp.Expression
 ) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
 
@@ -312,8 +311,6 @@ def unnest_to_explode(
         u: exp.Unnest, unnest_exprs: t.List[exp.Expression], has_multi_expr: bool
     ) -> t.List[exp.Expression]:
         if has_multi_expr:
-            if not unnest_using_arrays_zip:
-                raise UnsupportedError("Cannot transpile UNNEST with multiple input arrays")
 
             # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
             zip_exprs: t.List[exp.Expression] = [
@@ -368,6 +365,25 @@ def unnest_to_explode(
                 expression.args["joins"].remove(join)
 
                 alias_cols = alias.columns if alias else []
+                
+                
+                """
+                Handle Presto CROSS JOIN UNNEST to LATERAL VIEW EXPLODE for Multiple or No Exploded table column alias.
+                
+                Spark/Hive LATERAL VIEW EXPLODE requires only single alias for respective exploded array/struct to be given for unnest ulike trino/presto which can take multiple.
+                https://cwiki.apache.org/confluence/display/Hive/LanguageManual+LateralView
+                https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
+                
+                """
+                # Replace multiple alias for single EXPLODE column with single static alias name: `t_struct`
+                if not has_multi_expr and (len(alias_cols) != 1):
+                    alias_cols = ["t_struct"]
+
+                    # [Optional] Do Update the Column reference in AST for table with current alias
+                    for column in expression.find_all(exp.Column):
+                        if alias and column.table == alias.name:
+                            column.set("table", "t_struct")
+                
                 for e, column in zip(exprs, alias_cols):
                     expression.append(
                         "laterals",
@@ -376,7 +392,7 @@ def unnest_to_explode(
                             view=True,
                             alias=exp.TableAlias(
                                 this=alias.this,  # type: ignore
-                                columns=alias_cols if unnest_using_arrays_zip else [column],  # type: ignore
+                                columns=alias_cols
                             ),
                         ),
                     )

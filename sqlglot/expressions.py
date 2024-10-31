@@ -5509,11 +5509,11 @@ class DateTrunc(Func):
 
         unit = args.get("unit")
         if isinstance(unit, TimeUnit.VAR_LIKE):
-            unit_name = unit.name
+            unit_name = unit.name.upper()
             if unabbreviate and unit_name in TimeUnit.UNABBREVIATED_UNIT_NAME:
-                unit_name = TimeUnit.UNABBREVIATED_UNIT_NAME.get(unit_name)
+                unit_name = TimeUnit.UNABBREVIATED_UNIT_NAME[unit_name]
 
-            args["unit"] = Literal.string(unit_name.upper())
+            args["unit"] = Literal.string(unit_name)
         elif isinstance(unit, Week):
             unit.set("this", Literal.string(unit.this.name.upper()))
 

@@ -120,13 +120,6 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
-            "TRUNC(SYSDATE, 'YEAR')",
-            write={
-                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
-                "oracle": "TRUNC(SYSDATE, 'YEAR')",
-            },
-        )
-        self.validate_all(
             "SELECT * FROM test WHERE MOD(col1, 4) = 3",
             read={
                 "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",
@@ -632,3 +625,20 @@ WHERE
         self.validate_identity("GRANT UPDATE, TRIGGER ON TABLE t TO anita, zhi")
         self.validate_identity("GRANT EXECUTE ON PROCEDURE p TO george")
         self.validate_identity("GRANT USAGE ON SEQUENCE order_id TO sales_role")
+
+    def test_datetrunc(self):
+        self.validate_all(
+            "TRUNC(SYSDATE, 'YEAR')",
+            write={
+                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
+                "oracle": "TRUNC(SYSDATE, 'YEAR')",
+            },
+        )
+
+        # Make sure units are not normalized e.g 'Q' -> 'QUARTER' and 'W' -> 'WEEK'
+        # https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/ROUND-and-TRUNC-Date-Functions.html
+        for unit in (
+            "'Q'",
+            "'W'",
+        ):
+            self.validate_identity(f"TRUNC(x, {unit})")

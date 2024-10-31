@@ -526,7 +526,7 @@ class TestDialect(Validator):
             write={
                 "": "SELECT NVL2(a, b, c)",
                 "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
-                "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "clickhouse": "SELECT CASE WHEN NOT (a IS NULL) THEN b ELSE c END",
                 "databricks": "SELECT NVL2(a, b, c)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
@@ -552,7 +552,7 @@ class TestDialect(Validator):
             write={
                 "": "SELECT NVL2(a, b)",
                 "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b END",
-                "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "clickhouse": "SELECT CASE WHEN NOT (a IS NULL) THEN b END",
                 "databricks": "SELECT NVL2(a, b)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b END",

@@ -1089,12 +1089,10 @@ class Snowflake(Dialect):
             )
 
         def timestampsub_sql(self, expression: exp.TimestampSub):
-            expr = expression.expression
-            if isinstance(expr, exp.Literal):
-                expr = expr.to_py()
-
             return self.sql(
                 exp.TimestampAdd(
-                    this=expression.this, expression=exp.Neg(this=expr), unit=expression.unit
+                    this=expression.this,
+                    expression=expression.expression * -1,
+                    unit=expression.unit,
                 )
             )

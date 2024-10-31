@@ -697,14 +697,14 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
                 "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
-                "snowflake": "SELECT TIMESTAMPADD(MINUTE, -10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT TIMESTAMPADD(MINUTE, '10' * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
             },
         )
         self.validate_all(
             'SELECT TIMESTAMP_SUB(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL col MINUTE)',
             write={
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL col MINUTE)",
-                "snowflake": "SELECT TIMESTAMPADD(MINUTE, -col, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT TIMESTAMPADD(MINUTE, col * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
             },
         )
         self.validate_all(

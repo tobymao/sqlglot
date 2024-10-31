@@ -154,6 +154,10 @@ class TestClickhouse(Validator):
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
         )
         self.validate_identity(
+            "SELECT (toUInt8('1') + toUInt8('2')) IS NOT NULL",
+            "SELECT NOT ((toUInt8('1') + toUInt8('2')) IS NULL)",
+        )
+        self.validate_identity(
             "SELECT $1$foo$1$",
             "SELECT 'foo'",
         )

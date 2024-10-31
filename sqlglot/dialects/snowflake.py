@@ -1087,3 +1087,12 @@ class Snowflake(Dialect):
             return self.func(
                 f"{safe_prefix}TO_TIMESTAMP", expression.this, self.format_time(expression)
             )
+
+        def timestampsub_sql(self, expression: exp.TimestampSub):
+            return self.sql(
+                exp.TimestampAdd(
+                    this=expression.this,
+                    expression=expression.expression * -1,
+                    unit=expression.unit,
+                )
+            )

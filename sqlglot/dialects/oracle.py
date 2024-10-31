@@ -121,7 +121,9 @@ class Oracle(Dialect):
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args: exp.DateTrunc(
-                unit=seq_get(args, 1) or exp.Literal.string("DD"), this=seq_get(args, 0)
+                unit=seq_get(args, 1) or exp.Literal.string("DD"),
+                this=seq_get(args, 0),
+                unabbreviate=False,
             ),
         }
 

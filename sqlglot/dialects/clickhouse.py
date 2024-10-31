@@ -1223,8 +1223,8 @@ class ClickHouse(Dialect):
         def is_sql(self, expression: exp.Is) -> str:
             is_sql = super().is_sql(expression)
 
-            if isinstance(expression.parent, exp.Not) and isinstance(expression.this, exp.Subquery):
-                # WHERE (SELECT ...) IS NOT NULL -> NOT ((SELECT ...) IS NULL)
+            if isinstance(expression.parent, exp.Not):
+                # value IS NOT NULL -> NOT (value IS NULL)
                 is_sql = self.wrap(is_sql)
 
             return is_sql

@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     map_date_part,
     no_safe_divide_sql,
     no_timestamp_sql,
+    timestampdiff_sql,
 )
 from sqlglot.helper import flatten, is_float, is_int, seq_get
 from sqlglot.tokens import TokenType
@@ -784,6 +785,7 @@ class Snowflake(Dialect):
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
+            exp.DatetimeDiff: timestampdiff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),

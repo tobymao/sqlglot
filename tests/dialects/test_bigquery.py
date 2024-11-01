@@ -1565,6 +1565,14 @@ WHERE
                 "snowflake": "IFF((y) <> 0, (x) / (y), NULL)",
             },
         )
+        self.validate_all(
+            """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
+            write={
+                "bigquery": """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
+                "duckdb": """SELECT '{"class": {"students": []}}' -> '$.class'""",
+                "snowflake": """SELECT GET_PATH(PARSE_JSON('{"class": {"students": []}}'), 'class')""",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

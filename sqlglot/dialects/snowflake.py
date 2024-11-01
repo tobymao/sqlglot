@@ -798,7 +798,6 @@ class Snowflake(Dialect):
             ),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
-            exp.JSONExtract: lambda self, e: self.func("GET_PATH", e.this, e.expression),
             exp.JSONExtractScalar: lambda self, e: self.func(
                 "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
             ),
@@ -1095,4 +1094,14 @@ class Snowflake(Dialect):
                     expression=expression.expression * -1,
                     unit=expression.unit,
                 )
+            )
+
+        def jsonextract_sql(self, expression: exp.JSONExtract):
+            this = expression.this
+
+            # JSON strings are valid coming from other dialects such as BQ
+            return self.func(
+                "GET_PATH",
+                exp.ParseJSON(this=this) if this.is_string else this,
+                expression.expression,
             )

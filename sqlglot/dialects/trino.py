@@ -18,7 +18,7 @@ class Trino(Presto):
             **Presto.Parser.FUNCTION_PARSERS,
             "TRIM": lambda self: self._parse_trim(),
             "JSON_QUERY": lambda self: self._parse_json_query(),
-            "LISTAGG": lambda self: self._parse_string_agg(),
+            "LISTAGG": lambda self: self._parse_listagg(),
         }
 
         JSON_QUERY_OPTIONS: parser.OPTIONS_TYPE = {
@@ -68,15 +68,3 @@ class Trino(Presto):
             option = f" {option}" if option else ""
 
             return self.func("JSON_QUERY", expression.this, json_path + option)
-
-        def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
-            this = expression.this
-            separator = expression.args.get("separator") or exp.Literal.string(",")
-
-            if isinstance(this, exp.Order):
-                if this.this:
-                    this = this.this.pop()
-
-                return f"LISTAGG({self.format_args(this, separator)}) WITHIN GROUP ({self.sql(expression.this).lstrip()})"
-
-            return super().groupconcat_sql(expression)

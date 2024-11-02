@@ -5769,6 +5769,17 @@ class GroupConcat(AggFunc):
     arg_types = {"this": True, "separator": False}
 
 
+class ListAgg(AggFunc):
+    arg_types = {
+        "this": True,
+        "separator": False,
+        "overflow_behaviour": False,
+        "truncation_indicator": False,
+        "count_option": False,
+        "order": False,
+    }
+
+
 class Hex(Func):
     pass
 

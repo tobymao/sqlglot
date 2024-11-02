@@ -4466,3 +4466,18 @@ class Generator(metaclass=_Generator):
             )
 
         return self.function_fallback_sql(expression)
+
+    def listagg_sql(self, expression: exp.ListAgg) -> str:
+        args = expression.args
+        listagg = f"LISTAGG({args['this']}"
+        if args.get("separator"):
+            listagg += f", {args['separator']}"
+
+        if args.get("overflow_behaviour"):
+            listagg += f" ON OVERFLOW {args['overflow_behaviour']}"
+            if args.get("truncation_indicator"):
+                listagg += f" {args['truncation_indicator']} {args['count_option']} COUNT"
+
+        listagg += f") WITHIN GROUP ({self.sql(args['order']).lstrip()})"
+
+        return listagg

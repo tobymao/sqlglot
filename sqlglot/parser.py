@@ -7548,3 +7548,46 @@ class Parser(metaclass=_Parser):
                 "for": self._match_text_seq("FOR") and self._parse_bitwise(),
             },
         )
+
+    def _parse_listagg(self) -> exp.ListAgg:
+        # https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/LISTAGG.html
+        # https://trino.io/docs/current/functions/aggregate.html#listagg
+
+        overflow_behaviour = None
+        truncation_indicator = None
+        count_option = None
+
+        if self._match(TokenType.DISTINCT):
+            args: t.List[t.Optional[exp.Expression]] = [
+                self.expression(exp.Distinct, expressions=[self._parse_assignment()])
+            ]
+            if self._match(TokenType.COMMA):
+                args.extend(self._parse_csv(self._parse_assignment))
+        else:
+            args = self._parse_csv(self._parse_assignment)
+
+        if self._match_text_seq("ON", "OVERFLOW"):
+            if self._match_texts("ERROR"):
+                overflow_behaviour = "ERROR"
+            elif self._match_texts("TRUNCATE"):
+                overflow_behaviour = "TRUNCATE"
+                truncation_indicator = seq_get(self._parse_csv(self._parse_assignment), 0)
+                if self._match_texts(["WITH", "WITHOUT"]):
+                    count_option = self._prev.text.upper()
+                self._match_texts("COUNT")
+
+        self._match_r_paren()
+        self._match_text_seq("WITHIN", "GROUP")
+        self._match_l_paren()
+
+        order = self._parse_order()
+
+        return self.expression(
+            exp.ListAgg,
+            this=seq_get(args, 0),
+            separator=seq_get(args, 1),
+            overflow_behaviour=overflow_behaviour,
+            truncation_indicator=truncation_indicator,
+            count_option=count_option,
+            order=order,
+        )

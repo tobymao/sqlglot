@@ -9,9 +9,6 @@ class TestTrino(Validator):
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
-        self.validate_identity(
-            "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"
-        )
 
     def test_trim(self):
         self.validate_identity("SELECT TRIM('!' FROM '!foo!')")
@@ -56,4 +53,19 @@ class TestTrino(Validator):
         self.validate_identity("ALTER VIEW people RENAME TO users")
         self.validate_identity(
             "ALTER VIEW people SET AUTHORIZATION alice", check_command_warning=True
+        )
+
+    def test_listagg(self):
+        self.validate_identity(
+            "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity("SELECT LISTAGG(col) WITHIN GROUP (ORDER BY col DESC) FROM tbl")
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
         )

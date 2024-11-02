@@ -483,6 +483,7 @@ class Parser(metaclass=_Parser):
         TokenType.FORMAT,
         TokenType.FULL,
         TokenType.IDENTIFIER,
+        TokenType.INFORMATION_SCHEMA,
         TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,
@@ -3604,8 +3605,9 @@ class Parser(metaclass=_Parser):
         db = None
         table: t.Optional[exp.Expression | str] = self._parse_table_part(schema=schema)
 
+        prev = self._prev
         while self._match(TokenType.DOT):
-            if catalog:
+            if catalog or (prev and prev.token_type == TokenType.INFORMATION_SCHEMA):
                 # This allows nesting the table in arbitrarily many dot expressions if needed
                 table = self.expression(
                     exp.Dot, this=table, expression=self._parse_table_part(schema=schema)
@@ -3615,6 +3617,8 @@ class Parser(metaclass=_Parser):
                 db = table
                 # "" used for tsql FROM a..b case
                 table = self._parse_table_part(schema=schema) or ""
+
+            prev = self._prev
 
         if (
             wildcard

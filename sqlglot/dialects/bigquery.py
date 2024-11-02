@@ -574,11 +574,18 @@ class BigQuery(Dialect):
                         table.set("db", exp.Identifier(this=parts[0]))
                         table.set("this", exp.Identifier(this=parts[1]))
 
-            if isinstance(table.this, exp.Identifier) and any("." in p.name for p in table.parts):
+            if isinstance(table.this, (exp.Identifier, exp.Dot)) and any(
+                "." in p.name for p in table.parts
+            ):
                 catalog, db, this, *rest = (
                     exp.to_identifier(p, quoted=True)
                     for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)
                 )
+
+                if db and db.name.upper() == "INFORMATION_SCHEMA":
+                    this = exp.Dot.build([db, this])  # type: ignore
+                    db = catalog
+                    catalog, *rest = rest or [None]
 
                 if rest and this:
                     this = exp.Dot.build([this, *rest])  # type: ignore

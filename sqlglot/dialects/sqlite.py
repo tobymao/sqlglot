@@ -109,6 +109,7 @@ class SQLite(Dialect):
 
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("INFORMATION_SCHEMA")
 
     class Parser(parser.Parser):
         FUNCTIONS = {

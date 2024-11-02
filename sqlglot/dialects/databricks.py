@@ -35,6 +35,12 @@ class Databricks(Spark):
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']
 
+    class Tokenizer(Spark.Tokenizer):
+        KEYWORDS = {
+            **Spark.Tokenizer.KEYWORDS,
+            "INFORMATION_SCHEMA": TokenType.INFORMATION_SCHEMA,
+        }
+
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = True

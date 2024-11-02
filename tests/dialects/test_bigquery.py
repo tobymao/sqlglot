@@ -85,6 +85,13 @@ LANGUAGE js AS
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
         )
 
+        for prefix in ("c.db.", "db.", ""):
+            with self.subTest(f"Parsing {prefix}INFORMATION_SCHEMA.X into a Table"):
+                table = parse_one(
+                    f"`{prefix}INFORMATION_SCHEMA.X`", dialect="bigquery", into=exp.Table
+                )
+                self.assertIsInstance(table.this, exp.Dot)
+
         table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")
         self.assertEqual(table.db, "_y")

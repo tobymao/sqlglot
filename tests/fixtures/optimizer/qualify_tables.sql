@@ -14,6 +14,22 @@ SELECT 1 FROM x.y.z AS z;
 SELECT 1 FROM x.y.z AS z;
 SELECT 1 FROM x.y.z AS z;
 
+# title: only information schema
+SELECT * FROM information_schema.tables;
+SELECT * FROM c.db.information_schema.tables AS tables;
+
+# title: information schema with db
+SELECT * FROM y.information_schema.tables;
+SELECT * FROM c.y.information_schema.tables AS tables;
+
+# title: information schema with db, catalog
+SELECT * FROM x.y.information_schema.tables;
+SELECT * FROM x.y.information_schema.tables AS tables;
+
+# title: information schema with db, catalog, alias
+SELECT * FROM x.y.information_schema.tables AS z;
+SELECT * FROM x.y.information_schema.tables AS z;
+
 # title: redshift unnest syntax, z.a should be a column, not a table
 # dialect: redshift
 SELECT 1 FROM y.z AS z, z.a;

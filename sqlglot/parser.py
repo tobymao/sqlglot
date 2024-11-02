@@ -7558,7 +7558,7 @@ class Parser(metaclass=_Parser):
         count_option = None
 
         if self._match(TokenType.DISTINCT):
-            args: t.List[t.Optional[exp.Expression]] = [
+            args: t.List[exp.Expression] = [
                 self.expression(exp.Distinct, expressions=[self._parse_assignment()])
             ]
             if self._match(TokenType.COMMA):

@@ -302,13 +302,19 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
+def unnest_to_explode(
+    expression: exp.Expression,
+    unnest_using_arrays_zip: bool = True,
+) -> exp.Expression:
     """Convert cross join unnest into lateral view explode."""
 
     def _unnest_zip_exprs(
         u: exp.Unnest, unnest_exprs: t.List[exp.Expression], has_multi_expr: bool
     ) -> t.List[exp.Expression]:
         if has_multi_expr:
+            if not unnest_using_arrays_zip:
+                raise UnsupportedError("Cannot transpile UNNEST with multiple input arrays")
+
             # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
             zip_exprs: t.List[exp.Expression] = [
                 exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
@@ -389,7 +395,7 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
                             view=True,
                             alias=exp.TableAlias(
                                 this=alias.this,  # type: ignore
-                                columns=alias_cols,
+                                columns=alias_cols if unnest_using_arrays_zip else [column],  # type: ignore
                             ),
                         ),
                     )

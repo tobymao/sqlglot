@@ -1460,6 +1460,7 @@ class TestDialect(Validator):
             write={
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
                 "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
+                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct"
             },
         )
 
@@ -1469,6 +1470,7 @@ class TestDialect(Validator):
             write={
                 "presto": "SELECT numbers, animals, n, a FROM (SELECT ARRAY[2, 5] AS numbers, ARRAY['dog', 'cat', 'bird'] AS animals UNION ALL SELECT ARRAY[7, 8, 9], ARRAY['cow', 'pig']) AS x CROSS JOIN UNNEST(numbers, animals) AS t(n, a)",
                 "spark": "SELECT numbers, animals, n, a FROM (SELECT ARRAY(2, 5) AS numbers, ARRAY('dog', 'cat', 'bird') AS animals UNION ALL SELECT ARRAY(7, 8, 9), ARRAY('cow', 'pig')) AS x LATERAL VIEW INLINE(ARRAYS_ZIP(numbers, animals)) t AS n, a",
+                "hive": UnsupportedError,
             },
         )
 

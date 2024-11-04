@@ -231,6 +231,13 @@ def _build_regexp_extract(args: t.List) -> exp.RegexpExtract:
     )
 
 
+def _build_json_extract_scalar(args: t.List, dialect: Dialect) -> exp.JSONExtractScalar:
+    if len(args) == 1:
+        # The default value for the JSONPath is '$' i.e all of the data
+        args.append(exp.Literal.string("$"))
+    return parser.build_extract_json_with_path(exp.JSONExtractScalar)(args, dialect)
+
+
 def _str_to_datetime_sql(
     self: BigQuery.Generator, expression: exp.StrToDate | exp.StrToTime
 ) -> str:
@@ -432,9 +439,8 @@ class BigQuery(Dialect):
                 this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
             ),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
-            "JSON_EXTRACT_SCALAR": lambda args: exp.JSONExtractScalar(
-                this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string("$")
-            ),
+            "JSON_EXTRACT_SCALAR": _build_json_extract_scalar,
+            "JSON_VALUE": _build_json_extract_scalar,
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _build_to_hex,

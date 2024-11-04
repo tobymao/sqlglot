@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
     timestamptrunc_sql,
+    timestampdiff_sql,
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
@@ -17,12 +18,6 @@ def _build_json_extract(args: t.List) -> exp.JSONExtract:
     this = args[0]
     path = args[1].name.lstrip("$.")
     return exp.JSONExtract(this=this, expression=path)
-
-
-def _timestamp_diff(
-    self: Databricks.Generator, expression: exp.DatetimeDiff | exp.TimestampDiff
-) -> str:
-    return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)
 
 
 def _jsonextract_sql(
@@ -80,8 +75,8 @@ class Databricks(Spark):
                 exp.Mul(this=e.expression, expression=exp.Literal.number(-1)),
                 e.this,
             ),
-            exp.DatetimeDiff: _timestamp_diff,
-            exp.TimestampDiff: _timestamp_diff,
+            exp.DatetimeDiff: timestampdiff_sql,
+            exp.TimestampDiff: timestampdiff_sql,
             exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.Select: transforms.preprocess(
                 [

@@ -440,6 +440,7 @@ class BigQuery(Dialect):
             ),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "JSON_EXTRACT_SCALAR": _build_json_extract_scalar,
+            "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_VALUE": _build_json_extract_scalar,
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,

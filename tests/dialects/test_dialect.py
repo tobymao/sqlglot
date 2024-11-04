@@ -1460,7 +1460,7 @@ class TestDialect(Validator):
             write={
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
                 "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
-                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct"
+                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
             },
         )
 

@@ -25,7 +25,6 @@ from sqlglot.dialects.dialect import (
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
-    regexp_extract_sql,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -552,7 +551,6 @@ class DuckDB(Dialect):
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
-            exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpReplace: lambda self, e: self.func(
                 "REGEXP_REPLACE",
                 e.this,
@@ -954,3 +952,23 @@ class DuckDB(Dialect):
                 this = f"LIST_TRANSFORM({this}, x -> COALESCE(x, {null_text}))"
 
             return self.func("ARRAY_TO_STRING", this, expression.expression)
+
+        @generator.unsupported_args("position", "occurrence")
+        def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
+            group = expression.args.get("group")
+            params = expression.args.get("parameters")
+
+            if params and params.name == "":
+                params = None
+
+            # Do not render group if it's the default value for this dialect
+            if (
+                not params
+                and group
+                and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP)
+            ):
+                group = None
+
+            return self.func(
+                "REGEXP_EXTRACT", expression.this, expression.expression, group, params
+            )

@@ -77,6 +77,8 @@ class Trino(Presto):
                 if this.this:
                     this = this.this.pop()
 
-                return f"LISTAGG({self.format_args(this, separator)}) WITHIN GROUP ({self.sql(expression.this).lstrip()})"
+                on_overflow = self.sql(expression, "on_overflow")
+                on_overflow = f" ON OVERFLOW {on_overflow}" if on_overflow else ""
+                return f"LISTAGG({self.format_args(this, separator)}{on_overflow}) WITHIN GROUP ({self.sql(expression.this).lstrip()})"
 
             return super().groupconcat_sql(expression)

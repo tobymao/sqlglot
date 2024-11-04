@@ -5765,8 +5765,14 @@ class Greatest(Func):
     is_var_len_args = True
 
 
+# Trino's `ON OVERFLOW TRUNCATE [filler_string] {WITH | WITHOUT} COUNT`
+# https://trino.io/docs/current/functions/aggregate.html#listagg
+class OverflowTruncateBehavior(Expression):
+    arg_types = {"this": False, "with_count": True}
+
+
 class GroupConcat(AggFunc):
-    arg_types = {"this": True, "separator": False}
+    arg_types = {"this": True, "separator": False, "on_overflow": False}
 
 
 class Hex(Func):

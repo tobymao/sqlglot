@@ -37,7 +37,7 @@ setup(
             "pytz",
             "pdoc",
             "pre-commit",
-            "ruff==0.4.3",
+            "ruff==0.7.2",
             "types-python-dateutil",
             "types-pytz",
             "typing_extensions",

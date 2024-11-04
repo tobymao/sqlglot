@@ -4466,3 +4466,9 @@ class Generator(metaclass=_Generator):
             )
 
         return self.function_fallback_sql(expression)
+
+    def overflowtruncatebehavior_sql(self, expression: exp.OverflowTruncateBehavior) -> str:
+        filler = self.sql(expression, "this")
+        filler = f" {filler}" if filler else ""
+        with_count = "WITH COUNT" if expression.args.get("with_count") else "WITHOUT COUNT"
+        return f"TRUNCATE{filler} {with_count}"

@@ -259,7 +259,6 @@ class Hive(Dialect):
             "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
             "SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
-        KEYWORDS.pop("INFORMATION_SCHEMA")
 
         NUMERIC_LITERALS = {
             "L": "BIGINT",

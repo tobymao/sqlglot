@@ -15,18 +15,22 @@ SELECT 1 FROM x.y.z AS z;
 SELECT 1 FROM x.y.z AS z;
 
 # title: only information schema
+# dialect: bigquery
 SELECT * FROM information_schema.tables;
 SELECT * FROM c.db.information_schema.tables AS tables;
 
 # title: information schema with db
+# dialect: bigquery
 SELECT * FROM y.information_schema.tables;
 SELECT * FROM c.y.information_schema.tables AS tables;
 
 # title: information schema with db, catalog
+# dialect: bigquery
 SELECT * FROM x.y.information_schema.tables;
 SELECT * FROM x.y.information_schema.tables AS tables;
 
 # title: information schema with db, catalog, alias
+# dialect: bigquery
 SELECT * FROM x.y.information_schema.tables AS z;
 SELECT * FROM x.y.information_schema.tables AS z;
 

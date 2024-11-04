@@ -1714,3 +1714,7 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
             )
         )
     return self.lateral_sql(expression)
+
+
+def timestampdiff_sql(self: Generator, expression: exp.DatetimeDiff | exp.TimestampDiff) -> str:
+    return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)

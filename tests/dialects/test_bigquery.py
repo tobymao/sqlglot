@@ -182,7 +182,6 @@ LANGUAGE js AS
         self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
         self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
         self.validate_identity("SELECT TIMESTAMP_MILLIS(2) AS t")
-        self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
         self.validate_identity("UPDATE x SET y = NULL")
         self.validate_identity("LOG(n, b)")
         self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
@@ -229,9 +228,6 @@ LANGUAGE js AS
         )
         self.validate_identity(
             "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-        )
-        self.validate_identity(
-            """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
         )
         self.validate_identity(
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
@@ -648,6 +644,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
+                    "snowflake": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
                 },
             ),
         )
@@ -2065,5 +2062,25 @@ OPTIONS (
                 },
                 write={
                     "bigquery": f"SELECT color, ARRAY_AGG(id ORDER BY id {sort_order}) AS ids FROM colors GROUP BY 1",
+                },
+            )
+
+    def test_json_extract_scalar(self):
+        for func in ("JSON_EXTRACT_SCALAR", "JSON_VALUE"):
+            with self.subTest(f"Testing BigQuery's {func}"):
+                self.validate_all(
+                    f"SELECT {func}('5')",
+                    write={
+                        "bigquery": f"SELECT {func}('5', '$')",
+                        "duckdb": """SELECT '5' ->> '$'""",
+                    },
+                )
+
+            self.validate_all(
+                f"""SELECT {func}('{{"name": "Jakob", "age": "6"}}', '$.age')""",
+                write={
+                    "bigquery": f"""SELECT {func}('{{"name": "Jakob", "age": "6"}}', '$.age')""",
+                    "duckdb": """SELECT '{"name": "Jakob", "age": "6"}' ->> '$.age'""",
+                    "snowflake": """SELECT JSON_EXTRACT_PATH_TEXT('{"name": "Jakob", "age": "6"}', 'age')""",
                 },
             )

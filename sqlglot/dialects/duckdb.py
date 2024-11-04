@@ -36,6 +36,7 @@ from sqlglot.dialects.dialect import (
     build_regexp_extract,
     explode_to_unnest_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
@@ -103,7 +104,7 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
-@generator.unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
+@unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
 
@@ -953,22 +954,18 @@ class DuckDB(Dialect):
 
             return self.func("ARRAY_TO_STRING", this, expression.expression)
 
-        @generator.unsupported_args("position", "occurrence")
+        @unsupported_args("position", "occurrence")
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             group = expression.args.get("group")
-            params = expression.args.get("parameters")
-
-            if params and params.name == "":
-                params = None
 
             # Do not render group if it's the default value for this dialect
-            if (
-                not params
-                and group
-                and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP)
-            ):
+            if group and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP):
                 group = None
 
             return self.func(
-                "REGEXP_EXTRACT", expression.this, expression.expression, group, params
+                "REGEXP_EXTRACT",
+                expression.this,
+                expression.expression,
+                group,
+                expression.args.get("parameters"),
             )

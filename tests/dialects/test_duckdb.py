@@ -761,14 +761,7 @@ class TestDuckDB(Validator):
                 write="duckdb",
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )
-        with self.assertRaises(UnsupportedError):
-            # duckdb has the group arg, but bq doesn't
-            transpile(
-                "SELECT REGEXP_EXTRACT(a, 'pattern', 2) from table",
-                read="duckdb",
-                write="bigquery",
-                unsupported_level=ErrorLevel.IMMEDIATE,
-            )
+
         self.validate_all(
             "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
             read={
@@ -783,20 +776,8 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT REGEXP_EXTRACT(a, 'pattern', 2) FROM t",
-            read={
-                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern', 2) FROM t",
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, '', 2) FROM t",
-            },
-            write={
-                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern', 2) FROM t",
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'c', 2) FROM t",
-            },
-        )
-        self.validate_all(
             "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
             read={
-                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
                 "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
             },
             write={

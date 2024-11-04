@@ -749,6 +749,13 @@ class BigQuery(Dialect):
             exp.MD5Digest: rename_func("MD5"),
             exp.Min: min_or_least,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.RegexpExtract: lambda self, e: self.func(
+                "REGEXP_EXTRACT",
+                e.this,
+                e.expression,
+                e.args.get("position"),
+                e.args.get("occurrence"),
+            ),
             exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.ReturnsProperty: _returnsproperty_sql,
@@ -1042,13 +1049,3 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
-
-        @generator.unsupported_args("group", "parameters")
-        def regexpextract_sql(self, e: exp.RegexpExtract) -> str:
-            return self.func(
-                "REGEXP_EXTRACT",
-                e.this,
-                e.expression,
-                e.args.get("position"),
-                e.args.get("occurrence"),
-            )

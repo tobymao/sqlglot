@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     no_timestamp_sql,
     timestampdiff_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import flatten, is_float, is_int, seq_get
 from sqlglot.tokens import TokenType
 
@@ -1067,7 +1068,7 @@ class Snowflake(Dialect):
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
 
-        @generator.unsupported_args("weight", "accuracy")
+        @unsupported_args("weight", "accuracy")
         def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
             return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))
 

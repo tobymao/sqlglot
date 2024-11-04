@@ -957,15 +957,16 @@ class DuckDB(Dialect):
         @unsupported_args("position", "occurrence")
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             group = expression.args.get("group")
+            params = expression.args.get("parameters")
 
-            # Do not render group if it's the default value for this dialect
-            if group and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP):
+            # Do not render group if there is no following argument,
+            # and it's the default value for this dialect
+            if (
+                not params
+                and group
+                and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP)
+            ):
                 group = None
-
             return self.func(
-                "REGEXP_EXTRACT",
-                expression.this,
-                expression.expression,
-                group,
-                expression.args.get("parameters"),
+                "REGEXP_EXTRACT", expression.this, expression.expression, group, params
             )

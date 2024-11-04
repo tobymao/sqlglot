@@ -785,6 +785,12 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
             },
         )
+        self.validate_identity(
+            "SELECT REGEXP_EXTRACT(a, 'pattern', 0)",
+            write_sql="SELECT REGEXP_EXTRACT(a, 'pattern')",
+        )
+        self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 0, 'i')")
+        self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 1, 'i')")
 
         self.validate_identity("SELECT ISNAN(x)")
 

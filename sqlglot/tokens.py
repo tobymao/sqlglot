@@ -289,7 +289,6 @@ class TokenType(AutoName):
     ILIKE_ANY = auto()
     IN = auto()
     INDEX = auto()
-    INFORMATION_SCHEMA = auto()
     INNER = auto()
     INSERT = auto()
     INTERSECT = auto()
@@ -732,7 +731,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "ILIKE": TokenType.ILIKE,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
-        "INFORMATION_SCHEMA": TokenType.INFORMATION_SCHEMA,
         "INET": TokenType.INET,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,

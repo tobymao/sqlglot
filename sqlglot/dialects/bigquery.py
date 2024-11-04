@@ -561,6 +561,18 @@ class BigQuery(Dialect):
                 schema=schema, is_db_reference=is_db_reference, wildcard=True
             )
 
+            # The `INFORMATION_SCHEMA` views in BigQuery need to be qualified by a region or
+            # dataset, so if the project identifier is omitted we need to fix the ast so that
+            # the `INFORMATION_SCHEMA.X` bit is represented as a Dot. Otherwise, we wouldn't
+            # correctly qualify a `Table` node that references these views, because it would
+            # seem like the "catalog" part is set, when it'd actually be the region/dataset.
+            #
+            # See: https://cloud.google.com/bigquery/docs/information-schema-intro#syntax
+            if table.db.upper() == "INFORMATION_SCHEMA":
+                table.set("this", exp.Dot.build([table.args["db"].pop(), table.this.pop()]))
+                table.set("db", table.args.get("catalog"))
+                table.set("catalog", None)
+
             # proj-1.db.tbl -- `1.` is tokenized as a float so we need to unravel it here
             if not table.catalog:
                 if table.db:

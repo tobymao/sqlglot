@@ -9,7 +9,6 @@ from sqlglot import (
     UnsupportedError,
     exp,
     parse,
-    parse_one,
     transpile,
 )
 from sqlglot.helper import logger as helper_logger
@@ -87,17 +86,15 @@ LANGUAGE js AS
 
         for prefix in ("c.db.", "db.", ""):
             with self.subTest(f"Parsing {prefix}INFORMATION_SCHEMA.X into a Table"):
-                table = parse_one(
-                    f"`{prefix}INFORMATION_SCHEMA.X`", dialect="bigquery", into=exp.Table
-                )
+                table = self.parse_one(f"`{prefix}INFORMATION_SCHEMA.X`", into=exp.Table)
                 self.assertIsInstance(table.this, exp.Dot)
 
-        table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
+        table = self.parse_one("x-0._y.z", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")
         self.assertEqual(table.db, "_y")
         self.assertEqual(table.name, "z")
 
-        table = parse_one("x-0._y", dialect="bigquery", into=exp.Table)
+        table = self.parse_one("x-0._y", into=exp.Table)
         self.assertEqual(table.db, "x-0")
         self.assertEqual(table.name, "_y")
 

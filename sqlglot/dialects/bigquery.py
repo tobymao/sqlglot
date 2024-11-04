@@ -1049,3 +1049,13 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        @generator.unsupported_args("group", "parameters")
+        def regexpextract_sql(self, e: exp.RegexpExtract) -> str:
+            return self.func(
+                "REGEXP_EXTRACT",
+                e.this,
+                e.expression,
+                e.args.get("position"),
+                e.args.get("occurrence"),
+            )

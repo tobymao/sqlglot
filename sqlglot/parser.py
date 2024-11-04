@@ -5954,7 +5954,7 @@ class Parser(metaclass=_Parser):
             action=self._parse_var_from_options(self.CAST_ACTIONS, raise_unmatched=False),
         )
 
-    def _parse_string_agg(self) -> exp.Expression:
+    def _parse_string_agg(self) -> exp.GroupConcat:
         if self._match(TokenType.DISTINCT):
             args: t.List[t.Optional[exp.Expression]] = [
                 self.expression(exp.Distinct, expressions=[self._parse_assignment()])
@@ -5963,6 +5963,23 @@ class Parser(metaclass=_Parser):
                 args.extend(self._parse_csv(self._parse_assignment))
         else:
             args = self._parse_csv(self._parse_assignment)  # type: ignore
+
+        if self._match_text_seq("ON", "OVERFLOW"):
+            # trino: LISTAGG(expression [, separator] [ON OVERFLOW overflow_behavior])
+            if self._match_text_seq("ERROR"):
+                on_overflow: t.Optional[exp.Expression] = exp.var("ERROR")
+            else:
+                self._match_text_seq("TRUNCATE")
+                on_overflow = self.expression(
+                    exp.OverflowTruncateBehavior,
+                    this=self._parse_string(),
+                    with_count=(
+                        self._match_text_seq("WITH", "COUNT")
+                        or not self._match_text_seq("WITHOUT", "COUNT")
+                    ),
+                )
+        else:
+            on_overflow = None
 
         index = self._index
         if not self._match(TokenType.R_PAREN) and args:
@@ -5978,9 +5995,15 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return self.validate_expression(exp.GroupConcat.from_arg_list(args), args)
 
-        self._match_l_paren()  # The corresponding match_r_paren will be called in parse_function (caller)
-        order = self._parse_order(this=seq_get(args, 0))
-        return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
+        # The corresponding match_r_paren will be called in parse_function (caller)
+        self._match_l_paren()
+
+        return self.expression(
+            exp.GroupConcat,
+            this=self._parse_order(this=seq_get(args, 0)),
+            separator=seq_get(args, 1),
+            on_overflow=on_overflow,
+        )
 
     def _parse_convert(
         self, strict: bool, safe: t.Optional[bool] = None

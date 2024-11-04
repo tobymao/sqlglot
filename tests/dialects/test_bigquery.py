@@ -87,7 +87,11 @@ LANGUAGE js AS
         for prefix in ("c.db.", "db.", ""):
             with self.subTest(f"Parsing {prefix}INFORMATION_SCHEMA.X into a Table"):
                 table = self.parse_one(f"`{prefix}INFORMATION_SCHEMA.X`", into=exp.Table)
-                self.assertIsInstance(table.this, exp.Dot)
+                this = table.this
+
+                self.assertIsInstance(this, exp.Identifier)
+                self.assertTrue(this.quoted)
+                self.assertEqual(this.name, "INFORMATION_SCHEMA.X")
 
         table = self.parse_one("x-0._y.z", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")
@@ -204,9 +208,6 @@ LANGUAGE js AS
             "MERGE INTO dataset.NewArrivals USING (SELECT * FROM UNNEST([('microwave', 10, 'warehouse #1'), ('dryer', 30, 'warehouse #1'), ('oven', 20, 'warehouse #2')])) ON FALSE WHEN NOT MATCHED THEN INSERT ROW WHEN NOT MATCHED BY SOURCE THEN DELETE"
         )
         self.validate_identity(
-            "SELECT * FROM `SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW`"
-        )
-        self.validate_identity(
             "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
         )
         self.validate_identity(
@@ -235,6 +236,18 @@ LANGUAGE js AS
         )
         self.validate_identity(
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
+        )
+        self.validate_identity(
+            "SELECT * FROM `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW`",
+            "SELECT * FROM `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW` AS `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW`",
+        )
+        self.validate_identity(
+            "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES",
+            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
+        )
+        self.validate_identity(
+            "SELECT * FROM proj.region_or_dataset.INFORMATION_SCHEMA.TABLES",
+            "SELECT * FROM proj.region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
         )
         self.validate_identity(
             "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=TIMESTAMP '2020-01-02T04:05:06.007Z') AS SELECT 1 AS c",

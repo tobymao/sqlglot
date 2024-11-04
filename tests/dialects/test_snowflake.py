@@ -1763,7 +1763,6 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_SUBSTR(subject, pattern)",
             read={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern)",
-                "snowflake": "REGEXP_EXTRACT(subject, pattern)",
             },
             write={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern)",

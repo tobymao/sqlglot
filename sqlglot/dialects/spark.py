@@ -137,6 +137,7 @@ class Spark(Spark2):
         PAD_FILL_PATTERN_IS_REQUIRED = False
         SUPPORTS_CONVERT_TIMEZONE = True
         SUPPORTS_MEDIAN = True
+        SUPPORTS_UNIX_SECONDS = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,

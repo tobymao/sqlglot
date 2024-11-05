@@ -366,6 +366,7 @@ class Presto(Dialect):
             ),
             exp.BitwiseXor: lambda self, e: self.func("BITWISE_XOR", e.this, e.expression),
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
+            exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateDiff: lambda self, e: self.func(

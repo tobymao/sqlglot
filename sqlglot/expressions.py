@@ -6516,6 +6516,10 @@ class UnixToTimeStr(Func):
     pass
 
 
+class UnixSeconds(Func):
+    pass
+
+
 class Uuid(Func):
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 

@@ -436,6 +436,9 @@ class Generator(metaclass=_Generator):
     # Whether MEDIAN(expr) is supported; if not, it will be generated as PERCENTILE_CONT(expr, 0.5)
     SUPPORTS_MEDIAN = True
 
+    # Whether UNIX_SECONDS(timestamp) is supported
+    SUPPORTS_UNIX_SECONDS = False
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -4472,3 +4475,15 @@ class Generator(metaclass=_Generator):
         filler = f" {filler}" if filler else ""
         with_count = "WITH COUNT" if expression.args.get("with_count") else "WITHOUT COUNT"
         return f"TRUNCATE{filler} {with_count}"
+
+    def unixseconds_sql(self, expression: exp.UnixSeconds) -> str:
+        if self.SUPPORTS_UNIX_SECONDS:
+            return self.function_fallback_sql(expression)
+
+        start_ts = exp.cast(
+            exp.Literal.string("1970-01-01 00:00:00+00"), to=exp.DataType.Type.TIMESTAMPTZ
+        )
+
+        return self.sql(
+            exp.TimestampDiff(this=expression.this, expression=start_ts, unit=exp.var("SECONDS"))
+        )

@@ -10,6 +10,7 @@ from sqlglot import (
     exp,
     parse,
     transpile,
+    parse_one,
 )
 from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
@@ -2116,3 +2117,22 @@ OPTIONS (
                     "snowflake": """SELECT JSON_EXTRACT_PATH_TEXT('{"name": "Jakob", "age": "6"}', 'age')""",
                 },
             )
+
+    def test_unix_seconds(self):
+        self.validate_all(
+            "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
+            read={
+                "bigquery": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
+                "spark": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
+                "databricks": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
+            },
+            write={
+                "spark": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
+                "databricks": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT DATE_DIFF('SECONDS', CAST('1970-01-01 00:00:00+00' AS TIMESTAMPTZ), '2008-12-25 15:30:00+00')",
+                "snowflake": "SELECT TIMESTAMPDIFF(SECONDS, CAST('1970-01-01 00:00:00+00' AS TIMESTAMPTZ), '2008-12-25 15:30:00+00')",
+            },
+        )
+
+        for dialect in ("bigquery", "spark", "databricks"):
+            parse_one("UNIX_SECONDS(col)", dialect=dialect).assert_is(exp.UnixSeconds)

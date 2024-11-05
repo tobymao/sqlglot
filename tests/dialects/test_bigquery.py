@@ -1138,7 +1138,8 @@ LANGUAGE js AS
             write={
                 "bigquery": "CURRENT_TIME()",
                 "duckdb": "CURRENT_TIME",
-                "presto": "CURRENT_TIME()",
+                "presto": "CURRENT_TIME",
+                "trino": "CURRENT_TIME",
                 "hive": "CURRENT_TIME()",
                 "spark": "CURRENT_TIME()",
             },

@@ -151,9 +151,7 @@ class AbstractMappingSchema:
         return self._supported_table_args
 
     def table_parts(self, table: exp.Table) -> t.List[str]:
-        if isinstance(table.this, exp.ReadCSV):
-            return [table.this.name]
-        return [table.text(part) for part in exp.TABLE_PARTS if table.text(part)]
+        return [part.name for part in reversed(table.parts)]
 
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
@@ -417,12 +415,10 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=normalize)
 
         if normalize:
-            for arg in exp.TABLE_PARTS:
-                value = normalized_table.args.get(arg)
-                if isinstance(value, exp.Identifier):
-                    normalized_table.set(
-                        arg,
-                        normalize_name(value, dialect=dialect, is_table=True, normalize=normalize),
+            for part in normalized_table.parts:
+                if isinstance(part, exp.Identifier):
+                    part.replace(
+                        normalize_name(part, dialect=dialect, is_table=True, normalize=normalize)
                     )
 
         return normalized_table

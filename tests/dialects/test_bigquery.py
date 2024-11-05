@@ -165,6 +165,7 @@ LANGUAGE js AS
         self.validate_identity("SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c")
         self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
+        self.validate_identity("DATE_TRUNC(col, MONTH, 'UTC+8')")
         self.validate_identity("SELECT b'abc'")
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")

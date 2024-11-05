@@ -105,6 +105,9 @@
             <li>
                     <a class="function" href="#eliminate_join_marks">eliminate_join_marks</a>
             </li>
+            <li>
+                    <a class="function" href="#any_to_exists">any_to_exists</a>
+            </li>
     </ul>
 
 
@@ -1044,6 +1047,33 @@
 </span><span id="L-914"><a href="#L-914"><span class="linenos">914</span></a>            <span class="n">where</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
 </span><span id="L-915"><a href="#L-915"><span class="linenos">915</span></a>
 </span><span id="L-916"><a href="#L-916"><span class="linenos">916</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span><span id="L-917"><a href="#L-917"><span class="linenos">917</span></a>
+</span><span id="L-918"><a href="#L-918"><span class="linenos">918</span></a>
+</span><span id="L-919"><a href="#L-919"><span class="linenos">919</span></a><span class="k">def</span> <span class="nf">any_to_exists</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-920"><a href="#L-920"><span class="linenos">920</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-921"><a href="#L-921"><span class="linenos">921</span></a><span class="sd">    Transform ANY operator to Spark&#39;s EXISTS</span>
+</span><span id="L-922"><a href="#L-922"><span class="linenos">922</span></a>
+</span><span id="L-923"><a href="#L-923"><span class="linenos">923</span></a><span class="sd">    For example,</span>
+</span><span id="L-924"><a href="#L-924"><span class="linenos">924</span></a><span class="sd">        - Postgres: SELECT * FROM tbl WHERE 5 &gt; ANY(tbl.col)</span>
+</span><span id="L-925"><a href="#L-925"><span class="linenos">925</span></a><span class="sd">        - Spark: SELECT * FROM tbl WHERE EXISTS(tbl.col, x -&gt; x &lt; 5)</span>
+</span><span id="L-926"><a href="#L-926"><span class="linenos">926</span></a>
+</span><span id="L-927"><a href="#L-927"><span class="linenos">927</span></a><span class="sd">    Both ANY and EXISTS accept queries but currently only array expressions are supported for this</span>
+</span><span id="L-928"><a href="#L-928"><span class="linenos">928</span></a><span class="sd">    transformation</span>
+</span><span id="L-929"><a href="#L-929"><span class="linenos">929</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-930"><a href="#L-930"><span class="linenos">930</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">):</span>
+</span><span id="L-931"><a href="#L-931"><span class="linenos">931</span></a>        <span class="k">for</span> <span class="nb">any</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
+</span><span id="L-932"><a href="#L-932"><span class="linenos">932</span></a>            <span class="n">this</span> <span class="o">=</span> <span class="nb">any</span><span class="o">.</span><span class="n">this</span>
+</span><span id="L-933"><a href="#L-933"><span class="linenos">933</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Query</span><span class="p">):</span>
+</span><span id="L-934"><a href="#L-934"><span class="linenos">934</span></a>                <span class="k">continue</span>
+</span><span id="L-935"><a href="#L-935"><span class="linenos">935</span></a>
+</span><span id="L-936"><a href="#L-936"><span class="linenos">936</span></a>            <span class="n">binop</span> <span class="o">=</span> <span class="nb">any</span><span class="o">.</span><span class="n">parent</span>
+</span><span id="L-937"><a href="#L-937"><span class="linenos">937</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binop</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Binary</span><span class="p">):</span>
+</span><span id="L-938"><a href="#L-938"><span class="linenos">938</span></a>                <span class="n">lambda_arg</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+</span><span id="L-939"><a href="#L-939"><span class="linenos">939</span></a>                <span class="nb">any</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">lambda_arg</span><span class="p">)</span>
+</span><span id="L-940"><a href="#L-940"><span class="linenos">940</span></a>                <span class="n">lambda_expr</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">binop</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">expressions</span><span class="o">=</span><span class="p">[</span><span class="n">lambda_arg</span><span class="p">])</span>
+</span><span id="L-941"><a href="#L-941"><span class="linenos">941</span></a>                <span class="n">binop</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Exists</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">this</span><span class="o">.</span><span class="n">unnest</span><span class="p">(),</span> <span class="n">expression</span><span class="o">=</span><span class="n">lambda_expr</span><span class="p">))</span>
+</span><span id="L-942"><a href="#L-942"><span class="linenos">942</span></a>
+</span><span id="L-943"><a href="#L-943"><span class="linenos">943</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span></pre></div>
 
 
@@ -2459,6 +2489,57 @@ If this does not hold for a query, consider running <code><a href="optimizer/qua
 <blockquote>
   <p>The AST with join marks removed.</p>
 </blockquote>
+</div>
+
+
+                </section>
+                <section id="any_to_exists">
+                            <input id="any_to_exists-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">any_to_exists</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span></span><span class="return-annotation">) -> <span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span>:</span></span>
+
+                <label class="view-source-button" for="any_to_exists-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#any_to_exists"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="any_to_exists-920"><a href="#any_to_exists-920"><span class="linenos">920</span></a><span class="k">def</span> <span class="nf">any_to_exists</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="any_to_exists-921"><a href="#any_to_exists-921"><span class="linenos">921</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="any_to_exists-922"><a href="#any_to_exists-922"><span class="linenos">922</span></a><span class="sd">    Transform ANY operator to Spark&#39;s EXISTS</span>
+</span><span id="any_to_exists-923"><a href="#any_to_exists-923"><span class="linenos">923</span></a>
+</span><span id="any_to_exists-924"><a href="#any_to_exists-924"><span class="linenos">924</span></a><span class="sd">    For example,</span>
+</span><span id="any_to_exists-925"><a href="#any_to_exists-925"><span class="linenos">925</span></a><span class="sd">        - Postgres: SELECT * FROM tbl WHERE 5 &gt; ANY(tbl.col)</span>
+</span><span id="any_to_exists-926"><a href="#any_to_exists-926"><span class="linenos">926</span></a><span class="sd">        - Spark: SELECT * FROM tbl WHERE EXISTS(tbl.col, x -&gt; x &lt; 5)</span>
+</span><span id="any_to_exists-927"><a href="#any_to_exists-927"><span class="linenos">927</span></a>
+</span><span id="any_to_exists-928"><a href="#any_to_exists-928"><span class="linenos">928</span></a><span class="sd">    Both ANY and EXISTS accept queries but currently only array expressions are supported for this</span>
+</span><span id="any_to_exists-929"><a href="#any_to_exists-929"><span class="linenos">929</span></a><span class="sd">    transformation</span>
+</span><span id="any_to_exists-930"><a href="#any_to_exists-930"><span class="linenos">930</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="any_to_exists-931"><a href="#any_to_exists-931"><span class="linenos">931</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">):</span>
+</span><span id="any_to_exists-932"><a href="#any_to_exists-932"><span class="linenos">932</span></a>        <span class="k">for</span> <span class="nb">any</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
+</span><span id="any_to_exists-933"><a href="#any_to_exists-933"><span class="linenos">933</span></a>            <span class="n">this</span> <span class="o">=</span> <span class="nb">any</span><span class="o">.</span><span class="n">this</span>
+</span><span id="any_to_exists-934"><a href="#any_to_exists-934"><span class="linenos">934</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Query</span><span class="p">):</span>
+</span><span id="any_to_exists-935"><a href="#any_to_exists-935"><span class="linenos">935</span></a>                <span class="k">continue</span>
+</span><span id="any_to_exists-936"><a href="#any_to_exists-936"><span class="linenos">936</span></a>
+</span><span id="any_to_exists-937"><a href="#any_to_exists-937"><span class="linenos">937</span></a>            <span class="n">binop</span> <span class="o">=</span> <span class="nb">any</span><span class="o">.</span><span class="n">parent</span>
+</span><span id="any_to_exists-938"><a href="#any_to_exists-938"><span class="linenos">938</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binop</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Binary</span><span class="p">):</span>
+</span><span id="any_to_exists-939"><a href="#any_to_exists-939"><span class="linenos">939</span></a>                <span class="n">lambda_arg</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+</span><span id="any_to_exists-940"><a href="#any_to_exists-940"><span class="linenos">940</span></a>                <span class="nb">any</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">lambda_arg</span><span class="p">)</span>
+</span><span id="any_to_exists-941"><a href="#any_to_exists-941"><span class="linenos">941</span></a>                <span class="n">lambda_expr</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">binop</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">expressions</span><span class="o">=</span><span class="p">[</span><span class="n">lambda_arg</span><span class="p">])</span>
+</span><span id="any_to_exists-942"><a href="#any_to_exists-942"><span class="linenos">942</span></a>                <span class="n">binop</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Exists</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">this</span><span class="o">.</span><span class="n">unnest</span><span class="p">(),</span> <span class="n">expression</span><span class="o">=</span><span class="n">lambda_expr</span><span class="p">))</span>
+</span><span id="any_to_exists-943"><a href="#any_to_exists-943"><span class="linenos">943</span></a>
+</span><span id="any_to_exists-944"><a href="#any_to_exists-944"><span class="linenos">944</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Transform ANY operator to Spark's EXISTS</p>
+
+<p>For example,
+    - Postgres: SELECT * FROM tbl WHERE 5 &gt; ANY(tbl.col)
+    - Spark: SELECT * FROM tbl WHERE EXISTS(tbl.col, x -> x &lt; 5)</p>
+
+<p>Both ANY and EXISTS accept queries but currently only array expressions are supported for this
+transformation</p>
 </div>
 
 

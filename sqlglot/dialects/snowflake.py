@@ -839,6 +839,7 @@ class Snowflake(Dialect):
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),
+            exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
             exp.Stuff: rename_func("INSERT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
             exp.Timestamp: no_timestamp_sql,

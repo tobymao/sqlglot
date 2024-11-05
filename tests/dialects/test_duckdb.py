@@ -787,7 +787,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "SELECT REGEXP_EXTRACT(a, 'pattern', 0)",
-            write_sql="SELECT REGEXP_EXTRACT(a, 'pattern')",
+            "SELECT REGEXP_EXTRACT(a, 'pattern')",
         )
         self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 0, 'i')")
         self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 1, 'i')")

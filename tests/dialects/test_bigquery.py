@@ -1518,6 +1518,14 @@ WHERE
             },
         )
         self.validate_all(
+            "SELECT PARSE_DATE('%Y%m%d', '20081225')",
+            write={
+                "bigquery": "SELECT PARSE_DATE('%Y%m%d', '20081225')",
+                "duckdb": "SELECT CAST(STRPTIME('20081225', '%Y%m%d') AS DATE)",
+                "snowflake": "SELECT DATE('20081225', 'yyyymmDD')",
+            },
+        )
+        self.validate_all(
             "SELECT ARRAY_TO_STRING(['cake', 'pie', NULL], '--') AS text",
             write={
                 "bigquery": "SELECT ARRAY_TO_STRING(['cake', 'pie', NULL], '--') AS text",

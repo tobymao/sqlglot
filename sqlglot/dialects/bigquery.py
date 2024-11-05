@@ -561,18 +561,6 @@ class BigQuery(Dialect):
                 schema=schema, is_db_reference=is_db_reference, wildcard=True
             )
 
-            # The `INFORMATION_SCHEMA` views in BigQuery need to be qualified by a region or
-            # dataset, so if the project identifier is omitted we need to fix the ast so that
-            # the `INFORMATION_SCHEMA.X` bit is represented as a Dot. Otherwise, we wouldn't
-            # correctly qualify a `Table` node that references these views, because it would
-            # seem like the "catalog" part is set, when it'd actually be the region/dataset.
-            #
-            # See: https://cloud.google.com/bigquery/docs/information-schema-intro#syntax
-            if table.db.upper() == "INFORMATION_SCHEMA":
-                table.set("this", exp.Dot.build([table.args["db"].pop(), table.this.pop()]))
-                table.set("db", table.args.get("catalog"))
-                table.set("catalog", None)
-
             # proj-1.db.tbl -- `1.` is tokenized as a float so we need to unravel it here
             if not table.catalog:
                 if table.db:
@@ -586,18 +574,12 @@ class BigQuery(Dialect):
                         table.set("db", exp.Identifier(this=parts[0]))
                         table.set("this", exp.Identifier(this=parts[1]))
 
-            if isinstance(table.this, (exp.Identifier, exp.Dot)) and any(
-                "." in p.name for p in table.parts
-            ):
+            if isinstance(table.this, exp.Identifier) and any("." in p.name for p in table.parts):
+                alias = table.this
                 catalog, db, this, *rest = (
                     exp.to_identifier(p, quoted=True)
                     for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)
                 )
-
-                if db and db.name.upper() == "INFORMATION_SCHEMA":
-                    this = exp.Dot.build([db, this])  # type: ignore
-                    db = catalog
-                    catalog, *rest = rest or [None]
 
                 if rest and this:
                     this = exp.Dot.build([this, *rest])  # type: ignore
@@ -606,6 +588,36 @@ class BigQuery(Dialect):
                     this=this, db=db, catalog=catalog, pivots=table.args.get("pivots")
                 )
                 table.meta["quoted_table"] = True
+            else:
+                alias = None
+
+            # The `INFORMATION_SCHEMA` views in BigQuery need to be qualified by a region or
+            # dataset, so if the project identifier is omitted we need to fix the ast so that
+            # the `INFORMATION_SCHEMA.X` bit is represented as a single (quoted) Identifier.
+            # Otherwise, we wouldn't correctly qualify a `Table` node that references these
+            # views, because it would seem like the "catalog" part is set, when it'd actually
+            # be the region/dataset. Merging the two identifiers into a single one is done to
+            # avoid producing a 4-part Table reference, which would cause issues in the schema
+            # module, when there are 3-part table names mixed with information schema views.
+            #
+            # See: https://cloud.google.com/bigquery/docs/information-schema-intro#syntax
+            table_parts = table.parts
+            if len(table_parts) > 1 and table_parts[-2].name.upper() == "INFORMATION_SCHEMA":
+                # We need to alias the table here to avoid breaking existing qualified columns.
+                # This is expected to be safe, because if there's an actual alias coming up in
+                # the token stream, it will overwrite this one. If there isn't one, we are only
+                # exposing the name that can be used to reference the view explicitly (a no-op).
+                exp.alias_(
+                    table,
+                    t.cast(exp.Identifier, alias or table_parts[-1]),
+                    table=True,
+                    copy=False,
+                )
+
+                info_schema_view = f"{table_parts[-2].name}.{table_parts[-1].name}"
+                table.set("this", exp.Identifier(this=info_schema_view, quoted=True))
+                table.set("db", seq_get(table_parts, -3))
+                table.set("catalog", seq_get(table_parts, -4))
 
             return table
 

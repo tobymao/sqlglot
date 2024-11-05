@@ -735,6 +735,7 @@ class BigQuery(Dialect):
         WITH_PROPERTIES_PREFIX = "OPTIONS"
         SUPPORTS_EXPLODING_PROJECTIONS = False
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        SUPPORTS_UNIX_SECONDS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

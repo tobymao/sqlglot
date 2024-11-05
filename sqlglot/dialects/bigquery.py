@@ -427,6 +427,7 @@ class BigQuery(Dialect):
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=exp.Literal.string(str(seq_get(args, 1))),
                 this=seq_get(args, 0),
+                zone=seq_get(args, 2),
             ),
             "DATETIME": _build_datetime,
             "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
@@ -732,7 +733,9 @@ class BigQuery(Dialect):
             exp.DateSub: date_add_interval_sql("DATE", "SUB"),
             exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
             exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
-            exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
+            exp.DateTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", e.this, e.text("unit"), e.args.get("zone")
+            ),
             exp.FromTimeZone: lambda self, e: self.func(
                 "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
             ),

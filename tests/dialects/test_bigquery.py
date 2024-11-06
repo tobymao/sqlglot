@@ -1603,6 +1603,14 @@ WHERE
                 "snowflake": """SELECT GET_PATH(PARSE_JSON('{"class": {"students": []}}'), 'class')""",
             },
         )
+        self.validate_all(
+            """SELECT JSON_VALUE_ARRAY('{"arr": [1, "a"]}', '$.arr')""",
+            write={
+                "bigquery": """SELECT JSON_VALUE_ARRAY('{"arr": [1, "a"]}', '$.arr')""",
+                "duckdb": """SELECT CAST('{"arr": [1, "a"]}' -> '$.arr' AS TEXT[])""",
+                "snowflake": """SELECT TRANSFORM(GET_PATH(PARSE_JSON('{"arr": [1, "a"]}'), 'arr'), x -> CAST(x AS VARCHAR))""",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

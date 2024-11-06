@@ -231,11 +231,14 @@ def _build_regexp_extract(args: t.List) -> exp.RegexpExtract:
     )
 
 
-def _build_json_extract_scalar(args: t.List, dialect: Dialect) -> exp.JSONExtractScalar:
-    if len(args) == 1:
-        # The default value for the JSONPath is '$' i.e all of the data
-        args.append(exp.Literal.string("$"))
-    return parser.build_extract_json_with_path(exp.JSONExtractScalar)(args, dialect)
+def _build_extract_json_with_default_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _builder(args: t.List, dialect: Dialect) -> E:
+        if len(args) == 1:
+            # The default value for the JSONPath is '$' i.e all of the data
+            args.append(exp.Literal.string("$"))
+        return parser.build_extract_json_with_path(expr_type)(args, dialect)
+
+    return _builder
 
 
 def _str_to_datetime_sql(
@@ -440,9 +443,10 @@ class BigQuery(Dialect):
                 this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
             ),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
-            "JSON_EXTRACT_SCALAR": _build_json_extract_scalar,
+            "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
-            "JSON_VALUE": _build_json_extract_scalar,
+            "JSON_VALUE": _build_extract_json_with_default_path(exp.JSONExtractScalar),
+            "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _build_to_hex,

@@ -949,6 +949,7 @@ class ClickHouse(Dialect):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.Median: rename_func("median"),
             exp.Nullif: rename_func("nullIf"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Pivot: no_pivot_sql,

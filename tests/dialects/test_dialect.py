@@ -3007,7 +3007,7 @@ FROM subquery2""",
                     "databricks": f"MEDIAN(x){suffix}",
                     "redshift": f"MEDIAN(x){suffix}",
                     "oracle": f"MEDIAN(x){suffix}",
-                    "clickhouse": f"MEDIAN(x){suffix}",
+                    "clickhouse": f"median(x){suffix}",
                     "postgres": f"PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
             )

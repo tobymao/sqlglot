@@ -5138,6 +5138,9 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
 
+            if field and field.comments:
+                t.cast(exp.Expression, this).add_comments(field.pop_comments())
+
             this = self._parse_bracket(this)
 
         return self._parse_colon_as_variant_extract(this) if self.COLON_IS_VARIANT_EXTRACT else this

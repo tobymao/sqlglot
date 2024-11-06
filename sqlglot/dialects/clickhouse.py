@@ -419,6 +419,8 @@ class ClickHouse(Dialect):
             TokenType.LIKE,
         }
 
+        TYPE_TOKENS = parser.Parser.TYPE_TOKENS - {TokenType.RANGE}
+
         AGG_FUNC_MAPPING = (
             lambda functions, suffixes: {
                 f"{f}{sfx}": (f, sfx) for sfx in (suffixes + [""]) for f in functions

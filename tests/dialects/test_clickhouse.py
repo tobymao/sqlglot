@@ -25,6 +25,10 @@ class TestClickhouse(Validator):
             target_type = exp.DataType.build(nullable_type, dialect="clickhouse").sql("clickhouse")
             self.assertEqual(try_cast.sql("clickhouse"), f"CAST(x AS Nullable({target_type}))")
 
+        # confirm RANGE not parsed as datatype
+        # - `range.1` is referencing the first column of an object named `range`
+        self.validate_identity("a BETWEEN range.1 AND range.2")
+
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)

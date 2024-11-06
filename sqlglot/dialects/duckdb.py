@@ -970,3 +970,8 @@ class DuckDB(Dialect):
             return self.func(
                 "REGEXP_EXTRACT", expression.this, expression.expression, group, params
             )
+
+        def jsonvaluearray_sql(self, expression: exp.JSONValueArray) -> str:
+            json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
+
+            return self.sql(exp.cast(json_extract, to=exp.DataType.build("ARRAY<STRING>")))

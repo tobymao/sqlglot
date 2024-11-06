@@ -1110,3 +1110,12 @@ class Snowflake(Dialect):
                 exp.ParseJSON(this=this) if this.is_string else this,
                 expression.expression,
             )
+
+        def jsonvaluearray_sql(self, expression: exp.JSONValueArray):
+            json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
+            ident = exp.to_identifier("x")
+            transform_lambda = exp.Lambda(
+                expressions=[ident], this=exp.cast(ident, to=exp.DataType.Type.VARCHAR)
+            )
+
+            return self.func("TRANSFORM", json_extract, transform_lambda)

@@ -1474,6 +1474,16 @@ class TestDialect(Validator):
             },
         )
 
+        # Unnest column to more then 2 alias (STRUCT)
+        self.validate_all(
+            "SELECT a, b, c, d, e FROM x CROSS JOIN UNNEST(y) AS t(a, b, c, d)",
+            write={
+                "presto": "SELECT a, b, c, d, e FROM x CROSS JOIN UNNEST(y) AS t(a, b, c, d)",
+                "spark": UnsupportedError,
+                "hive": UnsupportedError,
+            },
+        )
+
     def test_lateral_subquery(self):
         self.validate_identity(
             "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"

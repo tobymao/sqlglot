@@ -6237,11 +6237,22 @@ class Reduce(Func):
 class RegexpExtract(Func):
     arg_types = {
         "this": True,
-        "expression": True,  # The pattern
-        "position": False,  # Only start searching the string from this index
-        "occurrence": False,  # Skip the first `occurence-1` matches
-        "parameters": False,  # Flags, eg "i" for case-insensitive
-        "group": False,  # Which group to return
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+        "group": False,
+    }
+
+
+class RegexpExtractAll(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+        "group": False,
     }
 
 

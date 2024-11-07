@@ -376,7 +376,8 @@ class DuckDB(Dialect):
             "MAKE_TIMESTAMP": _build_make_timestamp,
             "QUANTILE_CONT": exp.PercentileCont.from_arg_list,
             "QUANTILE_DISC": exp.PercentileDisc.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract,
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),

@@ -235,6 +235,45 @@ def _unnest_generate_date_array(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            position=seq_get(args, 2),
+            occurrence=seq_get(args, 3),
+            parameters=seq_get(args, 4),
+            group=seq_get(args, 5) or exp.Literal.number(0),
+        )
+
+    return _builder
+
+
+def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:
+    # Other dialects don't support all of the following parameters, so we need to
+    # generate default values as necessary to ensure the transpilation is correct
+    group = expression.args.get("group")
+
+    # To avoid generating all these default values, we set group to None if
+    # it's 0 (also default value) which doesn't trigger the following chain
+    if group and group.name == "0":
+        group = None
+
+    parameters = expression.args.get("parameters") or (group and exp.Literal.string("c"))
+    occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))
+    position = expression.args.get("position") or (occurrence and exp.Literal.number(1))
+
+    return self.func(
+        "REGEXP_SUBSTR" if isinstance(expression, exp.RegexpExtract) else "REGEXP_EXTRACT_ALL",
+        expression.this,
+        expression.expression,
+        position,
+        occurrence,
+        parameters,
+        group,
+    )
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -335,15 +374,10 @@ class Snowflake(Dialect):
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
+            "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": _build_regexp_replace,
-            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                position=seq_get(args, 2),
-                occurrence=seq_get(args, 3),
-                parameters=seq_get(args, 4),
-                group=seq_get(args, 5) or exp.Literal.number(0),
-            ),
+            "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
@@ -823,6 +857,8 @@ class Snowflake(Dialect):
                 [transforms.add_within_group_for_percentiles]
             ),
             exp.Pivot: transforms.preprocess([_unqualify_unpivot_columns]),
+            exp.RegexpExtract: _regexpextract_sql,
+            exp.RegexpExtractAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
@@ -1008,30 +1044,6 @@ class Snowflake(Dialect):
                 from_ = f" FROM {from_}"
 
             return f"SHOW {terse}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}"
-
-        def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
-            # Other dialects don't support all of the following parameters, so we need to
-            # generate default values as necessary to ensure the transpilation is correct
-            group = expression.args.get("group")
-
-            # To avoid generating all these default values, we set group to None if
-            # it's 0 (also default value) which doesn't trigger the following chain
-            if group and group.name == "0":
-                group = None
-
-            parameters = expression.args.get("parameters") or (group and exp.Literal.string("c"))
-            occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))
-            position = expression.args.get("position") or (occurrence and exp.Literal.number(1))
-
-            return self.func(
-                "REGEXP_SUBSTR",
-                expression.this,
-                expression.expression,
-                position,
-                occurrence,
-                parameters,
-                group,
-            )
 
         def describe_sql(self, expression: exp.Describe) -> str:
             # Default to table if kind is unknown

@@ -369,8 +369,8 @@ def unnest_to_explode(
 
                 alias_cols = alias.columns if alias else []
 
-                # Handle UNNEST to LATERAL VIEW EXPLODE in case of 'No alias'
-                # Spark LATERAL VIEW EXPLODE requires single alias for array/struct and two for Map type column ulike unnest in trino/presto which can take zero or more.
+                # Handle UNNEST to LATERAL VIEW EXPLODE: Exception is raised when there is 0 or more then 2 aliases for single unnest column.
+                # Spark LATERAL VIEW EXPLODE requires single alias for array/struct and two for Map type column unlike unnest in trino/presto which can take zero or more.
                 # Refs: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
 
                 if not has_multi_expr and len(alias_cols) not in [1, 2]:

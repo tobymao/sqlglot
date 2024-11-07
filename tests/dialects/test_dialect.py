@@ -1449,8 +1449,8 @@ class TestDialect(Validator):
             "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
             write={
                 "presto": "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
-                "spark": "SELECT * FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
-                "databricks": "SELECT * FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
+                "spark": UnsupportedError,
+                "databricks": UnsupportedError,
             },
         )
 
@@ -1459,8 +1459,8 @@ class TestDialect(Validator):
             "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t (a, b)",
             write={
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
-                "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
-                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS t_struct",
+                "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
+                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a",
             },
         )
 

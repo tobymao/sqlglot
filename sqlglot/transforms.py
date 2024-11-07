@@ -369,23 +369,14 @@ def unnest_to_explode(
 
                 alias_cols = alias.columns if alias else []
 
-                """
-                Handle Presto CROSS JOIN UNNEST to LATERAL VIEW EXPLODE for Multiple or No Exploded table column alias.
-                
-                Spark/Hive LATERAL VIEW EXPLODE requires only single alias for respective exploded array/struct to be given for unnest ulike trino/presto which can take multiple.
-                https://cwiki.apache.org/confluence/display/Hive/LanguageManual+LateralView
-                https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
-                
-                """
-                # Replace multiple alias for single EXPLODE column with single static alias name: `t_struct`
-                if not has_multi_expr and (len(alias_cols) != 1):
-                    alias_cols = ["t_struct"]
+                # Handle UNNEST to LATERAL VIEW EXPLODE in case of 'No alias'
+                # Spark LATERAL VIEW EXPLODE requires single alias for array/struct and two for Map type column ulike unnest in trino/presto which can take zero or more.
+                # Refs: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
 
-                    # [Optional] Do Update the Column reference in AST for table with current alias
-                    if alias:
-                        for column in expression.find_all(exp.Column):
-                            if column.table == alias.name:
-                                column.set("table", "t_struct")
+                if not has_multi_expr and len(alias_cols) not in [1, 2]:
+                    raise UnsupportedError(
+                        "Please provide alias to unnest column as per column type to support the transformation."
+                    )
 
                 for e, column in zip(exprs, alias_cols):
                     expression.append(

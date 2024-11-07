@@ -456,6 +456,7 @@ class BigQuery(Dialect):
             "PARSE_TIMESTAMP": _build_parse_timestamp,
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": _build_regexp_extract,
+            "REGEXP_SUBSTR": _build_regexp_extract,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "SPLIT": lambda args: exp.Split(

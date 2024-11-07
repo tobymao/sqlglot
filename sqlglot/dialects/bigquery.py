@@ -216,19 +216,24 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
-def _build_regexp_extract(args: t.List) -> exp.RegexpExtract:
-    try:
-        group = re.compile(args[1].name).groups == 1
-    except re.error:
-        group = False
+def _build_regexp_extract(
+    expr_type: t.Type[E], default_group: t.Optional[exp.Expression] = None
+) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
+        try:
+            group = re.compile(args[1].name).groups == 1
+        except re.error:
+            group = False
 
-    return exp.RegexpExtract(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        position=seq_get(args, 2),
-        occurrence=seq_get(args, 3),
-        group=exp.Literal.number(1) if group else None,
-    )
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            position=seq_get(args, 2),
+            occurrence=seq_get(args, 3),
+            group=exp.Literal.number(1) if group else default_group,
+        )
+
+    return _builder
 
 
 def _build_extract_json_with_default_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
@@ -455,8 +460,11 @@ class BigQuery(Dialect):
             ),
             "PARSE_TIMESTAMP": _build_parse_timestamp,
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
-            "REGEXP_EXTRACT": _build_regexp_extract,
-            "REGEXP_SUBSTR": _build_regexp_extract,
+            "REGEXP_EXTRACT": _build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": _build_regexp_extract(
+                exp.RegexpExtractAll, default_group=exp.Literal.number(0)
+            ),
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "SPLIT": lambda args: exp.Split(
@@ -795,6 +803,9 @@ class BigQuery(Dialect):
                 e.expression,
                 e.args.get("position"),
                 e.args.get("occurrence"),
+            ),
+            exp.RegexpExtractAll: lambda self, e: self.func(
+                "REGEXP_EXTRACT_ALL", e.this, e.expression
             ),
             exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),

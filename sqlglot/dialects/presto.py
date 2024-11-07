@@ -273,7 +273,8 @@ class Presto(Dialect):
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract,
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -405,6 +406,7 @@ class Presto(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpExtractAll: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,

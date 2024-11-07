@@ -225,6 +225,7 @@ def _build_regexp_extract(
         except re.error:
             group = False
 
+        # Default group is used for the transpilation of REGEXP_EXTRACT_ALL
         return expr_type(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),

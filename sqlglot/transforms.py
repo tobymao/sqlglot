@@ -386,7 +386,7 @@ def unnest_to_explode(
                             view=True,
                             alias=exp.TableAlias(
                                 this=alias.this,  # type: ignore
-                                columns=alias_cols if unnest_using_arrays_zip else [column],  # type: ignore
+                                columns=alias_cols,
                             ),
                         ),
                     )

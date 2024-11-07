@@ -22,8 +22,6 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
-
         self.validate_all(
             "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
             write={
@@ -183,7 +181,6 @@ LANGUAGE js AS
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity("CAST(x AS TIMESTAMP)")
-        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
@@ -314,10 +311,6 @@ LANGUAGE js AS
         self.validate_identity(
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
-        )
-        self.validate_identity(
-            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
-            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
         self.validate_identity(
             "SELECT CAST(1 AS BYTEINT)",
@@ -1379,14 +1372,6 @@ LANGUAGE js AS
                 "postgres": "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
             },
         )
-
-        self.validate_all(
-            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-            write={
-                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
-            },
-        )
         self.validate_all(
             "SELECT * FROM UNNEST([1]) WITH OFFSET",
             write={"bigquery": "SELECT * FROM UNNEST([1]) WITH OFFSET AS offset"},
@@ -2144,3 +2129,23 @@ OPTIONS (
 
         for dialect in ("bigquery", "spark", "databricks"):
             parse_one("UNIX_SECONDS(col)", dialect=dialect).assert_is(exp.UnixSeconds)
+
+    def test_regexp_extract(self):
+        self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
+        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
+        self.validate_identity(
+            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
+            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
+        )
+        self.validate_identity(
+            r"REGEXP_SUBSTR(value, pattern, position, occurence)",
+            r"REGEXP_EXTRACT(value, pattern, position, occurence)",
+        )
+
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )

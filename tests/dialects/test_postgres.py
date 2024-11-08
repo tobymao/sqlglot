@@ -683,11 +683,9 @@ class TestPostgres(Validator):
             """SELECT TRIM(TRAILING ' XXX ' COLLATE "de_DE")""",
             """SELECT RTRIM(' XXX ' COLLATE "de_DE")""",
         )
-        self.validate_identity("LEVENSHTEIN(col1, col2)" "")
-
+        self.validate_identity("LEVENSHTEIN(col1, col2)")
         self.validate_identity("LEVENSHTEIN_LESS_EQUAL(col1, col2, 1)")
         self.validate_identity("LEVENSHTEIN(col1, col2, 1, 2, 3)")
-
         self.validate_identity("LEVENSHTEIN_LESS_EQUAL(col1, col2, 1, 2, 3, 4)")
 
         self.validate_all(

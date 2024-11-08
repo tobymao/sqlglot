@@ -1765,6 +1765,10 @@ class ColumnConstraintKind(Expression):
     pass
 
 
+class Watermark(Expression):
+    arg_types = {"column": True, "expression": True}
+
+
 class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
@@ -3000,6 +3004,19 @@ class WithProcedureOptions(Property):
     arg_types = {"expressions": True}
 
 
+class EncodeProperty(Property):
+    arg_types = {"this": True, "is_key": True, "expressions": False}
+
+
+class IncludeProperty(Property):
+    arg_types = {
+        "column_type": True,
+        "inner_field": False,
+        "header_inner_expect_type": False,
+        "column_alias": False,
+    }
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 
@@ -3024,6 +3041,8 @@ class Properties(Expression):
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,
         "SORTKEY": SortKeyProperty,
+        "ENCODE": EncodeProperty,
+        "INCLUDE": IncludeProperty,
     }
 
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}

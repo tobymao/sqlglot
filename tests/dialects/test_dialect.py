@@ -1454,7 +1454,7 @@ class TestDialect(Validator):
             },
         )
 
-        # UNNEST STRUCT Object into multiple columns, using single alias
+        # UNNEST MAP Object into multiple columns, using single alias
         self.validate_all(
             "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t (a, b)",
             write={

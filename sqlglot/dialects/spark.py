@@ -13,7 +13,6 @@ from sqlglot.transforms import (
     preprocess,
     move_partitioned_by_to_schema_columns,
 )
-from sqlglot.generator import unsupported_args
 
 
 def _build_datediff(args: t.List) -> exp.Expression:

@@ -373,7 +373,7 @@ def unnest_to_explode(
                 # Spark LATERAL VIEW EXPLODE requires single alias for array/struct and two for Map type column unlike unnest in trino/presto which can take an arbitrary amount.
                 # Refs: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
 
-                if not has_multi_expr and len(alias_cols) not in [1, 2]:
+                if not has_multi_expr and len(alias_cols) not in (1, 2):
                     raise UnsupportedError(
                         "CROSS JOIN UNNEST to LATERAL VIEW EXPLODE transformation requires explicit column aliases"
                     )

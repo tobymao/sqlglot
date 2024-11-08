@@ -128,9 +128,6 @@ class Drill(Dialect):
             exp.If: lambda self,
             e: f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})",
             exp.ILike: lambda self, e: self.binary(e, "`ILIKE`"),
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("LEVENSHTEIN_DISTANCE")
-            ),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.StrPosition: str_position_sql,

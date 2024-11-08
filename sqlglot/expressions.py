@@ -6052,18 +6052,6 @@ class Length(Func):
     _sql_names = ["LENGTH", "LEN"]
 
 
-# https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#edit_distance
-# https://clickhouse.com/docs/en/sql-reference/functions/string-functions#editdistance
-# https://docs.databricks.com/en/sql/language-manual/functions/levenshtein.html
-# https://drill.apache.org/docs/string-distance-functions/
-# https://duckdb.org/docs/sql/functions/char.html#editdist3s1-s2
-# https://duckdb.org/docs/sql/functions/char.html#levenshteins1-s2
-# https://www.postgresql.org/docs/current/fuzzystrmatch.html#FUZZYSTRMATCH-LEVENSHTEIN
-# https://prestodb.io/docs/current/functions/string.html#levenshtein_distance-string1-string2-bigint
-# https://docs.snowflake.com/en/sql-reference/functions/editdistance
-# https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html#string-functions
-# https://www.sqlite.org/spellfix1.html#the_editdist3_function
-# https://trino.io/docs/current/functions/string.html#levenshtein_distance
 class Levenshtein(Func):
     arg_types = {
         "this": True,

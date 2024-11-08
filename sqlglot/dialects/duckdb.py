@@ -257,6 +257,14 @@ def _generate_datetime_array_sql(
     return self.sql(gen_series)
 
 
+def _json_extract_value_array_sql(
+    self: DuckDB.Generator, expression: exp.JSONValueArray | exp.JSONExtractArray
+) -> str:
+    json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
+    data_type = "ARRAY<STRING>" if isinstance(expression, exp.JSONValueArray) else "ARRAY<JSON>"
+    return self.sql(exp.cast(json_extract, to=exp.DataType.build(data_type)))
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -536,8 +544,10 @@ class DuckDB(Dialect):
             exp.IsNan: rename_func("ISNAN"),
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
+            exp.JSONExtractArray: _json_extract_value_array_sql,
             exp.JSONExtractScalar: _arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
+            exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
@@ -971,8 +981,3 @@ class DuckDB(Dialect):
             return self.func(
                 "REGEXP_EXTRACT", expression.this, expression.expression, group, params
             )
-
-        def jsonvaluearray_sql(self, expression: exp.JSONValueArray) -> str:
-            json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
-
-            return self.sql(exp.cast(json_extract, to=exp.DataType.build("ARRAY<STRING>")))

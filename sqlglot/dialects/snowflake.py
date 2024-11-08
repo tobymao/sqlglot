@@ -274,6 +274,12 @@ def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAl
     )
 
 
+def _levenshtein(args: t.List) -> exp.Levenshtein:
+    return exp.Levenshtein(
+        this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
+    )
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -361,6 +367,7 @@ class Snowflake(Dialect):
             "DATEADD": _build_date_time_add(exp.DateAdd),
             "DATEDIFF": _build_datediff,
             "DIV0": _build_if_from_div0,
+            "EDITDISTANCE": _levenshtein,
             "FLATTEN": exp.Explode.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
                 this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
@@ -903,6 +910,7 @@ class Snowflake(Dialect):
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: rename_func("BOOLXOR"),
+            exp.Levenshtein: rename_func("EDITDISTANCE"),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

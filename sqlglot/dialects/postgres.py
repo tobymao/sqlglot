@@ -237,6 +237,32 @@ def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> s
     )
 
 
+def _levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
+    max_dist = args.pop()
+    this = seq_get(args, 0)
+    expression = seq_get(args, 1)
+    ins_cost = seq_get(args, 2)
+    del_cost = seq_get(args, 3)
+    sub_cost = seq_get(args, 4)
+
+    return exp.Levenshtein(
+        this=this,
+        expression=expression,
+        ins_cost=ins_cost,
+        del_cost=del_cost,
+        sub_cost=sub_cost,
+        max_dist=max_dist,
+    )
+
+
+def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein):
+    max_dist = self.sql(expression, "max_dist")
+    if max_dist:
+        return rename_func("LEVENSHTEIN_LESS_EQUAL")(self, expression)
+    else:
+        return rename_func("LEVENSHTEIN")(self, expression)
+
+
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
@@ -365,6 +391,7 @@ class Postgres(Dialect):
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "LEVENSHTEIN_LESS_EQUAL": _levenshtein_less_equal,
         }
 
         FUNCTION_PARSERS = {
@@ -568,6 +595,7 @@ class Postgres(Dialect):
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.UnixToTime: _unix_to_time_sql,
+            exp.Levenshtein: _levenshtein_sql,
         }
         TRANSFORMS.pop(exp.CommentColumnConstraint)
 

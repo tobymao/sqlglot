@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
 )
 from sqlglot.tokens import TokenType
+from sqlglot.generator import unsupported_args
 
 
 def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
@@ -184,7 +185,9 @@ class SQLite(Dialect):
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
-            exp.Levenshtein: rename_func("EDITDIST3"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("EDITDIST3")
+            ),
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Pivot: no_pivot_sql,

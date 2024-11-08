@@ -29,6 +29,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
+from sqlglot.generator import unsupported_args
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
@@ -285,6 +286,31 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     return expression
 
 
+@unsupported_args("ins_cost", "del_cost", "sub_cost")
+def _Levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein):
+    value1 = self.sql(expression, "this")
+    value2 = self.sql(expression, "expression")
+    max_dist = self.sql(expression, "max_dist")
+    if max_dist:
+        return self.func(
+            "EDIT_DISTANCE",
+            value1,
+            value2,
+            exp.Kwarg(this=exp.var("max_distance"), expression=max_dist),
+        )
+
+    return self.func("EDIT_DISTANCE", value1, value2)
+
+
+def _levenshtein(args):
+    max_dist = seq_get(args, 2)
+    return exp.Levenshtein(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        max_dist=max_dist.expression if max_dist else None,
+    )
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -442,9 +468,7 @@ class BigQuery(Dialect):
             "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
             "DIV": binary_from_function(exp.IntDiv),
-            "EDIT_DISTANCE": lambda args: exp.Levenshtein(
-                this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
-            ),
+            "EDIT_DISTANCE": _levenshtein,
             "FORMAT_DATE": lambda args: exp.TimeToStr(
                 this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
             ),
@@ -792,7 +816,7 @@ class BigQuery(Dialect):
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
-            exp.Levenshtein: rename_func("EDIT_DISTANCE"),
+            exp.Levenshtein: _Levenshtein_sql,
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),

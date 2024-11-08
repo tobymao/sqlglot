@@ -13,6 +13,7 @@ from sqlglot.transforms import (
     preprocess,
     move_partitioned_by_to_schema_columns,
 )
+from sqlglot.generator import unsupported_args
 
 
 def _build_datediff(args: t.List) -> exp.Expression:
@@ -169,6 +170,9 @@ class Spark(Spark2):
             exp.TimestampAdd: _dateadd_sql,
             exp.TryCast: lambda self, e: (
                 self.trycast_sql(e) if e.args.get("safe") else self.cast_sql(e)
+            ),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN")
             ),
         }
         TRANSFORMS.pop(exp.AnyValue)

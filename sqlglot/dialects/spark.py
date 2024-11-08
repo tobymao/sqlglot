@@ -171,9 +171,6 @@ class Spark(Spark2):
             exp.TryCast: lambda self, e: (
                 self.trycast_sql(e) if e.args.get("safe") else self.cast_sql(e)
             ),
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("LEVENSHTEIN")
-            ),
         }
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)

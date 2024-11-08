@@ -213,6 +213,7 @@ LANGUAGE js AS
                 "presto": UnsupportedError,
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
                 "spark": UnsupportedError,
+                "spark2": UnsupportedError,
                 "sqlite": UnsupportedError,
             },
         )

@@ -204,13 +204,16 @@ LANGUAGE js AS
             "EDIT_DISTANCE(col1, col2, max_distance => 3)",
             write={
                 "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
-                "duckdb": UnsupportedError,
+                "clickhouse": UnsupportedError,
+                "databricks": UnsupportedError,
                 "drill": UnsupportedError,
-                "presto": UnsupportedError,
+                "duckdb": UnsupportedError,
                 "hive": UnsupportedError,
-                "spark": UnsupportedError,
                 "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
+                "presto": UnsupportedError,
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
+                "spark": UnsupportedError,
+                "sqlite": UnsupportedError,
             },
         )
 

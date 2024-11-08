@@ -237,30 +237,24 @@ def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> s
     )
 
 
-def _levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
+def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
+    # Get last argument of function invocation
     max_dist = args.pop()
-    this = seq_get(args, 0)
-    expression = seq_get(args, 1)
-    ins_cost = seq_get(args, 2)
-    del_cost = seq_get(args, 3)
-    sub_cost = seq_get(args, 4)
 
     return exp.Levenshtein(
-        this=this,
-        expression=expression,
-        ins_cost=ins_cost,
-        del_cost=del_cost,
-        sub_cost=sub_cost,
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        ins_cost=seq_get(args, 2),
+        del_cost=seq_get(args, 3),
+        sub_cost=seq_get(args, 4),
         max_dist=max_dist,
     )
 
 
-def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein):
-    max_dist = self.sql(expression, "max_dist")
-    if max_dist:
-        return rename_func("LEVENSHTEIN_LESS_EQUAL")(self, expression)
-    else:
-        return rename_func("LEVENSHTEIN")(self, expression)
+def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein) -> str:
+    name = "LEVENSHTEIN_LESS_EQUAL" if self.sql(expression, "max_dist") else "LEVENSHTEIN"
+
+    return rename_func(name)(self, expression)
 
 
 class Postgres(Dialect):
@@ -391,7 +385,7 @@ class Postgres(Dialect):
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
-            "LEVENSHTEIN_LESS_EQUAL": _levenshtein_less_equal,
+            "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
         }
 
         FUNCTION_PARSERS = {

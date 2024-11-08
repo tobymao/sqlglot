@@ -398,6 +398,7 @@ class DuckDB(Dialect):
             "XOR": binary_from_function(exp.BitwiseXor),
             "GENERATE_SERIES": _build_generate_series(),
             "RANGE": _build_generate_series(end_exclusive=True),
+            "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
         FUNCTIONS.pop("DATE_SUB")

@@ -1444,6 +1444,46 @@ class TestDialect(Validator):
             },
         )
 
+        # UNNEST without column alias
+        self.validate_all(
+            "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
+            write={
+                "presto": "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
+                "spark": UnsupportedError,
+                "databricks": UnsupportedError,
+            },
+        )
+
+        # UNNEST MAP Object into multiple columns, using single alias
+        self.validate_all(
+            "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t (a, b)",
+            write={
+                "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
+                "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
+                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
+            },
+        )
+
+        # Unnest multiple Expression into respective mapped alias
+        self.validate_all(
+            "SELECT numbers, animals, n, a FROM (SELECT ARRAY(2, 5) AS numbers, ARRAY('dog', 'cat', 'bird') AS animals UNION ALL SELECT ARRAY(7, 8, 9), ARRAY('cow', 'pig')) AS x CROSS JOIN UNNEST(numbers, animals) AS t(n, a)",
+            write={
+                "presto": "SELECT numbers, animals, n, a FROM (SELECT ARRAY[2, 5] AS numbers, ARRAY['dog', 'cat', 'bird'] AS animals UNION ALL SELECT ARRAY[7, 8, 9], ARRAY['cow', 'pig']) AS x CROSS JOIN UNNEST(numbers, animals) AS t(n, a)",
+                "spark": "SELECT numbers, animals, n, a FROM (SELECT ARRAY(2, 5) AS numbers, ARRAY('dog', 'cat', 'bird') AS animals UNION ALL SELECT ARRAY(7, 8, 9), ARRAY('cow', 'pig')) AS x LATERAL VIEW INLINE(ARRAYS_ZIP(numbers, animals)) t AS n, a",
+                "hive": UnsupportedError,
+            },
+        )
+
+        # Unnest column to more then 2 alias (STRUCT)
+        self.validate_all(
+            "SELECT a, b, c, d, e FROM x CROSS JOIN UNNEST(y) AS t(a, b, c, d)",
+            write={
+                "presto": "SELECT a, b, c, d, e FROM x CROSS JOIN UNNEST(y) AS t(a, b, c, d)",
+                "spark": UnsupportedError,
+                "hive": UnsupportedError,
+            },
+        )
+
     def test_lateral_subquery(self):
         self.validate_identity(
             "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"

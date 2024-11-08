@@ -238,7 +238,7 @@ def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> s
 
 
 def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
-    # Postgres has two signatures for levenshtein_less_equal function, but in both cases 
+    # Postgres has two signatures for levenshtein_less_equal function, but in both cases
     # max_dist is the last argument
     # levenshtein_less_equal(source, target, ins_cost, del_cost, sub_cost, max_d)
     # levenshtein_less_equal(source, target, max_d)
@@ -255,7 +255,7 @@ def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
 
 
 def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein) -> str:
-    name = "LEVENSHTEIN_LESS_EQUAL" if self.sql(expression, "max_dist") else "LEVENSHTEIN"
+    name = "LEVENSHTEIN_LESS_EQUAL" if expression.args.get("max_dist") else "LEVENSHTEIN"
 
     return rename_func(name)(self, expression)
 

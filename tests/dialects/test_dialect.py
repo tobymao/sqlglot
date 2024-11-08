@@ -1761,6 +1761,19 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "LEVENSHTEIN(col1, col2)",
+            read={
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
+                "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "hive": "LEVENSHTEIN(col1, col2)",
+                "spark": "LEVENSHTEIN(col1, col2)",
+                "postgres": "LEVENSHTEIN(col1, col2)",
+                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+                "sqlite": "EDITDIST3(col1, col2)",
+                "trino": "LEVENSHTEIN_DISTANCE(col1, col2)",
+            },
             write={
                 "bigquery": "EDIT_DISTANCE(col1, col2)",
                 "clickhouse": "editDistance(col1, col2)",

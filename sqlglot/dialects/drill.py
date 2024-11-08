@@ -81,6 +81,7 @@ class Drill(Dialect):
             **parser.Parser.FUNCTIONS,
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
+            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -128,6 +129,9 @@ class Drill(Dialect):
             exp.If: lambda self,
             e: f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})",
             exp.ILike: lambda self, e: self.binary(e, "`ILIKE`"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN_DISTANCE")
+            ),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.StrPosition: str_position_sql,
@@ -148,7 +152,4 @@ class Drill(Dialect):
             e: f"DATE_ADD(CAST({self.sql(e, 'this')} AS DATE), {self.sql(exp.Interval(this=e.expression, unit=exp.var('DAY')))})",
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("LEVENSHTEIN_DISTANCE")
-            ),
         }

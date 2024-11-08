@@ -1459,8 +1459,8 @@ class TestDialect(Validator):
             "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t (a, b)",
             write={
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
-                "spark": UnsupportedError,
-                "hive": UnsupportedError,
+                "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
+                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
             },
         )
 

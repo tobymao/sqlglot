@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import date_add_sql
 from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
+from sqlglot.generator import unsupported_args
 
 
 def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
@@ -80,6 +81,7 @@ class Drill(Dialect):
             **parser.Parser.FUNCTIONS,
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
+            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -127,7 +129,9 @@ class Drill(Dialect):
             exp.If: lambda self,
             e: f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})",
             exp.ILike: lambda self, e: self.binary(e, "`ILIKE`"),
-            exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN_DISTANCE")
+            ),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.StrPosition: str_position_sql,

@@ -398,6 +398,7 @@ class DuckDB(Dialect):
             "XOR": binary_from_function(exp.BitwiseXor),
             "GENERATE_SERIES": _build_generate_series(),
             "RANGE": _build_generate_series(end_exclusive=True),
+            "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
         FUNCTIONS.pop("DATE_SUB")
@@ -611,6 +612,9 @@ class DuckDB(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: bool_xor_sql,
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN")
+            ),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

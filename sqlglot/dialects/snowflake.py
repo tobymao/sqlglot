@@ -274,6 +274,22 @@ def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAl
     )
 
 
+def _json_extract_value_array_sql(
+    self: Snowflake.Generator, expression: exp.JSONValueArray | exp.JSONExtractArray
+) -> str:
+    json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
+    ident = exp.to_identifier("x")
+
+    if isinstance(expression, exp.JSONValueArray):
+        this: exp.Expression = exp.cast(ident, to=exp.DataType.Type.VARCHAR)
+    else:
+        this = exp.ParseJSON(this=f"TO_JSON({ident})")
+
+    transform_lambda = exp.Lambda(expressions=[ident], this=this)
+
+    return self.func("TRANSFORM", json_extract, transform_lambda)
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -839,11 +855,13 @@ class Snowflake(Dialect):
             ),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
+            exp.JSONExtractArray: _json_extract_value_array_sql,
             exp.JSONExtractScalar: lambda self, e: self.func(
                 "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
             ),
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.JSONPathRoot: lambda *_: "",
+            exp.JSONValueArray: _json_extract_value_array_sql,
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -1128,12 +1146,3 @@ class Snowflake(Dialect):
                 exp.ParseJSON(this=this) if this.is_string else this,
                 expression.expression,
             )
-
-        def jsonvaluearray_sql(self, expression: exp.JSONValueArray):
-            json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
-            ident = exp.to_identifier("x")
-            transform_lambda = exp.Lambda(
-                expressions=[ident], this=exp.cast(ident, to=exp.DataType.Type.VARCHAR)
-            )
-
-            return self.func("TRANSFORM", json_extract, transform_lambda)

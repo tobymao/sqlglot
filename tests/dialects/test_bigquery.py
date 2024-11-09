@@ -2126,6 +2126,18 @@ OPTIONS (
                 },
             )
 
+    def test_json_extract_array(self):
+        for func in ("JSON_QUERY_ARRAY", "JSON_EXTRACT_ARRAY"):
+            with self.subTest(f"Testing BigQuery's {func}"):
+                self.validate_all(
+                    f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')""",
+                    write={
+                        "bigquery": f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')""",
+                        "duckdb": """SELECT CAST('{"fruits": [1, "oranges"]}' -> '$.fruits' AS JSON[])""",
+                        "snowflake": """SELECT TRANSFORM(GET_PATH(PARSE_JSON('{"fruits": [1, "oranges"]}'), 'fruits'), x -> PARSE_JSON(TO_JSON(x)))""",
+                    },
+                )
+
     def test_unix_seconds(self):
         self.validate_all(
             "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",

@@ -5999,6 +5999,10 @@ class JSONExtract(Binary, Func):
         return self.expression.output_name if not self.expressions else ""
 
 
+class JSONExtractArray(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class JSONExtractScalar(Binary, Func):
     arg_types = {"this": True, "expression": True, "only_json_types": False, "expressions": False}
     _sql_names = ["JSON_EXTRACT_SCALAR"]

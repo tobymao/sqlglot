@@ -1801,15 +1801,67 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "LEVENSHTEIN(col1, col2)",
-            write={
+            read={
                 "bigquery": "EDIT_DISTANCE(col1, col2)",
-                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
                 "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
-                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
                 "hive": "LEVENSHTEIN(col1, col2)",
                 "spark": "LEVENSHTEIN(col1, col2)",
+                "postgres": "LEVENSHTEIN(col1, col2)",
+                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+                "sqlite": "EDITDIST3(col1, col2)",
+                "trino": "LEVENSHTEIN_DISTANCE(col1, col2)",
+            },
+            write={
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
+                "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "hive": "LEVENSHTEIN(col1, col2)",
+                "spark": "LEVENSHTEIN(col1, col2)",
+                "postgres": "LEVENSHTEIN(col1, col2)",
+                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+                "sqlite": "EDITDIST3(col1, col2)",
+                "trino": "LEVENSHTEIN_DISTANCE(col1, col2)",
             },
         )
+
+        self.validate_all(
+            "LEVENSHTEIN(col1, col2, 1, 2, 3)",
+            write={
+                "bigquery": UnsupportedError,
+                "clickhouse": UnsupportedError,
+                "drill": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "hive": UnsupportedError,
+                "spark": UnsupportedError,
+                "postgres": "LEVENSHTEIN(col1, col2, 1, 2, 3)",
+                "presto": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "sqlite": UnsupportedError,
+                "trino": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "LEVENSHTEIN(col1, col2, 1, 2, 3, 4)",
+            write={
+                "bigquery": UnsupportedError,
+                "clickhouse": UnsupportedError,
+                "drill": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "hive": UnsupportedError,
+                "spark": UnsupportedError,
+                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 1, 2, 3, 4)",
+                "presto": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "sqlite": UnsupportedError,
+                "trino": UnsupportedError,
+            },
+        )
+
         self.validate_all(
             "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
             write={

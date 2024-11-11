@@ -348,8 +348,9 @@ def unnest_to_explode(
                 )
             )
 
+        joins = expression.args.get("joins") or []
         for join in list(
-            expression.args.get("joins") or []
+            joins
         ):  # support safe removal by iterating over copy list for multiple joins
             join_expr = join.this
 

@@ -754,6 +754,17 @@ TBLPROPERTIES (
             },
         )
 
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+            read={
+                "databricks": "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+            },
+            write={
+                "spark": "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+                "databricks": "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

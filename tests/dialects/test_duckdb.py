@@ -1154,6 +1154,7 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS BINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS LOGICAL)", "CAST(x AS BOOLEAN)")
+        self.validate_identity("""CAST({'i': 1, 's': 'foo'} AS STRUCT("s" TEXT, "i" INT))""")
         self.validate_identity(
             "CAST(ROW(1, ROW(1)) AS STRUCT(number BIGINT, row STRUCT(number BIGINT)))"
         )
@@ -1163,11 +1164,11 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
-            "CAST([[ROW(1)]] AS STRUCT(a BIGINT)[][])",
+            "CAST([[{'a': 1}]] AS STRUCT(a BIGINT)[][])",
         )
         self.validate_identity(
             "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
-            "CAST([ROW(1)] AS STRUCT(a BIGINT)[])",
+            "CAST([{'a': 1}] AS STRUCT(a BIGINT)[])",
         )
         self.validate_identity(
             "STRUCT_PACK(a := 'b')::json",
@@ -1175,7 +1176,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "STRUCT_PACK(a := 'b')::STRUCT(a TEXT)",
-            "CAST(ROW('b') AS STRUCT(a TEXT))",
+            "CAST({'a': 'b'} AS STRUCT(a TEXT))",
         )
 
         self.validate_all(

@@ -852,6 +852,7 @@ class TestDuckDB(Validator):
                 "clickhouse": "DATE_TRUNC('DAY', x)",
             },
         )
+        self.validate_identity("EDITDIST3(col1, col2)", "LEVENSHTEIN(col1, col2)")
 
         self.validate_identity("SELECT LENGTH(foo)")
         self.validate_identity("SELECT ARRAY[1, 2, 3]", "SELECT [1, 2, 3]")

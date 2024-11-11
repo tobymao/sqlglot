@@ -44,6 +44,7 @@ from sqlglot.transforms import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.generator import unsupported_args
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -309,7 +310,8 @@ class Hive(Dialect):
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,
             "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract,
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
@@ -542,6 +544,7 @@ class Hive(Dialect):
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpExtractAll: regexp_extract_sql,
             exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
@@ -598,6 +601,9 @@ class Hive(Dialect):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN")
+            ),
         }
 
         PROPERTIES_LOCATION = {

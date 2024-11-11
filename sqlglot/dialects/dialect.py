@@ -1364,14 +1364,16 @@ def concat_ws_to_dpipe_sql(self: Generator, expression: exp.ConcatWs) -> str:
 
 
 @unsupported_args("position", "occurrence", "parameters")
-def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
+def regexp_extract_sql(
+    self: Generator, expression: exp.RegexpExtract | exp.RegexpExtractAll
+) -> str:
     group = expression.args.get("group")
 
     # Do not render group if it's the default value for this dialect
     if group and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP):
         group = None
 
-    return self.func("REGEXP_EXTRACT", expression.this, expression.expression, group)
+    return self.func(expression.sql_name(), expression.this, expression.expression, group)
 
 
 @unsupported_args("position", "occurrence", "modifiers")
@@ -1693,13 +1695,16 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_regexp_extract(args: t.List, dialect: Dialect) -> exp.RegexpExtract:
-    return exp.RegexpExtract(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
-        parameters=seq_get(args, 3),
-    )
+def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _builder(args: t.List, dialect: Dialect) -> E:
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
+            parameters=seq_get(args, 3),
+        )
+
+    return _builder
 
 
 def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:

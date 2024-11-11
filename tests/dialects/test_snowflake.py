@@ -946,6 +946,16 @@ WHERE
             },
         )
 
+        self.validate_identity("EDITDISTANCE(col1, col2)")
+        self.validate_all(
+            "EDITDISTANCE(col1, col2, 3)",
+            write={
+                "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
+                "snowflake": "EDITDISTANCE(col1, col2, 3)",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
@@ -1788,13 +1798,17 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
             read={
-                "bigquery": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
                 "duckdb": "REGEXP_EXTRACT(subject, pattern, group)",
                 "hive": "REGEXP_EXTRACT(subject, pattern, group)",
                 "presto": "REGEXP_EXTRACT(subject, pattern, group)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
                 "spark": "REGEXP_EXTRACT(subject, pattern, group)",
             },
+        )
+
+        self.validate_identity(
+            "REGEXP_SUBSTR_ALL(subject, pattern)",
+            "REGEXP_EXTRACT_ALL(subject, pattern)",
         )
 
     @mock.patch("sqlglot.generator.logger")

@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
+from sqlglot.generator import unsupported_args
 
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
@@ -271,6 +272,8 @@ class ClickHouse(Dialect):
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "EDITDISTANCE": exp.Levenshtein.from_arg_list,
+            "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
         }
 
         AGG_FUNCTIONS = {
@@ -949,6 +952,7 @@ class ClickHouse(Dialect):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.Median: rename_func("median"),
             exp.Nullif: rename_func("nullIf"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Pivot: no_pivot_sql,
@@ -983,6 +987,9 @@ class ClickHouse(Dialect):
             ),
             exp.Lead: lambda self, e: self.func(
                 "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
+            ),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("editDistance")
             ),
         }
 

@@ -5958,6 +5958,10 @@ class JSONValue(Expression):
     }
 
 
+class JSONValueArray(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 # # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 class JSONTable(Func):
     arg_types = {
@@ -6012,6 +6016,10 @@ class JSONExtract(Binary, Func):
     @property
     def output_name(self) -> str:
         return self.expression.output_name if not self.expressions else ""
+
+
+class JSONExtractArray(Func):
+    arg_types = {"this": True, "expression": False}
 
 
 class JSONExtractScalar(Binary, Func):
@@ -6252,11 +6260,22 @@ class Reduce(Func):
 class RegexpExtract(Func):
     arg_types = {
         "this": True,
-        "expression": True,  # The pattern
-        "position": False,  # Only start searching the string from this index
-        "occurrence": False,  # Skip the first `occurence-1` matches
-        "parameters": False,  # Flags, eg "i" for case-insensitive
-        "group": False,  # Which group to return
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+        "group": False,
+    }
+
+
+class RegexpExtractAll(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+        "group": False,
     }
 
 

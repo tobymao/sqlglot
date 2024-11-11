@@ -22,8 +22,6 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
-
         self.validate_all(
             "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
             write={
@@ -183,7 +181,6 @@ LANGUAGE js AS
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity("CAST(x AS TIMESTAMP)")
-        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
@@ -203,9 +200,24 @@ LANGUAGE js AS
         self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS STRING)")
         self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
         self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
-        self.validate_identity("EDIT_DISTANCE('a', 'a', max_distance => 2)").assert_is(
-            exp.Levenshtein
+        self.validate_all(
+            "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+            write={
+                "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+                "clickhouse": UnsupportedError,
+                "databricks": UnsupportedError,
+                "drill": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "hive": UnsupportedError,
+                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
+                "presto": UnsupportedError,
+                "snowflake": "EDITDISTANCE(col1, col2, 3)",
+                "spark": UnsupportedError,
+                "spark2": UnsupportedError,
+                "sqlite": UnsupportedError,
+            },
         )
+
         self.validate_identity(
             "MERGE INTO dataset.NewArrivals USING (SELECT * FROM UNNEST([('microwave', 10, 'warehouse #1'), ('dryer', 30, 'warehouse #1'), ('oven', 20, 'warehouse #2')])) ON FALSE WHEN NOT MATCHED THEN INSERT ROW WHEN NOT MATCHED BY SOURCE THEN DELETE"
         )
@@ -314,10 +326,6 @@ LANGUAGE js AS
         self.validate_identity(
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
-        )
-        self.validate_identity(
-            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
-            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
         self.validate_identity(
             "SELECT CAST(1 AS BYTEINT)",
@@ -1379,14 +1387,6 @@ LANGUAGE js AS
                 "postgres": "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
             },
         )
-
-        self.validate_all(
-            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-            write={
-                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
-            },
-        )
         self.validate_all(
             "SELECT * FROM UNNEST([1]) WITH OFFSET",
             write={"bigquery": "SELECT * FROM UNNEST([1]) WITH OFFSET AS offset"},
@@ -1601,6 +1601,14 @@ WHERE
                 "bigquery": """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
                 "duckdb": """SELECT '{"class": {"students": []}}' -> '$.class'""",
                 "snowflake": """SELECT GET_PATH(PARSE_JSON('{"class": {"students": []}}'), 'class')""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_VALUE_ARRAY('{"arr": [1, "a"]}', '$.arr')""",
+            write={
+                "bigquery": """SELECT JSON_VALUE_ARRAY('{"arr": [1, "a"]}', '$.arr')""",
+                "duckdb": """SELECT CAST('{"arr": [1, "a"]}' -> '$.arr' AS TEXT[])""",
+                "snowflake": """SELECT TRANSFORM(GET_PATH(PARSE_JSON('{"arr": [1, "a"]}'), 'arr'), x -> CAST(x AS VARCHAR))""",
             },
         )
 
@@ -2118,6 +2126,18 @@ OPTIONS (
                 },
             )
 
+    def test_json_extract_array(self):
+        for func in ("JSON_QUERY_ARRAY", "JSON_EXTRACT_ARRAY"):
+            with self.subTest(f"Testing BigQuery's {func}"):
+                self.validate_all(
+                    f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')""",
+                    write={
+                        "bigquery": f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')""",
+                        "duckdb": """SELECT CAST('{"fruits": [1, "oranges"]}' -> '$.fruits' AS JSON[])""",
+                        "snowflake": """SELECT TRANSFORM(GET_PATH(PARSE_JSON('{"fruits": [1, "oranges"]}'), 'fruits'), x -> PARSE_JSON(TO_JSON(x)))""",
+                    },
+                )
+
     def test_unix_seconds(self):
         self.validate_all(
             "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
@@ -2136,3 +2156,60 @@ OPTIONS (
 
         for dialect in ("bigquery", "spark", "databricks"):
             parse_one("UNIX_SECONDS(col)", dialect=dialect).assert_is(exp.UnixSeconds)
+
+    def test_regexp_extract(self):
+        self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
+        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
+        self.validate_identity(
+            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
+            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
+        )
+        self.validate_identity(
+            r"REGEXP_SUBSTR(value, pattern, position, occurence)",
+            r"REGEXP_EXTRACT(value, pattern, position, occurence)",
+        )
+
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # The pattern does not capture a group (entire regular expression is extracted)
+        self.validate_all(
+            "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+            read={
+                "bigquery": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "trino": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "presto": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "snowflake": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+                "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+                "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+            },
+            write={
+                "bigquery": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "trino": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "presto": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "snowflake": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+                "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+                "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+            },
+        )
+
+        # The pattern does capture >=1 group (the default is to extract the first instance)
+        self.validate_all(
+            "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
+            write={
+                "bigquery": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
+                "trino": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
+                "presto": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
+                "snowflake": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1, 1, 'c', 1)",
+                "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
+                "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
+                "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
+            },
+        )

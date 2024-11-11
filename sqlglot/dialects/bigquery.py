@@ -29,6 +29,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
+from sqlglot.generator import unsupported_args
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
@@ -216,26 +217,35 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
-def _build_regexp_extract(args: t.List) -> exp.RegexpExtract:
-    try:
-        group = re.compile(args[1].name).groups == 1
-    except re.error:
-        group = False
+def _build_regexp_extract(
+    expr_type: t.Type[E], default_group: t.Optional[exp.Expression] = None
+) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
+        try:
+            group = re.compile(args[1].name).groups == 1
+        except re.error:
+            group = False
 
-    return exp.RegexpExtract(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        position=seq_get(args, 2),
-        occurrence=seq_get(args, 3),
-        group=exp.Literal.number(1) if group else None,
-    )
+        # Default group is used for the transpilation of REGEXP_EXTRACT_ALL
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            position=seq_get(args, 2),
+            occurrence=seq_get(args, 3),
+            group=exp.Literal.number(1) if group else default_group,
+        )
+
+    return _builder
 
 
-def _build_json_extract_scalar(args: t.List, dialect: Dialect) -> exp.JSONExtractScalar:
-    if len(args) == 1:
-        # The default value for the JSONPath is '$' i.e all of the data
-        args.append(exp.Literal.string("$"))
-    return parser.build_extract_json_with_path(exp.JSONExtractScalar)(args, dialect)
+def _build_extract_json_with_default_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _builder(args: t.List, dialect: Dialect) -> E:
+        if len(args) == 1:
+            # The default value for the JSONPath is '$' i.e all of the data
+            args.append(exp.Literal.string("$"))
+        return parser.build_extract_json_with_path(expr_type)(args, dialect)
+
+    return _builder
 
 
 def _str_to_datetime_sql(
@@ -274,6 +284,24 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
         exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
     )
     return expression
+
+
+@unsupported_args("ins_cost", "del_cost", "sub_cost")
+def _levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein) -> str:
+    max_dist = expression.args.get("max_dist")
+    if max_dist:
+        max_dist = exp.Kwarg(this=exp.var("max_distance"), expression=max_dist)
+
+    return self.func("EDIT_DISTANCE", expression.this, expression.expression, max_dist)
+
+
+def _build_levenshtein(args: t.List) -> exp.Levenshtein:
+    max_dist = seq_get(args, 2)
+    return exp.Levenshtein(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        max_dist=max_dist.expression if max_dist else None,
+    )
 
 
 class BigQuery(Dialect):
@@ -433,16 +461,17 @@ class BigQuery(Dialect):
             "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
             "DIV": binary_from_function(exp.IntDiv),
-            "EDIT_DISTANCE": lambda args: exp.Levenshtein(
-                this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
-            ),
+            "EDIT_DISTANCE": _build_levenshtein,
             "FORMAT_DATE": lambda args: exp.TimeToStr(
                 this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
             ),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
-            "JSON_EXTRACT_SCALAR": _build_json_extract_scalar,
+            "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
+            "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
             "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
-            "JSON_VALUE": _build_json_extract_scalar,
+            "JSON_QUERY_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
+            "JSON_VALUE": _build_extract_json_with_default_path(exp.JSONExtractScalar),
+            "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _build_to_hex,
@@ -451,7 +480,11 @@ class BigQuery(Dialect):
             ),
             "PARSE_TIMESTAMP": _build_parse_timestamp,
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
-            "REGEXP_EXTRACT": _build_regexp_extract,
+            "REGEXP_EXTRACT": _build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": _build_regexp_extract(
+                exp.RegexpExtractAll, default_group=exp.Literal.number(0)
+            ),
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "SPLIT": lambda args: exp.Split(
@@ -778,7 +811,7 @@ class BigQuery(Dialect):
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
-            exp.Levenshtein: rename_func("EDIT_DISTANCE"),
+            exp.Levenshtein: _levenshtein_sql,
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),
@@ -790,6 +823,9 @@ class BigQuery(Dialect):
                 e.expression,
                 e.args.get("position"),
                 e.args.get("occurrence"),
+            ),
+            exp.RegexpExtractAll: lambda self, e: self.func(
+                "REGEXP_EXTRACT_ALL", e.this, e.expression
             ),
             exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),

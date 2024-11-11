@@ -37,6 +37,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
+from sqlglot.generator import unsupported_args
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
@@ -272,8 +273,10 @@ class Presto(Dialect):
             "FROM_UTF8": lambda args: exp.Decode(
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
+            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract,
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -399,12 +402,15 @@ class Presto(Dialect):
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
             exp.Lateral: explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
-            exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN_DISTANCE")
+            ),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpExtractAll: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,

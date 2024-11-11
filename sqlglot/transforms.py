@@ -348,7 +348,8 @@ def unnest_to_explode(
                 )
             )
 
-        for join in expression.args.get("joins") or []:
+        joins = expression.args.get("joins") or []
+        for join in list(joins):
             join_expr = join.this
 
             is_lateral = isinstance(join_expr, exp.Lateral)
@@ -365,7 +366,7 @@ def unnest_to_explode(
                 has_multi_expr = len(exprs) > 1
                 exprs = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
-                expression.args["joins"].remove(join)
+                joins.remove(join)
 
                 alias_cols = alias.columns if alias else []
 

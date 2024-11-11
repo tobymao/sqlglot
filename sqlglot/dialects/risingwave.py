@@ -1,5 +1,6 @@
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.tokens import TokenType
+from collections import defaultdict
 import typing as t
 
 from sqlglot import exp
@@ -67,7 +68,7 @@ class RisingWave(Postgres):
             if not encode_property:
                 return None
             if self._match(TokenType.L_PAREN, advance=False):
-                expressions = self._parse_wrapped_properties()
+                expressions = exp.Properties(expressions=self._parse_wrapped_properties())
             if expressions:
                 encode_property.set("expressions", expressions)
             return encode_property
@@ -363,3 +364,225 @@ class RisingWave(Postgres):
 
     class Generator(Postgres.Generator):
         LOCKING_READS_SUPPORTED = False
+
+        PROPERTIES_LOCATION = {
+            **Postgres.Generator.PROPERTIES_LOCATION,
+            exp.FileFormatProperty: exp.Properties.Location.POST_EXPRESSION,
+            exp.EncodeProperty: exp.Properties.Location.POST_EXPRESSION,
+            exp.IncludeProperty: exp.Properties.Location.POST_SCHEMA,
+        }
+
+        def _encode_property_sql(self, expression: exp.Expression) -> str:
+            is_key = expression.args.get("is_key")
+            property_sql_str: str = "KEY ENCODE" if is_key else "ENCODE"
+
+            property_value = self.sql(expression, "this")
+            property_sql_str = f"{property_sql_str} {property_value}"
+
+            encode_expr = expression.args.get("expressions")
+            if encode_expr:
+                property_sql_str = f"{property_sql_str} {self.properties(encode_expr)}"
+
+            return property_sql_str
+
+        def _watermark_sql(self, expression: exp.Expression) -> str:
+            column = self.sql(expression, "column")
+            expression_str = self.sql(expression, "expression")
+            return f"WATERMARK FOR {column} AS {expression_str}"
+
+        def _include_property_sql(self, expression: exp.Expression) -> str:
+            column_type = self.sql(expression, "column_type")
+            property_sql_str = f"INCLUDE {column_type}"
+            inner_field = self.sql(expression, "inner_field")
+            if inner_field:
+                property_sql_str = f"{property_sql_str} {inner_field}"
+            column_alias = self.sql(expression, "column_alias")
+            header_inner_expect_type = self.sql(expression, "header_inner_expect_type")
+            if header_inner_expect_type:
+                property_sql_str = f"{property_sql_str} {header_inner_expect_type}"
+            if column_alias:
+                property_sql_str = f"{property_sql_str} AS {column_alias}"
+            return property_sql_str
+
+        def with_properties(self, properties: exp.Properties) -> str:
+            with_sql = self.properties(
+                properties, prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep="")
+            )
+            return with_sql
+
+        def property_sql(self, expression: exp.Property) -> str:
+            property_cls = expression.__class__
+            if property_cls == exp.Property:
+                return f"{self.property_name(expression)}={self.sql(expression, 'value')}"
+
+            property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
+
+            if not property_name:
+                self.unsupported(f"Unsupported property {expression.key}")
+
+            if property_cls == exp.EncodeProperty:
+                return self._encode_property_sql(expression)
+
+            if property_cls == exp.FileFormatProperty:
+                return f"FORMAT {self.sql(expression, 'this')}"
+
+            if property_cls == exp.IncludeProperty:
+                return self._include_property_sql(expression)
+
+            return f"{property_name}={self.sql(expression, 'this')}"
+
+        def create_sql(self, expression: exp.Create) -> str:
+            kind = self.sql(expression, "kind")
+            kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
+            properties = expression.args.get("properties")
+            properties_locs = self.locate_properties(properties) if properties else defaultdict()
+
+            this = self.createable_sql(expression, properties_locs)
+
+            properties_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
+                exp.Properties.Location.POST_WITH
+            ):
+                properties_sql = self.sql(
+                    exp.Properties(
+                        expressions=[
+                            *properties_locs[exp.Properties.Location.POST_SCHEMA],
+                            *properties_locs[exp.Properties.Location.POST_WITH],
+                        ]
+                    )
+                )
+
+                if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
+                    properties_sql = self.sep() + properties_sql
+                elif not self.pretty:
+                    # Standalone POST_WITH properties need a leading whitespace in non-pretty mode
+                    properties_sql = f" {properties_sql}"
+
+            begin = " BEGIN" if expression.args.get("begin") else ""
+            end = " END" if expression.args.get("end") else ""
+
+            expression_sql = self.sql(expression, "expression")
+            if expression_sql:
+                expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
+
+                if self.CREATE_FUNCTION_RETURN_AS or not isinstance(
+                    expression.expression, exp.Return
+                ):
+                    postalias_props_sql = ""
+                    if properties_locs.get(exp.Properties.Location.POST_ALIAS):
+                        postalias_props_sql = self.properties(
+                            exp.Properties(
+                                expressions=properties_locs[exp.Properties.Location.POST_ALIAS]
+                            ),
+                            wrapped=False,
+                        )
+                    postalias_props_sql = f" {postalias_props_sql}" if postalias_props_sql else ""
+                    expression_sql = f" AS{postalias_props_sql}{expression_sql}"
+
+            postindex_props_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_INDEX):
+                postindex_props_sql = self.properties(
+                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_INDEX]),
+                    wrapped=False,
+                    prefix=" ",
+                )
+
+            indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
+            indexes = f" {indexes}" if indexes else ""
+            index_sql = indexes + postindex_props_sql
+
+            replace = " OR REPLACE" if expression.args.get("replace") else ""
+            refresh = " OR REFRESH" if expression.args.get("refresh") else ""
+            unique = " UNIQUE" if expression.args.get("unique") else ""
+
+            clustered = expression.args.get("clustered")
+            if clustered is None:
+                clustered_sql = ""
+            elif clustered:
+                clustered_sql = " CLUSTERED COLUMNSTORE"
+            else:
+                clustered_sql = " NONCLUSTERED COLUMNSTORE"
+
+            postcreate_props_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_CREATE):
+                postcreate_props_sql = self.properties(
+                    exp.Properties(
+                        expressions=properties_locs[exp.Properties.Location.POST_CREATE]
+                    ),
+                    sep=" ",
+                    prefix=" ",
+                    wrapped=False,
+                )
+
+            modifiers = "".join((clustered_sql, replace, refresh, unique, postcreate_props_sql))
+
+            postexpression_props_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
+                postexpression_props_sql = self.properties(
+                    exp.Properties(
+                        expressions=properties_locs[exp.Properties.Location.POST_EXPRESSION]
+                    ),
+                    sep=" ",
+                    prefix=" ",
+                    wrapped=False,
+                )
+
+            if kind == "SINK" or kind == "SOURCE" and self.pretty:
+                postexpression_props_sql = self.sep() + postexpression_props_sql.strip()
+
+            concurrently = " CONCURRENTLY" if expression.args.get("concurrently") else ""
+            exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+            no_schema_binding = (
+                " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
+            )
+
+            clone = self.sql(expression, "clone")
+            clone = f" {clone}" if clone else ""
+
+            if kind == "SINK":
+                # Tailored for risingwave sink.
+                expression_sql = f"CREATE SINK{concurrently}{exists_sql} {this}{expression_sql}{properties_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
+            else:
+                expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
+            return self.prepend_ctes(expression, expression_sql)
+
+        def sql(
+            self,
+            expression: t.Optional[str | exp.Expression],
+            key: t.Optional[str] = None,
+            comment: bool = True,
+        ) -> str:
+            if not expression:
+                return ""
+
+            if isinstance(expression, str):
+                return expression
+
+            if key:
+                value = expression.args.get(key)
+                if value:
+                    return self.sql(value)
+                return ""
+
+            transform = self.TRANSFORMS.get(expression.__class__)
+
+            if callable(transform):
+                sql = transform(self, expression)
+            elif isinstance(expression, exp.Expression):
+                exp_handler_name = f"{expression.key}_sql"
+                if hasattr(self, exp_handler_name):
+                    sql = getattr(self, exp_handler_name)(expression)
+                elif isinstance(expression, exp.Func):
+                    sql = self.function_fallback_sql(expression)
+                elif isinstance(expression, exp.Property):
+                    sql = self.property_sql(expression)
+                elif isinstance(expression, exp.Watermark):
+                    sql = self._watermark_sql(expression)
+                else:
+                    raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+            else:
+                raise ValueError(
+                    f"Expected an Expression. Received {type(expression)}: {expression}"
+                )
+
+            return self.maybe_comment(sql, expression) if self.comments and comment else sql

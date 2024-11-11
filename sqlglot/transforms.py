@@ -368,7 +368,7 @@ def unnest_to_explode(
                 has_multi_expr = len(exprs) > 1
                 exprs = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
-                expression.args["joins"].remove(join)
+                joins.remove(join)
 
                 alias_cols = alias.columns if alias else []
 

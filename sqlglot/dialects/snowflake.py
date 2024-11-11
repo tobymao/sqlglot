@@ -823,6 +823,7 @@ class Snowflake(Dialect):
         SUPPORTS_CONVERT_TIMEZONE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = True
+        ARRAY_SIZE_NAME = "ARRAY_SIZE"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

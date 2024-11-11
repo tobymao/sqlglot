@@ -79,6 +79,7 @@ class Drill(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "REPEATED_COUNT": exp.ArraySize.from_arg_list,
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
             "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
@@ -93,6 +94,7 @@ class Drill(Dialect):
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_CREATE_TABLE_LIKE = False
+        ARRAY_SIZE_NAME = "REPEATED_COUNT"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -117,7 +119,6 @@ class Drill(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
-            exp.ArraySize: rename_func("REPEATED_COUNT"),
             exp.Create: preprocess([move_schema_columns_to_partitioned_by]),
             exp.DateAdd: date_add_sql("ADD"),
             exp.DateStrToDate: datestrtodate_sql,

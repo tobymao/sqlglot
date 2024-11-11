@@ -156,18 +156,24 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     # BigQuery allows inline construction such as "STRUCT<a STRING, b INTEGER>('str', 1)" which is
     # canonicalized to "ROW('str', 1) AS STRUCT(a TEXT, b INT)" in DuckDB
-    # The transformation to ROW will take place if a cast to STRUCT / ARRAY of STRUCTs is found
+    # The transformation to ROW will take place if:
+    #  1. The STRUCT itself does not have proper fields (key := value) as a "proper" STRUCT would
+    #  2. A cast to STRUCT / ARRAY of STRUCTs is found
     ancestor_cast = expression.find_ancestor(exp.Cast)
-    is_struct_cast = ancestor_cast and any(
-        casted_type.is_type(exp.DataType.Type.STRUCT)
-        for casted_type in ancestor_cast.find_all(exp.DataType)
+    is_bq_inline_struct = (
+        (expression.find(exp.PropertyEQ) is None)
+        and ancestor_cast
+        and any(
+            casted_type.is_type(exp.DataType.Type.STRUCT)
+            for casted_type in ancestor_cast.find_all(exp.DataType)
+        )
     )
 
     for i, expr in enumerate(expression.expressions):
         is_property_eq = isinstance(expr, exp.PropertyEQ)
         value = expr.expression if is_property_eq else expr
 
-        if is_struct_cast:
+        if is_bq_inline_struct:
             args.append(self.sql(value))
         else:
             key = expr.name if is_property_eq else f"_{i}"
@@ -175,7 +181,7 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     csv_args = ", ".join(args)
 
-    return f"ROW({csv_args})" if is_struct_cast else f"{{{csv_args}}}"
+    return f"ROW({csv_args})" if is_bq_inline_struct else f"{{{csv_args}}}"
 
 
 def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:

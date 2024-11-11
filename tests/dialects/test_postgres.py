@@ -51,7 +51,6 @@ class TestPostgres(Validator):
         self.validate_identity("x$")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
-        self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2, 3], 1)")
         self.validate_identity("STRING_AGG(x, y)")
         self.validate_identity("STRING_AGG(x, ',' ORDER BY y)")
         self.validate_identity("STRING_AGG(x, ',' ORDER BY y DESC)")
@@ -1241,4 +1240,50 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         )
         self.validate_identity(
             """SELECT * FROM table1, ROWS FROM (FUNC1(col1) AS alias1("col1" TEXT)) WITH ORDINALITY AS alias3("col3" INT, "col4" TEXT)"""
+        )
+
+    def test_array_length(self):
+        self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2, 3], 1)")
+
+        self.validate_all(
+            "ARRAY_LENGTH(arr, 1)",
+            read={
+                "bigquery": "ARRAY_LENGTH(arr)",
+                "duckdb": "ARRAY_LENGTH(arr)",
+                "presto": "CARDINALITY(arr)",
+                "drill": "REPEATED_COUNT(arr)",
+                "teradata": "CARDINALITY(arr)",
+                "hive": "SIZE(arr)",
+                "spark2": "SIZE(arr)",
+                "spark": "SIZE(arr)",
+                "databricks": "SIZE(arr)",
+            },
+            write={
+                "duckdb": "ARRAY_LENGTH(arr, 1)",
+                "presto": "CARDINALITY(arr)",
+                "teradata": "CARDINALITY(arr)",
+                "bigquery": "ARRAY_LENGTH(arr)",
+                "drill": "REPEATED_COUNT(arr)",
+                "clickhouse": "LENGTH(arr)",
+                "hive": "SIZE(arr)",
+                "spark2": "SIZE(arr)",
+                "spark": "SIZE(arr)",
+                "databricks": "SIZE(arr)",
+            },
+        )
+
+        self.validate_all(
+            "ARRAY_LENGTH(arr, foo)",
+            write={
+                "duckdb": "ARRAY_LENGTH(arr, foo)",
+                "hive": UnsupportedError,
+                "spark2": UnsupportedError,
+                "spark": UnsupportedError,
+                "databricks": UnsupportedError,
+                "presto": UnsupportedError,
+                "teradata": UnsupportedError,
+                "bigquery": UnsupportedError,
+                "drill": UnsupportedError,
+                "clickhouse": UnsupportedError,
+            },
         )

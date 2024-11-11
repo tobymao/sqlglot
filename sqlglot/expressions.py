@@ -767,6 +767,7 @@ class Expression(metaclass=_Expression):
         *expressions: t.Optional[ExpOrStr],
         dialect: DialectType = None,
         copy: bool = True,
+        wrap: bool = True,
         **opts,
     ) -> Condition:
         """
@@ -781,18 +782,22 @@ class Expression(metaclass=_Expression):
                 If an `Expression` instance is passed, it will be used as-is.
             dialect: the dialect used to parse the input expression.
             copy: whether to copy the involved expressions (only applies to Expressions).
+            wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+                precedence issues, but can be turned off when the produced AST is too deep and
+                causes recursion-related issues.
             opts: other options to use to parse the input expressions.
 
         Returns:
             The new And condition.
         """
-        return and_(self, *expressions, dialect=dialect, copy=copy, **opts)
+        return and_(self, *expressions, dialect=dialect, copy=copy, wrap=wrap, **opts)
 
     def or_(
         self,
         *expressions: t.Optional[ExpOrStr],
         dialect: DialectType = None,
         copy: bool = True,
+        wrap: bool = True,
         **opts,
     ) -> Condition:
         """
@@ -807,12 +812,15 @@ class Expression(metaclass=_Expression):
                 If an `Expression` instance is passed, it will be used as-is.
             dialect: the dialect used to parse the input expression.
             copy: whether to copy the involved expressions (only applies to Expressions).
+            wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+                precedence issues, but can be turned off when the produced AST is too deep and
+                causes recursion-related issues.
             opts: other options to use to parse the input expressions.
 
         Returns:
             The new Or condition.
         """
-        return or_(self, *expressions, dialect=dialect, copy=copy, **opts)
+        return or_(self, *expressions, dialect=dialect, copy=copy, wrap=wrap, **opts)
 
     def not_(self, copy: bool = True):
         """
@@ -6921,6 +6929,7 @@ def _combine(
     operator: t.Type[Connector],
     dialect: DialectType = None,
     copy: bool = True,
+    wrap: bool = True,
     **opts,
 ) -> Expression:
     conditions = [
@@ -6930,10 +6939,10 @@ def _combine(
     ]
 
     this, *rest = conditions
-    if rest:
+    if rest and wrap:
         this = _wrap(this, Connector)
     for expression in rest:
-        this = operator(this=this, expression=_wrap(expression, Connector))
+        this = operator(this=this, expression=_wrap(expression, Connector) if wrap else expression)
 
     return this
 
@@ -7316,7 +7325,11 @@ def condition(
 
 
 def and_(
-    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr],
+    dialect: DialectType = None,
+    copy: bool = True,
+    wrap: bool = True,
+    **opts,
 ) -> Condition:
     """
     Combine multiple conditions with an AND logical operator.
@@ -7330,16 +7343,23 @@ def and_(
             If an Expression instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy `expressions` (only applies to Expressions).
+        wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+            precedence issues, but can be turned off when the produced AST is too deep and
+            causes recursion-related issues.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         The new condition
     """
-    return t.cast(Condition, _combine(expressions, And, dialect, copy=copy, **opts))
+    return t.cast(Condition, _combine(expressions, And, dialect, copy=copy, wrap=wrap, **opts))
 
 
 def or_(
-    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr],
+    dialect: DialectType = None,
+    copy: bool = True,
+    wrap: bool = True,
+    **opts,
 ) -> Condition:
     """
     Combine multiple conditions with an OR logical operator.
@@ -7353,16 +7373,23 @@ def or_(
             If an Expression instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy `expressions` (only applies to Expressions).
+        wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+            precedence issues, but can be turned off when the produced AST is too deep and
+            causes recursion-related issues.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         The new condition
     """
-    return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, **opts))
+    return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, wrap=wrap, **opts))
 
 
 def xor(
-    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr],
+    dialect: DialectType = None,
+    copy: bool = True,
+    wrap: bool = True,
+    **opts,
 ) -> Condition:
     """
     Combine multiple conditions with an XOR logical operator.
@@ -7376,12 +7403,15 @@ def xor(
             If an Expression instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy `expressions` (only applies to Expressions).
+        wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+            precedence issues, but can be turned off when the produced AST is too deep and
+            causes recursion-related issues.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         The new condition
     """
-    return t.cast(Condition, _combine(expressions, Xor, dialect, copy=copy, **opts))
+    return t.cast(Condition, _combine(expressions, Xor, dialect, copy=copy, wrap=wrap, **opts))
 
 
 def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Not:

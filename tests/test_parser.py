@@ -1,3 +1,4 @@
+import time
 import unittest
 from unittest.mock import patch
 
@@ -711,14 +712,20 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])
 
     def test_parse_nested(self):
-        query = parse_one("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
-        self.assertIsNotNone(query)
+        def warn_over_threshold(query: str, max_threshold: float = 0.2):
+            now = time.time()
+            ast = parse_one(query)
+            end = time.time() - now
 
-        query = parse_one("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
-        self.assertIsNotNone(query)
+            self.assertIsNotNone(ast)
+            if end >= max_threshold:
+                parser_logger.warning(
+                    f"Query {query[:100]}... surpassed the time threshold of {max_threshold} seconds"
+                )
 
-        query = parse_one("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
-        self.assertIsNotNone(query)
+        warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
+        warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
+        warn_over_threshold("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
 
     def test_parse_properties(self):
         self.assertEqual(

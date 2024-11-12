@@ -1611,6 +1611,14 @@ WHERE
                 "snowflake": """SELECT TRANSFORM(GET_PATH(PARSE_JSON('{"arr": [1, "a"]}'), 'arr'), x -> CAST(x AS VARCHAR))""",
             },
         )
+        self.validate_all(
+            "SELECT STRPOS('foo@example.com', '@')",
+            write={
+                "bigquery": "SELECT STRPOS('foo@example.com', '@')",
+                "duckdb": "SELECT STRPOS('foo@example.com', '@')",
+                "snowflake": "SELECT POSITION('@', 'foo@example.com')",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_add_cast,
     unit_to_var,
+    str_position_sql,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -492,6 +493,7 @@ class BigQuery(Dialect):
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1) or exp.Literal.string(","),
             ),
+            "STRPOS": exp.StrPosition.from_arg_list,
             "TIME": _build_time,
             "TIME_ADD": build_date_delta_with_interval(exp.TimeAdd),
             "TIME_SUB": build_date_delta_with_interval(exp.TimeSub),
@@ -845,6 +847,7 @@ class BigQuery(Dialect):
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),
             exp.String: rename_func("STRING"),
+            exp.StrPosition: str_position_sql,
             exp.StrToDate: _str_to_datetime_sql,
             exp.StrToTime: _str_to_datetime_sql,
             exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),

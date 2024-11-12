@@ -1688,6 +1688,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPOS(haystack, needle)",
                 "postgres": "STRPOS(haystack, needle)",
                 "presto": "STRPOS(haystack, needle)",
+                "bigquery": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",
                 "clickhouse": "position(haystack, needle)",
                 "snowflake": "POSITION(needle, haystack)",

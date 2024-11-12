@@ -301,7 +301,7 @@ class Expression(metaclass=_Expression):
         """
         return deepcopy(self)
 
-    def add_comments(self, comments: t.Optional[t.List[str]] = None) -> None:
+    def add_comments(self, comments: t.Optional[t.List[str]] = None, prepend: bool = False) -> None:
         if self.comments is None:
             self.comments = []
 
@@ -313,7 +313,12 @@ class Expression(metaclass=_Expression):
                         k, *v = kv.split("=")
                         value = v[0].strip() if v else True
                         self.meta[k.strip()] = value
-                self.comments.append(comment)
+
+                if not prepend:
+                    self.comments.append(comment)
+
+            if prepend:
+                self.comments = comments + self.comments
 
     def pop_comments(self) -> t.List[str]:
         comments = self.comments or []

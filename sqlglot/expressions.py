@@ -6490,6 +6490,10 @@ class TsOrDsToDate(Func):
     arg_types = {"this": True, "format": False, "safe": False}
 
 
+class TsOrDsToDatetime(Func):
+    pass
+
+
 class TsOrDsToTime(Func):
     pass
 
@@ -7793,8 +7797,8 @@ def cast(
         existing_cast_type: DataType.Type = expr.to.this
         new_cast_type: DataType.Type = data_type.this
         types_are_equivalent = type_mapping.get(
-            existing_cast_type, existing_cast_type
-        ) == type_mapping.get(new_cast_type, new_cast_type)
+            existing_cast_type, existing_cast_type.value
+        ) == type_mapping.get(new_cast_type, new_cast_type.value)
         if expr.is_type(data_type) or types_are_equivalent:
             return expr
 

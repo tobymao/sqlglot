@@ -35,6 +35,7 @@ from sqlglot.dialects.dialect import (
     sha256_sql,
     build_regexp_extract,
     explode_to_unnest_sql,
+    no_make_interval_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -558,6 +559,7 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",

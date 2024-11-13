@@ -1619,6 +1619,14 @@ WHERE
                 "snowflake": "SELECT POSITION('@', 'foo@example.com')",
             },
         )
+        self.validate_all(
+            "SELECT ts + MAKE_INTERVAL(1, 2, minute => 5, day => 3)",
+            write={
+                "bigquery": "SELECT ts + MAKE_INTERVAL(1, 2, day => 3, minute => 5)",
+                "duckdb": "SELECT ts + INTERVAL '1 year 2 month 5 minute 3 day'",
+                "snowflake": "SELECT ts + INTERVAL '1 year, 2 month, 5 minute, 3 day'",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

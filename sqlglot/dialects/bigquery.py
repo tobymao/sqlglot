@@ -516,6 +516,7 @@ class BigQuery(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
+            "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -745,6 +746,26 @@ class BigQuery(Dialect):
                     unnest.set("explode_array", True)
 
             return unnest
+
+        def _parse_make_interval(self):
+            expr = exp.MakeInterval()
+
+            for arg_key in expr.arg_types:
+                value = self._parse_lambda()
+
+                if not value:
+                    break
+
+                # Non-named arguments are filled sequentially, (optionally) followed by named arguments
+                # that can appear in any order e.g MAKE_INTERVAL(1, minute => 5, day => 2)
+                if isinstance(value, exp.Kwarg):
+                    arg_key = value.this.name
+
+                expr.set(arg_key, value)
+
+                self._match(TokenType.COMMA)
+
+            return expr
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False

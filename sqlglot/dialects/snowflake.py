@@ -25,6 +25,7 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     no_timestamp_sql,
     timestampdiff_sql,
+    no_make_interval_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import flatten, is_float, is_int, seq_get
@@ -866,6 +867,7 @@ class Snowflake(Dialect):
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.MakeInterval: no_make_interval_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.ParseJSON: lambda self, e: self.func(

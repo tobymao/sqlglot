@@ -5589,6 +5589,17 @@ class MonthsBetween(Func):
     arg_types = {"this": True, "expression": True, "roundoff": False}
 
 
+class MakeInterval(Func):
+    arg_types = {
+        "year": False,
+        "month": False,
+        "day": False,
+        "hour": False,
+        "minute": False,
+        "second": False,
+    }
+
+
 class LastDay(Func, TimeUnit):
     _sql_names = ["LAST_DAY", "LAST_DAY_OF_MONTH"]
     arg_types = {"this": True, "unit": False}

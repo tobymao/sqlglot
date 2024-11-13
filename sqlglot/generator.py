@@ -3897,7 +3897,14 @@ class Generator(metaclass=_Generator):
         if isinstance(this, exp.TsOrDsToTimestamp) or this.is_type(exp.DataType.Type.TIMESTAMP):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP))
+        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP, dialect=self.dialect))
+
+    def tsordstodatetime_sql(self, expression: exp.TsOrDsToDatetime) -> str:
+        this = expression.this
+        if isinstance(this, exp.TsOrDsToDatetime) or this.is_type(exp.DataType.Type.DATETIME):
+            return self.sql(this)
+
+        return self.sql(exp.cast(this, exp.DataType.Type.DATETIME, dialect=self.dialect))
 
     def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
         this = expression.this

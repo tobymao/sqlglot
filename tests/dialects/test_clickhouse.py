@@ -251,7 +251,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "clickhouse": "SELECT CAST('2020-01-01' AS Nullable(DateTime)) + INTERVAL '500' MICROSECOND",
-                "duckdb": "SELECT CAST('2020-01-01' AS DATETIME) + INTERVAL '500' MICROSECOND",
+                "duckdb": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' MICROSECOND",
                 "postgres": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500 MICROSECOND'",
             },
         )

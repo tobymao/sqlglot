@@ -558,27 +558,6 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
-            "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
-            write={
-                "bigquery": "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
-                "duckdb": "SELECT STRFTIME(CAST('2023-12-25' AS DATE), '%Y%m%d')",
-            },
-        )
-        self.validate_all(
-            "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', DATETIME '2023-12-25 15:30:00')",
-            write={
-                "bigquery": "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', CAST('2023-12-25 15:30:00' AS DATETIME))",
-                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%Y%m%d %H:%M:%S')",
-            },
-        )
-        self.validate_all(
-            "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
-            write={
-                "bigquery": "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
-                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%x')",
-            },
-        )
-        self.validate_all(
             "SELECT COUNTIF(x)",
             read={
                 "clickhouse": "SELECT countIf(x)",
@@ -685,7 +664,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
-                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) + INTERVAL '1' MILLISECOND",
+                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) + INTERVAL '1' MILLISECOND",
                     "snowflake": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
                 },
             ),
@@ -696,7 +675,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1' * -1, '2023-01-01T00:00:00')",
-                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS DATETIME) - INTERVAL '1' MILLISECOND",
+                    "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) - INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -706,7 +685,7 @@ LANGUAGE js AS
                 write={
                     "bigquery": "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
                     "databricks": "SELECT DATE_TRUNC('HOUR', '2023-01-01T01:01:01')",
-                    "duckdb": "SELECT DATE_TRUNC('HOUR', CAST('2023-01-01T01:01:01' AS DATETIME))",
+                    "duckdb": "SELECT DATE_TRUNC('HOUR', CAST('2023-01-01T01:01:01' AS TIMESTAMP))",
                 },
             ),
         )
@@ -2219,5 +2198,36 @@ OPTIONS (
                 "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
                 "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
                 "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
+            },
+        )
+
+    def test_format_temporal(self):
+        self.validate_all(
+            "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
+            write={
+                "bigquery": "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25' AS DATE), '%Y%m%d')",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', DATETIME '2023-12-25 15:30:00')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', CAST('2023-12-25 15:30:00' AS DATETIME))",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%Y%m%d %H:%M:%S')",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%x')",
+            },
+        )
+        self.validate_all(
+            """SELECT FORMAT_TIMESTAMP("%b-%d-%Y", TIMESTAMP "2050-12-25 15:30:55+00")""",
+            write={
+                "bigquery": "SELECT FORMAT_TIMESTAMP('%b-%d-%Y', CAST('2050-12-25 15:30:55+00' AS TIMESTAMP))",
+                "duckdb": "SELECT STRFTIME(CAST(CAST('2050-12-25 15:30:55+00' AS TIMESTAMPTZ) AS TIMESTAMP), '%b-%d-%Y')",
+                "snowflake": "SELECT TO_CHAR(CAST(CAST('2050-12-25 15:30:55+00' AS TIMESTAMPTZ) AS TIMESTAMP), 'mon-DD-yyyy')",
             },
         )

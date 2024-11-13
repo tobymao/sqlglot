@@ -645,6 +645,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.BPCHAR: "TEXT",
             exp.DataType.Type.CHAR: "TEXT",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",

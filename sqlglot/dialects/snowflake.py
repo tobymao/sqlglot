@@ -908,9 +908,6 @@ class Snowflake(Dialect):
             ),
             exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeToStr: lambda self, e: self.func(
-                "TO_CHAR", exp.cast(e.this, exp.DataType.Type.TIMESTAMP), self.format_time(e)
-            ),
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.ToArray: rename_func("TO_ARRAY"),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
@@ -1147,3 +1144,11 @@ class Snowflake(Dialect):
                 exp.ParseJSON(this=this) if this.is_string else this,
                 expression.expression,
             )
+
+        def timetostr_sql(self, expression: exp.TimeToStr) -> str:
+            this = expression.this
+
+            if this.is_string:
+                this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+
+            return self.func("TO_CHAR", this, self.format_time(expression))

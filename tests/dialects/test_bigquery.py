@@ -1606,6 +1606,14 @@ WHERE
                 "snowflake": "SELECT ts + INTERVAL '1 year, 2 month, 5 minute, 3 day'",
             },
         )
+        self.validate_all(
+            """SELECT INT64(JSON_QUERY(JSON '{"key": 2000}', '$.key'))""",
+            write={
+                "bigquery": """SELECT INT64(JSON_QUERY(PARSE_JSON('{"key": 2000}'), '$.key'))""",
+                "duckdb": """SELECT CAST(JSON('{"key": 2000}') -> '$.key' AS BIGINT)""",
+                "snowflake": """SELECT CAST(GET_PATH(PARSE_JSON('{"key": 2000}'), 'key') AS BIGINT)""",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

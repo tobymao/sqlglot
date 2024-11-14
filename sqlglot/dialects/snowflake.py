@@ -106,8 +106,8 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
 
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _build_if_from_div0(args: t.List) -> exp.If:
-    lhs = exp._wrap(t.cast(exp.Expression, seq_get(args, 0)), exp.Binary)
-    rhs = exp._wrap(t.cast(exp.Expression, seq_get(args, 1)), exp.Binary)
+    lhs = exp._wrap(seq_get(args, 0), exp.Binary)
+    rhs = exp._wrap(seq_get(args, 1), exp.Binary)
 
     cond = exp.EQ(this=rhs, expression=exp.Literal.number(0)).and_(
         exp.Is(this=lhs, expression=exp.null()).not_()

@@ -879,3 +879,8 @@ class TestParser(unittest.TestCase):
             expr = parse_one(sql)
             self.assertIsInstance(expr, exp.Insert)
             self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
+
+    def test_drop_column(self):
+        ast = parse_one("ALTER TABLE tbl DROP COLUMN col")
+        self.assertEqual(len(list(ast.find_all(exp.Table))), 1)
+        self.assertEqual(len(list(ast.find_all(exp.Column))), 1)

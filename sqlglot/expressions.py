@@ -5828,6 +5828,11 @@ class IsNan(Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#int64_for_json
+class Int64(Func):
+    pass
+
+
 class IsInf(Func):
     _sql_names = ["IS_INF", "ISINF"]
 

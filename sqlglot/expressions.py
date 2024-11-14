@@ -6981,8 +6981,6 @@ def _wrap(expression: E, kind: t.Type[Expression]) -> E | Paren: ...
 
 
 def _wrap(expression: t.Optional[E], kind: t.Type[Expression]) -> t.Optional[E] | Paren:
-    if not expression:
-        return None
     return Paren(this=expression) if isinstance(expression, kind) else expression
 
 

@@ -442,6 +442,15 @@ class Generator(metaclass=_Generator):
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
+    # The function name of the exp.ArraySize expression
+    ARRAY_SIZE_NAME: str = "ARRAY_LENGTH"
+
+    # Whether exp.ArraySize should generate the dimension arg too (valid for Postgres & DuckDB)
+    # None -> Doesn't support it at all
+    # False (DuckDB) -> Has backwards-compatible support, but preferably generated without
+    # True (Postgres) -> Explicitly requires it
+    ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -584,6 +593,7 @@ class Generator(metaclass=_Generator):
     WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
         exp.Command,
         exp.Create,
+        exp.Describe,
         exp.Delete,
         exp.Drop,
         exp.From,
@@ -3887,7 +3897,14 @@ class Generator(metaclass=_Generator):
         if isinstance(this, exp.TsOrDsToTimestamp) or this.is_type(exp.DataType.Type.TIMESTAMP):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP))
+        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP, dialect=self.dialect))
+
+    def tsordstodatetime_sql(self, expression: exp.TsOrDsToDatetime) -> str:
+        this = expression.this
+        if isinstance(this, exp.TsOrDsToDatetime) or this.is_type(exp.DataType.Type.DATETIME):
+            return self.sql(this)
+
+        return self.sql(exp.cast(this, exp.DataType.Type.DATETIME, dialect=self.dialect))
 
     def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
         this = expression.this
@@ -4487,3 +4504,18 @@ class Generator(metaclass=_Generator):
         return self.sql(
             exp.TimestampDiff(this=expression.this, expression=start_ts, unit=exp.var("SECONDS"))
         )
+
+    def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        dim = expression.expression
+
+        # For dialects that don't support the dimension arg, we can safely transpile it's default value (1st dimension)
+        if dim and self.ARRAY_SIZE_DIM_REQUIRED is None:
+            if not (dim.is_int and dim.name == "1"):
+                self.unsupported("Cannot transpile dimension argument for ARRAY_LENGTH")
+            dim = None
+
+        # If dimension is required but not specified, default initialize it
+        if self.ARRAY_SIZE_DIM_REQUIRED and not dim:
+            dim = exp.Literal.number(1)
+
+        return self.func(self.ARRAY_SIZE_NAME, expression.this, dim)

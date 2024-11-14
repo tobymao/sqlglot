@@ -853,6 +853,7 @@ class ClickHouse(Dialect):
         SET_OP_MODIFIERS = False
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
         VALUES_AS_TABLE = False
+        ARRAY_SIZE_NAME = "LENGTH"
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",
@@ -928,7 +929,6 @@ class ClickHouse(Dialect):
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
             exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
-            exp.ArraySize: rename_func("LENGTH"),
             exp.ArraySum: rename_func("arraySum"),
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
             exp.ArgMin: arg_max_or_min_no_count("argMin"),

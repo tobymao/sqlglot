@@ -1484,6 +1484,16 @@ class TestDialect(Validator):
             },
         )
 
+    def test_multiple_chained_unnest(self):
+        self.validate_all(
+            "SELECT * FROM x CROSS JOIN UNNEST(a) AS j(lista) CROSS JOIN UNNEST(b) AS k(listb) CROSS JOIN UNNEST(c) AS l(listc)",
+            write={
+                "presto": "SELECT * FROM x CROSS JOIN UNNEST(a) AS j(lista) CROSS JOIN UNNEST(b) AS k(listb) CROSS JOIN UNNEST(c) AS l(listc)",
+                "spark": "SELECT * FROM x LATERAL VIEW EXPLODE(a) j AS lista LATERAL VIEW EXPLODE(b) k AS listb LATERAL VIEW EXPLODE(c) l AS listc",
+                "hive": "SELECT * FROM x LATERAL VIEW EXPLODE(a) j AS lista LATERAL VIEW EXPLODE(b) k AS listb LATERAL VIEW EXPLODE(c) l AS listc",
+            },
+        )
+
     def test_lateral_subquery(self):
         self.validate_identity(
             "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"
@@ -1678,6 +1688,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPOS(haystack, needle)",
                 "postgres": "STRPOS(haystack, needle)",
                 "presto": "STRPOS(haystack, needle)",
+                "bigquery": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",
                 "clickhouse": "position(haystack, needle)",
                 "snowflake": "POSITION(needle, haystack)",

@@ -321,6 +321,7 @@ class Presto(Dialect):
         PAD_FILL_PATTERN_IS_REQUIRED = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = False
+        ARRAY_SIZE_NAME = "CARDINALITY"
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -354,7 +355,6 @@ class Presto(Dialect):
             exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
-            exp.ArraySize: rename_func("CARDINALITY"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("SET_AGG"),
             exp.AtTimeZone: rename_func("AT_TIMEZONE"),

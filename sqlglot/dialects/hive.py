@@ -463,6 +463,7 @@ class Hive(Dialect):
         PARSE_JSON_NAME = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
         SUPPORTS_MEDIAN = False
+        ARRAY_SIZE_NAME = "SIZE"
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -500,7 +501,6 @@ class Hive(Dialect):
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayToString: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
-            exp.ArraySize: rename_func("SIZE"),
             exp.ArraySort: _array_sort_sql,
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date_sql,

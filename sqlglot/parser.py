@@ -806,7 +806,7 @@ class Parser(metaclass=_Parser):
             kind=self._parse_var_from_options(self.USABLES, raise_unmatched=False),
             this=self._parse_table(schema=False),
         ),
-        TokenType.SEMICOLON: lambda self: self.expression(exp.Semicolon),
+        TokenType.SEMICOLON: lambda self: exp.Semicolon(),
     }
 
     UNARY_PARSERS = {
@@ -1715,7 +1715,10 @@ class Parser(metaclass=_Parser):
             return None
 
         if self._match_set(self.STATEMENT_PARSERS):
-            return self.STATEMENT_PARSERS[self._prev.token_type](self)
+            comments = self._prev_comments
+            stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+            stmt.add_comments(comments, prepend=True)
+            return stmt
 
         if self._match_set(self.dialect.tokenizer.COMMANDS):
             return self._parse_command()
@@ -1748,7 +1751,6 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Drop,
-            comments=start.comments,
             exists=if_exists,
             this=table,
             expressions=expressions,
@@ -1772,7 +1774,6 @@ class Parser(metaclass=_Parser):
     def _parse_create(self) -> exp.Create | exp.Command:
         # Note: this can't be None because we've matched a statement parser
         start = self._prev
-        comments = self._prev_comments
 
         replace = (
             start.token_type == TokenType.REPLACE
@@ -1919,7 +1920,6 @@ class Parser(metaclass=_Parser):
         create_kind_text = create_token.text.upper()
         return self.expression(
             exp.Create,
-            comments=comments,
             this=this,
             kind=self.dialect.CREATABLE_KIND_MAPPING.get(create_kind_text) or create_kind_text,
             replace=replace,
@@ -2659,7 +2659,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_insert(self) -> t.Union[exp.Insert, exp.MultitableInserts]:
-        comments = ensure_list(self._prev_comments)
+        comments = []
         hint = self._parse_hint()
         overwrite = self._match(TokenType.OVERWRITE)
         ignore = self._match(TokenType.IGNORE)
@@ -2845,7 +2845,6 @@ class Parser(metaclass=_Parser):
         # This handles MySQL's "Multiple-Table Syntax"
         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
         tables = None
-        comments = self._prev_comments
         if not self._match(TokenType.FROM, advance=False):
             tables = self._parse_csv(self._parse_table) or None
 
@@ -2853,7 +2852,6 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Delete,
-            comments=comments,
             tables=tables,
             this=self._match(TokenType.FROM) and self._parse_table(joins=True),
             using=self._match(TokenType.USING) and self._parse_table(joins=True),
@@ -2864,13 +2862,11 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_update(self) -> exp.Update:
-        comments = self._prev_comments
         this = self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS)
         expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
         returning = self._parse_returning()
         return self.expression(
             exp.Update,
-            comments=comments,
             **{  # type: ignore
                 "this": this,
                 "expressions": expressions,

@@ -35,6 +35,7 @@ from sqlglot.dialects.dialect import (
     sha256_sql,
     build_regexp_extract,
     explode_to_unnest_sql,
+    no_make_interval_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -156,18 +157,24 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     # BigQuery allows inline construction such as "STRUCT<a STRING, b INTEGER>('str', 1)" which is
     # canonicalized to "ROW('str', 1) AS STRUCT(a TEXT, b INT)" in DuckDB
-    # The transformation to ROW will take place if a cast to STRUCT / ARRAY of STRUCTs is found
+    # The transformation to ROW will take place if:
+    #  1. The STRUCT itself does not have proper fields (key := value) as a "proper" STRUCT would
+    #  2. A cast to STRUCT / ARRAY of STRUCTs is found
     ancestor_cast = expression.find_ancestor(exp.Cast)
-    is_struct_cast = ancestor_cast and any(
-        casted_type.is_type(exp.DataType.Type.STRUCT)
-        for casted_type in ancestor_cast.find_all(exp.DataType)
+    is_bq_inline_struct = (
+        (expression.find(exp.PropertyEQ) is None)
+        and ancestor_cast
+        and any(
+            casted_type.is_type(exp.DataType.Type.STRUCT)
+            for casted_type in ancestor_cast.find_all(exp.DataType)
+        )
     )
 
     for i, expr in enumerate(expression.expressions):
         is_property_eq = isinstance(expr, exp.PropertyEQ)
         value = expr.expression if is_property_eq else expr
 
-        if is_struct_cast:
+        if is_bq_inline_struct:
             args.append(self.sql(value))
         else:
             key = expr.name if is_property_eq else f"_{i}"
@@ -175,7 +182,7 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     csv_args = ", ".join(args)
 
-    return f"ROW({csv_args})" if is_struct_cast else f"{{{csv_args}}}"
+    return f"ROW({csv_args})" if is_bq_inline_struct else f"{{{csv_args}}}"
 
 
 def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
@@ -501,13 +508,13 @@ class DuckDB(Dialect):
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
         ARRAY_CONCAT_IS_VAR_LEN = False
+        ARRAY_SIZE_DIM_REQUIRED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
-            exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
             exp.ArgMin: arg_max_or_min_no_count("ARG_MIN"),
             exp.ArraySort: _array_sort_sql,
@@ -552,6 +559,7 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
@@ -639,6 +647,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.BPCHAR: "TEXT",
             exp.DataType.Type.CHAR: "TEXT",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",

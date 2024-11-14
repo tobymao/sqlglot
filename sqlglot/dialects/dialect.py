@@ -1724,3 +1724,14 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
 
 def timestampdiff_sql(self: Generator, expression: exp.DatetimeDiff | exp.TimestampDiff) -> str:
     return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)
+
+
+def no_make_interval_sql(self: Generator, expression: exp.MakeInterval, sep: str = ", ") -> str:
+    args = []
+    for unit, value in expression.args.items():
+        if isinstance(value, exp.Kwarg):
+            value = value.expression
+
+        args.append(f"{value} {unit}")
+
+    return f"INTERVAL '{self.format_args(*args, sep=sep)}'"

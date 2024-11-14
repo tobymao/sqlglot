@@ -836,6 +836,7 @@ class BigQuery(Dialect):
             exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
+            exp.Int64: rename_func("INT64"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Levenshtein: _levenshtein_sql,
             exp.Max: max_or_greatest,

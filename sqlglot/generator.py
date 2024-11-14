@@ -148,6 +148,7 @@ class Generator(metaclass=_Generator):
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
         exp.Intersect: lambda self, e: self.set_operations(e),
         exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
+        exp.Int64: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.BIGINT)),
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda _, e: f"{'NO ' if e.args.get('no') else ''}LOG",

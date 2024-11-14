@@ -1738,9 +1738,13 @@ class Parser(metaclass=_Parser):
 
         concurrently = self._match_text_seq("CONCURRENTLY")
         if_exists = exists or self._parse_exists()
-        table = self._parse_table_parts(
-            schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
-        )
+
+        if kind == "COLUMN":
+            this = self._parse_column()
+        else:
+            this = self._parse_table_parts(
+                schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
+            )
 
         cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
@@ -1752,7 +1756,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Drop,
             exists=if_exists,
-            this=table,
+            this=this,
             expressions=expressions,
             kind=self.dialect.CREATABLE_KIND_MAPPING.get(kind) or kind,
             temporary=temporary,

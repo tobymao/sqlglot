@@ -26,6 +26,11 @@ class RisingWave(Postgres):
             *DB_CREATABLES,
         }
 
+        ID_VAR_TOKENS = {
+            *Postgres.Parser.ID_VAR_TOKENS,
+            *CREATABLES,
+        }
+
         def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
             # There is no hint in risingwave.
             # Do nothing here to avoid WITH keywords conflict in CREATE SINK statement.

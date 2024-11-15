@@ -1,6 +1,6 @@
 import collections.abc
 
-from benchmarks.helpers import ascii_table
+from helpers import ascii_table
 
 # moz_sql_parser 3.10 compatibility
 collections.Iterable = collections.abc.Iterable
@@ -12,7 +12,7 @@ import numpy as np
 # import moz_sql_parser
 # import sqloxide
 # import sqlparse
-import sqltree
+# import sqltree
 
 import sqlglot
 
@@ -203,7 +203,7 @@ libs = [
     "sqlglot",
     "sqlglotrs",
     # "sqlfluff",
-    "sqltree",
+    # "sqltree",
     # "sqlparse",
     # "moz_sql_parser",
     # "sqloxide",

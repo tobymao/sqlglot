@@ -1,7 +1,7 @@
 import typing as t
 from argparse import ArgumentParser
 
-from benchmarks.helpers import ascii_table
+from helpers import ascii_table
 from sqlglot.optimizer import optimize
 from sqlglot import parse_one
 from tests.helpers import load_sql_fixture_pairs, TPCH_SCHEMA, TPCDS_SCHEMA

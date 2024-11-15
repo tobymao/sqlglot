@@ -80,20 +80,6 @@ class RisingWave(Postgres):
             return encode_property
 
         def _parse_property(self) -> t.Optional[exp.Expression]:
-            if self._match_texts(self.PROPERTY_PARSERS):
-                return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
-
-            if self._match(TokenType.DEFAULT) and self._match_texts(self.PROPERTY_PARSERS):
-                return self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
-
-            if self._match_text_seq("COMPOUND", "SORTKEY"):
-                return self._parse_sortkey(compound=True)
-
-            if self._match_text_seq("SQL", "SECURITY"):
-                return self.expression(
-                    exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER")
-                )
-
             # Parse risingwave specific properties.
             if self._match_texts("ENCODE"):
                 return self._parse_encode_property(is_key=False)
@@ -104,25 +90,9 @@ class RisingWave(Postgres):
             if self._match_texts("INCLUDE"):
                 return self._parse_include()
 
-            index = self._index
-            key = self._parse_column()
+            return super()._parse_property()
 
-            if not self._match(TokenType.EQ):
-                self._retreat(index)
-                return self._parse_sequence_properties()
-
-            # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
-            if isinstance(key, exp.Column):
-                key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
-
-            value = self._parse_bitwise() or self._parse_var(any_token=True)
-
-            # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
-            if isinstance(value, exp.Column):
-                value = exp.var(value.name)
-
-            return self.expression(exp.Property, this=key, value=value)
-
+        # @FIXME: refactor this method.
         def _parse_create(self) -> exp.Create | exp.Command:
             # Note: this can't be None because we've matched a statement parser
             start = self._prev
@@ -312,10 +282,8 @@ class RisingWave(Postgres):
             return self.expression(exp.Watermark, column=column, expression=expr)
 
         def _parse_field_def(self) -> t.Optional[exp.Expression]:
-            # First parse if it is watermark field before parsing column def.
-            return self._parse_watermark_field() or self._parse_column_def(
-                self._parse_field(any_token=True)
-            )
+            # First parse if it is watermark field before parsing super class field def.
+            return self._parse_watermark_field() or super()._parse_field_def()
 
         def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             # column defs are not really columns, they're identifiers
@@ -323,32 +291,14 @@ class RisingWave(Postgres):
                 this = this.this
 
             kind = self._parse_types(schema=True)
-
-            if self._match_text_seq("FOR", "ORDINALITY"):
-                return self.expression(exp.ColumnDef, this=this, ordinality=True)
-
             constraints: t.List[exp.Expression] = []
 
-            if (not kind and self._match(TokenType.ALIAS)) or self._match_texts(
-                ("ALIAS", "MATERIALIZED")
+            if (
+                kind
+                and self._match(TokenType.ALIAS, advance=False)
+                and not self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False)
             ):
-                persisted = self._prev.text.upper() == "MATERIALIZED"
-                constraint_kind = exp.ComputedColumnConstraint(
-                    this=self._parse_assignment(),
-                    persisted=persisted or self._match_text_seq("PERSISTED"),
-                    not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
-                )
-                constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
-            elif kind and self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False):
-                self._match(TokenType.ALIAS)
-                constraints.append(
-                    self.expression(
-                        exp.ColumnConstraint,
-                        kind=exp.TransformColumnConstraint(this=self._parse_field()),
-                    )
-                )
-            elif kind and self._match(TokenType.ALIAS, advance=False):
-                # Deal with CREATE SOURCE statement, where we may have col_name data_type [ AS generation_expression ] and generation_expression may not have parentheses, which makes it different compared to previous if.
+                # Deal with CREATE SOURCE statement, where we may have col_name data_type [ AS generation_expression ] and generation_expression may not have parentheses.
                 self._match(TokenType.ALIAS)
                 constraints.append(
                     self.expression(
@@ -357,16 +307,15 @@ class RisingWave(Postgres):
                     )
                 )
 
-            while True:
-                constraint = self._parse_column_constraint()
-                if not constraint:
-                    break
-                constraints.append(constraint)
+                while True:
+                    constraint = self._parse_column_constraint()
+                    if not constraint:
+                        break
+                    constraints.append(constraint)
 
-            if not kind and not constraints:
-                return this
+                return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
 
-            return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
+            return super()._parse_column_def(this)
 
     class Generator(Postgres.Generator):
         LOCKING_READS_SUPPORTED = False
@@ -392,8 +341,8 @@ class RisingWave(Postgres):
             return property_sql_str
 
         def _watermark_sql(self, expression: exp.Expression) -> str:
-            column = self.sql(expression, "column")
-            expression_str = self.sql(expression, "expression")
+            column = expression.args.get("column")
+            expression_str = expression.args.get("expression")
             return f"WATERMARK FOR {column} AS {expression_str}"
 
         def _include_property_sql(self, expression: exp.Expression) -> str:
@@ -410,22 +359,8 @@ class RisingWave(Postgres):
                 property_sql_str = f"{property_sql_str} AS {column_alias}"
             return property_sql_str
 
-        def with_properties(self, properties: exp.Properties) -> str:
-            with_sql = self.properties(
-                properties, prefix=self.seg(self.WITH_PROPERTIES_PREFIX, sep="")
-            )
-            return with_sql
-
         def property_sql(self, expression: exp.Property) -> str:
             property_cls = expression.__class__
-            if property_cls == exp.Property:
-                return f"{self.property_name(expression)}={self.sql(expression, 'value')}"
-
-            property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
-
-            if not property_name:
-                self.unsupported(f"Unsupported property {expression.key}")
-
             if property_cls == exp.EncodeProperty:
                 return self._encode_property_sql(expression)
 
@@ -435,8 +370,9 @@ class RisingWave(Postgres):
             if property_cls == exp.IncludeProperty:
                 return self._include_property_sql(expression)
 
-            return f"{property_name}={self.sql(expression, 'this')}"
+            return super().property_sql(expression)
 
+        # @FIXME: refactor this method.
         def create_sql(self, expression: exp.Create) -> str:
             kind = self.sql(expression, "kind")
             kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
@@ -558,37 +494,8 @@ class RisingWave(Postgres):
             key: t.Optional[str] = None,
             comment: bool = True,
         ) -> str:
-            if not expression:
-                return ""
+            if isinstance(expression, exp.Watermark):
+                sql = self._watermark_sql(expression)
+                return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
-            if isinstance(expression, str):
-                return expression
-
-            if key:
-                value = expression.args.get(key)
-                if value:
-                    return self.sql(value)
-                return ""
-
-            transform = self.TRANSFORMS.get(expression.__class__)
-
-            if callable(transform):
-                sql = transform(self, expression)
-            elif isinstance(expression, exp.Expression):
-                exp_handler_name = f"{expression.key}_sql"
-                if hasattr(self, exp_handler_name):
-                    sql = getattr(self, exp_handler_name)(expression)
-                elif isinstance(expression, exp.Func):
-                    sql = self.function_fallback_sql(expression)
-                elif isinstance(expression, exp.Property):
-                    sql = self.property_sql(expression)
-                elif isinstance(expression, exp.Watermark):
-                    sql = self._watermark_sql(expression)
-                else:
-                    raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
-            else:
-                raise ValueError(
-                    f"Expected an Expression. Received {type(expression)}: {expression}"
-                )
-
-            return self.maybe_comment(sql, expression) if self.comments and comment else sql
+            return super().sql(expression, key, comment)

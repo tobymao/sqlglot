@@ -43,19 +43,19 @@ impl Token {
     ) -> Token {
         Python::with_gil(|py| Token {
             token_type,
-            token_type_py: PyNone::get(py).into(),
-            text: PyString::new(py, &text).into(),
+            token_type_py: PyNone::get_bound(py).into_py(py),
+            text: PyString::new_bound(py, &text).into_py(py),
             line,
             col,
             start,
             end,
-            comments: PyList::new(py, &comments).into(),
+            comments: PyList::new_bound(py, &comments).into(),
         })
     }
 
     pub fn append_comments(&self, comments: &mut Vec<String>) {
         Python::with_gil(|py| {
-            let pylist = self.comments.as_ref(py);
+            let pylist = self.comments.bind(py);
             for comment in comments.iter() {
                 if let Err(_) = pylist.append(comment) {
                     panic!("Failed to append comments to the Python list");
@@ -74,20 +74,20 @@ impl Token {
         Python::with_gil(|py| {
             Ok(format!(
                 "<Token token_type: {}, text: {}, line: {}, col: {}, start: {}, end: {}, comments: {}>",
-                self.token_type_py.as_ref(py).repr()?,
-                self.text.as_ref(py).repr()?,
+                self.token_type_py.bind(py).repr()?,
+                self.text.bind(py).repr()?,
                 self.line,
                 self.col,
                 self.start,
                 self.end,
-                self.comments.as_ref(py).repr()?,
+                self.comments.bind(py).repr()?,
             ))
         })
     }
 }
 
 #[pymodule]
-fn sqlglotrs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn sqlglotrs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Token>()?;
     m.add_class::<TokenTypeSettings>()?;
     m.add_class::<TokenizerSettings>()?;

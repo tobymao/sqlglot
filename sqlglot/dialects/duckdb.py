@@ -316,6 +316,7 @@ class DuckDB(Dialect):
             "BPCHAR": TokenType.TEXT,
             "CHAR": TokenType.TEXT,
             "CHARACTER VARYING": TokenType.TEXT,
+            "DETACH": TokenType.COMMAND,
             "EXCLUDE": TokenType.EXCEPT,
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,

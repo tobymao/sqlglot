@@ -382,6 +382,7 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "ATTACH DATABASE ':memory:' AS new_database", check_command_warning=True
         )
+        self.validate_identity("DETACH DATABASE new_database", check_command_warning=True)
         self.validate_identity(
             "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
         )

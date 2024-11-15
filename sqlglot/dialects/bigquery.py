@@ -312,6 +312,18 @@ def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List]
     return _builder
 
 
+def _build_contains_substring(args: t.List) -> exp.Contains | exp.Anonymous:
+    if len(args) == 3:
+        return exp.Anonymous(this="CONTAINS_SUBSTRING", expressions=args)
+
+    # Lowercase the operands in case of transpilation, as exp.Contains
+    # is case-sensitive on other dialects
+    this = exp.Lower(this=seq_get(args, 0))
+    expr = exp.Lower(this=seq_get(args, 1))
+
+    return exp.Contains(this=this, expression=expr)
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -457,6 +469,7 @@ class BigQuery(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CONTAINS_SUBSTRING": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
@@ -1153,3 +1166,13 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        def contains_sql(self, expression: exp.Contains) -> str:
+            this = expression.this
+            expr = expression.expression
+
+            if isinstance(this, exp.Lower) and isinstance(expr, exp.Lower):
+                this = this.this
+                expr = expr.this
+
+            return self.func("CONTAINS_SUBSTRING", this, expr)

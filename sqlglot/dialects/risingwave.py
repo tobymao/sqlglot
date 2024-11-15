@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.tokens import TokenType
 from collections import defaultdict
@@ -291,7 +292,7 @@ class RisingWave(Postgres):
             )
 
         def _parse_watermark_field(self) -> t.Optional[exp.Expression]:
-            if not self._match(TokenType.WATERMARK):
+            if not self._match_texts("WATERMARK"):
                 return None
             if not self._match(TokenType.FOR):
                 return None

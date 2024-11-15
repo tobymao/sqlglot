@@ -404,12 +404,8 @@ class TokenType(AutoName):
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
-
-    # Newly added for Risingwave
     SINK = auto()
     SOURCE = auto()
-    ENCODE = auto()
-    WATERMARK = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)
@@ -936,11 +932,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "USER-DEFINED": TokenType.USERDEFINED,
         "FOR VERSION": TokenType.VERSION_SNAPSHOT,
         "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
-        # Newly added for Risingwave
-        "SINK": TokenType.SINK,
-        "SOURCE": TokenType.SOURCE,
-        "ENCODE": TokenType.ENCODE,
-        "WATERMARK": TokenType.WATERMARK,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

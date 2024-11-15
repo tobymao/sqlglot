@@ -1615,6 +1615,31 @@ WHERE
             },
         )
 
+        self.validate_identity(
+            "CONTAINS_SUBSTRING(a, b, json_scope => 'JSON_KEYS_AND_VALUES')"
+        ).assert_is(exp.Anonymous)
+
+        self.validate_all(
+            """CONTAINS_SUBSTRING(a, b)""",
+            read={
+                "": "CONTAINS(a, b)",
+                "spark": "CONTAINS(a, b)",
+                "databricks": "CONTAINS(a, b)",
+                "snowflake": "CONTAINS(a, b)",
+                "duckdb": "CONTAINS(a, b)",
+                "oracle": "CONTAINS(a, b)",
+            },
+            write={
+                "": "CONTAINS(LOWER(a), LOWER(b))",
+                "spark": "CONTAINS(LOWER(a), LOWER(b))",
+                "databricks": "CONTAINS(LOWER(a), LOWER(b))",
+                "snowflake": "CONTAINS(LOWER(a), LOWER(b))",
+                "duckdb": "CONTAINS(LOWER(a), LOWER(b))",
+                "oracle": "CONTAINS(LOWER(a), LOWER(b))",
+                "bigquery": "CONTAINS_SUBSTRING(a, b)",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")

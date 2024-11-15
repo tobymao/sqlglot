@@ -39,6 +39,9 @@ class TestStarrocks(Validator):
         self.validate_identity(
             """SELECT CAST(PARSE_JSON(fieldvalue) -> '00000000-0000-0000-0000-00000000' AS VARCHAR) AS `code` FROM (SELECT '{"00000000-0000-0000-0000-00000000":"code01"}') AS t(fieldvalue)"""
         )
+        self.validate_identity(
+            "SELECT text FROM example_table", write_sql="SELECT `text` FROM example_table"
+        )
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")

@@ -5479,6 +5479,10 @@ class ConcatWs(Concat):
     _sql_names = ["CONCAT_WS"]
 
 
+class Contains(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 # https://docs.oracle.com/cd/B13789_01/server.101/b10759/operators004.htm#i1035022
 class ConnectByRoot(Func):
     pass

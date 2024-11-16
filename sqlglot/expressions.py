@@ -6329,7 +6329,7 @@ class Round(Func):
 
 
 class RowNumber(Func):
-    arg_types: t.Dict[str, t.Any] = {}
+    arg_types = {"this": False}
 
 
 class SafeDivide(Func):

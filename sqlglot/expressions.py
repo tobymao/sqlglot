@@ -5134,7 +5134,8 @@ class Flatten(Func):
 
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
 
 
 class Anonymous(Func):

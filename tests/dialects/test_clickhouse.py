@@ -1253,3 +1253,9 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT row_number() OVER (PARTITION BY column2 ORDER BY column3) FROM table"
         )
+
+    def test_functions(self):
+        self.validate_identity("SELECT transform(foo, [1, 2], ['first', 'second']) FROM table")
+        self.validate_identity(
+            "SELECT transform(foo, [1, 2], ['first', 'second'], 'default') FROM table"
+        )

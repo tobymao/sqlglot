@@ -1245,3 +1245,11 @@ LIFETIME(MIN 0 MAX 0)""",
         scopes = traverse_scope(parse_one(sql, dialect=self.dialect))
         self.assertEqual(len(scopes), 1)
         self.assertEqual(set(scopes[0].sources), {"t"})
+
+    def test_window_functions(self):
+        self.validate_identity(
+            "SELECT row_number(column1) OVER (PARTITION BY column2 ORDER BY column3) FROM table"
+        )
+        self.validate_identity(
+            "SELECT row_number() OVER (PARTITION BY column2 ORDER BY column3) FROM table"
+        )

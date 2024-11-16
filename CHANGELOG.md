@@ -1,6 +1,43 @@
 Changelog
 =========
 
+## [v25.31.0] - 2024-11-16
+### :boom: BREAKING CHANGES
+- due to [`f4abfd5`](https://github.com/tobymao/sqlglot/commit/f4abfd59b8255cf8c39bf51028ee5f6ed704927f) - Support FORMAT_TIMESTAMP *(PR [#4383](https://github.com/tobymao/sqlglot/pull/4383) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Support FORMAT_TIMESTAMP (#4383)
+
+- due to [`45eef60`](https://github.com/tobymao/sqlglot/commit/45eef600064ad024b34e32e7acc3aca409fbd9c4) - use select star when eliminating distinct on *(PR [#4401](https://github.com/tobymao/sqlglot/pull/4401) by [@agrigoroi-palantir](https://github.com/agrigoroi-palantir))*:
+
+  use select star when eliminating distinct on (#4401)
+
+
+### :sparkles: New Features
+- [`72ffdcb`](https://github.com/tobymao/sqlglot/commit/72ffdcb631bf7afdeda2ce96911442a94b7f11eb) - **bigquery**: Add parsing support for STRPOS(...) *(PR [#4378](https://github.com/tobymao/sqlglot/pull/4378) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`e7b67e0`](https://github.com/tobymao/sqlglot/commit/e7b67e0c280179188ce1bca650735978b758dca1) - **bigquery**: Support MAKE_INTERVAL *(PR [#4384](https://github.com/tobymao/sqlglot/pull/4384) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`37c4809`](https://github.com/tobymao/sqlglot/commit/37c4809dfda48224fd982ea8a48d3dbc5c17f9ae) - **bigquery**: Support INT64(...) *(PR [#4391](https://github.com/tobymao/sqlglot/pull/4391) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`9694999`](https://github.com/tobymao/sqlglot/commit/96949999d394e27df8b0287a14e9ac82d52bc0f9) - Add support for CONTAINS(...) *(PR [#4399](https://github.com/tobymao/sqlglot/pull/4399) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :bug: Bug Fixes
+- [`f4abfd5`](https://github.com/tobymao/sqlglot/commit/f4abfd59b8255cf8c39bf51028ee5f6ed704927f) - **bigquery**: Support FORMAT_TIMESTAMP *(PR [#4383](https://github.com/tobymao/sqlglot/pull/4383) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`bb46ee3`](https://github.com/tobymao/sqlglot/commit/bb46ee33d481a888882cbbb26a9240dd2dbb10ee) - **parser**: Parse exp.Column for DROP COLUMN *(PR [#4390](https://github.com/tobymao/sqlglot/pull/4390) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4388](https://github.com/tobymao/sqlglot/issues/4388) opened by [@AhlamHani](https://github.com/AhlamHani)*
+- [`79f6783`](https://github.com/tobymao/sqlglot/commit/79f67830d7d3ba92bff91eeb95b4dc8bdfa6c44e) - **snowflake**: Wrap DIV0 operands if they're binary expressions *(PR [#4393](https://github.com/tobymao/sqlglot/pull/4393) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4392](https://github.com/tobymao/sqlglot/issues/4392) opened by [@diogo-fernan](https://github.com/diogo-fernan)*
+- [`647b98d`](https://github.com/tobymao/sqlglot/commit/647b98d84643b88a41218fb67f6a2bd83ca4c702) - **starrocks**: Add RESERVED_KEYWORDS specific to starrocks *(PR [#4402](https://github.com/tobymao/sqlglot/pull/4402) by [@notexistence](https://github.com/notexistence))*
+- [`45eef60`](https://github.com/tobymao/sqlglot/commit/45eef600064ad024b34e32e7acc3aca409fbd9c4) - use select star when eliminating distinct on *(PR [#4401](https://github.com/tobymao/sqlglot/pull/4401) by [@agrigoroi-palantir](https://github.com/agrigoroi-palantir))*
+
+### :recycle: Refactors
+- [`a3af2af`](https://github.com/tobymao/sqlglot/commit/a3af2af3a893dfd6c6946b732aa086d1f1d91570) - attach stamement comments consistently *(PR [#4377](https://github.com/tobymao/sqlglot/pull/4377) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4376](https://github.com/tobymao/sqlglot/issues/4376) opened by [@YieldRay](https://github.com/YieldRay)*
+
+### :wrench: Chores
+- [`858c5b1`](https://github.com/tobymao/sqlglot/commit/858c5b1a43f74e11b8c357986c78b5068792b3af) - improve contribution guide *(PR [#4379](https://github.com/tobymao/sqlglot/pull/4379) by [@georgesittas](https://github.com/georgesittas))*
+- [`160e688`](https://github.com/tobymao/sqlglot/commit/160e6883225cd6ad41a218213f73aa9f91b5fc5e) - fix relative benchmark import, comment out sqltree *(PR [#4403](https://github.com/tobymao/sqlglot/pull/4403) by [@georgesittas](https://github.com/georgesittas))*
+- [`8d78add`](https://github.com/tobymao/sqlglot/commit/8d78addccaaffa4ea2dcfe1de002f8a653f137b7) - bump PYO3 to v"0.22.6" *(PR [#4400](https://github.com/tobymao/sqlglot/pull/4400) by [@MartinSahlen](https://github.com/MartinSahlen))*
+- [`f78e755`](https://github.com/tobymao/sqlglot/commit/f78e755adaf52823642d2b0e1cae54da835ec653) - bump sqlglotrs to v0.2.14 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.30.0] - 2024-11-11
 ### :boom: BREAKING CHANGES
 - due to [`60625ea`](https://github.com/tobymao/sqlglot/commit/60625eae34deb6a6fc36c0f3996f1281eae0ef6f) - Fix STRUCT cast generation *(PR [#4366](https://github.com/tobymao/sqlglot/pull/4366) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -5251,3 +5288,4 @@ Changelog
 [v25.28.0]: https://github.com/tobymao/sqlglot/compare/v25.27.0...v25.28.0
 [v25.29.0]: https://github.com/tobymao/sqlglot/compare/v25.28.0...v25.29.0
 [v25.30.0]: https://github.com/tobymao/sqlglot/compare/v25.29.0...v25.30.0
+[v25.31.0]: https://github.com/tobymao/sqlglot/compare/v25.30.0...v25.31.0

@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v25.31.3] - 2024-11-17
+### :sparkles: New Features
+- [`835e717`](https://github.com/tobymao/sqlglot/commit/835e71795f994599dbc19f1a5969b464154926e1) - **clickhouse**: transform function support *(PR [#4408](https://github.com/tobymao/sqlglot/pull/4408) by [@GaliFFun](https://github.com/GaliFFun))*
+
+### :bug: Bug Fixes
+- [`0479743`](https://github.com/tobymao/sqlglot/commit/047974393cebbddbbfb878071d159a3e538b0e4d) - **snowflake**: cast to TimeToStr arg to TIMESTAMP more conservatively *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.31.2] - 2024-11-17
 ### :bug: Bug Fixes
 - [`d851269`](https://github.com/tobymao/sqlglot/commit/d851269780c7f0a0c756289c3dea9b1aa58d2a69) - use existing aliases in DISTINCT ON elimination, if any *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -5304,3 +5312,4 @@ Changelog
 [v25.31.0]: https://github.com/tobymao/sqlglot/compare/v25.30.0...v25.31.0
 [v25.31.1]: https://github.com/tobymao/sqlglot/compare/v25.31.0...v25.31.1
 [v25.31.2]: https://github.com/tobymao/sqlglot/compare/v25.31.1...v25.31.2
+[v25.31.3]: https://github.com/tobymao/sqlglot/compare/v25.31.2...v25.31.3

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.31.4] - 2024-11-17
+### :bug: Bug Fixes
+- [`59b8b6d`](https://github.com/tobymao/sqlglot/commit/59b8b6d1409b4112d425cc31db45519d5936b6fa) - preserve column quoting in DISTINCT ON elimination *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.31.3] - 2024-11-17
 ### :sparkles: New Features
 - [`835e717`](https://github.com/tobymao/sqlglot/commit/835e71795f994599dbc19f1a5969b464154926e1) - **clickhouse**: transform function support *(PR [#4408](https://github.com/tobymao/sqlglot/pull/4408) by [@GaliFFun](https://github.com/GaliFFun))*
@@ -5313,3 +5318,4 @@ Changelog
 [v25.31.1]: https://github.com/tobymao/sqlglot/compare/v25.31.0...v25.31.1
 [v25.31.2]: https://github.com/tobymao/sqlglot/compare/v25.31.1...v25.31.2
 [v25.31.3]: https://github.com/tobymao/sqlglot/compare/v25.31.2...v25.31.3
+[v25.31.4]: https://github.com/tobymao/sqlglot/compare/v25.31.3...v25.31.4

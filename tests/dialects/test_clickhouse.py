@@ -1255,7 +1255,7 @@ LIFETIME(MIN 0 MAX 0)""",
         )
 
     def test_functions(self):
-        self.validate_identity("SELECT transform(foo, [1, 2], ['first', 'second']) FROM table")
+        self.validate_identity("SELECT TRANSFORM(foo, [1, 2], ['first', 'second']) FROM table")
         self.validate_identity(
-            "SELECT transform(foo, [1, 2], ['first', 'second'], 'default') FROM table"
+            "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
         )

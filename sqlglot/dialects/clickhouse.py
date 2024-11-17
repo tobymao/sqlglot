@@ -274,8 +274,8 @@ class ClickHouse(Dialect):
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
-            "TRANSFORM": lambda args: exp.Anonymous(this="TRANSFORM", expressions=args),
         }
+        FUNCTIONS.pop("TRANSFORM")
 
         AGG_FUNCTIONS = {
             "count",

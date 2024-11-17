@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v25.31.2] - 2024-11-17
+### :bug: Bug Fixes
+- [`d851269`](https://github.com/tobymao/sqlglot/commit/d851269780c7f0a0c756289c3dea9b1aa58d2a69) - use existing aliases in DISTINCT ON elimination, if any *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.31.1] - 2024-11-17
 ### :sparkles: New Features
 - [`b00d857`](https://github.com/tobymao/sqlglot/commit/b00d857cd8a6d2452c2170077cbfa82352f708dd) - add support for specifying column in row_number function *(PR [#4406](https://github.com/tobymao/sqlglot/pull/4406) by [@GaliFFun](https://github.com/GaliFFun))*
@@ -5298,3 +5303,4 @@ Changelog
 [v25.30.0]: https://github.com/tobymao/sqlglot/compare/v25.29.0...v25.30.0
 [v25.31.0]: https://github.com/tobymao/sqlglot/compare/v25.30.0...v25.31.0
 [v25.31.1]: https://github.com/tobymao/sqlglot/compare/v25.31.0...v25.31.1
+[v25.31.2]: https://github.com/tobymao/sqlglot/compare/v25.31.1...v25.31.2

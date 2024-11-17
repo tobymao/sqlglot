@@ -97,6 +97,11 @@ class TestTransforms(unittest.TestCase):
             "SELECT DISTINCT ON (a) * FROM x ORDER BY c DESC",
             "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
         )
+        self.validate(
+            eliminate_distinct_on,
+            'SELECT DISTINCT ON (a) a AS "A", b FROM x ORDER BY c DESC',
+            'SELECT "A", b FROM (SELECT a AS "A", b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1',
+        )
 
     def test_eliminate_qualify(self):
         self.validate(

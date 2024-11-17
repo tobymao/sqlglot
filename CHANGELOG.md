@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v25.31.1] - 2024-11-17
+### :sparkles: New Features
+- [`b00d857`](https://github.com/tobymao/sqlglot/commit/b00d857cd8a6d2452c2170077cbfa82352f708dd) - add support for specifying column in row_number function *(PR [#4406](https://github.com/tobymao/sqlglot/pull/4406) by [@GaliFFun](https://github.com/GaliFFun))*
+
+### :bug: Bug Fixes
+- [`0e46cc7`](https://github.com/tobymao/sqlglot/commit/0e46cc7fa2d80ba4e92182b3fa5f1075a63f4754) - refactor DISTINCT ON elimination transformation *(PR [#4407](https://github.com/tobymao/sqlglot/pull/4407) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v25.31.0] - 2024-11-16
 ### :boom: BREAKING CHANGES
 - due to [`f4abfd5`](https://github.com/tobymao/sqlglot/commit/f4abfd59b8255cf8c39bf51028ee5f6ed704927f) - Support FORMAT_TIMESTAMP *(PR [#4383](https://github.com/tobymao/sqlglot/pull/4383) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -5289,3 +5297,4 @@ Changelog
 [v25.29.0]: https://github.com/tobymao/sqlglot/compare/v25.28.0...v25.29.0
 [v25.30.0]: https://github.com/tobymao/sqlglot/compare/v25.29.0...v25.30.0
 [v25.31.0]: https://github.com/tobymao/sqlglot/compare/v25.30.0...v25.31.0
+[v25.31.1]: https://github.com/tobymao/sqlglot/compare/v25.31.0...v25.31.1

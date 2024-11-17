@@ -205,7 +205,8 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
 
             if not isinstance(select, exp.Alias):
                 alias = find_new_name(taken_names, select.output_name or "_col")
-                select = select.replace(exp.alias_(select, alias))
+                quoted = select.this.args.get("quoted") if isinstance(select, exp.Column) else None
+                select = select.replace(exp.alias_(select, alias, quoted=quoted))
 
             taken_names.add(select.output_name)
             new_selects.append(select.args["alias"])

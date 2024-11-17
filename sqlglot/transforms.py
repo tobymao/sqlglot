@@ -200,16 +200,15 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         taken_names = {row_number_window_alias}
         for select in expression.selects[:-1]:
             if select.is_star:
-                new_selects = ["*"]
+                new_selects = [exp.Star()]
                 break
 
             if not isinstance(select, exp.Alias):
                 alias = find_new_name(taken_names, select.output_name or "_col")
                 select = select.replace(exp.alias_(select, alias))
 
-            output_name = select.output_name
-            taken_names.add(output_name)
-            new_selects.append(output_name)
+            taken_names.add(select.output_name)
+            new_selects.append(select.args["alias"])
 
         return (
             exp.select(*new_selects, copy=False)

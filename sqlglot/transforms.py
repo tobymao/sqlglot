@@ -179,26 +179,42 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
     if (
         isinstance(expression, exp.Select)
         and expression.args.get("distinct")
-        and expression.args["distinct"].args.get("on")
-        and isinstance(expression.args["distinct"].args["on"], exp.Tuple)
+        and isinstance(expression.args["distinct"].args.get("on"), exp.Tuple)
     ):
-        distinct_cols = expression.args["distinct"].pop().args["on"].expressions
-        row_number = find_new_name(expression.named_selects, "_row_number")
-        window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
-        order = expression.args.get("order")
+        row_number_window_alias = find_new_name(expression.named_selects, "_row_number")
 
+        distinct_cols = expression.args["distinct"].pop().args["on"].expressions
+        window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
+
+        order = expression.args.get("order")
         if order:
             window.set("order", order.pop())
         else:
             window.set("order", exp.Order(expressions=[c.copy() for c in distinct_cols]))
 
-        window = exp.alias_(window, row_number)
+        window = exp.alias_(window, row_number_window_alias)
         expression.select(window, copy=False)
 
+        # We add aliases to the projections so that we can safely reference them in the outer query
+        new_selects = []
+        taken_names = {row_number_window_alias}
+        for select in expression.selects[:-1]:
+            if select.is_star:
+                new_selects = ["*"]
+                break
+
+            if not isinstance(select, exp.Alias):
+                alias = find_new_name(taken_names, select.output_name or "_col")
+                select = select.replace(exp.alias_(select, alias))
+
+            output_name = select.output_name
+            taken_names.add(output_name)
+            new_selects.append(output_name)
+
         return (
-            exp.select("*", copy=False)
+            exp.select(*new_selects, copy=False)
             .from_(expression.subquery("_t", copy=False), copy=False)
-            .where(exp.column(row_number).eq(1), copy=False)
+            .where(exp.column(row_number_window_alias).eq(1), copy=False)
         )
 
     return expression

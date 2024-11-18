@@ -232,6 +232,7 @@ class Presto(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "START": TokenType.BEGIN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
+            "RESET": TokenType.COMMAND,
             "ROW": TokenType.STRUCT,
             "IPADDRESS": TokenType.IPADDRESS,
             "IPPREFIX": TokenType.IPPREFIX,

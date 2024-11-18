@@ -2609,7 +2609,14 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)
-        this = self._parse_table(schema=True)
+
+        format = self._parse_property() if self._match(TokenType.FORMAT, advance=False) else None
+
+        if self._match_set(self.STATEMENT_PARSERS, advance=False):
+            this = self._parse_statement()
+        else:
+            this = self._parse_table(schema=True)
+
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
         partition = self._parse_partition()
@@ -2620,6 +2627,7 @@ class Parser(metaclass=_Parser):
             kind=kind,
             expressions=expressions,
             partition=partition,
+            format=format,
         )
 
     def _parse_multitable_inserts(self, comments: t.Optional[t.List[str]]) -> exp.MultitableInserts:

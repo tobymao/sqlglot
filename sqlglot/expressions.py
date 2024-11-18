@@ -1476,6 +1476,7 @@ class Describe(Expression):
         "kind": False,
         "expressions": False,
         "partition": False,
+        "format": False,
     }
 
 

@@ -1480,6 +1480,16 @@ class Describe(Expression):
     }
 
 
+# https://duckdb.org/docs/sql/statements/attach.html#attach
+class Attach(Expression):
+    arg_types = {"this": True, "exists": False, "expressions": False}
+
+
+# https://duckdb.org/docs/sql/statements/attach.html#detach
+class Detach(Expression):
+    arg_types = {"this": True, "exists": False}
+
+
 # https://duckdb.org/docs/guides/meta/summarize.html
 class Summarize(Expression):
     arg_types = {"this": True, "table": False}
@@ -4661,6 +4671,10 @@ class Alter(Expression):
 
 class AddConstraint(Expression):
     arg_types = {"expressions": True}
+
+
+class AttachOption(Expression):
+    arg_types = {"this": True, "expression": False}
 
 
 class DropPartition(Expression):

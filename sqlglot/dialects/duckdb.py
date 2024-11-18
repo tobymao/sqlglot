@@ -309,13 +309,13 @@ class DuckDB(Dialect):
             "^@": TokenType.CARET_AT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
-            "ATTACH": TokenType.COMMAND,
+            "ATTACH": TokenType.ATTACH,
             "BINARY": TokenType.VARBINARY,
             "BITSTRING": TokenType.BIT,
             "BPCHAR": TokenType.TEXT,
             "CHAR": TokenType.TEXT,
             "CHARACTER VARYING": TokenType.TEXT,
-            "DETACH": TokenType.COMMAND,
+            "DETACH": TokenType.DETACH,
             "EXCLUDE": TokenType.EXCEPT,
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,
@@ -448,6 +448,12 @@ class DuckDB(Dialect):
             exp.DataType.Type.TEXT: lambda dtype: exp.DataType.build("TEXT"),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.ATTACH: lambda self: self._parse_attach_detach(),
+            TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        }
+
         def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
             # https://duckdb.org/docs/sql/samples.html
             sample = super()._parse_table_sample(as_modifier=as_modifier)
@@ -482,6 +488,29 @@ class DuckDB(Dialect):
             if len(aggregations) == 1:
                 return super()._pivot_column_names(aggregations)
             return pivot_column_names(aggregations, dialect="duckdb")
+
+        def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
+            def _parse_attach_option() -> exp.AttachOption:
+                return self.expression(
+                    exp.AttachOption,
+                    this=self._parse_var(any_token=True),
+                    expression=self._parse_field(any_token=True),
+                )
+
+            self._match(TokenType.DATABASE)
+            exists = self._parse_exists(not_=is_attach)
+            this = self._parse_alias(self._parse_primary_or_var(), explicit=True)
+
+            if self._match(TokenType.L_PAREN, advance=False):
+                expressions = self._parse_wrapped_csv(_parse_attach_option)
+            else:
+                expressions = None
+
+            return (
+                self.expression(exp.Attach, this=this, exists=exists, expressions=expressions)
+                if is_attach
+                else self.expression(exp.Detach, this=this, exists=exists)
+            )
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
@@ -992,3 +1021,23 @@ class DuckDB(Dialect):
             return self.func(
                 "REGEXP_EXTRACT", expression.this, expression.expression, group, params
             )
+
+        def attach_sql(self, expression: exp.Attach) -> str:
+            this = self.sql(expression, "this")
+            exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+            expressions = self.expressions(expression)
+            expressions = f" ({expressions})" if expressions else ""
+
+            return f"ATTACH{exists_sql} {this}{expressions}"
+
+        def detach_sql(self, expression: exp.Detach) -> str:
+            this = self.sql(expression, "this")
+            exists_sql = " IF EXISTS" if expression.args.get("exists") else ""
+
+            return f"DETACH{exists_sql} {this}"
+
+        def attachoption_sql(self, expression: exp.AttachOption) -> str:
+            this = self.sql(expression, "this")
+            value = self.sql(expression, "expression")
+            value = f" {value}" if value else ""
+            return f"{this}{value}"

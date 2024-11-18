@@ -4523,3 +4523,23 @@ class Generator(metaclass=_Generator):
             dim = exp.Literal.number(1)
 
         return self.func(self.ARRAY_SIZE_NAME, expression.this, dim)
+
+    def attach_sql(self, expression: exp.Attach) -> str:
+        this = self.sql(expression, "this")
+        exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+        expressions = self.expressions(expression)
+        expressions = f" ({expressions})" if expressions else ""
+
+        return f"ATTACH{exists_sql} {this}{expressions}"
+
+    def detach_sql(self, expression: exp.Detach) -> str:
+        this = self.sql(expression, "this")
+        exists_sql = " IF EXISTS" if expression.args.get("exists") else ""
+
+        return f"DETACH{exists_sql} {this}"
+
+    def attachoption_sql(self, expression: exp.AttachOption) -> str:
+        this = self.sql(expression, "this")
+        value = self.sql(expression, "expression")
+        value = f" {value}" if value else ""
+        return f"{this}{value}"

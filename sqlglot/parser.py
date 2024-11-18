@@ -450,6 +450,7 @@ class Parser(metaclass=_Parser):
     # Tokens that can represent identifiers
     ID_VAR_TOKENS = {
         TokenType.ALL,
+        TokenType.ATTACH,
         TokenType.VAR,
         TokenType.ANTI,
         TokenType.APPLY,
@@ -471,6 +472,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESC,
         TokenType.DESCRIBE,
+        TokenType.DETACH,
         TokenType.DICTIONARY,
         TokenType.DIV,
         TokenType.END,

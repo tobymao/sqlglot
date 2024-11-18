@@ -1193,7 +1193,10 @@ class Generator(metaclass=_Generator):
         style = f" {style}" if style else ""
         partition = self.sql(expression, "partition")
         partition = f" {partition}" if partition else ""
-        return f"DESCRIBE{style} {self.sql(expression, 'this')}{partition}"
+        format = self.sql(expression, "format")
+        format = f" {format}" if format else ""
+
+        return f"DESCRIBE{style}{format} {self.sql(expression, 'this')}{partition}"
 
     def heredoc_sql(self, expression: exp.Heredoc) -> str:
         tag = self.sql(expression, "tag")

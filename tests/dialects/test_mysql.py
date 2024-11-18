@@ -1319,3 +1319,6 @@ COMMENT='客户账户表'"""
         expression = self.parse_one("EXPLAIN ANALYZE SELECT * FROM t")
         self.assertIsInstance(expression, exp.Describe)
         self.assertEqual(expression.text("style"), "ANALYZE")
+
+        for format in ("JSON", "TRADITIONAL", "TREE"):
+            self.validate_identity(f"DESCRIBE FORMAT={format} UPDATE test SET test_col = 'abc'")

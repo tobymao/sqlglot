@@ -2250,3 +2250,13 @@ SINGLE = TRUE""",
         self.validate_identity(
             "GRANT ALL PRIVILEGES ON FUNCTION mydb.myschema.ADD5(number) TO ROLE analyst"
         )
+
+    def test_window_function_arg(self):
+        query = "SELECT * FROM TABLE(db.schema.FUNC(a) OVER ())"
+
+        ast = self.parse_one(query)
+        window = ast.find(exp.Window)
+
+        self.assertEqual(ast.sql("snowflake"), query)
+        self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
+        self.assertEqual(window.this.sql("snowflake"), "db.schema.FUNC(a)")

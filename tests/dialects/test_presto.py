@@ -722,7 +722,7 @@ class TestPresto(Validator):
             "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
             write={
                 "clickhouse": "SELECT argMin(a.id, a.timestamp) FROM a",
-                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp) FROM a",
+                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp, 3) FROM a",
                 "presto": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
                 "snowflake": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
                 "spark": "SELECT MIN_BY(a.id, a.timestamp) FROM a",

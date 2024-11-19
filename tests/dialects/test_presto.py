@@ -7,6 +7,12 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
+        self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
+        self.validate_identity("DESCRIBE INPUT x", check_command_warning=True)
+        self.validate_identity("DESCRIBE OUTPUT x", check_command_warning=True)
+        self.validate_identity(
+            "RESET SESSION hive.optimized_reader_enabled", check_command_warning=True
+        )
         self.validate_identity("SELECT * FROM x qualify", "SELECT * FROM x AS qualify")
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
@@ -722,7 +728,7 @@ class TestPresto(Validator):
             "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
             write={
                 "clickhouse": "SELECT argMin(a.id, a.timestamp) FROM a",
-                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp) FROM a",
+                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp, 3) FROM a",
                 "presto": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
                 "snowflake": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
                 "spark": "SELECT MIN_BY(a.id, a.timestamp) FROM a",

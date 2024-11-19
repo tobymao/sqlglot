@@ -230,6 +230,10 @@ class Presto(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "DEALLOCATE PREPARE": TokenType.COMMAND,
+            "DESCRIBE INPUT": TokenType.COMMAND,
+            "DESCRIBE OUTPUT": TokenType.COMMAND,
+            "RESET SESSION": TokenType.COMMAND,
             "START": TokenType.BEGIN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "ROW": TokenType.STRUCT,

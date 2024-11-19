@@ -452,6 +452,7 @@ class Parser(metaclass=_Parser):
     # Tokens that can represent identifiers
     ID_VAR_TOKENS = {
         TokenType.ALL,
+        TokenType.ATTACH,
         TokenType.VAR,
         TokenType.ANTI,
         TokenType.APPLY,
@@ -473,6 +474,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESC,
         TokenType.DESCRIBE,
+        TokenType.DETACH,
         TokenType.DICTIONARY,
         TokenType.DIV,
         TokenType.END,
@@ -2611,7 +2613,14 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)
-        this = self._parse_table(schema=True)
+
+        format = self._parse_property() if self._match(TokenType.FORMAT, advance=False) else None
+
+        if self._match_set(self.STATEMENT_PARSERS, advance=False):
+            this = self._parse_statement()
+        else:
+            this = self._parse_table(schema=True)
+
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
         partition = self._parse_partition()
@@ -2622,6 +2631,7 @@ class Parser(metaclass=_Parser):
             kind=kind,
             expressions=expressions,
             partition=partition,
+            format=format,
         )
 
     def _parse_multitable_inserts(self, comments: t.Optional[t.List[str]]) -> exp.MultitableInserts:
@@ -5111,9 +5121,8 @@ class Parser(metaclass=_Parser):
             else:
                 field = self._parse_field(any_token=True, anonymous_func=True)
 
-            if isinstance(field, exp.Func) and this:
-                # bigquery allows function calls like x.y.count(...)
-                # SAFE.SUBSTR(...)
+            if isinstance(field, (exp.Func, exp.Window)) and this:
+                # BQ & snowflake allow function calls like x.y.count(...), SAFE.SUBSTR(...) etc
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
                 this = exp.replace_tree(
                     this,
@@ -5137,6 +5146,11 @@ class Parser(metaclass=_Parser):
                     db=this.args.get("table"),
                     catalog=this.args.get("db"),
                 )
+            elif isinstance(field, exp.Window):
+                # Move the exp.Dot's to the window's function
+                window_func = self.expression(exp.Dot, this=this, expression=field.this)
+                field.set("this", window_func)
+                this = field
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
 

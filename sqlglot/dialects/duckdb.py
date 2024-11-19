@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
     approx_count_distinct_sql,
-    arg_max_or_min_no_count,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -310,12 +309,13 @@ class DuckDB(Dialect):
             "^@": TokenType.CARET_AT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
-            "ATTACH": TokenType.COMMAND,
+            "ATTACH": TokenType.ATTACH,
             "BINARY": TokenType.VARBINARY,
             "BITSTRING": TokenType.BIT,
             "BPCHAR": TokenType.TEXT,
             "CHAR": TokenType.TEXT,
             "CHARACTER VARYING": TokenType.TEXT,
+            "DETACH": TokenType.DETACH,
             "EXCLUDE": TokenType.EXCEPT,
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,
@@ -448,6 +448,12 @@ class DuckDB(Dialect):
             exp.DataType.Type.TEXT: lambda dtype: exp.DataType.build("TEXT"),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.ATTACH: lambda self: self._parse_attach_detach(),
+            TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        }
+
         def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
             # https://duckdb.org/docs/sql/samples.html
             sample = super()._parse_table_sample(as_modifier=as_modifier)
@@ -483,6 +489,29 @@ class DuckDB(Dialect):
                 return super()._pivot_column_names(aggregations)
             return pivot_column_names(aggregations, dialect="duckdb")
 
+        def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
+            def _parse_attach_option() -> exp.AttachOption:
+                return self.expression(
+                    exp.AttachOption,
+                    this=self._parse_var(any_token=True),
+                    expression=self._parse_field(any_token=True),
+                )
+
+            self._match(TokenType.DATABASE)
+            exists = self._parse_exists(not_=is_attach)
+            this = self._parse_alias(self._parse_primary_or_var(), explicit=True)
+
+            if self._match(TokenType.L_PAREN, advance=False):
+                expressions = self._parse_wrapped_csv(_parse_attach_option)
+            else:
+                expressions = None
+
+            return (
+                self.expression(exp.Attach, this=this, exists=exists, expressions=expressions)
+                if is_attach
+                else self.expression(exp.Detach, this=this, exists=exists)
+            )
+
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         NAMED_PLACEHOLDER_TOKEN = "$"
@@ -515,8 +544,6 @@ class DuckDB(Dialect):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
-            exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
-            exp.ArgMin: arg_max_or_min_no_count("ARG_MIN"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.BitwiseXor: rename_func("XOR"),

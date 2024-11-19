@@ -380,9 +380,6 @@ class TestDuckDB(Validator):
             "x ->> '$.family'",
         )
         self.validate_identity(
-            "ATTACH DATABASE ':memory:' AS new_database", check_command_warning=True
-        )
-        self.validate_identity(
             "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
         )
         self.validate_identity(
@@ -1391,3 +1388,20 @@ class TestDuckDB(Validator):
             else:
                 self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
                 self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+
+    def test_attach_detach(self):
+        # ATTACH
+        self.validate_identity("ATTACH 'file.db'")
+        self.validate_identity("ATTACH ':memory:' AS db_alias")
+        self.validate_identity("ATTACH IF NOT EXISTS 'file.db' AS db_alias")
+        self.validate_identity("ATTACH 'file.db' AS db_alias (READ_ONLY)")
+        self.validate_identity("ATTACH 'file.db' (READ_ONLY FALSE, TYPE sqlite)")
+        self.validate_identity("ATTACH 'file.db' (TYPE POSTGRES, SCHEMA 'public')")
+
+        self.validate_identity("ATTACH DATABASE 'file.db'", "ATTACH 'file.db'")
+
+        # DETACH
+        self.validate_identity("DETACH new_database")
+        self.validate_identity("DETACH IF EXISTS file")
+
+        self.validate_identity("DETACH DATABASE db", "DETACH db")

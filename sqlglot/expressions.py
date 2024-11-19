@@ -1476,7 +1476,18 @@ class Describe(Expression):
         "kind": False,
         "expressions": False,
         "partition": False,
+        "format": False,
     }
+
+
+# https://duckdb.org/docs/sql/statements/attach.html#attach
+class Attach(Expression):
+    arg_types = {"this": True, "exists": False, "expressions": False}
+
+
+# https://duckdb.org/docs/sql/statements/attach.html#detach
+class Detach(Expression):
+    arg_types = {"this": True, "exists": False}
 
 
 # https://duckdb.org/docs/guides/meta/summarize.html
@@ -4681,6 +4692,10 @@ class AddConstraint(Expression):
     arg_types = {"expressions": True}
 
 
+class AttachOption(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
 class DropPartition(Expression):
     arg_types = {"expressions": True, "exists": False}
 
@@ -6348,7 +6363,7 @@ class Round(Func):
 
 
 class RowNumber(Func):
-    arg_types: t.Dict[str, t.Any] = {}
+    arg_types = {"this": False}
 
 
 class SafeDivide(Func):

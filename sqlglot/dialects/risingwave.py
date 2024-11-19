@@ -16,19 +16,11 @@ class RisingWave(Postgres):
         }
 
     class Parser(Postgres.Parser):
-        DB_CREATABLES = {
-            *Postgres.Parser.DB_CREATABLES,
-            TokenType.SINK,
-            TokenType.SOURCE,
-        }
-        CREATABLES = {
-            *Postgres.Parser.CREATABLES,
-            *DB_CREATABLES,
-        }
-
-        ID_VAR_TOKENS = {
-            *Postgres.Parser.ID_VAR_TOKENS,
-            *CREATABLES,
+        PROPERTY_PARSERS = {
+            **Postgres.Parser.PROPERTY_PARSERS,
+            "ENCODE": lambda self: self._parse_encode_property(is_key=False),
+            "KEY": lambda self: self._parse_key_encode_property(),
+            "INCLUDE": lambda self: self._parse_include_property(),
         }
 
         def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
@@ -36,7 +28,8 @@ class RisingWave(Postgres):
             # Do nothing here to avoid WITH keywords conflict in CREATE SINK statement.
             return None
 
-        def _parse_include(self) -> t.Optional[exp.Expression]:
+        # @FIXME: this method look too complicated.
+        def _parse_include_property(self) -> t.Optional[exp.Expression]:
             column_type = self._parse_var_or_string()
             column_alias = None
             inner_field = None
@@ -64,31 +57,35 @@ class RisingWave(Postgres):
 
             return include_property
 
+        def _parse_key_encode_property(self) -> t.Optional[exp.Expression]:
+            index = self._index - 1
+            if not self._match_texts("ENCODE"):
+                self._retreat(index)
+                return None
+            return self._parse_encode_property(is_key=True)
+
         def _parse_encode_property(self, is_key: bool) -> t.Optional[exp.Expression]:
             encode_var = self._parse_var_or_string()
-            encode_property: t.Optional[exp.Expression] = self.expression(
+            if not encode_var:
+                return None
+            encode_property: exp.Expression = self.expression(
                 exp.EncodeProperty, this=encode_var, is_key=is_key
             )
-            # encode_property: t.Optional[exp.Expression] = self._parse_property_assignment(exp.EncodeProperty)
-            expressions = None
-            if not encode_property:
-                return None
             if self._match(TokenType.L_PAREN, advance=False):
                 expressions = exp.Properties(expressions=self._parse_wrapped_properties())
-            if expressions:
                 encode_property.set("expressions", expressions)
             return encode_property
 
         def _parse_property(self) -> t.Optional[exp.Expression]:
-            # Parse risingwave specific properties.
-            if self._match_texts("ENCODE"):
-                return self._parse_encode_property(is_key=False)
+            # # Parse risingwave specific properties.
+            # if self._match_texts("ENCODE"):
+            #     return self._parse_encode_property(is_key=False)
 
-            if self._match_text_seq("KEY", "ENCODE"):
-                return self._parse_encode_property(is_key=True)
+            # if self._match_text_seq("KEY", "ENCODE"):
+            #     return self._parse_encode_property(is_key=True)
 
-            if self._match_texts("INCLUDE"):
-                return self._parse_include()
+            # if self._match_texts("INCLUDE"):
+            #     return self._parse_include_property()
 
             return super()._parse_property()
 
@@ -340,7 +337,7 @@ class RisingWave(Postgres):
 
             return property_sql_str
 
-        def _watermark_sql(self, expression: exp.Expression) -> str:
+        def watermark_sql(self, expression: exp.Expression) -> str:
             column = expression.args.get("column")
             expression_str = expression.args.get("expression")
             return f"WATERMARK FOR {column} AS {expression_str}"
@@ -488,14 +485,14 @@ class RisingWave(Postgres):
                 expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
             return self.prepend_ctes(expression, expression_sql)
 
-        def sql(
-            self,
-            expression: t.Optional[str | exp.Expression],
-            key: t.Optional[str] = None,
-            comment: bool = True,
-        ) -> str:
-            if isinstance(expression, exp.Watermark):
-                sql = self._watermark_sql(expression)
-                return self.maybe_comment(sql, expression) if self.comments and comment else sql
+        # def sql(
+        #     self,
+        #     expression: t.Optional[str | exp.Expression],
+        #     key: t.Optional[str] = None,
+        #     comment: bool = True,
+        # ) -> str:
+        #     if isinstance(expression, exp.Watermark):
+        #         sql = self.watermark_sql(expression)
+        #         return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
-            return super().sql(expression, key, comment)
+        #     return super().sql(expression, key, comment)

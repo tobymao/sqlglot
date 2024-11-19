@@ -429,6 +429,8 @@ class Parser(metaclass=_Parser):
         TokenType.VIEW,
         TokenType.WAREHOUSE,
         TokenType.STREAMLIT,
+        TokenType.SINK,
+        TokenType.SOURCE,
     }
 
     CREATABLES = {

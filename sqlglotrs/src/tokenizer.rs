@@ -395,6 +395,10 @@ impl<'a> TokenizerState<'a> {
                 .push(self.text()[comment_start_size..].to_string());
         }
 
+        if comment_start == "/*+" {
+            self.add(self.token_types.hint, None)?;
+        }
+
         // Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.
         // Multiple consecutive comments are preserved by appending them to the current comments list.
         if Some(comment_start_line) == self.previous_token_line {

@@ -756,6 +756,7 @@ class Parser(metaclass=_Parser):
         exp.From: lambda self: self._parse_from(joins=True),
         exp.Group: lambda self: self._parse_group(),
         exp.Having: lambda self: self._parse_having(),
+        exp.Hint: lambda self: self._parse_hint_body(),
         exp.Identifier: lambda self: self._parse_id_var(),
         exp.Join: lambda self: self._parse_join(),
         exp.Lambda: lambda self: self._parse_lambda(),
@@ -2973,10 +2974,11 @@ class Parser(metaclass=_Parser):
         # duckdb supports leading with FROM x
         from_ = self._parse_from() if self._match(TokenType.FROM, advance=False) else None
 
+        hint = self._parse_hint()
         if self._match(TokenType.SELECT):
             comments = self._prev_comments
 
-            hint = self._parse_hint()
+            hint = hint or self._parse_hint()
 
             if self._next and not self._next.token_type == TokenType.DOT:
                 all_ = self._match(TokenType.ALL)
@@ -3226,21 +3228,42 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_hint(self) -> t.Optional[exp.Hint]:
-        if self._match(TokenType.HINT):
-            hints = []
+    def _parse_hint_fallback_to_string(self) -> t.Optional[exp.Hint]:
+        start = self._curr
+        while self._curr:
+            self._advance()
+
+        end = self._tokens[self._index - 1]
+        return exp.Hint(expressions=[self._find_sql(start, end)])
+
+    def _parse_hint_function_call(self) -> t.Optional[exp.Expression]:
+        return self._parse_function_call()
+
+    def _parse_hint_body(self) -> t.Optional[exp.Hint]:
+        start_index = self._index
+        should_fallback_to_string = False
+
+        hints = []
+        try:
             for hint in iter(
                 lambda: self._parse_csv(
-                    lambda: self._parse_function() or self._parse_var(upper=True)
+                    lambda: self._parse_hint_function_call() or self._parse_var(upper=True),
                 ),
                 [],
             ):
                 hints.extend(hint)
+        except ParseError:
+            should_fallback_to_string = True
 
-            if not self._match_pair(TokenType.STAR, TokenType.SLASH):
-                self.raise_error("Expected */ after HINT")
+        if should_fallback_to_string or self._curr:
+            self._retreat(start_index)
+            return self._parse_hint_fallback_to_string()
 
-            return self.expression(exp.Hint, expressions=hints)
+        return self.expression(exp.Hint, expressions=hints)
+
+    def _parse_hint(self) -> t.Optional[exp.Hint]:
+        if self._match(TokenType.HINT) and self._prev.comments:
+            return exp.maybe_parse(self._prev.comments[0], into=exp.Hint, dialect=self.dialect)
 
         return None
 

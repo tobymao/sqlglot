@@ -19,6 +19,7 @@ pub struct TokenTypeSettings {
     pub string: TokenType,
     pub var: TokenType,
     pub heredoc_string_alternative: TokenType,
+    pub hint: TokenType,
 }
 
 #[pymethods]
@@ -38,6 +39,7 @@ impl TokenTypeSettings {
         string: TokenType,
         var: TokenType,
         heredoc_string_alternative: TokenType,
+        hint: TokenType,
     ) -> Self {
         TokenTypeSettings {
             bit_string,
@@ -53,6 +55,7 @@ impl TokenTypeSettings {
             string,
             var,
             heredoc_string_alternative,
+            hint,
         }
     }
 }

@@ -561,6 +561,7 @@ class _Tokenizer(type):
                 string=_TOKEN_TYPE_TO_INDEX[TokenType.STRING],
                 var=_TOKEN_TYPE_TO_INDEX[TokenType.VAR],
                 heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[klass.HEREDOC_STRING_ALTERNATIVE],
+                hint=_TOKEN_TYPE_TO_INDEX[TokenType.HINT],
             )
             klass._RS_TOKENIZER = RsTokenizer(settings, token_types)
         else:
@@ -954,7 +955,11 @@ class Tokenizer(metaclass=_Tokenizer):
     # Handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
 
-    COMMENTS = ["--", ("/*", "*/")]
+    COMMENTS = [
+        "--",
+        ("/*", "*/"),
+        ("/*+", "*/"),
+    ]
 
     __slots__ = (
         "sql",
@@ -1229,6 +1234,9 @@ class Tokenizer(metaclass=_Tokenizer):
             while not self._end and self.WHITE_SPACE.get(self._peek) is not TokenType.BREAK:
                 self._advance(alnum=True)
             self._comments.append(self._text[comment_start_size:])
+
+        if comment_start == "/*+":
+            self._add(TokenType.HINT)
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.
         # Multiple consecutive comments are preserved by appending them to the current comments list.

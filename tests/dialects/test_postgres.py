@@ -128,10 +128,6 @@ class TestPostgres(Validator):
             "ORDER BY 2, 3"
         )
         self.validate_identity(
-            "/*+ some comment*/ SELECT b.foo, b.bar FROM baz AS b",
-            "/* + some comment */ SELECT b.foo, b.bar FROM baz AS b",
-        )
-        self.validate_identity(
             "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
             "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
         )
@@ -816,6 +812,13 @@ class TestPostgres(Validator):
                 "spark2": "WITH t AS (SELECT ARRAY(1, 2, 3) AS col) SELECT * FROM t WHERE EXISTS(col, x -> 1 <= x) AND EXISTS(col, x -> 2 = x)",
                 "spark": "WITH t AS (SELECT ARRAY(1, 2, 3) AS col) SELECT * FROM t WHERE EXISTS(col, x -> 1 <= x) AND EXISTS(col, x -> 2 = x)",
                 "databricks": "WITH t AS (SELECT ARRAY(1, 2, 3) AS col) SELECT * FROM t WHERE EXISTS(col, x -> 1 <= x) AND EXISTS(col, x -> 2 = x)",
+            },
+        )
+
+        self.validate_all(
+            "/*+ some comment*/ SELECT b.foo, b.bar FROM baz AS b",
+            write={
+                "postgres": UnsupportedError,
             },
         )
 

@@ -534,6 +534,7 @@ class BigQuery(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
+            "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -764,7 +765,7 @@ class BigQuery(Dialect):
 
             return unnest
 
-        def _parse_make_interval(self):
+        def _parse_make_interval(self) -> exp.MakeInterval:
             expr = exp.MakeInterval()
 
             for arg_key in expr.arg_types:
@@ -781,6 +782,23 @@ class BigQuery(Dialect):
                 expr.set(arg_key, value)
 
                 self._match(TokenType.COMMA)
+
+            return expr
+
+        def _parse_features_at_time(self) -> exp.FeaturesAtTime:
+            expr = self.expression(
+                exp.FeaturesAtTime,
+                this=(self._match(TokenType.TABLE) and self._parse_table())
+                or self._parse_select(nested=True),
+            )
+
+            while self._match(TokenType.COMMA):
+                arg = self._parse_lambda()
+
+                # Get the LHS of the Kwarg and set the arg to that value, e.g
+                # "num_rows => 1" sets the expr's `num_rows` arg
+                if arg:
+                    expr.set(arg.this.name, arg)
 
             return expr
 

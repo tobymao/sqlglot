@@ -568,7 +568,6 @@ class _Tokenizer(type):
                 var=_TOKEN_TYPE_TO_INDEX[TokenType.VAR],
                 heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[klass.HEREDOC_STRING_ALTERNATIVE],
                 hint=_TOKEN_TYPE_TO_INDEX[TokenType.HINT],
-                select=_TOKEN_TYPE_TO_INDEX[TokenType.SELECT],
             )
             klass._RS_TOKENIZER = RsTokenizer(settings, token_types)
         else:
@@ -966,10 +965,7 @@ class Tokenizer(metaclass=_Tokenizer):
     # Handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
 
-    COMMENTS = [
-        "--",
-        ("/*", "*/"),
-    ]
+    COMMENTS = ["--", ("/*", "*/")]
 
     __slots__ = (
         "sql",

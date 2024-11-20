@@ -395,7 +395,9 @@ impl<'a> TokenizerState<'a> {
                 .push(self.text()[comment_start_size..].to_string());
         }
 
-        if comment_start == self.settings.hint_start && self.tokens.last().is_some() && self.settings.tokens_preceding_hint.contains(&self.tokens.last().unwrap().token_type) {
+        if comment_start == self.settings.hint_start
+            && self.tokens.last().is_some()
+            && self.settings.tokens_preceding_hint.contains(&self.tokens.last().unwrap().token_type) {
             self.add(self.token_types.hint, None)?;
         }
 

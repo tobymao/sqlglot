@@ -138,7 +138,7 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
             and b.type
             and b.type.this in exp.DataType.TEXT_TYPES
         ):
-            _replace_cast(b, exp.DataType.Type.DATETIME)
+            _replace_cast(b, a.type)
 
 
 def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:
@@ -168,7 +168,7 @@ def _coerce_datediff_args(node: exp.DateDiff) -> None:
             e.replace(exp.cast(e.copy(), to=exp.DataType.Type.DATETIME))
 
 
-def _replace_cast(node: exp.Expression, to: exp.DataType.Type) -> None:
+def _replace_cast(node: exp.Expression, to: exp.DATA_TYPE) -> None:
     node.replace(exp.cast(node.copy(), to=to))
 
 

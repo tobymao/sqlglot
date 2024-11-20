@@ -287,6 +287,17 @@ class TestOracle(Validator):
                 "clickhouse": "TRIM(BOTH 'h' FROM 'Hello World')",
             },
         )
+        self.validate_identity(
+            "SELECT /*+ ORDERED */* FROM tbl", "SELECT /*+ ORDERED */ * FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT /* test */ /*+ ORDERED */* FROM tbl",
+            "/* test */ SELECT /*+ ORDERED */ * FROM tbl",
+        )
+        self.validate_identity(
+            "SELECT /*+ ORDERED */*/* test */ FROM tbl",
+            "SELECT /*+ ORDERED */ * /* test */ FROM tbl",
+        )
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")

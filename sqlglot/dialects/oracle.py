@@ -15,7 +15,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.parser import OPTIONS_TYPE, build_coalesce
 from sqlglot.tokens import TokenType
-from sqlglot.errors import ParseError
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -207,35 +206,6 @@ class Oracle(Dialect):
                 **kwargs,
             )
 
-        def _parse_hint(self) -> t.Optional[exp.Hint]:
-            start_index = self._index
-            should_fallback_to_string = False
-
-            if not self._match(TokenType.HINT):
-                return None
-
-            hints = []
-
-            try:
-                for hint in iter(
-                    lambda: self._parse_csv(
-                        lambda: self._parse_hint_function_call() or self._parse_var(upper=True),
-                    ),
-                    [],
-                ):
-                    hints.extend(hint)
-            except ParseError:
-                should_fallback_to_string = True
-
-            if not self._match_pair(TokenType.STAR, TokenType.SLASH):
-                should_fallback_to_string = True
-
-            if should_fallback_to_string:
-                self._retreat(start_index)
-                return self._parse_hint_fallback_to_string()
-
-            return self.expression(exp.Hint, expressions=hints)
-
         def _parse_hint_function_call(self) -> t.Optional[exp.Expression]:
             if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
                 return None
@@ -257,20 +227,6 @@ class Oracle(Dialect):
                 result = self._parse_var()
 
             return args
-
-        def _parse_hint_fallback_to_string(self) -> t.Optional[exp.Hint]:
-            if self._match(TokenType.HINT):
-                start = self._curr
-                while self._curr and not self._match_pair(TokenType.STAR, TokenType.SLASH):
-                    self._advance()
-
-                if not self._curr:
-                    self.raise_error("Expected */ after HINT")
-
-                end = self._tokens[self._index - 3]
-                return exp.Hint(expressions=[self._find_sql(start, end)])
-
-            return None
 
         def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
             kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)

@@ -1789,10 +1789,6 @@ class ColumnConstraintKind(Expression):
     pass
 
 
-class Watermark(Expression):
-    arg_types = {"column": True, "expression": True}
-
-
 class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
@@ -1936,6 +1932,11 @@ class UniqueColumnConstraint(ColumnConstraintKind):
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
     arg_types: t.Dict[str, t.Any] = {}
+
+
+# https://docs.risingwave.com/processing/watermarks#syntax
+class WatermarkColumnConstraint(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class PathColumnConstraint(ColumnConstraintKind):
@@ -3029,16 +3030,11 @@ class WithProcedureOptions(Property):
 
 
 class EncodeProperty(Property):
-    arg_types = {"this": True, "is_key": True, "expressions": False}
+    arg_types = {"this": True, "properties": False, "key": False}
 
 
 class IncludeProperty(Property):
-    arg_types = {
-        "column_type": True,
-        "inner_field": False,
-        "header_inner_expect_type": False,
-        "column_alias": False,
-    }
+    arg_types = {"this": True, "alias": False, "column_def": False}
 
 
 class Properties(Expression):

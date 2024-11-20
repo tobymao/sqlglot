@@ -395,7 +395,7 @@ impl<'a> TokenizerState<'a> {
                 .push(self.text()[comment_start_size..].to_string());
         }
 
-        if comment_start == "/*+" {
+        if comment_start == self.settings.hint_start {
             self.add(self.token_types.hint, None)?;
         }
 

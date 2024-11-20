@@ -3262,8 +3262,8 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Hint, expressions=hints)
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:
-        if self._match(TokenType.HINT) and self._prev.comments:
-            return exp.maybe_parse(self._prev.comments[0], into=exp.Hint, dialect=self.dialect)
+        if self._match(TokenType.HINT) and self._prev_comments:
+            return exp.maybe_parse(self._prev_comments[0], into=exp.Hint, dialect=self.dialect)
 
         return None
 

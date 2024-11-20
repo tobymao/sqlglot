@@ -546,6 +546,7 @@ class _Tokenizer(type):
                 heredoc_tag_is_identifier=klass.HEREDOC_TAG_IS_IDENTIFIER,
                 string_escapes_allowed_in_raw_strings=klass.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
                 nested_comments=klass.NESTED_COMMENTS,
+                hint_start=klass.HINT_START,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],
@@ -632,6 +633,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     NESTED_COMMENTS = True
 
+    HINT_START = "/*+"
+
     # Autofilled
     _COMMENTS: t.Dict[str, str] = {}
     _FORMAT_STRINGS: t.Dict[str, t.Tuple[str, TokenType]] = {}
@@ -647,7 +650,7 @@ class Tokenizer(metaclass=_Tokenizer):
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
         **{f"{prefix}}}}}": TokenType.BLOCK_END for prefix in ("+", "-")},
-        "/*+": TokenType.HINT,
+        HINT_START: TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "||": TokenType.DPIPE,
@@ -1235,7 +1238,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance(alnum=True)
             self._comments.append(self._text[comment_start_size:])
 
-        if comment_start == "/*+":
+        if comment_start == self.HINT_START:
             self._add(TokenType.HINT)
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.

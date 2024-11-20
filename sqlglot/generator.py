@@ -496,6 +496,8 @@ class Generator(metaclass=_Generator):
     PARAMETER_TOKEN = "@"
     NAMED_PLACEHOLDER_TOKEN = ":"
 
+    EXPRESSION_PRECEDES_PROPERTIES_CREATABLES: t.Set[str] = set()
+
     PROPERTIES_LOCATION = {
         exp.AllowedValuesProperty: exp.Properties.Location.POST_SCHEMA,
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
@@ -520,6 +522,7 @@ class Generator(metaclass=_Generator):
         exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.EmptyProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.EncodeProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ExecuteAsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ExternalProperty: exp.Properties.Location.POST_CREATE,
@@ -530,6 +533,7 @@ class Generator(metaclass=_Generator):
         exp.HeapProperty: exp.Properties.Location.POST_WITH,
         exp.InheritsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
+        exp.IncludeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.IsolatedLoadingProperty: exp.Properties.Location.POST_NAME,
         exp.JournalProperty: exp.Properties.Location.POST_NAME,
@@ -1154,7 +1158,12 @@ class Generator(metaclass=_Generator):
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
 
-        expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
+        if kind in self.EXPRESSION_PRECEDES_PROPERTIES_CREATABLES:
+            properties_expression = f"{expression_sql}{properties_sql}"
+        else:
+            properties_expression = f"{properties_sql}{expression_sql}"
+
+        expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_expression}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
         return self.prepend_ctes(expression, expression_sql)
 
     def sequenceproperties_sql(self, expression: exp.SequenceProperties) -> str:
@@ -4556,3 +4565,32 @@ class Generator(metaclass=_Generator):
             expression.args.get("num_rows"),
             expression.args.get("ignore_feature_nulls"),
         )
+
+    def watermarkcolumnconstraint_sql(self, expression: exp.WatermarkColumnConstraint) -> str:
+        return (
+            f"WATERMARK FOR {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
+        )
+
+    def encodeproperty_sql(self, expression: exp.EncodeProperty) -> str:
+        encode = "KEY ENCODE" if expression.args.get("key") else "ENCODE"
+        encode = f"{encode} {self.sql(expression, 'this')}"
+
+        properties = expression.args.get("properties")
+        if properties:
+            encode = f"{encode} {self.properties(properties)}"
+
+        return encode
+
+    def includeproperty_sql(self, expression: exp.IncludeProperty) -> str:
+        this = self.sql(expression, "this")
+        include = f"INCLUDE {this}"
+
+        column_def = self.sql(expression, "column_def")
+        if column_def:
+            include = f"{include} {column_def}"
+
+        alias = self.sql(expression, "alias")
+        if alias:
+            include = f"{include} AS {alias}"
+
+        return include

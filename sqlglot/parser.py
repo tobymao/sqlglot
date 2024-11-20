@@ -1057,6 +1057,11 @@ class Parser(metaclass=_Parser):
         "TTL": lambda self: self.expression(exp.MergeTreeTTL, expressions=[self._parse_bitwise()]),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
+        "WATERMARK": lambda self: self.expression(
+            exp.WatermarkColumnConstraint,
+            this=self._match(TokenType.FOR) and self._parse_column(),
+            expression=self._match(TokenType.ALIAS) and self._parse_disjunction(),
+        ),
         "WITH": lambda self: self.expression(
             exp.Properties, expressions=self._parse_wrapped_properties()
         ),
@@ -1091,6 +1096,7 @@ class Parser(metaclass=_Parser):
         "PERIOD",
         "PRIMARY KEY",
         "UNIQUE",
+        "WATERMARK",
     }
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -1359,6 +1365,9 @@ class Parser(metaclass=_Parser):
 
     # Whether a PARTITION clause can follow a table reference
     SUPPORTS_PARTITION_SELECTION = False
+
+    # Whether the `name AS expr` schema/column constraint requires parentheses around `expr`
+    WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
 
     __slots__ = (
         "error_level",
@@ -1913,6 +1922,8 @@ class Parser(metaclass=_Parser):
             elif create_token.token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
+            elif create_token.token_type in (TokenType.SINK, TokenType.SOURCE):
+                extend_props(self._parse_properties())
 
             shallow = self._match_text_seq("SHALLOW")
 
@@ -5477,12 +5488,19 @@ class Parser(metaclass=_Parser):
                 not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
             constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
-        elif kind and self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False):
-            self._match(TokenType.ALIAS)
+        elif (
+            kind
+            and self._match(TokenType.ALIAS, advance=False)
+            and (
+                not self.WRAPPED_TRANSFORM_COLUMN_CONSTRAINT
+                or (self._next and self._next.token_type == TokenType.L_PAREN)
+            )
+        ):
+            self._advance()
             constraints.append(
                 self.expression(
                     exp.ColumnConstraint,
-                    kind=exp.TransformColumnConstraint(this=self._parse_field()),
+                    kind=exp.TransformColumnConstraint(this=self._parse_disjunction()),
                 )
             )
 

@@ -406,6 +406,8 @@ class TokenType(AutoName):
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
+    SINK = auto()
+    SOURCE = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)

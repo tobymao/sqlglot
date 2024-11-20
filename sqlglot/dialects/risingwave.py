@@ -36,18 +36,15 @@ class RisingWave(Postgres):
             header_inner_expect_type = None
             if not column_type:
                 return None
-            if not self._match(TokenType.ALIAS, advance=False) and not self._match_texts(
-                "INCLUDE", advance=False
-            ):
-                inner_field = self._parse_var_or_string()
-                if not self._match(TokenType.ALIAS, advance=False) and not self._match_texts(
-                    "INCLUDE", advance=False
-                ):
+            inner_field = self._parse_string() or self._parse_var()
+            if inner_field:
+                if self._match_set(self.TYPE_TOKENS, advance=False):
                     header_inner_expect_type = self._parse_var_or_string()
-
+                    
+            include_property = self.expression(exp.IncludeProperty, column_type=column_type)
+            
             if self._match(TokenType.ALIAS):
                 column_alias = self._parse_var_or_string()
-            include_property = self.expression(exp.IncludeProperty, column_type=column_type)
             if column_alias:
                 include_property.set("column_alias", column_alias)
             if inner_field:
@@ -75,19 +72,6 @@ class RisingWave(Postgres):
                 expressions = exp.Properties(expressions=self._parse_wrapped_properties())
                 encode_property.set("expressions", expressions)
             return encode_property
-
-        def _parse_property(self) -> t.Optional[exp.Expression]:
-            # # Parse risingwave specific properties.
-            # if self._match_texts("ENCODE"):
-            #     return self._parse_encode_property(is_key=False)
-
-            # if self._match_text_seq("KEY", "ENCODE"):
-            #     return self._parse_encode_property(is_key=True)
-
-            # if self._match_texts("INCLUDE"):
-            #     return self._parse_include_property()
-
-            return super()._parse_property()
 
         # @FIXME: refactor this method.
         def _parse_create(self) -> exp.Create | exp.Command:

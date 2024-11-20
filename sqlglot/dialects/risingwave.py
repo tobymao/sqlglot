@@ -40,9 +40,9 @@ class RisingWave(Postgres):
             if inner_field:
                 if self._match_set(self.TYPE_TOKENS, advance=False):
                     header_inner_expect_type = self._parse_var_or_string()
-                    
+
             include_property = self.expression(exp.IncludeProperty, column_type=column_type)
-            
+
             if self._match(TokenType.ALIAS):
                 column_alias = self._parse_var_or_string()
             if column_alias:
@@ -468,15 +468,3 @@ class RisingWave(Postgres):
             else:
                 expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
             return self.prepend_ctes(expression, expression_sql)
-
-        # def sql(
-        #     self,
-        #     expression: t.Optional[str | exp.Expression],
-        #     key: t.Optional[str] = None,
-        #     comment: bool = True,
-        # ) -> str:
-        #     if isinstance(expression, exp.Watermark):
-        #         sql = self.watermark_sql(expression)
-        #         return self.maybe_comment(sql, expression) if self.comments and comment else sql
-
-        #     return super().sql(expression, key, comment)

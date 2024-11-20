@@ -936,7 +936,7 @@ class Parser(metaclass=_Parser):
         "INPUT": lambda self: self.expression(exp.InputModelProperty, this=self._parse_schema()),
         "JOURNAL": lambda self, **kwargs: self._parse_journal(**kwargs),
         "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
-        "LAYOUT": lambda self: self._parse_dict_property(this="LAYOUT"),
+        "LAYOUT": lambda self: self._parse_dict_property(this="LAYOUT", has_kind=True),
         "LIFETIME": lambda self: self._parse_dict_range(this="LIFETIME"),
         "LIKE": lambda self: self._parse_create_like(),
         "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
@@ -973,7 +973,7 @@ class Parser(metaclass=_Parser):
         "SETTINGS": lambda self: self._parse_settings_property(),
         "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
         "SORTKEY": lambda self: self._parse_sortkey(),
-        "SOURCE": lambda self: self._parse_dict_property(this="SOURCE"),
+        "SOURCE": lambda self: self._parse_dict_property(this="SOURCE", has_kind=True),
         "STABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
@@ -7108,21 +7108,39 @@ class Parser(metaclass=_Parser):
         self._warn_unsupported()
         return exp.Command(this=text[:size], expression=text[size:])
 
-    def _parse_dict_property(self, this: str) -> exp.DictProperty:
+    def _parse_dict_property(
+        self,
+        this: str,
+        has_kind: bool,
+        separator: t.Optional[t.Tuple[TokenType, str]] = None,
+        delimiter: t.Optional[t.Tuple[TokenType, str]] = None,
+    ) -> exp.DictProperty:
+        """
+        Parses a dictionary property, which is a key-value pair enclosed in parentheses.
+
+        Args:
+            this: The name of the property.
+            has_kind: Whether the property is labeled, e.g. is of the form `PROPERTY (KIND (k1=v1, k2=v2, ...))`.
+            separator: The separator token between key-value pairs, and its string representation.
+            delimiter: The delimiter token between key and value, and its string representation.
+        """
+        separator_token = None
+        separator_str = None
+        if separator:
+            separator_token, separator_str = separator
+
         settings = []
 
         self._match_l_paren()
-        kind = self._parse_id_var()
 
-        if self._match(TokenType.L_PAREN):
-            while True:
-                key = self._parse_id_var()
-                value = self._parse_primary()
-
-                if not key and value is None:
-                    break
-                settings.append(self.expression(exp.DictSubProperty, this=key, value=value))
-            self._match(TokenType.R_PAREN)
+        if has_kind:
+            kind = self._parse_id_var()
+            if self._match(TokenType.L_PAREN):
+                settings = self._parse_key_value_list(this, separator_token, delimiter)
+                self._match(TokenType.R_PAREN)
+        else:
+            kind = None
+            settings = self._parse_key_value_list(this, separator_token, delimiter)
 
         self._match_r_paren()
 
@@ -7131,7 +7149,38 @@ class Parser(metaclass=_Parser):
             this=this,
             kind=kind.this if kind else None,
             settings=settings,
+            separator=separator_str,
         )
+
+    def _parse_key_value_list(
+        self,
+        this: str,
+        separator_token: t.Optional[TokenType],
+        delimiter: t.Optional[t.Tuple[TokenType, str]],
+    ) -> t.List[exp.DictSubProperty]:
+        delimiter_token = None
+        delimiter_str = None
+        if delimiter:
+            delimiter_token, delimiter_str = delimiter
+
+        lst = []
+
+        while True:
+            key = self._parse_id_var()
+            if delimiter_token:
+                self._match(delimiter_token)
+            value = self._parse_primary()
+
+            if not key and value is None:
+                break
+            lst.append(
+                self.expression(exp.DictSubProperty, this=key, value=value, delimiter=delimiter_str)
+            )
+
+            if separator_token:
+                self._match(separator_token)
+
+        return lst
 
     def _parse_dict_range(self, this: str) -> exp.DictRange:
         self._match_l_paren()

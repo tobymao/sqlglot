@@ -4543,3 +4543,16 @@ class Generator(metaclass=_Generator):
         value = self.sql(expression, "expression")
         value = f" {value}" if value else ""
         return f"{this}{value}"
+
+    def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
+        this_sql = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Table):
+            this_sql = f"TABLE {this_sql}"
+
+        return self.func(
+            "FEATURES_AT_TIME",
+            this_sql,
+            expression.args.get("time"),
+            expression.args.get("num_rows"),
+            expression.args.get("ignore_feature_nulls"),
+        )

@@ -5772,6 +5772,10 @@ class FromBase64(Func):
     pass
 
 
+class FeaturesAtTime(Func):
+    arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
+
+
 class ToBase64(Func):
     pass
 

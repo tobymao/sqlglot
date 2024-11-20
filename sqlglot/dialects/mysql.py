@@ -178,12 +178,7 @@ class MySQL(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
-        COMMENTS = [
-            "--",
-            "#",
-            ("/*", "*/"),
-            ("/*+", "*/"),
-        ]
+        COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["'", '"', "\\"]
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]

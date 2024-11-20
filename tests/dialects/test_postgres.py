@@ -815,11 +815,9 @@ class TestPostgres(Validator):
             },
         )
 
-        self.validate_all(
+        self.validate_identity(
             "/*+ some comment*/ SELECT b.foo, b.bar FROM baz AS b",
-            write={
-                "postgres": UnsupportedError,
-            },
+            "/* + some comment */ SELECT b.foo, b.bar FROM baz AS b",
         )
 
     def test_ddl(self):

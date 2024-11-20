@@ -2974,11 +2974,10 @@ class Parser(metaclass=_Parser):
         # duckdb supports leading with FROM x
         from_ = self._parse_from() if self._match(TokenType.FROM, advance=False) else None
 
-        hint = self._parse_hint()
         if self._match(TokenType.SELECT):
             comments = self._prev_comments
 
-            hint = hint or self._parse_hint()
+            hint = self._parse_hint()
 
             if self._next and not self._next.token_type == TokenType.DOT:
                 all_ = self._match(TokenType.ALL)

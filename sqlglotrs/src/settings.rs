@@ -78,6 +78,7 @@ pub struct TokenizerSettings {
     pub var_single_tokens: HashSet<char>,
     pub commands: HashSet<TokenType>,
     pub command_prefix_tokens: HashSet<TokenType>,
+    pub tokens_preceding_hint: HashSet<TokenType>,
     pub heredoc_tag_is_identifier: bool,
     pub string_escapes_allowed_in_raw_strings: bool,
     pub nested_comments: bool,
@@ -103,6 +104,7 @@ impl TokenizerSettings {
         var_single_tokens: HashSet<String>,
         commands: HashSet<TokenType>,
         command_prefix_tokens: HashSet<TokenType>,
+        tokens_preceding_hint: HashSet<TokenType>,
         heredoc_tag_is_identifier: bool,
         string_escapes_allowed_in_raw_strings: bool,
         nested_comments: bool,
@@ -155,10 +157,11 @@ impl TokenizerSettings {
             var_single_tokens: var_single_tokens_native,
             commands,
             command_prefix_tokens,
+            tokens_preceding_hint,
             heredoc_tag_is_identifier,
             string_escapes_allowed_in_raw_strings,
             nested_comments,
-            hint_start
+            hint_start,
         }
     }
 }

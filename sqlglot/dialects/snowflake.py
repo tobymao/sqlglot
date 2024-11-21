@@ -465,6 +465,12 @@ class Snowflake(Dialect):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "LOCATION": lambda self: self._parse_location_property(),
+            "TAG": lambda self: self._parse_dict_property(
+                this="TAG",
+                has_kind=False,
+                separator=(TokenType.COMMA, ","),
+                delimiter=(TokenType.EQ, "="),
+            ),
         }
 
         TYPE_CONVERTERS = {

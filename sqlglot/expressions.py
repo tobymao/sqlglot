@@ -2783,10 +2783,11 @@ class ClusteredByProperty(Property):
 
 
 class DictProperty(Property):
-    arg_types = {"this": True, "kind": True, "settings": False}
+    arg_types = {"this": True, "kind": False, "settings": False, "separator": False}
 
 
 class DictSubProperty(Property):
+    arg_types = {"this": True, "value": True, "delimiter": False}
     pass
 
 

@@ -1479,11 +1479,18 @@ WHERE
                 "snowflake": "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             },
         )
-
         self.validate_all(
             "CREATE TABLE a (b INT)",
             read={"teradata": "CREATE MULTISET TABLE a (b INT)"},
             write={"snowflake": "CREATE TABLE a (b INT)"},
+        )
+
+        self.validate_identity("CREATE TABLE a TAG (key1='value_1', key2='value_2')")
+        self.validate_all(
+            "CREATE TABLE a TAG (key1='value_1')",
+            read={
+                "snowflake": "CREATE TABLE a WITH TAG (key1='value_1')",
+            },
         )
 
         for action in ("SET", "DROP"):

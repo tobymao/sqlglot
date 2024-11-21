@@ -1308,6 +1308,12 @@ WHERE
             },
         )
 
+        for fmt in ("WEEK", "WW", "WK"):
+            self.validate_identity(
+                f"SELECT DATEPART({fmt}, '2024-11-21')",
+                "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
+            )
+
     def test_convert(self):
         self.validate_all(
             "CONVERT(NVARCHAR(200), x)",

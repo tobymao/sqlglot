@@ -26,6 +26,7 @@ def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
 
 class Drill(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
+    PRESERVE_ORIGINAL_NAMES = True
     NULL_ORDERING = "nulls_are_last"
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"

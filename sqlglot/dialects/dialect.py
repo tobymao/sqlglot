@@ -397,6 +397,13 @@ class Dialect(metaclass=_Dialect):
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
 
+    PROMOTE_TO_INFERRED_DATETIME_TYPE = False
+    """
+    This flag is used in the optimizer's canonicalize rule and determines whether x will be promoted
+    to the literal's type in x::DATE < '2020-01-01 12:05:03' (i.e., DATETIME). When false, the literal
+    is cast to x's type to match it instead.
+    """
+
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
 

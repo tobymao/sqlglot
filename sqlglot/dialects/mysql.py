@@ -145,6 +145,8 @@ def _remove_ts_or_ds_to_date(
 
 
 class MySQL(Dialect):
+    PROMOTE_TO_INFERRED_DATETIME_TYPE = True
+
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
 

@@ -7847,6 +7847,7 @@ def cast(
         types_are_equivalent = type_mapping.get(
             existing_cast_type, existing_cast_type.value
         ) == type_mapping.get(new_cast_type, new_cast_type.value)
+
         if expr.is_type(data_type) or types_are_equivalent:
             return expr
 

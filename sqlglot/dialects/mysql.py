@@ -292,6 +292,8 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CHAR_LENGTH": exp.Length.from_arg_list,
+            "CHARACTER_LENGTH": exp.Length.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -725,6 +727,7 @@ class MySQL(Dialect):
             e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.Length: rename_func("CHAR_LENGTH"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Month: _remove_ts_or_ds_to_date(),

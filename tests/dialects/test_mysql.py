@@ -708,6 +708,16 @@ class TestMySQL(Validator):
         )
 
     def test_mysql(self):
+        for func in ("CHAR_LENGTH", "CHARACTER_LENGTH"):
+            with self.subTest(f"Testing MySQL's {func}"):
+                self.validate_all(
+                    f"SELECT {func}('foo')",
+                    write={
+                        "duckdb": "SELECT LENGTH('foo')",
+                        "mysql": "SELECT CHAR_LENGTH('foo')",
+                    },
+                )
+
         self.validate_all(
             "SELECT CONCAT('11', '22')",
             read={

@@ -524,7 +524,9 @@ def _expand_struct_stars(
         this = field.this.copy()
         root, *parts = [part.copy() for part in itertools.chain(dot_parts, [this])]
         new_column = exp.column(
-            t.cast(exp.Identifier, root), table=dot_column.args.get("table"), fields=parts
+            t.cast(exp.Identifier, root),
+            table=dot_column.args.get("table"),
+            fields=t.cast(t.List[exp.Identifier], parts),
         )
         new_selections.append(alias(new_column, this, copy=False))
 

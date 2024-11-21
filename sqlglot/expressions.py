@@ -295,7 +295,7 @@ class Expression(metaclass=_Expression):
 
         return root
 
-    def copy(self):
+    def copy(self) -> Self:
         """
         Returns a deep copy of the expression.
         """

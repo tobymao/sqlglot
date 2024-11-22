@@ -480,12 +480,7 @@ class Snowflake(Dialect):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "LOCATION": lambda self: self._parse_location_property(),
-            "TAG": lambda self: self._parse_dict_property(
-                this="TAG",
-                has_kind=False,
-                separator=(TokenType.COMMA, ","),
-                delimiter=(TokenType.EQ, "="),
-            ),
+            "TAG": lambda self: self._parse_tag(),
         }
 
         TYPE_CONVERTERS = {
@@ -567,6 +562,12 @@ class Snowflake(Dialect):
 
             return self.expression(exp.Not, this=this)
 
+        def _parse_tag(self) -> exp.Tags:
+            return self.expression(
+                exp.Tags,
+                expressions=self._parse_wrapped_csv(self._parse_property),
+            )
+
         def _parse_with_constraint(self) -> t.Optional[exp.Expression]:
             if self._prev.token_type != TokenType.WITH:
                 self._retreat(self._index - 1)
@@ -586,12 +587,15 @@ class Snowflake(Dialect):
                     this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
                 )
             if self._match(TokenType.TAG):
-                return self.expression(
-                    exp.TagColumnConstraint,
-                    expressions=self._parse_wrapped_csv(self._parse_property),
-                )
+                return self._parse_tag()
 
             return None
+
+        def _parse_with_property(self) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+            if self._match(TokenType.TAG):
+                return self._parse_tag()
+
+            return super()._parse_with_property()
 
         def _parse_create(self) -> exp.Create | exp.Command:
             expression = super()._parse_create()

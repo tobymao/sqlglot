@@ -974,11 +974,11 @@ SET
   amount Float64
 )
 PRIMARY KEY (id)
-SOURCE (CLICKHOUSE(
+SOURCE(CLICKHOUSE(
   TABLE 'discounts'
 ))
 LIFETIME(MIN 1 MAX 1000)
-LAYOUT (RANGE_HASHED(
+LAYOUT(RANGE_HASHED(
   range_lookup_strategy 'max'
 ))
 RANGE(MIN discount_start_date MAX discount_end_date)""",
@@ -1004,10 +1004,10 @@ RANGE(MIN discount_start_date MAX discount_end_date)""",
   cca2 String DEFAULT '??'
 )
 PRIMARY KEY (prefix)
-SOURCE (CLICKHOUSE(
+SOURCE(CLICKHOUSE(
   TABLE 'my_ip_addresses'
 ))
-LAYOUT (IP_TRIE())
+LAYOUT(IP_TRIE())
 LIFETIME(MIN 0 MAX 3600)""",
             },
             pretty=True,
@@ -1030,10 +1030,10 @@ LIFETIME(MIN 0 MAX 3600)""",
   name String
 )
 PRIMARY KEY (key)
-SOURCE (CLICKHOUSE(
+SOURCE(CLICKHOUSE(
   TABLE 'polygons_test_table'
 ))
-LAYOUT (POLYGON(
+LAYOUT(POLYGON(
   STORE_POLYGON_KEY_COLUMN 1
 ))
 LIFETIME(MIN 0 MAX 0)""",

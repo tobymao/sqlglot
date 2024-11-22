@@ -188,7 +188,7 @@ class Generator(metaclass=_Generator):
         exp.StrictProperty: lambda *_: "STRICT",
         exp.SwapTable: lambda self, e: f"SWAP WITH {self.sql(e, 'this')}",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
-        exp.TagColumnConstraint: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
+        exp.Tags: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
@@ -576,6 +576,7 @@ class Generator(metaclass=_Generator):
         exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.StreamingTableProperty: exp.Properties.Location.POST_CREATE,
         exp.StrictProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.Tags: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ToTableProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
@@ -3729,16 +3730,9 @@ class Generator(metaclass=_Generator):
     def dictproperty_sql(self, expression: exp.DictProperty) -> str:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        separator = self.sql(expression, "separator")
-        settings_sql = self.expressions(expression, key="settings", sep=f"{separator} ")
-        if kind:
-            settings_section = (
-                f"({self.sep('')}{settings_sql}{self.seg(')', sep='')}" if settings_sql else "()"
-            )
-            args = f"{kind}{settings_section}"
-        else:
-            args = f"{self.sep('')}{settings_sql}{self.sep(sep='')}"
-        return f"{this} ({args})"
+        settings_sql = self.expressions(expression, key="settings", sep=" ")
+        args = f"({self.sep('')}{settings_sql}{self.seg(')', sep='')}" if settings_sql else "()"
+        return f"{this}({kind}{args})"
 
     def dictrange_sql(self, expression: exp.DictRange) -> str:
         this = self.sql(expression, "this")
@@ -3747,8 +3741,7 @@ class Generator(metaclass=_Generator):
         return f"{this}(MIN {min} MAX {max})"
 
     def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
-        delimiter = self.sql(expression, "delimiter") or " "
-        return f"{self.sql(expression, 'this')}{delimiter}{self.sql(expression, 'value')}"
+        return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
 
     def duplicatekeyproperty_sql(self, expression: exp.DuplicateKeyProperty) -> str:
         return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"

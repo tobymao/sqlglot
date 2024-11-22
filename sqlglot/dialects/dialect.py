@@ -264,6 +264,13 @@ class Dialect(metaclass=_Dialect):
         False: Disables function name normalization.
     """
 
+    PRESERVE_ORIGINAL_NAMES: bool = False
+    """
+    Whether the name of the function should be preserved inside the node's metadata,
+    can be useful for roundtripping deprecated vs new functions that share an AST node
+    e.g JSON_VALUE vs JSON_EXTRACT_SCALAR in BigQuery
+    """
+
     LOG_BASE_FIRST: t.Optional[bool] = True
     """
     Whether the base comes first in the `LOG` function.

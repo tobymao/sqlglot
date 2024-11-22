@@ -165,6 +165,7 @@ class ClickHouse(Dialect):
     SAFE_DIVISION = True
     LOG_BASE_FIRST: t.Optional[bool] = None
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
+    PRESERVE_ORIGINAL_NAMES = True
 
     # https://github.com/ClickHouse/ClickHouse/issues/33935#issue-1112165779
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE

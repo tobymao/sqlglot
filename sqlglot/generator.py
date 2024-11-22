@@ -3532,10 +3532,10 @@ class Generator(metaclass=_Generator):
             elif arg_value is not None:
                 args.append(arg_value)
 
-        if self.normalize_functions:
-            name = expression.sql_name()
-        else:
+        if self.dialect.PRESERVE_ORIGINAL_NAMES:
             name = (expression._meta and expression.meta.get("name")) or expression.sql_name()
+        else:
+            name = expression.sql_name()
 
         return self.func(name, *args)
 

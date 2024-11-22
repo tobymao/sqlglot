@@ -333,6 +333,7 @@ class BigQuery(Dialect):
     HEX_LOWERCASE = True
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = True
+    PRESERVE_ORIGINAL_NAMES = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

@@ -2150,25 +2150,35 @@ OPTIONS (
                     },
                 )
 
-            self.validate_all(
-                f"""SELECT {func}('{{"name": "Jakob", "age": "6"}}', '$.age')""",
-                write={
-                    "bigquery": f"""SELECT {func}('{{"name": "Jakob", "age": "6"}}', '$.age')""",
-                    "duckdb": """SELECT '{"name": "Jakob", "age": "6"}' ->> '$.age'""",
-                    "snowflake": """SELECT JSON_EXTRACT_PATH_TEXT('{"name": "Jakob", "age": "6"}', 'age')""",
-                },
-            )
+                sql = f"""SELECT {func}('{{"name": "Jakob", "age": "6"}}', '$.age')"""
+                self.validate_all(
+                    sql,
+                    write={
+                        "bigquery": sql,
+                        "duckdb": """SELECT '{"name": "Jakob", "age": "6"}' ->> '$.age'""",
+                        "snowflake": """SELECT JSON_EXTRACT_PATH_TEXT('{"name": "Jakob", "age": "6"}', 'age')""",
+                    },
+                )
+
+                self.assertEqual(
+                    self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql
+                )
 
     def test_json_extract_array(self):
         for func in ("JSON_QUERY_ARRAY", "JSON_EXTRACT_ARRAY"):
             with self.subTest(f"Testing BigQuery's {func}"):
+                sql = f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')"""
                 self.validate_all(
-                    f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')""",
+                    sql,
                     write={
-                        "bigquery": f"""SELECT {func}('{{"fruits": [1, "oranges"]}}', '$.fruits')""",
+                        "bigquery": sql,
                         "duckdb": """SELECT CAST('{"fruits": [1, "oranges"]}' -> '$.fruits' AS JSON[])""",
                         "snowflake": """SELECT TRANSFORM(GET_PATH(PARSE_JSON('{"fruits": [1, "oranges"]}'), 'fruits'), x -> PARSE_JSON(TO_JSON(x)))""",
                     },
+                )
+
+                self.assertEqual(
+                    self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql
                 )
 
     def test_unix_seconds(self):

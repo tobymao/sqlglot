@@ -198,43 +198,58 @@ def _flatten_structured_types_unless_iceberg(expression: exp.Expression) -> exp.
     return expression
 
 
-def _unnest_generate_date_array(expression: exp.Expression) -> exp.Expression:
+def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
+    generate_date_array = unnest.expressions[0]
+    start = generate_date_array.args.get("start")
+    end = generate_date_array.args.get("end")
+    step = generate_date_array.args.get("step")
+
+    if not start or not end or not isinstance(step, exp.Interval) or step.name != "1":
+        return
+
+    unit = step.args.get("unit")
+
+    unnest_alias = unnest.args.get("alias")
+    if unnest_alias:
+        unnest_alias = unnest_alias.copy()
+        sequence_value_name = seq_get(unnest_alias.columns, 0) or "value"
+    else:
+        sequence_value_name = "value"
+
+    # We'll add the next sequence value to the starting date and project the result
+    date_add = _build_date_time_add(exp.DateAdd)(
+        [unit, exp.cast(sequence_value_name, "int"), exp.cast(start, "date")]
+    ).as_(sequence_value_name)
+
+    # We use DATEDIFF to compute the number of sequence values needed
+    number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
+        [exp.Literal.number(0), _build_datediff([unit, start, end]) + 1]
+    )
+
+    unnest.set("expressions", [number_sequence])
+    unnest.replace(exp.select(date_add).from_(unnest.copy()).subquery(unnest_alias))
+
+
+def _transform_generate_date_array(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
-        for unnest in expression.find_all(exp.Unnest):
-            if (
-                isinstance(unnest.parent, (exp.From, exp.Join))
-                and len(unnest.expressions) == 1
-                and isinstance(unnest.expressions[0], exp.GenerateDateArray)
-            ):
-                generate_date_array = unnest.expressions[0]
-                start = generate_date_array.args.get("start")
-                end = generate_date_array.args.get("end")
-                step = generate_date_array.args.get("step")
+        for generate_date_array in expression.find_all(exp.GenerateDateArray):
+            parent = generate_date_array.parent
 
-                if not start or not end or not isinstance(step, exp.Interval) or step.name != "1":
-                    continue
-
-                unit = step.args.get("unit")
-
-                unnest_alias = unnest.args.get("alias")
-                if unnest_alias:
-                    unnest_alias = unnest_alias.copy()
-                    sequence_value_name = seq_get(unnest_alias.columns, 0) or "value"
-                else:
-                    sequence_value_name = "value"
-
-                # We'll add the next sequence value to the starting date and project the result
-                date_add = _build_date_time_add(exp.DateAdd)(
-                    [unit, exp.cast(sequence_value_name, "int"), exp.cast(start, "date")]
-                ).as_(sequence_value_name)
-
-                # We use DATEDIFF to compute the number of sequence values needed
-                number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
-                    [exp.Literal.number(0), _build_datediff([unit, start, end]) + 1]
+            # If GENERATE_DATE_ARRAY is used directly as an array (e.g passed into ARRAY_LENGTH), the transformed Snowflake
+            # query is the following (it'll be unnested properly on the next iteration due to copy):
+            # SELECT ref(GENERATE_DATE_ARRAY(...)) -> SELECT ref((SELECT ARRAY_AGG(*) FROM UNNEST(GENERATE_DATE_ARRAY(...))))
+            if not isinstance(parent, exp.Unnest):
+                unnest = exp.Unnest(expressions=[generate_date_array.copy()])
+                generate_date_array.replace(
+                    exp.select(exp.ArrayAgg(this=exp.Star())).from_(unnest).subquery()
                 )
 
-                unnest.set("expressions", [number_sequence])
-                unnest.replace(exp.select(date_add).from_(unnest.copy()).subquery(unnest_alias))
+            if (
+                isinstance(parent, exp.Unnest)
+                and isinstance(parent.parent, (exp.From, exp.Join))
+                and len(parent.expressions) == 1
+            ):
+                _unnest_generate_date_array(parent)
 
     return expression
 
@@ -899,7 +914,7 @@ class Snowflake(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.explode_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
-                    _unnest_generate_date_array,
+                    _transform_generate_date_array,
                 ]
             ),
             exp.SafeDivide: lambda self, e: no_safe_divide_sql(self, e, "IFF"),

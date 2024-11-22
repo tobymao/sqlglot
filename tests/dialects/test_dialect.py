@@ -2854,6 +2854,13 @@ FROM subquery2""",
             },
         )
 
+        self.validate_all(
+            "SELECT ARRAY_LENGTH(GENERATE_DATE_ARRAY(DATE '2020-01-01', DATE '2020-02-01', INTERVAL 1 WEEK))",
+            write={
+                "snowflake": "SELECT ARRAY_SIZE((SELECT ARRAY_AGG(*) FROM (SELECT DATEADD(WEEK, CAST(value AS INT), CAST('2020-01-01' AS DATE)) AS value FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(WEEK, CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE)) + 1 - 1) + 1))) AS _u(seq, key, path, index, value, this))))",
+            },
+        )
+
     def test_set_operation_specifiers(self):
         self.validate_all(
             "SELECT 1 EXCEPT ALL SELECT 1",

@@ -1908,11 +1908,6 @@ class OnUpdateColumnConstraint(ColumnConstraintKind):
     pass
 
 
-# https://docs.snowflake.com/en/sql-reference/sql/create-table
-class TagColumnConstraint(ColumnConstraintKind):
-    arg_types = {"expressions": True}
-
-
 # https://docs.snowflake.com/en/sql-reference/sql/create-external-table#optional-parameters
 class TransformColumnConstraint(ColumnConstraintKind):
     pass
@@ -2783,11 +2778,10 @@ class ClusteredByProperty(Property):
 
 
 class DictProperty(Property):
-    arg_types = {"this": True, "kind": False, "settings": False, "separator": False}
+    arg_types = {"this": True, "kind": True, "settings": False}
 
 
 class DictSubProperty(Property):
-    arg_types = {"this": True, "value": True, "delimiter": False}
     pass
 
 
@@ -2981,6 +2975,11 @@ class TemporaryProperty(Property):
 
 class SecureProperty(Property):
     arg_types = {}
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-table
+class Tags(ColumnConstraintKind, Property):
+    arg_types = {"expressions": True}
 
 
 class TransformModelProperty(Property):

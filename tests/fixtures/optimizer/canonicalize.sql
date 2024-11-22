@@ -2,7 +2,7 @@ SELECT w.d + w.e AS c FROM w AS w;
 SELECT CONCAT("w"."d", "w"."e") AS "c" FROM "w" AS "w";
 
 SELECT CAST(w.d AS DATE) > w.e AS a FROM w AS w;
-SELECT CAST("w"."d" AS DATE) > CAST("w"."e" AS DATETIME) AS "a" FROM "w" AS "w";
+SELECT CAST("w"."d" AS DATE) > CAST("w"."e" AS DATE) AS "a" FROM "w" AS "w";
 
 SELECT CAST(1 AS VARCHAR) AS a FROM w AS w;
 SELECT CAST(1 AS VARCHAR) AS "a" FROM "w" AS "w";
@@ -102,13 +102,24 @@ DATEDIFF('2023-01-01', '2023-01-02', DAY);
 DATEDIFF(CAST('2023-01-01' AS DATETIME), CAST('2023-01-02' AS DATETIME), DAY);
 
 SELECT "t"."d" > '2023-01-01' AS "d" FROM "temporal" AS "t";
-SELECT "t"."d" > CAST('2023-01-01' AS DATETIME) AS "d" FROM "temporal" AS "t";
+SELECT "t"."d" > CAST('2023-01-01' AS DATE) AS "d" FROM "temporal" AS "t";
 
 SELECT "t"."d" > CAST('2023-01-01' AS DATETIME) AS "d" FROM "temporal" AS "t";
 SELECT "t"."d" > CAST('2023-01-01' AS DATETIME) AS "d" FROM "temporal" AS "t";
 
 SELECT "t"."t" > '2023-01-01 00:00:01' AS "t" FROM "temporal" AS "t";
 SELECT "t"."t" > CAST('2023-01-01 00:00:01' AS DATETIME) AS "t" FROM "temporal" AS "t";
+
+WITH "t" AS (SELECT CAST("ext"."created_at" AS TIMESTAMP) AS "created_at" FROM "ext" AS "ext") SELECT "t"."created_at" > '2024-10-01 12:05:02' AS "col" FROM "t" AS "t";
+WITH "t" AS (SELECT CAST("ext"."created_at" AS TIMESTAMP) AS "created_at" FROM "ext" AS "ext") SELECT "t"."created_at" > CAST('2024-10-01 12:05:02' AS TIMESTAMP) AS "col" FROM "t" AS "t";
+
+# dialect: mysql
+SELECT `t`.`d` < '2023-01-01 00:00:01' AS `col` FROM `temporal` AS `t`;
+SELECT CAST(`t`.`d` AS DATETIME) < CAST('2023-01-01 00:00:01' AS DATETIME) AS `col` FROM `temporal` AS `t`;
+
+# dialect: mysql
+SELECT CAST(`t`.`some_col` AS DATE) < CAST(`t`.`other_col` AS CHAR) AS `col` FROM `other_table` AS `t`;
+SELECT CAST(CAST(`t`.`some_col` AS DATE) AS DATETIME) < CAST(CAST(`t`.`other_col` AS CHAR) AS DATETIME) AS `col` FROM `other_table` AS `t`;
 
 --------------------------------------
 -- Remove redundant casts

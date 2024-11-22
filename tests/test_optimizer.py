@@ -132,7 +132,6 @@ class TestOptimizer(unittest.TestCase):
         func,
         pretty=False,
         execute=False,
-        set_dialect=False,
         only=None,
         **kwargs,
     ):
@@ -158,7 +157,7 @@ class TestOptimizer(unittest.TestCase):
                         validate_qualify_columns
                     )
 
-                if set_dialect and dialect:
+                if dialect:
                     func_kwargs["dialect"] = dialect
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
@@ -207,7 +206,6 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
             execute=True,
             schema=schema,
-            set_dialect=True,
         )
 
     def test_isolate_table_selects(self):
@@ -235,7 +233,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_tables.qualify_tables,
             db="db",
             catalog="c",
-            set_dialect=True,
         )
 
     def test_normalize(self):
@@ -446,11 +443,8 @@ class TestOptimizer(unittest.TestCase):
             qualify_columns,
             execute=True,
             schema=self.schema,
-            set_dialect=True,
         )
-        self.check_file(
-            "qualify_columns_ddl", qualify_columns, schema=self.schema, set_dialect=True
-        )
+        self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
@@ -475,7 +469,6 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "normalize_identifiers",
             optimizer.normalize_identifiers.normalize_identifiers,
-            set_dialect=True,
         )
 
         self.assertEqual(optimizer.normalize_identifiers.normalize_identifiers("a%").sql(), '"a%"')
@@ -484,14 +477,13 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "quote_identifiers",
             optimizer.qualify_columns.quote_identifiers,
-            set_dialect=True,
         )
 
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):
-        self.check_file("simplify", simplify, set_dialect=True)
+        self.check_file("simplify", simplify)
 
         expression = parse_one("SELECT a, c, b FROM table1 WHERE 1 = 1")
         self.assertEqual(simplify(simplify(expression.find(exp.Where))).sql(), "WHERE TRUE")

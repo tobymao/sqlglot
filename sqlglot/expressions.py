@@ -6068,6 +6068,7 @@ class JSONExtract(Binary, Func):
 
 class JSONExtractArray(Func):
     arg_types = {"this": True, "expression": False}
+    _sql_names = ["JSON_EXTRACT_ARRAY"]
 
 
 class JSONExtractScalar(Binary, Func):

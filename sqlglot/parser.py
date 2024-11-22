@@ -5357,7 +5357,7 @@ class Parser(metaclass=_Parser):
                     func = function(args)
 
                 func = self.validate_expression(func, args)
-                if not self.dialect.NORMALIZE_FUNCTIONS:
+                if self.dialect.PRESERVE_ORIGINAL_NAMES:
                     func.meta["name"] = this
 
                 this = func

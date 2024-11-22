@@ -143,35 +143,37 @@ def _coerce_date(
 
         a_type = a.type
         if (
-            a_type
-            and a_type.this in exp.DataType.TEMPORAL_TYPES
-            and b.type
-            and b.type.this in exp.DataType.TEXT_TYPES
+            not a_type
+            or a_type.this not in exp.DataType.TEMPORAL_TYPES
+            or not b.type
+            or b.type.this not in exp.DataType.TEXT_TYPES
         ):
-            if promote_to_inferred_datetime_type:
-                if b.is_string:
-                    date_text = b.name
-                    if is_iso_date(date_text):
-                        b_type = exp.DataType.Type.DATE
-                    elif is_iso_datetime(date_text):
-                        b_type = exp.DataType.Type.DATETIME
-                    else:
-                        b_type = a_type.this
-                else:
-                    # If b is not a datetime string, we conservatively promote it to a DATETIME,
-                    # in order to ensure there are no surprising truncations due to downcasting
+            continue
+
+        if promote_to_inferred_datetime_type:
+            if b.is_string:
+                date_text = b.name
+                if is_iso_date(date_text):
+                    b_type = exp.DataType.Type.DATE
+                elif is_iso_datetime(date_text):
                     b_type = exp.DataType.Type.DATETIME
-
-                target_type = (
-                    b_type if b_type in TypeAnnotator.COERCES_TO.get(a_type.this, {}) else a_type
-                )
+                else:
+                    b_type = a_type.this
             else:
-                target_type = a_type
+                # If b is not a datetime string, we conservatively promote it to a DATETIME,
+                # in order to ensure there are no surprising truncations due to downcasting
+                b_type = exp.DataType.Type.DATETIME
 
-            if target_type != a_type:
-                _replace_cast(a, target_type)
+            target_type = (
+                b_type if b_type in TypeAnnotator.COERCES_TO.get(a_type.this, {}) else a_type
+            )
+        else:
+            target_type = a_type
 
-            _replace_cast(b, target_type)
+        if target_type != a_type:
+            _replace_cast(a, target_type)
+
+        _replace_cast(b, target_type)
 
 
 def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:

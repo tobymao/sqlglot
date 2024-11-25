@@ -525,6 +525,8 @@ class _Tokenizer(type):
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
+        klass._use_rs_tokenizer = USE_RS_TOKENIZER
+
         if USE_RS_TOKENIZER:
             settings = RsTokenizerSettings(
                 white_space={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.WHITE_SPACE.items()},
@@ -984,14 +986,20 @@ class Tokenizer(metaclass=_Tokenizer):
         "_peek",
         "_prev_token_line",
         "_rs_dialect_settings",
+        "_use_rs_tokenizer",
     )
 
-    def __init__(self, dialect: DialectType = None) -> None:
+    def __init__(
+        self, dialect: DialectType = None, USE_RS_TOKENIZER: t.Optional[bool] = None
+    ) -> None:
         from sqlglot.dialects import Dialect
 
         self.dialect = Dialect.get_or_raise(dialect)
 
-        if USE_RS_TOKENIZER:
+        if USE_RS_TOKENIZER is not None:
+            self._use_rs_tokenizer = USE_RS_TOKENIZER
+
+        if self._use_rs_tokenizer:
             self._rs_dialect_settings = RsTokenizerDialectSettings(
                 unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
@@ -1016,7 +1024,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
-        if USE_RS_TOKENIZER:
+        if self._use_rs_tokenizer:
             return self.tokenize_rs(sql)
 
         self.reset()
@@ -1033,31 +1041,32 @@ class Tokenizer(metaclass=_Tokenizer):
 
         return self.tokens
 
-    def _scan(self, until: t.Optional[t.Callable] = None) -> None:
+    def _scan(self, until: t.Optional[t.Callable] = None, skip_spaces: bool = True) -> None:
         while self.size and not self._end:
             current = self._current
 
             # Skip spaces here rather than iteratively calling advance() for performance reasons
-            while current < self.size:
-                char = self.sql[current]
+            if skip_spaces:
+                while current < self.size:
+                    char = self.sql[current]
 
-                if char.isspace() and (char == " " or char == "\t"):
-                    current += 1
-                else:
-                    break
+                    if char.isspace() and (char == " " or char == "\t"):
+                        current += 1
+                    else:
+                        break
 
             offset = current - self._current if current > self._current else 1
 
             self._start = current
             self._advance(offset)
 
-            if not self._char.isspace():
+            if not self._char.isspace() or not skip_spaces:
                 if self._char.isdigit():
                     self._scan_number()
                 elif self._char in self._IDENTIFIERS:
                     self._scan_identifier(self._IDENTIFIERS[self._char])
                 else:
-                    self._scan_keywords()
+                    self._scan_keywords(skip_spaces=skip_spaces)
 
             if until and until():
                 break
@@ -1146,7 +1155,7 @@ class Tokenizer(metaclass=_Tokenizer):
             if text:
                 self._add(TokenType.STRING, text)
 
-    def _scan_keywords(self) -> None:
+    def _scan_keywords(self, skip_spaces: bool = True) -> None:
         size = 0
         word = None
         chars = self._text
@@ -1202,7 +1211,7 @@ class Tokenizer(metaclass=_Tokenizer):
             self._add(self.SINGLE_TOKENS[self._char], text=self._char)
             return
 
-        self._scan_var()
+        self._scan_var(skip_spaces=skip_spaces)
 
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self._COMMENTS:
@@ -1394,9 +1403,9 @@ class Tokenizer(metaclass=_Tokenizer):
         )
         self._add(TokenType.IDENTIFIER, text)
 
-    def _scan_var(self) -> None:
+    def _scan_var(self, skip_spaces: bool = True) -> None:
         while True:
-            char = self._peek.strip()
+            char = self._peek.strip() if skip_spaces else self._peek
             if char and (char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS):
                 self._advance(alnum=True)
             else:

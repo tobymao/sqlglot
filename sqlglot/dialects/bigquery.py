@@ -4,7 +4,7 @@ import logging
 import re
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, parser, tokens, transforms, jsonpath
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -38,6 +38,11 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 logger = logging.getLogger("sqlglot")
+
+
+JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtractArray]
+
+DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
 
 
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
@@ -324,6 +329,23 @@ def _build_contains_substring(args: t.List) -> exp.Contains | exp.Anonymous:
     return exp.Contains(this=this, expression=expr)
 
 
+def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -> str:
+    name = (expression._meta and expression.meta.get("name")) or expression.sql_name()
+    upper = name.upper()
+
+    dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS
+
+    if dquote_escaping:
+        self.JSON_PATH_SINGLE_QUOTE_ESCAPE = self.JSON_PATH_BRACKETED_KEY_SUPPORTED = False
+
+    sql = rename_func(upper)(self, expression)
+
+    if dquote_escaping:
+        self.JSON_PATH_SINGLE_QUOTE_ESCAPE = self.JSON_PATH_BRACKETED_KEY_SUPPORTED = True
+
+    return sql
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -334,6 +356,7 @@ class BigQuery(Dialect):
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = True
     PRESERVE_ORIGINAL_NAMES = True
+    USE_RS_JSONPATH_TOKENIZER = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -462,6 +485,12 @@ class BigQuery(Dialect):
         KEYWORDS.pop("DIV")
         KEYWORDS.pop("VALUES")
         KEYWORDS.pop("/*+")
+
+    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+        IDENTIFIERS = ["`", '"']
+
+        def _scan(self, until: t.Optional[t.Callable] = None, skip_spaces: bool = True) -> None:
+            return super()._scan(until=until, skip_spaces=False)
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True
@@ -869,6 +898,9 @@ class BigQuery(Dialect):
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.Int64: rename_func("INT64"),
+            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtractArray: _json_extract_sql,
+            exp.JSONExtractScalar: _json_extract_sql,
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Levenshtein: _levenshtein_sql,
             exp.Max: max_or_greatest,

@@ -411,6 +411,13 @@ class Dialect(metaclass=_Dialect):
     is cast to x's type to match it instead.
     """
 
+    USE_RS_JSONPATH_TOKENIZER: t.Optional[bool] = None
+    """
+    Whether the JSONPathTokenizer should use the Rust implementation (True by default) or always
+    enforce the SQLGlot/Python version. This is required in case a dialect requires specialized
+    tokenization, in which case it must override the py-based Tokenizer functions
+    """
+
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
 
@@ -957,7 +964,9 @@ class Dialect(metaclass=_Dialect):
 
     @property
     def jsonpath_tokenizer(self) -> JSONPathTokenizer:
-        return self.jsonpath_tokenizer_class(dialect=self)
+        return self.jsonpath_tokenizer_class(
+            dialect=self, USE_RS_TOKENIZER=self.USE_RS_JSONPATH_TOKENIZER
+        )
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(dialect=self, **opts)

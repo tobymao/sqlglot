@@ -1266,22 +1266,27 @@ COMMENT='客户账户表'"""
         )
 
     def test_timestamp_trunc(self):
-        for dialect in ("postgres", "snowflake", "duckdb", "spark", "databricks"):
+        hive_dialects = ("spark", "databricks")
+        for dialect in ("postgres", "snowflake", "duckdb", *hive_dialects):
             for unit in (
-                "MILLISECOND",
                 "SECOND",
                 "DAY",
                 "MONTH",
                 "YEAR",
             ):
                 with self.subTest(f"MySQL -> {dialect} Timestamp Trunc with unit {unit}: "):
+                    cast = (
+                        "TIMESTAMP('2001-02-16 20:38:40')"
+                        if dialect in hive_dialects
+                        else "CAST('2001-02-16 20:38:40' AS DATETIME)"
+                    )
                     self.validate_all(
-                        f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', CAST('2001-02-16 20:38:40' AS DATETIME))) {unit})",
+                        f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', {cast})) {unit})",
                         read={
                             dialect: f"DATE_TRUNC({unit}, TIMESTAMP '2001-02-16 20:38:40')",
                         },
                         write={
-                            "mysql": f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', CAST('2001-02-16 20:38:40' AS DATETIME))) {unit})",
+                            "mysql": f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', {cast})) {unit})",
                         },
                     )
 

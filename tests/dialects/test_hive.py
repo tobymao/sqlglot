@@ -405,6 +405,16 @@ class TestHive(Validator):
                 },
             )
 
+        self.validate_all(
+            "SELECT CAST(col AS TIMESTAMP)",
+            write={
+                "hive": "SELECT CAST(col AS TIMESTAMP)",
+                "spark": "SELECT CAST(col AS TIMESTAMP)",
+                "databricks": "SELECT TRY_CAST(col AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST(col AS TIMESTAMPTZ)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -761,13 +771,13 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH') AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+            "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH')",
             read={
-                "hive": "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH') AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
-                "presto": "SELECT DATE_TRUNC('MONTH', CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+                "hive": "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH')",
+                "presto": "SELECT DATE_TRUNC('MONTH', CAST(ds AS TIMESTAMP))",
             },
             write={
-                "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+                "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP WITH TIME ZONE))",
             },
         )
         self.validate_all(

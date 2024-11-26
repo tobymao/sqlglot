@@ -487,8 +487,6 @@ class BigQuery(Dialect):
         KEYWORDS.pop("/*+")
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
-        IDENTIFIERS = ["`", '"']
-
         def _scan(self, until: t.Optional[t.Callable] = None, skip_spaces: bool = True) -> None:
             return super()._scan(until=until, skip_spaces=False)
 

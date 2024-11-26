@@ -965,7 +965,7 @@ class Dialect(metaclass=_Dialect):
     @property
     def jsonpath_tokenizer(self) -> JSONPathTokenizer:
         return self.jsonpath_tokenizer_class(
-            dialect=self, USE_RS_TOKENIZER=self.USE_RS_JSONPATH_TOKENIZER
+            dialect=self, use_rs_tokenizer=self.USE_RS_JSONPATH_TOKENIZER
         )
 
     def parser(self, **opts) -> Parser:

@@ -525,8 +525,6 @@ class _Tokenizer(type):
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
-        klass._use_rs_tokenizer = USE_RS_TOKENIZER
-
         if USE_RS_TOKENIZER:
             settings = RsTokenizerSettings(
                 white_space={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.WHITE_SPACE.items()},
@@ -990,14 +988,15 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(
-        self, dialect: DialectType = None, USE_RS_TOKENIZER: t.Optional[bool] = None
+        self, dialect: DialectType = None, use_rs_tokenizer: t.Optional[bool] = None
     ) -> None:
         from sqlglot.dialects import Dialect
 
         self.dialect = Dialect.get_or_raise(dialect)
 
-        if USE_RS_TOKENIZER is not None:
-            self._use_rs_tokenizer = USE_RS_TOKENIZER
+        self._use_rs_tokenizer = (
+            use_rs_tokenizer if use_rs_tokenizer is not None else USE_RS_TOKENIZER
+        )
 
         if self._use_rs_tokenizer:
             self._rs_dialect_settings = RsTokenizerDialectSettings(

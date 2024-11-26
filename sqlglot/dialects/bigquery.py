@@ -336,12 +336,12 @@ def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -
     dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS
 
     if dquote_escaping:
-        self.JSON_PATH_SINGLE_QUOTE_ESCAPE = self.JSON_PATH_BRACKETED_KEY_SUPPORTED = False
+        self._quote_json_path_key_using_brackets = False
 
     sql = rename_func(upper)(self, expression)
 
     if dquote_escaping:
-        self.JSON_PATH_SINGLE_QUOTE_ESCAPE = self.JSON_PATH_BRACKETED_KEY_SUPPORTED = True
+        self._quote_json_path_key_using_brackets = True
 
     return sql
 

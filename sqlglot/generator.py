@@ -658,6 +658,7 @@ class Generator(metaclass=_Generator):
         "_next_name",
         "_identifier_start",
         "_identifier_end",
+        "_quote_json_path_key_using_brackets",
     )
 
     def __init__(
@@ -705,6 +706,8 @@ class Generator(metaclass=_Generator):
 
         self._identifier_start = self.dialect.IDENTIFIER_START
         self._identifier_end = self.dialect.IDENTIFIER_END
+
+        self._quote_json_path_key_using_brackets = True
 
     def generate(self, expression: exp.Expression, copy: bool = True) -> str:
         """
@@ -2871,7 +2874,7 @@ class Generator(metaclass=_Generator):
         if isinstance(expression, int):
             return str(expression)
 
-        if self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
+        if self._quote_json_path_key_using_brackets and self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
             escaped = expression.replace("'", "\\'")
             escaped = f"\\'{expression}\\'"
         else:
@@ -4072,7 +4075,11 @@ class Generator(metaclass=_Generator):
             return f".{this}"
 
         this = self.json_path_part(this)
-        return f"[{this}]" if self.JSON_PATH_BRACKETED_KEY_SUPPORTED else f".{this}"
+        return (
+            f"[{this}]"
+            if self._quote_json_path_key_using_brackets and self.JSON_PATH_BRACKETED_KEY_SUPPORTED
+            else f".{this}"
+        )
 
     def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
         this = self.json_path_part(expression.this)

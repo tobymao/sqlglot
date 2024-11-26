@@ -4,7 +4,7 @@ import logging
 import re
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms, jsonpath
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -356,7 +356,6 @@ class BigQuery(Dialect):
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = True
     PRESERVE_ORIGINAL_NAMES = True
-    USE_RS_JSONPATH_TOKENIZER = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -485,10 +484,6 @@ class BigQuery(Dialect):
         KEYWORDS.pop("DIV")
         KEYWORDS.pop("VALUES")
         KEYWORDS.pop("/*+")
-
-    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
-        def _scan(self, until: t.Optional[t.Callable] = None, skip_spaces: bool = True) -> None:
-            return super()._scan(until=until, skip_spaces=False)
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True

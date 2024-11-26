@@ -119,6 +119,13 @@ class TestMySQL(Validator):
         )
 
         self.validate_all(
+            "insert into t(i) values (default)",
+            write={
+                "duckdb": "INSERT INTO t (i) VALUES (DEFAULT)",
+                "mysql": "INSERT INTO t (i) VALUES (DEFAULT)",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE t (id INT UNSIGNED)",
             write={
                 "duckdb": "CREATE TABLE t (id UINTEGER)",

@@ -2946,8 +2946,13 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_value(self) -> t.Optional[exp.Tuple]:
+        def _parse_value_expression() -> t.Optional[exp.Expression]:
+            if self.dialect.SUPPORTS_VALUES_DEFAULT and self._match(TokenType.DEFAULT):
+                return exp.var(self._prev.text.upper())
+            return self._parse_expression()
+
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(self._parse_expression)
+            expressions = self._parse_csv(_parse_value_expression)
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=expressions)
 

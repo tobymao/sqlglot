@@ -411,6 +411,9 @@ class Dialect(metaclass=_Dialect):
     is cast to x's type to match it instead.
     """
 
+    SUPPORTS_VALUES_DEFAULT = True
+    """Whether the DEFAULT keyword is supported in the VALUES clause."""
+
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
 

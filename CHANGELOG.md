@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v25.32.1] - 2024-11-27
+### :bug: Bug Fixes
+- [`954d8fd`](https://github.com/tobymao/sqlglot/commit/954d8fd12740071e0951d1df3a405a4b9634868d) - parse DEFAULT in VALUES clause into a Var *(PR [#4448](https://github.com/tobymao/sqlglot/pull/4448) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4446](https://github.com/tobymao/sqlglot/issues/4446) opened by [@ddh-5230](https://github.com/ddh-5230)*
+- [`73afd0f`](https://github.com/tobymao/sqlglot/commit/73afd0f435b7e7ccde831ee311c9a76c14797fdc) - **bigquery**: Make JSONPathTokenizer more lenient for new standards *(PR [#4447](https://github.com/tobymao/sqlglot/pull/4447) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4441](https://github.com/tobymao/sqlglot/issues/4441) opened by [@patricksurry](https://github.com/patricksurry)*
+
+
 ## [v25.32.0] - 2024-11-22
 ### :boom: BREAKING CHANGES
 - due to [`0eed45c`](https://github.com/tobymao/sqlglot/commit/0eed45cce82681bfbafc8bfb78eb2a1bce86ae53) - Add support for ATTACH/DETACH statements *(PR [#4419](https://github.com/tobymao/sqlglot/pull/4419) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -5375,3 +5383,4 @@ Changelog
 [v25.31.3]: https://github.com/tobymao/sqlglot/compare/v25.31.2...v25.31.3
 [v25.31.4]: https://github.com/tobymao/sqlglot/compare/v25.31.3...v25.31.4
 [v25.32.0]: https://github.com/tobymao/sqlglot/compare/v25.31.4...v25.32.0
+[v25.32.1]: https://github.com/tobymao/sqlglot/compare/v25.32.0...v25.32.1

@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get, ensure_list
+from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
     preprocess,
     remove_unique_constraints,
@@ -158,6 +159,14 @@ class Spark2(Hive):
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         ),
     }
+
+    class Tokenizer(Hive.Tokenizer):
+        HEX_STRINGS = [("X'", "'"), ("x'", "'")]
+
+        KEYWORDS = {
+            **Hive.Tokenizer.KEYWORDS,
+            "TIMESTAMP": TokenType.TIMESTAMPTZ,
+        }
 
     class Parser(Hive.Parser):
         TRIM_PATTERN_FIRST = True
@@ -337,6 +346,3 @@ class Spark2(Hive):
                     else sep
                 ),
             )
-
-    class Tokenizer(Hive.Tokenizer):
-        HEX_STRINGS = [("X'", "'"), ("x'", "'")]

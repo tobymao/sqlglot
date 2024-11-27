@@ -405,16 +405,6 @@ class TestHive(Validator):
                 },
             )
 
-        self.validate_all(
-            "SELECT CAST(col AS TIMESTAMP)",
-            write={
-                "hive": "SELECT CAST(col AS TIMESTAMP)",
-                "spark": "SELECT CAST(col AS TIMESTAMP)",
-                "databricks": "SELECT TRY_CAST(col AS TIMESTAMP)",
-                "duckdb": "SELECT TRY_CAST(col AS TIMESTAMPTZ)",
-            },
-        )
-
     def test_order_by(self):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -777,7 +767,7 @@ class TestHive(Validator):
                 "presto": "SELECT DATE_TRUNC('MONTH', CAST(ds AS TIMESTAMP))",
             },
             write={
-                "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP WITH TIME ZONE))",
+                "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP))",
             },
         )
         self.validate_all(

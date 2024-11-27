@@ -1575,14 +1575,6 @@ WHERE
             },
         )
         self.validate_all(
-            """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
-            write={
-                "bigquery": """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
-                "duckdb": """SELECT '{"class": {"students": []}}' -> '$.class'""",
-                "snowflake": """SELECT GET_PATH(PARSE_JSON('{"class": {"students": []}}'), 'class')""",
-            },
-        )
-        self.validate_all(
             """SELECT JSON_VALUE_ARRAY('{"arr": [1, "a"]}', '$.arr')""",
             write={
                 "bigquery": """SELECT JSON_VALUE_ARRAY('{"arr": [1, "a"]}', '$.arr')""",
@@ -2139,7 +2131,16 @@ OPTIONS (
                 },
             )
 
-    def test_json_extract_scalar(self):
+    def test_json_extract(self):
+        self.validate_all(
+            """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
+            write={
+                "bigquery": """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
+                "duckdb": """SELECT '{"class": {"students": []}}' -> '$.class'""",
+                "snowflake": """SELECT GET_PATH(PARSE_JSON('{"class": {"students": []}}'), 'class')""",
+            },
+        )
+
         for func in ("JSON_EXTRACT_SCALAR", "JSON_VALUE"):
             with self.subTest(f"Testing BigQuery's {func}"):
                 self.validate_all(
@@ -2163,6 +2164,18 @@ OPTIONS (
                 self.assertEqual(
                     self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql
                 )
+
+        # Test double quote escaping
+        for func in ("JSON_VALUE", "JSON_QUERY", "JSON_QUERY_ARRAY"):
+            self.validate_identity(
+                f"{func}(doc, '$. a b c .d')", f"""{func}(doc, '$." a b c ".d')"""
+            )
+
+        # Test single quote & bracket escaping
+        for func in ("JSON_EXTRACT", "JSON_EXTRACT_SCALAR", "JSON_EXTRACT_ARRAY"):
+            self.validate_identity(
+                f"{func}(doc, '$. a b c .d')", f"""{func}(doc, '$[\\' a b c \\'].d')"""
+            )
 
     def test_json_extract_array(self):
         for func in ("JSON_QUERY_ARRAY", "JSON_EXTRACT_ARRAY"):

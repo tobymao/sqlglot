@@ -40,6 +40,11 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 
+JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtractArray]
+
+DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
+
+
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
         return self.values_sql(expression)
@@ -322,6 +327,23 @@ def _build_contains_substring(args: t.List) -> exp.Contains | exp.Anonymous:
     expr = exp.Lower(this=seq_get(args, 1))
 
     return exp.Contains(this=this, expression=expr)
+
+
+def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -> str:
+    name = (expression._meta and expression.meta.get("name")) or expression.sql_name()
+    upper = name.upper()
+
+    dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS
+
+    if dquote_escaping:
+        self._quote_json_path_key_using_brackets = False
+
+    sql = rename_func(upper)(self, expression)
+
+    if dquote_escaping:
+        self._quote_json_path_key_using_brackets = True
+
+    return sql
 
 
 class BigQuery(Dialect):
@@ -869,6 +891,9 @@ class BigQuery(Dialect):
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.Int64: rename_func("INT64"),
+            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtractArray: _json_extract_sql,
+            exp.JSONExtractScalar: _json_extract_sql,
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Levenshtein: _levenshtein_sql,
             exp.Max: max_or_greatest,

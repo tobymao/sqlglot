@@ -765,6 +765,16 @@ TBLPROPERTIES (
             },
         )
 
+        self.validate_all(
+            "SELECT CAST(col AS TIMESTAMP)",
+            write={
+                "spark2": "SELECT CAST(col AS TIMESTAMP)",
+                "spark": "SELECT CAST(col AS TIMESTAMP)",
+                "databricks": "SELECT TRY_CAST(col AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST(col AS TIMESTAMPTZ)",
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

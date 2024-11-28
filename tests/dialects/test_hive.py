@@ -761,13 +761,13 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH') AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+            "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH')",
             read={
-                "hive": "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH') AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
-                "presto": "SELECT DATE_TRUNC('MONTH', CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+                "hive": "SELECT TRUNC(CAST(ds AS TIMESTAMP), 'MONTH')",
+                "presto": "SELECT DATE_TRUNC('MONTH', CAST(ds AS TIMESTAMP))",
             },
             write={
-                "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP)) AS mm FROM tbl WHERE ds BETWEEN '2023-10-01' AND '2024-02-29'",
+                "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP))",
             },
         )
         self.validate_all(

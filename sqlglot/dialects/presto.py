@@ -376,6 +376,7 @@ class Presto(Dialect):
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.expression, e.this

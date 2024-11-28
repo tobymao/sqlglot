@@ -1079,7 +1079,6 @@ class TestPresto(Validator):
                 "snowflake": "CURRENT_USER()",  # Although the ANSI standard is CURRENT_USER
             },
             write={
-                "presto": "CURRENT_USER",
                 "trino": "CURRENT_USER",
                 "snowflake": "CURRENT_USER()",
             },

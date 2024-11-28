@@ -1608,11 +1608,11 @@ WHERE
         )
 
         self.validate_identity(
-            "CONTAINS_SUBSTRING(a, b, json_scope => 'JSON_KEYS_AND_VALUES')"
+            "CONTAINS_SUBSTR(a, b, json_scope => 'JSON_KEYS_AND_VALUES')"
         ).assert_is(exp.Anonymous)
 
         self.validate_all(
-            """CONTAINS_SUBSTRING(a, b)""",
+            """CONTAINS_SUBSTR(a, b)""",
             read={
                 "": "CONTAINS(a, b)",
                 "spark": "CONTAINS(a, b)",
@@ -1628,7 +1628,7 @@ WHERE
                 "snowflake": "CONTAINS(LOWER(a), LOWER(b))",
                 "duckdb": "CONTAINS(LOWER(a), LOWER(b))",
                 "oracle": "CONTAINS(LOWER(a), LOWER(b))",
-                "bigquery": "CONTAINS_SUBSTRING(a, b)",
+                "bigquery": "CONTAINS_SUBSTR(a, b)",
             },
         )
 

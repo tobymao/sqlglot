@@ -267,6 +267,7 @@ class TokenType(AutoName):
     EXCEPT = auto()
     EXECUTE = auto()
     EXISTS = auto()
+    EXPLAIN = auto()
     FALSE = auto()
     FETCH = auto()
     FILTER = auto()

@@ -1479,6 +1479,16 @@ class Describe(Expression):
         "format": False,
     }
 
+class Explain(Expression):
+    arg_types = {
+        "this": True,
+        "style": False,
+        "kind": False,
+        "expressions": False,
+        "partition": False,
+        "format": False,
+    }    
+
 
 # https://duckdb.org/docs/sql/statements/attach.html#attach
 class Attach(Expression):

@@ -1210,6 +1210,15 @@ class Generator(metaclass=_Generator):
         format = f" {format}" if format else ""
 
         return f"DESCRIBE{style}{format} {self.sql(expression, 'this')}{partition}"
+    
+    def explain_sql(self, expression: exp.Explain) -> str:
+        style = expression.args.get("style")
+        style = f" {style}" if style else ""
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
+        format = self.sql(expression, "format")
+        format = f" {format}" if format else ""
+        return f"EXPLAIN{style}{format} {self.sql(expression, 'this')}{partition}"    
 
     def heredoc_sql(self, expression: exp.Heredoc) -> str:
         tag = self.sql(expression, "tag")

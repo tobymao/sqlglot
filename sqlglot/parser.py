@@ -792,6 +792,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.DESC: lambda self: self._parse_describe(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
+        TokenType.EXPLAIN: lambda self: self._parse_explain(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.GRANT: lambda self: self._parse_grant(),
         TokenType.INSERT: lambda self: self._parse_insert(),
@@ -1313,6 +1314,7 @@ class Parser(metaclass=_Parser):
 
     # The style options for the DESCRIBE statement
     DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
+    EXPLAIN_STYLES = {"ANALYZE"}
 
     OPERATION_MODIFIERS: t.Set[str] = set()
 
@@ -2638,6 +2640,33 @@ class Parser(metaclass=_Parser):
         partition = self._parse_partition()
         return self.expression(
             exp.Describe,
+            this=this,
+            style=style,
+            kind=kind,
+            expressions=expressions,
+            partition=partition,
+            format=format,
+        )
+    
+    def _parse_explain(self) -> exp.Explain:
+        kind = self._match_set(self.CREATABLES) and self._prev.text
+        style = self._match_texts(self.EXPLAIN_STYLES) and self._prev.text.upper()
+        if self._match(TokenType.DOT):
+            style = None
+            self._retreat(self._index - 2)
+
+        format = self._parse_property() if self._match(TokenType.FORMAT, advance=False) else None
+
+        if self._match_set(self.STATEMENT_PARSERS, advance=False):
+            this = self._parse_statement()
+        else:
+            this = self._parse_table(schema=True)
+
+        properties = self._parse_properties()
+        expressions = properties.expressions if properties else None
+        partition = self._parse_partition()
+        return self.expression(
+            exp.Explain,
             this=this,
             style=style,
             kind=kind,

@@ -854,8 +854,6 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT LENGTH(foo)")
         self.validate_identity("SELECT ARRAY[1, 2, 3]", "SELECT [1, 2, 3]")
 
-        self.validate_identity("SELECT * FROM (DESCRIBE t)")
-
         self.validate_identity("SELECT UNNEST([*COLUMNS('alias_.*')]) AS column_name")
         self.validate_identity(
             "SELECT COALESCE(*COLUMNS(*)) FROM (SELECT NULL, 2, 3) AS t(a, b, c)"
@@ -1405,3 +1403,24 @@ class TestDuckDB(Validator):
         self.validate_identity("DETACH IF EXISTS file")
 
         self.validate_identity("DETACH DATABASE db", "DETACH db")
+
+    def test_explain(self):
+        self.validate_identity(
+            "EXPLAIN SELECT * FROM t"
+        )
+
+        self.validate_identity(
+            "EXPLAIN ANALYZE SELECT * FROM t"
+        )        
+
+        self.validate_identity(
+            "DESCRIBE SELECT * FROM t", "EXPLAIN SELECT * FROM t"
+        )        
+
+        self.validate_identity(
+            "DESCRIBE ANALYZE SELECT * FROM t", "EXPLAIN ANALYZE SELECT * FROM t"
+        )
+
+        expression = self.parse_one("EXPLAIN ANALYZE SELECT * FROM t")
+        self.assertIsInstance(expression, exp.Explain)
+        self.assertEqual(expression.text("style"), "ANALYZE")

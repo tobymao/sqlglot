@@ -2647,7 +2647,7 @@ class Parser(metaclass=_Parser):
             partition=partition,
             format=format,
         )
-    
+
     def _parse_explain(self) -> exp.Explain:
         kind = self._match_set(self.CREATABLES) and self._prev.text
         style = self._match_texts(self.EXPLAIN_STYLES) and self._prev.text.upper()

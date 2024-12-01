@@ -768,7 +768,7 @@ class DuckDB(Dialect):
             "using",
             "order",
             "current_catalog",
-            "explain"
+            "explain",
         }
 
         UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
@@ -907,7 +907,7 @@ class DuckDB(Dialect):
                     bracket = f"({bracket})[1]"
 
             return bracket
-        
+
         def describe_sql(self, expression: exp.Describe) -> str:
             style = expression.args.get("style")
             style = f" {style}" if style else ""
@@ -917,7 +917,7 @@ class DuckDB(Dialect):
             format = f" {format}" if format else ""
 
             return f"EXPLAIN{style}{format} {self.sql(expression, 'this')}{partition}"
-        
+
         def explain_sql(self, expression: exp.Explain) -> str:
             style = expression.args.get("style")
             style = f" {style}" if style else ""
@@ -926,7 +926,7 @@ class DuckDB(Dialect):
             format = self.sql(expression, "format")
             format = f" {format}" if format else ""
 
-            return f"EXPLAIN{style}{format} {self.sql(expression, 'this')}{partition}"        
+            return f"EXPLAIN{style}{format} {self.sql(expression, 'this')}{partition}"
 
         def withingroup_sql(self, expression: exp.WithinGroup) -> str:
             expression_sql = self.sql(expression, "expression")

@@ -1405,17 +1405,11 @@ class TestDuckDB(Validator):
         self.validate_identity("DETACH DATABASE db", "DETACH db")
 
     def test_explain(self):
-        self.validate_identity(
-            "EXPLAIN SELECT * FROM t"
-        )
+        self.validate_identity("EXPLAIN SELECT * FROM t")
 
-        self.validate_identity(
-            "EXPLAIN ANALYZE SELECT * FROM t"
-        )        
+        self.validate_identity("EXPLAIN ANALYZE SELECT * FROM t")
 
-        self.validate_identity(
-            "DESCRIBE SELECT * FROM t", "EXPLAIN SELECT * FROM t"
-        )        
+        self.validate_identity("DESCRIBE SELECT * FROM t", "EXPLAIN SELECT * FROM t")
 
         self.validate_identity(
             "DESCRIBE ANALYZE SELECT * FROM t", "EXPLAIN ANALYZE SELECT * FROM t"

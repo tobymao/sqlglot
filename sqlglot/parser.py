@@ -5627,6 +5627,9 @@ class Parser(metaclass=_Parser):
 
             self._match_r_paren()
 
+        if self._match_text_seq("STORED"):
+            this.set("stored", True)
+
         return this
 
     def _parse_inline(self) -> exp.InlineLengthColumnConstraint:

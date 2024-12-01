@@ -1007,6 +1007,8 @@ class Generator(metaclass=_Generator):
         minvalue = f" MINVALUE {minvalue}" if minvalue else ""
         maxvalue = expression.args.get("maxvalue")
         maxvalue = f" MAXVALUE {maxvalue}" if maxvalue else ""
+        stored = expression.args.get("stored")
+        stored = " STORED" if stored else ""
         cycle = expression.args.get("cycle")
         cycle_sql = ""
 
@@ -1022,7 +1024,7 @@ class Generator(metaclass=_Generator):
         expr = self.sql(expression, "expression")
         expr = f"({expr})" if expr else "IDENTITY"
 
-        return f"GENERATED{this} AS {expr}{sequence_opts}"
+        return f"GENERATED{this} AS {expr}{sequence_opts}{stored}"
 
     def generatedasrowcolumnconstraint_sql(
         self, expression: exp.GeneratedAsRowColumnConstraint

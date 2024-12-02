@@ -258,6 +258,14 @@ class TestExpressions(unittest.TestCase):
             'SELECT * FROM "my-project"."example"."table" /* example.table */',
         )
 
+        self.assertEqual(
+            exp.replace_tables(
+                parse_one("select * from example.table /* sqlglot.meta preserve_reference */"),
+                {"example.table": "a.b"},
+            ).sql(),
+            "SELECT * FROM example.table /* sqlglot.meta preserve_reference */",
+        )
+
     def test_expand(self):
         self.assertEqual(
             exp.expand(

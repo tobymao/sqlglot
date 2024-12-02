@@ -8231,7 +8231,7 @@ def replace_tables(
     mapping = {normalize_table_name(k, dialect=dialect): v for k, v in mapping.items()}
 
     def _replace_tables(node: Expression) -> Expression:
-        if isinstance(node, Table):
+        if isinstance(node, Table) and not node.meta.get("preserve_reference"):
             original = normalize_table_name(node, dialect=dialect)
             new_name = mapping.get(original)
 

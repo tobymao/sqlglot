@@ -8,7 +8,7 @@ from functools import reduce
 from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
-from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses
+from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses, to_bool
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -770,14 +770,7 @@ class Dialect(metaclass=_Dialect):
                     elif len(pair) == 2:
                         value = pair[1].strip()
 
-                        # Coerce the value to boolean if it matches to the truthy/falsy values below
-                        value_lower = value.lower()
-                        if value_lower in ("true", "1"):
-                            value = True
-                        elif value_lower in ("false", "0"):
-                            value = False
-
-                    kwargs[key] = value
+                    kwargs[key] = to_bool(value)
 
             except ValueError:
                 raise ValueError(

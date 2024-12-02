@@ -258,6 +258,14 @@ class TestExpressions(unittest.TestCase):
             'SELECT * FROM "my-project"."example"."table" /* example.table */',
         )
 
+        self.assertEqual(
+            exp.replace_tables(
+                parse_one("select * from example.table /* sqlglot.meta replace=false */"),
+                {"example.table": "a.b"},
+            ).sql(),
+            "SELECT * FROM example.table /* sqlglot.meta replace=false */",
+        )
+
     def test_expand(self):
         self.assertEqual(
             exp.expand(
@@ -1168,7 +1176,7 @@ FROM foo""",
 
     def test_set_meta(self):
         query = parse_one("SELECT * FROM foo /* sqlglot.meta x = 1, y = a, z */")
-        self.assertEqual(query.find(exp.Table).meta, {"x": "1", "y": "a", "z": True})
+        self.assertEqual(query.find(exp.Table).meta, {"x": True, "y": "a", "z": True})
         self.assertEqual(query.sql(), "SELECT * FROM foo /* sqlglot.meta x = 1, y = a, z */")
 
     def test_assert_is(self):

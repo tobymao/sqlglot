@@ -830,8 +830,6 @@ JSON_OBJECT('x': 1 RETURNING VARCHAR(100))
 JSON_OBJECT('x': 1 RETURNING VARBINARY FORMAT JSON ENCODING UTF8)
 PRIOR AS x
 SELECT if.x
-SELECT NEXT VALUE FOR db.schema.sequence_name
-SELECT NEXT VALUE FOR db.schema.sequence_name OVER (ORDER BY foo), col
 SELECT PERCENTILE_CONT(x, 0.5) OVER ()
 WITH my_cte AS (SELECT 'a' AS desc) SELECT desc AS description FROM my_cte
 WITH my_cte AS (SELECT 'a' AS asc) SELECT asc AS description FROM my_cte

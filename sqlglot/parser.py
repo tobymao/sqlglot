@@ -5629,6 +5629,8 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("STORED"):
             this.set("stored", True)
+        elif self._match_text_seq("VIRTUAL"):
+            this.set("virtual", True)
 
         return this
 

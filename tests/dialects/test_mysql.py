@@ -949,6 +949,11 @@ class TestMySQL(Validator):
                 "postgres": "STRING_AGG(DISTINCT CONCAT(a, b, c), '' ORDER BY d NULLS FIRST)",
             },
         )
+
+        self.validate_identity("CREATE TABLE IF NOT EXISTS example (col_a INT, col_c INT GENERATED ALWAYS AS (col_a + 1))")
+        self.validate_identity("CREATE TABLE IF NOT EXISTS example (col_a INT, col_c INT GENERATED ALWAYS AS (col_a + 1) STORED)")
+        self.validate_identity("CREATE TABLE IF NOT EXISTS example (col_a INT, col_c INT GENERATED ALWAYS AS (col_a + 1) VIRTUAL)")
+
         self.validate_identity(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'"
         )

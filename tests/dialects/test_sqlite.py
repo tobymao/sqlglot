@@ -179,9 +179,15 @@ class TestSQLite(Validator):
         self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
         self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
 
-        self.validate_identity("CREATE TABLE IF NOT EXISTS foo (col_a INTEGER, col_c INTEGER GENERATED ALWAYS AS (col_a + 2))")
-        self.validate_identity("CREATE TABLE IF NOT EXISTS foo (col_a INTEGER, col_c INTEGER GENERATED ALWAYS AS (col_a + 2) STORED)")
-        self.validate_identity("CREATE TABLE IF NOT EXISTS foo (col_a INTEGER, col_c INTEGER GENERATED ALWAYS AS (col_a + 2) VIRTUAL)")
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS foo (col_a INTEGER, col_c INTEGER GENERATED ALWAYS AS (col_a + 2))"
+        )
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS foo (col_a INTEGER, col_c INTEGER GENERATED ALWAYS AS (col_a + 2) STORED)"
+        )
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS foo (col_a INTEGER, col_c INTEGER GENERATED ALWAYS AS (col_a + 2) VIRTUAL)"
+        )
 
         self.validate_all(
             """

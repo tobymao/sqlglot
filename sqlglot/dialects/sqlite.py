@@ -96,6 +96,7 @@ def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
 
     return expression
 
+
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

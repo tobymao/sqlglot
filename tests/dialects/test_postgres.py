@@ -1034,7 +1034,9 @@ class TestPostgres(Validator):
             "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5 RESTART IDENTITY CASCADE",
         )
 
-        self.validate_identity("CREATE TABLE IF NOT EXISTS example (col_a INT, col_c INT GENERATED ALWAYS AS (col_a + 1) STORED)")
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS example (col_a INT, col_c INT GENERATED ALWAYS AS (col_a + 1) STORED)"
+        )
 
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",

@@ -597,6 +597,11 @@ class TSQL(Dialect):
             ),
         }
 
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "NEXT": lambda self: self._parse_next_value_for(),
+        }
+
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,

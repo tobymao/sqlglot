@@ -1203,7 +1203,8 @@ MATCH_RECOGNIZE (
   DEFINE
     B AS totalprice < PREV(totalprice),
     C AS totalprice > PREV(totalprice) AND totalprice <= A.totalprice,
-    D AS totalprice > PREV(totalprice)
+    D AS totalprice > PREV(totalprice),
+    E AS MAX(foo) >= NEXT(bar)
 )""",
             pretty=True,
         )

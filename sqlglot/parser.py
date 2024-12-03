@@ -586,6 +586,7 @@ class Parser(metaclass=_Parser):
         TokenType.INSERT,
         TokenType.LIKE,
         TokenType.MERGE,
+        TokenType.NEXT,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.RANGE,
@@ -1107,7 +1108,6 @@ class Parser(metaclass=_Parser):
             exp.ConnectByRoot, this=self._parse_column()
         ),
         "IF": lambda self: self._parse_if(),
-        "NEXT": lambda self: self._parse_next_value_for(),
     }
 
     INVALID_FUNC_NAME_TOKENS = {

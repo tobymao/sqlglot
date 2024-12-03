@@ -2075,3 +2075,18 @@ FROM OPENJSON(@json) WITH (
                 "tsql": UnsupportedError,
             },
         )
+
+    def test_next_value_for(self):
+        self.validate_identity(
+            "SELECT NEXT VALUE FOR db.schema.sequence_name OVER (ORDER BY foo), col"
+        )
+        self.validate_all(
+            "SELECT NEXT VALUE FOR db.schema.sequence_name",
+            read={
+                "oracle": "SELECT NEXT VALUE FOR db.schema.sequence_name",
+                "tsql": "SELECT NEXT VALUE FOR db.schema.sequence_name",
+            },
+            write={
+                "oracle": "SELECT NEXT VALUE FOR db.schema.sequence_name",
+            },
+        )

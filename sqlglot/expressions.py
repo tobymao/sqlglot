@@ -31,6 +31,7 @@ from sqlglot.helper import (
     ensure_list,
     seq_get,
     subclasses,
+    to_bool,
 )
 from sqlglot.tokens import Token, TokenError
 
@@ -312,7 +313,7 @@ class Expression(metaclass=_Expression):
                     for kv in "".join(meta).split(","):
                         k, *v = kv.split("=")
                         value = v[0].strip() if v else True
-                        self.meta[k.strip()] = value
+                        self.meta[k.strip()] = to_bool(value)
 
                 if not prepend:
                     self.comments.append(comment)
@@ -8231,7 +8232,7 @@ def replace_tables(
     mapping = {normalize_table_name(k, dialect=dialect): v for k, v in mapping.items()}
 
     def _replace_tables(node: Expression) -> Expression:
-        if isinstance(node, Table):
+        if isinstance(node, Table) and node.meta.get("replace") is not False:
             original = normalize_table_name(node, dialect=dialect)
             new_name = mapping.get(original)
 

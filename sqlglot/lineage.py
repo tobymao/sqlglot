@@ -276,8 +276,44 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
             )
+
+        elif scope.pivots:
+            pivot = next((p for p in scope.pivots if p.alias_or_name == c.table), None)
+            if pivot:
+                # The source is a pivot operation, so we need to trace back to the aggregated column
+                pivot_column_mapping = {}
+                for agg in pivot.expressions:
+                    agg_columns = list(agg.find_all(exp.Column))
+                    literals = list(pivot.args.get("field").find_all(exp.Literal))
+                    for literal in literals:
+                        pivot_column_name = f"{literal.this}"
+                        if isinstance(agg, exp.Alias):
+                            pivot_column_name += f"_{agg.alias_or_name}"
+                        pivot_column_mapping[pivot_column_name] = agg_columns
+
+                for agg_column in pivot_column_mapping[c.alias_or_name]:
+                    table = agg_column.table
+                    source = scope.sources.get(table)
+                    if isinstance(source, Scope):
+                        to_node(
+                            agg_column.name,
+                            scope=source,
+                            scope_name=table,
+                            dialect=dialect,
+                            upstream=node,
+                            trim_selects=trim_selects,
+                        )
+                    else:
+                        source = source or exp.Placeholder()
+                        node.downstream.append(
+                            Node(
+                                name=agg_column.sql(comments=False),
+                                source=source,
+                                expression=source,
+                            )
+                        )
         else:
-            # The source is not a scope - we've reached the end of the line. At this point, if a source is not found
+            # The source is not a scope and the column is not in any pivot - we've reached the end of the line. At this point, if a source is not found
             # it means this column's lineage is unknown. This can happen if the definition of a source used in a query
             # is not passed into the `sources` map.
             source = source or exp.Placeholder()

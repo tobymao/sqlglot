@@ -118,6 +118,9 @@
                     <a class="function" href="#first">first</a>
             </li>
             <li>
+                    <a class="function" href="#to_bool">to_bool</a>
+            </li>
+            <li>
                     <a class="function" href="#merge_ranges">merge_ranges</a>
             </li>
             <li>
@@ -622,83 +625,97 @@
 </span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
 </span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a>
 </span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a>
-</span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
-</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
-</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a><span class="sd">    belong to some totally-ordered set.</span>
-</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>
-</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a><span class="sd">    Example:</span>
-</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
-</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a><span class="sd">        [(1, 6)]</span>
-</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
-</span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a>        <span class="k">return</span> <span class="p">[]</span>
-</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a>
-</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a><span class="k">def</span> <span class="nf">to_bool</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
+</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a>        <span class="k">return</span> <span class="n">value</span>
+</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a>
+</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>    <span class="c1"># Coerce the value to boolean if it matches to the truthy/falsy values below</span>
+</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a>    <span class="n">value_lower</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>    <span class="k">if</span> <span class="n">value_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">):</span>
+</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>    <span class="k">if</span> <span class="n">value_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;false&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">):</span>
+</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a>
+</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a>    <span class="k">return</span> <span class="n">value</span>
+</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>
 </span><span id="L-472"><a href="#L-472"><span class="linenos">472</span></a>
-</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a>
-</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
+</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
+</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a><span class="sd">    belong to some totally-ordered set.</span>
 </span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a>
-</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
-</span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a>
-</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a>    <span class="k">return</span> <span class="n">merged</span>
+</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a><span class="sd">    Example:</span>
+</span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
+</span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a><span class="sd">        [(1, 6)]</span>
+</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a>        <span class="k">return</span> <span class="p">[]</span>
 </span><span id="L-484"><a href="#L-484"><span class="linenos">484</span></a>
-</span><span id="L-485"><a href="#L-485"><span class="linenos">485</span></a>
-</span><span id="L-486"><a href="#L-486"><span class="linenos">486</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-487"><a href="#L-487"><span class="linenos">487</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-488"><a href="#L-488"><span class="linenos">488</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="L-492"><a href="#L-492"><span class="linenos">492</span></a>
-</span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a>
-</span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-495"><a href="#L-495"><span class="linenos">495</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a>
-</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a>
-</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a><span class="c1"># Interval units that operate on date components</span>
-</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a><span class="n">DATE_UNITS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;quarter&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="s2">&quot;year_month&quot;</span><span class="p">}</span>
-</span><span id="L-504"><a href="#L-504"><span class="linenos">504</span></a>
-</span><span id="L-505"><a href="#L-505"><span class="linenos">505</span></a>
-</span><span id="L-506"><a href="#L-506"><span class="linenos">506</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-507"><a href="#L-507"><span class="linenos">507</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
-</span><span id="L-508"><a href="#L-508"><span class="linenos">508</span></a>
-</span><span id="L-509"><a href="#L-509"><span class="linenos">509</span></a>
-</span><span id="L-510"><a href="#L-510"><span class="linenos">510</span></a><span class="n">K</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
-</span><span id="L-511"><a href="#L-511"><span class="linenos">511</span></a><span class="n">V</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
-</span><span id="L-512"><a href="#L-512"><span class="linenos">512</span></a>
-</span><span id="L-513"><a href="#L-513"><span class="linenos">513</span></a>
-</span><span id="L-514"><a href="#L-514"><span class="linenos">514</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
-</span><span id="L-515"><a href="#L-515"><span class="linenos">515</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-516"><a href="#L-516"><span class="linenos">516</span></a><span class="sd">    Mapping where all keys return the same value.</span>
-</span><span id="L-517"><a href="#L-517"><span class="linenos">517</span></a>
-</span><span id="L-518"><a href="#L-518"><span class="linenos">518</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
-</span><span id="L-519"><a href="#L-519"><span class="linenos">519</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
-</span><span id="L-520"><a href="#L-520"><span class="linenos">520</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-521"><a href="#L-521"><span class="linenos">521</span></a>
-</span><span id="L-522"><a href="#L-522"><span class="linenos">522</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
-</span><span id="L-523"><a href="#L-523"><span class="linenos">523</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-</span><span id="L-524"><a href="#L-524"><span class="linenos">524</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
-</span><span id="L-525"><a href="#L-525"><span class="linenos">525</span></a>
-</span><span id="L-526"><a href="#L-526"><span class="linenos">526</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
-</span><span id="L-527"><a href="#L-527"><span class="linenos">527</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
-</span><span id="L-528"><a href="#L-528"><span class="linenos">528</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
-</span><span id="L-529"><a href="#L-529"><span class="linenos">529</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="L-530"><a href="#L-530"><span class="linenos">530</span></a>
-</span><span id="L-531"><a href="#L-531"><span class="linenos">531</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="L-532"><a href="#L-532"><span class="linenos">532</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
-</span><span id="L-533"><a href="#L-533"><span class="linenos">533</span></a>
-</span><span id="L-534"><a href="#L-534"><span class="linenos">534</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
-</span><span id="L-535"><a href="#L-535"><span class="linenos">535</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="L-485"><a href="#L-485"><span class="linenos">485</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="L-486"><a href="#L-486"><span class="linenos">486</span></a>
+</span><span id="L-487"><a href="#L-487"><span class="linenos">487</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+</span><span id="L-488"><a href="#L-488"><span class="linenos">488</span></a>
+</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>
+</span><span id="L-492"><a href="#L-492"><span class="linenos">492</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
+</span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-495"><a href="#L-495"><span class="linenos">495</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>
+</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a>    <span class="k">return</span> <span class="n">merged</span>
+</span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a>
+</span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>
+</span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-504"><a href="#L-504"><span class="linenos">504</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="L-505"><a href="#L-505"><span class="linenos">505</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-506"><a href="#L-506"><span class="linenos">506</span></a>
+</span><span id="L-507"><a href="#L-507"><span class="linenos">507</span></a>
+</span><span id="L-508"><a href="#L-508"><span class="linenos">508</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-509"><a href="#L-509"><span class="linenos">509</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-510"><a href="#L-510"><span class="linenos">510</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="L-511"><a href="#L-511"><span class="linenos">511</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-512"><a href="#L-512"><span class="linenos">512</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="L-513"><a href="#L-513"><span class="linenos">513</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-514"><a href="#L-514"><span class="linenos">514</span></a>
+</span><span id="L-515"><a href="#L-515"><span class="linenos">515</span></a>
+</span><span id="L-516"><a href="#L-516"><span class="linenos">516</span></a><span class="c1"># Interval units that operate on date components</span>
+</span><span id="L-517"><a href="#L-517"><span class="linenos">517</span></a><span class="n">DATE_UNITS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;quarter&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="s2">&quot;year_month&quot;</span><span class="p">}</span>
+</span><span id="L-518"><a href="#L-518"><span class="linenos">518</span></a>
+</span><span id="L-519"><a href="#L-519"><span class="linenos">519</span></a>
+</span><span id="L-520"><a href="#L-520"><span class="linenos">520</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-521"><a href="#L-521"><span class="linenos">521</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
+</span><span id="L-522"><a href="#L-522"><span class="linenos">522</span></a>
+</span><span id="L-523"><a href="#L-523"><span class="linenos">523</span></a>
+</span><span id="L-524"><a href="#L-524"><span class="linenos">524</span></a><span class="n">K</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
+</span><span id="L-525"><a href="#L-525"><span class="linenos">525</span></a><span class="n">V</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+</span><span id="L-526"><a href="#L-526"><span class="linenos">526</span></a>
+</span><span id="L-527"><a href="#L-527"><span class="linenos">527</span></a>
+</span><span id="L-528"><a href="#L-528"><span class="linenos">528</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
+</span><span id="L-529"><a href="#L-529"><span class="linenos">529</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-530"><a href="#L-530"><span class="linenos">530</span></a><span class="sd">    Mapping where all keys return the same value.</span>
+</span><span id="L-531"><a href="#L-531"><span class="linenos">531</span></a>
+</span><span id="L-532"><a href="#L-532"><span class="linenos">532</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
+</span><span id="L-533"><a href="#L-533"><span class="linenos">533</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
+</span><span id="L-534"><a href="#L-534"><span class="linenos">534</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-535"><a href="#L-535"><span class="linenos">535</span></a>
+</span><span id="L-536"><a href="#L-536"><span class="linenos">536</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="L-537"><a href="#L-537"><span class="linenos">537</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="L-538"><a href="#L-538"><span class="linenos">538</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="L-539"><a href="#L-539"><span class="linenos">539</span></a>
+</span><span id="L-540"><a href="#L-540"><span class="linenos">540</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
+</span><span id="L-541"><a href="#L-541"><span class="linenos">541</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+</span><span id="L-542"><a href="#L-542"><span class="linenos">542</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+</span><span id="L-543"><a href="#L-543"><span class="linenos">543</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="L-544"><a href="#L-544"><span class="linenos">544</span></a>
+</span><span id="L-545"><a href="#L-545"><span class="linenos">545</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="L-546"><a href="#L-546"><span class="linenos">546</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="L-547"><a href="#L-547"><span class="linenos">547</span></a>
+</span><span id="L-548"><a href="#L-548"><span class="linenos">548</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
+</span><span id="L-549"><a href="#L-549"><span class="linenos">549</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1770,6 +1787,35 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
 
 
                 </section>
+                <section id="to_bool">
+                            <input id="to_bool-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">to_bool</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="to_bool-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#to_bool"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="to_bool-460"><a href="#to_bool-460"><span class="linenos">460</span></a><span class="k">def</span> <span class="nf">to_bool</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
+</span><span id="to_bool-461"><a href="#to_bool-461"><span class="linenos">461</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="to_bool-462"><a href="#to_bool-462"><span class="linenos">462</span></a>        <span class="k">return</span> <span class="n">value</span>
+</span><span id="to_bool-463"><a href="#to_bool-463"><span class="linenos">463</span></a>
+</span><span id="to_bool-464"><a href="#to_bool-464"><span class="linenos">464</span></a>    <span class="c1"># Coerce the value to boolean if it matches to the truthy/falsy values below</span>
+</span><span id="to_bool-465"><a href="#to_bool-465"><span class="linenos">465</span></a>    <span class="n">value_lower</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</span><span id="to_bool-466"><a href="#to_bool-466"><span class="linenos">466</span></a>    <span class="k">if</span> <span class="n">value_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">):</span>
+</span><span id="to_bool-467"><a href="#to_bool-467"><span class="linenos">467</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="to_bool-468"><a href="#to_bool-468"><span class="linenos">468</span></a>    <span class="k">if</span> <span class="n">value_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;false&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">):</span>
+</span><span id="to_bool-469"><a href="#to_bool-469"><span class="linenos">469</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="to_bool-470"><a href="#to_bool-470"><span class="linenos">470</span></a>
+</span><span id="to_bool-471"><a href="#to_bool-471"><span class="linenos">471</span></a>    <span class="k">return</span> <span class="n">value</span>
+</span></pre></div>
+
+
+    
+
+                </section>
                 <section id="merge_ranges">
                             <input id="merge_ranges-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1781,31 +1827,31 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
 
     </div>
     <a class="headerlink" href="#merge_ranges"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="merge_ranges-460"><a href="#merge_ranges-460"><span class="linenos">460</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
-</span><span id="merge_ranges-461"><a href="#merge_ranges-461"><span class="linenos">461</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="merge_ranges-462"><a href="#merge_ranges-462"><span class="linenos">462</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
-</span><span id="merge_ranges-463"><a href="#merge_ranges-463"><span class="linenos">463</span></a><span class="sd">    belong to some totally-ordered set.</span>
-</span><span id="merge_ranges-464"><a href="#merge_ranges-464"><span class="linenos">464</span></a>
-</span><span id="merge_ranges-465"><a href="#merge_ranges-465"><span class="linenos">465</span></a><span class="sd">    Example:</span>
-</span><span id="merge_ranges-466"><a href="#merge_ranges-466"><span class="linenos">466</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
-</span><span id="merge_ranges-467"><a href="#merge_ranges-467"><span class="linenos">467</span></a><span class="sd">        [(1, 6)]</span>
-</span><span id="merge_ranges-468"><a href="#merge_ranges-468"><span class="linenos">468</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="merge_ranges-469"><a href="#merge_ranges-469"><span class="linenos">469</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
-</span><span id="merge_ranges-470"><a href="#merge_ranges-470"><span class="linenos">470</span></a>        <span class="k">return</span> <span class="p">[]</span>
-</span><span id="merge_ranges-471"><a href="#merge_ranges-471"><span class="linenos">471</span></a>
-</span><span id="merge_ranges-472"><a href="#merge_ranges-472"><span class="linenos">472</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
-</span><span id="merge_ranges-473"><a href="#merge_ranges-473"><span class="linenos">473</span></a>
-</span><span id="merge_ranges-474"><a href="#merge_ranges-474"><span class="linenos">474</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span id="merge_ranges-475"><a href="#merge_ranges-475"><span class="linenos">475</span></a>
-</span><span id="merge_ranges-476"><a href="#merge_ranges-476"><span class="linenos">476</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="merge_ranges-477"><a href="#merge_ranges-477"><span class="linenos">477</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="merge_ranges-474"><a href="#merge_ranges-474"><span class="linenos">474</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
+</span><span id="merge_ranges-475"><a href="#merge_ranges-475"><span class="linenos">475</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="merge_ranges-476"><a href="#merge_ranges-476"><span class="linenos">476</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
+</span><span id="merge_ranges-477"><a href="#merge_ranges-477"><span class="linenos">477</span></a><span class="sd">    belong to some totally-ordered set.</span>
 </span><span id="merge_ranges-478"><a href="#merge_ranges-478"><span class="linenos">478</span></a>
-</span><span id="merge_ranges-479"><a href="#merge_ranges-479"><span class="linenos">479</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
-</span><span id="merge_ranges-480"><a href="#merge_ranges-480"><span class="linenos">480</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="merge_ranges-481"><a href="#merge_ranges-481"><span class="linenos">481</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="merge_ranges-482"><a href="#merge_ranges-482"><span class="linenos">482</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="merge_ranges-483"><a href="#merge_ranges-483"><span class="linenos">483</span></a>
-</span><span id="merge_ranges-484"><a href="#merge_ranges-484"><span class="linenos">484</span></a>    <span class="k">return</span> <span class="n">merged</span>
+</span><span id="merge_ranges-479"><a href="#merge_ranges-479"><span class="linenos">479</span></a><span class="sd">    Example:</span>
+</span><span id="merge_ranges-480"><a href="#merge_ranges-480"><span class="linenos">480</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
+</span><span id="merge_ranges-481"><a href="#merge_ranges-481"><span class="linenos">481</span></a><span class="sd">        [(1, 6)]</span>
+</span><span id="merge_ranges-482"><a href="#merge_ranges-482"><span class="linenos">482</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="merge_ranges-483"><a href="#merge_ranges-483"><span class="linenos">483</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+</span><span id="merge_ranges-484"><a href="#merge_ranges-484"><span class="linenos">484</span></a>        <span class="k">return</span> <span class="p">[]</span>
+</span><span id="merge_ranges-485"><a href="#merge_ranges-485"><span class="linenos">485</span></a>
+</span><span id="merge_ranges-486"><a href="#merge_ranges-486"><span class="linenos">486</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="merge_ranges-487"><a href="#merge_ranges-487"><span class="linenos">487</span></a>
+</span><span id="merge_ranges-488"><a href="#merge_ranges-488"><span class="linenos">488</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+</span><span id="merge_ranges-489"><a href="#merge_ranges-489"><span class="linenos">489</span></a>
+</span><span id="merge_ranges-490"><a href="#merge_ranges-490"><span class="linenos">490</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="merge_ranges-491"><a href="#merge_ranges-491"><span class="linenos">491</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="merge_ranges-492"><a href="#merge_ranges-492"><span class="linenos">492</span></a>
+</span><span id="merge_ranges-493"><a href="#merge_ranges-493"><span class="linenos">493</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
+</span><span id="merge_ranges-494"><a href="#merge_ranges-494"><span class="linenos">494</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-495"><a href="#merge_ranges-495"><span class="linenos">495</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="merge_ranges-496"><a href="#merge_ranges-496"><span class="linenos">496</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-497"><a href="#merge_ranges-497"><span class="linenos">497</span></a>
+</span><span id="merge_ranges-498"><a href="#merge_ranges-498"><span class="linenos">498</span></a>    <span class="k">return</span> <span class="n">merged</span>
 </span></pre></div>
 
 
@@ -1836,12 +1882,12 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#is_iso_date"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_date-487"><a href="#is_iso_date-487"><span class="linenos">487</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_iso_date-488"><a href="#is_iso_date-488"><span class="linenos">488</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="is_iso_date-489"><a href="#is_iso_date-489"><span class="linenos">489</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="is_iso_date-490"><a href="#is_iso_date-490"><span class="linenos">490</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="is_iso_date-491"><a href="#is_iso_date-491"><span class="linenos">491</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="is_iso_date-492"><a href="#is_iso_date-492"><span class="linenos">492</span></a>        <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_date-501"><a href="#is_iso_date-501"><span class="linenos">501</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_iso_date-502"><a href="#is_iso_date-502"><span class="linenos">502</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="is_iso_date-503"><a href="#is_iso_date-503"><span class="linenos">503</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="is_iso_date-504"><a href="#is_iso_date-504"><span class="linenos">504</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="is_iso_date-505"><a href="#is_iso_date-505"><span class="linenos">505</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="is_iso_date-506"><a href="#is_iso_date-506"><span class="linenos">506</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1859,12 +1905,12 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#is_iso_datetime"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_datetime-495"><a href="#is_iso_datetime-495"><span class="linenos">495</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_iso_datetime-496"><a href="#is_iso_datetime-496"><span class="linenos">496</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="is_iso_datetime-497"><a href="#is_iso_datetime-497"><span class="linenos">497</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="is_iso_datetime-498"><a href="#is_iso_datetime-498"><span class="linenos">498</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="is_iso_datetime-499"><a href="#is_iso_datetime-499"><span class="linenos">499</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="is_iso_datetime-500"><a href="#is_iso_datetime-500"><span class="linenos">500</span></a>        <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_datetime-509"><a href="#is_iso_datetime-509"><span class="linenos">509</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_iso_datetime-510"><a href="#is_iso_datetime-510"><span class="linenos">510</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="is_iso_datetime-511"><a href="#is_iso_datetime-511"><span class="linenos">511</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="is_iso_datetime-512"><a href="#is_iso_datetime-512"><span class="linenos">512</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="is_iso_datetime-513"><a href="#is_iso_datetime-513"><span class="linenos">513</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="is_iso_datetime-514"><a href="#is_iso_datetime-514"><span class="linenos">514</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1874,7 +1920,7 @@ belong to some totally-ordered set.</p>
                 <section id="DATE_UNITS">
                     <div class="attr variable">
             <span class="name">DATE_UNITS</span>        =
-<span class="default_value">{&#39;week&#39;, &#39;year_month&#39;, &#39;year&#39;, &#39;month&#39;, &#39;day&#39;, &#39;quarter&#39;}</span>
+<span class="default_value">{&#39;quarter&#39;, &#39;day&#39;, &#39;year&#39;, &#39;year_month&#39;, &#39;month&#39;, &#39;week&#39;}</span>
 
         
     </div>
@@ -1894,8 +1940,8 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#is_date_unit"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_date_unit-507"><a href="#is_date_unit-507"><span class="linenos">507</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_date_unit-508"><a href="#is_date_unit-508"><span class="linenos">508</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_date_unit-521"><a href="#is_date_unit-521"><span class="linenos">521</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_date_unit-522"><a href="#is_date_unit-522"><span class="linenos">522</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
 </span></pre></div>
 
 
@@ -1913,28 +1959,28 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#SingleValuedMapping"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping-515"><a href="#SingleValuedMapping-515"><span class="linenos">515</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
-</span><span id="SingleValuedMapping-516"><a href="#SingleValuedMapping-516"><span class="linenos">516</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SingleValuedMapping-517"><a href="#SingleValuedMapping-517"><span class="linenos">517</span></a><span class="sd">    Mapping where all keys return the same value.</span>
-</span><span id="SingleValuedMapping-518"><a href="#SingleValuedMapping-518"><span class="linenos">518</span></a>
-</span><span id="SingleValuedMapping-519"><a href="#SingleValuedMapping-519"><span class="linenos">519</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
-</span><span id="SingleValuedMapping-520"><a href="#SingleValuedMapping-520"><span class="linenos">520</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
-</span><span id="SingleValuedMapping-521"><a href="#SingleValuedMapping-521"><span class="linenos">521</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="SingleValuedMapping-522"><a href="#SingleValuedMapping-522"><span class="linenos">522</span></a>
-</span><span id="SingleValuedMapping-523"><a href="#SingleValuedMapping-523"><span class="linenos">523</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
-</span><span id="SingleValuedMapping-524"><a href="#SingleValuedMapping-524"><span class="linenos">524</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-</span><span id="SingleValuedMapping-525"><a href="#SingleValuedMapping-525"><span class="linenos">525</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
-</span><span id="SingleValuedMapping-526"><a href="#SingleValuedMapping-526"><span class="linenos">526</span></a>
-</span><span id="SingleValuedMapping-527"><a href="#SingleValuedMapping-527"><span class="linenos">527</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
-</span><span id="SingleValuedMapping-528"><a href="#SingleValuedMapping-528"><span class="linenos">528</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
-</span><span id="SingleValuedMapping-529"><a href="#SingleValuedMapping-529"><span class="linenos">529</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
-</span><span id="SingleValuedMapping-530"><a href="#SingleValuedMapping-530"><span class="linenos">530</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="SingleValuedMapping-531"><a href="#SingleValuedMapping-531"><span class="linenos">531</span></a>
-</span><span id="SingleValuedMapping-532"><a href="#SingleValuedMapping-532"><span class="linenos">532</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="SingleValuedMapping-533"><a href="#SingleValuedMapping-533"><span class="linenos">533</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
-</span><span id="SingleValuedMapping-534"><a href="#SingleValuedMapping-534"><span class="linenos">534</span></a>
-</span><span id="SingleValuedMapping-535"><a href="#SingleValuedMapping-535"><span class="linenos">535</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
-</span><span id="SingleValuedMapping-536"><a href="#SingleValuedMapping-536"><span class="linenos">536</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping-529"><a href="#SingleValuedMapping-529"><span class="linenos">529</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
+</span><span id="SingleValuedMapping-530"><a href="#SingleValuedMapping-530"><span class="linenos">530</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SingleValuedMapping-531"><a href="#SingleValuedMapping-531"><span class="linenos">531</span></a><span class="sd">    Mapping where all keys return the same value.</span>
+</span><span id="SingleValuedMapping-532"><a href="#SingleValuedMapping-532"><span class="linenos">532</span></a>
+</span><span id="SingleValuedMapping-533"><a href="#SingleValuedMapping-533"><span class="linenos">533</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
+</span><span id="SingleValuedMapping-534"><a href="#SingleValuedMapping-534"><span class="linenos">534</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
+</span><span id="SingleValuedMapping-535"><a href="#SingleValuedMapping-535"><span class="linenos">535</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="SingleValuedMapping-536"><a href="#SingleValuedMapping-536"><span class="linenos">536</span></a>
+</span><span id="SingleValuedMapping-537"><a href="#SingleValuedMapping-537"><span class="linenos">537</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="SingleValuedMapping-538"><a href="#SingleValuedMapping-538"><span class="linenos">538</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-539"><a href="#SingleValuedMapping-539"><span class="linenos">539</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="SingleValuedMapping-540"><a href="#SingleValuedMapping-540"><span class="linenos">540</span></a>
+</span><span id="SingleValuedMapping-541"><a href="#SingleValuedMapping-541"><span class="linenos">541</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-542"><a href="#SingleValuedMapping-542"><span class="linenos">542</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-543"><a href="#SingleValuedMapping-543"><span class="linenos">543</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+</span><span id="SingleValuedMapping-544"><a href="#SingleValuedMapping-544"><span class="linenos">544</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-545"><a href="#SingleValuedMapping-545"><span class="linenos">545</span></a>
+</span><span id="SingleValuedMapping-546"><a href="#SingleValuedMapping-546"><span class="linenos">546</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-547"><a href="#SingleValuedMapping-547"><span class="linenos">547</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-548"><a href="#SingleValuedMapping-548"><span class="linenos">548</span></a>
+</span><span id="SingleValuedMapping-549"><a href="#SingleValuedMapping-549"><span class="linenos">549</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
+</span><span id="SingleValuedMapping-550"><a href="#SingleValuedMapping-550"><span class="linenos">550</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1955,9 +2001,9 @@ as an optimization while qualifying columns for tables with lots of columns.</p>
 
     </div>
     <a class="headerlink" href="#SingleValuedMapping.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping.__init__-523"><a href="#SingleValuedMapping.__init__-523"><span class="linenos">523</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
-</span><span id="SingleValuedMapping.__init__-524"><a href="#SingleValuedMapping.__init__-524"><span class="linenos">524</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-</span><span id="SingleValuedMapping.__init__-525"><a href="#SingleValuedMapping.__init__-525"><span class="linenos">525</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping.__init__-537"><a href="#SingleValuedMapping.__init__-537"><span class="linenos">537</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="SingleValuedMapping.__init__-538"><a href="#SingleValuedMapping.__init__-538"><span class="linenos">538</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping.__init__-539"><a href="#SingleValuedMapping.__init__-539"><span class="linenos">539</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
 </span></pre></div>
 
 

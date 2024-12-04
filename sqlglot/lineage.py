@@ -278,7 +278,9 @@ def to_node(
             )
 
         elif scope.pivots:
-            pivot = next((p for p in scope.pivots if p.alias_or_name == c.table), None)
+            pivot = next(
+                (p for p in scope.pivots if p.alias_or_name == c.table and not p.unpivot), None
+            )
             if pivot:
                 # The source is a pivot operation, so we need to trace back to the aggregated column
                 pivot_column_mapping = {}

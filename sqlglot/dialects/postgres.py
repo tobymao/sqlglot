@@ -476,6 +476,20 @@ class Postgres(Dialect):
                 and self.dialect.to_json_path(self._parse_bitwise()),
             )
 
+        def _parse_generated_as_identity(
+            self,
+        ) -> (
+            exp.GeneratedAsIdentityColumnConstraint
+            | exp.ComputedColumnConstraint
+            | exp.GeneratedAsRowColumnConstraint
+        ):
+            this = super()._parse_generated_as_identity()
+
+            if self._match_text_seq("STORED"):
+                this = self.expression(exp.ComputedColumnConstraint, this=this.expression)
+
+            return this
+
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
         RENAME_TABLE_WITH_DB = False
@@ -691,3 +705,6 @@ class Postgres(Dialect):
                 if isinstance(seq_get(exprs, 0), exp.Select)
                 else f"{self.normalize_func('ARRAY')}[{self.expressions(expression, flat=True)}]"
             )
+
+        def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+            return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')}) STORED"

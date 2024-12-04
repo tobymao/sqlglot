@@ -1,6 +1,5 @@
-from sqlglot import exp, parser
+from sqlglot import exp, generator, parser
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.generator import Generator
 from sqlglot.tokens import TokenType
 
 
@@ -33,9 +32,7 @@ class TemporalCeil(exp.Func):
 
 
 class Druid(Dialect):
-
     class Parser(parser.Parser):
-
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
@@ -52,6 +49,7 @@ class Druid(Dialect):
                 self.raise_error("FLOOR requires at least one argument")
 
             this = args[0]
+            decimals = args[1] if len(args) > 1 else None
             unit = None
 
             # Check for the 'TO' token and handle it
@@ -64,7 +62,7 @@ class Druid(Dialect):
                 unit = self._parse_expression()
                 return TemporalFloor(this=this, unit=unit)
 
-            return exp.Floor(this=this)
+            return exp.Floor(this=this, decimals=decimals)
 
         def _parse_temporal_ceil(self, args, dialect):
             """
@@ -76,6 +74,7 @@ class Druid(Dialect):
                 self.raise_error("CEIL requires at least one argument")
 
             this = args[0]
+            decimals = args[1] if len(args) > 1 else None
             unit = None
 
             # Check for the 'TO' token and handle it
@@ -88,20 +87,19 @@ class Druid(Dialect):
                 unit = self._parse_expression()
                 return TemporalCeil(this=this, unit=unit)
 
-            return exp.Ceil(this=this)
+            return exp.Ceil(this=this, decimals=decimals)
 
-    class Generator(Generator):
+    class Generator(generator.Generator):
         TYPE_MAPPING = {
             exp.DataType.Type.INT: "LONG",
             exp.DataType.Type.FLOAT: "FLOAT",
             exp.DataType.Type.DOUBLE: "DOUBLE",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.ARRAY: "ARRAY",
-            exp.DataType.Type.COMPLEX: "COMPLEX",
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             TemporalFloor: lambda self, e: f"FLOOR({e.this} TO {e.unit})",
             TemporalCeil: lambda self, e: f"CEIL({e.this} TO {e.unit})",
         }

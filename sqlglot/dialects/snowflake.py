@@ -44,7 +44,7 @@ def _build_datetime(
         scale_or_fmt = seq_get(args, 1)
 
         int_value = value is not None and is_int(value.name)
-        int_scale_or_fmt = scale_or_fmt is not None and is_int(scale_or_fmt.name)
+        int_scale_or_fmt = scale_or_fmt is not None and scale_or_fmt.is_int
 
         if isinstance(value, exp.Literal) or (value and scale_or_fmt):
             # Converts calls like `TO_TIME('01:02:03')` into casts

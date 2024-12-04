@@ -485,7 +485,7 @@ class Postgres(Dialect):
         ):
             this = super()._parse_generated_as_identity()
 
-            if self._match_texts(("STORED")):
+            if self._match_text_seq("STORED"):
                 this = self.expression(exp.ComputedColumnConstraint, this=this.expression)
 
             return this

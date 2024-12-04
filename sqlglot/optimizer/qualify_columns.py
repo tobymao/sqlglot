@@ -223,10 +223,10 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
                 replacement: exp.Expression = exp.func("coalesce", *coalesce_args)
 
                 if isinstance(column.parent, exp.Select):
-                    # Ensure the USING column keeps it's output name if it's projected
+                    # Ensure the USING column keeps its name if it's projected
                     replacement = alias(replacement, alias=column.name, copy=False)
                 elif isinstance(column.parent, exp.Struct):
-                    # Ensure the USING column keeps it's name if it's an anonymous STRUCT field
+                    # Ensure the USING column keeps its name if it's an anonymous STRUCT field
                     replacement = exp.PropertyEQ(
                         this=exp.to_identifier(column.name), expression=replacement
                     )

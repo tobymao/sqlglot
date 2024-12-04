@@ -284,14 +284,14 @@ def to_node(
             if pivot:
                 # The source is a pivot operation, so we need to trace back to the aggregated column
                 pivot_column_mapping = {}
-                for agg in pivot.expressions:
-                    agg_columns = list(agg.find_all(exp.Column))
-                    literals = list(pivot.args.get("field").find_all(exp.Literal))
-                    for literal in literals:
-                        pivot_column_name = f"{literal.this}"
-                        if isinstance(agg, exp.Alias):
-                            pivot_column_name += f"_{agg.alias_or_name}"
-                        pivot_column_mapping[pivot_column_name] = agg_columns
+                pivot_aggs = len(pivot.expressions)
+                columns = pivot.args.get("columns")
+
+                for i, agg in enumerate(pivot.expressions):
+                    agg_cols = list(agg.find_all(exp.Column))
+                    for col in range(i, len(columns), pivot_aggs):
+                        # Go through the field_names in a step manner for this aggfunc
+                        pivot_column_mapping[columns[col].name] = agg_cols
 
                 for agg_column in pivot_column_mapping[c.alias_or_name]:
                     table = agg_column.table

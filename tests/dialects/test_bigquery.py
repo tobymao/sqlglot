@@ -200,24 +200,7 @@ LANGUAGE js AS
         self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS STRING)")
         self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
         self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
-        self.validate_all(
-            "EDIT_DISTANCE(col1, col2, max_distance => 3)",
-            write={
-                "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
-                "clickhouse": UnsupportedError,
-                "databricks": UnsupportedError,
-                "drill": UnsupportedError,
-                "duckdb": UnsupportedError,
-                "hive": UnsupportedError,
-                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
-                "presto": UnsupportedError,
-                "snowflake": "EDITDISTANCE(col1, col2, 3)",
-                "spark": UnsupportedError,
-                "spark2": UnsupportedError,
-                "sqlite": UnsupportedError,
-            },
-        )
-
+        self.validate_identity("SELECT * FROM x WHERE x.y >= (SELECT MAX(a) FROM b-c) - 20")
         self.validate_identity(
             "MERGE INTO dataset.NewArrivals USING (SELECT * FROM UNNEST([('microwave', 10, 'warehouse #1'), ('dryer', 30, 'warehouse #1'), ('oven', 20, 'warehouse #2')])) ON FALSE WHEN NOT MATCHED THEN INSERT ROW WHEN NOT MATCHED BY SOURCE THEN DELETE"
         )
@@ -332,6 +315,23 @@ LANGUAGE js AS
             "SELECT CAST(1 AS INT64)",
         )
 
+        self.validate_all(
+            "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+            write={
+                "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+                "clickhouse": UnsupportedError,
+                "databricks": UnsupportedError,
+                "drill": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "hive": UnsupportedError,
+                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
+                "presto": UnsupportedError,
+                "snowflake": "EDITDISTANCE(col1, col2, 3)",
+                "spark": UnsupportedError,
+                "spark2": UnsupportedError,
+                "sqlite": UnsupportedError,
+            },
+        )
         self.validate_all(
             "EDIT_DISTANCE(a, b)",
             write={

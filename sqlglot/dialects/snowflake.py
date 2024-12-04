@@ -41,9 +41,12 @@ def _build_datetime(
 ) -> t.Callable[[t.List], exp.Func]:
     def _builder(args: t.List) -> exp.Func:
         value = seq_get(args, 0)
-        int_value = value is not None and is_int(value.name)
+        scale_or_fmt = seq_get(args, 1)
 
-        if isinstance(value, exp.Literal):
+        int_value = value is not None and is_int(value.name)
+        int_scale_or_fmt = scale_or_fmt is not None and is_int(scale_or_fmt.name)
+
+        if isinstance(value, exp.Literal) or (value and scale_or_fmt):
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return (
@@ -55,11 +58,11 @@ def _build_datetime(
             # Handles `TO_TIMESTAMP(str, fmt)` and `TO_TIMESTAMP(num, scale)` as special
             # cases so we can transpile them, since they're relatively common
             if kind == exp.DataType.Type.TIMESTAMP:
-                if int_value and not safe:
+                if not safe and (int_value or int_scale_or_fmt):
                     # TRY_TO_TIMESTAMP('integer') is not parsed into exp.UnixToTime as
                     # it's not easily transpilable
-                    return exp.UnixToTime(this=value, scale=seq_get(args, 1))
-                if not is_float(value.this):
+                    return exp.UnixToTime(this=value, scale=scale_or_fmt)
+                if not int_scale_or_fmt and not is_float(value.name):
                     expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
                     expr.set("safe", safe)
                     return expr

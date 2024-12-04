@@ -124,6 +124,7 @@ WHERE
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
+        self.validate_identity("TO_TIMESTAMP(col, fmt)")
         self.validate_identity(
             "CAST(x AS GEOGRAPHY)",
             "TO_GEOGRAPHY(x)",
@@ -668,6 +669,15 @@ WHERE
             write={
                 "bigquery": "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z NULLS LAST) = 1",
                 "snowflake": "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(col, 'DD-MM-YYYY HH12:MI:SS') FROM t",
+            write={
+                "bigquery": "SELECT PARSE_TIMESTAMP('%d-%m-%Y %I:%M:%S', col) FROM t",
+                "duckdb": "SELECT STRPTIME(col, '%d-%m-%Y %I:%M:%S') FROM t",
+                "snowflake": "SELECT TO_TIMESTAMP(col, 'DD-mm-yyyy hh12:mi:ss') FROM t",
+                "spark": "SELECT TO_TIMESTAMP(col, 'dd-MM-yyyy hh:mm:ss') FROM t",
             },
         )
         self.validate_all(

@@ -220,11 +220,16 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
                 coalesce_args = [exp.column(column.name, table=table) for table in tables]
-                replacement = exp.func("coalesce", *coalesce_args)
+                replacement: exp.Expression = exp.func("coalesce", *coalesce_args)
 
-                # Ensure selects keep their output name
                 if isinstance(column.parent, exp.Select):
+                    # Ensure the USING column keeps it's output name if it's projected
                     replacement = alias(replacement, alias=column.name, copy=False)
+                elif isinstance(column.parent, exp.Struct):
+                    # Ensure the USING column keeps it's name if it's an anonymous STRUCT field
+                    replacement = exp.PropertyEQ(
+                        this=exp.to_identifier(column.name), expression=replacement
+                    )
 
                 scope.replace(column, replacement)
 

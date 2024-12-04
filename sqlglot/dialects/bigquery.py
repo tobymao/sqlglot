@@ -589,6 +589,8 @@ class BigQuery(Dialect):
 
         NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
 
+        DASHED_TABLE_PART_FOLLOW_TOKENS = {TokenType.DOT, TokenType.L_PAREN, TokenType.R_PAREN}
+
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
@@ -615,11 +617,13 @@ class BigQuery(Dialect):
             if isinstance(this, exp.Identifier):
                 table_name = this.name
                 while self._match(TokenType.DASH, advance=False) and self._next:
-                    text = ""
-                    while self._is_connected() and self._curr.token_type != TokenType.DOT:
+                    start = self._curr
+                    while self._is_connected() and not self._match_set(
+                        self.DASHED_TABLE_PART_FOLLOW_TOKENS, advance=False
+                    ):
                         self._advance()
-                        text += self._prev.text
-                    table_name += text
+
+                    table_name += self._find_sql(start, self._prev)
 
                 this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
             elif isinstance(this, exp.Literal):

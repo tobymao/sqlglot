@@ -2407,9 +2407,9 @@ class Generator(metaclass=_Generator):
                 # an aggregation func or under a window containing one
                 ancestor = expression.find_ancestor(exp.AggFunc, exp.Window, exp.Select)
 
-                if ancestor and any(
-                    isinstance(expr, exp.AggFunc) for expr in (ancestor, ancestor.this)
-                ):
+                if isinstance(ancestor, exp.Window):
+                    ancestor = ancestor.this
+                if isinstance(ancestor, exp.AggFunc):
                     self.unsupported(
                         f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
                     )

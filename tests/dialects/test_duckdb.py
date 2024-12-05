@@ -79,7 +79,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",
             write={
-                "bigquery": "SELECT SUM(X) OVER (ORDER BY x NULLS LAST)",
+                "bigquery": "SELECT SUM(X) OVER (ORDER BY x)",
                 "duckdb": "SELECT SUM(X) OVER (ORDER BY x)",
                 "mysql": "SELECT SUM(X) OVER (ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x)",
             },

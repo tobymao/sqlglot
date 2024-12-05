@@ -2399,18 +2399,21 @@ class Generator(metaclass=_Generator):
                     f"'{nulls_sort_change.strip()}' translation not supported in window functions"
                 )
                 nulls_sort_change = ""
-            elif (
-                self.NULL_ORDERING_SUPPORTED is False
-                and (isinstance(expression.find_ancestor(exp.AggFunc, exp.Select), exp.AggFunc))
-                and (
-                    (asc and nulls_sort_change == " NULLS LAST")
-                    or (desc and nulls_sort_change == " NULLS FIRST")
-                )
+            elif self.NULL_ORDERING_SUPPORTED is False and (
+                (asc and nulls_sort_change == " NULLS LAST")
+                or (desc and nulls_sort_change == " NULLS FIRST")
             ):
-                self.unsupported(
-                    f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
-                )
-                nulls_sort_change = ""
+                # BigQuery does not allow these ordering/nulls combinations when used under
+                # an aggregation func or under a window containing one
+                ancestor = expression.find_ancestor(exp.AggFunc, exp.Window, exp.Select)
+
+                if ancestor and any(
+                    isinstance(expr, exp.AggFunc) for expr in (ancestor, ancestor.this)
+                ):
+                    self.unsupported(
+                        f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
+                    )
+                    nulls_sort_change = ""
             elif self.NULL_ORDERING_SUPPORTED is None:
                 if expression.this.is_int:
                     self.unsupported(

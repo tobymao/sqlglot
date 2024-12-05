@@ -2131,6 +2131,16 @@ OPTIONS (
                 },
             )
 
+            self.validate_all(
+                f"SELECT SUM(f1) OVER (ORDER BY f2 {sort_order}) FROM t",
+                read={
+                    "": f"SELECT SUM(f1) OVER (ORDER BY f2 {sort_order} {null_order}) FROM t",
+                },
+                write={
+                    "bigquery": f"SELECT SUM(f1) OVER (ORDER BY f2 {sort_order}) FROM t",
+                },
+            )
+
     def test_json_extract(self):
         self.validate_all(
             """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",

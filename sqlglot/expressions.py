@@ -5783,6 +5783,7 @@ class Unnest(Func, UDTF):
 class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 
+
 class Format(Func):
     """
     SQL FORMAT function.
@@ -5792,13 +5793,15 @@ class Format(Func):
     Example (DuckDB):
         FORMAT('{:,.2f}', 123456.789) => "123,456.79"
     """
+
     arg_types = {
-        "this": True,      
-        "decimals": True,  
-        "locale": False, 
+        "this": True,
+        "decimals": True,
+        "locale": False,
     }
 
-    _sql_names = ["FORMAT"] 
+    _sql_names = ["FORMAT"]
+
 
 class FromBase64(Func):
     pass

@@ -1746,6 +1746,7 @@ def no_make_interval_sql(self: Generator, expression: exp.MakeInterval, sep: str
 
     return f"INTERVAL '{self.format_args(*args, sep=sep)}'"
 
+
 def convert_format_to_duckdb(self: Generator, expression: exp.Format) -> str:
     decimals = self.sql(expression, "decimals")
     number = self.sql(expression, "this")

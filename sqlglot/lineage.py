@@ -281,11 +281,11 @@ def to_node(
             pivot = next(
                 (p for p in scope.pivots if p.alias_or_name == c.table and not p.unpivot), None
             )
-            if pivot:
+            if pivot and isinstance(pivot.args.get("columns"), list):
                 # The source is a pivot operation, so we need to trace back to the aggregated column
                 pivot_column_mapping = {}
                 pivot_aggs = len(pivot.expressions)
-                columns = pivot.args.get("columns")
+                columns = pivot.args["columns"]
 
                 for i, agg in enumerate(pivot.expressions):
                     agg_cols = list(agg.find_all(exp.Column))

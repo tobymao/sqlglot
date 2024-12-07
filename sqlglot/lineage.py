@@ -288,24 +288,13 @@ def to_node(
                 columns = pivot.args["columns"]
                 columns_count = len(columns)
 
-                for i, agg in enumerate(pivot.expressions):
-                    agg_cols = list(agg.find_all(exp.Column))
-                    for col_index in range(i, columns_count, pivot_aggs_count):
-                        # e.g. "pivot (sum(value) as value_sum, max(price)) for category in ('a' as cat_a, 'b')"
-                        # For each aggregation function, the pivot creates a new column for each field in category combined with the aggfunc.
-                        # So the columns parsed have this order: cat_a_value_sum, cat_a, b_value_sum, b.
-                        # Because of this step wise manner the aggfunc 'sum(value) as value_sum' belongs to the column indices 0, 2,
-                        # and the aggfunc 'max(price)' without an alias belongs to the column indices 1, 3.
-                        # Here only the columns used in the aggregations are of interest in the lineage, so lookup the pivot column name
-                        # by index and map that with the columns used in the aggregation.
-                        pivot_column_mapping[columns[col_index].name] = agg_cols
-
-                for agg_column in pivot_column_mapping[c.alias_or_name]:
-                    table = agg_column.table
+                if c.alias_or_name not in [i.this for i in columns]:
+                    # The column is not in the pivot, so it must be an implicit column of the pivoted source.
+                    table = pivot.parent.name
                     source = scope.sources.get(table)
                     if isinstance(source, Scope):
                         to_node(
-                            agg_column.name,
+                            c.name,
                             scope=source,
                             scope_name=table,
                             dialect=dialect,
@@ -318,11 +307,48 @@ def to_node(
                         source = source or exp.Placeholder()
                         node.downstream.append(
                             Node(
-                                name=agg_column.sql(comments=False),
+                                name=f"{table}.{c.name}",  # TODO: probably a better way available
                                 source=source,
                                 expression=source,
                             )
                         )
+                else:
+                    # The column is in the pivot, so we need to trace back to the aggregation that created it.
+                    for i, agg in enumerate(pivot.expressions):
+                        agg_cols = list(agg.find_all(exp.Column))
+                        for col_index in range(i, columns_count, pivot_aggs_count):
+                            # e.g. "pivot (sum(value) as value_sum, max(price)) for category in ('a' as cat_a, 'b')"
+                            # For each aggregation function, the pivot creates a new column for each field in category combined with the aggfunc.
+                            # So the columns parsed have this order: cat_a_value_sum, cat_a, b_value_sum, b.
+                            # Because of this step wise manner the aggfunc 'sum(value) as value_sum' belongs to the column indices 0, 2,
+                            # and the aggfunc 'max(price)' without an alias belongs to the column indices 1, 3.
+                            # Here only the columns used in the aggregations are of interest in the lineage, so lookup the pivot column name
+                            # by index and map that with the columns used in the aggregation.
+                            pivot_column_mapping[columns[col_index].name] = agg_cols
+
+                    for agg_column in pivot_column_mapping[c.alias_or_name]:
+                        table = pivot.parent.alias_or_name
+                        source = scope.sources.get(table)
+                        if isinstance(source, Scope):
+                            to_node(
+                                agg_column.name,
+                                scope=source,
+                                scope_name=table,
+                                dialect=dialect,
+                                upstream=node,
+                                source_name=source_names.get(table) or source_name,
+                                reference_node_name=reference_node_name,
+                                trim_selects=trim_selects,
+                            )
+                        else:
+                            source = source or exp.Placeholder()
+                            node.downstream.append(
+                                Node(
+                                    name=agg_column.sql(comments=False),
+                                    source=source,
+                                    expression=source,
+                                )
+                            )
         else:
             # The source is not a scope and the column is not in any pivot - we've reached the end of the line. At this point, if a source is not found
             # it means this column's lineage is unknown. This can happen if the definition of a source used in a query

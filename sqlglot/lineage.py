@@ -286,12 +286,19 @@ def to_node(
                 pivot_column_mapping = {}
                 pivot_aggs_count = len(pivot.expressions)
                 columns = pivot.args["columns"]
+                columns_count = len(columns)
 
                 for i, agg in enumerate(pivot.expressions):
                     agg_cols = list(agg.find_all(exp.Column))
-                    for col in range(i, len(columns), pivot_aggs_count):
-                        # Go through the field_names in a step manner for this aggfunc
-                        pivot_column_mapping[columns[col].name] = agg_cols
+                    for col_index in range(i, columns_count, pivot_aggs_count):
+                        # e.g. "pivot (sum(value) as value_sum, max(price)) for category in ('a' as cat_a, 'b')"
+                        # For each aggregation function, the pivot creates a new column for each field in category combined with the aggfunc.
+                        # So the columns parsed have this order: cat_a_value_sum, cat_a, b_value_sum, b.
+                        # Because of this step wise manner the aggfunc 'sum(value) as value_sum' belongs to the column indices 0, 2,
+                        # and the aggfunc 'max(price)' without an alias belongs to the column indices 1, 3.
+                        # Here only the columns used in the aggregations are of interest in the lineage, so lookup the pivot column name
+                        # by index and map that with the columns used in the aggregation.
+                        pivot_column_mapping[columns[col_index].name] = agg_cols
 
                 for agg_column in pivot_column_mapping[c.alias_or_name]:
                     table = agg_column.table

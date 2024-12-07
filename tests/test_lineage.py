@@ -542,6 +542,7 @@ class TestLineage(unittest.TestCase):
         node = lineage("other_a", sql)
 
         self.assertEqual(node.downstream[0].name, "t.other_a")
+        self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
 
     def test_pivot_with_implicit_column_of_pivoted_source(self) -> None:
@@ -573,4 +574,5 @@ class TestLineage(unittest.TestCase):
         node = lineage("empid", sql)
 
         self.assertEqual(node.downstream[0].name, "t.empid")
+        self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")

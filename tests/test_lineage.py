@@ -514,11 +514,11 @@ class TestLineage(unittest.TestCase):
     def test_pivot_with_alias(self) -> None:
         sql = """
             SELECT 
-                a_s as other_as
+                cat_a_s as other_as
             FROM sample_data
             PIVOT (
-                sum(value) as s, max(price) as m
-                FOR category IN ('a', 'b')
+                sum(value) as s, max(price)
+                FOR category IN ('a' as cat_a, 'b')
             )
         """
         node = lineage("other_as", sql)

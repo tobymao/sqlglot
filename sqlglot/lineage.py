@@ -303,6 +303,8 @@ def to_node(
                             scope_name=table,
                             dialect=dialect,
                             upstream=node,
+                            source_name=source_names.get(table) or source_name,
+                            reference_node_name=reference_node_name,
                             trim_selects=trim_selects,
                         )
                     else:

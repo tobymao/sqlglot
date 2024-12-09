@@ -976,6 +976,9 @@ WHERE
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
             },
         )
+        self.validate_identity("SELECT BITOR(a, b) FROM table")
+
+        self.validate_identity("SELECT BIT_OR(a, b) FROM table", "SELECT BITOR(a, b) FROM table")
 
     def test_null_treatment(self):
         self.validate_all(
@@ -2277,13 +2280,3 @@ SINGLE = TRUE""",
         self.assertEqual(ast.sql("snowflake"), query)
         self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
         self.assertEqual(window.this.sql("snowflake"), "db.schema.FUNC(a)")
-
-    def test_bitor_function(self):
-        self.validate_identity("SELECT BITOR(a, b) FROM table")
-
-    def test_bit_or_function(self):
-        # BIT_OR it just alias of BITOR, so we can transpile to BITOR only
-
-        self.validate_identity("SELECT BITOR(a, b) FROM table")
-
-        self.validate_identity("SELECT BIT_OR(a, b) FROM table", "SELECT BITOR(a, b) FROM table")

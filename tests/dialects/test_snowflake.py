@@ -2286,7 +2286,4 @@ SINGLE = TRUE""",
 
         self.validate_identity("SELECT BITOR(a, b) FROM table")
 
-        self.validate_identity(
-            "SELECT BIT_OR(a, b) FROM table",
-            "SELECT BITOR(a, b) FROM table"
-        )
+        self.validate_identity("SELECT BIT_OR(a, b) FROM table", "SELECT BITOR(a, b) FROM table")

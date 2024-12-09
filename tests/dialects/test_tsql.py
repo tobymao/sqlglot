@@ -518,11 +518,21 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x AS DATETIME2)",
             read={
-                "": "CAST(x AS DATETIME)",
+                "": "CAST(x AS DATETIME2)",
             },
             write={
                 "mysql": "CAST(x AS DATETIME)",
                 "tsql": "CAST(x AS DATETIME2)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS DATETIME)",
+            read={
+                "": "CAST(x AS DATETIME)",
+            },
+            write={
+                "mysql": "CAST(x AS DATETIME)",
+                "tsql": "CAST(x AS DATETIME)",
             },
         )
         self.validate_all(
@@ -1094,7 +1104,7 @@ WHERE
 
         expected_sqls = [
             "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
-            "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
             "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
             "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
             "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
@@ -1438,7 +1448,7 @@ WHERE
             "CONVERT(DATETIME, x, 121)",
             write={
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
-                "tsql": "CONVERT(DATETIME2, x, 121)",
+                "tsql": "CONVERT(DATETIME, x, 121)",
             },
         )
         self.validate_all(
@@ -1899,7 +1909,7 @@ WHERE
   *
 FROM OPENJSON(@json) WITH (
     Number VARCHAR(200) '$.Order.Number',
-    Date DATETIME2 '$.Order.Date',
+    Date DATETIME '$.Order.Date',
     Customer VARCHAR(200) '$.AccountNumber',
     Quantity INTEGER '$.Item.Quantity',
     [Order] NVARCHAR(MAX) AS JSON

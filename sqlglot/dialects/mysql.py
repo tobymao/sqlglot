@@ -786,6 +786,7 @@ class MySQL(Dialect):
         }
 
         TIMESTAMP_TYPE_MAPPING = {
+            exp.DataType.Type.DATETIME2: "DATETIME",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",

@@ -4347,6 +4347,7 @@ class DataType(Expression):
         DATEMULTIRANGE = auto()
         DATERANGE = auto()
         DATETIME = auto()
+        DATETIME2 = auto()
         DATETIME64 = auto()
         DECIMAL = auto()
         DECIMAL32 = auto()
@@ -4529,6 +4530,7 @@ class DataType(Expression):
         Type.DATE,
         Type.DATE32,
         Type.DATETIME,
+        Type.DATETIME2,
         Type.DATETIME64,
         Type.TIME,
         Type.TIMESTAMP,

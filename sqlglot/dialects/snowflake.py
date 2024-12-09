@@ -395,8 +395,6 @@ class Snowflake(Dialect):
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BITOR": binary_from_function(exp.BitwiseOr),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
-            "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
-            "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BOOLXOR": binary_from_function(exp.Xor),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,

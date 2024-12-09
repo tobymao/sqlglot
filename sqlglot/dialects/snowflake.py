@@ -393,6 +393,8 @@ class Snowflake(Dialect):
             ),
             "BITXOR": binary_from_function(exp.BitwiseXor),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
+            "BITOR": binary_from_function(exp.BitwiseOr),
+            "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BOOLXOR": binary_from_function(exp.Xor),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
@@ -869,6 +871,7 @@ class Snowflake(Dialect):
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
             exp.BitwiseXor: rename_func("BITXOR"),
+            exp.BitwiseOr: rename_func("BITOR"),
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

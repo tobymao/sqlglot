@@ -453,6 +453,7 @@ class Generator(metaclass=_Generator):
     ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
 
     TYPE_MAPPING = {
+        exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
         exp.DataType.Type.MEDIUMTEXT: "TEXT",
@@ -463,6 +464,7 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
         exp.DataType.Type.ROWVERSION: "VARBINARY",
+        exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
     }
 
     TIME_PART_SINGULARS = {
@@ -4057,7 +4059,7 @@ class Generator(metaclass=_Generator):
 
             if to.this == exp.DataType.Type.DATE:
                 transformed = exp.StrToDate(this=value, format=fmt)
-            elif to.this == exp.DataType.Type.DATETIME:
+            elif to.this in (exp.DataType.Type.DATETIME, exp.DataType.Type.DATETIME2):
                 transformed = exp.StrToTime(this=value, format=fmt)
             elif to.this in self.PARAMETERIZABLE_TEXT_TYPES:
                 transformed = cast(this=exp.TimeToStr(this=value, format=fmt), to=to, safe=safe)

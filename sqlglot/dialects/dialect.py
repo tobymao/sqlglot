@@ -1547,7 +1547,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
     if alias:
         targets.add(normalize(alias.this))
 
-    for when in expression.expressions:
+    for when in expression.args["whens"].expressions:
         # only remove the target names from the THEN clause
         # theyre still valid in the <condition> part of WHEN MATCHED / WHEN NOT MATCHED
         # ref: https://github.com/TobikoData/sqlmesh/issues/2934

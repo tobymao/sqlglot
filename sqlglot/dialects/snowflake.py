@@ -107,6 +107,13 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     return _builder
 
 
+def _build_bitor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
+    if len(args) == 3:
+        return exp.Anonymous(this="BITOR", expressions=args)
+
+    return exp.BitwiseOr(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _build_if_from_div0(args: t.List) -> exp.If:
     lhs = exp._wrap(seq_get(args, 0), exp.Binary)
@@ -393,8 +400,8 @@ class Snowflake(Dialect):
             ),
             "BITXOR": binary_from_function(exp.BitwiseXor),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
-            "BITOR": binary_from_function(exp.BitwiseOr),
-            "BIT_OR": binary_from_function(exp.BitwiseOr),
+            "BITOR": _build_bitor,
+            "BIT_OR": _build_bitor,
             "BOOLXOR": binary_from_function(exp.Xor),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,

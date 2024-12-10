@@ -980,6 +980,12 @@ WHERE
 
         self.validate_identity("SELECT BIT_OR(a, b) FROM table", "SELECT BITOR(a, b) FROM table")
 
+        # Test BITOR with three arguments, padding on the left
+        self.validate_identity("SELECT BITOR(a, b, 'LEFT') FROM table_name")
+
+        # Test BITOR with three arguments, padding on the right
+        self.validate_identity("SELECT BITOR(a, b, 'RIGHT') FROM table_name")
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

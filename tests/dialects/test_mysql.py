@@ -1,7 +1,7 @@
 import unittest
 import sys
 
-from sqlglot import expressions as exp
+from sqlglot import UnsupportedError, expressions as exp
 from sqlglot.dialects.mysql import MySQL
 from tests.dialects.test_dialect import Validator
 
@@ -1344,3 +1344,33 @@ COMMENT='客户账户表'"""
 
         for format in ("JSON", "TRADITIONAL", "TREE"):
             self.validate_identity(f"DESCRIBE FORMAT={format} UPDATE test SET test_col = 'abc'")
+
+    def test_number_format(self):
+        self.validate_all(
+            "SELECT FORMAT(12332.123456, 4)",
+            write={
+                "duckdb": "SELECT FORMAT('{:,.4f}', 12332.123456)",
+                "mysql": "SELECT FORMAT(12332.123456, 4)",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT(12332.1, 4)",
+            write={
+                "duckdb": "SELECT FORMAT('{:,.4f}', 12332.1)",
+                "mysql": "SELECT FORMAT(12332.1, 4)",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT(12332.2, 0)",
+            write={
+                "duckdb": "SELECT FORMAT('{:,.0f}', 12332.2)",
+                "mysql": "SELECT FORMAT(12332.2, 0)",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT(12332.2, 2, 'de_DE')",
+            write={
+                "duckdb": UnsupportedError,
+                "mysql": "SELECT FORMAT(12332.2, 2, 'de_DE')",
+            },
+        )

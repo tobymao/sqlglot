@@ -899,6 +899,16 @@ class TestDuckDB(Validator):
             "NOT a ILIKE b",
         )
 
+        self.validate_all(
+            "SELECT e'Hello\nworld'",
+            read={
+                "duckdb": "SELECT E'Hello\nworld'",
+            },
+            write={
+                "duckdb": "SELECT e'Hello\nworld'",
+            },
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

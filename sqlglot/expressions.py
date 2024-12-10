@@ -6678,14 +6678,20 @@ class Merge(DML):
         "this": True,
         "using": True,
         "on": True,
-        "expressions": True,
+        "when_sequence": True,
         "with": False,
         "returning": False,
     }
 
 
-class When(Func):
+class When(Expression):
     arg_types = {"matched": True, "source": False, "condition": False, "then": True}
+
+
+class WhenSequence(Expression):
+    """Wraps around one or more WHEN [NOT] MATCHED [...] clauses."""
+
+    arg_types = {"expressions": True}
 
 
 # https://docs.oracle.com/javadb/10.8.3.0/ref/rrefsqljnextvaluefor.html
@@ -7345,14 +7351,19 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
+    expressions = []
+    for when_expr in when_exprs:
+        expressions.extend(
+            maybe_parse(
+                when_expr, dialect=dialect, copy=copy, into=WhenSequence, **opts
+            ).expressions
+        )
+
     merge = Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
         using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
         on=maybe_parse(on, dialect=dialect, copy=copy, **opts),
-        expressions=[
-            maybe_parse(when_expr, dialect=dialect, copy=copy, into=When, **opts)
-            for when_expr in when_exprs
-        ],
+        when_sequence=WhenSequence(expressions=expressions),
     )
     if returning:
         merge = merge.returning(returning, dialect=dialect, copy=False, **opts)

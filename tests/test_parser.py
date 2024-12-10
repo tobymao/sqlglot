@@ -27,9 +27,9 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(
             parse_one(
                 "WHEN MATCHED THEN UPDATE SET target.salary = COALESCE(source.salary, target.salary)",
-                into=exp.When,
+                into=exp.WhenSequence,
             ),
-            exp.When,
+            exp.WhenSequence,
         )
 
         with self.assertRaises(ParseError) as ctx:

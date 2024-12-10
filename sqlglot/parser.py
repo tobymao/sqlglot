@@ -776,7 +776,7 @@ class Parser(metaclass=_Parser):
         exp.Table: lambda self: self._parse_table_parts(),
         exp.TableAlias: lambda self: self._parse_table_alias(),
         exp.Tuple: lambda self: self._parse_value(),
-        exp.When: lambda self: seq_get(self._parse_when_matched(), 0),
+        exp.WhenSequence: lambda self: self._parse_when_matched(),
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
         exp.With: lambda self: self._parse_with(),
@@ -7008,11 +7008,11 @@ class Parser(metaclass=_Parser):
             this=target,
             using=using,
             on=on,
-            expressions=self._parse_when_matched(),
+            when_sequence=self._parse_when_matched(),
             returning=self._parse_returning(),
         )
 
-    def _parse_when_matched(self) -> t.List[exp.When]:
+    def _parse_when_matched(self) -> exp.WhenSequence:
         whens = []
 
         while self._match(TokenType.WHEN):
@@ -7061,7 +7061,7 @@ class Parser(metaclass=_Parser):
                     then=then,
                 )
             )
-        return whens
+        return self.expression(exp.WhenSequence, expressions=whens)
 
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self.SHOW_TRIE)

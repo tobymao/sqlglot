@@ -516,26 +516,6 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS BIT)")
 
         self.validate_all(
-            "CAST(x AS DATETIME2)",
-            read={
-                "": "CAST(x AS DATETIME2)",
-            },
-            write={
-                "mysql": "CAST(x AS DATETIME)",
-                "tsql": "CAST(x AS DATETIME2)",
-            },
-        )
-        self.validate_all(
-            "CAST(x AS DATETIME)",
-            read={
-                "": "CAST(x AS DATETIME)",
-            },
-            write={
-                "mysql": "CAST(x AS DATETIME)",
-                "tsql": "CAST(x AS DATETIME)",
-            },
-        )
-        self.validate_all(
             "CAST(x AS DATETIME2(6))",
             write={
                 "hive": "CAST(x AS TIMESTAMP)",
@@ -551,6 +531,19 @@ class TestTSQL(Validator):
                 "hive": "CAST(x AS BINARY)",
             },
         )
+
+        for temporal_type in ("SMALLDATETIME", "DATETIME", "DATETIME2"):
+            self.validate_all(
+                f"CAST(x AS {temporal_type})",
+                read={
+                    "": f"CAST(x AS {temporal_type})",
+                },
+                write={
+                    "mysql": "CAST(x AS DATETIME)",
+                    "duckdb": "CAST(x AS TIMESTAMP)",
+                    "tsql": f"CAST(x AS {temporal_type})",
+                },
+            )
 
     def test_types_ints(self):
         self.validate_all(
@@ -757,14 +750,6 @@ class TestTSQL(Validator):
             write={
                 "spark": "CAST(x AS TIMESTAMP)",
                 "tsql": "CAST(x AS DATETIMEOFFSET)",
-            },
-        )
-
-        self.validate_all(
-            "CAST(x as SMALLDATETIME)",
-            write={
-                "spark": "CAST(x AS TIMESTAMP)",
-                "tsql": "CAST(x AS DATETIME2)",
             },
         )
 

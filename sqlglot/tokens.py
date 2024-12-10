@@ -159,6 +159,7 @@ class TokenType(AutoName):
     DATETIME = auto()
     DATETIME2 = auto()
     DATETIME64 = auto()
+    SMALLDATETIME = auto()
     DATE = auto()
     DATE32 = auto()
     INT4RANGE = auto()

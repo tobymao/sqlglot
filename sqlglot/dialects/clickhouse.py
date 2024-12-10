@@ -885,6 +885,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.DATE32: "Date32",
             exp.DataType.Type.DATETIME: "DateTime",
             exp.DataType.Type.DATETIME2: "DateTime",
+            exp.DataType.Type.SMALLDATETIME: "DateTime",
             exp.DataType.Type.DATETIME64: "DateTime64",
             exp.DataType.Type.DECIMAL: "Decimal",
             exp.DataType.Type.DECIMAL32: "Decimal32",

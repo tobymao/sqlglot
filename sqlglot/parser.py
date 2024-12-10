@@ -334,6 +334,7 @@ class Parser(metaclass=_Parser):
         TokenType.DATETIME,
         TokenType.DATETIME2,
         TokenType.DATETIME64,
+        TokenType.SMALLDATETIME,
         TokenType.DATE,
         TokenType.DATE32,
         TokenType.INT4RANGE,

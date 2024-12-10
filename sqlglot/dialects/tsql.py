@@ -507,7 +507,7 @@ class TSQL(Dialect):
             "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
             "ROWVERSION": TokenType.ROWVERSION,
-            "SMALLDATETIME": TokenType.DATETIME2,
+            "SMALLDATETIME": TokenType.SMALLDATETIME,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "SYSTEM_USER": TokenType.CURRENT_USER,
@@ -881,6 +881,7 @@ class TSQL(Dialect):
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DataType.Type.SMALLDATETIME: "SMALLDATETIME",
             exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }

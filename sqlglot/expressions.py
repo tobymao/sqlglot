@@ -4347,6 +4347,7 @@ class DataType(Expression):
         DATEMULTIRANGE = auto()
         DATERANGE = auto()
         DATETIME = auto()
+        DATETIME2 = auto()
         DATETIME64 = auto()
         DECIMAL = auto()
         DECIMAL32 = auto()
@@ -4406,6 +4407,7 @@ class DataType(Expression):
         ROWVERSION = auto()
         SERIAL = auto()
         SET = auto()
+        SMALLDATETIME = auto()
         SMALLINT = auto()
         SMALLMONEY = auto()
         SMALLSERIAL = auto()
@@ -4529,7 +4531,9 @@ class DataType(Expression):
         Type.DATE,
         Type.DATE32,
         Type.DATETIME,
+        Type.DATETIME2,
         Type.DATETIME64,
+        Type.SMALLDATETIME,
         Type.TIME,
         Type.TIMESTAMP,
         Type.TIMESTAMPNTZ,

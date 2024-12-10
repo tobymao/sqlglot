@@ -791,7 +791,7 @@ class Snowflake(Dialect):
             return this
 
         def _parse_foreign_key(self) -> exp.ForeignKey:
-            # inlineFK, the REFERENCES column is implied
+            # inlineFK, the REFERENCES columns are implied
             if self._match(TokenType.REFERENCES, advance=False):
                 return self.expression(exp.ForeignKey)
 

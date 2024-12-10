@@ -2113,7 +2113,7 @@ class Directory(Expression):
 
 class ForeignKey(Expression):
     arg_types = {
-        "expressions": True,
+        "expressions": False,
         "reference": False,
         "delete": False,
         "update": False,

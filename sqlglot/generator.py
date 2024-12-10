@@ -2829,13 +2829,14 @@ class Generator(metaclass=_Generator):
 
     def foreignkey_sql(self, expression: exp.ForeignKey) -> str:
         expressions = self.expressions(expression, flat=True)
+        expressions = f" ({expressions})" if expressions else ""
         reference = self.sql(expression, "reference")
         reference = f" {reference}" if reference else ""
         delete = self.sql(expression, "delete")
         delete = f" ON DELETE {delete}" if delete else ""
         update = self.sql(expression, "update")
         update = f" ON UPDATE {update}" if update else ""
-        return f"FOREIGN KEY ({expressions}){reference}{delete}{update}"
+        return f"FOREIGN KEY{expressions}{reference}{delete}{update}"
 
     def primarykey_sql(self, expression: exp.ForeignKey) -> str:
         expressions = self.expressions(expression, flat=True)

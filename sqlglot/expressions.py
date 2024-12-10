@@ -6678,7 +6678,7 @@ class Merge(DML):
         "this": True,
         "using": True,
         "on": True,
-        "when_sequence": True,
+        "whens": True,
         "with": False,
         "returning": False,
     }
@@ -6688,7 +6688,7 @@ class When(Expression):
     arg_types = {"matched": True, "source": False, "condition": False, "then": True}
 
 
-class WhenSequence(Expression):
+class Whens(Expression):
     """Wraps around one or more WHEN [NOT] MATCHED [...] clauses."""
 
     arg_types = {"expressions": True}
@@ -7354,16 +7354,14 @@ def merge(
     expressions = []
     for when_expr in when_exprs:
         expressions.extend(
-            maybe_parse(
-                when_expr, dialect=dialect, copy=copy, into=WhenSequence, **opts
-            ).expressions
+            maybe_parse(when_expr, dialect=dialect, copy=copy, into=Whens, **opts).expressions
         )
 
     merge = Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),
         using=maybe_parse(using, dialect=dialect, copy=copy, **opts),
         on=maybe_parse(on, dialect=dialect, copy=copy, **opts),
-        when_sequence=WhenSequence(expressions=expressions),
+        whens=Whens(expressions=expressions),
     )
     if returning:
         merge = merge.returning(returning, dialect=dialect, copy=False, **opts)

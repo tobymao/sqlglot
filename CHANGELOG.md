@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v25.34.1] - 2024-12-10
+### :boom: BREAKING CHANGES
+- due to [`f70f124`](https://github.com/tobymao/sqlglot/commit/f70f12408fbaf021dd105f2eac957b9e6fac045d) - transpile MySQL FORMAT to DuckDB *(PR [#4488](https://github.com/tobymao/sqlglot/pull/4488) by [@georgesittas](https://github.com/georgesittas))*:
+
+  transpile MySQL FORMAT to DuckDB (#4488)
+
+
+### :sparkles: New Features
+- [`f70f124`](https://github.com/tobymao/sqlglot/commit/f70f12408fbaf021dd105f2eac957b9e6fac045d) - transpile MySQL FORMAT to DuckDB *(PR [#4488](https://github.com/tobymao/sqlglot/pull/4488) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4445](https://github.com/tobymao/sqlglot/issues/4445) opened by [@fanyang01](https://github.com/fanyang01)*
+- [`5a276f3`](https://github.com/tobymao/sqlglot/commit/5a276f33df48dab96e77c560c4b193f9634974f7) - add parse into tuple *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`ddf7483`](https://github.com/tobymao/sqlglot/commit/ddf74833c3e033067e731eab387db658a9a803be) - enable python 3.13 in CI *(PR [#4483](https://github.com/tobymao/sqlglot/pull/4483) by [@simon-pactum](https://github.com/simon-pactum))*
+
+
 ## [v25.34.0] - 2024-12-06
 ### :boom: BREAKING CHANGES
 - due to [`41c6d24`](https://github.com/tobymao/sqlglot/commit/41c6d24c99e130b3c8e35e348a25a59e9e3d5553) - Alias expanded USING STRUCT fields *(PR [#4474](https://github.com/tobymao/sqlglot/pull/4474) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -5431,3 +5447,4 @@ Changelog
 [v25.32.1]: https://github.com/tobymao/sqlglot/compare/v25.32.0...v25.32.1
 [v25.33.0]: https://github.com/tobymao/sqlglot/compare/v25.32.1...v25.33.0
 [v25.34.0]: https://github.com/tobymao/sqlglot/compare/v25.33.0...v25.34.0
+[v25.34.1]: https://github.com/tobymao/sqlglot/compare/v25.34.0...v25.34.1

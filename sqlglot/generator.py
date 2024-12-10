@@ -3696,6 +3696,9 @@ class Generator(metaclass=_Generator):
             then = self.sql(then_expression)
         return f"WHEN {matched}{source}{condition} THEN {then}"
 
+    def whens_sql(self, expression: exp.Whens) -> str:
+        return self.expressions(expression, sep=" ", indent=False)
+
     def merge_sql(self, expression: exp.Merge) -> str:
         table = expression.this
         table_alias = ""
@@ -3708,16 +3711,17 @@ class Generator(metaclass=_Generator):
         this = self.sql(table)
         using = f"USING {self.sql(expression, 'using')}"
         on = f"ON {self.sql(expression, 'on')}"
-        expressions = self.expressions(expression, sep=" ", indent=False)
+        whens = self.sql(expression, "whens")
+
         returning = self.sql(expression, "returning")
         if returning:
-            expressions = f"{expressions}{returning}"
+            whens = f"{whens}{returning}"
 
         sep = self.sep()
 
         return self.prepend_ctes(
             expression,
-            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}",
+            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{whens}",
         )
 
     @unsupported_args("format")

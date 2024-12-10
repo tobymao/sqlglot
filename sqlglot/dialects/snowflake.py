@@ -799,6 +799,14 @@ class Snowflake(Dialect):
 
             return this
 
+        def _parse_foreign_key(self) -> exp.ForeignKey:
+            # inlineFK, the REFERENCES columns are implied
+            if self._match(TokenType.REFERENCES, advance=False):
+                return self.expression(exp.ForeignKey)
+
+            # outoflineFK, explicitly names the columns
+            return super()._parse_foreign_key()
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]

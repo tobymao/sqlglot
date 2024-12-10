@@ -76,6 +76,8 @@ struct NonReAllocatedVec<'a, T> {
 }
 
 impl <'a, T> NonReAllocatedVec<'a, T> {
+    
+
     fn iter(&self) -> Iter<'a, T> {
         self.vec[self.range.clone()].iter()
     }
@@ -98,13 +100,59 @@ impl <'a, T> NonReAllocatedVec<'a, T> {
         }
     }
 
+    fn open_ended_index(&self, start: usize) -> NonReAllocatedVec<'a, T> {
+        NonReAllocatedVec {
+            vec: self.vec,
+            range: self.range.start+start..self.range.end,
+        }
+    }
+
     fn get(&self, index: usize) -> Option<&T> {
         self.vec.get(index+self.range.start)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.range.start == self.range.end
+    }
+}
+
+impl <'a> NonReAllocatedVec<'a, char> {
+    fn to_string(&self) -> String {
+        self.iter().collect()
+    }
+
+    fn trim(&self) -> NonReAllocatedVec<'a, char> {
+        let mut start = self.range.start;
+        let mut end = self.range.end;
+        while start < end && self.vec[start].is_whitespace() {
+            start += 1;
+        }
+        while end > start && self.vec[end-1].is_whitespace() {
+            end -= 1;
+        }
+        NonReAllocatedVec {
+            vec: self.vec,
+            range: start..end,
+        }
+    }
+}
+
+impl PartialEq<str> for NonReAllocatedVec<'_, char> {
+    fn eq(&self, other: &str) -> bool {
+        let chars = other.chars();
+        self.iter().copied().eq(chars)
     }
 }
 
 impl PartialEq<String> for NonReAllocatedVec<'_, char> {
     fn eq(&self, other: &String) -> bool {
+        let chars = other.chars();
+        self.iter().map(|c| *c).eq(chars)
+    }
+}
+
+impl PartialEq<&String> for NonReAllocatedVec<'_, char> {
+    fn eq(&self, other: &&String) -> bool {
         let chars = other.chars();
         self.iter().map(|c| *c).eq(chars)
     }
@@ -260,8 +308,8 @@ impl<'a> TokenizerState<'a> {
         })
     }
 
-    fn text(&self) -> String {
-        self.sql.index(self.start, self.current).iter().collect()
+    fn text(&self) -> NonReAllocatedVec<'a, char> {
+        self.sql.index(self.start, self.current)
     }
 
     fn add(&mut self, token_type: TokenType, text: Option<String>) -> Result<(), TokenizerError> {
@@ -279,7 +327,7 @@ impl<'a> TokenizerState<'a> {
 
         self.tokens.push(Token::new(
             token_type,
-            text.unwrap_or(self.text()),
+            text.unwrap_or(self.text().to_string()),
             self.line,
             self.column,
             self.start,
@@ -302,11 +350,9 @@ impl<'a> TokenizerState<'a> {
             self.scan(Some(';'))?;
             self.tokens.truncate(tokens_len);
             let text = self.sql.index(start, self.current)
-                .iter()
-                .collect::<String>()
-                .trim()
-                .to_string();
+                .trim();
             if !text.is_empty() {
+                let text = text.iter().collect();
                 self.add(self.token_types.string, Some(text))?;
             }
         }
@@ -316,7 +362,7 @@ impl<'a> TokenizerState<'a> {
     fn scan_keyword(&mut self) -> Result<(), TokenizerError> {
         let mut size: usize = 0;
         let mut word: Option<String> = None;
-        let mut chars = self.text();
+        let mut chars = self.text().to_string();
         let mut current_char = '\0';
         let mut prev_space = false;
         let mut skip;
@@ -324,16 +370,16 @@ impl<'a> TokenizerState<'a> {
             && self
                 .settings
                 .single_tokens
-                .contains_key(&chars.chars().next().unwrap());
+                .contains_key(&chars.to_string().chars().next().unwrap());
 
         let (mut trie_result, mut trie_node) =
-            self.keyword_trie.root.contains(&chars.to_uppercase());
+            self.keyword_trie.root.contains(&&chars.to_uppercase());
 
         while !chars.is_empty() {
             if let TrieResult::Failed = trie_result {
                 break;
             } else if let TrieResult::Exists = trie_result {
-                word = Some(chars.clone());
+                word = Some(chars.to_string());
             }
 
             let end = self.current + size;
@@ -413,7 +459,7 @@ impl<'a> TokenizerState<'a> {
             let comment_end_size = comment_end.len();
 
             while !self.is_end {
-                if self.chars(comment_end_size) == *comment_end {
+                if self.chars(comment_end_size) == comment_end {
                     comment_count -= 1;
                     if comment_count == 0 {
                         break;
@@ -423,7 +469,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
 
                 // Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
-                if self.settings.nested_comments && !self.is_end && self.chars(comment_start_size) == comment_start.to_string() {
+                if self.settings.nested_comments && !self.is_end && self.chars(comment_start_size) == *comment_start {
                     self.advance(comment_start_size as isize)?;
                     comment_count += 1
                 }
@@ -431,7 +477,7 @@ impl<'a> TokenizerState<'a> {
 
             let text = self.text();
             self.comments
-                .push(text[comment_start_size..text.len() - comment_end_size + 1].to_string());
+                .push(text.index(comment_start_size,text.len() - comment_end_size + 1).to_string());
             self.advance((comment_end_size - 1) as isize)?;
         } else {
             while !self.is_end
@@ -440,7 +486,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
             }
             self.comments
-                .push(self.text()[comment_start_size..].to_string());
+                .push(self.text().open_ended_index(comment_start_size).to_string());
         }
 
         if comment_start == self.settings.hint_start
@@ -580,14 +626,14 @@ impl<'a> TokenizerState<'a> {
                     .copied();
 
                 if let Some(unwrapped_token_type) = token_type {
-                    self.add(self.token_types.number, Some(number_text))?;
+                    self.add(self.token_types.number, Some(number_text.to_string()))?;
                     self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(self.token_types.var, None)?;
                 } else {
                     self.advance(-(literal.chars().count() as isize))?;
-                    self.add(self.token_types.number, Some(number_text))?;
+                    self.add(self.token_types.number, Some(number_text.to_string()))?;
                 }
                 return Ok(());
             } else {
@@ -610,7 +656,7 @@ impl<'a> TokenizerState<'a> {
         radix_token_type: TokenType,
     ) -> Result<(), TokenizerError> {
         self.advance(1)?;
-        let value = self.extract_value()?[2..].to_string();
+        let value = self.extract_value()?.open_ended_index(2).to_string();
         match u64::from_str_radix(&value, radix) {
             Ok(_) => self.add(radix_token_type, Some(value)),
             Err(_) => self.add(self.token_types.identifier, None),
@@ -640,7 +686,7 @@ impl<'a> TokenizerState<'a> {
             } else {
                 self.settings
                     .keywords
-                    .get(&self.text().to_uppercase())
+                    .get(&self.text().to_string().to_uppercase())
                     .copied()
                     .unwrap_or(self.token_types.var)
             };
@@ -754,7 +800,7 @@ impl<'a> TokenizerState<'a> {
         )
     }
 
-    fn extract_value(&mut self) -> Result<String, TokenizerError> {
+    fn extract_value(&mut self) -> Result<NonReAllocatedVec<'a, char>, TokenizerError> {
         loop {
             if !self.peek_char.is_whitespace()
                 && !self.is_end

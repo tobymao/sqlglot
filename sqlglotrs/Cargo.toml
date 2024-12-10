@@ -8,5 +8,10 @@ license = "MIT"
 name = "sqlglotrs"
 crate-type = ["cdylib"]
 
+[profile.release]
+codegen-units = 1
+lto = "fat"
+
 [dependencies]
 pyo3 = "0.22.6"
+ahash = "0.8.11"

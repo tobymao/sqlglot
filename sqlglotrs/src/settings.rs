@@ -1,5 +1,5 @@
+use ahash::{HashMap, HashSet};
 use pyo3::prelude::*;
-use std::collections::{HashMap, HashSet};
 
 pub type TokenType = u16;
 

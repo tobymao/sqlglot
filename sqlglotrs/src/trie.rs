@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use ahash::{HashMap, HashMapExt};
+
 
 #[derive(Debug)]
 pub struct TrieNode {

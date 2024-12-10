@@ -113,7 +113,7 @@ impl<'a> TokenizerState<'a> {
 
     fn tokenize(&mut self) -> Result<Vec<Token>, TokenizerError> {
         self.scan(None)?;
-        Ok(std::mem::replace(&mut self.tokens, Vec::new()))
+        Ok(std::mem::take(&mut self.tokens))
     }
 
     fn scan(&mut self, until_peek_char: Option<char>) -> Result<(), TokenizerError> {
@@ -145,7 +145,7 @@ impl<'a> TokenizerState<'a> {
             }
 
             if !self.settings.white_space.contains_key(&self.current_char) {
-                if self.current_char.is_digit(10) {
+                if self.current_char.is_ascii_digit() {
                     self.scan_number()?;
                 } else if let Some(identifier_end) =
                     self.settings.identifiers.get(&self.current_char)
@@ -204,7 +204,7 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn char_at(&self, index: usize) -> Result<char, TokenizerError> {
-        self.sql.get(index).map(|c| *c).ok_or_else(|| {
+        self.sql.get(index).copied().ok_or_else(|| {
             self.error(format!(
                 "Index {} is out of bound (size {})",
                 index, self.size
@@ -236,7 +236,7 @@ impl<'a> TokenizerState<'a> {
             self.column,
             self.start,
             self.current - 1,
-            std::mem::replace(&mut self.comments, Vec::new()),
+            std::mem::take(&mut self.comments),
         ));
 
         // If we have either a semicolon or a begin token before the command's token, we'll parse
@@ -494,7 +494,7 @@ impl<'a> TokenizerState<'a> {
         let mut scientific = 0;
 
         loop {
-            if self.peek_char.is_digit(10) {
+            if self.peek_char.is_ascii_digit() {
                 self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
                 if self.tokens.last().map(|t| t.token_type) == Some(self.token_types.parameter) {
@@ -529,7 +529,7 @@ impl<'a> TokenizerState<'a> {
                             .get(&literal.to_uppercase())
                             .unwrap_or(&String::from("")),
                     )
-                    .map(|x| *x);
+                    .copied();
 
                 if let Some(unwrapped_token_type) = token_type {
                     self.add(self.token_types.number, Some(number_text))?;
@@ -593,7 +593,7 @@ impl<'a> TokenizerState<'a> {
                 self.settings
                     .keywords
                     .get(&self.text().to_uppercase())
-                    .map(|x| *x)
+                    .copied()
                     .unwrap_or(self.token_types.var)
             };
         self.add(token_type, None)
@@ -702,7 +702,7 @@ impl<'a> TokenizerState<'a> {
         s.chars().enumerate().all(
             |(i, c)|
             if i == 0 { self.is_alphabetic_or_underscore(c) }
-            else { self.is_alphabetic_or_underscore(c) || c.is_digit(10) }
+            else { self.is_alphabetic_or_underscore(c) || c.is_ascii_digit() }
         )
     }
 

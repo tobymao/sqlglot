@@ -57,13 +57,13 @@ impl Token {
         Python::with_gil(|py| {
             let pylist = self.comments.bind(py);
             for comment in comments.iter() {
-                if let Err(_) = pylist.append(comment) {
+                if pylist.append(comment).is_err() {
                     panic!("Failed to append comments to the Python list");
                 }
             }
         });
         // Simulate `Vec::append`.
-        let _ = std::mem::replace(comments, Vec::new());
+        let _ = std::mem::take(comments);
     }
 }
 

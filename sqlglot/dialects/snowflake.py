@@ -111,7 +111,7 @@ def _build_bitor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
     if len(args) == 3:
         return exp.Anonymous(this="BITOR", expressions=args)
 
-    return exp.BitwiseOr(this=seq_get(args, 0), expression=seq_get(args, 1))
+    return binary_from_function(exp.BitwiseOr)(args)
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/div0

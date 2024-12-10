@@ -3,6 +3,9 @@ use crate::{Token, TokenType, TokenTypeSettings, TokenizerDialectSettings, Token
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use std::cmp::{max, min};
+use std::ops::Range;
+use std::slice::Iter;
+use std::usize;
 
 #[derive(Debug)]
 pub struct TokenizerError {
@@ -48,6 +51,11 @@ impl Tokenizer {
         sql: &str,
         dialect_settings: &TokenizerDialectSettings,
     ) -> Result<Vec<Token>, PyErr> {
+        let vec = sql.chars().collect::<Vec<char>>();
+        let sql = NonReAllocatedVec {
+            vec: &vec,
+            range: 0..vec.len(),
+        };
         let mut state = TokenizerState::new(
             sql,
             &self.settings,
@@ -62,8 +70,49 @@ impl Tokenizer {
 }
 
 #[derive(Debug)]
+struct NonReAllocatedVec<'a, T> {
+    vec: &'a [T],
+    range: Range<usize>,
+}
+
+impl <'a, T> NonReAllocatedVec<'a, T> {
+    fn iter(&self) -> Iter<'a, T> {
+        self.vec[self.range.clone()].iter()
+    }
+
+    fn empty () -> NonReAllocatedVec<'a, T> {
+        NonReAllocatedVec {
+            vec: &[],
+            range: 0..0,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.range.end - self.range.start
+    }
+
+    fn index(&self, start: usize, end: usize) -> NonReAllocatedVec<'a, T> {
+        NonReAllocatedVec {
+            vec: self.vec,
+            range: self.range.start+start..self.range.start+end,
+        }
+    }
+
+    fn get(&self, index: usize) -> Option<&T> {
+        self.vec.get(index+self.range.start)
+    }
+}
+
+impl PartialEq<String> for NonReAllocatedVec<'_, char> {
+    fn eq(&self, other: &String) -> bool {
+        let chars = other.chars();
+        self.iter().map(|c| *c).eq(chars)
+    }
+}
+
+#[derive(Debug)]
 struct TokenizerState<'a> {
-    sql: Vec<char>,
+    sql: NonReAllocatedVec<'a, char>,
     size: usize,
     tokens: Vec<Token>,
     start: usize,
@@ -83,16 +132,15 @@ struct TokenizerState<'a> {
 
 impl<'a> TokenizerState<'a> {
     fn new(
-        sql: &str,
+        sql: NonReAllocatedVec<'a, char>,
         settings: &'a TokenizerSettings,
         token_types: &'a TokenTypeSettings,
         dialect_settings: &'a TokenizerDialectSettings,
         keyword_trie: &'a Trie,
     ) -> TokenizerState<'a> {
-        let sql_vec = sql.chars().collect::<Vec<char>>();
-        let sql_vec_len = sql_vec.len();
+        let sql_vec_len = sql.len();
         TokenizerState {
-            sql: sql_vec,
+            sql: sql,
             size: sql_vec_len,
             tokens: Vec::new(),
             start: 0,
@@ -193,13 +241,13 @@ impl<'a> TokenizerState<'a> {
         Ok(())
     }
 
-    fn chars(&self, size: usize) -> String {
+    fn chars(&'a self, size: usize) -> NonReAllocatedVec<'a, char> {
         let start = self.current - 1;
         let end = start + size;
         if end <= self.size {
-            self.sql[start..end].iter().collect()
+            self.sql.index(start, end)
         } else {
-            String::from("")
+            NonReAllocatedVec::empty()
         }
     }
 
@@ -213,7 +261,7 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn text(&self) -> String {
-        self.sql[self.start..self.current].iter().collect()
+        self.sql.index(self.start, self.current).iter().collect()
     }
 
     fn add(&mut self, token_type: TokenType, text: Option<String>) -> Result<(), TokenizerError> {
@@ -253,7 +301,7 @@ impl<'a> TokenizerState<'a> {
             let tokens_len = self.tokens.len();
             self.scan(Some(';'))?;
             self.tokens.truncate(tokens_len);
-            let text = self.sql[start..self.current]
+            let text = self.sql.index(start, self.current)
                 .iter()
                 .collect::<String>()
                 .trim()
@@ -375,7 +423,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
 
                 // Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
-                if self.settings.nested_comments && !self.is_end && self.chars(comment_start_size) == *comment_start {
+                if self.settings.nested_comments && !self.is_end && self.chars(comment_start_size) == comment_start.to_string() {
                     self.advance(comment_start_size as isize)?;
                     comment_count += 1
                 }
@@ -664,7 +712,7 @@ impl<'a> TokenizerState<'a> {
                     ));
                 }
             } else {
-                if self.chars(delimiter.len()) == delimiter {
+                if self.chars(delimiter.len()) == delimiter.to_string() {
                     if delimiter.len() > 1 {
                         self.advance((delimiter.len() - 1) as isize)?;
                     }
@@ -685,7 +733,7 @@ impl<'a> TokenizerState<'a> {
                 let current = self.current - 1;
                 self.advance(1)?;
                 text.push_str(
-                    &self.sql[current..self.current - 1]
+                    &self.sql.index(current, self.current - 1)
                         .iter()
                         .collect::<String>(),
                 );
@@ -723,7 +771,7 @@ impl<'a> TokenizerState<'a> {
     fn error(&self, message: String) -> TokenizerError {
         let start = max((self.current as isize) - 50, 0);
         let end = min(self.current + 50, self.size - 1);
-        let context = self.sql[start as usize..end].iter().collect::<String>();
+        let context = self.sql.index(start as usize, end).iter().collect::<String>();
         TokenizerError { message, context }
     }
 

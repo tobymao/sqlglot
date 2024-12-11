@@ -113,7 +113,8 @@ def _build_bitor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
 
     return binary_from_function(exp.BitwiseOr)(args)
 
-def _build_bitxor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
+
+def _build_bitxor(args: t.List) -> exp.BitwiseXor | exp.Anonymous:
     if len(args) == 3:
         return exp.Anonymous(this="BITXOR", expressions=args)
 

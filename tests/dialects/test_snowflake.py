@@ -976,12 +976,15 @@ WHERE
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
             },
         )
-        self.validate_identity("SELECT BITOR(a, b) FROM table")
-
-        self.validate_identity("SELECT BIT_OR(a, b) FROM table", "SELECT BITOR(a, b) FROM table")
-
-        # Test BITOR with three arguments, padding on the left
-        self.validate_identity("SELECT BITOR(a, b, 'LEFT') FROM table_name")
+        self.validate_identity("SELECT BITOR(a, b)")
+        self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
+        self.validate_identity("SELECT BITOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BITXOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
+        self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
+        self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
+        self.validate_identity("SELECT BIT_SHIFTRIGHT(a, 1)", "SELECT BITSHIFTRIGHT(a, 1)")
 
     def test_null_treatment(self):
         self.validate_all(

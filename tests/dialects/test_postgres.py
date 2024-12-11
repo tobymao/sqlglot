@@ -1289,6 +1289,3 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "clickhouse": UnsupportedError,
             },
         )
-
-    def test_timestamp_with_interval(self):
-        pass

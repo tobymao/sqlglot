@@ -32,7 +32,7 @@ from sqlglot.helper import flatten, is_float, is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+    from sqlglot._typing import E, B
 
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
@@ -107,18 +107,14 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     return _builder
 
 
-def _build_bitor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
-    if len(args) == 3:
-        return exp.Anonymous(this="BITOR", expressions=args)
+def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | exp.Anonymous]:
+    def _builder(args: t.List) -> B | exp.Anonymous:
+        if len(args) == 3:
+            return exp.Anonymous(this=name, expressions=args)
 
-    return binary_from_function(exp.BitwiseOr)(args)
+        return binary_from_function(expr_type)(args)
 
-
-def _build_bitxor(args: t.List) -> exp.BitwiseXor | exp.Anonymous:
-    if len(args) == 3:
-        return exp.Anonymous(this="BITXOR", expressions=args)
-
-    return binary_from_function(exp.BitwiseXor)(args)
+    return _builder
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/div0
@@ -405,10 +401,10 @@ class Snowflake(Dialect):
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),
             ),
-            "BITXOR": _build_bitxor,
-            "BIT_XOR": _build_bitxor,
-            "BITOR": _build_bitor,
-            "BIT_OR": _build_bitor,
+            "BITXOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
+            "BIT_XOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
+            "BITOR": _build_bitwise(exp.BitwiseOr, "BITOR"),
+            "BIT_OR": _build_bitwise(exp.BitwiseOr, "BITOR"),
             "BITSHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
             "BITSHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
@@ -898,8 +894,8 @@ class Snowflake(Dialect):
             ),
             exp.BitwiseXor: rename_func("BITXOR"),
             exp.BitwiseOr: rename_func("BITOR"),
-            exp.BitwiseLeftShift: lambda self, e: self.func("BITSHIFTLEFT", e.this, e.expression),
-            exp.BitwiseRightShift: lambda self, e: self.func("BITSHIFTRIGHT", e.this, e.expression),
+            exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),
+            exp.BitwiseRightShift: rename_func("BITSHIFTRIGHT"),
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

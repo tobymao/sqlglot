@@ -113,6 +113,12 @@ def _build_bitor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
 
     return binary_from_function(exp.BitwiseOr)(args)
 
+def _build_bitxor(args: t.List) -> exp.BitwiseOr | exp.Anonymous:
+    if len(args) == 3:
+        return exp.Anonymous(this="BITXOR", expressions=args)
+
+    return binary_from_function(exp.BitwiseXor)(args)
+
 
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _build_if_from_div0(args: t.List) -> exp.If:
@@ -398,8 +404,8 @@ class Snowflake(Dialect):
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),
             ),
-            "BITXOR": binary_from_function(exp.BitwiseXor),
-            "BIT_XOR": binary_from_function(exp.BitwiseXor),
+            "BITXOR": _build_bitxor,
+            "BIT_XOR": _build_bitxor,
             "BITOR": _build_bitor,
             "BIT_OR": _build_bitor,
             "BOOLXOR": binary_from_function(exp.Xor),

@@ -111,7 +111,7 @@ def _build_formatted_time(
         assert len(args) == 2
 
         return exp_class(
-            this=exp.cast(args[1], exp.DataType.Type.DATETIME),
+            this=exp.cast(args[1], exp.DataType.Type.DATETIME2),
             format=exp.Literal.string(
                 format_time(
                     args[0].name.lower(),
@@ -492,7 +492,7 @@ class TSQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CLUSTERED INDEX": TokenType.INDEX,
-            "DATETIME2": TokenType.DATETIME,
+            "DATETIME2": TokenType.DATETIME2,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.DECLARE,
             "EXEC": TokenType.COMMAND,
@@ -507,7 +507,7 @@ class TSQL(Dialect):
             "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
             "ROWVERSION": TokenType.ROWVERSION,
-            "SMALLDATETIME": TokenType.DATETIME,
+            "SMALLDATETIME": TokenType.SMALLDATETIME,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "SYSTEM_USER": TokenType.CURRENT_USER,
@@ -873,14 +873,15 @@ class TSQL(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "BIT",
+            exp.DataType.Type.DATETIME2: "DATETIME2",
             exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DataType.Type.SMALLDATETIME: "SMALLDATETIME",
             exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }

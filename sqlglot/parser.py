@@ -332,7 +332,9 @@ class Parser(metaclass=_Parser):
         TokenType.TIMESTAMPLTZ,
         TokenType.TIMESTAMPNTZ,
         TokenType.DATETIME,
+        TokenType.DATETIME2,
         TokenType.DATETIME64,
+        TokenType.SMALLDATETIME,
         TokenType.DATE,
         TokenType.DATE32,
         TokenType.INT4RANGE,
@@ -776,7 +778,7 @@ class Parser(metaclass=_Parser):
         exp.Table: lambda self: self._parse_table_parts(),
         exp.TableAlias: lambda self: self._parse_table_alias(),
         exp.Tuple: lambda self: self._parse_value(),
-        exp.When: lambda self: seq_get(self._parse_when_matched(), 0),
+        exp.Whens: lambda self: self._parse_when_matched(),
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
         exp.With: lambda self: self._parse_with(),
@@ -7008,11 +7010,11 @@ class Parser(metaclass=_Parser):
             this=target,
             using=using,
             on=on,
-            expressions=self._parse_when_matched(),
+            whens=self._parse_when_matched(),
             returning=self._parse_returning(),
         )
 
-    def _parse_when_matched(self) -> t.List[exp.When]:
+    def _parse_when_matched(self) -> exp.Whens:
         whens = []
 
         while self._match(TokenType.WHEN):
@@ -7061,7 +7063,7 @@ class Parser(metaclass=_Parser):
                     then=then,
                 )
             )
-        return whens
+        return self.expression(exp.Whens, expressions=whens)
 
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self.SHOW_TRIE)

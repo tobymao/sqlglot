@@ -316,6 +316,14 @@ LANGUAGE js AS
         )
 
         self.validate_all(
+            "SELECT DATE_SUB(DATE '2008-12-25', INTERVAL 5 DAY)",
+            write={
+                "bigquery": "SELECT DATE_SUB(CAST('2008-12-25' AS DATE), INTERVAL '5' DAY)",
+                "duckdb": "SELECT CAST('2008-12-25' AS DATE) - INTERVAL '5' DAY",
+                "snowflake": "SELECT DATEADD(DAY, '5' * -1, CAST('2008-12-25' AS DATE))",
+            },
+        )
+        self.validate_all(
             "EDIT_DISTANCE(col1, col2, max_distance => 3)",
             write={
                 "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",

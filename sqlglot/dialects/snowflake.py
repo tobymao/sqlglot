@@ -1211,3 +1211,12 @@ class Snowflake(Dialect):
                 this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
 
             return self.func("TO_CHAR", this, self.format_time(expression))
+
+        def datesub_sql(self, expression: exp.DateSub) -> str:
+            value = expression.expression
+            if value:
+                value.replace(value * (-1))
+            else:
+                self.unsupported("DateSub cannot be transpiled if the subtracted count is unknown")
+
+            return date_delta_sql("DATEADD")(self, expression)

@@ -1097,7 +1097,11 @@ class Snowflake(Dialect):
             else:
                 unnest_alias = exp.TableAlias(this="_u", columns=columns)
 
-            explode = f"TABLE(FLATTEN(INPUT => {self.sql(expression.expressions[0])}))"
+            table_input = self.sql(expression.expressions[0])
+            if not table_input.startswith("INPUT =>"):
+                table_input = f"INPUT => {table_input}"
+
+            explode = f"TABLE(FLATTEN({table_input}))"
             alias = self.sql(unnest_alias)
             alias = f" AS {alias}" if alias else ""
             return f"{explode}{alias}"

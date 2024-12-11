@@ -409,8 +409,6 @@ class Snowflake(Dialect):
             "BIT_SHIFTLEFT": _build_bitwise(exp.BitwiseLeftShift, "BIT_SHIFTLEFT"),
             "BITSHIFTRIGHT": _build_bitwise(exp.BitwiseRightShift, "BITSHIFTRIGHT"),
             "BIT_SHIFTRIGHT": _build_bitwise(exp.BitwiseRightShift, "BIT_SHIFTRIGHT"),
-            "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
-            "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
@@ -894,7 +892,6 @@ class Snowflake(Dialect):
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
-            exp.BitwiseNot: lambda self, e: self.func("BITNOT", e.this),
             exp.BitwiseOr: rename_func("BITOR"),
             exp.BitwiseXor: rename_func("BITXOR"),
             exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),

@@ -342,6 +342,7 @@ class TokenType(AutoName):
     OVERWRITE = auto()
     PARTITION = auto()
     PARTITION_BY = auto()
+    PARTITION_BY_RANGE = auto()
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()

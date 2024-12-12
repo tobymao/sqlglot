@@ -14,10 +14,17 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
+
+    class Tokenizer(MySQL.Tokenizer):
+        KEYWORDS = {
+            **MySQL.Tokenizer.KEYWORDS,
+            "PARTITION BY RANGE": TokenType.PARTITION_BY_RANGE,
+        }
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
@@ -34,7 +41,9 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
+            "UNIQUE": lambda self: self._parse_unique_property(),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+            "PARTITION BY RANGE": lambda self: self._parse_partition_by_range(),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
@@ -70,6 +79,31 @@ class StarRocks(MySQL):
 
             return unnest
 
+        def _parse_interval_or_number(self) -> t.Optional[exp.Expression]:
+            return self._parse_interval(keep_number=True) or self._parse_number()
+
+        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
+            self._match_text_seq("START")
+            start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            end = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("EVERY")
+            every = self._parse_wrapped(self._parse_interval_or_number)
+            return self.expression(
+                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
+            )
+
+        def _parse_partition_by_range(self) -> exp.PartitionByRangeProperty:
+            partition_expressions = self._parse_wrapped_id_vars()
+            create_expressions = self._parse_wrapped_csv(
+                self._parse_partitioning_granularity_dynamic
+            )
+            return self.expression(
+                exp.PartitionByRangeProperty,
+                partition_expressions=partition_expressions,
+                create_expressions=create_expressions,
+            )
+
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
@@ -89,6 +123,8 @@ class StarRocks(MySQL):
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
+            exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {
@@ -287,3 +323,16 @@ class StarRocks(MySQL):
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
             return super().create_sql(expression)
+
+        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
+            partitions = self.expressions(expression, key="partition_expressions")
+            create = self.expressions(expression, key="create_expressions")
+            return f"PARTITION BY RANGE {self.wrap(partitions)} {self.wrap(create)}"
+
+        def partitionbyrangepropertydynamic_sql(
+            self, expression: exp.PartitionByRangePropertyDynamic
+        ) -> str:
+            start = self.sql(expression, key="start")
+            end = self.sql(expression, key="end")
+            every = self.sql(expression, key="every")
+            return f"START {self.wrap(start)} END {self.wrap(end)} EVERY {self.wrap(every)}"

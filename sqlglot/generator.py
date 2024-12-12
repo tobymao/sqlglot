@@ -3759,6 +3759,10 @@ class Generator(metaclass=_Generator):
     def duplicatekeyproperty_sql(self, expression: exp.DuplicateKeyProperty) -> str:
         return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"
 
+    # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
+    def uniquekeyproperty_sql(self, expression: exp.UniqueKeyProperty) -> str:
+        return f"UNIQUE KEY ({self.expressions(expression, flat=True)})"
+
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
     def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:
         expressions = self.expressions(expression, flat=True)

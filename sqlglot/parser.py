@@ -2210,8 +2210,13 @@ class Parser(metaclass=_Parser):
 
     def _parse_duplicate(self) -> exp.DuplicateKeyProperty:
         self._match_text_seq("KEY")
-        expressions = self._parse_wrapped_csv(self._parse_id_var, optional=False)
+        expressions = self._parse_wrapped_id_vars()
         return self.expression(exp.DuplicateKeyProperty, expressions=expressions)
+
+    def _parse_unique_property(self) -> exp.UniqueKeyProperty:
+        self._match_text_seq("KEY")
+        expressions = self._parse_wrapped_id_vars()
+        return self.expression(exp.UniqueKeyProperty, expressions=expressions)
 
     def _parse_with_property(self) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
         if self._match_text_seq("(", "SYSTEM_VERSIONING"):
@@ -4589,7 +4594,9 @@ class Parser(metaclass=_Parser):
             return this
         return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
-    def _parse_interval(self, match_interval: bool = True) -> t.Optional[exp.Add | exp.Interval]:
+    def _parse_interval(
+        self, match_interval: bool = True, keep_number: bool = False
+    ) -> t.Optional[exp.Add | exp.Interval]:
         index = self._index
 
         if not self._match(TokenType.INTERVAL) and match_interval:
@@ -4616,7 +4623,7 @@ class Parser(metaclass=_Parser):
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
-        if this and this.is_number:
+        if this and this.is_number and not keep_number:
             this = exp.Literal.string(this.to_py())
         elif this and this.is_string:
             parts = exp.INTERVAL_STRING_RE.findall(this.name)

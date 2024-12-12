@@ -75,7 +75,7 @@ def qualify_columns(
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver)
 
-        if not isinstance(scope.expression, exp.UDTF):
+        if isinstance(scope.expression, exp.Select):
             if expand_stars:
                 _expand_stars(
                     scope,

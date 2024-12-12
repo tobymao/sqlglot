@@ -21,27 +21,6 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
-        self.assertEqual(
-            exp.select(exp.Explode(this=exp.column("x")).as_("y", quoted=True)).sql(
-                "snowflake", pretty=True
-            ),
-            """SELECT
-  IFF(_u.pos = _u_2.pos_2, _u_2."y", NULL) AS "y"
-FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
-  GREATEST(ARRAY_SIZE(x)) - 1
-) + 1))) AS _u(seq, key, path, index, pos, this)
-CROSS JOIN TABLE(FLATTEN(INPUT => x)) AS _u_2(seq, key, path, pos_2, "y", this)
-WHERE
-  _u.pos = _u_2.pos_2
-  OR (
-    _u.pos > (
-      ARRAY_SIZE(x) - 1
-    ) AND _u_2.pos_2 = (
-      ARRAY_SIZE(x) - 1
-    )
-  )""",
-        )
-
         self.validate_identity("exclude := [foo]")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
@@ -1603,6 +1582,27 @@ WHERE
         )
 
     def test_flatten(self):
+        self.assertEqual(
+            exp.select(exp.Explode(this=exp.column("x")).as_("y", quoted=True)).sql(
+                "snowflake", pretty=True
+            ),
+            """SELECT
+  IFF(_u.pos = _u_2.pos_2, _u_2."y", NULL) AS "y"
+FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
+  GREATEST(ARRAY_SIZE(x)) - 1
+) + 1))) AS _u(seq, key, path, index, pos, this)
+CROSS JOIN TABLE(FLATTEN(INPUT => x)) AS _u_2(seq, key, path, pos_2, "y", this)
+WHERE
+  _u.pos = _u_2.pos_2
+  OR (
+    _u.pos > (
+      ARRAY_SIZE(x) - 1
+    ) AND _u_2.pos_2 = (
+      ARRAY_SIZE(x) - 1
+    )
+  )""",
+        )
+
         self.validate_all(
             """
             select
@@ -1624,6 +1624,75 @@ WHERE
   dag_report.dag_id,
   CAST(f.value AS VARCHAR) AS operator
 FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS f"""
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            SELECT
+              uc.user_id,
+              uc.start_ts AS ts,
+              CASE
+                WHEN uc.start_ts::DATE >= '2023-01-01' AND uc.country_code IN ('US') AND uc.user_id NOT IN (
+                  SELECT DISTINCT
+                    _id
+                  FROM
+                    users,
+                    LATERAL FLATTEN(INPUT => PARSE_JSON(flags)) datasource
+                  WHERE datasource.value:name = 'something'
+                )
+                  THEN 'Sample1'
+                  ELSE 'Sample2'
+              END AS entity
+            FROM user_countries AS uc
+            LEFT JOIN (
+              SELECT user_id, MAX(IFF(service_entity IS NULL,1,0)) AS le_null
+              FROM accepted_user_agreements
+              GROUP BY 1
+            ) AS aua
+              ON uc.user_id = aua.user_id
+            """,
+            write={
+                "snowflake": """SELECT
+  uc.user_id,
+  uc.start_ts AS ts,
+  CASE
+    WHEN CAST(uc.start_ts AS DATE) >= '2023-01-01'
+    AND uc.country_code IN ('US')
+    AND uc.user_id <> ALL (
+      SELECT DISTINCT
+        _id
+      FROM users, LATERAL IFF(_u.pos = _u_2.pos_2, _u_2.entity, NULL) AS datasource(SEQ, KEY, PATH, INDEX, VALUE, THIS)
+      WHERE
+        GET_PATH(datasource.value, 'name') = 'something'
+    )
+    THEN 'Sample1'
+    ELSE 'Sample2'
+  END AS entity
+FROM user_countries AS uc
+LEFT JOIN (
+  SELECT
+    user_id,
+    MAX(IFF(service_entity IS NULL, 1, 0)) AS le_null
+  FROM accepted_user_agreements
+  GROUP BY
+    1
+) AS aua
+  ON uc.user_id = aua.user_id
+CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
+  GREATEST(ARRAY_SIZE(INPUT => PARSE_JSON(flags))) - 1
+) + 1))) AS _u(seq, key, path, index, pos, this)
+CROSS JOIN TABLE(FLATTEN(INPUT => PARSE_JSON(flags))) AS _u_2(seq, key, path, pos_2, entity, this)
+WHERE
+  _u.pos = _u_2.pos_2
+  OR (
+    _u.pos > (
+      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
+    )
+    AND _u_2.pos_2 = (
+      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
+    )
+  )""",
             },
             pretty=True,
         )

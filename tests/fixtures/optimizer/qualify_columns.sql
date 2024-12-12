@@ -191,6 +191,10 @@ SELECT SOME_UDF(data).* FROM t;
 SELECT SOME_UDF(t.data).* FROM t AS t;
 
 # execute: false
+SELECT p.* FROM p UNION ALL SELECT p2.* FROM p2;
+SELECT p.* FROM p AS p UNION ALL SELECT p2.* FROM p2 AS p2;
+
+# execute: false
 # allow_partial_qualification: true
 # validate_qualify_columns: false
 SELECT a + 1 AS i, missing_column FROM x;

@@ -731,3 +731,30 @@ SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _q_0 INNER JOIN y AS y ON
 
 SELECT a, c FROM x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y TABLESAMPLE SYSTEM (10 ROWS);
 SELECT x.a AS a, y.c AS c FROM x AS x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y AS y TABLESAMPLE SYSTEM (10 ROWS);
+
+--------------------------------------
+-- Snowflake allows column alias to be used in almost all clauses
+--------------------------------------
+# title: Snowflake column alias in JOIN
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x JOIN y ON foo = y.b;
+SELECT X.A AS FOO FROM X AS X JOIN Y AS Y ON X.A = Y.B;
+
+# title: Snowflake column alias in QUALIFY
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x QUALIFY foo = 1;
+SELECT X.A AS FOO FROM X AS X QUALIFY X.A = 1;
+
+# title: Snowflake column alias in GROUP BY
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x GROUP BY foo = 1;
+SELECT X.A AS FOO FROM X AS X GROUP BY X.A = 1;
+
+# title: Snowflake column alias in WHERE
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x WHERE foo = 1;
+SELECT X.A AS FOO FROM X AS X WHERE X.A = 1;

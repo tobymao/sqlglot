@@ -66,6 +66,7 @@ def qualify_columns(
             _expand_alias_refs(
                 scope,
                 resolver,
+                dialect,
                 expand_only_groupby=dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY,
             )
 
@@ -73,7 +74,7 @@ def qualify_columns(
         _qualify_columns(scope, resolver, allow_partial_qualification=allow_partial_qualification)
 
         if not schema.empty and expand_alias_refs:
-            _expand_alias_refs(scope, resolver)
+            _expand_alias_refs(scope, resolver, dialect)
 
         if isinstance(scope.expression, exp.Select):
             if expand_stars:
@@ -236,7 +237,15 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     return column_tables
 
 
-def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bool = False) -> None:
+def _expand_alias_refs(
+    scope: Scope, resolver: Resolver, dialect: Dialect, expand_only_groupby: bool = False
+) -> None:
+    """
+    Expand references to aliases.
+    Example:
+        SELECT y.foo AS bar, bar * 2 AS baz FROM y
+     => SELECT y.foo AS bar, y.foo * 2 AS baz FROM y
+    """
     expression = scope.expression
 
     if not isinstance(expression, exp.Select):
@@ -308,6 +317,12 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, expand_only_groupby: bo
     replace_columns(expression.args.get("group"), literal_index=True)
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
+
+    # Snowflake allows alias expansion in the JOIN ... ON clause (and almost everywhere else)
+    # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
+    if dialect == "snowflake":
+        for join in expression.args.get("joins") or []:
+            replace_columns(join)
 
     scope.clear_cache()
 

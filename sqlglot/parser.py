@@ -1143,6 +1143,11 @@ class Parser(metaclass=_Parser):
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
         "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
+        "XMLELEMENT": lambda self: self.expression(
+            exp.XMLElement,
+            this=self._match_text_seq("NAME") and self._parse_id_var(),
+            expressions=self._match(TokenType.COMMA) and self._parse_csv(self._parse_expression),
+        ),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -5351,18 +5356,21 @@ class Parser(metaclass=_Parser):
                 functions = self.FUNCTIONS
 
             function = functions.get(upper)
+            known_function = function and not anonymous
 
-            alias = upper in self.FUNCTIONS_WITH_ALIASED_ARGS
+            alias = not known_function or upper in self.FUNCTIONS_WITH_ALIASED_ARGS
             args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
-            if alias:
+            if alias and known_function:
                 args = self._kv_to_prop_eq(args)
 
-            if function and not anonymous:
-                if "dialect" in function.__code__.co_varnames:
-                    func = function(args, dialect=self.dialect)
+            if known_function:
+                func_builder = t.cast(t.Callable, function)
+
+                if "dialect" in func_builder.__code__.co_varnames:
+                    func = func_builder(args, dialect=self.dialect)
                 else:
-                    func = function(args)
+                    func = func_builder(args)
 
                 func = self.validate_expression(func, args)
                 if self.dialect.PRESERVE_ORIGINAL_NAMES:
@@ -6730,7 +6738,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_select_or_expression(self, alias: bool = False) -> t.Optional[exp.Expression]:
         return self._parse_select() or self._parse_set_operations(
-            self._parse_expression() if alias else self._parse_assignment()
+            self._parse_alias(self._parse_assignment(), explicit=True)
+            if alias
+            else self._parse_assignment()
         )
 
     def _parse_ddl_select(self) -> t.Optional[exp.Expression]:

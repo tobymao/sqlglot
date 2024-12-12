@@ -6665,6 +6665,11 @@ class Week(Func):
     arg_types = {"this": True, "mode": False}
 
 
+class XMLElement(Func):
+    _sql_names = ["XMLELEMENT"]
+    arg_types = {"this": True, "expressions": False}
+
+
 class XMLTable(Func):
     arg_types = {"this": True, "passing": False, "columns": False, "by_ref": False}
 

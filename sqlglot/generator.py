@@ -4612,3 +4612,7 @@ class Generator(metaclass=_Generator):
             include = f"{include} AS {alias}"
 
         return include
+
+    def xmlelement_sql(self, expression: exp.XMLElement) -> str:
+        name = f"NAME {self.sql(expression, 'this')}"
+        return self.func("XMLELEMENT", name, *expression.expressions)

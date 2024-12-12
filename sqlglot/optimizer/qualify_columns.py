@@ -237,7 +237,9 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     return column_tables
 
 
-def _expand_alias_refs(scope: Scope, resolver: Resolver, dialect: Dialect, expand_only_groupby: bool = False) -> None:
+def _expand_alias_refs(
+    scope: Scope, resolver: Resolver, dialect: Dialect, expand_only_groupby: bool = False
+) -> None:
     """
     Expand references to aliases.
     Example:
@@ -318,8 +320,9 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver, dialect: Dialect, expan
 
     # Snowflake allows alias expansion in the JOIN ... ON clause (and almost everywhere else)
     # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
-    for join in expression.args.get("joins", []):
-        replace_columns(join)
+    if dialect == "snowflake":
+        for join in expression.args.get("joins", []):
+            replace_columns(join)
 
     scope.clear_cache()
 

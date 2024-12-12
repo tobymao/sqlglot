@@ -33,6 +33,9 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE foo (col0 DECIMAL(9, 1), col1 DECIMAL32(9, 1), col2 DECIMAL64(18, 10), col3 DECIMAL128(38, 10)) DISTRIBUTED BY HASH (col1) BUCKETS 1"
         )
+        self.validate_identity(
+            "CREATE TABLE foo (col1 LARGEINT) DISTRIBUTED BY HASH (col1) BUCKETS 1"
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")

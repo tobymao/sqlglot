@@ -23,6 +23,7 @@ class StarRocks(MySQL):
     class Tokenizer(MySQL.Tokenizer):
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
+            "LARGEINT": TokenType.INT128,
             "PARTITION BY RANGE": TokenType.PARTITION_BY_RANGE,
         }
 
@@ -115,6 +116,7 @@ class StarRocks(MySQL):
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
+            exp.DataType.Type.INT128: "LARGEINT",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",

@@ -67,7 +67,6 @@ def qualify_columns(
                 scope,
                 resolver,
                 dialect,
-                expand_only_groupby=dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY,
             )
 
         _convert_columns_to_dots(scope, resolver)
@@ -237,9 +236,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     return column_tables
 
 
-def _expand_alias_refs(
-    scope: Scope, resolver: Resolver, dialect: Dialect, expand_only_groupby: bool = False
-) -> None:
+def _expand_alias_refs(scope: Scope, resolver: Resolver, dialect: Dialect) -> None:
     """
     Expand references to aliases.
     Example:
@@ -247,6 +244,7 @@ def _expand_alias_refs(
      => SELECT y.foo AS bar, y.foo * 2 AS baz FROM y
     """
     expression = scope.expression
+    expand_only_groupby = dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY
 
     if not isinstance(expression, exp.Select):
         return

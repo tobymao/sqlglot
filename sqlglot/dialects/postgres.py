@@ -687,6 +687,14 @@ class Postgres(Dialect):
                     values = self.expressions(expression, key="values", flat=True)
                     return f"{self.expressions(expression, flat=True)}[{values}]"
                 return "ARRAY"
+
+            if (
+                expression.is_type(exp.DataType.Type.DOUBLE, exp.DataType.Type.FLOAT)
+                and expression.expressions
+            ):
+                # Postgres doesn't support precision for REAL and DOUBLE PRECISION types
+                return f"FLOAT({self.expressions(expression, flat=True)})"
+
             return super().datatype_sql(expression)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:

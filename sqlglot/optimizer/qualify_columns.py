@@ -321,7 +321,7 @@ def _expand_alias_refs(
     # Snowflake allows alias expansion in the JOIN ... ON clause (and almost everywhere else)
     # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
     if dialect == "snowflake":
-        for join in expression.args.get("joins", []):
+        for join in expression.args.get("joins") or []:
             replace_columns(join)
 
     scope.clear_cache()

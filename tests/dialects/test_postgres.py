@@ -1289,3 +1289,17 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "clickhouse": UnsupportedError,
             },
         )
+
+    def test_xmlelement(self):
+        self.validate_identity("SELECT XMLELEMENT(NAME foo)")
+        self.validate_identity("SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES('xyz' AS bar))")
+        self.validate_identity("SELECT XMLELEMENT(NAME test, XMLATTRIBUTES(a, b)) FROM test")
+        self.validate_identity(
+            "SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES(CURRENT_DATE AS bar), 'cont', 'ent')"
+        )
+        self.validate_identity(
+            """SELECT XMLELEMENT(NAME "foo$bar", XMLATTRIBUTES('xyz' AS "a&b"))"""
+        )
+        self.validate_identity(
+            "SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES('xyz' AS bar), XMLELEMENT(NAME abc), XMLCOMMENT('test'), XMLELEMENT(NAME xyz))"
+        )

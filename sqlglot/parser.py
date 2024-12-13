@@ -4620,14 +4620,14 @@ class Parser(metaclass=_Parser):
             this = exp.Literal.string(this.to_py())
         elif this and this.is_string:
             parts = exp.INTERVAL_STRING_RE.findall(this.name)
-            if len(parts) == 1:
-                if unit:
-                    # Unconsume the eagerly-parsed unit, since the real unit was part of the string
-                    self._retreat(self._index - 1)
+            if parts and unit:
+                # Unconsume the eagerly-parsed unit, since the real unit was part of the string
+                unit = None
+                self._retreat(self._index - 1)
 
+            if len(parts) == 1:
                 this = exp.Literal.string(parts[0][0])
                 unit = self.expression(exp.Var, this=parts[0][1].upper())
-
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(
                 exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)

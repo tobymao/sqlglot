@@ -311,11 +311,11 @@ def to_node(
                 else:
                     # The column is not in the pivot, so it must be an implicit column of the pivoted source.
                     # adapt column to be from the implicit pivoted source
-                    parent = pivot.parent.copy()
+                    parent = t.cast(exp.Table, pivot.parent.copy())
                     parent.args["pivots"] = []
-                    column: exp.Column = c.copy()
-                    column.args["table"] = parent.this
-                    downstream_columns.append(column)
+                    adapted_column = t.cast(exp.Column, c.copy())
+                    adapted_column.args["table"] = parent.this
+                    downstream_columns.append(adapted_column)
 
                 for downstream_column in downstream_columns:
                     table = downstream_column.table

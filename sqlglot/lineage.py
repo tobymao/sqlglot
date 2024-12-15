@@ -258,6 +258,12 @@ def to_node(
         table = c.table
         source = scope.sources.get(table)
 
+        # check for a possible pivot here to calculate ones for the 2nd if case
+        # and to fall back to the last else case if no pivot is found
+        pivot = next(
+            (p for p in scope.pivots if p.alias_or_name == c.table and not p.unpivot), None
+        )
+
         if isinstance(source, Scope):
             reference_node_name = None
             if source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
@@ -277,42 +283,17 @@ def to_node(
                 trim_selects=trim_selects,
             )
 
-        elif scope.pivots:
-            pivot = next(
-                (p for p in scope.pivots if p.alias_or_name == c.table and not p.unpivot), None
-            )
-            if pivot and isinstance(pivot.args.get("columns"), list):
+        elif pivot:
+            if isinstance(pivot.args.get("columns"), list):
                 # The source is a pivot operation, so we need to trace back to the aggregated column
                 pivot_column_mapping = {}
                 pivot_aggs_count = len(pivot.expressions)
                 columns = pivot.args["columns"]
                 columns_count = len(columns)
+                column_name = c.name
+                downstream_columns = []
 
-                if c.alias_or_name not in [i.this for i in columns]:
-                    # The column is not in the pivot, so it must be an implicit column of the pivoted source.
-                    table = pivot.parent.name
-                    source = scope.sources.get(table)
-                    if isinstance(source, Scope):
-                        to_node(
-                            c.name,
-                            scope=source,
-                            scope_name=table,
-                            dialect=dialect,
-                            upstream=node,
-                            source_name=source_names.get(table) or source_name,
-                            reference_node_name=reference_node_name,
-                            trim_selects=trim_selects,
-                        )
-                    else:
-                        source = source or exp.Placeholder()
-                        node.downstream.append(
-                            Node(
-                                name=f"{table}.{c.name}",  # TODO: probably a better way available
-                                source=source,
-                                expression=source,
-                            )
-                        )
-                else:
+                if any(column_name == pivoted_column.name for pivoted_column in columns):
                     # The column is in the pivot, so we need to trace back to the aggregation that created it.
                     for i, agg in enumerate(pivot.expressions):
                         agg_cols = list(agg.find_all(exp.Column))
@@ -326,29 +307,39 @@ def to_node(
                             # by index and map that with the columns used in the aggregation.
                             pivot_column_mapping[columns[col_index].name] = agg_cols
 
-                    for agg_column in pivot_column_mapping[c.alias_or_name]:
-                        table = pivot.parent.alias_or_name
-                        source = scope.sources.get(table)
-                        if isinstance(source, Scope):
-                            to_node(
-                                agg_column.name,
-                                scope=source,
-                                scope_name=table,
-                                dialect=dialect,
-                                upstream=node,
-                                source_name=source_names.get(table) or source_name,
-                                reference_node_name=reference_node_name,
-                                trim_selects=trim_selects,
+                    downstream_columns.extend(pivot_column_mapping[column_name])
+                else:
+                    # The column is not in the pivot, so it must be an implicit column of the pivoted source.
+                    # adapt column to be from the implicit pivoted source
+                    parent = pivot.parent.copy()
+                    parent.args["pivots"] = []
+                    column = c.copy()
+                    column.args["table"] = parent.this
+                    downstream_columns.append(column)
+
+                for downstream_column in downstream_columns:
+                    table = downstream_column.table
+                    source = scope.sources.get(table)
+                    if isinstance(source, Scope):
+                        to_node(
+                            downstream_column.name,
+                            scope=source,
+                            scope_name=table,
+                            dialect=dialect,
+                            upstream=node,
+                            source_name=source_names.get(table) or source_name,
+                            reference_node_name=reference_node_name,
+                            trim_selects=trim_selects,
+                        )
+                    else:
+                        source = source or exp.Placeholder()
+                        node.downstream.append(
+                            Node(
+                                name=downstream_column.sql(comments=False),
+                                source=source,
+                                expression=source,
                             )
-                        else:
-                            source = source or exp.Placeholder()
-                            node.downstream.append(
-                                Node(
-                                    name=agg_column.sql(comments=False),
-                                    source=source,
-                                    expression=source,
-                                )
-                            )
+                        )
         else:
             # The source is not a scope and the column is not in any pivot - we've reached the end of the line. At this point, if a source is not found
             # it means this column's lineage is unknown. This can happen if the definition of a source used in a query

@@ -313,7 +313,7 @@ def to_node(
                     # adapt column to be from the implicit pivoted source
                     parent = pivot.parent.copy()
                     parent.args["pivots"] = []
-                    column = c.copy()
+                    column: exp.Column = c.copy()
                     column.args["table"] = parent.this
                     downstream_columns.append(column)
 

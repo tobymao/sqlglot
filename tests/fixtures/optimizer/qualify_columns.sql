@@ -205,6 +205,30 @@ SELECT x.a + 1 AS i, missing_column AS missing_column FROM x AS x;
 SELECT s, arr1, arr2 FROM arrays_test LEFT ARRAY JOIN arr1, arrays_test.arr2;
 SELECT arrays_test.s AS s, arrays_test.arr1 AS arr1, arrays_test.arr2 AS arr2 FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr1, arrays_test.arr2;
 
+# execute: false
+# dialect: snowflake
+WITH employees AS (
+    SELECT *
+    FROM (VALUES ('President', 1, NULL),
+                 ('Vice President Engineering', 10, 1),
+                 ('Programmer', 100, 10),
+                 ('QA Engineer', 101, 10),
+                 ('Vice President HR', 20, 1),
+                 ('Health Insurance Analyst', 200, 20)
+    ) AS t(title, employee_ID, manager_ID)
+)
+SELECT
+  employee_ID,
+  manager_ID,
+  title,
+  level
+FROM employees
+START WITH title = 'President'
+CONNECT BY manager_ID = PRIOR employee_id
+ORDER BY
+  employee_ID NULLS LAST;
+WITH EMPLOYEES AS (SELECT T.TITLE AS TITLE, T.EMPLOYEE_ID AS EMPLOYEE_ID, T.MANAGER_ID AS MANAGER_ID FROM (VALUES ('President', 1, NULL), ('Vice President Engineering', 10, 1), ('Programmer', 100, 10), ('QA Engineer', 101, 10), ('Vice President HR', 20, 1), ('Health Insurance Analyst', 200, 20)) AS T(TITLE, EMPLOYEE_ID, MANAGER_ID)) SELECT EMPLOYEES.EMPLOYEE_ID AS EMPLOYEE_ID, EMPLOYEES.MANAGER_ID AS MANAGER_ID, EMPLOYEES.TITLE AS TITLE, EMPLOYEES.LEVEL AS LEVEL FROM EMPLOYEES AS EMPLOYEES START WITH EMPLOYEES.TITLE = 'President' CONNECT BY EMPLOYEES.MANAGER_ID = PRIOR EMPLOYEES.EMPLOYEE_ID ORDER BY EMPLOYEE_ID;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

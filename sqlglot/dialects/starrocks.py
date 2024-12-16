@@ -24,7 +24,6 @@ class StarRocks(MySQL):
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
             "LARGEINT": TokenType.INT128,
-            "PARTITION BY RANGE": TokenType.PARTITION_BY_RANGE,
         }
 
     class Parser(MySQL.Parser):
@@ -44,7 +43,7 @@ class StarRocks(MySQL):
             **MySQL.Parser.PROPERTY_PARSERS,
             "UNIQUE": lambda self: self._parse_unique_property(),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
-            "PARTITION BY RANGE": lambda self: self._parse_partition_by_range(),
+            "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
@@ -94,16 +93,20 @@ class StarRocks(MySQL):
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
-        def _parse_partition_by_range(self) -> exp.PartitionByRangeProperty:
-            partition_expressions = self._parse_wrapped_id_vars()
-            create_expressions = self._parse_wrapped_csv(
-                self._parse_partitioning_granularity_dynamic
-            )
-            return self.expression(
-                exp.PartitionByRangeProperty,
-                partition_expressions=partition_expressions,
-                create_expressions=create_expressions,
-            )
+        def _parse_partition_by_opt_range(
+            self,
+        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
+            if self._match_text_seq("RANGE"):
+                partition_expressions = self._parse_wrapped_id_vars()
+                create_expressions = self._parse_wrapped_csv(
+                    self._parse_partitioning_granularity_dynamic
+                )
+                return self.expression(
+                    exp.PartitionByRangeProperty,
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                )
+            return super()._parse_partitioned_by()
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False

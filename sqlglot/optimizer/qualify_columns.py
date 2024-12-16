@@ -898,9 +898,21 @@ class Resolver:
                     for (name, alias) in itertools.zip_longest(columns, column_aliases)
                 ]
 
+            pseudocolumns = self._get_source_pseudocolumns(name)
+            if pseudocolumns:
+                columns = list(columns)
+                columns.extend(c for c in pseudocolumns if c not in columns)
+
             self._get_source_columns_cache[cache_key] = columns
 
         return self._get_source_columns_cache[cache_key]
+
+    def _get_source_pseudocolumns(self, name: str) -> t.Sequence[str]:
+        if self.schema.dialect == "snowflake" and self.scope.expression.args.get("connect"):
+            # When there is a CONNECT BY clause, there is only one table being scanned
+            # See: https://docs.snowflake.com/en/sql-reference/constructs/connect-by
+            return ["LEVEL"]
+        return []
 
     def _get_all_source_columns(self) -> t.Dict[str, t.Sequence[str]]:
         if self._source_columns is None:

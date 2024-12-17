@@ -328,16 +328,3 @@ class StarRocks(MySQL):
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
             return super().create_sql(expression)
-
-        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
-            partitions = self.expressions(expression, key="partition_expressions")
-            create = self.expressions(expression, key="create_expressions")
-            return f"PARTITION BY RANGE {self.wrap(partitions)} {self.wrap(create)}"
-
-        def partitionbyrangepropertydynamic_sql(
-            self, expression: exp.PartitionByRangePropertyDynamic
-        ) -> str:
-            start = self.sql(expression, key="start")
-            end = self.sql(expression, key="end")
-            every = self.sql(expression, key="every")
-            return f"START {self.wrap(start)} END {self.wrap(end)} EVERY {self.wrap(every)}"

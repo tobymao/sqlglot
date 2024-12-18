@@ -1305,7 +1305,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     replaced = literal.replace("_", "")
                     if self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED and replaced.isdigit():
                         return self._add(TokenType.NUMBER, number_text + replaced)
-                    elif self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
+                    if self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
                         return self._add(TokenType.VAR)
 
                 self._advance(-len(literal))

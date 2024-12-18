@@ -205,6 +205,7 @@ class MySQL(Dialect):
             "MEDIUMINT": TokenType.MEDIUMINT,
             "MEMBER OF": TokenType.MEMBER_OF,
             "SEPARATOR": TokenType.SEPARATOR,
+            "SERIAL": TokenType.SERIAL,
             "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,

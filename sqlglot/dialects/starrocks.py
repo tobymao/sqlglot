@@ -41,7 +41,7 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
-            "UNIQUE": lambda self: self._parse_unique_property(),
+            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
         }
@@ -79,16 +79,13 @@ class StarRocks(MySQL):
 
             return unnest
 
-        def _parse_interval_or_number(self) -> t.Optional[exp.Expression]:
-            return self._parse_interval(keep_number=True) or self._parse_number()
-
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
             self._match_text_seq("START")
             start = self._parse_wrapped(self._parse_string)
             self._match_text_seq("END")
             end = self._parse_wrapped(self._parse_string)
             self._match_text_seq("EVERY")
-            every = self._parse_wrapped(self._parse_interval_or_number)
+            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
             return self.expression(
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )

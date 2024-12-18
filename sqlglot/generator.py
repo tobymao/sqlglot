@@ -4622,14 +4622,18 @@ class Generator(metaclass=_Generator):
         return self.func("XMLELEMENT", name, *expression.expressions)
 
     def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
-        partitions = self.expressions(expression, key="partition_expressions")
-        create = self.expressions(expression, key="create_expressions")
+        partitions = self.expressions(expression, "partition_expressions")
+        create = self.expressions(expression, "create_expressions")
         return f"PARTITION BY RANGE {self.wrap(partitions)} {self.wrap(create)}"
 
     def partitionbyrangepropertydynamic_sql(
         self, expression: exp.PartitionByRangePropertyDynamic
     ) -> str:
-        start = self.sql(expression, key="start")
-        end = self.sql(expression, key="end")
-        every = self.sql(expression, key="every")
-        return f"START {self.wrap(start)} END {self.wrap(end)} EVERY {self.wrap(every)}"
+        start = self.sql(expression, "start")
+        end = self.sql(expression, "end")
+
+        every = expression.args["every"]
+        if isinstance(every, exp.Interval) and every.this.is_string:
+            every.this.replace(exp.Literal.number(every.name))
+
+        return f"START {self.wrap(start)} END {self.wrap(end)} EVERY {self.wrap(self.sql(every))}"

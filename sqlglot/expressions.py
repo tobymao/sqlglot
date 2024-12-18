@@ -2855,6 +2855,21 @@ class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
+class PartitionByRangeProperty(Property):
+    arg_types = {"partition_expressions": True, "create_expressions": True}
+
+
+# https://docs.starrocks.io/docs/table_design/data_distribution/#range-partitioning
+class PartitionByRangePropertyDynamic(Expression):
+    arg_types = {"this": False, "start": True, "end": True, "every": True}
+
+
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
+class UniqueKeyProperty(Property):
+    arg_types = {"expressions": True}
+
+
 # https://www.postgresql.org/docs/current/sql-createtable.html
 class PartitionBoundSpec(Expression):
     # this -> IN / MODULUS, expression -> REMAINDER, from_expressions -> FROM (...), to_expressions -> TO (...)

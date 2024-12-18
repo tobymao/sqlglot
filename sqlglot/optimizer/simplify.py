@@ -1328,13 +1328,17 @@ def _flat_simplify(expression, simplifier, root=True):
     return expression
 
 
-def gen(expression: t.Any) -> str:
+def gen(expression: t.Any, comments: bool = False) -> str:
     """Simple pseudo sql generator for quickly generating sortable and uniq strings.
 
     Sorting and deduping sql is a necessary step for optimization. Calling the actual
     generator is expensive so we have a bare minimum sql generator here.
+
+    Args:
+        expression: the expression to convert into a SQL string.
+        comments: whether to include the expression's comments.
     """
-    return Gen().gen(expression)
+    return Gen().gen(expression, comments=comments)
 
 
 class Gen:
@@ -1342,7 +1346,7 @@ class Gen:
         self.stack = []
         self.sqls = []
 
-    def gen(self, expression: exp.Expression) -> str:
+    def gen(self, expression: exp.Expression, comments: bool = False) -> str:
         self.stack = [expression]
         self.sqls.clear()
 
@@ -1350,6 +1354,9 @@ class Gen:
             node = self.stack.pop()
 
             if isinstance(node, exp.Expression):
+                if comments and node.comments:
+                    self.stack.append(f" /*{','.join(node.comments)}*/")
+
                 exp_handler_name = f"{node.key}_sql"
 
                 if hasattr(self, exp_handler_name):

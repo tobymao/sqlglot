@@ -2208,15 +2208,16 @@ class Parser(metaclass=_Parser):
             order=self._parse_order(),
         )
 
-    def _parse_duplicate(self) -> exp.DuplicateKeyProperty:
+    def _parse_composite_key_property(self, expr_type: t.Type[E]) -> E:
         self._match_text_seq("KEY")
         expressions = self._parse_wrapped_id_vars()
-        return self.expression(exp.DuplicateKeyProperty, expressions=expressions)
+        return self.expression(expr_type, expressions=expressions)
+
+    def _parse_duplicate(self) -> exp.DuplicateKeyProperty:
+        return self._parse_composite_key_property(exp.DuplicateKeyProperty)
 
     def _parse_unique_property(self) -> exp.UniqueKeyProperty:
-        self._match_text_seq("KEY")
-        expressions = self._parse_wrapped_id_vars()
-        return self.expression(exp.UniqueKeyProperty, expressions=expressions)
+        return self._parse_composite_key_property(exp.UniqueKeyProperty)
 
     def _parse_with_property(self) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
         if self._match_text_seq("(", "SYSTEM_VERSIONING"):

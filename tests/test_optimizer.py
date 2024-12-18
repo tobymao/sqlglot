@@ -551,6 +551,10 @@ class TestOptimizer(unittest.TestCase):
 SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
 """.strip(),
         )
+        self.assertEqual(
+            optimizer.simplify.gen(parse_one("select item_id /* description */"), comments=True),
+            "SELECT :expressions,item_id /* description */",
+        )
 
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)

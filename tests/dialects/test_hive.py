@@ -806,6 +806,8 @@ class TestHive(Validator):
             },
         )
 
+        self.validate_identity("SELECT 1_2")
+
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")

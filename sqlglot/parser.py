@@ -5366,8 +5366,7 @@ class Parser(metaclass=_Parser):
                 # If the meta comment "/* sqlglot.meta anonymous */" is following the function
                 # call we'll construct it as exp.Anonymous, even if it's "known"
                 for comment in post_func_comments:
-                    lower = comment.lower()
-                    if exp.SQLGLOT_META in lower and "anonymous" in lower:
+                    if exp.SQLGLOT_META in comment and "anonymous" in comment:
                         known_function = False
                         break
 

@@ -890,8 +890,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
 
     def test_udf_meta(self):
-        ast = parse_one("YEAR(a) /* sqlglot.meta anONYMOUs */")
+        ast = parse_one("YEAR(a) /* sqlglot.meta anonymous */")
         self.assertIsInstance(ast, exp.Anonymous)
+
+        # Meta flag is case sensitive
+        ast = parse_one("YEAR(a) /* sqlglot.meta anONYMOUs */")
+        self.assertIsInstance(ast, exp.Year)
 
         # Incomplete or incorrect anonymous meta comments are not registered
         ast = parse_one("YEAR(a) /* sqlglot.meta anon */")

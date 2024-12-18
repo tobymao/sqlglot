@@ -5363,12 +5363,13 @@ class Parser(metaclass=_Parser):
 
             post_func_comments = self._curr and self._curr.comments
             if known_function and post_func_comments:
-                anonymous_meta = (exp.SQLGLOT_META, "anonymous")
                 # If the meta comment "/* sqlglot.meta anonymous */" is following the function
                 # call we'll construct it as exp.Anonymous, even if it's "known"
                 for comment in post_func_comments:
-                    if all(meta in comment.lower() for meta in anonymous_meta):
+                    lower = comment.lower()
+                    if exp.SQLGLOT_META in lower and "anonymous" in lower:
                         known_function = False
+                        break
 
             if alias and known_function:
                 args = self._kv_to_prop_eq(args)

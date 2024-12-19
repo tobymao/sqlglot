@@ -258,6 +258,35 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(
+                    """
+                    SELECT Teams.Name, count(*)
+                    FROM raw.TeamMemberships as TeamMemberships
+                    join raw.Teams
+                        on Teams.Id = TeamMemberships.TeamId
+                    GROUP BY 1
+                    """,
+                    read="bigquery",
+                ),
+                schema={
+                    "raw": {
+                        "TeamMemberships": {
+                            "Id": "INTEGER",
+                            "UserId": "INTEGER",
+                            "TeamId": "INTEGER",
+                        },
+                        "Teams": {
+                            "Id": "INTEGER",
+                            "Name": "STRING",
+                        },
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT `teams`.`name` AS `name`, count(*) AS `_col_1` FROM `raw`.`TeamMemberships` AS `teammemberships` JOIN `raw`.`Teams` AS `teams` ON `teams`.`id` = `teammemberships`.`teamid` GROUP BY `teams`.`name`",
+        )
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
                     "SELECT `my_db.my_table`.`my_column` FROM `my_db.my_table`",
                     read="bigquery",
                 ),

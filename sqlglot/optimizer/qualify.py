@@ -69,7 +69,6 @@ def qualify(
         The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
-    expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(
         expression,
         db=db,
@@ -78,6 +77,7 @@ def qualify(
         dialect=dialect,
         infer_csv_schemas=infer_csv_schemas,
     )
+    expression = normalize_identifiers(expression, dialect=dialect)
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)

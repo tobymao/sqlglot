@@ -549,6 +549,9 @@ class TestClickhouse(Validator):
             "SELECT name FROM data WHERE NOT ((SELECT DISTINCT name FROM data) IS NULL)",
         )
 
+        self.validate_identity("SELECT 1_2_3_4_5", "SELECT 12345")
+        self.validate_identity("SELECT 1_b", "SELECT 1_b")
+
     def test_clickhouse_values(self):
         values = exp.select("*").from_(
             exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])

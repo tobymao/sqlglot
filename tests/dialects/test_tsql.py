@@ -2091,18 +2091,26 @@ FROM OPENJSON(@json) WITH (
             },
         )
 
+    # string literals in the DATETRUNC are casted as DATETIME2
     def test_datetrunc(self):
         self.validate_all(
-            "SELECT DATETRUNC(month, '2021-12-08 11:30:15.1234567')",
+            "SELECT DATETRUNC(month, 'foo')",
             write={
-                "duckdb": "SELECT DATE_TRUNC('MONTH', CAST('2021-12-08 11:30:15.1234567' AS TIMESTAMP))"
+                "duckdb": "SELECT DATE_TRUNC('MONTH', CAST('foo' AS TIMESTAMP))",
+                "tsql": "SELECT DATETRUNC(MONTH, CAST('foo' AS DATETIME2))",
             },
         )
         self.validate_all(
-            "SELECT DATETRUNC(year, DATEFROMPARTS(2010, 12, 31))",
-            write={"duckdb": "SELECT DATE_TRUNC('YEAR', MAKE_DATE(2010, 12, 31))"},
+            "SELECT DATETRUNC(month, foo)",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('MONTH', foo)",
+                "tsql": "SELECT DATETRUNC(MONTH, foo)",
+            },
         )
         self.validate_all(
-            "SELECT DATETRUNC(year, CAST('2021-12-08' AS date))",
-            write={"duckdb": "SELECT DATE_TRUNC('YEAR', CAST('2021-12-08' AS DATE))"},
+            "SELECT DATETRUNC(year, CAST('foo1' AS date))",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('YEAR', CAST('foo1' AS DATE))",
+                "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
+            },
         )

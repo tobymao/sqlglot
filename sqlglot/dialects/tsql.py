@@ -370,14 +370,14 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     return sql
 
 
-def _parse_datetrunc(args: t.List) -> exp.TimestampTrunc:
+def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
 
-    if isinstance(this, exp.Expression) and this.is_string:
-        this = exp.TimeStrToTime(this=this)
+    if this and this.is_string:
+        this = exp.cast(this, exp.DataType.Type.DATETIME2)
 
-    return exp.TimestampTrunc(unit=unit, this=this)
+    return exp.TimestampTrunc(this=this, unit=unit)
 
 
 class TSQL(Dialect):
@@ -580,7 +580,7 @@ class TSQL(Dialect):
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
             "SYSTEM_USER": exp.CurrentUser.from_arg_list,
             "TIMEFROMPARTS": _build_timefromparts,
-            "DATETRUNC": _parse_datetrunc,
+            "DATETRUNC": _build_datetrunc,
         }
 
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
@@ -947,6 +947,7 @@ class TSQL(Dialect):
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
+            exp.TimestampTrunc: lambda self, e: self.func("DATETRUNC", e.unit, e.this),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

@@ -997,6 +997,7 @@ class Tokenizer(metaclass=_Tokenizer):
             self._rs_dialect_settings = RsTokenizerDialectSettings(
                 unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
+                numbers_can_be_underscore_separated=self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED,
             )
 
         self.reset()
@@ -1300,8 +1301,12 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                elif self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
-                    return self._add(TokenType.VAR)
+                else:
+                    replaced = literal.replace("_", "")
+                    if self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED and replaced.isdigit():
+                        return self._add(TokenType.NUMBER, number_text + replaced)
+                    if self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
+                        return self._add(TokenType.VAR)
 
                 self._advance(-len(literal))
                 return self._add(TokenType.NUMBER, number_text)

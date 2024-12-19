@@ -420,6 +420,9 @@ class Dialect(metaclass=_Dialect):
     SUPPORTS_VALUES_DEFAULT = True
     """Whether the DEFAULT keyword is supported in the VALUES clause."""
 
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = False
+    """Whether number literals can include underscores for better readability"""
+
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
 

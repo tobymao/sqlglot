@@ -171,6 +171,7 @@ impl TokenizerSettings {
 pub struct TokenizerDialectSettings {
     pub unescaped_sequences: HashMap<String, String>,
     pub identifiers_can_start_with_digit: bool,
+    pub numbers_can_be_underscore_separated: bool,
 }
 
 #[pymethods]
@@ -179,10 +180,12 @@ impl TokenizerDialectSettings {
     pub fn new(
         unescaped_sequences: HashMap<String, String>,
         identifiers_can_start_with_digit: bool,
+        numbers_can_be_underscore_separated: bool,
     ) -> Self {
         TokenizerDialectSettings {
             unescaped_sequences,
             identifiers_can_start_with_digit,
+            numbers_can_be_underscore_separated,
         }
     }
 }

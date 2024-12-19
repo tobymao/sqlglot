@@ -370,6 +370,17 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     return sql
 
 
+def _parse_datetrunc(args: t.List) -> exp.TimestampTrunc:
+    unit = seq_get(args, 0)
+    this = seq_get(args, 1)
+
+    # Every date - time type in tsql resoves to DATETIME2
+    if isinstance(this, exp.Expression) and this.is_string:
+        this = exp.TimeStrToTime(this=args[1])
+
+    return exp.TimestampTrunc(unit=unit, this=this)
+
+
 class TSQL(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
@@ -570,6 +581,7 @@ class TSQL(Dialect):
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
             "SYSTEM_USER": exp.CurrentUser.from_arg_list,
             "TIMEFROMPARTS": _build_timefromparts,
+            "DATETRUNC": _parse_datetrunc,
         }
 
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}

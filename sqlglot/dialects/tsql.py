@@ -374,7 +374,6 @@ def _parse_datetrunc(args: t.List) -> exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
 
-    # Every date - time type in tsql resoves to DATETIME2
     if isinstance(this, exp.Expression) and this.is_string:
         this = exp.TimeStrToTime(this=this)
 

@@ -2090,3 +2090,27 @@ FROM OPENJSON(@json) WITH (
                 "oracle": "SELECT NEXT VALUE FOR db.schema.sequence_name",
             },
         )
+
+    # string literals in the DATETRUNC are casted as DATETIME2
+    def test_datetrunc(self):
+        self.validate_all(
+            "SELECT DATETRUNC(month, 'foo')",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('MONTH', CAST('foo' AS TIMESTAMP))",
+                "tsql": "SELECT DATETRUNC(MONTH, CAST('foo' AS DATETIME2))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETRUNC(month, foo)",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('MONTH', foo)",
+                "tsql": "SELECT DATETRUNC(MONTH, foo)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETRUNC(year, CAST('foo1' AS date))",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('YEAR', CAST('foo1' AS DATE))",
+                "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
+            },
+        )

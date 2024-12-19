@@ -5361,6 +5361,16 @@ class Parser(metaclass=_Parser):
             alias = not known_function or upper in self.FUNCTIONS_WITH_ALIASED_ARGS
             args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
+            post_func_comments = self._curr and self._curr.comments
+            if known_function and post_func_comments:
+                # If the user-inputted comment "/* sqlglot.anonymous */" is following the function
+                # call we'll construct it as exp.Anonymous, even if it's "known"
+                if any(
+                    comment.lstrip().startswith(exp.SQLGLOT_ANONYMOUS)
+                    for comment in post_func_comments
+                ):
+                    known_function = False
+
             if alias and known_function:
                 args = self._kv_to_prop_eq(args)
 

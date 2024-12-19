@@ -59,6 +59,7 @@ class _Expression(type):
 
 
 SQLGLOT_META = "sqlglot.meta"
+SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
 

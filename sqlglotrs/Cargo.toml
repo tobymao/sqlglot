@@ -6,7 +6,26 @@ license = "MIT"
 
 [lib]
 name = "sqlglotrs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+
+[[bench]]
+name = "long"
+harness = false
+
+[features]
+# Enable this feature to use the serde and serde_json crates for profiling purposes
+default = []
+profiling = ["serde", "serde_json"]
 
 [dependencies]
-pyo3 = "0.22.6"
+pyo3 = {version ="0.22.6", features = ["auto-initialize"]}
+
+# Optional dependencies used for profiling
+serde = { version = "1", features = ["derive"] , optional = true }
+serde_json = { version = "1", optional = true }
+
+[dev-dependencies]
+criterion = "0.5"
+serde = { version = "1", features = ["derive"]  }
+serde_json = { version = "1" }
+sqlglotrs = { path = "." , features = ["profiling"] }

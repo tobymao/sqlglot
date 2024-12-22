@@ -7376,11 +7376,10 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
-    expressions = []
+    expressions: t.List[Expression] = []
     for when_expr in when_exprs:
-        expressions.extend(
-            maybe_parse(when_expr, dialect=dialect, copy=copy, into=Whens, **opts).expressions
-        )
+        expression = maybe_parse(when_expr, dialect=dialect, copy=copy, into=Whens, **opts)
+        expressions.extend([expression] if isinstance(expression, When) else expression.expressions)
 
     merge = Merge(
         this=maybe_parse(into, dialect=dialect, copy=copy, **opts),

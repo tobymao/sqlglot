@@ -3272,12 +3272,12 @@ class Table(Expression):
 
         return parts
 
-    def to_column(self, copy: bool = True) -> Alias | Column | Dot:
+    def to_column(self, copy: bool = True) -> Expression:
         parts = self.parts
         last_part = parts[-1]
 
         if isinstance(last_part, Identifier):
-            col = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
+            col: Expression = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
         else:
             # This branch will be reached if a function or array is wrapped in a `Table`
             col = last_part

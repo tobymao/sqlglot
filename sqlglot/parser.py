@@ -809,6 +809,7 @@ class Parser(metaclass=_Parser):
         TokenType.SET: lambda self: self._parse_set(),
         TokenType.TRUNCATE: lambda self: self._parse_truncate_table(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
+        TokenType.UNPIVOT: lambda self: self._parse_simplified_pivot(is_unpivot=True),
         TokenType.UPDATE: lambda self: self._parse_update(),
         TokenType.USE: lambda self: self.expression(
             exp.Use,
@@ -3056,8 +3057,10 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
-            if self._match(TokenType.PIVOT):
-                this = self._parse_simplified_pivot()
+            if self._match_set((TokenType.PIVOT, TokenType.UNPIVOT)):
+                this = self._parse_simplified_pivot(
+                    is_unpivot=self._prev.token_type == TokenType.UNPIVOT
+                )
             elif self._match(TokenType.FROM):
                 this = exp.select("*").from_(
                     t.cast(exp.From, self._parse_from(skip_from_token=True))
@@ -4000,20 +4003,46 @@ class Parser(metaclass=_Parser):
     def _parse_joins(self) -> t.Iterator[exp.Join]:
         return iter(self._parse_join, None)
 
+    def _parse_unpivot_columns(self) -> t.Optional[exp.UnpivotColumns]:
+        if not self._match(TokenType.INTO):
+            return None
+
+        return self.expression(
+            exp.UnpivotColumns,
+            this=self._match_text_seq("NAME") and self._parse_column(),
+            expressions=self._match_text_seq("VALUE") and self._parse_csv(self._parse_column),
+        )
+
     # https://duckdb.org/docs/sql/statements/pivot
-    def _parse_simplified_pivot(self) -> exp.Pivot:
+    def _parse_simplified_pivot(self, is_unpivot: t.Optional[bool] = None) -> exp.Pivot:
         def _parse_on() -> t.Optional[exp.Expression]:
             this = self._parse_bitwise()
-            return self._parse_in(this) if self._match(TokenType.IN) else this
+
+            if self._match(TokenType.IN):
+                # PIVOT ... ON col IN (row_val1, row_val2)
+                return self._parse_in(this)
+            elif self._match(TokenType.ALIAS, advance=False):
+                # UNPIVOT ... ON (col1, col2, col3) AS row_val
+                return self._parse_alias(this)
+
+            return this
 
         this = self._parse_table()
         expressions = self._match(TokenType.ON) and self._parse_csv(_parse_on)
+        into = self._parse_unpivot_columns()
         using = self._match(TokenType.USING) and self._parse_csv(
             lambda: self._parse_alias(self._parse_function())
         )
         group = self._parse_group()
+
         return self.expression(
-            exp.Pivot, this=this, expressions=expressions, using=using, group=group
+            exp.Pivot,
+            this=this,
+            expressions=expressions,
+            using=using,
+            group=group,
+            unpivot=is_unpivot,
+            into=into,
         )
 
     def _parse_pivot_in(self) -> exp.In | exp.PivotAny:

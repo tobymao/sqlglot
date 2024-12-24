@@ -102,6 +102,8 @@ class Spark(Spark2):
         ]
 
     class Parser(Spark2.Parser):
+        OPTIONAL_ALIAS_TOKEN_CTE = True
+
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),

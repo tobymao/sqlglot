@@ -29,6 +29,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("WITH arrayJoin([(1, [2, 3])]) AS arr SELECT arr")
         self.validate_identity("CAST(1 AS Bool)")
         self.validate_identity("SELECT toString(CHAR(104.1, 101, 108.9, 108.9, 111, 32))")
         self.validate_identity("@macro").assert_is(exp.Parameter).this.assert_is(exp.Var)

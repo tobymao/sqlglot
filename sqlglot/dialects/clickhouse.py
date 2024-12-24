@@ -633,7 +633,7 @@ class ClickHouse(Dialect):
             return super()._parse_position(haystack_first=True)
 
         # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
-        def _parse_cte(self) -> exp.CTE:
+        def _parse_cte(self) -> t.Optional[exp.CTE]:
             # WITH <identifier> AS <subquery expression>
             cte: t.Optional[exp.CTE] = self._try_parse(super()._parse_cte)
 

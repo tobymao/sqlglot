@@ -4021,7 +4021,7 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.IN):
                 # PIVOT ... ON col IN (row_val1, row_val2)
                 return self._parse_in(this)
-            elif self._match(TokenType.ALIAS, advance=False):
+            if self._match(TokenType.ALIAS, advance=False):
                 # UNPIVOT ... ON (col1, col2, col3) AS row_val
                 return self._parse_alias(this)
 

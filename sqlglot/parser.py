@@ -1379,6 +1379,9 @@ class Parser(metaclass=_Parser):
     # Whether the `name AS expr` schema/column constraint requires parentheses around `expr`
     WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
 
+    # Whether the 'AS' keyword is optional in the CTE definition syntax
+    OPTIONAL_ALIAS_TOKEN_CTE = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3131,12 +3134,17 @@ class Parser(metaclass=_Parser):
             exp.With, comments=comments, expressions=expressions, recursive=recursive
         )
 
-    def _parse_cte(self) -> exp.CTE:
+    def _parse_cte(self) -> t.Optional[exp.CTE]:
+        index = self._index
+
         alias = self._parse_table_alias(self.ID_VAR_TOKENS)
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 
-        self._match(TokenType.ALIAS)
+        if not self._match(TokenType.ALIAS) and not self.OPTIONAL_ALIAS_TOKEN_CTE:
+            self._retreat(index)
+            return None
+
         comments = self._prev_comments
 
         if self._match_text_seq("NOT", "MATERIALIZED"):

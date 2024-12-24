@@ -1988,6 +1988,7 @@ class Generator(metaclass=_Generator):
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)
+        direction = "UNPIVOT" if expression.unpivot else "PIVOT"
 
         if expression.this:
             this = self.sql(expression, "this")
@@ -1995,14 +1996,15 @@ class Generator(metaclass=_Generator):
                 return f"UNPIVOT {this}"
 
             on = f"{self.seg('ON')} {expressions}"
+            into = self.sql(expression, "into")
+            into = f"{self.seg('INTO')} {into}" if into else ""
             using = self.expressions(expression, key="using", flat=True)
             using = f"{self.seg('USING')} {using}" if using else ""
             group = self.sql(expression, "group")
-            return f"PIVOT {this}{on}{using}{group}"
+            return f"{direction} {this}{on}{into}{using}{group}"
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        direction = self.seg("UNPIVOT" if expression.unpivot else "PIVOT")
 
         field = self.sql(expression, "field")
 
@@ -2014,7 +2016,7 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{direction}{nulls}({expressions} FOR {field}{default_on_null}){alias}"
+        return f"{self.seg(direction)}{nulls}({expressions} FOR {field}{default_on_null}){alias}"
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"
@@ -4637,3 +4639,9 @@ class Generator(metaclass=_Generator):
             every.this.replace(exp.Literal.number(every.name))
 
         return f"START {self.wrap(start)} END {self.wrap(end)} EVERY {self.wrap(self.sql(every))}"
+
+    def unpivotcolumns_sql(self, expression: exp.UnpivotColumns) -> str:
+        name = self.sql(expression, "this")
+        values = self.expressions(expression, flat=True)
+
+        return f"NAME {name} VALUE {values}"

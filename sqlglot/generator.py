@@ -4645,3 +4645,24 @@ class Generator(metaclass=_Generator):
         values = self.expressions(expression, flat=True)
 
         return f"NAME {name} VALUE {values}"
+
+    def computestatistics_sql(self, expression: exp.ComputeStatistics) -> str:
+        kind = self.sql(expression, "kind")
+        kind_sql = kind if kind else ""
+        this = expression.args.get("this")
+        this_sql = ""
+        if this:
+            this_sql = " " + csv(*(self.sql(column) for column in this))
+        return f"COMPUTE STATISTICS {kind_sql}{this_sql}"
+
+    def analyze_sql(self, expression: exp.Analyze) -> str:
+        kind = self.sql(expression, "kind")
+        kind_sql = kind if kind else ""
+        this = self.sql(expression, "this")
+        this_sql = f" {this}" if this else ""
+        if this and kind == "TABLES":
+            this_sql = f" FROM {this}"
+        partition = self.sql(expression, "partition")
+        partition_sql = f" {partition}" if partition else ""
+        inner_expression = f" {self.sql(expression, 'expression')}"
+        return f"ANALYZE {kind_sql}{this_sql}{partition_sql}{inner_expression}"

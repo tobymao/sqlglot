@@ -787,10 +787,12 @@ class Parser(metaclass=_Parser):
 
     STATEMENT_PARSERS = {
         TokenType.ALTER: lambda self: self._parse_alter(),
+        TokenType.ANALYZE: lambda self: self._parse_analyze(),
         TokenType.BEGIN: lambda self: self._parse_transaction(),
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.COMMENT: lambda self: self._parse_comment(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+        TokenType.COMPUTE_STATISTICS: lambda self: self._parse_compute_statistics(),
         TokenType.COPY: lambda self: self._parse_copy(),
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DELETE: lambda self: self._parse_delete(),
@@ -7049,6 +7051,37 @@ class Parser(metaclass=_Parser):
 
         return self._parse_as_command(start)
 
+    def _parse_analyze(self) -> exp.Analyze:
+        kind = None
+        this: exp.Expression | None = None
+        partition = None
+
+        if self._match(TokenType.TABLE):
+            kind = TokenType.TABLE.name
+            this = self._parse_table_parts()
+            partition = self._parse_partition()  # parse_partition does _match(PARTITION)
+        elif self._match_texts("TABLES"):
+            kind = "TABLES"
+            this = (
+                self._parse_table(is_db_reference=True)
+                if self._match_set([TokenType.FROM, TokenType.IN])
+                else None
+            )
+
+        compute_stats = (
+            self._parse_compute_statistics() if self._match(TokenType.COMPUTE_STATISTICS) else None
+        )
+
+        return self.expression(
+            exp.Analyze,
+            **{  # type: ignore
+                "kind": kind,
+                "this": this,
+                "partition": partition,
+                "expression": compute_stats,
+            },
+        )
+
     def _parse_merge(self) -> exp.Merge:
         self._match(TokenType.INTO)
         target = self._parse_table()
@@ -7268,6 +7301,27 @@ class Parser(metaclass=_Parser):
             expression=expression,
             iterator=iterator,
             condition=condition,
+        )
+
+    # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-aux-analyze-table.html
+    def _parse_compute_statistics(self) -> exp.ComputeStatistics:
+        kind = None
+        this = None
+        if self._match(TokenType.NOSCAN):
+            kind = TokenType.NOSCAN.name
+        elif self._match(TokenType.FOR):
+            if self._match_text_seq("ALL", "COLUMNS"):
+                kind = "FOR ALL COLUMNS"
+            if self._match_texts("COLUMNS"):
+                kind = "FOR COLUMNS"
+                this = self._parse_csv(self._parse_column_reference)
+
+        return self.expression(
+            exp.ComputeStatistics,
+            **{  # type: ignore
+                "this": this,
+                "kind": kind,
+            },
         )
 
     def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:

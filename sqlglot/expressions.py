@@ -4712,6 +4712,22 @@ class Alter(Expression):
         return self.args.get("actions") or []
 
 
+class Analyze(Expression):
+    arg_types = {
+        "kind": True,
+        "this": False,
+        "partition": False,
+        "expression": True,
+    }
+
+
+class ComputeStatistics(Expression):
+    arg_types = {
+        "this": False,
+        "kind": False,
+    }
+
+
 class AddConstraint(Expression):
     arg_types = {"expressions": True}
 

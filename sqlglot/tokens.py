@@ -410,6 +410,9 @@ class TokenType(AutoName):
     OPTION = auto()
     SINK = auto()
     SOURCE = auto()
+    ANALYZE = auto()
+    COMPUTE_STATISTICS = auto()
+    NOSCAN = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)
@@ -703,6 +706,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
         "COMMIT": TokenType.COMMIT,
+        "COMPUTE STATISTICS": TokenType.COMPUTE_STATISTICS,
         "CONNECT BY": TokenType.CONNECT_BY,
         "CONSTRAINT": TokenType.CONSTRAINT,
         "COPY": TokenType.COPY,
@@ -770,6 +774,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "NEXT": TokenType.NEXT,
         "NOT": TokenType.NOT,
         "NOTNULL": TokenType.NOTNULL,
+        "NOSCAN": TokenType.NOSCAN,
         "NULL": TokenType.NULL,
         "OBJECT": TokenType.OBJECT,
         "OFFSET": TokenType.OFFSET,
@@ -936,7 +941,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SEQUENCE": TokenType.SEQUENCE,
         "VARIANT": TokenType.VARIANT,
         "ALTER": TokenType.ALTER,
-        "ANALYZE": TokenType.COMMAND,
+        "ANALYZE": TokenType.ANALYZE,
         "CALL": TokenType.COMMAND,
         "COMMENT": TokenType.COMMENT,
         "EXPLAIN": TokenType.COMMAND,

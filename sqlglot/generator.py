@@ -1861,7 +1861,8 @@ class Generator(metaclass=_Generator):
             set_keyword = "SET " if self.DUPLICATE_KEY_UPDATE_WITH_SET else ""
             expressions = f" {set_keyword}{expressions}"
 
-        return f"{conflict}{constraint}{conflict_keys}{action}{expressions}"
+        where = self.sql(expression, "where")
+        return f"{conflict}{constraint}{conflict_keys}{action}{expressions}{where}"
 
     def returning_sql(self, expression: exp.Returning) -> str:
         return f"{self.seg('RETURNING')} {self.expressions(expression, flat=True)}"

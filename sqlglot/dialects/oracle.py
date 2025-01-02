@@ -398,3 +398,8 @@ class Oracle(Dialect):
                     expressions.append(self.sql(expression))
 
             return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"
+
+        def unicode_sql(self, expression: exp.Unicode) -> str:
+            unistr_func = exp.func("UNISTR", expression.this)
+            unicode_func = exp.Anonymous(this="UNICODE", expressions=[unistr_func])
+            return self.sql(unicode_func)

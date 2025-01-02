@@ -915,7 +915,9 @@ class TestParser(unittest.TestCase):
                         kind="NAMESPACE",
                     ),
                 )
-                self.assertEqual(ast.sql(dialect=dialect), "CREATE NAMESPACE my_catalog.my_namespace")
+                self.assertEqual(
+                    ast.sql(dialect=dialect), "CREATE NAMESPACE my_catalog.my_namespace"
+                )
 
     def test_parse_drop_namespace(self):
         for dialect in [None, "spark"]:
@@ -932,4 +934,3 @@ class TestParser(unittest.TestCase):
                     ),
                 )
                 self.assertEqual(ast.sql(dialect=dialect), "DROP NAMESPACE my_catalog.my_namespace")
-

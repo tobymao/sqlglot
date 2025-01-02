@@ -1261,3 +1261,6 @@ class MySQL(Dialect):
         def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
             self.unsupported("AT TIME ZONE is not supported by MySQL")
             return self.sql(expression.this)
+
+        def isascii_sql(self, expression: exp.IsAscii) -> str:
+            return f"NOT REGEXP_LIKE({self.sql(expression.this)}, '[^[:ascii:]]')"

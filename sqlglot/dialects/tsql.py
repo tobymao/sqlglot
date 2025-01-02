@@ -1267,3 +1267,6 @@ class TSQL(Dialect):
             return self.sql(
                 reduce(lambda x, y: exp.Add(this=x, expression=y), expression.flatten())
             )
+
+        def isascii_sql(self, expression: exp.IsAscii) -> str:
+            return f"(PATINDEX('%[^' + CHAR(0x00) + '-' + CHAR(0x7f) + ']%' COLLATE Latin1_General_BIN, {self.sql(expression.this)}) = 0)"

@@ -1259,3 +1259,9 @@ class MySQL(Dialect):
         def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
             self.unsupported("AT TIME ZONE is not supported by MySQL")
             return self.sql(expression.this)
+
+
+        def unicode_sql(self, expression: exp.Unicode) -> str:
+            char_utf = exp.Cast(this=expression.this, to=exp.CharacterSet(this="utf32"))
+            char_ord = exp.func('ord', char_utf)
+            return self.sql(char_ord)

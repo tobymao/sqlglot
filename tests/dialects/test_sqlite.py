@@ -92,6 +92,14 @@ class TestSQLite(Validator):
             read={"snowflake": "LEAST(x, y, z)"},
             write={"snowflake": "LEAST(x, y, z)"},
         )
+        self.validate_all(
+            "UNICODE(x)",
+            write={
+                "mysql": "ORD(CAST(x AS CHAR CHARACTER SET utf32))",
+                "postgres": "ASCII(x)",
+                "oracle": "ASCII(UNISTR(x))",
+            }
+        )
         self.validate_identity(
             "SELECT * FROM station WHERE city IS NOT ''",
             "SELECT * FROM station WHERE NOT city IS ''",

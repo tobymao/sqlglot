@@ -723,6 +723,7 @@ class TestMySQL(Validator):
                     write={
                         "duckdb": "SELECT LENGTH('foo')",
                         "mysql": "SELECT CHAR_LENGTH('foo')",
+                        "postgres": "SELECT CHAR_LENGTH('foo')",
                     },
                 )
 

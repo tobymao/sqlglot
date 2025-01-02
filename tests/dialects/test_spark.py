@@ -315,6 +315,20 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT ARRAY_AGG(1)",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(1)",
+                "spark": "SELECT COLLECT_LIST(1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT STRUCT('a'))",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT {'col1': 'a'})",
+                "spark": "SELECT COLLECT_LIST(DISTINCT STRUCT('a' AS col1))",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_FORMAT(DATE '2020-01-01', 'EEEE') AS weekday",
             write={
                 "presto": "SELECT DATE_FORMAT(CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP), '%W') AS weekday",
@@ -740,6 +754,27 @@ TBLPROPERTIES (
             },
         )
 
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+            read={
+                "databricks": "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+            },
+            write={
+                "spark": "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+                "databricks": "SELECT TIMESTAMPDIFF(MONTH, foo, bar)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT CAST(col AS TIMESTAMP)",
+            write={
+                "spark2": "SELECT CAST(col AS TIMESTAMP)",
+                "spark": "SELECT CAST(col AS TIMESTAMP)",
+                "databricks": "SELECT TRY_CAST(col AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST(col AS TIMESTAMPTZ)",
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
@@ -875,3 +910,9 @@ TBLPROPERTIES (
                 "databricks": "SELECT * FROM db.table1 EXCEPT SELECT * FROM db.table2",
             },
         )
+
+    def test_string(self):
+        for dialect in ("hive", "spark2", "spark", "databricks"):
+            with self.subTest(f"Testing STRING() for {dialect}"):
+                query = parse_one("STRING(a)", dialect=dialect)
+                self.assertEqual(query.sql(dialect), "CAST(a AS STRING)")

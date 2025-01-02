@@ -201,11 +201,13 @@ class Step:
 
             aggregate.add_dependency(step)
             step = aggregate
+        else:
+            aggregate = None
 
         order = expression.args.get("order")
 
         if order:
-            if isinstance(step, Aggregate):
+            if aggregate and isinstance(step, Aggregate):
                 for i, ordered in enumerate(order.expressions):
                     if extract_agg_operands(exp.alias_(ordered.this, f"_o_{i}", quoted=True)):
                         ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))

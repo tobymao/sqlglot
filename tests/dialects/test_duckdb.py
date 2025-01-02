@@ -79,7 +79,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",
             write={
-                "bigquery": "SELECT SUM(X) OVER (ORDER BY x NULLS LAST)",
+                "bigquery": "SELECT SUM(X) OVER (ORDER BY x)",
                 "duckdb": "SELECT SUM(X) OVER (ORDER BY x)",
                 "mysql": "SELECT SUM(X) OVER (ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x)",
             },
@@ -256,6 +256,9 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT UNNEST([1, 2])").selects[0].assert_is(exp.UDTF)
+        self.validate_identity("'red' IN flags").args["field"].assert_is(exp.Column)
+        self.validate_identity("'red' IN tbl.flags")
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
@@ -273,12 +276,6 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT UNNEST(col, recursive := TRUE) FROM t")
         self.validate_identity("VAR_POP(a)")
         self.validate_identity("SELECT * FROM foo ASOF LEFT JOIN bar ON a = b")
-        self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
-        self.validate_identity("PIVOT Cities ON Year USING FIRST(Population)")
-        self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country")
-        self.validate_identity("PIVOT Cities ON Country, Name USING SUM(Population)")
-        self.validate_identity("PIVOT Cities ON Country || '_' || Name USING SUM(Population)")
-        self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country, Name")
         self.validate_identity("SELECT {'a': 1} AS x")
         self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
         self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")
@@ -375,9 +372,6 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
             "x ->> '$.family'",
-        )
-        self.validate_identity(
-            "ATTACH DATABASE ':memory:' AS new_database", check_command_warning=True
         )
         self.validate_identity(
             "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
@@ -617,12 +611,6 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "IF((y) <> 0, (x) / (y), NULL)",
-            read={
-                "bigquery": "SAFE_DIVIDE(x, y)",
-            },
-        )
-        self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={
                 "bigquery": "STRUCT(1 AS x, '2' AS y)",
@@ -755,22 +743,45 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT PERCENTILE_DISC(q) WITHIN GROUP (ORDER BY x) FROM t",
             },
         )
-        self.validate_all(
-            "SELECT MEDIAN(x) FROM t",
-            write={
-                "duckdb": "SELECT QUANTILE_CONT(x, 0.5) FROM t",
-                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) FROM t",
-                "snowflake": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) FROM t",
-            },
-        )
 
         with self.assertRaises(UnsupportedError):
+            # bq has the position arg, but duckdb doesn't
             transpile(
                 "SELECT REGEXP_EXTRACT(a, 'pattern', 1) from table",
                 read="bigquery",
                 write="duckdb",
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )
+
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
+            read={
+                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
+                "bigquery": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
+                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
+            },
+            write={
+                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
+                "bigquery": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
+                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
+            read={
+                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
+            },
+            write={
+                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
+                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
+            },
+        )
+        self.validate_identity(
+            "SELECT REGEXP_EXTRACT(a, 'pattern', 0)",
+            "SELECT REGEXP_EXTRACT(a, 'pattern')",
+        )
+        self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 0, 'i')")
+        self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 1, 'i')")
 
         self.validate_identity("SELECT ISNAN(x)")
 
@@ -832,6 +843,7 @@ class TestDuckDB(Validator):
                 "clickhouse": "DATE_TRUNC('DAY', x)",
             },
         )
+        self.validate_identity("EDITDIST3(col1, col2)", "LEVENSHTEIN(col1, col2)")
 
         self.validate_identity("SELECT LENGTH(foo)")
         self.validate_identity("SELECT ARRAY[1, 2, 3]", "SELECT [1, 2, 3]")
@@ -879,6 +891,16 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "a !~~* b",
             "NOT a ILIKE b",
+        )
+
+        self.validate_all(
+            "SELECT e'Hello\nworld'",
+            read={
+                "duckdb": "SELECT E'Hello\nworld'",
+            },
+            write={
+                "duckdb": "SELECT e'Hello\nworld'",
+            },
         )
 
     def test_array_index(self):
@@ -1133,6 +1155,7 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS BINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS LOGICAL)", "CAST(x AS BOOLEAN)")
+        self.validate_identity("""CAST({'i': 1, 's': 'foo'} AS STRUCT("s" TEXT, "i" INT))""")
         self.validate_identity(
             "CAST(ROW(1, ROW(1)) AS STRUCT(number BIGINT, row STRUCT(number BIGINT)))"
         )
@@ -1142,11 +1165,11 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
-            "CAST([[ROW(1)]] AS STRUCT(a BIGINT)[][])",
+            "CAST([[{'a': 1}]] AS STRUCT(a BIGINT)[][])",
         )
         self.validate_identity(
             "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
-            "CAST([ROW(1)] AS STRUCT(a BIGINT)[])",
+            "CAST([{'a': 1}] AS STRUCT(a BIGINT)[])",
         )
         self.validate_identity(
             "STRUCT_PACK(a := 'b')::json",
@@ -1154,7 +1177,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "STRUCT_PACK(a := 'b')::STRUCT(a TEXT)",
-            "CAST(ROW('b') AS STRUCT(a TEXT))",
+            "CAST({'a': 'b'} AS STRUCT(a TEXT))",
         )
 
         self.validate_all(
@@ -1369,3 +1392,45 @@ class TestDuckDB(Validator):
             else:
                 self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
                 self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+
+    def test_attach_detach(self):
+        # ATTACH
+        self.validate_identity("ATTACH 'file.db'")
+        self.validate_identity("ATTACH ':memory:' AS db_alias")
+        self.validate_identity("ATTACH IF NOT EXISTS 'file.db' AS db_alias")
+        self.validate_identity("ATTACH 'file.db' AS db_alias (READ_ONLY)")
+        self.validate_identity("ATTACH 'file.db' (READ_ONLY FALSE, TYPE sqlite)")
+        self.validate_identity("ATTACH 'file.db' (TYPE POSTGRES, SCHEMA 'public')")
+
+        self.validate_identity("ATTACH DATABASE 'file.db'", "ATTACH 'file.db'")
+
+        # DETACH
+        self.validate_identity("DETACH new_database")
+        self.validate_identity("DETACH IF EXISTS file")
+
+        self.validate_identity("DETACH DATABASE db", "DETACH db")
+
+    def test_simplified_pivot_unpivot(self):
+        self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
+        self.validate_identity("PIVOT Cities ON Year USING FIRST(Population)")
+        self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country")
+        self.validate_identity("PIVOT Cities ON Country, Name USING SUM(Population)")
+        self.validate_identity("PIVOT Cities ON Country || '_' || Name USING SUM(Population)")
+        self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country, Name")
+
+        self.validate_identity("UNPIVOT (SELECT 1 AS col1, 2 AS col2) ON foo, bar")
+        self.validate_identity(
+            "UNPIVOT monthly_sales ON jan, feb, mar, apr, may, jun INTO NAME month VALUE sales"
+        )
+        self.validate_identity(
+            "UNPIVOT monthly_sales ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales"
+        )
+        self.validate_identity(
+            "UNPIVOT monthly_sales ON (jan, feb, mar) AS q1, (apr, may, jun) AS q2 INTO NAME quarter VALUE month_1_sales, month_2_sales, month_3_sales"
+        )
+        self.validate_identity(
+            "WITH unpivot_alias AS (UNPIVOT monthly_sales ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales) SELECT * FROM unpivot_alias"
+        )
+        self.validate_identity(
+            "SELECT * FROM (UNPIVOT monthly_sales ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales) AS unpivot_alias"
+        )

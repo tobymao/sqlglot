@@ -14,10 +14,17 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
+
+    class Tokenizer(MySQL.Tokenizer):
+        KEYWORDS = {
+            **MySQL.Tokenizer.KEYWORDS,
+            "LARGEINT": TokenType.INT128,
+        }
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
@@ -34,7 +41,9 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
+            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+            "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
@@ -70,6 +79,32 @@ class StarRocks(MySQL):
 
             return unnest
 
+        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
+            self._match_text_seq("START")
+            start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            end = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("EVERY")
+            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
+            return self.expression(
+                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
+            )
+
+        def _parse_partition_by_opt_range(
+            self,
+        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
+            if self._match_text_seq("RANGE"):
+                partition_expressions = self._parse_wrapped_id_vars()
+                create_expressions = self._parse_wrapped_csv(
+                    self._parse_partitioning_granularity_dynamic
+                )
+                return self.expression(
+                    exp.PartitionByRangeProperty,
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                )
+            return super()._parse_partitioned_by()
+
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
@@ -81,6 +116,7 @@ class StarRocks(MySQL):
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
+            exp.DataType.Type.INT128: "LARGEINT",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
@@ -89,6 +125,8 @@ class StarRocks(MySQL):
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
+            exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {
@@ -111,6 +149,161 @@ class StarRocks(MySQL):
         }
 
         TRANSFORMS.pop(exp.DateTrunc)
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/keywords/#reserved-keywords
+        RESERVED_KEYWORDS = {
+            "add",
+            "all",
+            "alter",
+            "analyze",
+            "and",
+            "array",
+            "as",
+            "asc",
+            "between",
+            "bigint",
+            "bitmap",
+            "both",
+            "by",
+            "case",
+            "char",
+            "character",
+            "check",
+            "collate",
+            "column",
+            "compaction",
+            "convert",
+            "create",
+            "cross",
+            "cube",
+            "current_date",
+            "current_role",
+            "current_time",
+            "current_timestamp",
+            "current_user",
+            "database",
+            "databases",
+            "decimal",
+            "decimalv2",
+            "decimal32",
+            "decimal64",
+            "decimal128",
+            "default",
+            "deferred",
+            "delete",
+            "dense_rank",
+            "desc",
+            "describe",
+            "distinct",
+            "double",
+            "drop",
+            "dual",
+            "else",
+            "except",
+            "exists",
+            "explain",
+            "false",
+            "first_value",
+            "float",
+            "for",
+            "force",
+            "from",
+            "full",
+            "function",
+            "grant",
+            "group",
+            "grouping",
+            "grouping_id",
+            "groups",
+            "having",
+            "hll",
+            "host",
+            "if",
+            "ignore",
+            "immediate",
+            "in",
+            "index",
+            "infile",
+            "inner",
+            "insert",
+            "int",
+            "integer",
+            "intersect",
+            "into",
+            "is",
+            "join",
+            "json",
+            "key",
+            "keys",
+            "kill",
+            "lag",
+            "largeint",
+            "last_value",
+            "lateral",
+            "lead",
+            "left",
+            "like",
+            "limit",
+            "load",
+            "localtime",
+            "localtimestamp",
+            "maxvalue",
+            "minus",
+            "mod",
+            "not",
+            "ntile",
+            "null",
+            "on",
+            "or",
+            "order",
+            "outer",
+            "outfile",
+            "over",
+            "partition",
+            "percentile",
+            "primary",
+            "procedure",
+            "qualify",
+            "range",
+            "rank",
+            "read",
+            "regexp",
+            "release",
+            "rename",
+            "replace",
+            "revoke",
+            "right",
+            "rlike",
+            "row",
+            "row_number",
+            "rows",
+            "schema",
+            "schemas",
+            "select",
+            "set",
+            "set_var",
+            "show",
+            "smallint",
+            "system",
+            "table",
+            "terminated",
+            "text",
+            "then",
+            "tinyint",
+            "to",
+            "true",
+            "union",
+            "unique",
+            "unsigned",
+            "update",
+            "use",
+            "using",
+            "values",
+            "varchar",
+            "when",
+            "where",
+            "with",
+        }
 
         def create_sql(self, expression: exp.Create) -> str:
             # Starrocks' primary key is defined outside of the schema, so we need to move it there

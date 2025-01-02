@@ -120,12 +120,15 @@ class Oracle(Dialect):
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args: exp.DateTrunc(
-                unit=seq_get(args, 1) or exp.Literal.string("DD"), this=seq_get(args, 0)
+                unit=seq_get(args, 1) or exp.Literal.string("DD"),
+                this=seq_get(args, 0),
+                unabbreviate=False,
             ),
         }
 
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "NEXT": lambda self: self._parse_next_value_for(),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }
 
@@ -204,19 +207,27 @@ class Oracle(Dialect):
                 **kwargs,
             )
 
-        def _parse_hint(self) -> t.Optional[exp.Hint]:
-            if self._match(TokenType.HINT):
-                start = self._curr
-                while self._curr and not self._match_pair(TokenType.STAR, TokenType.SLASH):
-                    self._advance()
+        def _parse_hint_function_call(self) -> t.Optional[exp.Expression]:
+            if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
+                return None
 
-                if not self._curr:
-                    self.raise_error("Expected */ after HINT")
+            this = self._curr.text
 
-                end = self._tokens[self._index - 3]
-                return exp.Hint(expressions=[self._find_sql(start, end)])
+            self._advance(2)
+            args = self._parse_hint_args()
+            this = self.expression(exp.Anonymous, this=this, expressions=args)
+            self._match_r_paren(this)
+            return this
 
-            return None
+        def _parse_hint_args(self):
+            args = []
+            result = self._parse_var()
+
+            while result:
+                args.append(result)
+                result = self._parse_var()
+
+            return args
 
         def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
             kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)
@@ -271,6 +282,7 @@ class Oracle(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_SELECT_INTO = True
         TZ_TO_WITH_TIME_ZONE = True
+        QUERY_HINT_SEP = " "
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -370,3 +382,15 @@ class Oracle(Dialect):
                 return f"{self.seg(into)} {self.sql(expression, 'this')}"
 
             return f"{self.seg(into)} {self.expressions(expression)}"
+
+        def hint_sql(self, expression: exp.Hint) -> str:
+            expressions = []
+
+            for expression in expression.expressions:
+                if isinstance(expression, exp.Anonymous):
+                    formatted_args = self.format_args(*expression.expressions, sep=" ")
+                    expressions.append(f"{self.sql(expression, 'this')}({formatted_args})")
+                else:
+                    expressions.append(self.sql(expression))
+
+            return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"

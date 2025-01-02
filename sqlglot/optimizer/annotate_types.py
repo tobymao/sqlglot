@@ -192,6 +192,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
         self._visited: t.Set[int] = set()
 
+        # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
+        # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
+        # would reprocess the entire subtree to coerce the types of its operands' projections
+        self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType.Type]] = {}
+
     def _set_type(
         self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
     ) -> None:
@@ -231,22 +236,42 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):
-                if expression.args.get("by_name"):
-                    r_type_by_select = {s.alias_or_name: s.type for s in expression.right.selects}
-                    selects[name] = {
-                        s.alias_or_name: self._maybe_coerce(
-                            t.cast(exp.DataType, s.type),
-                            r_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
-                        )
-                        for s in expression.left.selects
-                    }
-                else:
-                    selects[name] = {
-                        ls.alias_or_name: self._maybe_coerce(
-                            t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
-                        )
-                        for ls, rs in zip(expression.left.selects, expression.right.selects)
-                    }
+                selects[name] = col_types = self._setop_column_types.setdefault(id(expression), {})
+
+                if not col_types:
+                    # Process a chain / sub-tree of set operations
+                    for set_op in expression.walk(
+                        prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
+                    ):
+                        if not isinstance(set_op, exp.SetOperation):
+                            continue
+
+                        if set_op.args.get("by_name"):
+                            r_type_by_select = {
+                                s.alias_or_name: s.type for s in set_op.right.selects
+                            }
+                            setop_cols = {
+                                s.alias_or_name: self._maybe_coerce(
+                                    t.cast(exp.DataType, s.type),
+                                    r_type_by_select.get(s.alias_or_name)
+                                    or exp.DataType.Type.UNKNOWN,
+                                )
+                                for s in set_op.left.selects
+                            }
+                        else:
+                            setop_cols = {
+                                ls.alias_or_name: self._maybe_coerce(
+                                    t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                                )
+                                for ls, rs in zip(set_op.left.selects, set_op.right.selects)
+                            }
+
+                        # Coerce intermediate results with the previously registered types, if they exist
+                        for col_name, col_type in setop_cols.items():
+                            col_types[col_name] = self._maybe_coerce(
+                                col_type, col_types.get(col_name, exp.DataType.Type.NULL)
+                            )
+
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 
@@ -287,15 +312,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _maybe_coerce(
         self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
-    ) -> exp.DataType:
+    ) -> exp.DataType.Type:
         type1_value = type1.this if isinstance(type1, exp.DataType) else type1
         type2_value = type2.this if isinstance(type2, exp.DataType) else type2
 
         # We propagate the UNKNOWN type upwards if found
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
-            return exp.DataType.build("unknown")
+            return exp.DataType.Type.UNKNOWN
 
-        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
+        return t.cast(
+            exp.DataType.Type,
+            type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value,
+        )
 
     def _annotate_binary(self, expression: B) -> B:
         self._annotate_args(expression)

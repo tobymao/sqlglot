@@ -216,12 +216,14 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(exp.table_name(exp.to_table("a.b.c.d.e", dialect="bigquery")), "a.b.c.d.e")
         self.assertEqual(exp.table_name(exp.to_table("'@foo'", dialect="snowflake")), "'@foo'")
         self.assertEqual(exp.table_name(exp.to_table("@foo", dialect="snowflake")), "@foo")
+        self.assertEqual(exp.table_name(bq_dashed_table, identify=True), '"a-1"."b"."c"')
         self.assertEqual(
             exp.table_name(parse_one("foo.`{bar,er}`", read="databricks"), dialect="databricks"),
             "foo.`{bar,er}`",
         )
-
-        self.assertEqual(exp.table_name(bq_dashed_table, identify=True), '"a-1"."b"."c"')
+        self.assertEqual(
+            exp.table_name(parse_one("/*c*/foo.bar", into=exp.Table), identify=True), '"foo"."bar"'
+        )
 
     def test_table(self):
         self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))
@@ -254,6 +256,14 @@ class TestExpressions(unittest.TestCase):
                 dialect="bigquery",
             ).sql(),
             'SELECT * FROM "my-project"."example"."table" /* example.table */',
+        )
+
+        self.assertEqual(
+            exp.replace_tables(
+                parse_one("select * from example.table /* sqlglot.meta replace=false */"),
+                {"example.table": "a.b"},
+            ).sql(),
+            "SELECT * FROM example.table /* sqlglot.meta replace=false */",
         )
 
     def test_expand(self):
@@ -935,15 +945,13 @@ FROM foo""",
     def test_to_interval(self):
         self.assertEqual(exp.to_interval("1day").sql(), "INTERVAL '1' DAY")
         self.assertEqual(exp.to_interval("  5     months").sql(), "INTERVAL '5' MONTHS")
-        with self.assertRaises(ValueError):
-            exp.to_interval("bla")
+        self.assertEqual(exp.to_interval("-2 day").sql(), "INTERVAL '-2' DAY")
 
         self.assertEqual(exp.to_interval(exp.Literal.string("1day")).sql(), "INTERVAL '1' DAY")
+        self.assertEqual(exp.to_interval(exp.Literal.string("-2 day")).sql(), "INTERVAL '-2' DAY")
         self.assertEqual(
             exp.to_interval(exp.Literal.string("  5   months")).sql(), "INTERVAL '5' MONTHS"
         )
-        with self.assertRaises(ValueError):
-            exp.to_interval(exp.Literal.string("bla"))
 
     def test_to_table(self):
         table_only = exp.to_table("table_name")
@@ -1168,7 +1176,7 @@ FROM foo""",
 
     def test_set_meta(self):
         query = parse_one("SELECT * FROM foo /* sqlglot.meta x = 1, y = a, z */")
-        self.assertEqual(query.find(exp.Table).meta, {"x": "1", "y": "a", "z": True})
+        self.assertEqual(query.find(exp.Table).meta, {"x": True, "y": "a", "z": True})
         self.assertEqual(query.sql(), "SELECT * FROM foo /* sqlglot.meta x = 1, y = a, z */")
 
     def test_assert_is(self):

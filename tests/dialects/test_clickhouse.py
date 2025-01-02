@@ -1,7 +1,8 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
+from sqlglot.optimizer import traverse_scope
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
 
@@ -28,6 +29,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("WITH arrayJoin([(1, [2, 3])]) AS arr SELECT arr")
         self.validate_identity("CAST(1 AS Bool)")
         self.validate_identity("SELECT toString(CHAR(104.1, 101, 108.9, 108.9, 111, 32))")
         self.validate_identity("@macro").assert_is(exp.Parameter).this.assert_is(exp.Var)
@@ -81,12 +83,14 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT histogram(5)(a)")
         self.validate_identity("SELECT groupUniqArray(2)(a)")
         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
+        self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS DateTime)")
         self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS DateTime)")
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
+        self.validate_identity("CAST(x AS DECIMAL(38, 2))", "CAST(x AS Decimal(38, 2))")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
@@ -94,6 +98,9 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
+        self.validate_identity(
+            "SELECT CAST(1730098800 AS DateTime64) AS DATETIME, 'test' AS interp ORDER BY DATETIME WITH FILL FROM toDateTime64(1730098800, 3) - INTERVAL '7' HOUR TO toDateTime64(1730185140, 3) - INTERVAL '7' HOUR STEP toIntervalSecond(900) INTERPOLATE (interp)"
+        )
         self.validate_identity(
             "SELECT number, COUNT() OVER (PARTITION BY number % 3) AS partition_count FROM numbers(10) WINDOW window_name AS (PARTITION BY number) QUALIFY partition_count = 4 ORDER BY number"
         )
@@ -147,6 +154,14 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
+        )
+        self.validate_identity(
+            "INSERT INTO tab VALUES ({'key1': 1, 'key2': 10}), ({'key1': 2, 'key2': 20}), ({'key1': 3, 'key2': 30})",
+            "INSERT INTO tab VALUES (map('key1', 1, 'key2', 10)), (map('key1', 2, 'key2', 20)), (map('key1', 3, 'key2', 30))",
+        )
+        self.validate_identity(
+            "SELECT (toUInt8('1') + toUInt8('2')) IS NOT NULL",
+            "SELECT NOT ((toUInt8('1') + toUInt8('2')) IS NULL)",
         )
         self.validate_identity(
             "SELECT $1$foo$1$",
@@ -241,7 +256,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "clickhouse": "SELECT CAST('2020-01-01' AS Nullable(DateTime)) + INTERVAL '500' MICROSECOND",
-                "duckdb": "SELECT CAST('2020-01-01' AS DATETIME) + INTERVAL '500' MICROSECOND",
+                "duckdb": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' MICROSECOND",
                 "postgres": "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500 MICROSECOND'",
             },
         )
@@ -421,18 +436,15 @@ class TestClickhouse(Validator):
                 " GROUP BY loyalty ORDER BY loyalty ASC"
             },
         )
-        self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")
-        self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
-        self.validate_identity(
-            "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
-        )
-        self.validate_identity(
-            "SELECT * FROM tbl ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
-        )
         self.validate_all(
             "SELECT quantile(0.5)(a)",
-            read={"duckdb": "SELECT quantile(a, 0.5)"},
-            write={"clickhouse": "SELECT quantile(0.5)(a)"},
+            read={
+                "duckdb": "SELECT quantile(a, 0.5)",
+                "clickhouse": "SELECT median(a)",
+            },
+            write={
+                "clickhouse": "SELECT quantile(0.5)(a)",
+            },
         )
         self.validate_all(
             "SELECT quantiles(0.5, 0.4)(a)",
@@ -533,6 +545,13 @@ class TestClickhouse(Validator):
             "SELECT * FROM ABC WHERE hasAny(COLUMNS('.*field') APPLY(toUInt64) APPLY(to), (SELECT groupUniqArray(toUInt64(field))))"
         )
         self.validate_identity("SELECT col apply", "SELECT col AS apply")
+        self.validate_identity(
+            "SELECT name FROM data WHERE (SELECT DISTINCT name FROM data) IS NOT NULL",
+            "SELECT name FROM data WHERE NOT ((SELECT DISTINCT name FROM data) IS NULL)",
+        )
+
+        self.validate_identity("SELECT 1_2_3_4_5", "SELECT 12345")
+        self.validate_identity("SELECT 1_b", "SELECT 1_b")
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(
@@ -652,6 +671,12 @@ class TestClickhouse(Validator):
                 write={"clickhouse": f"CAST(pow(2, 32) AS {data_type})"},
             )
 
+    def test_geom_types(self):
+        data_types = ["Point", "Ring", "LineString", "MultiLineString", "Polygon", "MultiPolygon"]
+        for data_type in data_types:
+            with self.subTest(f"Casting to ClickHouse {data_type}"):
+                self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
     def test_ddl(self):
         db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
         create_with_cluster = exp.Create(
@@ -685,6 +710,7 @@ class TestClickhouse(Validator):
             "CREATE TABLE foo ENGINE=Memory AS (SELECT * FROM db.other_table) COMMENT 'foo'",
         )
 
+        self.validate_identity("CREATE FUNCTION linear_equation AS (x, k, b) -> k * x + b")
         self.validate_identity("CREATE MATERIALIZED VIEW a.b TO a.c (c Int32) AS SELECT * FROM a.d")
         self.validate_identity("""CREATE TABLE ip_data (ip4 IPv4, ip6 IPv6) ENGINE=TinyLog()""")
         self.validate_identity("""CREATE TABLE dates (dt1 Date32) ENGINE=TinyLog()""")
@@ -707,6 +733,10 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             "CREATE TABLE foo (x UInt32) TTL time_column + INTERVAL '1' MONTH DELETE WHERE column = 'value'"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION parity_str AS (n) -> IF(n % 2, 'odd', 'even')",
+            "CREATE FUNCTION parity_str AS n -> CASE WHEN n % 2 THEN 'odd' ELSE 'even' END",
         )
         self.validate_identity(
             "CREATE TABLE a ENGINE=Memory AS SELECT 1 AS c COMMENT 'foo'",
@@ -1101,6 +1131,139 @@ LIFETIME(MIN 0 MAX 0)""",
             convert(date(2020, 1, 1)).sql(dialect=self.dialect), "toDate('2020-01-01')"
         )
 
+        # no fractional seconds
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1)).sql(dialect=self.dialect),
+            "CAST('2020-01-01 00:00:01' AS DateTime64(6))",
+        )
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1, tzinfo=timezone.utc)).sql(dialect=self.dialect),
+            "CAST('2020-01-01 00:00:01' AS DateTime64(6, 'UTC'))",
+        )
+
+        # with fractional seconds
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1, 1)).sql(dialect=self.dialect),
+            "CAST('2020-01-01 00:00:01.000001' AS DateTime64(6))",
+        )
+        self.assertEqual(
+            convert(datetime(2020, 1, 1, 0, 0, 1, 1, tzinfo=timezone.utc)).sql(
+                dialect=self.dialect
+            ),
+            "CAST('2020-01-01 00:00:01.000001' AS DateTime64(6, 'UTC'))",
+        )
+
+    def test_timestr_to_time(self):
+        # no fractional seconds
+        time_strings = [
+            "2020-01-01 00:00:01",
+            "2020-01-01 00:00:01+01:00",
+            " 2020-01-01 00:00:01-01:00 ",
+            "2020-01-01T00:00:01+01:00",
+        ]
+        for time_string in time_strings:
+            with self.subTest(f"'{time_string}'"):
+                self.assertEqual(
+                    exp.TimeStrToTime(this=exp.Literal.string(time_string)).sql(
+                        dialect=self.dialect
+                    ),
+                    f"CAST('{time_string}' AS DateTime64(6))",
+                )
+
+        time_strings_no_utc = ["2020-01-01 00:00:01" for i in range(4)]
+        for utc, no_utc in zip(time_strings, time_strings_no_utc):
+            with self.subTest(f"'{time_string}' with UTC timezone"):
+                self.assertEqual(
+                    exp.TimeStrToTime(
+                        this=exp.Literal.string(utc), zone=exp.Literal.string("UTC")
+                    ).sql(dialect=self.dialect),
+                    f"CAST('{no_utc}' AS DateTime64(6, 'UTC'))",
+                )
+
+        # with fractional seconds
+        time_strings = [
+            "2020-01-01 00:00:01.001",
+            "2020-01-01 00:00:01.000001",
+            "2020-01-01 00:00:01.001+00:00",
+            "2020-01-01 00:00:01.000001-00:00",
+            "2020-01-01 00:00:01.0001",
+            "2020-01-01 00:00:01.1+00:00",
+        ]
+
+        for time_string in time_strings:
+            with self.subTest(f"'{time_string}'"):
+                self.assertEqual(
+                    exp.TimeStrToTime(this=exp.Literal.string(time_string[0])).sql(
+                        dialect=self.dialect
+                    ),
+                    f"CAST('{time_string[0]}' AS DateTime64(6))",
+                )
+
+        time_strings_no_utc = [
+            "2020-01-01 00:00:01.001000",
+            "2020-01-01 00:00:01.000001",
+            "2020-01-01 00:00:01.001000",
+            "2020-01-01 00:00:01.000001",
+            "2020-01-01 00:00:01.000100",
+            "2020-01-01 00:00:01.100000",
+        ]
+
+        for utc, no_utc in zip(time_strings, time_strings_no_utc):
+            with self.subTest(f"'{time_string}' with UTC timezone"):
+                self.assertEqual(
+                    exp.TimeStrToTime(
+                        this=exp.Literal.string(utc), zone=exp.Literal.string("UTC")
+                    ).sql(dialect=self.dialect),
+                    f"CAST('{no_utc}' AS DateTime64(6, 'UTC'))",
+                )
+
     def test_grant(self):
         self.validate_identity("GRANT SELECT(x, y) ON db.table TO john WITH GRANT OPTION")
         self.validate_identity("GRANT INSERT(x, y) ON db.table TO john")
+
+    def test_array_join(self):
+        expr = self.validate_identity(
+            "SELECT * FROM arrays_test ARRAY JOIN arr1, arrays_test.arr2 AS foo, ['a', 'b', 'c'] AS elem"
+        )
+        joins = expr.args["joins"]
+        self.assertEqual(len(joins), 1)
+
+        join = joins[0]
+        self.assertEqual(join.kind, "ARRAY")
+        self.assertIsInstance(join.this, exp.Column)
+
+        self.assertEqual(len(join.expressions), 2)
+        self.assertIsInstance(join.expressions[0], exp.Alias)
+        self.assertIsInstance(join.expressions[0].this, exp.Column)
+
+        self.assertIsInstance(join.expressions[1], exp.Alias)
+        self.assertIsInstance(join.expressions[1].this, exp.Array)
+
+        self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")
+        self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
+        self.validate_identity(
+            "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
+        )
+        self.validate_identity(
+            "SELECT * FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
+        )
+
+    def test_traverse_scope(self):
+        sql = "SELECT * FROM t FINAL"
+        scopes = traverse_scope(parse_one(sql, dialect=self.dialect))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"t"})
+
+    def test_window_functions(self):
+        self.validate_identity(
+            "SELECT row_number(column1) OVER (PARTITION BY column2 ORDER BY column3) FROM table"
+        )
+        self.validate_identity(
+            "SELECT row_number() OVER (PARTITION BY column2 ORDER BY column3) FROM table"
+        )
+
+    def test_functions(self):
+        self.validate_identity("SELECT TRANSFORM(foo, [1, 2], ['first', 'second']) FROM table")
+        self.validate_identity(
+            "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
+        )

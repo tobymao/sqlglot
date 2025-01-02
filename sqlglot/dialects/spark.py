@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import rename_func, unit_to_var
+from sqlglot.dialects.dialect import rename_func, unit_to_var, timestampdiff_sql, build_date_delta
 from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
 from sqlglot.helper import ensure_list, seq_get
@@ -102,12 +102,15 @@ class Spark(Spark2):
         ]
 
     class Parser(Spark2.Parser):
+        OPTIONAL_ALIAS_TOKEN_CTE = True
+
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
             "DATE_ADD": _build_dateadd,
             "DATEADD": _build_dateadd,
             "TIMESTAMPADD": _build_dateadd,
+            "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
             "DATEDIFF": _build_datediff,
             "DATE_DIFF": _build_datediff,
             "TIMESTAMP_LTZ": _build_as_cast("TIMESTAMP_LTZ"),
@@ -136,6 +139,8 @@ class Spark(Spark2):
         SUPPORTS_TO_NUMBER = True
         PAD_FILL_PATTERN_IS_REQUIRED = False
         SUPPORTS_CONVERT_TIMEZONE = True
+        SUPPORTS_MEDIAN = True
+        SUPPORTS_UNIX_SECONDS = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,
@@ -165,6 +170,8 @@ class Spark(Spark2):
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.TsOrDsAdd: _dateadd_sql,
             exp.TimestampAdd: _dateadd_sql,
+            exp.DatetimeDiff: timestampdiff_sql,
+            exp.TimestampDiff: timestampdiff_sql,
             exp.TryCast: lambda self, e: (
                 self.trycast_sql(e) if e.args.get("safe") else self.cast_sql(e)
             ),

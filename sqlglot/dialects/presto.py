@@ -30,29 +30,16 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     sequence_sql,
     build_regexp_extract,
+    explode_to_unnest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
+from sqlglot.generator import unsupported_args
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
-
-
-def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
-    if isinstance(expression.this, exp.Explode):
-        return self.sql(
-            exp.Join(
-                this=exp.Unnest(
-                    expressions=[expression.this.this],
-                    alias=expression.args.get("alias"),
-                    offset=isinstance(expression.this, exp.Posexplode),
-                ),
-                kind="cross",
-            )
-        )
-    return self.lateral_sql(expression)
 
 
 def _initcap_sql(self: Presto.Generator, expression: exp.Initcap) -> str:
@@ -211,6 +198,7 @@ class Presto(Dialect):
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
+    SUPPORTS_VALUES_DEFAULT = False
 
     TIME_MAPPING = MySQL.TIME_MAPPING
 
@@ -243,6 +231,10 @@ class Presto(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "DEALLOCATE PREPARE": TokenType.COMMAND,
+            "DESCRIBE INPUT": TokenType.COMMAND,
+            "DESCRIBE OUTPUT": TokenType.COMMAND,
+            "RESET SESSION": TokenType.COMMAND,
             "START": TokenType.BEGIN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "ROW": TokenType.STRUCT,
@@ -286,8 +278,10 @@ class Presto(Dialect):
             "FROM_UTF8": lambda args: exp.Decode(
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
+            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract,
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -331,6 +325,8 @@ class Presto(Dialect):
         PARSE_JSON_NAME = "JSON_PARSE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        SUPPORTS_MEDIAN = False
+        ARRAY_SIZE_NAME = "CARDINALITY"
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -340,16 +336,18 @@ class Presto(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.STRUCT: "ROW",
+            exp.DataType.Type.BIT: "BOOLEAN",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.DATETIME64: "TIMESTAMP",
+            exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.HLLSKETCH: "HYPERLOGLOG",
+            exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.STRUCT: "ROW",
+            exp.DataType.Type.TEXT: "VARCHAR",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMETZ: "TIME",
         }
 
         TRANSFORMS = {
@@ -362,7 +360,6 @@ class Presto(Dialect):
             exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
-            exp.ArraySize: rename_func("CARDINALITY"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("SET_AGG"),
             exp.AtTimeZone: rename_func("AT_TIMEZONE"),
@@ -377,7 +374,9 @@ class Presto(Dialect):
             ),
             exp.BitwiseXor: lambda self, e: self.func("BITWISE_XOR", e.this, e.expression),
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
+            exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.expression, e.this
@@ -400,9 +399,6 @@ class Presto(Dialect):
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.GroupConcat: lambda self, e: self.func(
-                "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
-            ),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
@@ -410,14 +406,17 @@ class Presto(Dialect):
             exp.Last: _first_last_sql,
             exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
-            exp.Lateral: _explode_to_unnest_sql,
+            exp.Lateral: explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
-            exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN_DISTANCE")
+            ),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpExtractAll: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
@@ -694,3 +693,10 @@ class Presto(Dialect):
             expr = "".join(segments)
 
             return f"{this}{expr}"
+
+        def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+            return self.func(
+                "ARRAY_JOIN",
+                self.func("ARRAY_AGG", expression.this),
+                expression.args.get("separator"),
+            )

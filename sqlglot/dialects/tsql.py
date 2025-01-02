@@ -111,7 +111,7 @@ def _build_formatted_time(
         assert len(args) == 2
 
         return exp_class(
-            this=exp.cast(args[1], exp.DataType.Type.DATETIME),
+            this=exp.cast(args[1], exp.DataType.Type.DATETIME2),
             format=exp.Literal.string(
                 format_time(
                     args[0].name.lower(),
@@ -178,7 +178,7 @@ def _build_hashbytes(args: t.List) -> exp.Expression:
     return exp.func("HASHBYTES", *args)
 
 
-DATEPART_ONLY_FORMATS = {"DW", "HOUR", "QUARTER"}
+DATEPART_ONLY_FORMATS = {"DW", "WK", "HOUR", "QUARTER"}
 
 
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
@@ -232,7 +232,7 @@ def _build_date_delta(
         if start_date and start_date.is_number:
             # Numeric types are valid DATETIME values
             if start_date.is_int:
-                adds = DEFAULT_START_DATE + datetime.timedelta(days=int(start_date.this))
+                adds = DEFAULT_START_DATE + datetime.timedelta(days=start_date.to_py())
                 start_date = exp.Literal.string(adds.strftime("%F"))
             else:
                 # We currently don't handle float values, i.e. they're not converted to equivalent DATETIMEs.
@@ -370,6 +370,16 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     return sql
 
 
+def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
+    unit = seq_get(args, 0)
+    this = seq_get(args, 1)
+
+    if this and this.is_string:
+        this = exp.cast(this, exp.DataType.Type.DATETIME2)
+
+    return exp.TimestampTrunc(this=this, unit=unit)
+
+
 class TSQL(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
@@ -398,8 +408,8 @@ class TSQL(Dialect):
         "s": "%-S",
         "millisecond": "%f",
         "ms": "%f",
-        "weekday": "%W",
-        "dw": "%W",
+        "weekday": "%w",
+        "dw": "%w",
         "month": "%m",
         "mm": "%M",
         "m": "%-M",
@@ -492,7 +502,7 @@ class TSQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CLUSTERED INDEX": TokenType.INDEX,
-            "DATETIME2": TokenType.DATETIME,
+            "DATETIME2": TokenType.DATETIME2,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.DECLARE,
             "EXEC": TokenType.COMMAND,
@@ -507,7 +517,7 @@ class TSQL(Dialect):
             "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
             "ROWVERSION": TokenType.ROWVERSION,
-            "SMALLDATETIME": TokenType.DATETIME,
+            "SMALLDATETIME": TokenType.SMALLDATETIME,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "SYSTEM_USER": TokenType.CURRENT_USER,
@@ -570,9 +580,14 @@ class TSQL(Dialect):
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
             "SYSTEM_USER": exp.CurrentUser.from_arg_list,
             "TIMEFROMPARTS": _build_timefromparts,
+            "DATETRUNC": _build_datetrunc,
         }
 
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
+
+        PROCEDURE_OPTIONS = dict.fromkeys(
+            ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
+        )
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
@@ -591,6 +606,11 @@ class TSQL(Dialect):
                 this=this,
                 expression=self._parse_function() or self._parse_var(any_token=True),
             ),
+        }
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "NEXT": lambda self: self._parse_next_value_for(),
         }
 
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
@@ -719,7 +739,11 @@ class TSQL(Dialect):
             ):
                 return this
 
-            expressions = self._parse_csv(self._parse_function_parameter)
+            if not self._match(TokenType.WITH, advance=False):
+                expressions = self._parse_csv(self._parse_function_parameter)
+            else:
+                expressions = None
+
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
         def _parse_id_var(
@@ -860,14 +884,15 @@ class TSQL(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "BIT",
+            exp.DataType.Type.DATETIME2: "DATETIME2",
             exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DataType.Type.SMALLDATETIME: "SMALLDATETIME",
             exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }
@@ -893,6 +918,7 @@ class TSQL(Dialect):
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: _json_extract_sql,
             exp.LastDay: lambda self, e: self.func("EOMONTH", e.this),
+            exp.Ln: rename_func("LOG"),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
@@ -921,6 +947,7 @@ class TSQL(Dialect):
             exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
+            exp.TimestampTrunc: lambda self, e: self.func("DATETRUNC", e.unit, e.this),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)
@@ -1095,9 +1122,10 @@ class TSQL(Dialect):
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
-                sql = self.sql(exp.Literal.string(sql))
+                sql_with_ctes = self.prepend_ctes(expression, sql)
+                sql_literal = self.sql(exp.Literal.string(sql_with_ctes))
                 if kind == "SCHEMA":
-                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql_literal})"""
                 elif kind == "TABLE":
                     assert table
                     where = exp.and_(
@@ -1105,10 +1133,10 @@ class TSQL(Dialect):
                         exp.column("table_schema").eq(table.db) if table.db else None,
                         exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
                     )
-                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql_literal})"""
                 elif kind == "INDEX":
                     index = self.sql(exp.Literal.string(expression.this.text("this")))
-                    sql = f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC({sql})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC({sql_literal})"""
             elif expression.args.get("replace"):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 

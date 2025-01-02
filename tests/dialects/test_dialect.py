@@ -526,7 +526,7 @@ class TestDialect(Validator):
             write={
                 "": "SELECT NVL2(a, b, c)",
                 "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
-                "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "clickhouse": "SELECT CASE WHEN NOT (a IS NULL) THEN b ELSE c END",
                 "databricks": "SELECT NVL2(a, b, c)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
@@ -552,7 +552,7 @@ class TestDialect(Validator):
             write={
                 "": "SELECT NVL2(a, b)",
                 "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b END",
-                "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "clickhouse": "SELECT CASE WHEN NOT (a IS NULL) THEN b END",
                 "databricks": "SELECT NVL2(a, b)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b END",
@@ -651,7 +651,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST('2020-01-01' AS TIMESTAMP)",
                 "spark": "CAST('2020-01-01' AS TIMESTAMP)",
                 "trino": "CAST('2020-01-01' AS TIMESTAMP)",
-                "clickhouse": "CAST('2020-01-01' AS Nullable(DateTime))",
+                "clickhouse": "CAST('2020-01-01' AS DateTime64(6))",
                 "drill": "CAST('2020-01-01' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "CAST('2020-01-01' AS TIMESTAMP)",
@@ -688,7 +688,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMPTZ)",
                 "spark": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
                 "trino": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP WITH TIME ZONE)",
-                "clickhouse": "CAST('2020-01-01 12:13:14' AS Nullable(DateTime('America/Los_Angeles')))",
+                "clickhouse": "CAST('2020-01-01 12:13:14' AS DateTime64(6, 'America/Los_Angeles'))",
                 "drill": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP)",
                 "presto": "CAST('2020-01-01 12:13:14-08:00' AS TIMESTAMP WITH TIME ZONE)",
@@ -709,7 +709,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(col AS TIMESTAMPTZ)",
                 "spark": "CAST(col AS TIMESTAMP)",
                 "trino": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
-                "clickhouse": "CAST(col AS Nullable(DateTime('America/Los_Angeles')))",
+                "clickhouse": "CAST(col AS DateTime64(6, 'America/Los_Angeles'))",
                 "drill": "CAST(col AS TIMESTAMP)",
                 "hive": "CAST(col AS TIMESTAMP)",
                 "presto": "CAST(col AS TIMESTAMP WITH TIME ZONE)",
@@ -1444,6 +1444,56 @@ class TestDialect(Validator):
             },
         )
 
+        # UNNEST without column alias
+        self.validate_all(
+            "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
+            write={
+                "presto": "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
+                "spark": UnsupportedError,
+                "databricks": UnsupportedError,
+            },
+        )
+
+        # UNNEST MAP Object into multiple columns, using single alias
+        self.validate_all(
+            "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t (a, b)",
+            write={
+                "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
+                "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
+                "hive": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a, b",
+            },
+        )
+
+        # Unnest multiple Expression into respective mapped alias
+        self.validate_all(
+            "SELECT numbers, animals, n, a FROM (SELECT ARRAY(2, 5) AS numbers, ARRAY('dog', 'cat', 'bird') AS animals UNION ALL SELECT ARRAY(7, 8, 9), ARRAY('cow', 'pig')) AS x CROSS JOIN UNNEST(numbers, animals) AS t(n, a)",
+            write={
+                "presto": "SELECT numbers, animals, n, a FROM (SELECT ARRAY[2, 5] AS numbers, ARRAY['dog', 'cat', 'bird'] AS animals UNION ALL SELECT ARRAY[7, 8, 9], ARRAY['cow', 'pig']) AS x CROSS JOIN UNNEST(numbers, animals) AS t(n, a)",
+                "spark": "SELECT numbers, animals, n, a FROM (SELECT ARRAY(2, 5) AS numbers, ARRAY('dog', 'cat', 'bird') AS animals UNION ALL SELECT ARRAY(7, 8, 9), ARRAY('cow', 'pig')) AS x LATERAL VIEW INLINE(ARRAYS_ZIP(numbers, animals)) t AS n, a",
+                "hive": UnsupportedError,
+            },
+        )
+
+        # Unnest column to more then 2 alias (STRUCT)
+        self.validate_all(
+            "SELECT a, b, c, d, e FROM x CROSS JOIN UNNEST(y) AS t(a, b, c, d)",
+            write={
+                "presto": "SELECT a, b, c, d, e FROM x CROSS JOIN UNNEST(y) AS t(a, b, c, d)",
+                "spark": UnsupportedError,
+                "hive": UnsupportedError,
+            },
+        )
+
+    def test_multiple_chained_unnest(self):
+        self.validate_all(
+            "SELECT * FROM x CROSS JOIN UNNEST(a) AS j(lista) CROSS JOIN UNNEST(b) AS k(listb) CROSS JOIN UNNEST(c) AS l(listc)",
+            write={
+                "presto": "SELECT * FROM x CROSS JOIN UNNEST(a) AS j(lista) CROSS JOIN UNNEST(b) AS k(listb) CROSS JOIN UNNEST(c) AS l(listc)",
+                "spark": "SELECT * FROM x LATERAL VIEW EXPLODE(a) j AS lista LATERAL VIEW EXPLODE(b) k AS listb LATERAL VIEW EXPLODE(c) l AS listc",
+                "hive": "SELECT * FROM x LATERAL VIEW EXPLODE(a) j AS lista LATERAL VIEW EXPLODE(b) k AS listb LATERAL VIEW EXPLODE(c) l AS listc",
+            },
+        )
+
     def test_lateral_subquery(self):
         self.validate_identity(
             "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"
@@ -1638,6 +1688,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPOS(haystack, needle)",
                 "postgres": "STRPOS(haystack, needle)",
                 "presto": "STRPOS(haystack, needle)",
+                "bigquery": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",
                 "clickhouse": "position(haystack, needle)",
                 "snowflake": "POSITION(needle, haystack)",
@@ -1761,17 +1812,71 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "LEVENSHTEIN(col1, col2)",
-            write={
-                "duckdb": "LEVENSHTEIN(col1, col2)",
+            read={
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
                 "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
-                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
                 "hive": "LEVENSHTEIN(col1, col2)",
                 "spark": "LEVENSHTEIN(col1, col2)",
+                "postgres": "LEVENSHTEIN(col1, col2)",
+                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+                "sqlite": "EDITDIST3(col1, col2)",
+                "trino": "LEVENSHTEIN_DISTANCE(col1, col2)",
+            },
+            write={
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
+                "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "hive": "LEVENSHTEIN(col1, col2)",
+                "spark": "LEVENSHTEIN(col1, col2)",
+                "postgres": "LEVENSHTEIN(col1, col2)",
+                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+                "sqlite": "EDITDIST3(col1, col2)",
+                "trino": "LEVENSHTEIN_DISTANCE(col1, col2)",
+            },
+        )
+
+        self.validate_all(
+            "LEVENSHTEIN(col1, col2, 1, 2, 3)",
+            write={
+                "bigquery": UnsupportedError,
+                "clickhouse": UnsupportedError,
+                "drill": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "hive": UnsupportedError,
+                "spark": UnsupportedError,
+                "postgres": "LEVENSHTEIN(col1, col2, 1, 2, 3)",
+                "presto": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "sqlite": UnsupportedError,
+                "trino": UnsupportedError,
             },
         )
         self.validate_all(
+            "LEVENSHTEIN(col1, col2, 1, 2, 3, 4)",
+            write={
+                "bigquery": UnsupportedError,
+                "clickhouse": UnsupportedError,
+                "drill": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "hive": UnsupportedError,
+                "spark": UnsupportedError,
+                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 1, 2, 3, 4)",
+                "presto": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "sqlite": UnsupportedError,
+                "trino": UnsupportedError,
+            },
+        )
+
+        self.validate_all(
             "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
             write={
+                "bigquery": "EDIT_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "duckdb": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "drill": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "presto": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
@@ -2749,6 +2854,13 @@ FROM subquery2""",
             },
         )
 
+        self.validate_all(
+            "SELECT ARRAY_LENGTH(GENERATE_DATE_ARRAY(DATE '2020-01-01', DATE '2020-02-01', INTERVAL 1 WEEK))",
+            write={
+                "snowflake": "SELECT ARRAY_SIZE((SELECT ARRAY_AGG(*) FROM (SELECT DATEADD(WEEK, CAST(value AS INT), CAST('2020-01-01' AS DATE)) AS value FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(WEEK, CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE)) + 1 - 1) + 1))) AS _u(seq, key, path, index, value, this))))",
+            },
+        )
+
     def test_set_operation_specifiers(self):
         self.validate_all(
             "SELECT 1 EXCEPT ALL SELECT 1",
@@ -2891,3 +3003,121 @@ FROM subquery2""",
                 "snowflake": "UUID_STRING()",
             },
         )
+
+    def test_escaped_identifier_delimiter(self):
+        for dialect in ("databricks", "hive", "mysql", "spark2", "spark"):
+            with self.subTest(f"Testing escaped backtick in identifier name for {dialect}"):
+                self.validate_all(
+                    'SELECT 1 AS "x`"',
+                    read={
+                        dialect: "SELECT 1 AS `x```",
+                    },
+                    write={
+                        dialect: "SELECT 1 AS `x```",
+                    },
+                )
+
+        for dialect in (
+            "",
+            "clickhouse",
+            "duckdb",
+            "postgres",
+            "presto",
+            "trino",
+            "redshift",
+            "snowflake",
+            "sqlite",
+        ):
+            with self.subTest(f"Testing escaped double-quote in identifier name for {dialect}"):
+                self.validate_all(
+                    'SELECT 1 AS "x"""',
+                    read={
+                        dialect: 'SELECT 1 AS "x"""',
+                    },
+                    write={
+                        dialect: 'SELECT 1 AS "x"""',
+                    },
+                )
+
+        for dialect in ("clickhouse", "sqlite"):
+            with self.subTest(f"Testing escaped backtick in identifier name for {dialect}"):
+                self.validate_all(
+                    'SELECT 1 AS "x`"',
+                    read={
+                        dialect: "SELECT 1 AS `x```",
+                    },
+                    write={
+                        dialect: 'SELECT 1 AS "x`"',
+                    },
+                )
+
+        self.validate_all(
+            'SELECT 1 AS "x`"',
+            read={
+                "clickhouse": "SELECT 1 AS `x\\``",
+            },
+            write={
+                "clickhouse": 'SELECT 1 AS "x`"',
+            },
+        )
+        for name in ('"x\\""', '`x"`'):
+            with self.subTest(f"Testing ClickHouse delimiter escaping: {name}"):
+                self.validate_all(
+                    'SELECT 1 AS "x"""',
+                    read={
+                        "clickhouse": f"SELECT 1 AS {name}",
+                    },
+                    write={
+                        "clickhouse": 'SELECT 1 AS "x"""',
+                    },
+                )
+
+        for name in ("[[x]]]", '"[x]"'):
+            with self.subTest(f"Testing T-SQL delimiter escaping: {name}"):
+                self.validate_all(
+                    'SELECT 1 AS "[x]"',
+                    read={
+                        "tsql": f"SELECT 1 AS {name}",
+                    },
+                    write={
+                        "tsql": "SELECT 1 AS [[x]]]",
+                    },
+                )
+        for name in ('[x"]', '"x"""'):
+            with self.subTest(f"Testing T-SQL delimiter escaping: {name}"):
+                self.validate_all(
+                    'SELECT 1 AS "x"""',
+                    read={
+                        "tsql": f"SELECT 1 AS {name}",
+                    },
+                    write={
+                        "tsql": 'SELECT 1 AS [x"]',
+                    },
+                )
+
+    def test_median(self):
+        for suffix in (
+            "",
+            " OVER ()",
+        ):
+            self.validate_all(
+                f"MEDIAN(x){suffix}",
+                read={
+                    "snowflake": f"MEDIAN(x){suffix}",
+                    "duckdb": f"MEDIAN(x){suffix}",
+                    "spark": f"MEDIAN(x){suffix}",
+                    "databricks": f"MEDIAN(x){suffix}",
+                    "redshift": f"MEDIAN(x){suffix}",
+                    "oracle": f"MEDIAN(x){suffix}",
+                },
+                write={
+                    "snowflake": f"MEDIAN(x){suffix}",
+                    "duckdb": f"MEDIAN(x){suffix}",
+                    "spark": f"MEDIAN(x){suffix}",
+                    "databricks": f"MEDIAN(x){suffix}",
+                    "redshift": f"MEDIAN(x){suffix}",
+                    "oracle": f"MEDIAN(x){suffix}",
+                    "clickhouse": f"median(x){suffix}",
+                    "postgres": f"PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                },
+            )

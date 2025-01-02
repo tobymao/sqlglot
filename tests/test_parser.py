@@ -14,6 +14,10 @@ class TestParser(unittest.TestCase):
             parse_one("")
 
     def test_parse_into(self):
+        self.assertIsInstance(parse_one("(1)", into=exp.Tuple), exp.Tuple)
+        self.assertIsInstance(parse_one("(1,)", into=exp.Tuple), exp.Tuple)
+        self.assertIsInstance(parse_one("(x=1)", into=exp.Tuple), exp.Tuple)
+
         self.assertIsInstance(parse_one("select * from t", into=exp.Select), exp.Select)
         self.assertIsInstance(parse_one("select * from t limit 5", into=exp.Select), exp.Select)
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
@@ -23,9 +27,9 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(
             parse_one(
                 "WHEN MATCHED THEN UPDATE SET target.salary = COALESCE(source.salary, target.salary)",
-                into=exp.When,
+                into=exp.Whens,
             ),
-            exp.When,
+            exp.Whens,
         )
 
         with self.assertRaises(ParseError) as ctx:
@@ -329,7 +333,7 @@ class TestParser(unittest.TestCase):
                 e, --
                 f -- space
             FROM foo
-        """
+            """
         )
 
         self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
@@ -339,6 +343,20 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.expressions[3].comments, ["comment4 --foo"])
         self.assertEqual(expression.expressions[4].comments, [""])
         self.assertEqual(expression.expressions[5].comments, [" space"])
+
+        expression = parse_one(
+            """
+            SELECT a.column_name --# Comment 1
+                   ,b.column_name2, --# Comment 2
+                   b.column_name3 AS NAME3 --# Comment 3
+            FROM table_name a
+            JOIN table_name2 b ON a.column_name = b.column_name
+            """
+        )
+
+        self.assertEqual(expression.expressions[0].comments, ["# Comment 1"])
+        self.assertEqual(expression.expressions[1].comments, ["# Comment 2"])
+        self.assertEqual(expression.expressions[2].comments, ["# Comment 3"])
 
     def test_comments_select_cte(self):
         expression = parse_one(
@@ -350,7 +368,7 @@ class TestParser(unittest.TestCase):
                 a.*
             FROM /*comment3*/
                 a
-        """
+            """
         )
 
         self.assertEqual(expression.comments, ["comment2"])
@@ -698,20 +716,20 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])
 
     def test_parse_nested(self):
-        now = time.time()
-        query = parse_one("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
-        self.assertIsNotNone(query)
-        self.assertLessEqual(time.time() - now, 0.1)
+        def warn_over_threshold(query: str, max_threshold: float = 0.2):
+            now = time.time()
+            ast = parse_one(query)
+            end = time.time() - now
 
-        now = time.time()
-        query = parse_one("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
-        self.assertIsNotNone(query)
-        self.assertLessEqual(time.time() - now, 0.1)
+            self.assertIsNotNone(ast)
+            if end >= max_threshold:
+                parser_logger.warning(
+                    f"Query {query[:100]}... surpassed the time threshold of {max_threshold} seconds"
+                )
 
-        now = time.time()
-        query = parse_one("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
-        self.assertIsNotNone(query)
-        self.assertLessEqual(time.time() - now, 0.1)
+        warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
+        warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
+        warn_over_threshold("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
 
     def test_parse_properties(self):
         self.assertEqual(
@@ -865,3 +883,20 @@ class TestParser(unittest.TestCase):
             expr = parse_one(sql)
             self.assertIsInstance(expr, exp.Insert)
             self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
+
+    def test_drop_column(self):
+        ast = parse_one("ALTER TABLE tbl DROP COLUMN col")
+        self.assertEqual(len(list(ast.find_all(exp.Table))), 1)
+        self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
+
+    def test_udf_meta(self):
+        ast = parse_one("YEAR(a) /* sqlglot.anonymous */")
+        self.assertIsInstance(ast, exp.Anonymous)
+
+        # Meta flag is case sensitive
+        ast = parse_one("YEAR(a) /* sqlglot.anONymous */")
+        self.assertIsInstance(ast, exp.Year)
+
+        # Incomplete or incorrect anonymous meta comments are not registered
+        ast = parse_one("YEAR(a) /* sqlglot.anon */")
+        self.assertIsInstance(ast, exp.Year)

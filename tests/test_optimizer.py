@@ -132,7 +132,6 @@ class TestOptimizer(unittest.TestCase):
         func,
         pretty=False,
         execute=False,
-        set_dialect=False,
         only=None,
         **kwargs,
     ):
@@ -158,7 +157,7 @@ class TestOptimizer(unittest.TestCase):
                         validate_qualify_columns
                     )
 
-                if set_dialect and dialect:
+                if dialect:
                     func_kwargs["dialect"] = dialect
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
@@ -207,7 +206,6 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
             execute=True,
             schema=schema,
-            set_dialect=True,
         )
 
     def test_isolate_table_selects(self):
@@ -235,7 +233,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_tables.qualify_tables,
             db="db",
             catalog="c",
-            set_dialect=True,
         )
 
     def test_normalize(self):
@@ -258,6 +255,35 @@ class TestOptimizer(unittest.TestCase):
 
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT Teams.Name, count(*)
+                    FROM raw.TeamMemberships as TeamMemberships
+                    join raw.Teams
+                        on Teams.Id = TeamMemberships.TeamId
+                    GROUP BY 1
+                    """,
+                    read="bigquery",
+                ),
+                schema={
+                    "raw": {
+                        "TeamMemberships": {
+                            "Id": "INTEGER",
+                            "UserId": "INTEGER",
+                            "TeamId": "INTEGER",
+                        },
+                        "Teams": {
+                            "Id": "INTEGER",
+                            "Name": "STRING",
+                        },
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT `teams`.`name` AS `name`, count(*) AS `_col_1` FROM `raw`.`TeamMemberships` AS `teammemberships` JOIN `raw`.`Teams` AS `teams` ON `teams`.`id` = `teammemberships`.`teamid` GROUP BY `teams`.`name`",
+        )
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(
@@ -315,7 +341,7 @@ class TestOptimizer(unittest.TestCase):
                 ),
                 dialect="bigquery",
             ).sql(),
-            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "COLUMNS") SELECT "x"."a" AS "a" FROM "x" AS "x"',
+            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA.COLUMNS" AS "columns") SELECT "x"."a" AS "a" FROM "x" AS "x"',
         )
 
         self.assertEqual(
@@ -446,11 +472,8 @@ class TestOptimizer(unittest.TestCase):
             qualify_columns,
             execute=True,
             schema=self.schema,
-            set_dialect=True,
         )
-        self.check_file(
-            "qualify_columns_ddl", qualify_columns, schema=self.schema, set_dialect=True
-        )
+        self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
@@ -475,7 +498,6 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "normalize_identifiers",
             optimizer.normalize_identifiers.normalize_identifiers,
-            set_dialect=True,
         )
 
         self.assertEqual(optimizer.normalize_identifiers.normalize_identifiers("a%").sql(), '"a%"')
@@ -484,14 +506,13 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "quote_identifiers",
             optimizer.qualify_columns.quote_identifiers,
-            set_dialect=True,
         )
 
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):
-        self.check_file("simplify", simplify, set_dialect=True)
+        self.check_file("simplify", simplify)
 
         expression = parse_one("SELECT a, c, b FROM table1 WHERE 1 = 1")
         self.assertEqual(simplify(simplify(expression.find(exp.Where))).sql(), "WHERE TRUE")
@@ -559,6 +580,10 @@ class TestOptimizer(unittest.TestCase):
 SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
 """.strip(),
         )
+        self.assertEqual(
+            optimizer.simplify.gen(parse_one("select item_id /* description */"), comments=True),
+            "SELECT :expressions,item_id /* description */",
+        )
 
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
@@ -600,6 +625,16 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 schema=MappingSchema(schema=unused_schema, dialect="clickhouse"),
             ).sql(),
             "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT data.id AS my_id, CONCAT(data.id, data.name) AS full_name FROM data WHERE data.id = 1 GROUP BY data.id, CONCAT(data.id, data.name) HAVING data.id = 1",
+        )
+
+        # Edge case: BigQuery shouldn't expand aliases in complex expressions
+        sql = "WITH data AS (SELECT 1 AS id) SELECT FUNC(id) AS id FROM data GROUP BY FUNC(id)"
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(sql, dialect="bigquery"),
+                schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
+            ).sql(),
+            "WITH data AS (SELECT 1 AS id) SELECT FUNC(data.id) AS id FROM data GROUP BY FUNC(data.id)",
         )
 
     def test_optimize_joins(self):
@@ -1326,6 +1361,47 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         )
         self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.BIGINT)
         self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.DOUBLE)
+
+        # Test chained UNIONs
+        sql = """
+            WITH t AS
+            (
+                SELECT NULL AS col
+                UNION
+                SELECT NULL AS col
+                UNION
+                SELECT 'a' AS col
+                UNION
+                SELECT NULL AS col
+                UNION
+                SELECT NULL AS col
+            )
+            SELECT col FROM t;
+        """
+        self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        # Test UNIONs with nested subqueries
+        sql = """
+            WITH t AS
+            (
+                SELECT NULL AS col
+                UNION
+                (SELECT NULL AS col UNION ALL SELECT 'a' AS col)
+            )
+            SELECT col FROM t;
+        """
+        self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        sql = """
+            WITH t AS
+            (
+                (SELECT NULL AS col UNION ALL SELECT 'a' AS col)
+                UNION
+                SELECT NULL AS col
+            )
+            SELECT col FROM t;
+        """
+        self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
 
     def test_recursive_cte(self):
         query = parse_one(

@@ -32,6 +32,10 @@ class TestTeradata(Validator):
             },
         )
 
+        self.validate_identity("SELECT 0x1d", "SELECT X'1d'")
+        self.validate_identity("SELECT X'1D'", "SELECT X'1D'")
+        self.validate_identity("SELECT x'1d'", "SELECT X'1d'")
+
         self.validate_identity(
             "RENAME TABLE emp TO employee", check_command_warning=True
         ).assert_is(exp.Command)

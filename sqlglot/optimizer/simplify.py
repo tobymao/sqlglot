@@ -206,6 +206,11 @@ COMPLEMENT_COMPARISONS = {
     exp.NEQ: exp.EQ,
 }
 
+COMPLEMENT_SUBQUERY_PREDICATES = {
+    exp.All: exp.Any,
+    exp.Any: exp.All,
+}
+
 
 def simplify_not(expression):
     """
@@ -218,9 +223,12 @@ def simplify_not(expression):
         if is_null(this):
             return exp.null()
         if this.__class__ in COMPLEMENT_COMPARISONS:
-            return COMPLEMENT_COMPARISONS[this.__class__](
-                this=this.this, expression=this.expression
-            )
+            right = this.expression
+            complement_subquery_predicate = COMPLEMENT_SUBQUERY_PREDICATES.get(right.__class__)
+            if complement_subquery_predicate:
+                right = complement_subquery_predicate(this=right.this)
+
+            return COMPLEMENT_COMPARISONS[this.__class__](this=this.this, expression=right)
         if isinstance(this, exp.Paren):
             condition = this.unnest()
             if isinstance(condition, exp.And):
@@ -1320,13 +1328,17 @@ def _flat_simplify(expression, simplifier, root=True):
     return expression
 
 
-def gen(expression: t.Any) -> str:
+def gen(expression: t.Any, comments: bool = False) -> str:
     """Simple pseudo sql generator for quickly generating sortable and uniq strings.
 
     Sorting and deduping sql is a necessary step for optimization. Calling the actual
     generator is expensive so we have a bare minimum sql generator here.
+
+    Args:
+        expression: the expression to convert into a SQL string.
+        comments: whether to include the expression's comments.
     """
-    return Gen().gen(expression)
+    return Gen().gen(expression, comments=comments)
 
 
 class Gen:
@@ -1334,7 +1346,7 @@ class Gen:
         self.stack = []
         self.sqls = []
 
-    def gen(self, expression: exp.Expression) -> str:
+    def gen(self, expression: exp.Expression, comments: bool = False) -> str:
         self.stack = [expression]
         self.sqls.clear()
 
@@ -1342,6 +1354,9 @@ class Gen:
             node = self.stack.pop()
 
             if isinstance(node, exp.Expression):
+                if comments and node.comments:
+                    self.stack.append(f" /*{','.join(node.comments)}*/")
+
                 exp_handler_name = f"{node.key}_sql"
 
                 if hasattr(self, exp_handler_name):

@@ -411,6 +411,7 @@ class TestTSQL(Validator):
             },
         )
         self.validate_identity("HASHBYTES('MD2', 'x')")
+        self.validate_identity("LOG(n)")
         self.validate_identity("LOG(n, b)")
 
         self.validate_all(
@@ -515,16 +516,6 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS BIT)")
 
         self.validate_all(
-            "CAST(x AS DATETIME2)",
-            read={
-                "": "CAST(x AS DATETIME)",
-            },
-            write={
-                "mysql": "CAST(x AS DATETIME)",
-                "tsql": "CAST(x AS DATETIME2)",
-            },
-        )
-        self.validate_all(
             "CAST(x AS DATETIME2(6))",
             write={
                 "hive": "CAST(x AS TIMESTAMP)",
@@ -540,6 +531,19 @@ class TestTSQL(Validator):
                 "hive": "CAST(x AS BINARY)",
             },
         )
+
+        for temporal_type in ("SMALLDATETIME", "DATETIME", "DATETIME2"):
+            self.validate_all(
+                f"CAST(x AS {temporal_type})",
+                read={
+                    "": f"CAST(x AS {temporal_type})",
+                },
+                write={
+                    "mysql": "CAST(x AS DATETIME)",
+                    "duckdb": "CAST(x AS TIMESTAMP)",
+                    "tsql": f"CAST(x AS {temporal_type})",
+                },
+            )
 
     def test_types_ints(self):
         self.validate_all(
@@ -749,14 +753,6 @@ class TestTSQL(Validator):
             },
         )
 
-        self.validate_all(
-            "CAST(x as SMALLDATETIME)",
-            write={
-                "spark": "CAST(x AS TIMESTAMP)",
-                "tsql": "CAST(x AS DATETIME2)",
-            },
-        )
-
     def test_types_bin(self):
         self.validate_all(
             "CAST(x as BIT)",
@@ -921,6 +917,12 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT * INTO foo.bar.baz FROM (SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2) AS temp')",
+            read={
+                "": "CREATE TABLE IF NOT EXISTS foo.bar.baz AS WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2"
+            },
+        )
+        self.validate_all(
             "CREATE OR ALTER VIEW a.b AS SELECT 1",
             read={
                 "": "CREATE OR REPLACE VIEW a.b AS SELECT 1",
@@ -1001,6 +1003,17 @@ class TestTSQL(Validator):
         )
         self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
         self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
+
+        self.validate_identity("CREATE PROCEDURE foo WITH ENCRYPTION AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH RECOMPILE AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH SCHEMABINDING AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH NATIVE_COMPILATION AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS OWNER AS SELECT 1")
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS 'username' AS SELECT 1")
+        self.validate_identity(
+            "CREATE PROCEDURE foo WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS SELECT 1"
+        )
+
         self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
         self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
 
@@ -1059,6 +1072,7 @@ WHERE
             CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
                 @Loadid INTEGER
                ,@NumberOfRows INTEGER
+            WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION
             AS
             BEGIN
                 SET XACT_ABORT ON;
@@ -1074,8 +1088,8 @@ WHERE
         """
 
         expected_sqls = [
-            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON",
-            "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
+            "DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
             "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
             "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
             "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
@@ -1289,6 +1303,12 @@ WHERE
             },
         )
 
+        for fmt in ("WEEK", "WW", "WK"):
+            self.validate_identity(
+                f"SELECT DATEPART({fmt}, '2024-11-21')",
+                "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
+            )
+
     def test_convert(self):
         self.validate_all(
             "CONVERT(NVARCHAR(200), x)",
@@ -1413,7 +1433,7 @@ WHERE
             "CONVERT(DATETIME, x, 121)",
             write={
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
-                "tsql": "CONVERT(DATETIME2, x, 121)",
+                "tsql": "CONVERT(DATETIME, x, 121)",
             },
         )
         self.validate_all(
@@ -1555,8 +1575,13 @@ WHERE
             "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
             write={
                 "tsql": "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
-                "clickhouse": "SELECT DATE_DIFF(DAY, CAST(a AS Nullable(DateTime)), CAST(b AS Nullable(DateTime))) AS x FROM foo",
+                "clickhouse": "SELECT DATE_DIFF(DAY, CAST(CAST(a AS Nullable(DateTime)) AS DateTime64(6)), CAST(CAST(b AS Nullable(DateTime)) AS DateTime64(6))) AS x FROM foo",
             },
+        )
+
+        self.validate_identity(
+            "SELECT DATEADD(DAY, DATEDIFF(DAY, -3, GETDATE()), '08:00:00')",
+            "SELECT DATEADD(DAY, DATEDIFF(DAY, CAST('1899-12-29' AS DATETIME2), CAST(GETDATE() AS DATETIME2)), '08:00:00')",
         )
 
     def test_lateral_subquery(self):
@@ -1874,7 +1899,7 @@ WHERE
   *
 FROM OPENJSON(@json) WITH (
     Number VARCHAR(200) '$.Order.Number',
-    Date DATETIME2 '$.Order.Date',
+    Date DATETIME '$.Order.Date',
     Customer VARCHAR(200) '$.AccountNumber',
     Quantity INTEGER '$.Item.Quantity',
     [Order] NVARCHAR(MAX) AS JSON
@@ -2048,5 +2073,44 @@ FROM OPENJSON(@json) WITH (
                 "spark": "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
                 "databricks": "WITH t AS (SELECT 'a.b.c' AS value, 1 AS idx) SELECT SPLIT_PART(value, '.', idx) FROM t",
                 "tsql": UnsupportedError,
+            },
+        )
+
+    def test_next_value_for(self):
+        self.validate_identity(
+            "SELECT NEXT VALUE FOR db.schema.sequence_name OVER (ORDER BY foo), col"
+        )
+        self.validate_all(
+            "SELECT NEXT VALUE FOR db.schema.sequence_name",
+            read={
+                "oracle": "SELECT NEXT VALUE FOR db.schema.sequence_name",
+                "tsql": "SELECT NEXT VALUE FOR db.schema.sequence_name",
+            },
+            write={
+                "oracle": "SELECT NEXT VALUE FOR db.schema.sequence_name",
+            },
+        )
+
+    # string literals in the DATETRUNC are casted as DATETIME2
+    def test_datetrunc(self):
+        self.validate_all(
+            "SELECT DATETRUNC(month, 'foo')",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('MONTH', CAST('foo' AS TIMESTAMP))",
+                "tsql": "SELECT DATETRUNC(MONTH, CAST('foo' AS DATETIME2))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETRUNC(month, foo)",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('MONTH', foo)",
+                "tsql": "SELECT DATETRUNC(MONTH, foo)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETRUNC(year, CAST('foo1' AS date))",
+            write={
+                "duckdb": "SELECT DATE_TRUNC('YEAR', CAST('foo1' AS DATE))",
+                "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
             },
         )

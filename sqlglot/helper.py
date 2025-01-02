@@ -57,6 +57,10 @@ def ensure_list(value: t.Collection[T]) -> t.List[T]: ...
 
 
 @t.overload
+def ensure_list(value: None) -> t.List: ...
+
+
+@t.overload
 def ensure_list(value: T) -> t.List[T]: ...
 
 
@@ -450,6 +454,20 @@ def dict_depth(d: t.Dict) -> int:
 def first(it: t.Iterable[T]) -> T:
     """Returns the first element from an iterable (useful for sets)."""
     return next(i for i in it)
+
+
+def to_bool(value: t.Optional[str | bool]) -> t.Optional[str | bool]:
+    if isinstance(value, bool) or value is None:
+        return value
+
+    # Coerce the value to boolean if it matches to the truthy/falsy values below
+    value_lower = value.lower()
+    if value_lower in ("true", "1"):
+        return True
+    if value_lower in ("false", "0"):
+        return False
+
+    return value
 
 
 def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:

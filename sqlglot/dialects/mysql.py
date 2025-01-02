@@ -145,6 +145,8 @@ def _remove_ts_or_ds_to_date(
 
 
 class MySQL(Dialect):
+    PROMOTE_TO_INFERRED_DATETIME_TYPE = True
+
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
 
@@ -187,6 +189,9 @@ class MySQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CHARSET": TokenType.CHARACTER_SET,
+            # The DESCRIBE and EXPLAIN statements are synonyms.
+            # https://dev.mysql.com/doc/refman/8.4/en/explain.html
+            "EXPLAIN": TokenType.DESCRIBE,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
             "KEY": TokenType.KEY,
@@ -200,6 +205,7 @@ class MySQL(Dialect):
             "MEDIUMINT": TokenType.MEDIUMINT,
             "MEMBER OF": TokenType.MEMBER_OF,
             "SEPARATOR": TokenType.SEPARATOR,
+            "SERIAL": TokenType.SERIAL,
             "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
@@ -289,6 +295,8 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CHAR_LENGTH": exp.Length.from_arg_list,
+            "CHARACTER_LENGTH": exp.Length.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -300,6 +308,7 @@ class MySQL(Dialect):
             "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "FORMAT": exp.NumberToStr.from_arg_list,
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "ISNULL": isnull_to_is_null,
             "LOCATE": locate_to_strposition,
@@ -451,6 +460,17 @@ class MySQL(Dialect):
         ENUM_TYPE_TOKENS = {
             *parser.Parser.ENUM_TYPE_TOKENS,
             TokenType.SET,
+        }
+
+        # SELECT [ ALL | DISTINCT | DISTINCTROW ] [ <OPERATION_MODIFIERS> ]
+        OPERATION_MODIFIERS = {
+            "HIGH_PRIORITY",
+            "STRAIGHT_JOIN",
+            "SQL_SMALL_RESULT",
+            "SQL_BIG_RESULT",
+            "SQL_BUFFER_RESULT",
+            "SQL_NO_CACHE",
+            "SQL_CALC_FOUND_ROWS",
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -690,6 +710,7 @@ class MySQL(Dialect):
         PAD_FILL_PATTERN_IS_REQUIRED = True
         WRAP_DERIVED_VALUES = False
         VARCHAR_REQUIRES_SIZE = True
+        SUPPORTS_MEDIAN = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -710,11 +731,13 @@ class MySQL(Dialect):
             e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.Length: rename_func("CHAR_LENGTH"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Month: _remove_ts_or_ds_to_date(),
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
+            exp.NumberToStr: rename_func("FORMAT"),
             exp.Pivot: no_pivot_sql,
             exp.Select: transforms.preprocess(
                 [
@@ -766,6 +789,8 @@ class MySQL(Dialect):
         }
 
         TIMESTAMP_TYPE_MAPPING = {
+            exp.DataType.Type.DATETIME2: "DATETIME",
+            exp.DataType.Type.SMALLDATETIME: "DATETIME",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",

@@ -44,6 +44,7 @@ from sqlglot.transforms import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.generator import unsupported_args
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -309,7 +310,8 @@ class Hive(Dialect):
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,
             "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract,
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
@@ -332,6 +334,9 @@ class Hive(Dialect):
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "TRANSFORM": lambda self: self._parse_transform(),
         }
+
+        NO_PAREN_FUNCTIONS = parser.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIME)
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
@@ -457,6 +462,8 @@ class Hive(Dialect):
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
         PARSE_JSON_NAME = None
         PAD_FILL_PATTERN_IS_REQUIRED = True
+        SUPPORTS_MEDIAN = False
+        ARRAY_SIZE_NAME = "SIZE"
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -494,7 +501,6 @@ class Hive(Dialect):
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayToString: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
-            exp.ArraySize: rename_func("SIZE"),
             exp.ArraySort: _array_sort_sql,
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date_sql,
@@ -538,6 +544,7 @@ class Hive(Dialect):
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpExtractAll: regexp_extract_sql,
             exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
@@ -553,6 +560,7 @@ class Hive(Dialect):
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
+                    transforms.any_to_exists,
                 ]
             ),
             exp.StrPosition: strposition_to_locate_sql,
@@ -593,6 +601,9 @@ class Hive(Dialect):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN")
+            ),
         }
 
         PROPERTIES_LOCATION = {
@@ -706,3 +717,9 @@ class Hive(Dialect):
             exprs = self.expressions(expression, flat=True)
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"
+
+        def exists_sql(self, expression: exp.Exists):
+            if expression.expression:
+                return self.function_fallback_sql(expression)
+
+            return super().exists_sql(expression)

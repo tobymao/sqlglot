@@ -495,3 +495,84 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(len(node.downstream), 1)
         self.assertEqual(len(node.downstream[0].downstream), 1)
         self.assertEqual(node.downstream[0].downstream[0].name, "t1.x")
+
+    def test_pivot_without_alias(self) -> None:
+        sql = """
+        SELECT 
+            a as other_a
+        FROM (select value,category from sample_data)
+        PIVOT (
+            sum(value)
+            FOR category IN ('a', 'b')
+        );
+        """
+        node = lineage("other_a", sql)
+
+        self.assertEqual(node.downstream[0].name, "_q_0.value")
+        self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
+
+    def test_pivot_with_alias(self) -> None:
+        sql = """
+            SELECT 
+                cat_a_s as other_as
+            FROM sample_data
+            PIVOT (
+                sum(value) as s, max(price)
+                FOR category IN ('a' as cat_a, 'b')
+            )
+        """
+        node = lineage("other_as", sql)
+
+        self.assertEqual(len(node.downstream), 1)
+        self.assertEqual(node.downstream[0].name, "sample_data.value")
+
+    def test_pivot_with_cte(self) -> None:
+        sql = """
+        WITH t as (
+            SELECT 
+                a as other_a
+            FROM sample_data
+            PIVOT (
+                sum(value)
+                FOR category IN ('a', 'b')
+            )
+        )
+        select other_a from t
+        """
+        node = lineage("other_a", sql)
+
+        self.assertEqual(node.downstream[0].name, "t.other_a")
+        self.assertEqual(node.downstream[0].reference_node_name, "t")
+        self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
+
+    def test_pivot_with_implicit_column_of_pivoted_source(self) -> None:
+        sql = """
+        SELECT empid
+        FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (
+            '2023_Q1',
+            '2023_Q2',
+            '2023_Q3'))
+        ORDER BY empid;
+        """
+        node = lineage("empid", sql)
+
+        self.assertEqual(node.downstream[0].name, "quarterly_sales.empid")
+
+    def test_pivot_with_implicit_column_of_pivoted_source_and_cte(self) -> None:
+        sql = """
+        WITH t as (
+            SELECT empid
+            FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (
+                '2023_Q1',
+                '2023_Q2',
+                '2023_Q3'))
+        )
+        select empid from t
+        """
+        node = lineage("empid", sql)
+
+        self.assertEqual(node.downstream[0].name, "t.empid")
+        self.assertEqual(node.downstream[0].reference_node_name, "t")
+        self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")

@@ -250,7 +250,6 @@ SELECT LEAD(a, 1) OVER (PARTITION BY a ORDER BY a) AS x
 SELECT LEAD(a, 1, b) OVER (PARTITION BY a ORDER BY a) AS x
 SELECT X((a, b) -> a + b, z -> z) AS x
 SELECT X(a -> a + ("z" - 1))
-SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)
 SELECT test.* FROM test
 SELECT a AS b FROM test
 SELECT "a"."b" FROM "a"
@@ -831,8 +830,6 @@ JSON_OBJECT('x': 1 RETURNING VARCHAR(100))
 JSON_OBJECT('x': 1 RETURNING VARBINARY FORMAT JSON ENCODING UTF8)
 PRIOR AS x
 SELECT if.x
-SELECT NEXT VALUE FOR db.schema.sequence_name
-SELECT NEXT VALUE FOR db.schema.sequence_name OVER (ORDER BY foo), col
 SELECT PERCENTILE_CONT(x, 0.5) OVER ()
 WITH my_cte AS (SELECT 'a' AS desc) SELECT desc AS description FROM my_cte
 WITH my_cte AS (SELECT 'a' AS asc) SELECT asc AS description FROM my_cte
@@ -884,3 +881,5 @@ GRANT SELECT, INSERT ON FUNCTION tbl TO user
 GRANT SELECT ON orders TO ROLE PUBLIC
 GRANT SELECT ON nation TO alice WITH GRANT OPTION
 GRANT DELETE ON SCHEMA finance TO bob
+SELECT attach
+SELECT detach

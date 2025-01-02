@@ -10,9 +10,10 @@ import typing as t
 from collections import defaultdict
 from dataclasses import dataclass
 from heapq import heappop, heappush
+from itertools import chain
 
 from sqlglot import Dialect, expressions as exp
-from sqlglot.helper import ensure_list
+from sqlglot.helper import seq_get
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -36,7 +37,8 @@ class Remove:
 class Move:
     """Indicates that an existing node's position within the tree has changed"""
 
-    expression: exp.Expression
+    source: exp.Expression
+    target: exp.Expression
 
 
 @dataclass(frozen=True)
@@ -93,11 +95,11 @@ def diff(
         matchings: the list of pre-matched node pairs which is used to help the algorithm's
             heuristics produce better results for subtrees that are known by a caller to be matching.
             Note: expression references in this list must refer to the same node objects that are
-            referenced in source / target trees.
+            referenced in the source / target trees.
         delta_only: excludes all `Keep` nodes from the diff.
         copy: whether to copy the input expressions.
             Note: if this is set to false, the caller must ensure that there are no shared references
-            in the two ASTs, otherwise the diffing algorithm may produce unexpected behavior.
+            in the two trees, otherwise the diffing algorithm may produce unexpected behavior.
         kwargs: additional arguments to pass to the ChangeDistiller instance.
 
     Returns:
@@ -111,11 +113,19 @@ def diff(
     def compute_node_mappings(
         original: exp.Expression, copy: exp.Expression
     ) -> t.Dict[int, exp.Expression]:
-        return {
-            id(old_node): new_node
-            for old_node, new_node in zip(original.walk(), copy.walk())
-            if id(old_node) in matching_ids
-        }
+        node_mapping = {}
+        for old_node, new_node in zip(
+            reversed(tuple(original.walk())), reversed(tuple(copy.walk()))
+        ):
+            # We cache the hash of each new node here to speed up equality comparisons. If the input
+            # trees aren't copied, these hashes will be evicted before returning the edit script.
+            new_node._hash = hash(new_node)
+
+            old_node_id = id(old_node)
+            if old_node_id in matching_ids:
+                node_mapping[old_node_id] = new_node
+
+        return node_mapping
 
     source_copy = source.copy() if copy else source
     target_copy = target.copy() if copy else target
@@ -126,12 +136,18 @@ def diff(
     }
     matchings_copy = [(node_mappings[id(s)], node_mappings[id(t)]) for s, t in matchings]
 
-    return ChangeDistiller(**kwargs).diff(
+    edit_script = ChangeDistiller(**kwargs).diff(
         source_copy,
         target_copy,
         matchings=matchings_copy,
         delta_only=delta_only,
     )
+
+    if not copy:
+        for node in chain(source.walk(), target.walk()):
+            node._hash = None
+
+    return edit_script
 
 
 # The expression types for which Update edits are allowed.
@@ -185,30 +201,47 @@ class ChangeDistiller:
         self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
-        matching_set = self._compute_matching_set() | {(s, t) for s, t in pre_matched_nodes.items()}
-        return self._generate_edit_script(matching_set, delta_only)
+        matching_set = self._compute_matching_set() | set(pre_matched_nodes.items())
+        return self._generate_edit_script(dict(matching_set), delta_only)
 
-    def _generate_edit_script(
-        self,
-        matching_set: t.Set[t.Tuple[int, int]],
-        delta_only: bool,
-    ) -> t.List[Edit]:
+    def _generate_edit_script(self, matchings: t.Dict[int, int], delta_only: bool) -> t.List[Edit]:
         edit_script: t.List[Edit] = []
         for removed_node_id in self._unmatched_source_nodes:
             edit_script.append(Remove(self._source_index[removed_node_id]))
         for inserted_node_id in self._unmatched_target_nodes:
             edit_script.append(Insert(self._target_index[inserted_node_id]))
-        for kept_source_node_id, kept_target_node_id in matching_set:
+        for kept_source_node_id, kept_target_node_id in matchings.items():
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
-            if (
-                not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES)
-                or source_node == target_node
-            ):
-                edit_script.extend(
-                    self._generate_move_edits(source_node, target_node, matching_set)
-                )
-                if not delta_only:
+
+            identical_nodes = source_node == target_node
+
+            if not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES) or identical_nodes:
+                if identical_nodes:
+                    source_parent = source_node.parent
+                    target_parent = target_node.parent
+
+                    if (
+                        (source_parent and not target_parent)
+                        or (not source_parent and target_parent)
+                        or (
+                            source_parent
+                            and target_parent
+                            and matchings.get(id(source_parent)) != id(target_parent)
+                        )
+                    ):
+                        edit_script.append(Move(source=source_node, target=target_node))
+                else:
+                    edit_script.extend(
+                        self._generate_move_edits(source_node, target_node, matchings)
+                    )
+
+                source_non_expression_leaves = dict(_get_non_expression_leaves(source_node))
+                target_non_expression_leaves = dict(_get_non_expression_leaves(target_node))
+
+                if source_non_expression_leaves != target_non_expression_leaves:
+                    edit_script.append(Update(source_node, target_node))
+                elif not delta_only:
                     edit_script.append(Keep(source_node, target_node))
             else:
                 edit_script.append(Update(source_node, target_node))
@@ -216,17 +249,21 @@ class ChangeDistiller:
         return edit_script
 
     def _generate_move_edits(
-        self, source: exp.Expression, target: exp.Expression, matching_set: t.Set[t.Tuple[int, int]]
+        self, source: exp.Expression, target: exp.Expression, matchings: t.Dict[int, int]
     ) -> t.List[Move]:
         source_args = [id(e) for e in _expression_only_args(source)]
         target_args = [id(e) for e in _expression_only_args(target)]
 
-        args_lcs = set(_lcs(source_args, target_args, lambda l, r: (l, r) in matching_set))
+        args_lcs = set(
+            _lcs(source_args, target_args, lambda l, r: matchings.get(t.cast(int, l)) == r)
+        )
 
         move_edits = []
         for a in source_args:
             if a not in args_lcs and a not in self._unmatched_source_nodes:
-                move_edits.append(Move(self._source_index[a]))
+                move_edits.append(
+                    Move(source=self._source_index[a], target=self._target_index[matchings[a]])
+                )
 
         return move_edits
 
@@ -246,8 +283,8 @@ class ChangeDistiller:
                 source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
                 if _is_same_type(source_node, target_node):
-                    source_leaf_ids = {id(l) for l in _get_leaves(source_node)}
-                    target_leaf_ids = {id(l) for l in _get_leaves(target_node)}
+                    source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
+                    target_leaf_ids = {id(l) for l in _get_expression_leaves(target_node)}
 
                     max_leaves_num = max(len(source_leaf_ids), len(target_leaf_ids))
                     if max_leaves_num:
@@ -277,10 +314,10 @@ class ChangeDistiller:
 
     def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
         candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expression, exp.Expression]] = []
-        source_leaves = list(_get_leaves(self._source))
-        target_leaves = list(_get_leaves(self._target))
-        for source_leaf in source_leaves:
-            for target_leaf in target_leaves:
+        source_expression_leaves = list(_get_expression_leaves(self._source))
+        target_expression_leaves = list(_get_expression_leaves(self._target))
+        for source_leaf in source_expression_leaves:
+            for target_leaf in target_expression_leaves:
                 if _is_same_type(source_leaf, target_leaf):
                     similarity_score = self._dice_coefficient(source_leaf, target_leaf)
                     if similarity_score >= self.f:
@@ -338,16 +375,26 @@ class ChangeDistiller:
         return bigram_histo
 
 
-def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
+def _get_expression_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
     has_child_exprs = False
 
     for node in expression.iter_expressions():
         if not isinstance(node, IGNORED_LEAF_EXPRESSION_TYPES):
             has_child_exprs = True
-            yield from _get_leaves(node)
+            yield from _get_expression_leaves(node)
 
     if not has_child_exprs:
         yield expression
+
+
+def _get_non_expression_leaves(expression: exp.Expression) -> t.Iterator[t.Tuple[str, t.Any]]:
+    for arg, value in expression.args.items():
+        if isinstance(value, exp.Expression) or (
+            isinstance(value, list) and isinstance(seq_get(value, 0), exp.Expression)
+        ):
+            continue
+
+        yield (arg, value)
 
 
 def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
@@ -372,16 +419,12 @@ def _parent_similarity_score(
     return 1 + _parent_similarity_score(source.parent, target.parent)
 
 
-def _expression_only_args(expression: exp.Expression) -> t.List[exp.Expression]:
-    args: t.List[t.Union[exp.Expression, t.List]] = []
-    if expression:
-        for a in expression.args.values():
-            args.extend(ensure_list(a))
-    return [
-        a
-        for a in args
-        if isinstance(a, exp.Expression) and not isinstance(a, IGNORED_LEAF_EXPRESSION_TYPES)
-    ]
+def _expression_only_args(expression: exp.Expression) -> t.Iterator[exp.Expression]:
+    yield from (
+        arg
+        for arg in expression.iter_expressions()
+        if not isinstance(arg, IGNORED_LEAF_EXPRESSION_TYPES)
+    )
 
 
 def _lcs(

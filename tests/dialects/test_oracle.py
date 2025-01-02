@@ -120,13 +120,6 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
-            "TRUNC(SYSDATE, 'YEAR')",
-            write={
-                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
-                "oracle": "TRUNC(SYSDATE, 'YEAR')",
-            },
-        )
-        self.validate_all(
             "SELECT * FROM test WHERE MOD(col1, 4) = 3",
             read={
                 "duckdb": "SELECT * FROM test WHERE col1 % 4 = 3",
@@ -294,6 +287,17 @@ class TestOracle(Validator):
                 "clickhouse": "TRIM(BOTH 'h' FROM 'Hello World')",
             },
         )
+        self.validate_identity(
+            "SELECT /*+ ORDERED */* FROM tbl", "SELECT /*+ ORDERED */ * FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT /* test */ /*+ ORDERED */* FROM tbl",
+            "/* test */ SELECT /*+ ORDERED */ * FROM tbl",
+        )
+        self.validate_identity(
+            "SELECT /*+ ORDERED */*/* test */ FROM tbl",
+            "SELECT /*+ ORDERED */ * /* test */ FROM tbl",
+        )
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
@@ -329,6 +333,57 @@ class TestOracle(Validator):
         )
         self.validate_identity("INSERT /*+ APPEND */ INTO IAP_TBL (id, col1) VALUES (2, 'test2')")
         self.validate_identity("INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')")
+        self.validate_identity(
+            "SELECT /*+ LEADING(departments employees) USE_NL(employees) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
+            """SELECT /*+ LEADING(departments employees)
+  USE_NL(employees) */
+  *
+FROM employees
+JOIN departments
+  ON employees.department_id = departments.department_id""",
+            pretty=True,
+        )
+        self.validate_identity(
+            "SELECT /*+ USE_NL(bbbbbbbbbbbbbbbbbbbbbbbb) LEADING(aaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbb cccccccccccccccccccccccc dddddddddddddddddddddddd) INDEX(cccccccccccccccccccccccc) */ * FROM aaaaaaaaaaaaaaaaaaaaaaaa JOIN bbbbbbbbbbbbbbbbbbbbbbbb ON aaaaaaaaaaaaaaaaaaaaaaaa.id = bbbbbbbbbbbbbbbbbbbbbbbb.a_id JOIN cccccccccccccccccccccccc ON bbbbbbbbbbbbbbbbbbbbbbbb.id = cccccccccccccccccccccccc.b_id JOIN dddddddddddddddddddddddd ON cccccccccccccccccccccccc.id = dddddddddddddddddddddddd.c_id",
+        )
+        self.validate_identity(
+            "SELECT /*+ USE_NL(bbbbbbbbbbbbbbbbbbbbbbbb) LEADING(aaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbb cccccccccccccccccccccccc dddddddddddddddddddddddd) INDEX(cccccccccccccccccccccccc) */ * FROM aaaaaaaaaaaaaaaaaaaaaaaa JOIN bbbbbbbbbbbbbbbbbbbbbbbb ON aaaaaaaaaaaaaaaaaaaaaaaa.id = bbbbbbbbbbbbbbbbbbbbbbbb.a_id JOIN cccccccccccccccccccccccc ON bbbbbbbbbbbbbbbbbbbbbbbb.id = cccccccccccccccccccccccc.b_id JOIN dddddddddddddddddddddddd ON cccccccccccccccccccccccc.id = dddddddddddddddddddddddd.c_id",
+            """SELECT /*+ USE_NL(bbbbbbbbbbbbbbbbbbbbbbbb)
+  LEADING(
+    aaaaaaaaaaaaaaaaaaaaaaaa
+    bbbbbbbbbbbbbbbbbbbbbbbb
+    cccccccccccccccccccccccc
+    dddddddddddddddddddddddd
+  )
+  INDEX(cccccccccccccccccccccccc) */
+  *
+FROM aaaaaaaaaaaaaaaaaaaaaaaa
+JOIN bbbbbbbbbbbbbbbbbbbbbbbb
+  ON aaaaaaaaaaaaaaaaaaaaaaaa.id = bbbbbbbbbbbbbbbbbbbbbbbb.a_id
+JOIN cccccccccccccccccccccccc
+  ON bbbbbbbbbbbbbbbbbbbbbbbb.id = cccccccccccccccccccccccc.b_id
+JOIN dddddddddddddddddddddddd
+  ON cccccccccccccccccccccccc.id = dddddddddddddddddddddddd.c_id""",
+            pretty=True,
+        )
+        # Test that parsing error with keywords like select where etc falls back
+        self.validate_identity(
+            "SELECT /*+ LEADING(departments employees) USE_NL(employees) select where group by is order by */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
+            """SELECT /*+ LEADING(departments employees) USE_NL(employees) select where group by is order by */
+  *
+FROM employees
+JOIN departments
+  ON employees.department_id = departments.department_id""",
+            pretty=True,
+        )
+        # Test that parsing error with , inside hint function falls back
+        self.validate_identity(
+            "SELECT /*+ LEADING(departments, employees) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id"
+        )
+        # Test that parsing error with keyword inside hint function falls back
+        self.validate_identity(
+            "SELECT /*+ LEADING(departments select) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id"
+        )
 
     def test_xml_table(self):
         self.validate_identity("XMLTABLE('x')")
@@ -581,3 +636,20 @@ WHERE
         self.validate_identity("GRANT UPDATE, TRIGGER ON TABLE t TO anita, zhi")
         self.validate_identity("GRANT EXECUTE ON PROCEDURE p TO george")
         self.validate_identity("GRANT USAGE ON SEQUENCE order_id TO sales_role")
+
+    def test_datetrunc(self):
+        self.validate_all(
+            "TRUNC(SYSDATE, 'YEAR')",
+            write={
+                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
+                "oracle": "TRUNC(SYSDATE, 'YEAR')",
+            },
+        )
+
+        # Make sure units are not normalized e.g 'Q' -> 'QUARTER' and 'W' -> 'WEEK'
+        # https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/ROUND-and-TRUNC-Date-Functions.html
+        for unit in (
+            "'Q'",
+            "'W'",
+        ):
+            self.validate_identity(f"TRUNC(x, {unit})")

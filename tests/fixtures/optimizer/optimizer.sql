@@ -630,11 +630,11 @@ PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x', 'y')) AS `_q_0`;
 # dialect: snowflake
 SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
-  "_q_0"."G" AS "G",
-  "_q_0"."'x'" AS "'x'",
-  "_q_0"."'y'" AS "'y'"
+  "_Q_0"."G" AS "G",
+  "_Q_0"."'x'" AS "'x'",
+  "_Q_0"."'y'" AS "'y'"
 FROM "U" AS "U"
-PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0";
+PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_Q_0";
 
 # title: selecting all columns from a pivoted source and generating spark
 # note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)
@@ -690,14 +690,14 @@ PIVOT(MAX("SOURCE"."VALUE") FOR "SOURCE"."KEY" IN ('a', 'b', 'c')) AS "FINAL"("I
 # dialect: snowflake
 SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
 SELECT
-  "_q_0"."EMPID" AS "EMPID",
-  "_q_0"."DEPT" AS "DEPT",
-  "_q_0"."MONTH" AS "MONTH",
-  "_q_0"."SALES" AS "SALES"
+  "_Q_0"."EMPID" AS "EMPID",
+  "_Q_0"."DEPT" AS "DEPT",
+  "_Q_0"."MONTH" AS "MONTH",
+  "_Q_0"."SALES" AS "SALES"
 FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB")
-UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_Q_0"
 ORDER BY
-  "_q_0"."EMPID";
+  "_Q_0"."EMPID";
 
 # title: unpivoted table source, unpivot has column aliases
 # execute: false
@@ -722,10 +722,10 @@ UNPIVOT("sales" FOR "month" IN ("m_sales"."jan", "m_sales"."feb")) AS "unpiv"("a
 # dialect: snowflake
 SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
 SELECT
-  "_q_0"."EMPID" AS "EMPID",
-  "_q_0"."DEPT" AS "DEPT",
-  "_q_0"."MONTH" AS "MONTH",
-  "_q_0"."SALES" AS "SALES"
+  "_Q_0"."EMPID" AS "EMPID",
+  "_Q_0"."DEPT" AS "DEPT",
+  "_Q_0"."MONTH" AS "MONTH",
+  "_Q_0"."SALES" AS "SALES"
 FROM (
   SELECT
     "M_SALES"."EMPID" AS "EMPID",
@@ -734,9 +734,9 @@ FROM (
     "M_SALES"."FEB" AS "FEB"
   FROM "M_SALES" AS "M_SALES"
 ) AS "M_SALES"
-UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_Q_0"
 ORDER BY
-  "_q_0"."EMPID";
+  "_Q_0"."EMPID";
 
 # title: unpivoted table source with a single value column, unpivot columns can be qualified
 # execute: false
@@ -832,13 +832,13 @@ WHERE
 GROUP BY `dAy`, `top_term`, rank
 ORDER BY `DaY` DESC;
 SELECT
-  `TOp_TeRmS`.`refresh_date` AS `day`,
-  `TOp_TeRmS`.`term` AS `top_term`,
-  `TOp_TeRmS`.`rank` AS `rank`
-FROM `bigquery-public-data.GooGle_tReNDs.TOp_TeRmS` AS `TOp_TeRmS`
+  `top_terms`.`refresh_date` AS `day`,
+  `top_terms`.`term` AS `top_term`,
+  `top_terms`.`rank` AS `rank`
+FROM `bigquery-public-data.GooGle_tReNDs.TOp_TeRmS` AS `top_terms`
 WHERE
-  `TOp_TeRmS`.`rank` = 1
-  AND `TOp_TeRmS`.`refresh_date` >= DATE_SUB(CURRENT_DATE, INTERVAL '2' WEEK)
+  `top_terms`.`rank` = 1
+  AND `top_terms`.`refresh_date` >= DATE_SUB(CURRENT_DATE, INTERVAL '2' WEEK)
 GROUP BY
   `day`,
   `top_term`,

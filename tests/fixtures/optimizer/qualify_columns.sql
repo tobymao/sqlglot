@@ -190,6 +190,45 @@ SELECT x._col_0 AS _col_0, x._col_1 AS _col_1 FROM (VALUES (1, 2)) AS x(_col_0, 
 SELECT SOME_UDF(data).* FROM t;
 SELECT SOME_UDF(t.data).* FROM t AS t;
 
+# execute: false
+SELECT p.* FROM p UNION ALL SELECT p2.* FROM p2;
+SELECT p.* FROM p AS p UNION ALL SELECT p2.* FROM p2 AS p2;
+
+# execute: false
+# allow_partial_qualification: true
+# validate_qualify_columns: false
+SELECT a + 1 AS i, missing_column FROM x;
+SELECT x.a + 1 AS i, missing_column AS missing_column FROM x AS x;
+
+# execute: false
+# dialect: clickhouse
+SELECT s, arr1, arr2 FROM arrays_test LEFT ARRAY JOIN arr1, arrays_test.arr2;
+SELECT arrays_test.s AS s, arrays_test.arr1 AS arr1, arrays_test.arr2 AS arr2 FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr1, arrays_test.arr2;
+
+# execute: false
+# dialect: snowflake
+WITH employees AS (
+    SELECT *
+    FROM (VALUES ('President', 1, NULL),
+                 ('Vice President Engineering', 10, 1),
+                 ('Programmer', 100, 10),
+                 ('QA Engineer', 101, 10),
+                 ('Vice President HR', 20, 1),
+                 ('Health Insurance Analyst', 200, 20)
+    ) AS t(title, employee_ID, manager_ID)
+)
+SELECT
+  employee_ID,
+  manager_ID,
+  title,
+  level
+FROM employees
+START WITH title = 'President'
+CONNECT BY manager_ID = PRIOR employee_id
+ORDER BY
+  employee_ID NULLS LAST;
+WITH EMPLOYEES AS (SELECT T.TITLE AS TITLE, T.EMPLOYEE_ID AS EMPLOYEE_ID, T.MANAGER_ID AS MANAGER_ID FROM (VALUES ('President', 1, NULL), ('Vice President Engineering', 10, 1), ('Programmer', 100, 10), ('QA Engineer', 101, 10), ('Vice President HR', 20, 1), ('Health Insurance Analyst', 200, 20)) AS T(TITLE, EMPLOYEE_ID, MANAGER_ID)) SELECT EMPLOYEES.EMPLOYEE_ID AS EMPLOYEE_ID, EMPLOYEES.MANAGER_ID AS MANAGER_ID, EMPLOYEES.TITLE AS TITLE, EMPLOYEES.LEVEL AS LEVEL FROM EMPLOYEES AS EMPLOYEES START WITH EMPLOYEES.TITLE = 'President' CONNECT BY EMPLOYEES.MANAGER_ID = PRIOR EMPLOYEES.EMPLOYEE_ID ORDER BY EMPLOYEE_ID;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------
@@ -521,6 +560,14 @@ WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), 
 WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value), t4 AS (SELECT 'x' AS id, CAST('2024-03-03' AS DATE) AS foo, 789 AS value) SELECT * FROM t1 FULL OUTER JOIN t2 USING (id, foo) FULL OUTER JOIN t3 USING (id, foo) FULL OUTER JOIN t4 USING (id, foo);
 WITH t1 AS (SELECT 'x' AS id, CAST('2024-01-01' AS DATE) AS foo, 000 AS value), t2 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 123 AS value), t3 AS (SELECT 'x' AS id, CAST('2024-02-02' AS DATE) AS foo, 456 AS value), t4 AS (SELECT 'x' AS id, CAST('2024-03-03' AS DATE) AS foo, 789 AS value) SELECT COALESCE(t1.id, t2.id, t3.id, t4.id) AS id, COALESCE(t1.foo, t2.foo, t3.foo, t4.foo) AS foo, t1.value AS value, t2.value AS value, t3.value AS value, t4.value AS value FROM t1 AS t1 FULL OUTER JOIN t2 AS t2 ON t1.id = t2.id AND t1.foo = t2.foo FULL OUTER JOIN t3 AS t3 ON COALESCE(t1.id, t2.id) = t3.id AND COALESCE(t1.foo, t2.foo) = t3.foo FULL OUTER JOIN t4 AS t4 ON COALESCE(t1.id, t2.id, t3.id) = t4.id AND COALESCE(t1.foo, t2.foo, t3.foo) = t4.foo;
 
+# title: Name anonymous STRUCT fields if replacing USING columns
+WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(id) AS my_field FROM t1 JOIN t2 USING (id);
+WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(COALESCE(t1.id, t2.id) AS id) AS my_field FROM t1 AS t1 JOIN t2 AS t2 ON t1.id = t2.id;
+
+# title: Do not rename aliased STRUCT fields if replacing USING columns
+WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(id AS col) AS my_field FROM t1 JOIN t2 USING (id);
+WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(COALESCE(t1.id, t2.id) AS col) AS my_field FROM t1 AS t1 JOIN t2 AS t2 ON t1.id = t2.id;
+
 --------------------------------------
 -- Hint with table reference
 --------------------------------------
@@ -708,3 +755,30 @@ SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _q_0 INNER JOIN y AS y ON
 
 SELECT a, c FROM x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y TABLESAMPLE SYSTEM (10 ROWS);
 SELECT x.a AS a, y.c AS c FROM x AS x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y AS y TABLESAMPLE SYSTEM (10 ROWS);
+
+--------------------------------------
+-- Snowflake allows column alias to be used in almost all clauses
+--------------------------------------
+# title: Snowflake column alias in JOIN
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x JOIN y ON foo = y.b;
+SELECT X.A AS FOO FROM X AS X JOIN Y AS Y ON X.A = Y.B;
+
+# title: Snowflake column alias in QUALIFY
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x QUALIFY foo = 1;
+SELECT X.A AS FOO FROM X AS X QUALIFY X.A = 1;
+
+# title: Snowflake column alias in GROUP BY
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x GROUP BY foo = 1;
+SELECT X.A AS FOO FROM X AS X GROUP BY X.A = 1;
+
+# title: Snowflake column alias in WHERE
+# dialect: snowflake
+# execute: false
+SELECT x.a AS foo FROM x WHERE foo = 1;
+SELECT X.A AS FOO FROM X AS X WHERE X.A = 1;

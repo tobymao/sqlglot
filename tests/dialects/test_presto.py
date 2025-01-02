@@ -7,12 +7,28 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
+        self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
+        self.validate_identity("DESCRIBE INPUT x", check_command_warning=True)
+        self.validate_identity("DESCRIBE OUTPUT x", check_command_warning=True)
+        self.validate_identity(
+            "RESET SESSION hive.optimized_reader_enabled", check_command_warning=True
+        )
         self.validate_identity("SELECT * FROM x qualify", "SELECT * FROM x AS qualify")
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
         self.validate_identity("CAST(TDIGEST_AGG(1) AS TDIGEST)")
         self.validate_identity("CAST(x AS HYPERLOGLOG)")
 
+        self.validate_all(
+            "CAST(x AS BOOLEAN)",
+            read={
+                "tsql": "CAST(x AS BIT)",
+            },
+            write={
+                "presto": "CAST(x AS BOOLEAN)",
+                "tsql": "CAST(x AS BIT)",
+            },
+        )
         self.validate_all(
             "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
             write={
@@ -338,7 +354,7 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "((DAY_OF_WEEK(CAST(TRY_CAST('2012-08-08 01:00:00' AS TIMESTAMP) AS DATE)) % 7) + 1)",
+            "((DAY_OF_WEEK(CAST(CAST(TRY_CAST('2012-08-08 01:00:00' AS TIMESTAMP WITH TIME ZONE) AS TIMESTAMP) AS DATE)) % 7) + 1)",
             read={
                 "spark": "DAYOFWEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
@@ -390,7 +406,7 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "SELECT AT_TIMEZONE(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
+            "SELECT AT_TIMEZONE(CAST(CAST('2012-10-31 00:00' AS TIMESTAMP WITH TIME ZONE) AS TIMESTAMP), 'America/Sao_Paulo')",
             read={
                 "spark": "SELECT FROM_UTC_TIMESTAMP(TIMESTAMP '2012-10-31 00:00', 'America/Sao_Paulo')",
             },
@@ -403,13 +419,6 @@ class TestPresto(Validator):
         self.validate_all(
             "CAST(x AS TIMESTAMP)",
             read={"mysql": "TIMESTAMP(x)"},
-        )
-        self.validate_all(
-            "TIMESTAMP(x, 'America/Los_Angeles')",
-            write={
-                "duckdb": "CAST(x AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
-                "presto": "AT_TIMEZONE(CAST(x AS TIMESTAMP), 'America/Los_Angeles')",
-            },
         )
         # this case isn't really correct, but it's a fall back for mysql's version
         self.validate_all(
@@ -719,7 +728,7 @@ class TestPresto(Validator):
             "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
             write={
                 "clickhouse": "SELECT argMin(a.id, a.timestamp) FROM a",
-                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp) FROM a",
+                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp, 3) FROM a",
                 "presto": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
                 "snowflake": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
                 "spark": "SELECT MIN_BY(a.id, a.timestamp) FROM a",
@@ -1062,6 +1071,18 @@ class TestPresto(Validator):
                 "databricks": "REGEXP_EXTRACT('abc', '(a)(b)(c)', 0)",
             },
         )
+        self.validate_all(
+            "CURRENT_USER",
+            read={
+                "presto": "CURRENT_USER",
+                "trino": "CURRENT_USER",
+                "snowflake": "CURRENT_USER()",  # Although the ANSI standard is CURRENT_USER
+            },
+            write={
+                "trino": "CURRENT_USER",
+                "snowflake": "CURRENT_USER()",
+            },
+        )
 
     def test_encode_decode(self):
         self.validate_identity("FROM_UTF8(x, y)")
@@ -1182,7 +1203,8 @@ MATCH_RECOGNIZE (
   DEFINE
     B AS totalprice < PREV(totalprice),
     C AS totalprice > PREV(totalprice) AND totalprice <= A.totalprice,
-    D AS totalprice > PREV(totalprice)
+    D AS totalprice > PREV(totalprice),
+    E AS MAX(foo) >= NEXT(bar)
 )""",
             pretty=True,
         )

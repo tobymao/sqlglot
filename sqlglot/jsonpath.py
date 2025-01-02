@@ -146,6 +146,28 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
 
         return node
 
+    def _parse_var_text() -> str:
+        """
+        Consumes & returns the text for a var. In BigQuery it's valid to have a key with spaces
+        in it, e.g JSON_QUERY(..., '$. a b c ') should produce a single JSONPathKey(' a b c ').
+        This is done by merging "consecutive" vars until a key separator is found (dot, colon etc)
+        or the path string is exhausted.
+        """
+        prev_index = i - 2
+
+        while _match(TokenType.VAR):
+            pass
+
+        start = 0 if prev_index < 0 else tokens[prev_index].end + 1
+
+        if i >= len(tokens):
+            # This key is the last token for the path, so it's text is the remaining path
+            text = path[start:]
+        else:
+            text = path[start : tokens[i].start]
+
+        return text
+
     # We canonicalize the JSON path AST so that it always starts with a
     # "root" element, so paths like "field" will be generated as "$.field"
     _match(TokenType.DOLLAR)
@@ -155,8 +177,10 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         if _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
 
-            if _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
-                value: t.Optional[str | exp.JSONPathWildcard] = _prev().text
+            if _match(TokenType.VAR):
+                value: t.Optional[str | exp.JSONPathWildcard] = _parse_var_text()
+            elif _match(TokenType.IDENTIFIER):
+                value = _prev().text
             elif _match(TokenType.STAR):
                 value = exp.JSONPathWildcard()
             else:
@@ -170,7 +194,9 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())
-        elif _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
+        elif _match(TokenType.VAR):
+            expressions.append(exp.JSONPathKey(this=_parse_var_text()))
+        elif _match(TokenType.IDENTIFIER):
             expressions.append(exp.JSONPathKey(this=_prev().text))
         elif _match(TokenType.STAR):
             expressions.append(exp.JSONPathWildcard())

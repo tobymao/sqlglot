@@ -1,6 +1,6 @@
 [package]
 name = "sqlglotrs"
-version = "0.2.12"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 
@@ -9,4 +9,4 @@ name = "sqlglotrs"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = "0.20.0"
+pyo3 = "0.22.6"

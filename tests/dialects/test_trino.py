@@ -10,6 +10,30 @@ class TestTrino(Validator):
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
 
+    def test_listagg(self):
+        self.validate_identity(
+            "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE WITH COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE WITHOUT COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(col) WITHIN GROUP (ORDER BY col DESC) FROM tbl",
+            "SELECT LISTAGG(col, ',') WITHIN GROUP (ORDER BY col DESC) FROM tbl",
+        )
+
     def test_trim(self):
         self.validate_identity("SELECT TRIM('!' FROM '!foo!')")
         self.validate_identity("SELECT TRIM(BOTH '$' FROM '$var$')")

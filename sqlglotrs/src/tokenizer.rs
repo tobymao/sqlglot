@@ -395,6 +395,12 @@ impl<'a> TokenizerState<'a> {
                 .push(self.text()[comment_start_size..].to_string());
         }
 
+        if comment_start == self.settings.hint_start
+            && self.tokens.last().is_some()
+            && self.settings.tokens_preceding_hint.contains(&self.tokens.last().unwrap().token_type) {
+            self.add(self.token_types.hint, None)?;
+        }
+
         // Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.
         // Multiple consecutive comments are preserved by appending them to the current comments list.
         if Some(comment_start_line) == self.previous_token_line {
@@ -525,10 +531,14 @@ impl<'a> TokenizerState<'a> {
                     )
                     .map(|x| *x);
 
+                let replaced = literal.replace("_", "");
+
                 if let Some(unwrapped_token_type) = token_type {
                     self.add(self.token_types.number, Some(number_text))?;
                     self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
+                } else if self.dialect_settings.numbers_can_be_underscore_separated && self.is_numeric(&replaced) {
+                    self.add(self.token_types.number, Some(number_text + &replaced))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(self.token_types.var, None)?;
                 } else {
@@ -609,8 +619,11 @@ impl<'a> TokenizerState<'a> {
         let mut text = String::from("");
 
         loop {
+            let mut new_identifier_escapes;
             let escapes = if use_identifier_escapes {
-                &self.settings.identifier_escapes
+                new_identifier_escapes = self.settings.identifier_escapes.clone();
+                new_identifier_escapes.extend(delimiter.chars());
+                &new_identifier_escapes
             } else {
                 &self.settings.string_escapes
             };
@@ -695,6 +708,10 @@ impl<'a> TokenizerState<'a> {
             if i == 0 { self.is_alphabetic_or_underscore(c) }
             else { self.is_alphabetic_or_underscore(c) || c.is_digit(10) }
         )
+    }
+
+    fn is_numeric(&mut self, s: &str) -> bool {
+        s.chars().all(|c| c.is_digit(10))
     }
 
     fn extract_value(&mut self) -> Result<String, TokenizerError> {

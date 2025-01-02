@@ -19,12 +19,6 @@ def _build_json_extract(args: t.List) -> exp.JSONExtract:
     return exp.JSONExtract(this=this, expression=path)
 
 
-def _timestamp_diff(
-    self: Databricks.Generator, expression: exp.DatetimeDiff | exp.TimestampDiff
-) -> str:
-    return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)
-
-
 def _jsonextract_sql(
     self: Databricks.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
@@ -51,7 +45,6 @@ class Databricks(Spark):
             "DATE_ADD": build_date_delta(exp.DateAdd),
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
-            "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
             "GET_JSON_OBJECT": _build_json_extract,
         }
 
@@ -80,13 +73,12 @@ class Databricks(Spark):
                 exp.Mul(this=e.expression, expression=exp.Literal.number(-1)),
                 e.this,
             ),
-            exp.DatetimeDiff: _timestamp_diff,
-            exp.TimestampDiff: _timestamp_diff,
             exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
                     transforms.unnest_to_explode,
+                    transforms.any_to_exists,
                 ]
             ),
             exp.JSONExtract: _jsonextract_sql,

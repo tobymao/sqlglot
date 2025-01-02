@@ -21,27 +21,6 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
-        self.assertEqual(
-            exp.select(exp.Explode(this=exp.column("x")).as_("y", quoted=True)).sql(
-                "snowflake", pretty=True
-            ),
-            """SELECT
-  IFF(_u.pos = _u_2.pos_2, _u_2."y", NULL) AS "y"
-FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
-  GREATEST(ARRAY_SIZE(x)) - 1
-) + 1))) AS _u(seq, key, path, index, pos, this)
-CROSS JOIN TABLE(FLATTEN(INPUT => x)) AS _u_2(seq, key, path, pos_2, "y", this)
-WHERE
-  _u.pos = _u_2.pos_2
-  OR (
-    _u.pos > (
-      ARRAY_SIZE(x) - 1
-    ) AND _u_2.pos_2 = (
-      ARRAY_SIZE(x) - 1
-    )
-  )""",
-        )
-
         self.validate_identity("exclude := [foo]")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
@@ -124,6 +103,7 @@ WHERE
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
+        self.validate_identity("TO_TIMESTAMP(col, fmt)")
         self.validate_identity(
             "CAST(x AS GEOGRAPHY)",
             "TO_GEOGRAPHY(x)",
@@ -331,10 +311,15 @@ WHERE
                 "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
             },
         )
+        self.validate_identity(
+            "SELECT TIMESTAMPNTZFROMPARTS(2013, 4, 5, 12, 00, 00)",
+            "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
+        )
         self.validate_all(
             "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
             read={
                 "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",
+                "snowflake": "SELECT TIMESTAMP_NTZ_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
             },
             write={
                 "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",
@@ -519,21 +504,11 @@ WHERE
             self.validate_all(
                 f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 read={
-                    "snowflake": f"SELECT MEDIAN(x){suffix}",
                     "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
                 write={
                     "": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x NULLS LAST){suffix}",
                     "duckdb": f"SELECT QUANTILE_CONT(x, 0.5 ORDER BY x){suffix}",
-                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
-                    "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
-                },
-            )
-            self.validate_all(
-                f"SELECT MEDIAN(x){suffix}",
-                write={
-                    "": f"SELECT PERCENTILE_CONT(x, 0.5){suffix}",
-                    "duckdb": f"SELECT QUANTILE_CONT(x, 0.5){suffix}",
                     "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                     "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
@@ -611,6 +586,17 @@ WHERE
             },
         )
         self.validate_all(
+            "DIV0(a - b, c - d)",
+            write={
+                "snowflake": "IFF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / (c - d))",
+                "sqlite": "IIF((c - d) = 0 AND NOT (a - b) IS NULL, 0, CAST((a - b) AS REAL) / (c - d))",
+                "presto": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, CAST((a - b) AS DOUBLE) / (c - d))",
+                "spark": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / (c - d))",
+                "hive": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / (c - d))",
+                "duckdb": "CASE WHEN (c - d) = 0 AND NOT (a - b) IS NULL THEN 0 ELSE (a - b) / (c - d) END",
+            },
+        )
+        self.validate_all(
             "ZEROIFNULL(foo)",
             write={
                 "snowflake": "IFF(foo IS NULL, 0, foo)",
@@ -662,6 +648,15 @@ WHERE
             write={
                 "bigquery": "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z NULLS LAST) = 1",
                 "snowflake": "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(col, 'DD-MM-YYYY HH12:MI:SS') FROM t",
+            write={
+                "bigquery": "SELECT PARSE_TIMESTAMP('%d-%m-%Y %I:%M:%S', col) FROM t",
+                "duckdb": "SELECT STRPTIME(col, '%d-%m-%Y %I:%M:%S') FROM t",
+                "snowflake": "SELECT TO_TIMESTAMP(col, 'DD-mm-yyyy hh12:mi:ss') FROM t",
+                "spark": "SELECT TO_TIMESTAMP(col, 'dd-MM-yyyy hh:mm:ss') FROM t",
             },
         )
         self.validate_all(
@@ -927,6 +922,48 @@ WHERE
                 "bigquery": "GENERATE_UUID()",
             },
         )
+        self.validate_identity("TRY_TO_TIMESTAMP(foo)").assert_is(exp.Anonymous)
+        self.validate_identity("TRY_TO_TIMESTAMP('12345')").assert_is(exp.Anonymous)
+        self.validate_all(
+            "SELECT TRY_TO_TIMESTAMP('2024-01-15 12:30:00.000')",
+            write={
+                "snowflake": "SELECT TRY_CAST('2024-01-15 12:30:00.000' AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST('2024-01-15 12:30:00.000' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIMESTAMP('invalid')",
+            write={
+                "snowflake": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
+                "duckdb": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
+            write={
+                "snowflake": "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
+                "duckdb": "SELECT CAST(TRY_STRPTIME('04/05/2013 01:02:03', '%m/%d/%Y %H:%M:%S') AS TIMESTAMP)",
+            },
+        )
+
+        self.validate_identity("EDITDISTANCE(col1, col2)")
+        self.validate_all(
+            "EDITDISTANCE(col1, col2, 3)",
+            write={
+                "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+                "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
+                "snowflake": "EDITDISTANCE(col1, col2, 3)",
+            },
+        )
+        self.validate_identity("SELECT BITOR(a, b)")
+        self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
+        self.validate_identity("SELECT BITOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BITXOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
+        self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
+        self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
+        self.validate_identity("SELECT BIT_SHIFTRIGHT(a, 1)", "SELECT BITSHIFTRIGHT(a, 1)")
 
     def test_null_treatment(self):
         self.validate_all(
@@ -1083,6 +1120,20 @@ WHERE
             write={
                 "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE BERNOULLI (1)",
                 "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1 PERCENT)",
+            },
+        )
+        self.validate_all(
+            "TO_DOUBLE(expr)",
+            write={
+                "snowflake": "TO_DOUBLE(expr)",
+                "duckdb": "CAST(expr AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "TO_DOUBLE(expr, fmt)",
+            write={
+                "snowflake": "TO_DOUBLE(expr, fmt)",
+                "duckdb": UnsupportedError,
             },
         )
 
@@ -1388,6 +1439,9 @@ WHERE
             """CREATE OR REPLACE FUNCTION ibis_udfs.public.object_values("obj" OBJECT) RETURNS ARRAY LANGUAGE JAVASCRIPT STRICT AS ' return Object.values(obj) '"""
         )
         self.validate_identity(
+            "CREATE OR REPLACE TABLE TEST (SOME_REF DECIMAL(38, 0) NOT NULL FOREIGN KEY REFERENCES SOME_OTHER_TABLE (ID))"
+        )
+        self.validate_identity(
             "CREATE OR REPLACE FUNCTION my_udf(location OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN))) RETURNS VARCHAR AS $$ SELECT 'foo' $$",
             "CREATE OR REPLACE FUNCTION my_udf(location OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN))) RETURNS VARCHAR AS ' SELECT \\'foo\\' '",
         )
@@ -1426,11 +1480,18 @@ WHERE
                 "snowflake": "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             },
         )
-
         self.validate_all(
             "CREATE TABLE a (b INT)",
             read={"teradata": "CREATE MULTISET TABLE a (b INT)"},
             write={"snowflake": "CREATE TABLE a (b INT)"},
+        )
+
+        self.validate_identity("CREATE TABLE a TAG (key1='value_1', key2='value_2')")
+        self.validate_all(
+            "CREATE TABLE a TAG (key1='value_1')",
+            read={
+                "snowflake": "CREATE TABLE a WITH TAG (key1='value_1')",
+            },
         )
 
         for action in ("SET", "DROP"):
@@ -1521,6 +1582,27 @@ WHERE
         )
 
     def test_flatten(self):
+        self.assertEqual(
+            exp.select(exp.Explode(this=exp.column("x")).as_("y", quoted=True)).sql(
+                "snowflake", pretty=True
+            ),
+            """SELECT
+  IFF(_u.pos = _u_2.pos_2, _u_2."y", NULL) AS "y"
+FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
+  GREATEST(ARRAY_SIZE(x)) - 1
+) + 1))) AS _u(seq, key, path, index, pos, this)
+CROSS JOIN TABLE(FLATTEN(INPUT => x)) AS _u_2(seq, key, path, pos_2, "y", this)
+WHERE
+  _u.pos = _u_2.pos_2
+  OR (
+    _u.pos > (
+      ARRAY_SIZE(x) - 1
+    ) AND _u_2.pos_2 = (
+      ARRAY_SIZE(x) - 1
+    )
+  )""",
+        )
+
         self.validate_all(
             """
             select
@@ -1542,6 +1624,75 @@ WHERE
   dag_report.dag_id,
   CAST(f.value AS VARCHAR) AS operator
 FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS f"""
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            SELECT
+              uc.user_id,
+              uc.start_ts AS ts,
+              CASE
+                WHEN uc.start_ts::DATE >= '2023-01-01' AND uc.country_code IN ('US') AND uc.user_id NOT IN (
+                  SELECT DISTINCT
+                    _id
+                  FROM
+                    users,
+                    LATERAL FLATTEN(INPUT => PARSE_JSON(flags)) datasource
+                  WHERE datasource.value:name = 'something'
+                )
+                  THEN 'Sample1'
+                  ELSE 'Sample2'
+              END AS entity
+            FROM user_countries AS uc
+            LEFT JOIN (
+              SELECT user_id, MAX(IFF(service_entity IS NULL,1,0)) AS le_null
+              FROM accepted_user_agreements
+              GROUP BY 1
+            ) AS aua
+              ON uc.user_id = aua.user_id
+            """,
+            write={
+                "snowflake": """SELECT
+  uc.user_id,
+  uc.start_ts AS ts,
+  CASE
+    WHEN CAST(uc.start_ts AS DATE) >= '2023-01-01'
+    AND uc.country_code IN ('US')
+    AND uc.user_id <> ALL (
+      SELECT DISTINCT
+        _id
+      FROM users, LATERAL IFF(_u.pos = _u_2.pos_2, _u_2.entity, NULL) AS datasource(SEQ, KEY, PATH, INDEX, VALUE, THIS)
+      WHERE
+        GET_PATH(datasource.value, 'name') = 'something'
+    )
+    THEN 'Sample1'
+    ELSE 'Sample2'
+  END AS entity
+FROM user_countries AS uc
+LEFT JOIN (
+  SELECT
+    user_id,
+    MAX(IFF(service_entity IS NULL, 1, 0)) AS le_null
+  FROM accepted_user_agreements
+  GROUP BY
+    1
+) AS aua
+  ON uc.user_id = aua.user_id
+CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
+  GREATEST(ARRAY_SIZE(INPUT => PARSE_JSON(flags))) - 1
+) + 1))) AS _u(seq, key, path, index, pos, this)
+CROSS JOIN TABLE(FLATTEN(INPUT => PARSE_JSON(flags))) AS _u_2(seq, key, path, pos_2, entity, this)
+WHERE
+  _u.pos = _u_2.pos_2
+  OR (
+    _u.pos > (
+      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
+    )
+    AND _u_2.pos_2 = (
+      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
+    )
+  )""",
             },
             pretty=True,
         )
@@ -1731,7 +1882,6 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_SUBSTR(subject, pattern)",
             read={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern)",
-                "snowflake": "REGEXP_EXTRACT(subject, pattern)",
             },
             write={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern)",
@@ -1757,13 +1907,17 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
             read={
-                "bigquery": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
                 "duckdb": "REGEXP_EXTRACT(subject, pattern, group)",
                 "hive": "REGEXP_EXTRACT(subject, pattern, group)",
                 "presto": "REGEXP_EXTRACT(subject, pattern, group)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
                 "spark": "REGEXP_EXTRACT(subject, pattern, group)",
             },
+        )
+
+        self.validate_identity(
+            "REGEXP_SUBSTR_ALL(subject, pattern)",
+            "REGEXP_EXTRACT_ALL(subject, pattern)",
         )
 
     @mock.patch("sqlglot.generator.logger")
@@ -2194,3 +2348,13 @@ SINGLE = TRUE""",
         self.validate_identity(
             "GRANT ALL PRIVILEGES ON FUNCTION mydb.myschema.ADD5(number) TO ROLE analyst"
         )
+
+    def test_window_function_arg(self):
+        query = "SELECT * FROM TABLE(db.schema.FUNC(a) OVER ())"
+
+        ast = self.parse_one(query)
+        window = ast.find(exp.Window)
+
+        self.assertEqual(ast.sql("snowflake"), query)
+        self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
+        self.assertEqual(window.this.sql("snowflake"), "db.schema.FUNC(a)")

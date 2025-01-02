@@ -8,14 +8,20 @@ from functools import reduce
 from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
-from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses
+from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses, to_bool
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
-DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsDiff]
+DATE_ADD_OR_DIFF = t.Union[
+    exp.DateAdd,
+    exp.DateDiff,
+    exp.DateSub,
+    exp.TsOrDsAdd,
+    exp.TsOrDsDiff,
+]
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
 JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
 
@@ -264,6 +270,13 @@ class Dialect(metaclass=_Dialect):
         False: Disables function name normalization.
     """
 
+    PRESERVE_ORIGINAL_NAMES: bool = False
+    """
+    Whether the name of the function should be preserved inside the node's metadata,
+    can be useful for roundtripping deprecated vs new functions that share an AST node
+    e.g JSON_VALUE vs JSON_EXTRACT_SCALAR in BigQuery
+    """
+
     LOG_BASE_FIRST: t.Optional[bool] = True
     """
     Whether the base comes first in the `LOG` function.
@@ -396,6 +409,19 @@ class Dialect(metaclass=_Dialect):
 
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
+
+    PROMOTE_TO_INFERRED_DATETIME_TYPE = False
+    """
+    This flag is used in the optimizer's canonicalize rule and determines whether x will be promoted
+    to the literal's type in x::DATE < '2020-01-01 12:05:03' (i.e., DATETIME). When false, the literal
+    is cast to x's type to match it instead.
+    """
+
+    SUPPORTS_VALUES_DEFAULT = True
+    """Whether the DEFAULT keyword is supported in the VALUES clause."""
+
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = False
+    """Whether number literals can include underscores for better readability"""
 
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
@@ -588,6 +614,7 @@ class Dialect(metaclass=_Dialect):
             exp.Stddev,
             exp.StddevPop,
             exp.StddevSamp,
+            exp.ToDouble,
             exp.Variance,
             exp.VariancePop,
         },
@@ -636,6 +663,7 @@ class Dialect(metaclass=_Dialect):
             exp.Initcap,
             exp.Lower,
             exp.Substring,
+            exp.String,
             exp.TimeToStr,
             exp.TimeToTimeStr,
             exp.Trim,
@@ -751,14 +779,7 @@ class Dialect(metaclass=_Dialect):
                     elif len(pair) == 2:
                         value = pair[1].strip()
 
-                        # Coerce the value to boolean if it matches to the truthy/falsy values below
-                        value_lower = value.lower()
-                        if value_lower in ("true", "1"):
-                            value = True
-                        elif value_lower in ("false", "0"):
-                            value = False
-
-                    kwargs[key] = value
+                    kwargs[key] = to_bool(value)
 
             except ValueError:
                 raise ValueError(
@@ -1015,10 +1036,10 @@ def no_recursive_cte_sql(self: Generator, expression: exp.With) -> str:
     return self.with_sql(expression)
 
 
-def no_safe_divide_sql(self: Generator, expression: exp.SafeDivide) -> str:
+def no_safe_divide_sql(self: Generator, expression: exp.SafeDivide, if_sql: str = "IF") -> str:
     n = self.sql(expression, "this")
     d = self.sql(expression, "expression")
-    return f"IF(({d}) <> 0, ({n}) / ({d}), NULL)"
+    return f"{if_sql}(({d}) <> 0, ({n}) / ({d}), NULL)"
 
 
 def no_tablesample_sql(self: Generator, expression: exp.TableSample) -> str:
@@ -1362,14 +1383,16 @@ def concat_ws_to_dpipe_sql(self: Generator, expression: exp.ConcatWs) -> str:
 
 
 @unsupported_args("position", "occurrence", "parameters")
-def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
+def regexp_extract_sql(
+    self: Generator, expression: exp.RegexpExtract | exp.RegexpExtractAll
+) -> str:
     group = expression.args.get("group")
 
     # Do not render group if it's the default value for this dialect
     if group and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP):
         group = None
 
-    return self.func("REGEXP_EXTRACT", expression.this, expression.expression, group)
+    return self.func(expression.sql_name(), expression.this, expression.expression, group)
 
 
 @unsupported_args("position", "occurrence", "modifiers")
@@ -1533,7 +1556,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
     if alias:
         targets.add(normalize(alias.this))
 
-    for when in expression.expressions:
+    for when in expression.args["whens"].expressions:
         # only remove the target names from the THEN clause
         # theyre still valid in the <condition> part of WHEN MATCHED / WHEN NOT MATCHED
         # ref: https://github.com/TobikoData/sqlmesh/issues/2934
@@ -1691,9 +1714,43 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_regexp_extract(args: t.List, dialect: Dialect) -> exp.RegexpExtract:
-    return exp.RegexpExtract(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
-    )
+def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _builder(args: t.List, dialect: Dialect) -> E:
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
+            parameters=seq_get(args, 3),
+        )
+
+    return _builder
+
+
+def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
+    if isinstance(expression.this, exp.Explode):
+        return self.sql(
+            exp.Join(
+                this=exp.Unnest(
+                    expressions=[expression.this.this],
+                    alias=expression.args.get("alias"),
+                    offset=isinstance(expression.this, exp.Posexplode),
+                ),
+                kind="cross",
+            )
+        )
+    return self.lateral_sql(expression)
+
+
+def timestampdiff_sql(self: Generator, expression: exp.DatetimeDiff | exp.TimestampDiff) -> str:
+    return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)
+
+
+def no_make_interval_sql(self: Generator, expression: exp.MakeInterval, sep: str = ", ") -> str:
+    args = []
+    for unit, value in expression.args.items():
+        if isinstance(value, exp.Kwarg):
+            value = value.expression
+
+        args.append(f"{value} {unit}")
+
+    return f"INTERVAL '{self.format_args(*args, sep=sep)}'"

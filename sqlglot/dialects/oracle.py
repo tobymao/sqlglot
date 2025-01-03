@@ -401,5 +401,5 @@ class Oracle(Dialect):
 
         def unicode_sql(self, expression: exp.Unicode) -> str:
             unistr_func = exp.func("UNISTR", expression.this)
-            unicode_func = exp.Anonymous(this="UNICODE", expressions=[unistr_func])
+            unicode_func = exp.Anonymous(this="ASCII", expressions=[unistr_func])
             return self.sql(unicode_func)

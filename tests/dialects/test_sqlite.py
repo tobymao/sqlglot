@@ -98,7 +98,7 @@ class TestSQLite(Validator):
                 "mysql": "ORD(CAST(x AS CHAR CHARACTER SET utf32))",
                 "postgres": "ASCII(x)",
                 "oracle": "ASCII(UNISTR(x))",
-            }
+            },
         )
         self.validate_identity(
             "SELECT * FROM station WHERE city IS NOT ''",

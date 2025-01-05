@@ -948,6 +948,7 @@ class TSQL(Dialect):
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TimestampTrunc: lambda self, e: self.func("DATETRUNC", e.unit, e.this),
+            exp.DateFromParts: rename_func("DATEFROMPARTS"),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

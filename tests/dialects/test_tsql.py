@@ -1220,7 +1220,10 @@ WHERE
     def test_datefromparts(self):
         self.validate_all(
             "SELECT DATEFROMPARTS('2020', 10, 01)",
-            write={"spark": "SELECT MAKE_DATE('2020', 10, 01)"},
+            write={
+                "spark": "SELECT MAKE_DATE('2020', 10, 01)",
+                "tsql": "SELECT DATEFROMPARTS('2020', 10, 01)",
+            },
         )
 
     def test_datename(self):

@@ -319,6 +319,7 @@ class Postgres(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CHARACTER VARYING": TokenType.VARCHAR,
+            "COLUMNS": TokenType.COLUMN,
             "CONSTRAINT TRIGGER": TokenType.COMMAND,
             "CSTRING": TokenType.PSEUDO_TYPE,
             "DECLARE": TokenType.COMMAND,
@@ -395,6 +396,7 @@ class Postgres(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
             "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
+            "XMLTABLE": lambda self: self._parse_xml_table(),
         }
 
         BITWISE = {
@@ -489,6 +491,22 @@ class Postgres(Dialect):
                 this = self.expression(exp.ComputedColumnConstraint, this=this.expression)
 
             return this
+
+        def _parse_xml_table(self) -> exp.XMLTable:
+            this = self._parse_string()
+
+            passing = None
+            columns = None
+
+            if self._match_text_seq("PASSING"):
+                # The BY VALUE keywords are optional and are provided for semantic clarity
+                self._match_text_seq("BY", "VALUE")
+                passing = self._parse_csv(self._parse_column)
+
+            if self._match_text_seq("COLUMNS"):
+                columns = self._parse_csv(self._parse_field_def)
+
+            return self.expression(exp.XMLTable, this=this, passing=passing, columns=columns)
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
@@ -716,3 +734,11 @@ class Postgres(Dialect):
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')}) STORED"
+
+        def xmltable_sql(self, expression: exp.XMLTable) -> str:
+            this = self.sql(expression, "this")
+            passing = self.expressions(expression, key="passing")
+            passing = f"{self.sep()}PASSING{self.seg(passing)}" if passing else ""
+            columns = self.expressions(expression, key="columns")
+            columns = f"{self.sep()}COLUMNS{self.seg(columns)}" if columns else ""
+            return f"XMLTABLE({self.sep('')}{self.indent(this + passing + columns)}{self.seg(')', sep='')}"

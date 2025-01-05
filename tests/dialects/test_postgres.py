@@ -1309,3 +1309,8 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity(
             "SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES('xyz' AS bar), XMLELEMENT(NAME abc), XMLCOMMENT('test'), XMLELEMENT(NAME xyz))"
         )
+
+    def test_xmltable(self):
+        self.validate_identity(
+            "SELECT id, name FROM XMLTABLE('/root/user' PASSING xml_data COLUMNS id INT PATH '@id', name TEXT PATH 'name/text()') AS t"
+        )

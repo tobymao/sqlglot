@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     isnull_to_is_null,
-    length_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -1264,3 +1263,7 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
+
+        def length_sql(self: Generator, expression: exp.Length) -> str:
+            length_func = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
+            return f"{length_func}({self.sql(expression.this)})"

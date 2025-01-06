@@ -1016,11 +1016,6 @@ def inline_array_unless_query(self: Generator, expression: exp.Array) -> str:
     return inline_array_sql(self, expression)
 
 
-def length_sql(self: Generator, expression: exp.Length) -> str:
-    func_name = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
-    return self.sql(exp.Anonymous(this=func_name, expressions=[expression.this]))
-
-
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
     return self.like_sql(
         exp.Like(

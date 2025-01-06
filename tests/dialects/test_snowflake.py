@@ -495,6 +495,7 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
                 "spark": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
                 "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
+                "mysql": "SELECT MIN(c1), MIN(c2) FROM test",
             },
         )
         for suffix in (

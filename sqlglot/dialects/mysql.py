@@ -1263,4 +1263,4 @@ class MySQL(Dialect):
             return self.sql(expression.this)
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
-            return f"NOT REGEXP_LIKE({self.sql(expression.this)}, '[^[:ascii:]]')"
+            return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"

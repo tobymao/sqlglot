@@ -1233,8 +1233,8 @@ class MySQL(Dialect):
         def chr_sql(self, expression: exp.Chr) -> str:
             this = self.expressions(sqls=[expression.this] + expression.expressions)
             charset = expression.args.get("charset")
-            using = f" USING {self.sql(charset)}" if charset else ""
-            return f"CHAR({this}{using})"
+            charset = self.sql(charset) if charset else "utf8mb4"
+            return f"CHAR({this} USING {charset})"
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             unit = expression.args.get("unit")

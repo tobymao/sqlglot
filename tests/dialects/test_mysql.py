@@ -263,9 +263,7 @@ class TestMySQL(Validator):
         )
         self.validate_identity("INTERVAL '1' YEAR")
         self.validate_identity("DATE_ADD(x, INTERVAL '1' YEAR)")
-        self.validate_identity("CHAR(0)")
-        self.validate_identity("CHAR(77, 121, 83, 81, '76')")
-        self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
+        self.validate_identity("CHAR(77, 77.3, '77.3' USING latin1)")
         self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
         self.validate_identity("SELECT @var1 := 1, @var2")
         self.validate_identity("SELECT @var1, @var2 := @var1")
@@ -330,8 +328,10 @@ class TestMySQL(Validator):
         self.validate_all(
             "CHAR(10)",
             write={
-                "mysql": "CHAR(10)",
+                "mysql": "CHAR(10 USING utf8mb4)",
                 "presto": "CHR(10)",
+                "sqlite": "CHAR(10)",
+                "tsql": "CHAR(10)",
             },
         )
 

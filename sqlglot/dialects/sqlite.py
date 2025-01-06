@@ -172,6 +172,7 @@ class SQLite(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
+            exp.Chr: rename_func("CHAR"),
             exp.Concat: concat_to_dpipe_sql,
             exp.CountIf: count_if_to_sum,
             exp.Create: transforms.preprocess([_transform_create]),

@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     no_ilike_sql,
     rename_func,
+    str_position_sql,
     to_number_with_nls_param,
     trim_sql,
 )
@@ -317,6 +318,9 @@ class Oracle(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_qualify,
                 ]
+            ),
+            exp.StrPosition: lambda self, e: str_position_sql(
+                self, e, str_position_func_name="INSTR"
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),

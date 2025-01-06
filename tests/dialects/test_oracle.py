@@ -45,6 +45,7 @@ class TestOracle(Validator):
         self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity("SELECT TO_DATE('January 15, 1989, 11:00 A.M.')")
+        self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
             "SELECT * FROM test UNPIVOT INCLUDE NULLS (value FOR Description IN (col AS 'PREFIX ' || CHR(38) || ' SUFFIX'))"
         )

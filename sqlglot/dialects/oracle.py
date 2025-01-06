@@ -333,6 +333,7 @@ class Oracle(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Trim: _trim_sql,
+            exp.Unicode: lambda self, e: f"ASCII(UNISTR({self.sql(e.this)}))",
             exp.UnixToTime: lambda self,
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
@@ -398,8 +399,3 @@ class Oracle(Dialect):
                     expressions.append(self.sql(expression))
 
             return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"
-
-        def unicode_sql(self, expression: exp.Unicode) -> str:
-            unistr_func = exp.func("UNISTR", expression.this)
-            unicode_func = exp.Anonymous(this="ASCII", expressions=[unistr_func])
-            return self.sql(unicode_func)

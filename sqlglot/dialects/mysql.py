@@ -775,6 +775,7 @@ class MySQL(Dialect):
             exp.TsOrDsAdd: date_add_sql("ADD"),
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
+            exp.Unicode: lambda self, e: f"ORD(CONVERT({self.sql(e.this)} USING utf32))",
             exp.UnixToTime: _unix_to_time_sql,
             exp.Week: _remove_ts_or_ds_to_date(),
             exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
@@ -1261,8 +1262,3 @@ class MySQL(Dialect):
         def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
             self.unsupported("AT TIME ZONE is not supported by MySQL")
             return self.sql(expression.this)
-
-        def unicode_sql(self, expression: exp.Unicode) -> str:
-            char_utf = exp.Cast(this=expression.this, to=exp.CharacterSet(this="utf32"))
-            char_ord = exp.func("ord", char_utf)
-            return self.sql(char_ord)

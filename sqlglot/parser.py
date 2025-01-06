@@ -3068,9 +3068,14 @@ class Parser(metaclass=_Parser):
                     is_unpivot=self._prev.token_type == TokenType.UNPIVOT
                 )
             elif self._match(TokenType.FROM):
-                this = exp.select("*").from_(
-                    t.cast(exp.From, self._parse_from(skip_from_token=True))
-                )
+                from_ = self._parse_from(skip_from_token=True)
+                # Support parentheses for duckdb FROM-first syntax
+                select = self._parse_select()
+                if select:
+                    select.set("from", from_)
+                    this = select
+                else:
+                    this = exp.select("*").from_(t.cast(exp.From, from_))
             else:
                 this = (
                     self._parse_table()

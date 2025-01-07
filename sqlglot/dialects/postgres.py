@@ -716,3 +716,6 @@ class Postgres(Dialect):
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')}) STORED"
+
+        def isascii_sql(self, expression: exp.IsAscii) -> str:
+            return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"

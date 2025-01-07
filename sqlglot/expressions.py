@@ -6603,6 +6603,10 @@ class Unhex(Func):
     pass
 
 
+class Unicode(Func):
+    pass
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#unix_date
 class UnixDate(Func):
     pass

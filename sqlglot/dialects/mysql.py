@@ -775,6 +775,7 @@ class MySQL(Dialect):
             exp.TsOrDsAdd: date_add_sql("ADD"),
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
+            exp.Unicode: lambda self, e: f"ORD(CONVERT({self.sql(e.this)} USING utf32))",
             exp.UnixToTime: _unix_to_time_sql,
             exp.Week: _remove_ts_or_ds_to_date(),
             exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),

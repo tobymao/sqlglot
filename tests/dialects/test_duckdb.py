@@ -1436,21 +1436,15 @@ class TestDuckDB(Validator):
         )
 
     def test_from_first_with_parentheses(self):
-        self.validate_all(
+        self.validate_identity(
             "CREATE TABLE t1 AS (FROM t2 SELECT foo1, foo2)",
-            write={
-                "duckdb": "CREATE TABLE t1 AS (SELECT foo1, foo2 FROM t2)",
-            },
+            "CREATE TABLE t1 AS (SELECT foo1, foo2 FROM t2)",
         )
-        self.validate_all(
+        self.validate_identity(
             "FROM (FROM t1 SELECT foo1, foo2)",
-            write={
-                "duckdb": "SELECT * FROM (SELECT foo1, foo2 FROM t1)",
-            },
+            "SELECT * FROM (SELECT foo1, foo2 FROM t1)",
         )
-        self.validate_all(
+        self.validate_identity(
             "WITH t1 AS (FROM (FROM t2 SELECT foo1, foo2)) FROM t1",
-            write={
-                "duckdb": "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
-            },
+            "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
         )

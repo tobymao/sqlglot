@@ -1,5 +1,6 @@
+use crate::settings::TokenType;
 use crate::trie::{Trie, TrieResult};
-use crate::{Token, TokenType, TokenTypeSettings, TokenizerDialectSettings, TokenizerSettings};
+use crate::{Token, TokenTypeSettings, TokenizerDialectSettings, TokenizerSettings};
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use std::cmp::{max, min};
@@ -375,7 +376,10 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
 
                 // Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
-                if self.settings.nested_comments && !self.is_end && self.chars(comment_start_size) == *comment_start {
+                if self.settings.nested_comments
+                    && !self.is_end
+                    && self.chars(comment_start_size) == *comment_start
+                {
                     self.advance(comment_start_size as isize)?;
                     comment_count += 1
                 }
@@ -397,7 +401,11 @@ impl<'a> TokenizerState<'a> {
 
         if comment_start == self.settings.hint_start
             && self.tokens.last().is_some()
-            && self.settings.tokens_preceding_hint.contains(&self.tokens.last().unwrap().token_type) {
+            && self
+                .settings
+                .tokens_preceding_hint
+                .contains(&self.tokens.last().unwrap().token_type)
+        {
             self.add(self.token_types.hint, None)?;
         }
 
@@ -443,7 +451,7 @@ impl<'a> TokenizerState<'a> {
 
                     self.advance(-(tag.len() as isize))?;
                     self.add(self.token_types.heredoc_string_alternative, None)?;
-                    return Ok(true)
+                    return Ok(true);
                 }
 
                 (None, *token_type, format!("{}{}{}", start, tag, end))
@@ -455,7 +463,8 @@ impl<'a> TokenizerState<'a> {
         };
 
         self.advance(start.len() as isize)?;
-        let text = self.extract_string(&end, false, token_type == self.token_types.raw_string, true)?;
+        let text =
+            self.extract_string(&end, false, token_type == self.token_types.raw_string, true)?;
 
         if let Some(b) = base {
             if u128::from_str_radix(&text, b).is_err() {
@@ -537,7 +546,9 @@ impl<'a> TokenizerState<'a> {
                     self.add(self.token_types.number, Some(number_text))?;
                     self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
-                } else if self.dialect_settings.numbers_can_be_underscore_separated && self.is_numeric(&replaced) {
+                } else if self.dialect_settings.numbers_can_be_underscore_separated
+                    && self.is_numeric(&replaced)
+                {
                     self.add(self.token_types.number, Some(number_text + &replaced))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(self.token_types.var, None)?;
@@ -677,7 +688,7 @@ impl<'a> TokenizerState<'a> {
                 if self.is_end {
                     if !raise_unmatched {
                         text.push(self.current_char);
-                        return Ok(text)
+                        return Ok(text);
                     }
 
                     return self.error_result(format!(
@@ -703,11 +714,13 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn is_identifier(&mut self, s: &str) -> bool {
-        s.chars().enumerate().all(
-            |(i, c)|
-            if i == 0 { self.is_alphabetic_or_underscore(c) }
-            else { self.is_alphabetic_or_underscore(c) || c.is_digit(10) }
-        )
+        s.chars().enumerate().all(|(i, c)| {
+            if i == 0 {
+                self.is_alphabetic_or_underscore(c)
+            } else {
+                self.is_alphabetic_or_underscore(c) || c.is_digit(10)
+            }
+        })
     }
 
     fn is_numeric(&mut self, s: &str) -> bool {

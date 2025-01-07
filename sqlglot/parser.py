@@ -7054,21 +7054,21 @@ class Parser(metaclass=_Parser):
     def _parse_analyze(self) -> exp.Analyze | exp.Command:
         start = self._prev
         kind = None
-        this: exp.Expression | None = None
+        this: t.Optional[exp.Expression] = None
         partition = None
 
         if self._match(TokenType.TABLE):
-            kind = TokenType.TABLE.name
+            kind = "TABLE"
             this = self._parse_table_parts()
-            partition = self._parse_partition()  # parse_partition does _match(PARTITION)
+            partition = self._parse_partition()
         elif self._match_texts("TABLES"):
             kind = "TABLES"
             this = (
                 self._parse_table(is_db_reference=True)
-                if self._match_set([TokenType.FROM, TokenType.IN])
+                if self._match_set((TokenType.FROM, TokenType.IN))
                 else None
             )
-        else:  # Fallback to parse as command.
+        else:
             return self._parse_as_command(start)
 
         if self._match(TokenType.COMPUTE_STATISTICS):
@@ -7076,8 +7076,8 @@ class Parser(metaclass=_Parser):
             return self.expression(
                 exp.Analyze, kind=kind, this=this, partition=partition, expression=compute_stats
             )
-        else:
-            return self._parse_as_command(start)
+
+        return self._parse_as_command(start)
 
     def _parse_merge(self) -> exp.Merge:
         self._match(TokenType.INTO)

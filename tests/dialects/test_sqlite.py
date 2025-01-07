@@ -95,9 +95,12 @@ class TestSQLite(Validator):
         self.validate_all(
             "UNICODE(x)",
             write={
+                "": "UNICODE(x)",
                 "mysql": "ORD(CONVERT(x USING utf32))",
-                "postgres": "ASCII(x)",
                 "oracle": "ASCII(UNISTR(x))",
+                "postgres": "ASCII(x)",
+                "redshift": "ASCII(x)",
+                "spark": "ASCII(x)",
             },
         )
         self.validate_identity(

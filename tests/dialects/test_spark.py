@@ -923,6 +923,8 @@ TBLPROPERTIES (
         self.validate_identity("COMPUTE STATISTICS FOR COLUMNS foo, bar")
         self.validate_identity("ANALYZE TABLE myCatalog.Myschema.myTable COMPUTE STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLE myTable COMPUTE STATISTICS NOSCAN")
-        self.validate_identity("ANALYZE TABLE myCatalog.Myschema.myTable PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN")
+        self.validate_identity(
+            "ANALYZE TABLE myCatalog.Myschema.myTable PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
+        )
         self.validate_identity("ANALYZE TABLES COMPUTE STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLES FROM myDatabase COMPUTE STATISTICS")

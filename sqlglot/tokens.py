@@ -412,7 +412,6 @@ class TokenType(AutoName):
     SOURCE = auto()
     ANALYZE = auto()
     COMPUTE_STATISTICS = auto()
-    NOSCAN = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)
@@ -774,7 +773,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "NEXT": TokenType.NEXT,
         "NOT": TokenType.NOT,
         "NOTNULL": TokenType.NOTNULL,
-        "NOSCAN": TokenType.NOSCAN,
         "NULL": TokenType.NULL,
         "OBJECT": TokenType.OBJECT,
         "OFFSET": TokenType.OFFSET,

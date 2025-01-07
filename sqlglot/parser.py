@@ -7073,13 +7073,7 @@ class Parser(metaclass=_Parser):
         )
 
         return self.expression(
-            exp.Analyze,
-            **{  # type: ignore
-                "kind": kind,
-                "this": this,
-                "partition": partition,
-                "expression": compute_stats,
-            },
+            exp.Analyze, kind=kind, this=this, partition=partition, expression=compute_stats
         )
 
     def _parse_merge(self) -> exp.Merge:
@@ -7305,24 +7299,18 @@ class Parser(metaclass=_Parser):
 
     # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-aux-analyze-table.html
     def _parse_compute_statistics(self) -> exp.ComputeStatistics:
-        kind = None
         this = None
-        if self._match(TokenType.NOSCAN):
-            kind = TokenType.NOSCAN.name
+        expressions = None
+        if self._match_text_seq("NOSCAN"):
+            this = "NOSCAN"
         elif self._match(TokenType.FOR):
             if self._match_text_seq("ALL", "COLUMNS"):
-                kind = "FOR ALL COLUMNS"
+                this = "FOR ALL COLUMNS"
             if self._match_texts("COLUMNS"):
-                kind = "FOR COLUMNS"
-                this = self._parse_csv(self._parse_column_reference)
+                this = "FOR COLUMNS"
+                expressions = self._parse_csv(self._parse_column_reference)
 
-        return self.expression(
-            exp.ComputeStatistics,
-            **{  # type: ignore
-                "this": this,
-                "kind": kind,
-            },
-        )
+        return self.expression(exp.ComputeStatistics, this=this, expressions=expressions)
 
     def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:
         if self._match(TokenType.HEREDOC_STRING):

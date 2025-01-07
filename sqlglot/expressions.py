@@ -4724,7 +4724,7 @@ class Analyze(Expression):
 class ComputeStatistics(Expression):
     arg_types = {
         "this": False,
-        "kind": False,
+        "expressions": False,
     }
 
 

@@ -520,6 +520,19 @@ class TestDialect(Validator):
             },
         )
 
+    def test_is_ascii(self):
+        self.validate_all(
+            "SELECT IS_ASCII(x)",
+            write={
+                "": "SELECT IS_ASCII(x)",
+                "sqlite": "SELECT (NOT x GLOB CAST(x'2a5b5e012d7f5d2a' AS TEXT))",
+                "mysql": "SELECT REGEXP_LIKE(x, '^[[:ascii:]]*$')",
+                "postgres": "SELECT (x ~ '^[[:ascii:]]*$')",
+                "tsql": "SELECT (PATINDEX('%[^' + CHAR(0x00) + '-' + CHAR(0x7f) + ']%' COLLATE Latin1_General_BIN, x) = 0)",
+                "oracle": "SELECT NVL(REGEXP_LIKE(x, '^[' || CHR(1) || '-' || CHR(127) || ']*$'), TRUE)",
+            },
+        )
+
     def test_nvl2(self):
         self.validate_all(
             "SELECT NVL2(a, b, c)",

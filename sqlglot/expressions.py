@@ -5891,6 +5891,10 @@ class Initcap(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class IsAscii(Func):
+    pass
+
+
 class IsNan(Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 

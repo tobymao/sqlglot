@@ -398,3 +398,6 @@ class Oracle(Dialect):
                     expressions.append(self.sql(expression))
 
             return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"
+
+        def isascii_sql(self, expression: exp.IsAscii) -> str:
+            return f"NVL(REGEXP_LIKE({self.sql(expression.this)}, '^[' || CHR(1) || '-' || CHR(127) || ']*$'), TRUE)"

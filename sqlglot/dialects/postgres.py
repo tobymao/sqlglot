@@ -370,6 +370,7 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ASCII": exp.Unicode.from_arg_list,
             "DATE_TRUNC": build_timestamp_trunc,
             "DIV": lambda args: exp.cast(
                 binary_from_function(exp.IntDiv)(args), exp.DataType.Type.DECIMAL
@@ -605,6 +606,7 @@ class Postgres(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
+            exp.Unicode: rename_func("ASCII"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.Levenshtein: _levenshtein_sql,
         }
@@ -716,3 +718,6 @@ class Postgres(Dialect):
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')}) STORED"
+
+        def isascii_sql(self, expression: exp.IsAscii) -> str:
+            return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"

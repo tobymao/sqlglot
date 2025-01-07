@@ -2291,6 +2291,7 @@ class OnConflict(Expression):
         "action": False,
         "conflict_keys": False,
         "constraint": False,
+        "where": False,
     }
 
 
@@ -5906,6 +5907,10 @@ class Initcap(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class IsAscii(Func):
+    pass
+
+
 class IsNan(Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
@@ -6611,6 +6616,10 @@ class TsOrDiToDi(Func):
 
 
 class Unhex(Func):
+    pass
+
+
+class Unicode(Func):
     pass
 
 

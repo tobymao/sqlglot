@@ -423,16 +423,17 @@ class Parser(metaclass=_Parser):
         TokenType.DATABASE,
         TokenType.DICTIONARY,
         TokenType.MODEL,
+        TokenType.NAMESPACE,
         TokenType.SCHEMA,
         TokenType.SEQUENCE,
+        TokenType.SINK,
+        TokenType.SOURCE,
         TokenType.STORAGE_INTEGRATION,
+        TokenType.STREAMLIT,
         TokenType.TABLE,
         TokenType.TAG,
         TokenType.VIEW,
         TokenType.WAREHOUSE,
-        TokenType.STREAMLIT,
-        TokenType.SINK,
-        TokenType.SOURCE,
     }
 
     CREATABLES = {
@@ -2733,6 +2734,8 @@ class Parser(metaclass=_Parser):
                 if not is_function
                 else self._parse_function()
             )
+            if isinstance(this, exp.Table) and self._match(TokenType.ALIAS, advance=False):
+                this.set("alias", self._parse_table_alias())
 
         returning = self._parse_returning()
 
@@ -2797,6 +2800,7 @@ class Parser(metaclass=_Parser):
             action=action,
             conflict_keys=conflict_keys,
             constraint=constraint,
+            where=self._parse_where(),
         )
 
     def _parse_returning(self) -> t.Optional[exp.Returning]:
@@ -3066,9 +3070,14 @@ class Parser(metaclass=_Parser):
                     is_unpivot=self._prev.token_type == TokenType.UNPIVOT
                 )
             elif self._match(TokenType.FROM):
-                this = exp.select("*").from_(
-                    t.cast(exp.From, self._parse_from(skip_from_token=True))
-                )
+                from_ = self._parse_from(skip_from_token=True)
+                # Support parentheses for duckdb FROM-first syntax
+                select = self._parse_select()
+                if select:
+                    select.set("from", from_)
+                    this = select
+                else:
+                    this = exp.select("*").from_(t.cast(exp.From, from_))
             else:
                 this = (
                     self._parse_table()

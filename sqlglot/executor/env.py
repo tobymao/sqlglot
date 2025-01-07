@@ -75,8 +75,8 @@ def null_if_any(*required):
     return decorator
 
 
-@null_if_any("substr", "this")
-def str_position(substr, this, position=None):
+@null_if_any("this", "substr")
+def str_position(this, substr, position=None):
     position = position - 1 if position is not None else position
     return this.find(substr, position) + 1
 

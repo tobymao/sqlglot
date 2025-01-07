@@ -1434,3 +1434,17 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT * FROM (UNPIVOT monthly_sales ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales) AS unpivot_alias"
         )
+
+    def test_from_first_with_parentheses(self):
+        self.validate_identity(
+            "CREATE TABLE t1 AS (FROM t2 SELECT foo1, foo2)",
+            "CREATE TABLE t1 AS (SELECT foo1, foo2 FROM t2)",
+        )
+        self.validate_identity(
+            "FROM (FROM t1 SELECT foo1, foo2)",
+            "SELECT * FROM (SELECT foo1, foo2 FROM t1)",
+        )
+        self.validate_identity(
+            "WITH t1 AS (FROM (FROM t2 SELECT foo1, foo2)) FROM t1",
+            "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
+        )

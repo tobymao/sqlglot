@@ -21,6 +21,7 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
+        self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("exclude := [foo]")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
@@ -495,6 +496,7 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
                 "spark": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
                 "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
+                "mysql": "SELECT MIN(c1), MIN(c2) FROM test",
             },
         )
         for suffix in (

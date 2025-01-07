@@ -632,6 +632,12 @@ class TestExpressions(unittest.TestCase):
         self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk()))
         self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk(bfs=False)))
 
+    def test_str_position_order(self):
+        str_position_exp = parse_one("STR_POSITION('mytest', 'test')")
+        self.assertIsInstance(str_position_exp, exp.StrPosition)
+        self.assertEqual(str_position_exp.args.get("this").this, "mytest")
+        self.assertEqual(str_position_exp.args.get("substr").this, "test")
+
     def test_functions(self):
         self.assertIsInstance(parse_one("x LIKE ANY (y)"), exp.Like)
         self.assertIsInstance(parse_one("x ILIKE ANY (y)"), exp.ILike)

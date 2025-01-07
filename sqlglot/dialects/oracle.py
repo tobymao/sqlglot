@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     no_ilike_sql,
     rename_func,
+    str_position_sql,
     to_number_with_nls_param,
     trim_sql,
 )
@@ -318,6 +319,9 @@ class Oracle(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.StrPosition: lambda self, e: str_position_sql(
+                self, e, str_position_func_name="INSTR"
+            ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
@@ -329,6 +333,7 @@ class Oracle(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Trim: _trim_sql,
+            exp.Unicode: lambda self, e: f"ASCII(UNISTR({self.sql(e.this)}))",
             exp.UnixToTime: lambda self,
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
@@ -394,3 +399,6 @@ class Oracle(Dialect):
                     expressions.append(self.sql(expression))
 
             return f" /*+ {self.expressions(sqls=expressions, sep=self.QUERY_HINT_SEP).strip()} */"
+
+        def isascii_sql(self, expression: exp.IsAscii) -> str:
+            return f"NVL(REGEXP_LIKE({self.sql(expression.this)}, '^[' || CHR(1) || '-' || CHR(127) || ']*$'), TRUE)"

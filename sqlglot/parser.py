@@ -433,6 +433,7 @@ class Parser(metaclass=_Parser):
         TokenType.STREAMLIT,
         TokenType.SINK,
         TokenType.SOURCE,
+        TokenType.NAMESPACE,
     }
 
     CREATABLES = {

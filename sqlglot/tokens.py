@@ -410,6 +410,7 @@ class TokenType(AutoName):
     OPTION = auto()
     SINK = auto()
     SOURCE = auto()
+    NAMESPACE = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)
@@ -947,6 +948,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "USER-DEFINED": TokenType.USERDEFINED,
         "FOR VERSION": TokenType.VERSION_SNAPSHOT,
         "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
+        "NAMESPACE": TokenType.NAMESPACE,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

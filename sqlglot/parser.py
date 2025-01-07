@@ -7051,7 +7051,8 @@ class Parser(metaclass=_Parser):
 
         return self._parse_as_command(start)
 
-    def _parse_analyze(self) -> exp.Analyze:
+    def _parse_analyze(self) -> exp.Analyze | exp.Command:
+        start = self._prev
         kind = None
         this: exp.Expression | None = None
         partition = None
@@ -7067,14 +7068,16 @@ class Parser(metaclass=_Parser):
                 if self._match_set([TokenType.FROM, TokenType.IN])
                 else None
             )
+        else:  # Fallback to parse as command.
+            return self._parse_as_command(start)
 
-        compute_stats = (
-            self._parse_compute_statistics() if self._match(TokenType.COMPUTE_STATISTICS) else None
-        )
-
-        return self.expression(
-            exp.Analyze, kind=kind, this=this, partition=partition, expression=compute_stats
-        )
+        if self._match(TokenType.COMPUTE_STATISTICS):
+            compute_stats = self._parse_compute_statistics()
+            return self.expression(
+                exp.Analyze, kind=kind, this=this, partition=partition, expression=compute_stats
+            )
+        else:
+            return self._parse_as_command(start)
 
     def _parse_merge(self) -> exp.Merge:
         self._match(TokenType.INTO)

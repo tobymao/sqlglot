@@ -976,6 +976,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "size",
         "tokens",
         "dialect",
+        "use_rs_tokenizer",
         "_start",
         "_current",
         "_line",
@@ -986,7 +987,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "_peek",
         "_prev_token_line",
         "_rs_dialect_settings",
-        "use_rs_tokenizer",
     )
 
     def __init__(

@@ -976,6 +976,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "size",
         "tokens",
         "dialect",
+        "use_rs_tokenizer",
         "_start",
         "_current",
         "_line",
@@ -988,10 +989,15 @@ class Tokenizer(metaclass=_Tokenizer):
         "_rs_dialect_settings",
     )
 
-    def __init__(self, dialect: DialectType = None) -> None:
+    def __init__(
+        self, dialect: DialectType = None, use_rs_tokenizer: bool = USE_RS_TOKENIZER
+    ) -> None:
         from sqlglot.dialects import Dialect
 
         self.dialect = Dialect.get_or_raise(dialect)
+
+        # initialize `use_rs_tokenizer`, and allow it to be overwritten per Tokenizer instance
+        self.use_rs_tokenizer = use_rs_tokenizer
 
         if USE_RS_TOKENIZER:
             self._rs_dialect_settings = RsTokenizerDialectSettings(
@@ -1019,7 +1025,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
-        if USE_RS_TOKENIZER:
+        if self.use_rs_tokenizer:
             return self.tokenize_rs(sql)
 
         self.reset()

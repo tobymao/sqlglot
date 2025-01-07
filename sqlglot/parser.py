@@ -423,17 +423,17 @@ class Parser(metaclass=_Parser):
         TokenType.DATABASE,
         TokenType.DICTIONARY,
         TokenType.MODEL,
+        TokenType.NAMESPACE,
         TokenType.SCHEMA,
         TokenType.SEQUENCE,
+        TokenType.SINK,
+        TokenType.SOURCE,
         TokenType.STORAGE_INTEGRATION,
+        TokenType.STREAMLIT,
         TokenType.TABLE,
         TokenType.TAG,
         TokenType.VIEW,
         TokenType.WAREHOUSE,
-        TokenType.STREAMLIT,
-        TokenType.SINK,
-        TokenType.SOURCE,
-        TokenType.NAMESPACE,
     }
 
     CREATABLES = {

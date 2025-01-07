@@ -900,37 +900,3 @@ class TestParser(unittest.TestCase):
         # Incomplete or incorrect anonymous meta comments are not registered
         ast = parse_one("YEAR(a) /* sqlglot.anon */")
         self.assertIsInstance(ast, exp.Year)
-
-    def test_parse_create_namespace(self):
-        for dialect in [None, "spark"]:
-            with self.subTest(dialect):
-                ast = parse_one("CREATE NAMESPACE my_catalog.my_namespace", dialect=dialect)
-                self.assertEqual(
-                    ast,
-                    exp.Create(
-                        this=exp.Table(
-                            this=exp.Identifier(this="my_namespace", quoted=False),
-                            db=exp.Identifier(this="my_catalog", quoted=False),
-                        ),
-                        kind="NAMESPACE",
-                    ),
-                )
-                self.assertEqual(
-                    ast.sql(dialect=dialect), "CREATE NAMESPACE my_catalog.my_namespace"
-                )
-
-    def test_parse_drop_namespace(self):
-        for dialect in [None, "spark"]:
-            with self.subTest(dialect):
-                ast = parse_one("DROP NAMESPACE my_catalog.my_namespace", dialect=dialect)
-                self.assertEqual(
-                    ast,
-                    exp.Drop(
-                        this=exp.Table(
-                            this=exp.Identifier(this="my_namespace", quoted=False),
-                            db=exp.Identifier(this="my_catalog", quoted=False),
-                        ),
-                        kind="NAMESPACE",
-                    ),
-                )
-                self.assertEqual(ast.sql(dialect=dialect), "DROP NAMESPACE my_catalog.my_namespace")

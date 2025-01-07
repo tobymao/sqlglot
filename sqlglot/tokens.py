@@ -767,6 +767,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LOAD": TokenType.LOAD,
         "LOCK": TokenType.LOCK,
         "MERGE": TokenType.MERGE,
+        "NAMESPACE": TokenType.NAMESPACE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NOT": TokenType.NOT,
@@ -948,7 +949,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "USER-DEFINED": TokenType.USERDEFINED,
         "FOR VERSION": TokenType.VERSION_SNAPSHOT,
         "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
-        "NAMESPACE": TokenType.NAMESPACE,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

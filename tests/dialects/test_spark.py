@@ -918,13 +918,12 @@ TBLPROPERTIES (
                 self.assertEqual(query.sql(dialect), "CAST(a AS STRING)")
 
     def test_analyze_compute_statistics(self):
-        self.validate_identity("COMPUTE STATISTICS NOSCAN")
-        self.validate_identity("COMPUTE STATISTICS FOR ALL COLUMNS")
-        self.validate_identity("COMPUTE STATISTICS FOR COLUMNS foo, bar")
-        self.validate_identity("ANALYZE TABLE myCatalog.Myschema.myTable COMPUTE STATISTICS NOSCAN")
-        self.validate_identity("ANALYZE TABLE myTable COMPUTE STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS FOR ALL COLUMNS")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS FOR COLUMNS foo, bar")
+        self.validate_identity("ANALYZE TABLE ctlg.db.tbl COMPUTE STATISTICS NOSCAN")
         self.validate_identity(
-            "ANALYZE TABLE myCatalog.Myschema.myTable PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
+            "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
         )
         self.validate_identity("ANALYZE TABLES COMPUTE STATISTICS NOSCAN")
-        self.validate_identity("ANALYZE TABLES FROM myDatabase COMPUTE STATISTICS")
+        self.validate_identity("ANALYZE TABLES FROM db COMPUTE STATISTICS")

@@ -792,7 +792,6 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.COMMENT: lambda self: self._parse_comment(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
-        TokenType.COMPUTE_STATISTICS: lambda self: self._parse_compute_statistics(),
         TokenType.COPY: lambda self: self._parse_copy(),
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DELETE: lambda self: self._parse_delete(),

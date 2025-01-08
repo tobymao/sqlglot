@@ -1754,3 +1754,8 @@ def no_make_interval_sql(self: Generator, expression: exp.MakeInterval, sep: str
         args.append(f"{value} {unit}")
 
     return f"INTERVAL '{self.format_args(*args, sep=sep)}'"
+
+
+def length_or_char_length_sql(self: Generator, expression: exp.Length) -> str:
+    length_func = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
+    return self.func(length_func, expression.this)

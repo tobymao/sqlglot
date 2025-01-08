@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     isnull_to_is_null,
+    length_or_char_length_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -730,6 +731,7 @@ class MySQL(Dialect):
             e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.Length: length_or_char_length_sql,
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Max: max_or_greatest,
@@ -1263,7 +1265,3 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
-
-        def length_sql(self, expression: exp.Length) -> str:
-            length_func = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
-            return self.func(length_func, expression.this)

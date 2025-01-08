@@ -6154,7 +6154,7 @@ class Right(Func):
 
 class Length(Func):
     arg_types = {"this": True, "binary": False, "encoding": False}
-    _sql_names = ["LENGTH", "LEN"]
+    _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
 class Levenshtein(Func):

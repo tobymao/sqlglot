@@ -263,6 +263,8 @@ class TestMySQL(Validator):
         )
         self.validate_identity("INTERVAL '1' YEAR")
         self.validate_identity("DATE_ADD(x, INTERVAL '1' YEAR)")
+        self.validate_identity("CHAR(0)")
+        self.validate_identity("CHAR(77, 121, 83, 81, '76')")
         self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
         self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
         self.validate_identity("SELECT @var1 := 1, @var2")

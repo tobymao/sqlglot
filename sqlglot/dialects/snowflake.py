@@ -1229,10 +1229,5 @@ class Snowflake(Dialect):
             limit = expression.args.get("limit")
             offset = expression.args.get("offset")
             if offset and not limit:
-                expression.set(
-                    "limit",
-                    exp.Limit(
-                        expression=exp.Null(),
-                    ),
-                )
+                expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)

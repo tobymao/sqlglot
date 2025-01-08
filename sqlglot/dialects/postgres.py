@@ -582,6 +582,8 @@ class Postgres(Dialect):
                 ]
             ),
             exp.SHA2: sha256_sql,
+            exp.StrPosition: lambda self,
+            e: f"POSITION({self.sql(e, 'substr')} IN {self.sql(e, 'this')})",
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StructExtract: struct_extract_sql,
@@ -719,7 +721,3 @@ class Postgres(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"
-
-        def strposition_sql(self, expression: exp.StrPosition):
-            substr = expression.args.get("substr")
-            return f"POSITION({self.sql(substr)} in {self.sql(expression.this)})"

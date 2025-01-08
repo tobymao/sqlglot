@@ -753,6 +753,15 @@ class TestTSQL(Validator):
             },
         )
 
+        # percision of TIMESTAMP_NTZ 0 to 9 (same as TIMESTAMP)
+        # percision of DATETIME2 0 to 7
+        self.validate_all(
+            "CREATE TABLE t (col1 TIMESTAMP_NTZ(2))",
+            write={
+                "tsql": "CREATE TABLE t (col1 DATETIME2(2))",
+            },
+        )
+
     def test_types_bin(self):
         self.validate_all(
             "CAST(x as BIT)",

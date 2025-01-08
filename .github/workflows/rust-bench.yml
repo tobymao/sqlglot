@@ -10,3 +10,4 @@ jobs:
         with:
           branchName: ${{ github.base_ref }}
           cwd: "sqlglotrs"
+          additional_flags: "--lib"

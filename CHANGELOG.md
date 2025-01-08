@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v26.1.2] - 2025-01-08
+### :wrench: Chores
+- [`e33af0b`](https://github.com/tobymao/sqlglot/commit/e33af0bcd859571dab68aef3a1fc9ecbf5c49e71) - try setup-python@v5 in the publish job *(PR [#4582](https://github.com/tobymao/sqlglot/pull/4582) by [@georgesittas](https://github.com/georgesittas))*
+- [`3259f84`](https://github.com/tobymao/sqlglot/commit/3259f84f1faa6f1135ecca7d0f5fcd4b187b4da7) - bump sqlglotrs to 0.3.3 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.1.1] - 2025-01-08
 ### :wrench: Chores
 - [`e51d1cf`](https://github.com/tobymao/sqlglot/commit/e51d1cfb0aa1028bb116851b03b759282305217b) - release sqlglotrs for Python 3.13 on windows *(PR [#4580](https://github.com/tobymao/sqlglot/pull/4580) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -5583,3 +5589,4 @@ Changelog
 [v26.0.1]: https://github.com/tobymao/sqlglot/compare/v26.0.0...v26.0.1
 [v26.1.0]: https://github.com/tobymao/sqlglot/compare/v26.0.1...v26.1.0
 [v26.1.1]: https://github.com/tobymao/sqlglot/compare/v26.1.0...v26.1.1
+[v26.1.2]: https://github.com/tobymao/sqlglot/compare/v26.1.1...v26.1.2

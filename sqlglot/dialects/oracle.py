@@ -144,7 +144,6 @@ class Oracle(Dialect):
                 this=self._parse_format_json(self._parse_bitwise()),
                 order=self._parse_order(),
             ),
-            "XMLTABLE": lambda self: self._parse_xml_table(),
             "JSON_EXISTS": lambda self: self._parse_json_exists(),
         }
 
@@ -178,26 +177,6 @@ class Oracle(Dialect):
                 ("CHECK", "OPTION"),
             ),
         }
-
-        def _parse_xml_table(self) -> exp.XMLTable:
-            this = self._parse_string()
-
-            passing = None
-            columns = None
-
-            if self._match_text_seq("PASSING"):
-                # The BY VALUE keywords are optional and are provided for semantic clarity
-                self._match_text_seq("BY", "VALUE")
-                passing = self._parse_csv(self._parse_column)
-
-            by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
-
-            if self._match_text_seq("COLUMNS"):
-                columns = self._parse_csv(self._parse_field_def)
-
-            return self.expression(
-                exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref
-            )
 
         def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
             return self.expression(
@@ -352,17 +331,6 @@ class Oracle(Dialect):
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
-
-        def xmltable_sql(self, expression: exp.XMLTable) -> str:
-            this = self.sql(expression, "this")
-            passing = self.expressions(expression, key="passing")
-            passing = f"{self.sep()}PASSING{self.seg(passing)}" if passing else ""
-            columns = self.expressions(expression, key="columns")
-            columns = f"{self.sep()}COLUMNS{self.seg(columns)}" if columns else ""
-            by_ref = (
-                f"{self.sep()}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
-            )
-            return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')', sep='')}"
 
         def add_column_sql(self, expression: exp.Alter) -> str:
             actions = self.expressions(expression, key="actions", flat=True)

@@ -72,6 +72,9 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity(
+            "SELECT id, name FROM XMLTABLE('/root/user' PASSING xml_data COLUMNS id INT PATH '@id', name TEXT PATH 'name/text()') AS t"
+        )
+        self.validate_identity(
             "SELECT * FROM t WHERE some_column >= CURRENT_DATE + INTERVAL '1 day 1 hour' AND some_another_column IS TRUE"
         )
         self.validate_identity(

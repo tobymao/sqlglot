@@ -1,0 +1,47 @@
+name: Publish Python Release to PyPI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-rs:
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
+        target: [x86_64, aarch64]
+        include:
+        - os: linux
+          target: i686
+        - os: linux
+          target: armv7
+        - os: linux
+          target: s390x
+        - os: linux
+          target: ppc64le
+        - os: windows
+          target: i686
+          python-architecture: x86
+        exclude:
+        - os: windows
+          target: aarch64
+    runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+        architecture: ${{ matrix.python-architecture || 'x64' }}
+    - name: Build wheels
+      uses: PyO3/maturin-action@v1
+      with:
+        target: ${{ matrix.target }}
+        args: --release --out dist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12
+        sccache: 'true'
+        manylinux: auto
+        working-directory: ./sqlglotrs

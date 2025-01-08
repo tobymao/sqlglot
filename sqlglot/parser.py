@@ -188,6 +188,8 @@ class Parser(metaclass=_Parser):
             this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
         ),
         "CHAR": lambda args: exp.Chr(expressions=args),
+        "CHAR_LENGTH": exp.Length.from_arg_list,
+        "CHARACTER_LENGTH": exp.Length.from_arg_list,
         "CHR": lambda args: exp.Chr(expressions=args),
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(

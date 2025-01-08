@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v26.1.1] - 2025-01-08
+### :wrench: Chores
+- [`e51d1cf`](https://github.com/tobymao/sqlglot/commit/e51d1cfb0aa1028bb116851b03b759282305217b) - release sqlglotrs for Python 3.13 on windows *(PR [#4580](https://github.com/tobymao/sqlglot/pull/4580) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`975ffa0`](https://github.com/tobymao/sqlglot/commit/975ffa0e10f08243375e5e83384fd0e134730d14) - bump sqlglotrs to 0.3.2 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.1.0] - 2025-01-08
 ### :boom: BREAKING CHANGES
 - due to [`07d05da`](https://github.com/tobymao/sqlglot/commit/07d05da95c7d3882a7032dade3cbeefbd96628b7) - normalize before qualifying tables *(PR [#4539](https://github.com/tobymao/sqlglot/pull/4539) by [@tobymao](https://github.com/tobymao))*:
@@ -5576,3 +5582,4 @@ Changelog
 [v26.0.0]: https://github.com/tobymao/sqlglot/compare/v25.34.1...v26.0.0
 [v26.0.1]: https://github.com/tobymao/sqlglot/compare/v26.0.0...v26.0.1
 [v26.1.0]: https://github.com/tobymao/sqlglot/compare/v26.0.1...v26.1.0
+[v26.1.1]: https://github.com/tobymao/sqlglot/compare/v26.1.0...v26.1.1

@@ -1,7 +1,7 @@
 on: [pull_request]
 name: benchmark pull requests
 jobs:
-  runBenchmark:
+  run-benchmark:
     name: run benchmark
     runs-on: ubuntu-latest
     steps:

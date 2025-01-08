@@ -3,7 +3,6 @@ from sqlglot.dialects.dialect import Dialect
 
 
 class Druid(Dialect):
-
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             exp.DataType.Type.INT: "LONG",

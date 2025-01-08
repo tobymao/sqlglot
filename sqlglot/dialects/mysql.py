@@ -295,8 +295,6 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "CHAR_LENGTH": exp.Length.from_arg_list,
-            "CHARACTER_LENGTH": exp.Length.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -311,6 +309,7 @@ class MySQL(Dialect):
             "FORMAT": exp.NumberToStr.from_arg_list,
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "ISNULL": isnull_to_is_null,
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LOCATE": locate_to_strposition,
             "MAKETIME": exp.TimeFromParts.from_arg_list,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
@@ -731,7 +730,6 @@ class MySQL(Dialect):
             e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
-            exp.Length: rename_func("CHAR_LENGTH"),
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Max: max_or_greatest,
@@ -1265,3 +1263,7 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
+
+        def length_sql(self, expression: exp.Length) -> str:
+            length_func = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
+            return self.func(length_func, expression.this)

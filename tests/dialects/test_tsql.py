@@ -753,6 +753,16 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_all(
+            "CREATE TABLE t (col1 DATETIME2(2))",
+            read={
+                "snowflake": "CREATE TABLE t (col1 TIMESTAMP_NTZ(2))",
+            },
+            write={
+                "tsql": "CREATE TABLE t (col1 DATETIME2(2))",
+            },
+        )
+
     def test_types_bin(self):
         self.validate_all(
             "CAST(x as BIT)",

@@ -891,6 +891,7 @@ class TSQL(Dialect):
             exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
+            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.SMALLDATETIME: "SMALLDATETIME",
             exp.DataType.Type.UTINYINT: "TINYINT",

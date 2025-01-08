@@ -1224,3 +1224,15 @@ class Snowflake(Dialect):
                 self.unsupported("DateSub cannot be transpiled if the subtracted count is unknown")
 
             return date_delta_sql("DATEADD")(self, expression)
+
+        def select_sql(self, expression: exp.Select) -> str:
+            limit = expression.args.get("limit")
+            offset = expression.args.get("offset")
+            if offset and not limit:
+                expression.set(
+                    "limit",
+                    exp.Limit(
+                        expression=exp.Null(),
+                    ),
+                )
+            return super().select_sql(expression)

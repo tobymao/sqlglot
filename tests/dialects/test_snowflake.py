@@ -2360,3 +2360,11 @@ SINGLE = TRUE""",
         self.assertEqual(ast.sql("snowflake"), query)
         self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
         self.assertEqual(window.this.sql("snowflake"), "db.schema.FUNC(a)")
+
+    def test_offset_without_limit(self):
+        self.validate_all(
+            "SELECT 1 ORDER BY 1 OFFSET 0",
+            write={
+                "snowflake": "SELECT 1 ORDER BY 1 LIMIT NULL OFFSET 0",
+            },
+        )

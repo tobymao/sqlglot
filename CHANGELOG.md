@@ -1,6 +1,72 @@
 Changelog
 =========
 
+## [v26.1.0] - 2025-01-08
+### :boom: BREAKING CHANGES
+- due to [`07d05da`](https://github.com/tobymao/sqlglot/commit/07d05da95c7d3882a7032dade3cbeefbd96628b7) - normalize before qualifying tables *(PR [#4539](https://github.com/tobymao/sqlglot/pull/4539) by [@tobymao](https://github.com/tobymao))*:
+
+  normalize before qualifying tables (#4539)
+
+- due to [`cead7c3`](https://github.com/tobymao/sqlglot/commit/cead7c32bef44c0efaf48c2038976c7c7f2b709c) - require AS token in CTEs for all dialects except spark, databricks *(PR [#4546](https://github.com/tobymao/sqlglot/pull/4546) by [@georgesittas](https://github.com/georgesittas))*:
+
+  require AS token in CTEs for all dialects except spark, databricks (#4546)
+
+- due to [`231d032`](https://github.com/tobymao/sqlglot/commit/231d03202e4338ee097662d59770dae1a9958617) - support Unicode in sqlite, mysql, tsql, postgres, oracle *(PR [#4554](https://github.com/tobymao/sqlglot/pull/4554) by [@pruzko](https://github.com/pruzko))*:
+
+  support Unicode in sqlite, mysql, tsql, postgres, oracle (#4554)
+
+- due to [`83595b6`](https://github.com/tobymao/sqlglot/commit/83595b67f0aa4cafdfcf4bace7b92c17f9e9f5f3) - parse ASCII into Unicode to facilitate transpilation *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse ASCII into Unicode to facilitate transpilation
+
+- due to [`e141960`](https://github.com/tobymao/sqlglot/commit/e1419607981cd8fe597781faeae429069b13d5fb) - improve transpilation of CHAR[ACTER]_LENGTH *(PR [#4555](https://github.com/tobymao/sqlglot/pull/4555) by [@pruzko](https://github.com/pruzko))*:
+
+  improve transpilation of CHAR[ACTER]_LENGTH (#4555)
+
+
+### :sparkles: New Features
+- [`7a517d7`](https://github.com/tobymao/sqlglot/commit/7a517d71dbcab4b46538263cac604ac38e714e6b) - Introduce meta comment to parse known functions as exp.Anonymous *(PR [#4532](https://github.com/tobymao/sqlglot/pull/4532) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4522](https://github.com/tobymao/sqlglot/issues/4522) opened by [@github-christophe-oudar](https://github.com/github-christophe-oudar)*
+- [`6992c18`](https://github.com/tobymao/sqlglot/commit/6992c1855f343a5d0120a3b4c993d8c406dd29ba) - **tokenizer**: Allow underscore separated number literals *(PR [#4536](https://github.com/tobymao/sqlglot/pull/4536) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4530](https://github.com/tobymao/sqlglot/issues/4530) opened by [@martijnthe](https://github.com/martijnthe)*
+- [`7fe9f7f`](https://github.com/tobymao/sqlglot/commit/7fe9f7f6dbc701580ca17318400203245331704e) - **tsql**: add support for DATETRUNC [#4531](https://github.com/tobymao/sqlglot/pull/4531) *(PR [#4537](https://github.com/tobymao/sqlglot/pull/4537) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#4531](https://github.com/tobymao/sqlglot/issues/4531) opened by [@rajat-wisdom](https://github.com/rajat-wisdom)*
+- [`931eef6`](https://github.com/tobymao/sqlglot/commit/931eef6958be87ef88f4ff5311441e7a7004b8c5) - **duckdb**: Support simplified UNPIVOT statement *(PR [#4545](https://github.com/tobymao/sqlglot/pull/4545) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4542](https://github.com/tobymao/sqlglot/issues/4542) opened by [@Bilbottom](https://github.com/Bilbottom)*
+- [`923a1f7`](https://github.com/tobymao/sqlglot/commit/923a1f7fda66f3dc61ee12755fe8960f8aeb3cd8) - treat NAMESPACE as a db creatable *(PR [#4556](https://github.com/tobymao/sqlglot/pull/4556) by [@TanviPardeshi](https://github.com/TanviPardeshi))*
+- [`b0cc7d0`](https://github.com/tobymao/sqlglot/commit/b0cc7d029a78c7929daff9b30dc072608d9c80b0) - add support for IS_ASCII *(PR [#4557](https://github.com/tobymao/sqlglot/pull/4557) by [@pruzko](https://github.com/pruzko))*
+- [`231d032`](https://github.com/tobymao/sqlglot/commit/231d03202e4338ee097662d59770dae1a9958617) - support Unicode in sqlite, mysql, tsql, postgres, oracle *(PR [#4554](https://github.com/tobymao/sqlglot/pull/4554) by [@pruzko](https://github.com/pruzko))*
+- [`83595b6`](https://github.com/tobymao/sqlglot/commit/83595b67f0aa4cafdfcf4bace7b92c17f9e9f5f3) - **hive**: parse ASCII into Unicode to facilitate transpilation *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`095fb1e`](https://github.com/tobymao/sqlglot/commit/095fb1e834153eeeea33885dc20e1ba05f8bf814) - generate POSITION instead of STRPOS for Postgres *(PR [#4577](https://github.com/tobymao/sqlglot/pull/4577) by [@pruzko](https://github.com/pruzko))*
+- [`9def0b7`](https://github.com/tobymao/sqlglot/commit/9def0b79ee623a07d8c367e0ec575ed8e63c83c6) - add support for Chr in tsql and sqlite *(PR [#4566](https://github.com/tobymao/sqlglot/pull/4566) by [@pruzko](https://github.com/pruzko))*
+- [`d32d26a`](https://github.com/tobymao/sqlglot/commit/d32d26affaa7b0639abc107505db234aeb7386d4) - **postgres**: add support for XMLTABLE *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`e141960`](https://github.com/tobymao/sqlglot/commit/e1419607981cd8fe597781faeae429069b13d5fb) - improve transpilation of CHAR[ACTER]_LENGTH *(PR [#4555](https://github.com/tobymao/sqlglot/pull/4555) by [@pruzko](https://github.com/pruzko))*
+
+### :bug: Bug Fixes
+- [`07d05da`](https://github.com/tobymao/sqlglot/commit/07d05da95c7d3882a7032dade3cbeefbd96628b7) - normalize before qualifying tables *(PR [#4539](https://github.com/tobymao/sqlglot/pull/4539) by [@tobymao](https://github.com/tobymao))*
+  - :arrow_lower_right: *fixes issue [#4538](https://github.com/tobymao/sqlglot/issues/4538) opened by [@karakanb](https://github.com/karakanb)*
+- [`1ed3235`](https://github.com/tobymao/sqlglot/commit/1ed32358adc6b578e8b8af265ac8afe37aae9ad8) - allow When in exp.merge fixes [#4543](https://github.com/tobymao/sqlglot/pull/4543) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`cead7c3`](https://github.com/tobymao/sqlglot/commit/cead7c32bef44c0efaf48c2038976c7c7f2b709c) - **parser**: require AS token in CTEs for all dialects except spark, databricks *(PR [#4546](https://github.com/tobymao/sqlglot/pull/4546) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4544](https://github.com/tobymao/sqlglot/issues/4544) opened by [@xtess16](https://github.com/xtess16)*
+- [`006b384`](https://github.com/tobymao/sqlglot/commit/006b3842f90186f8932f0dbf02453f138129608b) - **postgres**: add support for WHERE clause in INSERT DML *(PR [#4550](https://github.com/tobymao/sqlglot/pull/4550) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4549](https://github.com/tobymao/sqlglot/issues/4549) opened by [@VigneshChennai](https://github.com/VigneshChennai)*
+- [`795e7e0`](https://github.com/tobymao/sqlglot/commit/795e7e0e857486417ce98246389849fc09ccb60a) - Pin ubuntu to 22.04 for Python 3.7 *(PR [#4571](https://github.com/tobymao/sqlglot/pull/4571) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`2495508`](https://github.com/tobymao/sqlglot/commit/2495508fa7b3931d466c36b5ed225b2e1510b01c) - **tsql**: generate correct DateFromParts naming *(PR [#4563](https://github.com/tobymao/sqlglot/pull/4563) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4558](https://github.com/tobymao/sqlglot/issues/4558) opened by [@rajat-wisdom](https://github.com/rajat-wisdom)*
+- [`2aff4ae`](https://github.com/tobymao/sqlglot/commit/2aff4ae861dc5225a616f5e3980cf04805e5b339) - **duckdb**: support parentheses with FROM-First syntax *(PR [#4569](https://github.com/tobymao/sqlglot/pull/4569) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4561](https://github.com/tobymao/sqlglot/issues/4561) opened by [@LennartH](https://github.com/LennartH)*
+- [`51ac9a7`](https://github.com/tobymao/sqlglot/commit/51ac9a7b8a91d1bb5b3b6b396e1083c03573a708) - **rust-tokenizer**: increase integer width when converting hex literals *(PR [#4573](https://github.com/tobymao/sqlglot/pull/4573) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4560](https://github.com/tobymao/sqlglot/issues/4560) opened by [@whummer](https://github.com/whummer)*
+- [`94ffdb7`](https://github.com/tobymao/sqlglot/commit/94ffdb7b790c6c2235a0586c6df23c3155c184b1) - addressing mismatch in STR_POSITION argument order in executor. *(PR [#4574](https://github.com/tobymao/sqlglot/pull/4574) by [@cecilycarver](https://github.com/cecilycarver))*
+- [`139b699`](https://github.com/tobymao/sqlglot/commit/139b699f61326bdf9700f0ba9bea9a44e594cf6d) - **tsql**: transpile snowflake TIMESTAMP_NTZ to DATETIME2 *(PR [#4576](https://github.com/tobymao/sqlglot/pull/4576) by [@geooo109](https://github.com/geooo109))*
+- [`ceb42fa`](https://github.com/tobymao/sqlglot/commit/ceb42fabad60312699e4b15936aeebac00e22e4d) - parse & generate Length properly in clickhouse *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`9921528`](https://github.com/tobymao/sqlglot/commit/992152840ffad5fb85315e0bead2c498d4310cc5) - introduce benchmarking for rust *(PR [#4552](https://github.com/tobymao/sqlglot/pull/4552) by [@benfdking](https://github.com/benfdking))*
+- [`0ffe8f9`](https://github.com/tobymao/sqlglot/commit/0ffe8f91eb8295ab8171e029aa4ccbf071028a4a) - temporarily disable sqlglotrs benchmarking *(PR [#4578](https://github.com/tobymao/sqlglot/pull/4578) by [@georgesittas](https://github.com/georgesittas))*
+- [`7a0dbcf`](https://github.com/tobymao/sqlglot/commit/7a0dbcfda26ff7cf20371c84b31f454e63260959) - bump sqlglotrs to 0.3.1 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.0.1] - 2024-12-18
 ### :sparkles: New Features
 - [`5d3ee4c`](https://github.com/tobymao/sqlglot/commit/5d3ee4cac1c5c9e45cbf6263c32c87fda78f9854) - **snowflake**: transpile date subtraction *(PR [#4506](https://github.com/tobymao/sqlglot/pull/4506) by [@georgesittas](https://github.com/georgesittas))*
@@ -5509,3 +5575,4 @@ Changelog
 [v25.34.1]: https://github.com/tobymao/sqlglot/compare/v25.34.0...v25.34.1
 [v26.0.0]: https://github.com/tobymao/sqlglot/compare/v25.34.1...v26.0.0
 [v26.0.1]: https://github.com/tobymao/sqlglot/compare/v26.0.0...v26.0.1
+[v26.1.0]: https://github.com/tobymao/sqlglot/compare/v26.0.1...v26.1.0

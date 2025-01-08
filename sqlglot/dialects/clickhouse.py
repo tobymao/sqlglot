@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     inline_array_sql,
     json_extract_segments,
     json_path_key_only_name,
+    length_or_char_length_sql,
     no_pivot_sql,
     build_json_extract_path,
     rename_func,
@@ -261,6 +262,7 @@ class ClickHouse(Dialect):
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "RANDCANONICAL": exp.Rand.from_arg_list,
@@ -979,6 +981,7 @@ class ClickHouse(Dialect):
             exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
+            exp.Length: length_or_char_length_sql,
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Median: rename_func("median"),
             exp.Nullif: rename_func("nullIf"),

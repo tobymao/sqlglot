@@ -56,25 +56,25 @@
 
                         <label class="view-source-button" for="mod-qualify-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.dialect</span> <span class="kn">import</span> <span class="n">Dialect</span><span class="p">,</span> <span class="n">DialectType</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.isolate_table_selects</span> <span class="kn">import</span> <span class="n">isolate_table_selects</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.normalize_identifiers</span> <span class="kn">import</span> <span class="n">normalize_identifiers</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.qualify_columns</span> <span class="kn">import</span> <span class="p">(</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.dialect</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dialect</span><span class="p">,</span> <span class="n">DialectType</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.isolate_table_selects</span><span class="w"> </span><span class="kn">import</span> <span class="n">isolate_table_selects</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.normalize_identifiers</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalize_identifiers</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.qualify_columns</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>    <span class="n">pushdown_cte_alias_columns</span> <span class="k">as</span> <span class="n">pushdown_cte_alias_columns_func</span><span class="p">,</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>    <span class="n">qualify_columns</span> <span class="k">as</span> <span class="n">qualify_columns_func</span><span class="p">,</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>    <span class="n">quote_identifiers</span> <span class="k">as</span> <span class="n">quote_identifiers_func</span><span class="p">,</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>    <span class="n">validate_qualify_columns</span> <span class="k">as</span> <span class="n">validate_qualify_columns_func</span><span class="p">,</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="p">)</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.qualify_tables</span> <span class="kn">import</span> <span class="n">qualify_tables</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="kn">from</span> <span class="nn">sqlglot.schema</span> <span class="kn">import</span> <span class="n">Schema</span><span class="p">,</span> <span class="n">ensure_schema</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.qualify_tables</span><span class="w"> </span><span class="kn">import</span> <span class="n">qualify_tables</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span><span class="p">,</span> <span class="n">ensure_schema</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="k">def</span> <span class="nf">qualify</span><span class="p">(</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="k">def</span><span class="w"> </span><span class="nf">qualify</span><span class="p">(</span>
 </span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>    <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>    <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>    <span class="n">db</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -127,15 +127,15 @@
 </span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">        The qualified expression.</span>
 </span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="n">expression</span><span class="p">,</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="p">)</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>        <span class="n">expression</span><span class="p">,</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>    <span class="p">)</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
 </span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>
 </span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="k">if</span> <span class="n">isolate_tables</span><span class="p">:</span>
 </span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
@@ -175,7 +175,7 @@
 
     </div>
     <a class="headerlink" href="#qualify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="qualify-20"><a href="#qualify-20"><span class="linenos"> 20</span></a><span class="k">def</span> <span class="nf">qualify</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="qualify-20"><a href="#qualify-20"><span class="linenos"> 20</span></a><span class="k">def</span><span class="w"> </span><span class="nf">qualify</span><span class="p">(</span>
 </span><span id="qualify-21"><a href="#qualify-21"><span class="linenos"> 21</span></a>    <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span>
 </span><span id="qualify-22"><a href="#qualify-22"><span class="linenos"> 22</span></a>    <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="qualify-23"><a href="#qualify-23"><span class="linenos"> 23</span></a>    <span class="n">db</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -228,15 +228,15 @@
 </span><span id="qualify-70"><a href="#qualify-70"><span class="linenos"> 70</span></a><span class="sd">        The qualified expression.</span>
 </span><span id="qualify-71"><a href="#qualify-71"><span class="linenos"> 71</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="qualify-72"><a href="#qualify-72"><span class="linenos"> 72</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="qualify-73"><a href="#qualify-73"><span class="linenos"> 73</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="qualify-74"><a href="#qualify-74"><span class="linenos"> 74</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
-</span><span id="qualify-75"><a href="#qualify-75"><span class="linenos"> 75</span></a>        <span class="n">expression</span><span class="p">,</span>
-</span><span id="qualify-76"><a href="#qualify-76"><span class="linenos"> 76</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
-</span><span id="qualify-77"><a href="#qualify-77"><span class="linenos"> 77</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
-</span><span id="qualify-78"><a href="#qualify-78"><span class="linenos"> 78</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
-</span><span id="qualify-79"><a href="#qualify-79"><span class="linenos"> 79</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
-</span><span id="qualify-80"><a href="#qualify-80"><span class="linenos"> 80</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
-</span><span id="qualify-81"><a href="#qualify-81"><span class="linenos"> 81</span></a>    <span class="p">)</span>
+</span><span id="qualify-73"><a href="#qualify-73"><span class="linenos"> 73</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">qualify_tables</span><span class="p">(</span>
+</span><span id="qualify-74"><a href="#qualify-74"><span class="linenos"> 74</span></a>        <span class="n">expression</span><span class="p">,</span>
+</span><span id="qualify-75"><a href="#qualify-75"><span class="linenos"> 75</span></a>        <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span>
+</span><span id="qualify-76"><a href="#qualify-76"><span class="linenos"> 76</span></a>        <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
+</span><span id="qualify-77"><a href="#qualify-77"><span class="linenos"> 77</span></a>        <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
+</span><span id="qualify-78"><a href="#qualify-78"><span class="linenos"> 78</span></a>        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
+</span><span id="qualify-79"><a href="#qualify-79"><span class="linenos"> 79</span></a>        <span class="n">infer_csv_schemas</span><span class="o">=</span><span class="n">infer_csv_schemas</span><span class="p">,</span>
+</span><span id="qualify-80"><a href="#qualify-80"><span class="linenos"> 80</span></a>    <span class="p">)</span>
+</span><span id="qualify-81"><a href="#qualify-81"><span class="linenos"> 81</span></a>    <span class="n">expression</span> <span class="o">=</span> <span class="n">normalize_identifiers</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
 </span><span id="qualify-82"><a href="#qualify-82"><span class="linenos"> 82</span></a>
 </span><span id="qualify-83"><a href="#qualify-83"><span class="linenos"> 83</span></a>    <span class="k">if</span> <span class="n">isolate_tables</span><span class="p">:</span>
 </span><span id="qualify-84"><a href="#qualify-84"><span class="linenos"> 84</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
@@ -272,7 +272,7 @@
 
 <blockquote>
   <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tbl&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="s2">&quot;INT&quot;</span><span class="p">}}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="s2">&quot;SELECT col FROM tbl&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">qualify</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>

@@ -56,21 +56,21 @@
 
                         <label class="view-source-button" for="mod-eliminate_subqueries-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span> <span class="nn">itertools</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">expressions</span> <span class="k">as</span> <span class="n">exp</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="kn">from</span> <span class="nn">sqlglot.helper</span> <span class="kn">import</span> <span class="n">find_new_name</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.scope</span> <span class="kn">import</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">build_scope</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">expressions</span> <span class="k">as</span> <span class="n">exp</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.helper</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_new_name</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.scope</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">build_scope</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>    <span class="n">ExistingCTEsMapping</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>    <span class="n">TakenNameMapping</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">Scope</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="k">def</span> <span class="nf">eliminate_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="k">def</span><span class="w"> </span><span class="nf">eliminate_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">    Rewrite derived tables as CTES, deduplicating if possible.</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
@@ -160,7 +160,7 @@
 </span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="k">def</span> <span class="nf">_eliminate</span><span class="p">(</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_eliminate</span><span class="p">(</span>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">existing_ctes</span><span class="p">:</span> <span class="n">ExistingCTEsMapping</span><span class="p">,</span> <span class="n">taken</span><span class="p">:</span> <span class="n">TakenNameMapping</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]:</span>
 </span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">is_derived_table</span><span class="p">:</span>
@@ -172,7 +172,7 @@
 </span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>    <span class="k">return</span> <span class="kc">None</span>
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>
 </span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="k">def</span> <span class="nf">_eliminate_derived_table</span><span class="p">(</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_eliminate_derived_table</span><span class="p">(</span>
 </span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">existing_ctes</span><span class="p">:</span> <span class="n">ExistingCTEsMapping</span><span class="p">,</span> <span class="n">taken</span><span class="p">:</span> <span class="n">TakenNameMapping</span>
 </span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]:</span>
 </span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>    <span class="c1"># This makes sure that we don&#39;t:</span>
@@ -192,7 +192,7 @@
 </span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>    <span class="k">return</span> <span class="n">cte</span>
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
 </span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>
-</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="k">def</span> <span class="nf">_eliminate_cte</span><span class="p">(</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_eliminate_cte</span><span class="p">(</span>
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">existing_ctes</span><span class="p">:</span> <span class="n">ExistingCTEsMapping</span><span class="p">,</span> <span class="n">taken</span><span class="p">:</span> <span class="n">TakenNameMapping</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]:</span>
 </span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>    <span class="n">parent</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">parent</span>
@@ -213,7 +213,7 @@
 </span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>    <span class="k">return</span> <span class="n">cte</span>
 </span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>
 </span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="k">def</span> <span class="nf">_new_cte</span><span class="p">(</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_new_cte</span><span class="p">(</span>
 </span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">existing_ctes</span><span class="p">:</span> <span class="n">ExistingCTEsMapping</span><span class="p">,</span> <span class="n">taken</span><span class="p">:</span> <span class="n">TakenNameMapping</span>
 </span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
 </span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -260,7 +260,7 @@
 
     </div>
     <a class="headerlink" href="#eliminate_subqueries"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="eliminate_subqueries-16"><a href="#eliminate_subqueries-16"><span class="linenos"> 16</span></a><span class="k">def</span> <span class="nf">eliminate_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="eliminate_subqueries-16"><a href="#eliminate_subqueries-16"><span class="linenos"> 16</span></a><span class="k">def</span><span class="w"> </span><span class="nf">eliminate_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
 </span><span id="eliminate_subqueries-17"><a href="#eliminate_subqueries-17"><span class="linenos"> 17</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="eliminate_subqueries-18"><a href="#eliminate_subqueries-18"><span class="linenos"> 18</span></a><span class="sd">    Rewrite derived tables as CTES, deduplicating if possible.</span>
 </span><span id="eliminate_subqueries-19"><a href="#eliminate_subqueries-19"><span class="linenos"> 19</span></a>
@@ -357,7 +357,7 @@
 
 <blockquote>
   <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="s2">&quot;SELECT a FROM (SELECT * FROM x) AS y&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">eliminate_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 <span class="go">&#39;WITH y AS (SELECT * FROM x) SELECT a FROM y AS y&#39;</span>

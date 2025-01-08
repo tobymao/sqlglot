@@ -332,6 +332,8 @@ class TestMySQL(Validator):
             write={
                 "mysql": "CHAR(10)",
                 "presto": "CHR(10)",
+                "sqlite": "CHAR(10)",
+                "tsql": "CHAR(10)",
             },
         )
 

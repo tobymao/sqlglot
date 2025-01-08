@@ -762,6 +762,7 @@ class TestTSQL(Validator):
                 "tsql": "CREATE TABLE t (col1 DATETIME2(2))",
             },
         )
+
     def test_types_bin(self):
         self.validate_all(
             "CAST(x as BIT)",

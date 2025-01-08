@@ -120,6 +120,7 @@ class Generator(metaclass=_Generator):
         exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda _,
         e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
+        exp.Ceil: lambda self, e: self.ceil_floor(e, "CEIL"),
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
         exp.CharacterSetProperty: lambda self,
         e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
@@ -140,6 +141,7 @@ class Generator(metaclass=_Generator):
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.Except: lambda self, e: self.set_operations(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
+        exp.Floor: lambda self, e: self.ceil_floor(e, "FLOOR"),
         exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
         exp.IcebergProperty: lambda *_: "ICEBERG",
@@ -3531,6 +3533,12 @@ class Generator(metaclass=_Generator):
                 sqls.append(self.sql(node))
 
         return "".join(sqls)
+
+    def ceil_floor(self, expression: exp.Ceil | exp.Floor, name: str) -> str:
+        if expression.args.get("to"):
+            return f"{name}({expression.this} TO {expression.args['to']})"
+
+        return self.func(name, *expression.args.values())
 
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []

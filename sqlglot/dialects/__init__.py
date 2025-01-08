@@ -68,6 +68,7 @@ from sqlglot.dialects.databricks import Databricks
 from sqlglot.dialects.dialect import Dialect, Dialects
 from sqlglot.dialects.doris import Doris
 from sqlglot.dialects.drill import Drill
+from sqlglot.dialects.druid import Druid
 from sqlglot.dialects.duckdb import DuckDB
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.materialize import Materialize

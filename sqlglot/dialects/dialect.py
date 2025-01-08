@@ -62,6 +62,7 @@ class Dialects(str, Enum):
     DATABRICKS = "databricks"
     DORIS = "doris"
     DRILL = "drill"
+    DRUID = "druid"
     DUCKDB = "duckdb"
     HIVE = "hive"
     MATERIALIZE = "materialize"

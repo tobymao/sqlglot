@@ -59,12 +59,12 @@
 
                         <label class="view-source-button" for="mod-eliminate_joins-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">expressions</span> <span class="k">as</span> <span class="n">exp</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.normalize</span> <span class="kn">import</span> <span class="n">normalized</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.scope</span> <span class="kn">import</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">traverse_scope</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">expressions</span> <span class="k">as</span> <span class="n">exp</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.normalize</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalized</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.scope</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">traverse_scope</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a>
 </span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="k">def</span> <span class="nf">eliminate_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="k">def</span><span class="w"> </span><span class="nf">eliminate_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">    Remove unused joins from an expression.</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
@@ -100,7 +100,7 @@
 </span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>
 </span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="k">def</span> <span class="nf">_should_eliminate_join</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">join</span><span class="p">,</span> <span class="n">alias</span><span class="p">):</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_should_eliminate_join</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">join</span><span class="p">,</span> <span class="n">alias</span><span class="p">):</span>
 </span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>    <span class="n">inner_source</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">alias</span><span class="p">)</span>
 </span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>    <span class="k">return</span> <span class="p">(</span>
 </span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">inner_source</span><span class="p">,</span> <span class="n">Scope</span><span class="p">)</span>
@@ -112,7 +112,7 @@
 </span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>    <span class="p">)</span>
 </span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>
 </span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="k">def</span> <span class="nf">_join_is_used</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">join</span><span class="p">,</span> <span class="n">alias</span><span class="p">):</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_join_is_used</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">join</span><span class="p">,</span> <span class="n">alias</span><span class="p">):</span>
 </span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>    <span class="c1"># We need to find all columns that reference this join.</span>
 </span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>    <span class="c1"># But columns in the ON clause shouldn&#39;t count.</span>
 </span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>    <span class="n">on</span> <span class="o">=</span> <span class="n">join</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">)</span>
@@ -125,7 +125,7 @@
 </span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>    <span class="p">)</span>
 </span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
 </span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="k">def</span> <span class="nf">_is_joined_on_all_unique_outputs</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">join</span><span class="p">):</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_is_joined_on_all_unique_outputs</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">join</span><span class="p">):</span>
 </span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>    <span class="n">unique_outputs</span> <span class="o">=</span> <span class="n">_unique_outputs</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
 </span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">unique_outputs</span><span class="p">:</span>
 </span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>        <span class="k">return</span> <span class="kc">False</span>
@@ -135,7 +135,7 @@
 </span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="k">return</span> <span class="ow">not</span> <span class="n">remaining_unique_outputs</span>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="k">def</span> <span class="nf">_unique_outputs</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_unique_outputs</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
 </span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine output columns of `scope` that must have a unique combination per row&quot;&quot;&quot;</span>
 </span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;distinct&quot;</span><span class="p">):</span>
 </span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">named_selects</span><span class="p">)</span>
@@ -164,7 +164,7 @@
 </span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>    <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">def</span> <span class="nf">_has_single_output_row</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_has_single_output_row</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
 </span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">unalias</span><span class="p">(),</span> <span class="n">exp</span><span class="o">.</span><span class="n">AggFunc</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">selects</span><span class="p">)</span>
 </span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>        <span class="ow">or</span> <span class="n">_is_limit_1</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
@@ -172,12 +172,12 @@
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>    <span class="p">)</span>
 </span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>
 </span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="k">def</span> <span class="nf">_is_limit_1</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_is_limit_1</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>    <span class="n">limit</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">)</span>
 </span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>    <span class="k">return</span> <span class="n">limit</span> <span class="ow">and</span> <span class="n">limit</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">this</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span>
 </span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>
 </span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="k">def</span> <span class="nf">join_condition</span><span class="p">(</span><span class="n">join</span><span class="p">):</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="k">def</span><span class="w"> </span><span class="nf">join_condition</span><span class="p">(</span><span class="n">join</span><span class="p">):</span>
 </span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">    Extract the join condition from a join expression.</span>
 </span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>
@@ -192,7 +192,7 @@
 </span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>    <span class="n">source_key</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>    <span class="n">join_key</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>    <span class="k">def</span> <span class="nf">extract_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">extract_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">condition</span><span class="o">.</span><span class="n">unnest_operands</span><span class="p">()</span>
 </span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>        <span class="n">left_tables</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>        <span class="n">right_tables</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
@@ -255,7 +255,7 @@
 
     </div>
     <a class="headerlink" href="#eliminate_joins"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="eliminate_joins-7"><a href="#eliminate_joins-7"><span class="linenos"> 7</span></a><span class="k">def</span> <span class="nf">eliminate_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="eliminate_joins-7"><a href="#eliminate_joins-7"><span class="linenos"> 7</span></a><span class="k">def</span><span class="w"> </span><span class="nf">eliminate_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="eliminate_joins-8"><a href="#eliminate_joins-8"><span class="linenos"> 8</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="eliminate_joins-9"><a href="#eliminate_joins-9"><span class="linenos"> 9</span></a><span class="sd">    Remove unused joins from an expression.</span>
 </span><span id="eliminate_joins-10"><a href="#eliminate_joins-10"><span class="linenos">10</span></a>
@@ -300,7 +300,7 @@
 
 <blockquote>
   <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">eliminate_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
@@ -335,7 +335,7 @@
 
     </div>
     <a class="headerlink" href="#join_condition"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="join_condition-120"><a href="#join_condition-120"><span class="linenos">120</span></a><span class="k">def</span> <span class="nf">join_condition</span><span class="p">(</span><span class="n">join</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="join_condition-120"><a href="#join_condition-120"><span class="linenos">120</span></a><span class="k">def</span><span class="w"> </span><span class="nf">join_condition</span><span class="p">(</span><span class="n">join</span><span class="p">):</span>
 </span><span id="join_condition-121"><a href="#join_condition-121"><span class="linenos">121</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="join_condition-122"><a href="#join_condition-122"><span class="linenos">122</span></a><span class="sd">    Extract the join condition from a join expression.</span>
 </span><span id="join_condition-123"><a href="#join_condition-123"><span class="linenos">123</span></a>
@@ -350,7 +350,7 @@
 </span><span id="join_condition-132"><a href="#join_condition-132"><span class="linenos">132</span></a>    <span class="n">source_key</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="join_condition-133"><a href="#join_condition-133"><span class="linenos">133</span></a>    <span class="n">join_key</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="join_condition-134"><a href="#join_condition-134"><span class="linenos">134</span></a>
-</span><span id="join_condition-135"><a href="#join_condition-135"><span class="linenos">135</span></a>    <span class="k">def</span> <span class="nf">extract_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
+</span><span id="join_condition-135"><a href="#join_condition-135"><span class="linenos">135</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">extract_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
 </span><span id="join_condition-136"><a href="#join_condition-136"><span class="linenos">136</span></a>        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">condition</span><span class="o">.</span><span class="n">unnest_operands</span><span class="p">()</span>
 </span><span id="join_condition-137"><a href="#join_condition-137"><span class="linenos">137</span></a>        <span class="n">left_tables</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
 </span><span id="join_condition-138"><a href="#join_condition-138"><span class="linenos">138</span></a>        <span class="n">right_tables</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>

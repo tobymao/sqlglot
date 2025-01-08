@@ -71,13 +71,13 @@
 
                         <label class="view-source-button" for="mod-pushdown_predicates-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.normalize</span> <span class="kn">import</span> <span class="n">normalized</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.scope</span> <span class="kn">import</span> <span class="n">build_scope</span><span class="p">,</span> <span class="n">find_in_scope</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.simplify</span> <span class="kn">import</span> <span class="n">simplify</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.normalize</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalized</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.scope</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_scope</span><span class="p">,</span> <span class="n">find_in_scope</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.simplify</span><span class="w"> </span><span class="kn">import</span> <span class="n">simplify</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>
 </span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="k">def</span> <span class="nf">pushdown_predicates</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown_predicates</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="sd">    Rewrite sqlglot AST to pushdown predicates in FROMS and JOINS</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>
@@ -131,7 +131,7 @@
 </span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>
 </span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="k">def</span> <span class="nf">pushdown</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">condition</span><span class="p">:</span>
 </span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>        <span class="k">return</span>
 </span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
@@ -150,7 +150,7 @@
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">pushdown_dnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">)</span>
 </span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>
 </span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a><span class="k">def</span> <span class="nf">pushdown_cnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown_cnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a><span class="sd">    If the predicates are in CNF like form, we can simply replace each block in the parent.</span>
 </span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -176,7 +176,7 @@
 </span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>                    <span class="n">node</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">inner_predicate</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">def</span> <span class="nf">pushdown_dnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown_dnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">    If the predicates are in DNF form, we can only push down conditions that are in all blocks.</span>
 </span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="sd">    Additionally, we can&#39;t remove predicates from their original form.</span>
@@ -225,7 +225,7 @@
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>                    <span class="n">node</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">inner_predicate</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>
 </span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="k">def</span> <span class="nf">nodes_for_predicate</span><span class="p">(</span><span class="n">predicate</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="k">def</span><span class="w"> </span><span class="nf">nodes_for_predicate</span><span class="p">(</span><span class="n">predicate</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
 </span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>    <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>    <span class="n">tables</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">predicate</span><span class="p">)</span>
 </span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>    <span class="n">where_condition</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predicate</span><span class="o">.</span><span class="n">find_ancestor</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Where</span><span class="p">),</span> <span class="n">exp</span><span class="o">.</span><span class="n">Where</span><span class="p">)</span>
@@ -265,7 +265,7 @@
 </span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>    <span class="k">return</span> <span class="n">nodes</span>
 </span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>
 </span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>
-</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="k">def</span> <span class="nf">replace_aliases</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">predicate</span><span class="p">):</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="k">def</span><span class="w"> </span><span class="nf">replace_aliases</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">predicate</span><span class="p">):</span>
 </span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>    <span class="n">aliases</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>
 </span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>    <span class="k">for</span> <span class="n">select</span> <span class="ow">in</span> <span class="n">source</span><span class="o">.</span><span class="n">selects</span><span class="p">:</span>
@@ -274,7 +274,7 @@
 </span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>        <span class="k">else</span><span class="p">:</span>
 </span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>            <span class="n">aliases</span><span class="p">[</span><span class="n">select</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">select</span>
 </span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>    <span class="k">def</span> <span class="nf">_replace_alias</span><span class="p">(</span><span class="n">column</span><span class="p">):</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_replace_alias</span><span class="p">(</span><span class="n">column</span><span class="p">):</span>
 </span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">)</span> <span class="ow">and</span> <span class="n">column</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">aliases</span><span class="p">:</span>
 </span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>            <span class="k">return</span> <span class="n">aliases</span><span class="p">[</span><span class="n">column</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>        <span class="k">return</span> <span class="n">column</span>
@@ -295,7 +295,7 @@
 
     </div>
     <a class="headerlink" href="#pushdown_predicates"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown_predicates-8"><a href="#pushdown_predicates-8"><span class="linenos"> 8</span></a><span class="k">def</span> <span class="nf">pushdown_predicates</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown_predicates-8"><a href="#pushdown_predicates-8"><span class="linenos"> 8</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown_predicates</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="pushdown_predicates-9"><a href="#pushdown_predicates-9"><span class="linenos"> 9</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="pushdown_predicates-10"><a href="#pushdown_predicates-10"><span class="linenos">10</span></a><span class="sd">    Rewrite sqlglot AST to pushdown predicates in FROMS and JOINS</span>
 </span><span id="pushdown_predicates-11"><a href="#pushdown_predicates-11"><span class="linenos">11</span></a>
@@ -356,7 +356,7 @@
 
 <blockquote>
   <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y WHERE y.a = 1&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pushdown_predicates</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
@@ -391,7 +391,7 @@
 
     </div>
     <a class="headerlink" href="#pushdown"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown-62"><a href="#pushdown-62"><span class="linenos">62</span></a><span class="k">def</span> <span class="nf">pushdown</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown-62"><a href="#pushdown-62"><span class="linenos">62</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="pushdown-63"><a href="#pushdown-63"><span class="linenos">63</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">condition</span><span class="p">:</span>
 </span><span id="pushdown-64"><a href="#pushdown-64"><span class="linenos">64</span></a>        <span class="k">return</span>
 </span><span id="pushdown-65"><a href="#pushdown-65"><span class="linenos">65</span></a>
@@ -425,7 +425,7 @@
 
     </div>
     <a class="headerlink" href="#pushdown_cnf"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown_cnf-81"><a href="#pushdown_cnf-81"><span class="linenos"> 81</span></a><span class="k">def</span> <span class="nf">pushdown_cnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown_cnf-81"><a href="#pushdown_cnf-81"><span class="linenos"> 81</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown_cnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">,</span> <span class="n">join_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="pushdown_cnf-82"><a href="#pushdown_cnf-82"><span class="linenos"> 82</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="pushdown_cnf-83"><a href="#pushdown_cnf-83"><span class="linenos"> 83</span></a><span class="sd">    If the predicates are in CNF like form, we can simply replace each block in the parent.</span>
 </span><span id="pushdown_cnf-84"><a href="#pushdown_cnf-84"><span class="linenos"> 84</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -468,7 +468,7 @@
 
     </div>
     <a class="headerlink" href="#pushdown_dnf"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown_dnf-107"><a href="#pushdown_dnf-107"><span class="linenos">107</span></a><span class="k">def</span> <span class="nf">pushdown_dnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="pushdown_dnf-107"><a href="#pushdown_dnf-107"><span class="linenos">107</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pushdown_dnf</span><span class="p">(</span><span class="n">predicates</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
 </span><span id="pushdown_dnf-108"><a href="#pushdown_dnf-108"><span class="linenos">108</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="pushdown_dnf-109"><a href="#pushdown_dnf-109"><span class="linenos">109</span></a><span class="sd">    If the predicates are in DNF form, we can only push down conditions that are in all blocks.</span>
 </span><span id="pushdown_dnf-110"><a href="#pushdown_dnf-110"><span class="linenos">110</span></a><span class="sd">    Additionally, we can&#39;t remove predicates from their original form.</span>
@@ -535,7 +535,7 @@ Additionally, we can't remove predicates from their original form.</p>
 
     </div>
     <a class="headerlink" href="#nodes_for_predicate"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="nodes_for_predicate-156"><a href="#nodes_for_predicate-156"><span class="linenos">156</span></a><span class="k">def</span> <span class="nf">nodes_for_predicate</span><span class="p">(</span><span class="n">predicate</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="nodes_for_predicate-156"><a href="#nodes_for_predicate-156"><span class="linenos">156</span></a><span class="k">def</span><span class="w"> </span><span class="nf">nodes_for_predicate</span><span class="p">(</span><span class="n">predicate</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">scope_ref_count</span><span class="p">):</span>
 </span><span id="nodes_for_predicate-157"><a href="#nodes_for_predicate-157"><span class="linenos">157</span></a>    <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="nodes_for_predicate-158"><a href="#nodes_for_predicate-158"><span class="linenos">158</span></a>    <span class="n">tables</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">predicate</span><span class="p">)</span>
 </span><span id="nodes_for_predicate-159"><a href="#nodes_for_predicate-159"><span class="linenos">159</span></a>    <span class="n">where_condition</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predicate</span><span class="o">.</span><span class="n">find_ancestor</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Where</span><span class="p">),</span> <span class="n">exp</span><span class="o">.</span><span class="n">Where</span><span class="p">)</span>
@@ -590,7 +590,7 @@ Additionally, we can't remove predicates from their original form.</p>
 
     </div>
     <a class="headerlink" href="#replace_aliases"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="replace_aliases-196"><a href="#replace_aliases-196"><span class="linenos">196</span></a><span class="k">def</span> <span class="nf">replace_aliases</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">predicate</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="replace_aliases-196"><a href="#replace_aliases-196"><span class="linenos">196</span></a><span class="k">def</span><span class="w"> </span><span class="nf">replace_aliases</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">predicate</span><span class="p">):</span>
 </span><span id="replace_aliases-197"><a href="#replace_aliases-197"><span class="linenos">197</span></a>    <span class="n">aliases</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="replace_aliases-198"><a href="#replace_aliases-198"><span class="linenos">198</span></a>
 </span><span id="replace_aliases-199"><a href="#replace_aliases-199"><span class="linenos">199</span></a>    <span class="k">for</span> <span class="n">select</span> <span class="ow">in</span> <span class="n">source</span><span class="o">.</span><span class="n">selects</span><span class="p">:</span>
@@ -599,7 +599,7 @@ Additionally, we can't remove predicates from their original form.</p>
 </span><span id="replace_aliases-202"><a href="#replace_aliases-202"><span class="linenos">202</span></a>        <span class="k">else</span><span class="p">:</span>
 </span><span id="replace_aliases-203"><a href="#replace_aliases-203"><span class="linenos">203</span></a>            <span class="n">aliases</span><span class="p">[</span><span class="n">select</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">select</span>
 </span><span id="replace_aliases-204"><a href="#replace_aliases-204"><span class="linenos">204</span></a>
-</span><span id="replace_aliases-205"><a href="#replace_aliases-205"><span class="linenos">205</span></a>    <span class="k">def</span> <span class="nf">_replace_alias</span><span class="p">(</span><span class="n">column</span><span class="p">):</span>
+</span><span id="replace_aliases-205"><a href="#replace_aliases-205"><span class="linenos">205</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_replace_alias</span><span class="p">(</span><span class="n">column</span><span class="p">):</span>
 </span><span id="replace_aliases-206"><a href="#replace_aliases-206"><span class="linenos">206</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">)</span> <span class="ow">and</span> <span class="n">column</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">aliases</span><span class="p">:</span>
 </span><span id="replace_aliases-207"><a href="#replace_aliases-207"><span class="linenos">207</span></a>            <span class="k">return</span> <span class="n">aliases</span><span class="p">[</span><span class="n">column</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </span><span id="replace_aliases-208"><a href="#replace_aliases-208"><span class="linenos">208</span></a>        <span class="k">return</span> <span class="n">column</span>

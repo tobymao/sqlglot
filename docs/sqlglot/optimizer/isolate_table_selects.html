@@ -56,13 +56,13 @@
 
                         <label class="view-source-button" for="mod-isolate_table_selects-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">alias</span><span class="p">,</span> <span class="n">exp</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">from</span> <span class="nn">sqlglot.errors</span> <span class="kn">import</span> <span class="n">OptimizeError</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.scope</span> <span class="kn">import</span> <span class="n">traverse_scope</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span> <span class="nn">sqlglot.schema</span> <span class="kn">import</span> <span class="n">ensure_schema</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">alias</span><span class="p">,</span> <span class="n">exp</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizeError</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.scope</span><span class="w"> </span><span class="kn">import</span> <span class="n">traverse_scope</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_schema</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="k">def</span> <span class="nf">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="k">def</span><span class="w"> </span><span class="nf">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
 </span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="n">traverse_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
@@ -106,7 +106,7 @@
 
     </div>
     <a class="headerlink" href="#isolate_table_selects"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="isolate_table_selects-8"><a href="#isolate_table_selects-8"><span class="linenos"> 8</span></a><span class="k">def</span> <span class="nf">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="isolate_table_selects-8"><a href="#isolate_table_selects-8"><span class="linenos"> 8</span></a><span class="k">def</span><span class="w"> </span><span class="nf">isolate_table_selects</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="isolate_table_selects-9"><a href="#isolate_table_selects-9"><span class="linenos"> 9</span></a>    <span class="n">schema</span> <span class="o">=</span> <span class="n">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 </span><span id="isolate_table_selects-10"><a href="#isolate_table_selects-10"><span class="linenos">10</span></a>
 </span><span id="isolate_table_selects-11"><a href="#isolate_table_selects-11"><span class="linenos">11</span></a>    <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="n">traverse_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>

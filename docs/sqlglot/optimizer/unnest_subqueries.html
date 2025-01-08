@@ -62,12 +62,12 @@
 
                         <label class="view-source-button" for="mod-unnest_subqueries-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span> <span class="nn">sqlglot.helper</span> <span class="kn">import</span> <span class="n">name_sequence</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.scope</span> <span class="kn">import</span> <span class="n">ScopeType</span><span class="p">,</span> <span class="n">find_in_scope</span><span class="p">,</span> <span class="n">traverse_scope</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.helper</span><span class="w"> </span><span class="kn">import</span> <span class="n">name_sequence</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.scope</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScopeType</span><span class="p">,</span> <span class="n">find_in_scope</span><span class="p">,</span> <span class="n">traverse_scope</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a>
 </span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="k">def</span> <span class="nf">unnest_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="k">def</span><span class="w"> </span><span class="nf">unnest_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">    Rewrite sqlglot AST to convert some predicates with subqueries into joins.</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
@@ -100,7 +100,7 @@
 </span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
 </span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>
-</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="k">def</span> <span class="nf">unnest</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="k">def</span><span class="w"> </span><span class="nf">unnest</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
 </span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">selects</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
 </span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>        <span class="k">return</span>
 </span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>
@@ -181,7 +181,7 @@
 </span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>    <span class="p">)</span>
 </span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>
 </span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="k">def</span> <span class="nf">decorrelate</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">external_columns</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="k">def</span><span class="w"> </span><span class="nf">decorrelate</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">external_columns</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
 </span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>    <span class="n">where</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;where&quot;</span><span class="p">)</span>
 </span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>
 </span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">where</span> <span class="ow">or</span> <span class="n">where</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Or</span><span class="p">)</span> <span class="ow">or</span> <span class="n">select</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Limit</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Offset</span><span class="p">):</span>
@@ -301,7 +301,7 @@
 </span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>        <span class="c1"># by transforming all counts into 0 and using that as the coalesced value</span>
 </span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">):</span>
 </span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a>
-</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>            <span class="k">def</span> <span class="nf">remove_aggs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>            <span class="k">def</span><span class="w"> </span><span class="nf">remove_aggs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
 </span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">):</span>
 </span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a>                    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a>                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">AggFunc</span><span class="p">):</span>
@@ -345,11 +345,11 @@
 </span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a>    <span class="p">)</span>
 </span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a>
 </span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a>
-</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="k">def</span> <span class="nf">_replace</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">condition</span><span class="p">):</span>
+</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_replace</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">condition</span><span class="p">):</span>
 </span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a>    <span class="k">return</span> <span class="n">expression</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">condition</span><span class="p">))</span>
 </span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a>
 </span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a>
-</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="k">def</span> <span class="nf">_other_operand</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_other_operand</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">In</span><span class="p">):</span>
 </span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a>        <span class="k">return</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span>
 </span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a>
@@ -379,7 +379,7 @@
 
     </div>
     <a class="headerlink" href="#unnest_subqueries"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="unnest_subqueries-7"><a href="#unnest_subqueries-7"><span class="linenos"> 7</span></a><span class="k">def</span> <span class="nf">unnest_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="unnest_subqueries-7"><a href="#unnest_subqueries-7"><span class="linenos"> 7</span></a><span class="k">def</span><span class="w"> </span><span class="nf">unnest_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="unnest_subqueries-8"><a href="#unnest_subqueries-8"><span class="linenos"> 8</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="unnest_subqueries-9"><a href="#unnest_subqueries-9"><span class="linenos"> 9</span></a><span class="sd">    Rewrite sqlglot AST to convert some predicates with subqueries into joins.</span>
 </span><span id="unnest_subqueries-10"><a href="#unnest_subqueries-10"><span class="linenos">10</span></a>
@@ -422,7 +422,7 @@ Convert correlated or vectorized subqueries into a group by so it is not a many 
 
 <blockquote>
   <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="s2">&quot;SELECT * FROM x AS x WHERE (SELECT y.a AS a FROM y AS y WHERE x.a = y.a) = 1 &quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">unnest_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 <span class="go">&#39;SELECT * FROM x AS x LEFT JOIN (SELECT y.a AS a FROM y AS y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE _u_0.a = 1&#39;</span>
@@ -456,7 +456,7 @@ Convert correlated or vectorized subqueries into a group by so it is not a many 
 
     </div>
     <a class="headerlink" href="#unnest"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="unnest-40"><a href="#unnest-40"><span class="linenos"> 40</span></a><span class="k">def</span> <span class="nf">unnest</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="unnest-40"><a href="#unnest-40"><span class="linenos"> 40</span></a><span class="k">def</span><span class="w"> </span><span class="nf">unnest</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
 </span><span id="unnest-41"><a href="#unnest-41"><span class="linenos"> 41</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">selects</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
 </span><span id="unnest-42"><a href="#unnest-42"><span class="linenos"> 42</span></a>        <span class="k">return</span>
 </span><span id="unnest-43"><a href="#unnest-43"><span class="linenos"> 43</span></a>
@@ -552,7 +552,7 @@ Convert correlated or vectorized subqueries into a group by so it is not a many 
 
     </div>
     <a class="headerlink" href="#decorrelate"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="decorrelate-121"><a href="#decorrelate-121"><span class="linenos">121</span></a><span class="k">def</span> <span class="nf">decorrelate</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">external_columns</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="decorrelate-121"><a href="#decorrelate-121"><span class="linenos">121</span></a><span class="k">def</span><span class="w"> </span><span class="nf">decorrelate</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="n">parent_select</span><span class="p">,</span> <span class="n">external_columns</span><span class="p">,</span> <span class="n">next_alias_name</span><span class="p">):</span>
 </span><span id="decorrelate-122"><a href="#decorrelate-122"><span class="linenos">122</span></a>    <span class="n">where</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;where&quot;</span><span class="p">)</span>
 </span><span id="decorrelate-123"><a href="#decorrelate-123"><span class="linenos">123</span></a>
 </span><span id="decorrelate-124"><a href="#decorrelate-124"><span class="linenos">124</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">where</span> <span class="ow">or</span> <span class="n">where</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Or</span><span class="p">)</span> <span class="ow">or</span> <span class="n">select</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Limit</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Offset</span><span class="p">):</span>
@@ -672,7 +672,7 @@ Convert correlated or vectorized subqueries into a group by so it is not a many 
 </span><span id="decorrelate-238"><a href="#decorrelate-238"><span class="linenos">238</span></a>        <span class="c1"># by transforming all counts into 0 and using that as the coalesced value</span>
 </span><span id="decorrelate-239"><a href="#decorrelate-239"><span class="linenos">239</span></a>        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">):</span>
 </span><span id="decorrelate-240"><a href="#decorrelate-240"><span class="linenos">240</span></a>
-</span><span id="decorrelate-241"><a href="#decorrelate-241"><span class="linenos">241</span></a>            <span class="k">def</span> <span class="nf">remove_aggs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+</span><span id="decorrelate-241"><a href="#decorrelate-241"><span class="linenos">241</span></a>            <span class="k">def</span><span class="w"> </span><span class="nf">remove_aggs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
 </span><span id="decorrelate-242"><a href="#decorrelate-242"><span class="linenos">242</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">):</span>
 </span><span id="decorrelate-243"><a href="#decorrelate-243"><span class="linenos">243</span></a>                    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="decorrelate-244"><a href="#decorrelate-244"><span class="linenos">244</span></a>                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">AggFunc</span><span class="p">):</span>

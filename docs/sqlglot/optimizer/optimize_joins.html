@@ -68,17 +68,17 @@
 
                         <label class="view-source-button" for="mod-optimize_joins-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span> <span class="nn">sqlglot.helper</span> <span class="kn">import</span> <span class="n">tsort</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.helper</span><span class="w"> </span><span class="kn">import</span> <span class="n">tsort</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="n">JOIN_ATTRS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">,</span> <span class="s2">&quot;side&quot;</span><span class="p">,</span> <span class="s2">&quot;kind&quot;</span><span class="p">,</span> <span class="s2">&quot;using&quot;</span><span class="p">,</span> <span class="s2">&quot;method&quot;</span><span class="p">)</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
 </span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="k">def</span> <span class="nf">optimize_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="k">def</span><span class="w"> </span><span class="nf">optimize_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">    Removes cross joins if possible and reorder joins based on predicate dependencies.</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
@@ -123,7 +123,7 @@
 </span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>
 </span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="k">def</span> <span class="nf">reorder_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="k">def</span><span class="w"> </span><span class="nf">reorder_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">    Reorder joins by topological sort order based on predicate references.</span>
 </span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -138,7 +138,7 @@
 </span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>
 </span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>
-</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a><span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a><span class="sd">    Remove INNER and OUTER from joins as they are optional.</span>
 </span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -156,7 +156,7 @@
 </span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-87"><a href="#L-87"><span class="linenos">87</span></a>
 </span><span id="L-88"><a href="#L-88"><span class="linenos">88</span></a>
-</span><span id="L-89"><a href="#L-89"><span class="linenos">89</span></a><span class="k">def</span> <span class="nf">other_table_names</span><span class="p">(</span><span class="n">join</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos">89</span></a><span class="k">def</span><span class="w"> </span><span class="nf">other_table_names</span><span class="p">(</span><span class="n">join</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 </span><span id="L-90"><a href="#L-90"><span class="linenos">90</span></a>    <span class="n">on</span> <span class="o">=</span> <span class="n">join</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">)</span>
 </span><span id="L-91"><a href="#L-91"><span class="linenos">91</span></a>    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">on</span><span class="p">,</span> <span class="n">join</span><span class="o">.</span><span class="n">alias_or_name</span><span class="p">)</span> <span class="k">if</span> <span class="n">on</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
 </span></pre></div>
@@ -186,7 +186,7 @@
 
     </div>
     <a class="headerlink" href="#optimize_joins"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="optimize_joins-12"><a href="#optimize_joins-12"><span class="linenos">12</span></a><span class="k">def</span> <span class="nf">optimize_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="optimize_joins-12"><a href="#optimize_joins-12"><span class="linenos">12</span></a><span class="k">def</span><span class="w"> </span><span class="nf">optimize_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="optimize_joins-13"><a href="#optimize_joins-13"><span class="linenos">13</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="optimize_joins-14"><a href="#optimize_joins-14"><span class="linenos">14</span></a><span class="sd">    Removes cross joins if possible and reorder joins based on predicate dependencies.</span>
 </span><span id="optimize_joins-15"><a href="#optimize_joins-15"><span class="linenos">15</span></a>
@@ -238,7 +238,7 @@
 
 <blockquote>
   <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_one</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">optimize_joins</span><span class="p">(</span><span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM x CROSS JOIN y JOIN z ON x.a = z.a AND y.a = z.a&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 <span class="go">&#39;SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a&#39;</span>
 </code></pre>
@@ -259,7 +259,7 @@
 
     </div>
     <a class="headerlink" href="#reorder_joins"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="reorder_joins-57"><a href="#reorder_joins-57"><span class="linenos">57</span></a><span class="k">def</span> <span class="nf">reorder_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="reorder_joins-57"><a href="#reorder_joins-57"><span class="linenos">57</span></a><span class="k">def</span><span class="w"> </span><span class="nf">reorder_joins</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="reorder_joins-58"><a href="#reorder_joins-58"><span class="linenos">58</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="reorder_joins-59"><a href="#reorder_joins-59"><span class="linenos">59</span></a><span class="sd">    Reorder joins by topological sort order based on predicate references.</span>
 </span><span id="reorder_joins-60"><a href="#reorder_joins-60"><span class="linenos">60</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -291,7 +291,7 @@
 
     </div>
     <a class="headerlink" href="#normalize"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="normalize-72"><a href="#normalize-72"><span class="linenos">72</span></a><span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="normalize-72"><a href="#normalize-72"><span class="linenos">72</span></a><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
 </span><span id="normalize-73"><a href="#normalize-73"><span class="linenos">73</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="normalize-74"><a href="#normalize-74"><span class="linenos">74</span></a><span class="sd">    Remove INNER and OUTER from joins as they are optional.</span>
 </span><span id="normalize-75"><a href="#normalize-75"><span class="linenos">75</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -326,7 +326,7 @@
 
     </div>
     <a class="headerlink" href="#other_table_names"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="other_table_names-90"><a href="#other_table_names-90"><span class="linenos">90</span></a><span class="k">def</span> <span class="nf">other_table_names</span><span class="p">(</span><span class="n">join</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="other_table_names-90"><a href="#other_table_names-90"><span class="linenos">90</span></a><span class="k">def</span><span class="w"> </span><span class="nf">other_table_names</span><span class="p">(</span><span class="n">join</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 </span><span id="other_table_names-91"><a href="#other_table_names-91"><span class="linenos">91</span></a>    <span class="n">on</span> <span class="o">=</span> <span class="n">join</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">)</span>
 </span><span id="other_table_names-92"><a href="#other_table_names-92"><span class="linenos">92</span></a>    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">column_table_names</span><span class="p">(</span><span class="n">on</span><span class="p">,</span> <span class="n">join</span><span class="o">.</span><span class="n">alias_or_name</span><span class="p">)</span> <span class="k">if</span> <span class="n">on</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
 </span></pre></div>

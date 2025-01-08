@@ -1264,6 +1264,6 @@ class MySQL(Dialect):
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
 
-        def length_sql(self: Generator, expression: exp.Length) -> str:
+        def length_sql(self, expression: exp.Length) -> str:
             length_func = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
-            return f"{length_func}({self.sql(expression.this)})"
+            return self.func(length_func, expression.this)

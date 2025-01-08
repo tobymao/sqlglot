@@ -2363,8 +2363,8 @@ SINGLE = TRUE""",
 
     def test_offset_without_limit(self):
         self.validate_all(
-            "SELECT 1 ORDER BY 1 OFFSET 0",
-            write={
-                "snowflake": "SELECT 1 ORDER BY 1 LIMIT NULL OFFSET 0",
+            "SELECT 1 ORDER BY 1 LIMIT NULL OFFSET 0",
+            read={
+                "trino": "SELECT 1 ORDER BY 1 OFFSET 0",
             },
         )

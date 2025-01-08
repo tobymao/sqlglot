@@ -7622,23 +7622,15 @@ class Parser(metaclass=_Parser):
             form=self._match(TokenType.COMMA) and self._parse_var(),
         )
 
-    def _parse_ceil_floor(self, expression: t.Type[TCeilFloor]) -> TCeilFloor:
+    def _parse_ceil_floor(self, expr_type: t.Type[TCeilFloor]) -> TCeilFloor:
         args = self._parse_csv(lambda: self._parse_lambda())
 
-        this = args[0]
-        decimals = args[1] if len(args) > 1 else None
-        to = None
+        this = seq_get(args, 0)
+        decimals = seq_get(args, 1)
 
-        # Handle `CEIL(col TO unit)` or `FLOOR(col TO unit)`
-        if (
-            self._curr
-            and self._curr.token_type == TokenType.VAR
-            and self._curr.text.upper() == "TO"
-        ):
-            self._advance()  # Consume the 'TO' token
-            to = self._parse_expression()
-
-        return expression(this=this, decimals=decimals, to=to)
+        return expr_type(
+            this=this, decimals=decimals, to=self._match_text_seq("TO") and self._parse_var()
+        )
 
     def _parse_star_ops(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("COLUMNS", "(", advance=False):

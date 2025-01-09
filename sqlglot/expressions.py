@@ -5510,7 +5510,7 @@ class Collate(Binary, Func):
 
 
 class Ceil(Func):
-    arg_types = {"this": True, "decimals": False}
+    arg_types = {"this": True, "decimals": False, "to": False}
     _sql_names = ["CEIL", "CEILING"]
 
 
@@ -5825,7 +5825,7 @@ class Unnest(Func, UDTF):
 
 
 class Floor(Func):
-    arg_types = {"this": True, "decimals": False}
+    arg_types = {"this": True, "decimals": False, "to": False}
 
 
 class FromBase64(Func):

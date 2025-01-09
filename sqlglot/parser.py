@@ -16,6 +16,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect, DialectType
 
     T = t.TypeVar("T")
+    TCeilFloor = t.TypeVar("TCeilFloor", exp.Ceil, exp.Floor)
 
 logger = logging.getLogger("sqlglot")
 
@@ -1127,9 +1128,11 @@ class Parser(metaclass=_Parser):
 
     FUNCTION_PARSERS = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
+        "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "FLOOR": lambda self: self._parse_ceil_floor(exp.Floor),
         "GAP_FILL": lambda self: self._parse_gap_fill(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
@@ -7684,6 +7687,16 @@ class Parser(metaclass=_Parser):
             exp.Normalize,
             this=self._parse_bitwise(),
             form=self._match(TokenType.COMMA) and self._parse_var(),
+        )
+
+    def _parse_ceil_floor(self, expr_type: t.Type[TCeilFloor]) -> TCeilFloor:
+        args = self._parse_csv(lambda: self._parse_lambda())
+
+        this = seq_get(args, 0)
+        decimals = seq_get(args, 1)
+
+        return expr_type(
+            this=this, decimals=decimals, to=self._match_text_seq("TO") and self._parse_var()
         )
 
     def _parse_star_ops(self) -> t.Optional[exp.Expression]:

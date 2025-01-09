@@ -205,7 +205,7 @@
 <p>Easily translate from one dialect to another. For example, date/time functions vary between dialects and can be hard to deal with:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT EPOCH_MS(1618088028295)&quot;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="s2">&quot;duckdb&quot;</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="s2">&quot;hive&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 </code></pre>
 </div>
@@ -218,7 +218,7 @@
 <p>SQLGlot can even translate custom time formats:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT STRFTIME(x, &#39;%y-%-m-%S&#39;)&quot;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="s2">&quot;duckdb&quot;</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="s2">&quot;hive&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 </code></pre>
 </div>
@@ -231,7 +231,7 @@
 <p>Identifier delimiters and data types can be translated as well:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 
 <span class="c1"># Spark SQL requires backticks (`) for delimited identifiers and uses `FLOAT` over `REAL`</span>
 <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;WITH baz AS (SELECT a, c FROM foo WHERE a = 1) SELECT f.a, b.b, baz.c, CAST(&quot;b&quot;.&quot;a&quot; AS REAL) d FROM foo f JOIN bar b ON f.a = b.a LEFT JOIN baz ON f.a = baz.a&quot;&quot;&quot;</span>
@@ -303,7 +303,7 @@
 <p>You can explore SQL with expression helpers to do things like find columns and tables in a query:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span><span class="p">,</span> <span class="n">exp</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_one</span><span class="p">,</span> <span class="n">exp</span>
 
 <span class="c1"># print all column references (a and b)</span>
 <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT a, b + 1 AS c FROM d&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">):</span>
@@ -327,7 +327,7 @@
 <p>When the parser detects an error in the syntax, it raises a <code>ParseError</code>:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT foo FROM (SELECT baz FROM t&quot;</span><span class="p">)</span>
 </code></pre>
 </div>
@@ -340,7 +340,7 @@
 <p>Structured syntax errors are accessible for programmatic use:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT foo FROM (SELECT baz FROM t&quot;</span><span class="p">)</span>
 <span class="k">except</span> <span class="n"><a href="sqlglot/errors.html#ParseError">sqlglot.errors.ParseError</a></span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -366,7 +366,7 @@
 <p>It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and will proceed to do a best-effort translation by default:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT APPROX_DISTINCT(a, 0.1) FROM foo&quot;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="s2">&quot;presto&quot;</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="s2">&quot;hive&quot;</span><span class="p">)</span>
 </code></pre>
 </div>
@@ -380,7 +380,7 @@
 <p>This behavior can be changed by setting the <a href="https://github.com/tobymao/sqlglot/blob/b0e8dc96ba179edb1776647b5bde4e704238b44d/sqlglot/errors.py#L9"><code>unsupported_level</code></a> attribute. For example, we can set it to either <code>RAISE</code> or <code>IMMEDIATE</code> to ensure an exception is raised instead:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
 <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT APPROX_DISTINCT(a, 0.1) FROM foo&quot;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="s2">&quot;presto&quot;</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="s2">&quot;hive&quot;</span><span class="p">,</span> <span class="n">unsupported_level</span><span class="o">=</span><span class="n">sqlglot</span><span class="o">.</span><span class="n">ErrorLevel</span><span class="o">.</span><span class="n">RAISE</span><span class="p">)</span>
 </code></pre>
 </div>
@@ -397,7 +397,7 @@
 <p>SQLGlot supports incrementally building SQL expressions:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">select</span><span class="p">,</span> <span class="n">condition</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span><span class="p">,</span> <span class="n">condition</span>
 
 <span class="n">where</span> <span class="o">=</span> <span class="n">condition</span><span class="p">(</span><span class="s2">&quot;x=1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">and_</span><span class="p">(</span><span class="s2">&quot;y=1&quot;</span><span class="p">)</span>
 <span class="n">select</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">from_</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">where</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
@@ -412,7 +412,7 @@
 <p>It's possible to modify a parsed tree:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_one</span>
 <span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT x FROM y&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">from_</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 </code></pre>
 </div>
@@ -425,11 +425,11 @@
 <p>Parsed expressions can also be transformed recursively by applying a mapping function to each node in the tree:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">parse_one</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">parse_one</span>
 
 <span class="n">expression_tree</span> <span class="o">=</span> <span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT a FROM x&quot;</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">transformer</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">transformer</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;FUN(a)&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">node</span>
@@ -449,8 +449,8 @@
 <p>SQLGlot can rewrite queries into an "optimized" form. It performs a variety of <a href="https://github.com/tobymao/sqlglot/blob/main/sqlglot/optimizer/optimizer.py">techniques</a> to create a new canonical AST. This AST can be used to standardize queries or provide the foundations for implementing an actual engine. For example:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
-<span class="kn">from</span> <span class="nn"><a href="sqlglot/optimizer.html">sqlglot.optimizer</a></span> <span class="kn">import</span> <span class="n">optimize</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn"><a href="sqlglot/optimizer.html">sqlglot.optimizer</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="n">optimize</span><span class="p">(</span>
@@ -484,7 +484,7 @@
 <p>You can see the AST version of the parsed SQL by calling <code>repr</code>:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_one</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT a + 1 AS z&quot;</span><span class="p">)))</span>
 </code></pre>
 </div>
@@ -506,7 +506,7 @@
 <p>SQLGlot can calculate the semantic difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">diff</span><span class="p">,</span> <span class="n">parse_one</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">diff</span><span class="p">,</span> <span class="n">parse_one</span>
 <span class="n">diff</span><span class="p">(</span><span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT a + b, c, d&quot;</span><span class="p">),</span> <span class="n">parse_one</span><span class="p">(</span><span class="s2">&quot;SELECT c, a - b, d&quot;</span><span class="p">))</span>
 </code></pre>
 </div>
@@ -538,14 +538,14 @@
 <p><a href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects">Dialects</a> can be added by subclassing <code>Dialect</code>:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span>
-<span class="kn">from</span> <span class="nn"><a href="sqlglot/dialects/dialect.html">sqlglot.dialects.dialect</a></span> <span class="kn">import</span> <span class="n">Dialect</span>
-<span class="kn">from</span> <span class="nn"><a href="sqlglot/generator.html">sqlglot.generator</a></span> <span class="kn">import</span> <span class="n">Generator</span>
-<span class="kn">from</span> <span class="nn"><a href="sqlglot/tokens.html">sqlglot.tokens</a></span> <span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">TokenType</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn"><a href="sqlglot/dialects/dialect.html">sqlglot.dialects.dialect</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">Dialect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn"><a href="sqlglot/generator.html">sqlglot.generator</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn"><a href="sqlglot/tokens.html">sqlglot.tokens</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">TokenType</span>
 
 
-<span class="k">class</span> <span class="nc">Custom</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
-    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Custom</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
         <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
         <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
 
@@ -555,7 +555,7 @@
             <span class="s2">&quot;FLOAT64&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">,</span>
         <span class="p">}</span>
 
-    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Generator</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
         <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span><span class="n">exp</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">}</span>
 
         <span class="n">TYPE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
@@ -584,7 +584,7 @@
 <p>The example below showcases the execution of a query that involves aggregations and joins:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span> <span class="nn"><a href="sqlglot/executor.html">sqlglot.executor</a></span> <span class="kn">import</span> <span class="n">execute</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn"><a href="sqlglot/executor.html">sqlglot.executor</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">execute</span>
 
 <span class="n">tables</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;sushi&quot;</span><span class="p">:</span> <span class="p">[</span>
@@ -746,21 +746,21 @@ make check  # Full test suite &amp; linter checks
 </span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="sd">----</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
-</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span> <span class="nn">logging</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">expressions</span> <span class="k">as</span> <span class="n">exp</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.dialect</span> <span class="kn">import</span> <span class="n">Dialect</span> <span class="k">as</span> <span class="n">Dialect</span><span class="p">,</span> <span class="n">Dialects</span> <span class="k">as</span> <span class="n">Dialects</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="kn">from</span> <span class="nn">sqlglot.diff</span> <span class="kn">import</span> <span class="n">diff</span> <span class="k">as</span> <span class="n">diff</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="kn">from</span> <span class="nn">sqlglot.errors</span> <span class="kn">import</span> <span class="p">(</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">expressions</span> <span class="k">as</span> <span class="n">exp</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.dialect</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dialect</span> <span class="k">as</span> <span class="n">Dialect</span><span class="p">,</span> <span class="n">Dialects</span> <span class="k">as</span> <span class="n">Dialects</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.diff</span><span class="w"> </span><span class="kn">import</span> <span class="n">diff</span> <span class="k">as</span> <span class="n">diff</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>    <span class="n">ErrorLevel</span> <span class="k">as</span> <span class="n">ErrorLevel</span><span class="p">,</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>    <span class="n">ParseError</span> <span class="k">as</span> <span class="n">ParseError</span><span class="p">,</span>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>    <span class="n">TokenError</span> <span class="k">as</span> <span class="n">TokenError</span><span class="p">,</span>
 </span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>    <span class="n">UnsupportedError</span> <span class="k">as</span> <span class="n">UnsupportedError</span><span class="p">,</span>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="p">)</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="kn">from</span> <span class="nn">sqlglot.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.expressions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>    <span class="n">Expression</span> <span class="k">as</span> <span class="n">Expression</span><span class="p">,</span>
 </span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>    <span class="n">alias_</span> <span class="k">as</span> <span class="n">alias</span><span class="p">,</span>
 </span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>    <span class="n">and_</span> <span class="k">as</span> <span class="n">and_</span><span class="p">,</span>
@@ -786,20 +786,20 @@ make check  # Full test suite &amp; linter checks
 </span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>    <span class="n">to_table</span> <span class="k">as</span> <span class="n">to_table</span><span class="p">,</span>
 </span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>    <span class="n">union</span> <span class="k">as</span> <span class="n">union</span><span class="p">,</span>
 </span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a><span class="p">)</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="kn">from</span> <span class="nn">sqlglot.generator</span> <span class="kn">import</span> <span class="n">Generator</span> <span class="k">as</span> <span class="n">Generator</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="kn">from</span> <span class="nn">sqlglot.parser</span> <span class="kn">import</span> <span class="n">Parser</span> <span class="k">as</span> <span class="n">Parser</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="kn">from</span> <span class="nn">sqlglot.schema</span> <span class="kn">import</span> <span class="n">MappingSchema</span> <span class="k">as</span> <span class="n">MappingSchema</span><span class="p">,</span> <span class="n">Schema</span> <span class="k">as</span> <span class="n">Schema</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="kn">from</span> <span class="nn">sqlglot.tokens</span> <span class="kn">import</span> <span class="n">Token</span> <span class="k">as</span> <span class="n">Token</span><span class="p">,</span> <span class="n">Tokenizer</span> <span class="k">as</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">TokenType</span> <span class="k">as</span> <span class="n">TokenType</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span> <span class="k">as</span> <span class="n">Generator</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parser</span> <span class="k">as</span> <span class="n">Parser</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingSchema</span> <span class="k">as</span> <span class="n">MappingSchema</span><span class="p">,</span> <span class="n">Schema</span> <span class="k">as</span> <span class="n">Schema</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.tokens</span><span class="w"> </span><span class="kn">import</span> <span class="n">Token</span> <span class="k">as</span> <span class="n">Token</span><span class="p">,</span> <span class="n">Tokenizer</span> <span class="k">as</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">TokenType</span> <span class="k">as</span> <span class="n">TokenType</span>
 </span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>
 </span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>    <span class="kn">from</span> <span class="nn">sqlglot._typing</span> <span class="kn">import</span> <span class="n">E</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>    <span class="kn">from</span> <span class="nn">sqlglot.dialects.dialect</span> <span class="kn">import</span> <span class="n">DialectType</span> <span class="k">as</span> <span class="n">DialectType</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot._typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">E</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.dialect</span><span class="w"> </span><span class="kn">import</span> <span class="n">DialectType</span> <span class="k">as</span> <span class="n">DialectType</span>
 </span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>
 </span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;sqlglot&quot;</span><span class="p">)</span>
 </span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>
 </span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>
 </span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="k">try</span><span class="p">:</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>    <span class="kn">from</span> <span class="nn">sqlglot._version</span> <span class="kn">import</span> <span class="n">__version__</span><span class="p">,</span> <span class="n">__version_tuple__</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot._version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span><span class="p">,</span> <span class="n">__version_tuple__</span>
 </span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
 </span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
 </span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>        <span class="s2">&quot;Unable to set __version__, run `pip install -e .` or `python setup.py develop` first.&quot;</span>
@@ -810,7 +810,7 @@ make check  # Full test suite &amp; linter checks
 </span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">&quot;&quot;&quot;Whether to format generated SQL by default.&quot;&quot;&quot;</span>
 </span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="k">def</span><span class="w"> </span><span class="nf">tokenize</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
 </span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a><span class="sd">    Tokenizes the given SQL string.</span>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>
@@ -825,7 +825,7 @@ make check  # Full test suite &amp; linter checks
 </span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>    <span class="k">return</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">read</span> <span class="ow">or</span> <span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 </span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>
 </span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span>
 </span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span>
 </span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Expression</span><span class="p">]]:</span>
 </span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -844,14 +844,14 @@ make check  # Full test suite &amp; linter checks
 </span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="nd">@t</span><span class="o">.</span><span class="n">overload</span>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">def</span> <span class="nf">parse_one</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">into</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">E</span><span class="p">],</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">E</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse_one</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">into</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">E</span><span class="p">],</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">E</span><span class="p">:</span> <span class="o">...</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
 </span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
 </span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="nd">@t</span><span class="o">.</span><span class="n">overload</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="k">def</span> <span class="nf">parse_one</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Expression</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse_one</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Expression</span><span class="p">:</span> <span class="o">...</span>
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
 </span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="k">def</span> <span class="nf">parse_one</span><span class="p">(</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse_one</span><span class="p">(</span>
 </span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>    <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>    <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -887,7 +887,7 @@ make check  # Full test suite &amp; linter checks
 </span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a>        <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No expression was parsed from &#39;</span><span class="si">{</span><span class="n">sql</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
 </span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a>
 </span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>
-</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="k">def</span> <span class="nf">transpile</span><span class="p">(</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="k">def</span><span class="w"> </span><span class="nf">transpile</span><span class="p">(</span>
 </span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>    <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>    <span class="n">write</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -958,7 +958,7 @@ make check  # Full test suite &amp; linter checks
 
     </div>
     <a class="headerlink" href="#tokenize"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="tokenize-73"><a href="#tokenize-73"><span class="linenos">73</span></a><span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="tokenize-73"><a href="#tokenize-73"><span class="linenos">73</span></a><span class="k">def</span><span class="w"> </span><span class="nf">tokenize</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
 </span><span id="tokenize-74"><a href="#tokenize-74"><span class="linenos">74</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="tokenize-75"><a href="#tokenize-75"><span class="linenos">75</span></a><span class="sd">    Tokenizes the given SQL string.</span>
 </span><span id="tokenize-76"><a href="#tokenize-76"><span class="linenos">76</span></a>
@@ -1004,7 +1004,7 @@ make check  # Full test suite &amp; linter checks
 
     </div>
     <a class="headerlink" href="#parse"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="parse-88"><a href="#parse-88"><span class="linenos"> 88</span></a><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="parse-88"><a href="#parse-88"><span class="linenos"> 88</span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span>
 </span><span id="parse-89"><a href="#parse-89"><span class="linenos"> 89</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span>
 </span><span id="parse-90"><a href="#parse-90"><span class="linenos"> 90</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Expression</span><span class="p">]]:</span>
 </span><span id="parse-91"><a href="#parse-91"><span class="linenos"> 91</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1054,7 +1054,7 @@ make check  # Full test suite &amp; linter checks
 
     </div>
     <a class="headerlink" href="#parse_one"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="parse_one-114"><a href="#parse_one-114"><span class="linenos">114</span></a><span class="k">def</span> <span class="nf">parse_one</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="parse_one-114"><a href="#parse_one-114"><span class="linenos">114</span></a><span class="k">def</span><span class="w"> </span><span class="nf">parse_one</span><span class="p">(</span>
 </span><span id="parse_one-115"><a href="#parse_one-115"><span class="linenos">115</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="parse_one-116"><a href="#parse_one-116"><span class="linenos">116</span></a>    <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="parse_one-117"><a href="#parse_one-117"><span class="linenos">117</span></a>    <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1123,7 +1123,7 @@ make check  # Full test suite &amp; linter checks
 
     </div>
     <a class="headerlink" href="#transpile"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="transpile-150"><a href="#transpile-150"><span class="linenos">150</span></a><span class="k">def</span> <span class="nf">transpile</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="transpile-150"><a href="#transpile-150"><span class="linenos">150</span></a><span class="k">def</span><span class="w"> </span><span class="nf">transpile</span><span class="p">(</span>
 </span><span id="transpile-151"><a href="#transpile-151"><span class="linenos">151</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="transpile-152"><a href="#transpile-152"><span class="linenos">152</span></a>    <span class="n">read</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="transpile-153"><a href="#transpile-153"><span class="linenos">153</span></a>    <span class="n">write</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

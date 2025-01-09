@@ -1151,6 +1151,7 @@ class Parser(metaclass=_Parser):
             this=self._match_text_seq("NAME") and self._parse_id_var(),
             expressions=self._match(TokenType.COMMA) and self._parse_csv(self._parse_expression),
         ),
+        "XMLTABLE": lambda self: self._parse_xml_table(),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -6152,6 +6153,26 @@ class Parser(metaclass=_Parser):
             to = None
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, safe=safe)
+
+    def _parse_xml_table(self) -> exp.XMLTable:
+        this = self._parse_string()
+
+        passing = None
+        columns = None
+
+        if self._match_text_seq("PASSING"):
+            # The BY VALUE keywords are optional and are provided for semantic clarity
+            self._match_text_seq("BY", "VALUE")
+            passing = self._parse_csv(self._parse_column)
+
+        by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
+
+        if self._match_text_seq("COLUMNS"):
+            columns = self._parse_csv(self._parse_field_def)
+
+        return self.expression(
+            exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref
+        )
 
     def _parse_decode(self) -> t.Optional[exp.Decode | exp.Case]:
         """

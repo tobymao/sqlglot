@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     isnull_to_is_null,
+    length_or_char_length_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -295,8 +296,6 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "CHAR_LENGTH": exp.Length.from_arg_list,
-            "CHARACTER_LENGTH": exp.Length.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -311,6 +310,7 @@ class MySQL(Dialect):
             "FORMAT": exp.NumberToStr.from_arg_list,
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "ISNULL": isnull_to_is_null,
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LOCATE": locate_to_strposition,
             "MAKETIME": exp.TimeFromParts.from_arg_list,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
@@ -731,7 +731,7 @@ class MySQL(Dialect):
             e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
-            exp.Length: rename_func("CHAR_LENGTH"),
+            exp.Length: length_or_char_length_sql,
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Max: max_or_greatest,

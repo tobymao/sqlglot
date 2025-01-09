@@ -116,26 +116,26 @@
 
                         <label class="view-source-button" for="mod-lineage-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span> <span class="nn">json</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">import</span> <span class="nn">logging</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">Schema</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">maybe_parse</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span> <span class="nn">sqlglot.errors</span> <span class="kn">import</span> <span class="n">SqlglotError</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer</span> <span class="kn">import</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">build_scope</span><span class="p">,</span> <span class="n">find_all_in_scope</span><span class="p">,</span> <span class="n">normalize_identifiers</span><span class="p">,</span> <span class="n">qualify</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">from</span> <span class="nn">sqlglot.optimizer.scope</span> <span class="kn">import</span> <span class="n">ScopeType</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">maybe_parse</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SqlglotError</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">build_scope</span><span class="p">,</span> <span class="n">find_all_in_scope</span><span class="p">,</span> <span class="n">normalize_identifiers</span><span class="p">,</span> <span class="n">qualify</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.optimizer.scope</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScopeType</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="kn">from</span> <span class="nn">sqlglot.dialects.dialect</span> <span class="kn">import</span> <span class="n">DialectType</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.dialect</span><span class="w"> </span><span class="kn">import</span> <span class="n">DialectType</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;sqlglot&quot;</span><span class="p">)</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="k">class</span> <span class="nc">Node</span><span class="p">:</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Node</span><span class="p">:</span>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>    <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>    <span class="n">source</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span>
@@ -143,13 +143,13 @@
 </span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>    <span class="n">source_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>    <span class="n">reference_node_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>
-</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">Node</span><span class="p">]:</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">Node</span><span class="p">]:</span>
 </span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>        <span class="k">yield</span> <span class="bp">self</span>
 </span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>
 </span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">downstream</span><span class="p">:</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>            <span class="k">yield from</span> <span class="n">d</span><span class="o">.</span><span class="n">walk</span><span class="p">()</span>
 </span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>    <span class="k">def</span> <span class="nf">to_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphHTML</span><span class="p">:</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphHTML</span><span class="p">:</span>
 </span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>        <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
@@ -183,7 +183,7 @@
 </span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>        <span class="k">return</span> <span class="n">GraphHTML</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">edges</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
 </span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>
 </span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="k">def</span> <span class="nf">lineage</span><span class="p">(</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="k">def</span><span class="w"> </span><span class="nf">lineage</span><span class="p">(</span>
 </span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">,</span>
 </span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span>
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>    <span class="n">schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span> <span class="o">|</span> <span class="n">Schema</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -238,7 +238,7 @@
 </span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>    <span class="k">return</span> <span class="n">to_node</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">trim_selects</span><span class="o">=</span><span class="n">trim_selects</span><span class="p">)</span>
 </span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>
 </span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>
-</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="k">def</span> <span class="nf">to_node</span><span class="p">(</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_node</span><span class="p">(</span>
 </span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span>
 </span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>    <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span><span class="p">,</span>
@@ -463,13 +463,13 @@
 </span><span id="L-345"><a href="#L-345"><span class="linenos">345</span></a>    <span class="k">return</span> <span class="n">node</span>
 </span><span id="L-346"><a href="#L-346"><span class="linenos">346</span></a>
 </span><span id="L-347"><a href="#L-347"><span class="linenos">347</span></a>
-</span><span id="L-348"><a href="#L-348"><span class="linenos">348</span></a><span class="k">class</span> <span class="nc">GraphHTML</span><span class="p">:</span>
+</span><span id="L-348"><a href="#L-348"><span class="linenos">348</span></a><span class="k">class</span><span class="w"> </span><span class="nc">GraphHTML</span><span class="p">:</span>
 </span><span id="L-349"><a href="#L-349"><span class="linenos">349</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Node to HTML generator using vis.js.</span>
 </span><span id="L-350"><a href="#L-350"><span class="linenos">350</span></a>
 </span><span id="L-351"><a href="#L-351"><span class="linenos">351</span></a><span class="sd">    https://visjs.github.io/vis-network/docs/network/</span>
 </span><span id="L-352"><a href="#L-352"><span class="linenos">352</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-353"><a href="#L-353"><span class="linenos">353</span></a>
-</span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">edges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">,</span> <span class="n">imports</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a>    <span class="p">):</span>
 </span><span id="L-357"><a href="#L-357"><span class="linenos">357</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">imports</span> <span class="o">=</span> <span class="n">imports</span>
@@ -507,7 +507,7 @@
 </span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes</span>
 </span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span>
 </span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a>
-</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 </span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a>        <span class="n">nodes</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 </span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
 </span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a>        <span class="n">options</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
@@ -537,7 +537,7 @@
 </span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a><span class="s2">  &lt;/script&gt;</span>
 </span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a><span class="s2">&lt;/div&gt;&quot;&quot;&quot;</span>
 </span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>
-</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>    <span class="k">def</span> <span class="nf">_repr_html_</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_repr_html_</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 </span></pre></div>
 
@@ -568,7 +568,7 @@
     </div>
     <a class="headerlink" href="#Node"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Node-20"><a href="#Node-20"><span class="linenos">20</span></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="Node-21"><a href="#Node-21"><span class="linenos">21</span></a><span class="k">class</span> <span class="nc">Node</span><span class="p">:</span>
+</span><span id="Node-21"><a href="#Node-21"><span class="linenos">21</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Node</span><span class="p">:</span>
 </span><span id="Node-22"><a href="#Node-22"><span class="linenos">22</span></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="Node-23"><a href="#Node-23"><span class="linenos">23</span></a>    <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span>
 </span><span id="Node-24"><a href="#Node-24"><span class="linenos">24</span></a>    <span class="n">source</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span>
@@ -576,13 +576,13 @@
 </span><span id="Node-26"><a href="#Node-26"><span class="linenos">26</span></a>    <span class="n">source_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </span><span id="Node-27"><a href="#Node-27"><span class="linenos">27</span></a>    <span class="n">reference_node_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </span><span id="Node-28"><a href="#Node-28"><span class="linenos">28</span></a>
-</span><span id="Node-29"><a href="#Node-29"><span class="linenos">29</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">Node</span><span class="p">]:</span>
+</span><span id="Node-29"><a href="#Node-29"><span class="linenos">29</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">Node</span><span class="p">]:</span>
 </span><span id="Node-30"><a href="#Node-30"><span class="linenos">30</span></a>        <span class="k">yield</span> <span class="bp">self</span>
 </span><span id="Node-31"><a href="#Node-31"><span class="linenos">31</span></a>
 </span><span id="Node-32"><a href="#Node-32"><span class="linenos">32</span></a>        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">downstream</span><span class="p">:</span>
 </span><span id="Node-33"><a href="#Node-33"><span class="linenos">33</span></a>            <span class="k">yield from</span> <span class="n">d</span><span class="o">.</span><span class="n">walk</span><span class="p">()</span>
 </span><span id="Node-34"><a href="#Node-34"><span class="linenos">34</span></a>
-</span><span id="Node-35"><a href="#Node-35"><span class="linenos">35</span></a>    <span class="k">def</span> <span class="nf">to_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphHTML</span><span class="p">:</span>
+</span><span id="Node-35"><a href="#Node-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphHTML</span><span class="p">:</span>
 </span><span id="Node-36"><a href="#Node-36"><span class="linenos">36</span></a>        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="Node-37"><a href="#Node-37"><span class="linenos">37</span></a>        <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="Node-38"><a href="#Node-38"><span class="linenos">38</span></a>
@@ -710,7 +710,7 @@
 
     </div>
     <a class="headerlink" href="#Node.walk"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Node.walk-29"><a href="#Node.walk-29"><span class="linenos">29</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">Node</span><span class="p">]:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Node.walk-29"><a href="#Node.walk-29"><span class="linenos">29</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">Node</span><span class="p">]:</span>
 </span><span id="Node.walk-30"><a href="#Node.walk-30"><span class="linenos">30</span></a>        <span class="k">yield</span> <span class="bp">self</span>
 </span><span id="Node.walk-31"><a href="#Node.walk-31"><span class="linenos">31</span></a>
 </span><span id="Node.walk-32"><a href="#Node.walk-32"><span class="linenos">32</span></a>        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">downstream</span><span class="p">:</span>
@@ -732,7 +732,7 @@
 
     </div>
     <a class="headerlink" href="#Node.to_html"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Node.to_html-35"><a href="#Node.to_html-35"><span class="linenos">35</span></a>    <span class="k">def</span> <span class="nf">to_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphHTML</span><span class="p">:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Node.to_html-35"><a href="#Node.to_html-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphHTML</span><span class="p">:</span>
 </span><span id="Node.to_html-36"><a href="#Node.to_html-36"><span class="linenos">36</span></a>        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="Node.to_html-37"><a href="#Node.to_html-37"><span class="linenos">37</span></a>        <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="Node.to_html-38"><a href="#Node.to_html-38"><span class="linenos">38</span></a>
@@ -782,7 +782,7 @@
 
     </div>
     <a class="headerlink" href="#lineage"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="lineage-69"><a href="#lineage-69"><span class="linenos"> 69</span></a><span class="k">def</span> <span class="nf">lineage</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="lineage-69"><a href="#lineage-69"><span class="linenos"> 69</span></a><span class="k">def</span><span class="w"> </span><span class="nf">lineage</span><span class="p">(</span>
 </span><span id="lineage-70"><a href="#lineage-70"><span class="linenos"> 70</span></a>    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">,</span>
 </span><span id="lineage-71"><a href="#lineage-71"><span class="linenos"> 71</span></a>    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span>
 </span><span id="lineage-72"><a href="#lineage-72"><span class="linenos"> 72</span></a>    <span class="n">schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span> <span class="o">|</span> <span class="n">Schema</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -873,7 +873,7 @@
 
     </div>
     <a class="headerlink" href="#to_node"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="to_node-124"><a href="#to_node-124"><span class="linenos">124</span></a><span class="k">def</span> <span class="nf">to_node</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="to_node-124"><a href="#to_node-124"><span class="linenos">124</span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_node</span><span class="p">(</span>
 </span><span id="to_node-125"><a href="#to_node-125"><span class="linenos">125</span></a>    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="to_node-126"><a href="#to_node-126"><span class="linenos">126</span></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span>
 </span><span id="to_node-127"><a href="#to_node-127"><span class="linenos">127</span></a>    <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span><span class="p">,</span>
@@ -1113,13 +1113,13 @@
 
     </div>
     <a class="headerlink" href="#GraphHTML"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="GraphHTML-349"><a href="#GraphHTML-349"><span class="linenos">349</span></a><span class="k">class</span> <span class="nc">GraphHTML</span><span class="p">:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="GraphHTML-349"><a href="#GraphHTML-349"><span class="linenos">349</span></a><span class="k">class</span><span class="w"> </span><span class="nc">GraphHTML</span><span class="p">:</span>
 </span><span id="GraphHTML-350"><a href="#GraphHTML-350"><span class="linenos">350</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Node to HTML generator using vis.js.</span>
 </span><span id="GraphHTML-351"><a href="#GraphHTML-351"><span class="linenos">351</span></a>
 </span><span id="GraphHTML-352"><a href="#GraphHTML-352"><span class="linenos">352</span></a><span class="sd">    https://visjs.github.io/vis-network/docs/network/</span>
 </span><span id="GraphHTML-353"><a href="#GraphHTML-353"><span class="linenos">353</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="GraphHTML-354"><a href="#GraphHTML-354"><span class="linenos">354</span></a>
-</span><span id="GraphHTML-355"><a href="#GraphHTML-355"><span class="linenos">355</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="GraphHTML-355"><a href="#GraphHTML-355"><span class="linenos">355</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="GraphHTML-356"><a href="#GraphHTML-356"><span class="linenos">356</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">edges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">,</span> <span class="n">imports</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="GraphHTML-357"><a href="#GraphHTML-357"><span class="linenos">357</span></a>    <span class="p">):</span>
 </span><span id="GraphHTML-358"><a href="#GraphHTML-358"><span class="linenos">358</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">imports</span> <span class="o">=</span> <span class="n">imports</span>
@@ -1157,7 +1157,7 @@
 </span><span id="GraphHTML-390"><a href="#GraphHTML-390"><span class="linenos">390</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes</span>
 </span><span id="GraphHTML-391"><a href="#GraphHTML-391"><span class="linenos">391</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span>
 </span><span id="GraphHTML-392"><a href="#GraphHTML-392"><span class="linenos">392</span></a>
-</span><span id="GraphHTML-393"><a href="#GraphHTML-393"><span class="linenos">393</span></a>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="GraphHTML-393"><a href="#GraphHTML-393"><span class="linenos">393</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 </span><span id="GraphHTML-394"><a href="#GraphHTML-394"><span class="linenos">394</span></a>        <span class="n">nodes</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 </span><span id="GraphHTML-395"><a href="#GraphHTML-395"><span class="linenos">395</span></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
 </span><span id="GraphHTML-396"><a href="#GraphHTML-396"><span class="linenos">396</span></a>        <span class="n">options</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
@@ -1187,7 +1187,7 @@
 </span><span id="GraphHTML-420"><a href="#GraphHTML-420"><span class="linenos">420</span></a><span class="s2">  &lt;/script&gt;</span>
 </span><span id="GraphHTML-421"><a href="#GraphHTML-421"><span class="linenos">421</span></a><span class="s2">&lt;/div&gt;&quot;&quot;&quot;</span>
 </span><span id="GraphHTML-422"><a href="#GraphHTML-422"><span class="linenos">422</span></a>
-</span><span id="GraphHTML-423"><a href="#GraphHTML-423"><span class="linenos">423</span></a>    <span class="k">def</span> <span class="nf">_repr_html_</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="GraphHTML-423"><a href="#GraphHTML-423"><span class="linenos">423</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_repr_html_</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="GraphHTML-424"><a href="#GraphHTML-424"><span class="linenos">424</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 </span></pre></div>
 
@@ -1208,7 +1208,7 @@
 
     </div>
     <a class="headerlink" href="#GraphHTML.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="GraphHTML.__init__-355"><a href="#GraphHTML.__init__-355"><span class="linenos">355</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="GraphHTML.__init__-355"><a href="#GraphHTML.__init__-355"><span class="linenos">355</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="GraphHTML.__init__-356"><a href="#GraphHTML.__init__-356"><span class="linenos">356</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">edges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">,</span> <span class="n">imports</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="GraphHTML.__init__-357"><a href="#GraphHTML.__init__-357"><span class="linenos">357</span></a>    <span class="p">):</span>
 </span><span id="GraphHTML.__init__-358"><a href="#GraphHTML.__init__-358"><span class="linenos">358</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">imports</span> <span class="o">=</span> <span class="n">imports</span>

@@ -1682,11 +1682,11 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "POSITION(needle in haystack)",
+            "POSITION(needle IN haystack)",
             write={
                 "drill": "STRPOS(haystack, needle)",
                 "duckdb": "STRPOS(haystack, needle)",
-                "postgres": "STRPOS(haystack, needle)",
+                "postgres": "POSITION(needle IN haystack)",
                 "presto": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",
                 "clickhouse": "position(haystack, needle)",
@@ -1699,7 +1699,7 @@ class TestDialect(Validator):
             write={
                 "drill": "STRPOS(haystack, needle)",
                 "duckdb": "STRPOS(haystack, needle)",
-                "postgres": "STRPOS(haystack, needle)",
+                "postgres": "POSITION(needle IN haystack)",
                 "presto": "STRPOS(haystack, needle)",
                 "bigquery": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",

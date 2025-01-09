@@ -1686,7 +1686,7 @@ class TestDialect(Validator):
             write={
                 "drill": "STRPOS(haystack, needle)",
                 "duckdb": "STRPOS(haystack, needle)",
-                "postgres": "POSITION(needle IN haystack)",
+                "postgres": "STRPOS(haystack, needle)",
                 "presto": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",
                 "clickhouse": "position(haystack, needle)",
@@ -1699,7 +1699,7 @@ class TestDialect(Validator):
             write={
                 "drill": "STRPOS(haystack, needle)",
                 "duckdb": "STRPOS(haystack, needle)",
-                "postgres": "POSITION(needle IN haystack)",
+                "postgres": "STRPOS(haystack, needle)",
                 "presto": "STRPOS(haystack, needle)",
                 "bigquery": "STRPOS(haystack, needle)",
                 "spark": "LOCATE(needle, haystack)",
@@ -1711,8 +1711,9 @@ class TestDialect(Validator):
         self.validate_all(
             "POSITION(needle, haystack, pos)",
             write={
-                "drill": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
-                "presto": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
+                "drill": "`IF`(STRPOS(SUBSTR(haystack, pos), needle) = 0, 0, STRPOS(SUBSTR(haystack, pos), needle) + pos - 1)",
+                "presto": "IF(STRPOS(SUBSTR(haystack, pos), needle) = 0, 0, STRPOS(SUBSTR(haystack, pos), needle) + pos - 1)",
+                "postgres": "CASE WHEN STRPOS(SUBSTR(haystack, pos), needle) = 0 THEN 0 ELSE STRPOS(SUBSTR(haystack, pos), needle) + pos - 1 END",
                 "spark": "LOCATE(needle, haystack, pos)",
                 "clickhouse": "position(haystack, needle, pos)",
                 "snowflake": "POSITION(needle, haystack, pos)",

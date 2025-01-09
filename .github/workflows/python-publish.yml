@@ -52,6 +52,11 @@ jobs:
       with:
         python-version: '3.13'
         architecture: ${{ matrix.python-architecture || 'x64' }}
+    - uses: actions/setup-python@v5
+      if: matrix.os == 'windows'
+      with:
+        python-version: '3.7'
+        architecture: ${{ matrix.python-architecture || 'x64' }}
     - name: Build wheels
       uses: PyO3/maturin-action@v1
       with:

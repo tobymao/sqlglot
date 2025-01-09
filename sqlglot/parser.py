@@ -788,6 +788,7 @@ class Parser(metaclass=_Parser):
 
     STATEMENT_PARSERS = {
         TokenType.ALTER: lambda self: self._parse_alter(),
+        TokenType.ANALYZE: lambda self: self._parse_analyze(),
         TokenType.BEGIN: lambda self: self._parse_transaction(),
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.COMMENT: lambda self: self._parse_comment(),
@@ -7079,6 +7080,34 @@ class Parser(metaclass=_Parser):
 
         return self._parse_as_command(start)
 
+    def _parse_analyze(self) -> exp.Analyze | exp.Command:
+        start = self._prev
+        kind = None
+        this: t.Optional[exp.Expression] = None
+        partition = None
+
+        if self._match(TokenType.TABLE):
+            kind = "TABLE"
+            this = self._parse_table_parts()
+            partition = self._parse_partition()
+        elif self._match_texts("TABLES"):
+            kind = "TABLES"
+            this = (
+                self._parse_table(is_db_reference=True)
+                if self._match_set((TokenType.FROM, TokenType.IN))
+                else None
+            )
+        else:
+            return self._parse_as_command(start)
+
+        if self._match(TokenType.COMPUTE_STATISTICS):
+            compute_stats = self._parse_compute_statistics()
+            return self.expression(
+                exp.Analyze, kind=kind, this=this, partition=partition, expression=compute_stats
+            )
+
+        return self._parse_as_command(start)
+
     def _parse_merge(self) -> exp.Merge:
         self._match(TokenType.INTO)
         target = self._parse_table()
@@ -7299,6 +7328,21 @@ class Parser(metaclass=_Parser):
             iterator=iterator,
             condition=condition,
         )
+
+    # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-aux-analyze-table.html
+    def _parse_compute_statistics(self) -> exp.ComputeStatistics:
+        this = None
+        expressions = None
+        if self._match_text_seq("NOSCAN"):
+            this = "NOSCAN"
+        elif self._match(TokenType.FOR):
+            if self._match_text_seq("ALL", "COLUMNS"):
+                this = "FOR ALL COLUMNS"
+            if self._match_texts("COLUMNS"):
+                this = "FOR COLUMNS"
+                expressions = self._parse_csv(self._parse_column_reference)
+
+        return self.expression(exp.ComputeStatistics, this=this, expressions=expressions)
 
     def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:
         if self._match(TokenType.HEREDOC_STRING):

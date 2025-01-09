@@ -4647,6 +4647,23 @@ class Generator(metaclass=_Generator):
 
         return f"NAME {name} VALUE {values}"
 
+    def computestatistics_sql(self, expression: exp.ComputeStatistics) -> str:
+        this = self.sql(expression, "this")
+        columns = self.expressions(expression)
+        columns = f" {columns}" if columns else ""
+        return f"COMPUTE STATISTICS {this}{columns}"
+
+    def analyze_sql(self, expression: exp.Analyze) -> str:
+        kind = self.sql(expression, "kind")
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        if this and kind == "TABLES":
+            this = f" FROM{this}"
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
+        inner_expression = f" {self.sql(expression, 'expression')}"
+        return f"ANALYZE {kind}{this}{partition}{inner_expression}"
+
     def xmltable_sql(self, expression: exp.XMLTable) -> str:
         this = self.sql(expression, "this")
         passing = self.expressions(expression, key="passing")

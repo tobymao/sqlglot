@@ -918,3 +918,14 @@ TBLPROPERTIES (
             with self.subTest(f"Testing STRING() for {dialect}"):
                 query = parse_one("STRING(a)", dialect=dialect)
                 self.assertEqual(query.sql(dialect), "CAST(a AS STRING)")
+
+    def test_analyze_compute_statistics(self):
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS FOR ALL COLUMNS")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS FOR COLUMNS foo, bar")
+        self.validate_identity("ANALYZE TABLE ctlg.db.tbl COMPUTE STATISTICS NOSCAN")
+        self.validate_identity(
+            "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
+        )
+        self.validate_identity("ANALYZE TABLES COMPUTE STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLES FROM db COMPUTE STATISTICS")

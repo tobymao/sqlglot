@@ -822,6 +822,22 @@ class TestBuild(unittest.TestCase):
                 lambda: exp.union("SELECT 1", "SELECT 2", "SELECT 3", "SELECT 4"),
                 "SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4",
             ),
+            (
+                lambda: select("x")
+                .with_("var1", as_=select("x").from_("tbl2").subquery(), scalar=True)
+                .from_("tbl")
+                .where("x > var1"),
+                "WITH (SELECT x FROM tbl2) AS var1 SELECT x FROM tbl WHERE x > var1",
+                "clickhouse",
+            ),
+            (
+                lambda: select("x")
+                .with_("var1", as_=select("x").from_("tbl2"), scalar=True)
+                .from_("tbl")
+                .where("x > var1"),
+                "WITH (SELECT x FROM tbl2) AS var1 SELECT x FROM tbl WHERE x > var1",
+                "clickhouse",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

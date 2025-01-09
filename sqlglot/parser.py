@@ -7082,16 +7082,15 @@ class Parser(metaclass=_Parser):
 
     def _parse_analyze(self) -> exp.Analyze | exp.Command:
         start = self._prev
-        kind = None
         this: t.Optional[exp.Expression] = None
         partition = None
 
+        kind = self._curr and self._curr.text.upper()
+
         if self._match(TokenType.TABLE):
-            kind = "TABLE"
             this = self._parse_table_parts()
             partition = self._parse_partition()
         elif self._match_texts("TABLES"):
-            kind = "TABLES"
             this = (
                 self._parse_table(is_db_reference=True)
                 if self._match_set((TokenType.FROM, TokenType.IN))
@@ -7100,10 +7099,13 @@ class Parser(metaclass=_Parser):
         else:
             return self._parse_as_command(start)
 
-        if self._match(TokenType.COMPUTE_STATISTICS):
-            compute_stats = self._parse_compute_statistics()
+        if self._match_text_seq("COMPUTE", "STATISTICS"):
             return self.expression(
-                exp.Analyze, kind=kind, this=this, partition=partition, expression=compute_stats
+                exp.Analyze,
+                kind=kind,
+                this=this,
+                partition=partition,
+                expression=self._parse_compute_statistics(),
             )
 
         return self._parse_as_command(start)

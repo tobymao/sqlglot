@@ -1224,6 +1224,7 @@ class Query(Expression):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
+        scalar: bool = False,
         **opts,
     ) -> Q:
         """
@@ -1244,6 +1245,7 @@ class Query(Expression):
                 Otherwise, this resets the expressions.
             dialect: the dialect used to parse the input expression.
             copy: if `False`, modify this expression instance in-place.
+            scalar: if `True`, this is a scalar common table expression.
             opts: other options to use to parse the input expressions.
 
         Returns:
@@ -1258,6 +1260,7 @@ class Query(Expression):
             append=append,
             dialect=dialect,
             copy=copy,
+            scalar=scalar,
             **opts,
         )
 
@@ -7036,11 +7039,15 @@ def _apply_cte_builder(
     append: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
+    scalar: bool = False,
     **opts,
 ) -> E:
     alias_expression = maybe_parse(alias, dialect=dialect, into=TableAlias, **opts)
-    as_expression = maybe_parse(as_, dialect=dialect, **opts)
-    cte = CTE(this=as_expression, alias=alias_expression, materialized=materialized)
+    as_expression = maybe_parse(as_, dialect=dialect, copy=copy, **opts)
+    if scalar and not isinstance(as_expression, Subquery):
+        # scalar CTE must be wrapped in a subquery
+        as_expression = Subquery(this=as_expression)
+    cte = CTE(this=as_expression, alias=alias_expression, materialized=materialized, scalar=scalar)
     return _apply_child_list_builder(
         cte,
         instance=instance,

@@ -4,7 +4,6 @@ jobs:
   run-benchmark:
     name: run benchmark
     runs-on: ubuntu-latest
-    if: ${{ false }}  # Uncomment this when the workflow is fixed (currently fails in PRs)
     steps:
       - uses: actions/checkout@v4
       - uses: boa-dev/criterion-compare-action@v3

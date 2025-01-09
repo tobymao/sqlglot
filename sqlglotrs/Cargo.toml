@@ -7,6 +7,7 @@ license = "MIT"
 [lib]
 name = "sqlglotrs"
 crate-type = ["cdylib", "rlib"]
+bench = false
 
 [[bench]]
 name = "long"

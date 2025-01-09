@@ -1089,7 +1089,19 @@ def str_position_sql(
         this = self.func("SUBSTR", this, position)
         position_offset = f" + {position} - 1"
 
-    return self.func(str_position_func_name, this, substr, instance) + position_offset
+    strpos_sql = self.func(str_position_func_name, this, substr, instance)
+
+    if position_offset:
+        zero = exp.Literal.number(0)
+        # If match is not found (returns 0) the position offset should not be applied
+        case = exp.If(
+            this=exp.EQ(this=strpos_sql, expression=zero),
+            true=zero,
+            false=strpos_sql + position_offset,
+        )
+        strpos_sql = self.sql(case)
+
+    return strpos_sql
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:

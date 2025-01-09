@@ -906,10 +906,14 @@ class TestParser(unittest.TestCase):
         ast = parse_one("ANALYZE TABLE tbl COMPUTE STATISTICS FOR ALL COLUMNS")
         self.assertIsInstance(ast, exp.Analyze)
 
-        # Fallback to command - valid postgres.
-        ast = parse_one("ANALYZE VERBOSE tbl")
-        self.assertIsInstance(ast, exp.Command)
+        with self.assertLogs(parser_logger) as cm:
+            # Fallback to command - valid postgres.
+            ast = parse_one("ANALYZE VERBOSE tbl")
+            self.assertIsInstance(ast, exp.Command)
+            assert "'ANALYZE VERBOSE tbl'" in cm.output[0]
 
-        # Fallback to command - valid sqllite.
-        ast = parse_one("ANALYZE TABLE tbl")
-        self.assertIsInstance(ast, exp.Command)
+        with self.assertLogs(parser_logger) as cm:
+            # Fallback to command - valid sqllite.
+            ast = parse_one("ANALYZE TABLE tbl")
+            self.assertIsInstance(ast, exp.Command)
+            assert "'ANALYZE TABLE tbl'" in cm.output[0]

@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v26.1.3] - 2025-01-09
+### :bug: Bug Fixes
+- [`d250846`](https://github.com/tobymao/sqlglot/commit/d250846d05711ac62a45efd4930f0ca712841b11) - **snowflake**: generate LIMIT when OFFSET exists [#4575](https://github.com/tobymao/sqlglot/pull/4575) *(PR [#4581](https://github.com/tobymao/sqlglot/pull/4581) by [@geooo109](https://github.com/geooo109))*
+
+### :wrench: Chores
+- [`ffbb935`](https://github.com/tobymao/sqlglot/commit/ffbb9350f8d0decab4555471ec2e468fa2741f5f) - install python 3.7 when building windows wheel for sqlglotrs *(PR [#4585](https://github.com/tobymao/sqlglot/pull/4585) by [@georgesittas](https://github.com/georgesittas))*
+- [`1ea05c0`](https://github.com/tobymao/sqlglot/commit/1ea05c0b4e3cf53482058b22ecac7ec7c1de525d) - bump sqlglotrs to 0.3.4 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.1.2] - 2025-01-08
 ### :wrench: Chores
 - [`e33af0b`](https://github.com/tobymao/sqlglot/commit/e33af0bcd859571dab68aef3a1fc9ecbf5c49e71) - try setup-python@v5 in the publish job *(PR [#4582](https://github.com/tobymao/sqlglot/pull/4582) by [@georgesittas](https://github.com/georgesittas))*
@@ -5590,3 +5599,4 @@ Changelog
 [v26.1.0]: https://github.com/tobymao/sqlglot/compare/v26.0.1...v26.1.0
 [v26.1.1]: https://github.com/tobymao/sqlglot/compare/v26.1.0...v26.1.1
 [v26.1.2]: https://github.com/tobymao/sqlglot/compare/v26.1.1...v26.1.2
+[v26.1.3]: https://github.com/tobymao/sqlglot/compare/v26.1.2...v26.1.3

@@ -900,20 +900,3 @@ class TestParser(unittest.TestCase):
         # Incomplete or incorrect anonymous meta comments are not registered
         ast = parse_one("YEAR(a) /* sqlglot.anon */")
         self.assertIsInstance(ast, exp.Year)
-
-    def test_analyze(self):
-        # Valid spark analyze statement.
-        ast = parse_one("ANALYZE TABLE tbl COMPUTE STATISTICS FOR ALL COLUMNS")
-        self.assertIsInstance(ast, exp.Analyze)
-
-        with self.assertLogs(parser_logger) as cm:
-            # Fallback to command - valid postgres.
-            ast = parse_one("ANALYZE VERBOSE tbl")
-            self.assertIsInstance(ast, exp.Command)
-            assert "'ANALYZE VERBOSE tbl'" in cm.output[0]
-
-        with self.assertLogs(parser_logger) as cm:
-            # Fallback to command - valid sqllite.
-            ast = parse_one("ANALYZE TABLE tbl")
-            self.assertIsInstance(ast, exp.Command)
-            assert "'ANALYZE TABLE tbl'" in cm.output[0]

@@ -654,3 +654,9 @@ WHERE
             "'W'",
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE tbl")
+        self.validate_identity("ANALYZE INDEX ndx")
+        self.validate_identity("ANALYZE TABLE db.tbl PARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE INDEX db.ndx PARTITION(foo = 'foo', bar = 'bar')")

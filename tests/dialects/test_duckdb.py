@@ -1448,3 +1448,6 @@ class TestDuckDB(Validator):
             "WITH t1 AS (FROM (FROM t2 SELECT foo1, foo2)) FROM t1",
             "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE")

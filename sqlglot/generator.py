@@ -4656,22 +4656,45 @@ class Generator(metaclass=_Generator):
 
         return f"NAME {name} VALUE {values}"
 
-    def computestatistics_sql(self, expression: exp.ComputeStatistics) -> str:
-        this = self.sql(expression, "this")
-        columns = self.expressions(expression)
-        columns = f" {columns}" if columns else ""
-        return f"COMPUTE STATISTICS {this}{columns}"
-
-    def analyze_sql(self, expression: exp.Analyze) -> str:
+    def statistics_sql(self, expression: exp.Statistics) -> str:
         kind = self.sql(expression, "kind")
+        option = self.sql(expression, "option")
+        option = f" {option}" if option else ""
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
-        if this and kind == "TABLES":
+        columns = self.expressions(expression)
+        columns = f" {columns}" if columns else ""
+        return f"{kind}{option} STATISTICS{this}{columns}"
+
+    def histogram_sql(self, expression: exp.Histogram) -> str:
+        this = self.sql(expression, "this")
+        columns = self.expressions(expression)
+        inner_expression = self.sql(expression, "expression")
+        inner_expression = f" {inner_expression}" if inner_expression else ""
+        update_options = self.sql(expression, "update_options")
+        update_options = f" {update_options} UPDATE" if update_options else ""
+        return f"{this} HISTOGRAM ON {columns}{inner_expression}{update_options}"
+
+    def usingdata_sql(self, expression: exp.UsingData) -> str:
+        data = self.sql(expression, "this")
+        return f"USING DATA {data}"
+
+    def analyze_sql(self, expression: exp.Analyze) -> str:
+        options = " ".join(expression.args.get("options") or [])
+        options = f" {options}" if options else ""
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        properties = self.sql(expression, "properties")
+        properties = f" {properties}" if properties else ""
+        if this and kind == " TABLES":
             this = f" FROM{this}"
         partition = self.sql(expression, "partition")
         partition = f" {partition}" if partition else ""
-        inner_expression = f" {self.sql(expression, 'expression')}"
-        return f"ANALYZE {kind}{this}{partition}{inner_expression}"
+        inner_expression = self.sql(expression, "expression")
+        inner_expression = f" {inner_expression}" if inner_expression else ""
+        return f"ANALYZE{options}{kind}{this}{properties}{partition}{inner_expression}"
 
     def xmltable_sql(self, expression: exp.XMLTable) -> str:
         this = self.sql(expression, "this")

@@ -4718,18 +4718,35 @@ class Alter(Expression):
 
 class Analyze(Expression):
     arg_types = {
-        "kind": True,
+        "kind": False,
         "this": False,
+        "options": False,
         "partition": False,
-        "expression": True,
+        "expression": False,
+        "properties": False,
     }
 
 
-class ComputeStatistics(Expression):
+class Statistics(Expression):
     arg_types = {
+        "kind": True,
+        "option": False,
         "this": False,
         "expressions": False,
     }
+
+
+class Histogram(Expression):
+    arg_types = {
+        "this": True,
+        "expressions": True,
+        "expression": False,
+        "update_options": False,
+    }
+
+
+class UsingData(Expression):
+    arg_types = {"this": True}
 
 
 class AddConstraint(Expression):

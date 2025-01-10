@@ -126,3 +126,8 @@ class TestStarrocks(Validator):
                         "spark": "SELECT id, t.col FROM tbl LATERAL VIEW EXPLODE(scores) t AS col",
                     },
                 )
+
+    def test_analyze(self):
+        self.validate_identity(
+            "ANALYZE SAMPLE SKIP_LOCKED TBL(col1, col2) PROPERTIES ('prop1'=val1, 'prop2'=val2)"
+        )

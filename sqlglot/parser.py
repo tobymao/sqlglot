@@ -1329,6 +1329,16 @@ class Parser(metaclass=_Parser):
     # The style options for the DESCRIBE statement
     DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
 
+    # The style options for the ANALYZE statement
+    ANALYZE_STYLES = {"VERBOSE", "FULL", "SAMPLE", "SKIP_LOCKED", "LOCAL", "NO_WRITE_TO_BINLOG"}
+
+    ANALYZE_EXPRESSION_PARSERS = {
+        "COMPUTE": lambda self: self._parse_analyze_statistics("COMPUTE"),
+        "ESTIMATE": lambda self: self._parse_analyze_statistics("ESTIMATE"),
+        "UPDATE": lambda self: self._parse_analyze_histogram("UPDATE"),
+        "DROP": lambda self: self._parse_analyze_histogram("DROP"),
+    }
+
     OPERATION_MODIFIERS: t.Set[str] = set()
 
     STRICT_CAST = True
@@ -7083,35 +7093,109 @@ class Parser(metaclass=_Parser):
 
         return self._parse_as_command(start)
 
-    def _parse_analyze(self) -> exp.Analyze | exp.Command:
-        start = self._prev
+    def _parse_analyze(self) -> exp.Analyze:
+        # https://duckdb.org/docs/sql/statements/analyze
+        if not self._curr:
+            return self.expression(exp.Analyze)
+
+        options = []
+        while self._match_texts(self.ANALYZE_STYLES):
+            options.append(self._prev.text.upper())
+
+        kind = None
         this: t.Optional[exp.Expression] = None
-        partition = None
+        partition: t.Optional[exp.Expression] = None
 
-        kind = self._curr and self._curr.text.upper()
-
-        if self._match(TokenType.TABLE):
+        if self._match(TokenType.TABLE) or self._match(TokenType.INDEX):
+            kind = self._prev.text.upper()
             this = self._parse_table_parts()
-            partition = self._parse_partition()
-        elif self._match_texts("TABLES"):
+        elif self._match_text_seq("TABLES"):
+            kind = self._prev.text.upper()
             this = (
-                self._parse_table(is_db_reference=True)
+                self._parse_table(schema=True, is_db_reference=True)
                 if self._match_set((TokenType.FROM, TokenType.IN))
                 else None
             )
         else:
-            return self._parse_as_command(start)
+            # Empty kind  https://prestodb.io/docs/current/sql/analyze.html
+            this = self._parse_table_parts()
 
-        if self._match_text_seq("COMPUTE", "STATISTICS"):
-            return self.expression(
-                exp.Analyze,
-                kind=kind,
-                this=this,
-                partition=partition,
-                expression=self._parse_compute_statistics(),
+        partition = self._parse_partition()
+        inner_expression: t.Optional[exp.Expression] = None
+        if self._match_texts(self.ANALYZE_EXPRESSION_PARSERS):
+            inner_expression = self.ANALYZE_EXPRESSION_PARSERS[self._prev.text.upper()](self)
+
+        properties = self._parse_properties()
+        return self.expression(
+            exp.Analyze,
+            kind=kind,
+            this=this,
+            partition=partition,
+            properties=properties,
+            expression=inner_expression,
+            options=options,
+        )
+
+    # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-aux-analyze-table.html
+    def _parse_analyze_statistics(self, kind) -> exp.Statistics:
+        this = None
+        option = self._prev.text.upper() if self._match_text_seq("DELTA") else None
+        expressions = []
+
+        if not self._match_text_seq("STATISTICS"):
+            self.raise_error("Expecting token STATISTICS")
+
+        if self._match_text_seq("NOSCAN"):
+            this = "NOSCAN"
+        elif self._match(TokenType.FOR):
+            if self._match_text_seq("ALL", "COLUMNS"):
+                this = "FOR ALL COLUMNS"
+            if self._match_texts("COLUMNS"):
+                this = "FOR COLUMNS"
+                expressions = self._parse_csv(self._parse_column_reference)
+        elif self._match_text_seq("SAMPLE"):
+            sample = self._parse_number()
+            expressions = (
+                [self.expression(exp.Command, this="SAMPLE", expression=f" {sample} PERCENT")]
+                if self._match(TokenType.PERCENT)
+                else []
             )
 
-        return self._parse_as_command(start)
+        return self.expression(
+            exp.Statistics, kind=kind, option=option, this=this, expressions=expressions
+        )
+
+    # https://dev.mysql.com/doc/refman/8.4/en/analyze-table.html
+    def _parse_analyze_histogram(self, this: str) -> exp.Histogram:
+        expression: t.Optional[exp.Expression] = None
+        expressions = []
+        update_options = None
+
+        if self._match_text_seq("HISTOGRAM", "ON"):
+            expressions = self._parse_csv(self._parse_column_reference)
+            if self._match(TokenType.WITH):
+                buckets = self._parse_number()
+                with_expression = (
+                    f"{buckets} {self._prev.text.upper()}"
+                    if self._match_text_seq("BUCKETS")
+                    else None
+                )
+                expression = self.expression(exp.With, expressions=[with_expression])
+            if self._match_texts(("MANUAL", "AUTO")) and self._match(
+                TokenType.UPDATE, advance=False
+            ):
+                update_options = self._prev.text.upper()
+                self._advance()
+            elif self._match_text_seq("USING", "DATA"):
+                expression = self.expression(exp.UsingData, this=self._parse_string())
+
+        return self.expression(
+            exp.Histogram,
+            this=this,
+            expressions=expressions,
+            expression=expression,
+            update_options=update_options,
+        )
 
     def _parse_merge(self) -> exp.Merge:
         self._match(TokenType.INTO)
@@ -7333,21 +7417,6 @@ class Parser(metaclass=_Parser):
             iterator=iterator,
             condition=condition,
         )
-
-    # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-aux-analyze-table.html
-    def _parse_compute_statistics(self) -> exp.ComputeStatistics:
-        this = None
-        expressions = None
-        if self._match_text_seq("NOSCAN"):
-            this = "NOSCAN"
-        elif self._match(TokenType.FOR):
-            if self._match_text_seq("ALL", "COLUMNS"):
-                this = "FOR ALL COLUMNS"
-            if self._match_texts("COLUMNS"):
-                this = "FOR COLUMNS"
-                expressions = self._parse_csv(self._parse_column_reference)
-
-        return self.expression(exp.ComputeStatistics, this=this, expressions=expressions)
 
     def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:
         if self._match(TokenType.HEREDOC_STRING):

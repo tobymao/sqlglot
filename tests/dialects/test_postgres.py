@@ -1316,3 +1316,8 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity(
             "SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES('xyz' AS bar), XMLELEMENT(NAME abc), XMLCOMMENT('test'), XMLELEMENT(NAME xyz))"
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TBL")
+        self.validate_identity("ANALYZE TBL(col1, col2)")
+        self.validate_identity("ANALYZE VERBOSE SKIP_LOCKED TBL(col1, col2)")

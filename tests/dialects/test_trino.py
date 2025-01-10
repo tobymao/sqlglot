@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -78,3 +79,7 @@ class TestTrino(Validator):
         self.validate_identity(
             "ALTER VIEW people SET AUTHORIZATION alice", check_command_warning=True
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE tbl").assert_is(exp.Analyze)
+        self.validate_identity("ANALYZE tbl WITH (prop1=val1, prop2=val2)").assert_is(exp.Analyze)

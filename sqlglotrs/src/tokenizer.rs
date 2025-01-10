@@ -23,7 +23,7 @@ pub struct Tokenizer {
 impl Tokenizer {
     #[new]
     pub fn new(settings: TokenizerSettings, token_types: TokenTypeSettings) -> Tokenizer {
-        let mut keyword_trie = Trie::new();
+        let mut keyword_trie = Trie::default();
         let single_token_strs: Vec<String> = settings
             .single_tokens
             .keys()

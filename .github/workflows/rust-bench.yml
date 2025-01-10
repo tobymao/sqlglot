@@ -1,4 +1,7 @@
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - 'sqlglotrs/**'
 name: benchmark pull requests
 jobs:
   run-benchmark:

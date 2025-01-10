@@ -528,7 +528,7 @@ class TestDialect(Validator):
                 "sqlite": "SELECT (NOT x GLOB CAST(x'2a5b5e012d7f5d2a' AS TEXT))",
                 "mysql": "SELECT REGEXP_LIKE(x, '^[[:ascii:]]*$')",
                 "postgres": "SELECT (x ~ '^[[:ascii:]]*$')",
-                "tsql": "SELECT (PATINDEX('%[^' + CHAR(0x00) + '-' + CHAR(0x7f) + ']%' COLLATE Latin1_General_BIN, x) = 0)",
+                "tsql": "SELECT (PATINDEX(CONVERT(VARCHAR(MAX), 0x255b5e002d7f5d25) COLLATE Latin1_General_BIN, x) = 0)",
                 "oracle": "SELECT NVL(REGEXP_LIKE(x, '^[' || CHR(1) || '-' || CHR(127) || ']*$'), TRUE)",
             },
         )

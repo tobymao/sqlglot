@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use rustc_hash::FxHashMap as HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TrieNode {
     is_word: bool,
     children: HashMap<char, TrieNode>,
@@ -35,21 +35,12 @@ impl TrieNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Trie {
     pub root: TrieNode,
 }
 
 impl Trie {
-    pub fn new() -> Self {
-        Trie {
-            root: TrieNode {
-                is_word: false,
-                children: HashMap::new(),
-            },
-        }
-    }
-
     pub fn add<'a, I>(&mut self, keys: I)
     where
         I: Iterator<Item = &'a String>,
@@ -59,7 +50,7 @@ impl Trie {
             for c in key.chars() {
                 current = current.children.entry(c).or_insert(TrieNode {
                     is_word: false,
-                    children: HashMap::new(),
+                    children: HashMap::default(),
                 });
             }
             current.is_word = true;

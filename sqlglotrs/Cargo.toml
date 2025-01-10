@@ -20,6 +20,7 @@ profiling = ["serde", "serde_json"]
 
 [dependencies]
 pyo3 = {version ="0.22.6", features = ["auto-initialize"]}
+rustc-hash = { version = "2.1" }
 
 # Optional dependencies used for profiling
 serde = { version = "1", features = ["derive"] , optional = true }

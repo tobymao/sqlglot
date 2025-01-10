@@ -481,6 +481,7 @@ class TestSnowflake(Validator):
             write={
                 "": "SELECT LOGICAL_OR(c1), LOGICAL_OR(c2) FROM test",
                 "duckdb": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "oracle": "SELECT MAX(c1), MAX(c2) FROM test",
                 "postgres": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
                 "snowflake": "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
                 "spark": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
@@ -492,6 +493,7 @@ class TestSnowflake(Validator):
             write={
                 "": "SELECT LOGICAL_AND(c1), LOGICAL_AND(c2) FROM test",
                 "duckdb": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "oracle": "SELECT MIN(c1), MIN(c2) FROM test",
                 "postgres": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
                 "snowflake": "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
                 "spark": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",

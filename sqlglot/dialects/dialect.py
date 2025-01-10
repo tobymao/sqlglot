@@ -1578,7 +1578,11 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
             then.transform(
                 lambda node: (
                     exp.column(node.this)
-                    if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
+                    if (
+                        isinstance(node, exp.Column)
+                        and normalize(node.args.get("table")) in targets
+                        and not isinstance(node.parent, exp.Func)
+                    )
                     else node
                 ),
                 copy=False,

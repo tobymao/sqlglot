@@ -291,6 +291,8 @@ class Oracle(Dialect):
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
+            exp.LogicalOr: rename_func("MAX"),
+            exp.LogicalAnd: rename_func("MIN"),
             exp.Mod: rename_func("MOD"),
             exp.Select: transforms.preprocess(
                 [

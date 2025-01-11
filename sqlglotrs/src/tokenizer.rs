@@ -24,13 +24,10 @@ impl Tokenizer {
     #[new]
     pub fn new(settings: TokenizerSettings, token_types: TokenTypeSettings) -> Tokenizer {
         let mut keyword_trie = Trie::default();
-        let single_token_strs: Vec<String> = settings
-            .single_tokens
-            .keys()
-            .map(|s| s.to_string())
-            .collect();
-        let trie_filter =
-            |key: &&String| key.contains(" ") || single_token_strs.iter().any(|t| key.contains(t));
+
+        let trie_filter = |key: &&String| {
+            key.contains(" ") || settings.single_tokens.keys().any(|&t| key.contains(t))
+        };
 
         keyword_trie.add(settings.keywords.keys().filter(trie_filter));
         keyword_trie.add(settings.comments.keys().filter(trie_filter));

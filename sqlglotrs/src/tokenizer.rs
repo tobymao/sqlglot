@@ -114,7 +114,7 @@ impl<'a> TokenizerState<'a> {
 
     fn tokenize(&mut self) -> Result<Vec<Token>, TokenizerError> {
         self.scan(None)?;
-        Ok(std::mem::replace(&mut self.tokens, Vec::new()))
+        Ok(std::mem::take(&mut self.tokens))
     }
 
     fn scan(&mut self, until_peek_char: Option<char>) -> Result<(), TokenizerError> {
@@ -237,7 +237,7 @@ impl<'a> TokenizerState<'a> {
             self.column,
             self.start,
             self.current - 1,
-            std::mem::replace(&mut self.comments, Vec::new()),
+            std::mem::take(&mut self.comments),
         ));
 
         // If we have either a semicolon or a begin token before the command's token, we'll parse

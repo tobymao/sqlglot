@@ -1387,3 +1387,4 @@ COMMENT='客户账户表'"""
         self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS")
         self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS AUTO UPDATE")
         self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS MANUAL UPDATE")
+        self.validate_identity("ANALYZE tbl DROP HISTOGRAM ON col1")

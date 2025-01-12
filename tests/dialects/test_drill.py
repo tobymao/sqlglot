@@ -19,3 +19,6 @@ class TestDrill(Validator):
                 "mysql": "SELECT '2021-01-01' + INTERVAL '1' MONTH",
             },
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS SAMPLE 5 PERCENT")

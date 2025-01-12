@@ -4721,6 +4721,7 @@ class Analyze(Expression):
         "kind": False,
         "this": False,
         "options": False,
+        "mode": False,
         "partition": False,
         "expression": False,
         "properties": False,
@@ -4745,8 +4746,18 @@ class Histogram(Expression):
     }
 
 
+class AnalyzeWith(Expression):
+    arg_types = {
+        "expressions": True,
+    }
+
+
+class AnalyzeColumns(Expression):
+    pass
+
+
 class UsingData(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 class AddConstraint(Expression):

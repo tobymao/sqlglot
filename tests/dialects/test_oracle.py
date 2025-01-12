@@ -660,3 +660,6 @@ WHERE
         self.validate_identity("ANALYZE INDEX ndx")
         self.validate_identity("ANALYZE TABLE db.tbl PARTITION(foo = 'foo', bar = 'bar')")
         self.validate_identity("ANALYZE INDEX db.ndx PARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE CLUSTER db.cluster")
+        # TODO _parse_command doesn't work
+        # self.validate_identity("ANALYZE TABLE tbl VALIDATE REF UPDATE")

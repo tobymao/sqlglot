@@ -666,3 +666,9 @@ FROM (
         self.validate_identity("GRANT USAGE ON DATABASE sales_db TO Bob")
         self.validate_identity("GRANT USAGE ON SCHEMA sales_schema TO ROLE Analyst_role")
         self.validate_identity("GRANT SELECT ON sales_db.sales_schema.tickit_sales_redshift TO Bob")
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TBL(col1, col2)")
+        self.validate_identity("ANALYZE VERBOSE TBL")
+        self.validate_identity("ANALYZE TBL PREDICATE COLUMNS")
+        self.validate_identity("ANALYZE TBL ALL COLUMNS")

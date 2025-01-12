@@ -4679,6 +4679,13 @@ class Generator(metaclass=_Generator):
         data = self.sql(expression, "this")
         return f"USING DATA {data}"
 
+    def analyzecolumns_sql(self, expression: exp.AnalyzeColumns) -> str:
+        return self.sql(expression, "this")
+
+    def analyzewith_sql(self, expression: exp.AnalyzeColumns) -> str:
+        expressions = " WITH ".join(expression.args.get("expressions") or [])
+        return f"WITH {expressions}" if expressions else ""
+
     def analyze_sql(self, expression: exp.Analyze) -> str:
         options = " ".join(expression.args.get("options") or [])
         options = f" {options}" if options else ""
@@ -4686,15 +4693,15 @@ class Generator(metaclass=_Generator):
         kind = f" {kind}" if kind else ""
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
+        mode = self.sql(expression, "mode")
+        mode = f" {mode}" if mode else ""
         properties = self.sql(expression, "properties")
         properties = f" {properties}" if properties else ""
-        if this and kind == " TABLES":
-            this = f" FROM{this}"
         partition = self.sql(expression, "partition")
         partition = f" {partition}" if partition else ""
         inner_expression = self.sql(expression, "expression")
         inner_expression = f" {inner_expression}" if inner_expression else ""
-        return f"ANALYZE{options}{kind}{this}{properties}{partition}{inner_expression}"
+        return f"ANALYZE{options}{kind}{this}{partition}{mode}{inner_expression}{properties}"
 
     def xmltable_sql(self, expression: exp.XMLTable) -> str:
         this = self.sql(expression, "this")

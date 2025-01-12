@@ -926,6 +926,7 @@ TBLPROPERTIES (
         self.validate_identity("ANALYZE TABLE ctlg.db.tbl COMPUTE STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLES COMPUTE STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLES FROM db COMPUTE STATISTICS")
+        self.validate_identity("ANALYZE TABLES IN db COMPUTE STATISTICS")
         self.validate_identity(
             "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
         )

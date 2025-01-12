@@ -1330,13 +1330,24 @@ class Parser(metaclass=_Parser):
     DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
 
     # The style options for the ANALYZE statement
-    ANALYZE_STYLES = {"VERBOSE", "FULL", "SAMPLE", "SKIP_LOCKED", "LOCAL", "NO_WRITE_TO_BINLOG"}
+    ANALYZE_STYLES = {
+        "VERBOSE": lambda self: "VERBOSE",
+        "FULL": lambda self: "FULL",
+        "SAMPLE": lambda self: "SAMPLE",
+        "SKIP_LOCKED": lambda self: "SKIP_LOCKED",
+        "LOCAL": lambda self: "LOCAL",
+        "NO_WRITE_TO_BINLOG": lambda self: "NO_WRITE_TO_BINLOG",
+        "BUFFER_USAGE_LIMIT": lambda self: f"BUFFER_USAGE_LIMIT {self._parse_number()}",
+    }
 
     ANALYZE_EXPRESSION_PARSERS = {
         "COMPUTE": lambda self: self._parse_analyze_statistics("COMPUTE"),
         "ESTIMATE": lambda self: self._parse_analyze_statistics("ESTIMATE"),
         "UPDATE": lambda self: self._parse_analyze_histogram("UPDATE"),
         "DROP": lambda self: self._parse_analyze_histogram("DROP"),
+        "PREDICATE": lambda self: self._parse_analyze_columns("PREDICATE"),
+        "ALL": lambda self: self._parse_analyze_columns("ALL"),
+        "VALIDATE": lambda self: self._parse_command(),
     }
 
     OPERATION_MODIFIERS: t.Set[str] = set()
@@ -7100,9 +7111,10 @@ class Parser(metaclass=_Parser):
 
         options = []
         while self._match_texts(self.ANALYZE_STYLES):
-            options.append(self._prev.text.upper())
+            options.append(self.ANALYZE_STYLES[self._prev.text.upper()](self))
 
         kind = None
+        mode = None
         this: t.Optional[exp.Expression] = None
         partition: t.Optional[exp.Expression] = None
 
@@ -7111,16 +7123,27 @@ class Parser(metaclass=_Parser):
             this = self._parse_table_parts()
         elif self._match_text_seq("TABLES"):
             kind = self._prev.text.upper()
-            this = (
-                self._parse_table(schema=True, is_db_reference=True)
-                if self._match_set((TokenType.FROM, TokenType.IN))
-                else None
-            )
+            if self._match_set((TokenType.FROM, TokenType.IN)):
+                kind = f"{kind} {self._prev.text.upper()}"
+                this = self._parse_table(schema=True, is_db_reference=True)
+        elif self._match_text_seq("DATABASE"):
+            kind = self._prev.text.upper()
+            this = self._parse_table(schema=True, is_db_reference=True)
+        elif self._match_text_seq("CLUSTER"):
+            kind = self._prev.text.upper()
+            this = self._parse_table()
         else:
             # Empty kind  https://prestodb.io/docs/current/sql/analyze.html
             this = self._parse_table_parts()
-
         partition = self._parse_partition()
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/ANALYZE_TABLE/
+        if self._match_text_seq("WITH", "SYNC", "MODE", advance=False) or self._match_text_seq(
+            "WITH", "ASYNC", "MODE", advance=False
+        ):
+            mode = f"WITH {self._next.text.upper()} MODE"
+            self._advance(3)
+
         inner_expression: t.Optional[exp.Expression] = None
         if self._match_texts(self.ANALYZE_EXPRESSION_PARSERS):
             inner_expression = self.ANALYZE_EXPRESSION_PARSERS[self._prev.text.upper()](self)
@@ -7130,6 +7153,7 @@ class Parser(metaclass=_Parser):
             exp.Analyze,
             kind=kind,
             this=this,
+            mode=mode,
             partition=partition,
             properties=properties,
             expression=inner_expression,
@@ -7165,6 +7189,12 @@ class Parser(metaclass=_Parser):
             exp.Statistics, kind=kind, option=option, this=this, expressions=expressions
         )
 
+    def _parse_analyze_columns(self, this: str) -> t.Optional[exp.AnalyzeColumns]:
+        if self._match_text_seq("COLUMNS"):
+            return self.expression(exp.AnalyzeColumns, this=f"{this} {self._prev.text.upper()}")
+        self.raise_error("Expecting COLUMNS")
+        return None
+
     # https://dev.mysql.com/doc/refman/8.4/en/analyze-table.html
     def _parse_analyze_histogram(self, this: str) -> exp.Histogram:
         expression: t.Optional[exp.Expression] = None
@@ -7173,14 +7203,20 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("HISTOGRAM", "ON"):
             expressions = self._parse_csv(self._parse_column_reference)
-            if self._match(TokenType.WITH):
-                buckets = self._parse_number()
-                with_expression = (
-                    f"{buckets} {self._prev.text.upper()}"
-                    if self._match_text_seq("BUCKETS")
-                    else None
-                )
-                expression = self.expression(exp.With, expressions=[with_expression])
+            with_expressions = []
+            while self._match(TokenType.WITH):
+                # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/ANALYZE_TABLE/
+                if self._match_texts(("SYNC", "ASYNC")):
+                    if self._match_text_seq("MODE", advance=False):
+                        with_expressions.append(f"{self._prev.text.upper()} MODE")
+                        self._advance()
+                else:
+                    buckets = self._parse_number()
+                    if self._match_text_seq("BUCKETS"):
+                        with_expressions.append(f"{buckets} BUCKETS")
+            if len(with_expressions):
+                expression = self.expression(exp.AnalyzeWith, expressions=with_expressions)
+
             if self._match_texts(("MANUAL", "AUTO")) and self._match(
                 TokenType.UPDATE, advance=False
             ):

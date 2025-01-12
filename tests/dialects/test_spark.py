@@ -264,6 +264,14 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
         self.validate_identity(
+            "SELECT 1 limit",
+            "SELECT 1 AS limit",
+        )
+        self.validate_identity(
+            "SELECT 1 offset",
+            "SELECT 1 AS offset",
+        )
+        self.validate_identity(
             "SELECT UNIX_TIMESTAMP()",
             "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
         )

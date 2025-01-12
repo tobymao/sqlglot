@@ -1271,4 +1271,4 @@ class TSQL(Dialect):
             )
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
-            return f"(PATINDEX('%[^' + CHAR(0x00) + '-' + CHAR(0x7f) + ']%' COLLATE Latin1_General_BIN, {self.sql(expression.this)}) = 0)"
+            return f"(PATINDEX(CONVERT(VARCHAR(MAX), 0x255b5e002d7f5d25) COLLATE Latin1_General_BIN, {self.sql(expression.this)}) = 0)"

@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
-
 use pyo3::prelude::*;
+use rustc_hash::FxHashMap as HashMap;
+use rustc_hash::FxHashSet as HashSet;
 
 pub type TokenType = u16;
 

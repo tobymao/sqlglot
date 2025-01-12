@@ -497,6 +497,7 @@ class Parser(metaclass=_Parser):
         TokenType.KEEP,
         TokenType.KILL,
         TokenType.LEFT,
+        TokenType.LIMIT,
         TokenType.LOAD,
         TokenType.MERGE,
         TokenType.NATURAL,
@@ -552,7 +553,6 @@ class Parser(metaclass=_Parser):
         TokenType.LEFT,
         TokenType.LOCK,
         TokenType.NATURAL,
-        TokenType.OFFSET,
         TokenType.RIGHT,
         TokenType.SEMI,
         TokenType.WINDOW,
@@ -1349,6 +1349,8 @@ class Parser(metaclass=_Parser):
         "ALL": lambda self: self._parse_analyze_columns("ALL"),
         "VALIDATE": lambda self: self._parse_command(),
     }
+
+    AMBIGUOUS_ALIAS_TOKENS = (TokenType.LIMIT, TokenType.OFFSET)
 
     OPERATION_MODIFIERS: t.Set[str] = set()
 
@@ -3200,6 +3202,12 @@ class Parser(metaclass=_Parser):
     def _parse_table_alias(
         self, alias_tokens: t.Optional[t.Collection[TokenType]] = None
     ) -> t.Optional[exp.TableAlias]:
+        # In some dialects, LIMIT and OFFSET can act as both identifiers and keywords (clauses)
+        # so this section tries to parse the clause version and if it fails, it treats the token
+        # as an identifier (alias)
+        if self._can_parse_limit_or_offset():
+            return None
+
         any_token = self._match(TokenType.ALIAS)
         alias = (
             self._parse_id_var(any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
@@ -4448,6 +4456,18 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Offset, this=this, expression=count, expressions=self._parse_limit_by()
         )
+
+    def _can_parse_limit_or_offset(self) -> bool:
+        if not self._match_set(self.AMBIGUOUS_ALIAS_TOKENS, advance=False):
+            return False
+
+        index = self._index
+        result = bool(
+            self._try_parse(self._parse_limit, retreat=True)
+            or self._try_parse(self._parse_offset, retreat=True)
+        )
+        self._retreat(index)
+        return result
 
     def _parse_limit_by(self) -> t.Optional[t.List[exp.Expression]]:
         return self._match_text_seq("BY") and self._parse_csv(self._parse_bitwise)
@@ -6658,6 +6678,12 @@ class Parser(metaclass=_Parser):
     def _parse_alias(
         self, this: t.Optional[exp.Expression], explicit: bool = False
     ) -> t.Optional[exp.Expression]:
+        # In some dialects, LIMIT and OFFSET can act as both identifiers and keywords (clauses)
+        # so this section tries to parse the clause version and if it fails, it treats the token
+        # as an identifier (alias)
+        if self._can_parse_limit_or_offset():
+            return this
+
         any_token = self._match(TokenType.ALIAS)
         comments = self._prev_comments or []
 

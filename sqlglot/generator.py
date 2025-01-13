@@ -4687,8 +4687,18 @@ class Generator(metaclass=_Generator):
     def analyzecolumns_sql(self, expression: exp.AnalyzeColumns) -> str:
         return self.sql(expression, "this")
 
+    def analyzedelete_sql(self, expression: exp.AnalyzeDelete) -> str:
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        return f"DELETE{kind} STATISTICS"
+
     def analyzewith_sql(self, expression: exp.AnalyzeColumns) -> str:
         return self.expressions(expression, prefix="WITH ", sep=" ")
+
+    def analyzelistchainedrows_sql(self, expression: exp.AnalyzeValidate) -> str:
+        inner_expression = self.sql(expression, "expression")[1:]  # INTO has a leading space.
+        inner_expression = f" {inner_expression}" if inner_expression else ""
+        return f"LIST CHAINED ROWS{inner_expression}"
 
     def analyzevalidate_sql(self, expression: exp.AnalyzeValidate) -> str:
         kind = self.sql(expression, "kind")

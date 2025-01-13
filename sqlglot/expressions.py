@@ -4753,6 +4753,18 @@ class Sample(Expression):
     }
 
 
+class AnalyzeListChainedRows(Expression):
+    arg_types = {
+        "expression": False,
+    }
+
+
+class AnalyzeDelete(Expression):
+    arg_types = {
+        "kind": False,
+    }
+
+
 class AnalyzeWith(Expression):
     arg_types = {
         "expressions": True,

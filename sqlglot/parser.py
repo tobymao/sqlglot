@@ -1331,22 +1331,24 @@ class Parser(metaclass=_Parser):
 
     # The style options for the ANALYZE statement
     ANALYZE_STYLES = {
-        "VERBOSE",
+        "BUFFER_USAGE_LIMIT",
         "FULL",
-        "SAMPLE",
-        "SKIP_LOCKED",
         "LOCAL",
         "NO_WRITE_TO_BINLOG",
-        "BUFFER_USAGE_LIMIT",
+        "SAMPLE",
+        "SKIP_LOCKED",
+        "VERBOSE",
     }
 
     ANALYZE_EXPRESSION_PARSERS = {
-        "COMPUTE": lambda self: self._parse_analyze_statistics(),
-        "ESTIMATE": lambda self: self._parse_analyze_statistics(),
-        "UPDATE": lambda self: self._parse_analyze_histogram(),
-        "DROP": lambda self: self._parse_analyze_histogram(),
-        "PREDICATE": lambda self: self._parse_analyze_columns(),
         "ALL": lambda self: self._parse_analyze_columns(),
+        "COMPUTE": lambda self: self._parse_analyze_statistics(),
+        "DELETE": lambda self: self._parse_analyze_delete(),
+        "DROP": lambda self: self._parse_analyze_histogram(),
+        "ESTIMATE": lambda self: self._parse_analyze_statistics(),
+        "LIST": lambda self: self._parse_analyze_list(),
+        "PREDICATE": lambda self: self._parse_analyze_columns(),
+        "UPDATE": lambda self: self._parse_analyze_histogram(),
         "VALIDATE": lambda self: self._parse_analyze_validate(),
     }
 
@@ -7130,7 +7132,8 @@ class Parser(metaclass=_Parser):
 
         return self._parse_as_command(start)
 
-    def _parse_analyze(self) -> exp.Analyze:
+    def _parse_analyze(self) -> exp.Analyze | exp.Command:
+        start = self._prev
         # https://duckdb.org/docs/sql/statements/analyze
         if not self._curr:
             return self.expression(exp.Analyze)
@@ -7146,6 +7149,7 @@ class Parser(metaclass=_Parser):
         mode = None
         this: t.Optional[exp.Expression] = None
         partition: t.Optional[exp.Expression] = None
+        inner_expression: t.Optional[exp.Expression] = None
 
         if self._match(TokenType.TABLE) or self._match(TokenType.INDEX):
             kind = self._prev.text.upper()
@@ -7161,10 +7165,17 @@ class Parser(metaclass=_Parser):
         elif self._match_text_seq("CLUSTER"):
             kind = self._prev.text.upper()
             this = self._parse_table()
+        # Try matching inner expr keywords before fallback to parse table.
+        elif self._match_texts(self.ANALYZE_EXPRESSION_PARSERS):
+            inner_expression = self.ANALYZE_EXPRESSION_PARSERS[self._prev.text.upper()](self)
         else:
             # Empty kind  https://prestodb.io/docs/current/sql/analyze.html
             this = self._parse_table_parts()
-        partition = self._parse_partition()
+
+        try:
+            partition = self._parse_partition()
+        except ParseError:
+            return self._parse_as_command(start)
 
         # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/ANALYZE_TABLE/
         if self._match_text_seq("WITH", "SYNC", "MODE", advance=False) or self._match_text_seq(
@@ -7173,7 +7184,6 @@ class Parser(metaclass=_Parser):
             mode = f"WITH {self._next.text.upper()} MODE"
             self._advance(3)
 
-        inner_expression: t.Optional[exp.Expression] = None
         if self._match_texts(self.ANALYZE_EXPRESSION_PARSERS):
             inner_expression = self.ANALYZE_EXPRESSION_PARSERS[self._prev.text.upper()](self)
 
@@ -7248,6 +7258,19 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("COLUMNS"):
             return self.expression(exp.AnalyzeColumns, this=f"{this} {self._prev.text.upper()}")
         self.raise_error("Expecting COLUMNS")
+        return None
+
+    def _parse_analyze_delete(self) -> t.Optional[exp.AnalyzeDelete]:
+        kind = self._prev.text.upper() if self._match_text_seq("SYSTEM") else None
+        if self._match_text_seq("STATISTICS"):
+            return self.expression(exp.AnalyzeDelete, kind=kind)
+        self.raise_error("Expecting STATISTICS")
+        return None
+
+    def _parse_analyze_list(self) -> t.Optional[exp.AnalyzeListChainedRows]:
+        if self._match_text_seq("CHAINED", "ROWS"):
+            return self.expression(exp.AnalyzeListChainedRows, expression=self._parse_into())
+        self.raise_error("Expecting CHAINED ROWS")
         return None
 
     # https://dev.mysql.com/doc/refman/8.4/en/analyze-table.html

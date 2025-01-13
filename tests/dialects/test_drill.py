@@ -21,4 +21,5 @@ class TestDrill(Validator):
         )
 
     def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS")
         self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS SAMPLE 5 PERCENT")

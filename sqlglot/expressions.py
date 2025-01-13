@@ -4746,9 +4746,24 @@ class Histogram(Expression):
     }
 
 
+class Sample(Expression):
+    arg_types = {
+        "kind": True,
+        "sample": True,
+    }
+
+
 class AnalyzeWith(Expression):
     arg_types = {
         "expressions": True,
+    }
+
+
+class AnalyzeValidate(Expression):
+    arg_types = {
+        "kind": True,
+        "this": False,
+        "expression": False,
     }
 
 

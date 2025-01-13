@@ -1331,23 +1331,23 @@ class Parser(metaclass=_Parser):
 
     # The style options for the ANALYZE statement
     ANALYZE_STYLES = {
-        "VERBOSE": lambda self: "VERBOSE",
-        "FULL": lambda self: "FULL",
-        "SAMPLE": lambda self: "SAMPLE",
-        "SKIP_LOCKED": lambda self: "SKIP_LOCKED",
-        "LOCAL": lambda self: "LOCAL",
-        "NO_WRITE_TO_BINLOG": lambda self: "NO_WRITE_TO_BINLOG",
-        "BUFFER_USAGE_LIMIT": lambda self: f"BUFFER_USAGE_LIMIT {self._parse_number()}",
+        "VERBOSE",
+        "FULL",
+        "SAMPLE",
+        "SKIP_LOCKED",
+        "LOCAL",
+        "NO_WRITE_TO_BINLOG",
+        "BUFFER_USAGE_LIMIT",
     }
 
     ANALYZE_EXPRESSION_PARSERS = {
-        "COMPUTE": lambda self: self._parse_analyze_statistics("COMPUTE"),
-        "ESTIMATE": lambda self: self._parse_analyze_statistics("ESTIMATE"),
-        "UPDATE": lambda self: self._parse_analyze_histogram("UPDATE"),
-        "DROP": lambda self: self._parse_analyze_histogram("DROP"),
-        "PREDICATE": lambda self: self._parse_analyze_columns("PREDICATE"),
-        "ALL": lambda self: self._parse_analyze_columns("ALL"),
-        "VALIDATE": lambda self: self._parse_command(),
+        "COMPUTE": lambda self: self._parse_analyze_statistics(),
+        "ESTIMATE": lambda self: self._parse_analyze_statistics(),
+        "UPDATE": lambda self: self._parse_analyze_histogram(),
+        "DROP": lambda self: self._parse_analyze_histogram(),
+        "PREDICATE": lambda self: self._parse_analyze_columns(),
+        "ALL": lambda self: self._parse_analyze_columns(),
+        "VALIDATE": lambda self: self._parse_analyze_validate(),
     }
 
     AMBIGUOUS_ALIAS_TOKENS = (TokenType.LIMIT, TokenType.OFFSET)
@@ -7137,7 +7137,10 @@ class Parser(metaclass=_Parser):
 
         options = []
         while self._match_texts(self.ANALYZE_STYLES):
-            options.append(self.ANALYZE_STYLES[self._prev.text.upper()](self))
+            if self._prev.text.upper() == "BUFFER_USAGE_LIMIT":
+                options.append(f"BUFFER_USAGE_LIMIT {self._parse_number()}")
+            else:
+                options.append(self._prev.text.upper())
 
         kind = None
         mode = None
@@ -7187,8 +7190,9 @@ class Parser(metaclass=_Parser):
         )
 
     # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-aux-analyze-table.html
-    def _parse_analyze_statistics(self, kind) -> exp.Statistics:
+    def _parse_analyze_statistics(self) -> exp.Statistics:
         this = None
+        kind = self._prev.text.upper()
         option = self._prev.text.upper() if self._match_text_seq("DELTA") else None
         expressions = []
 
@@ -7205,24 +7209,50 @@ class Parser(metaclass=_Parser):
                 expressions = self._parse_csv(self._parse_column_reference)
         elif self._match_text_seq("SAMPLE"):
             sample = self._parse_number()
-            expressions = (
-                [self.expression(exp.Command, this="SAMPLE", expression=f" {sample} PERCENT")]
-                if self._match(TokenType.PERCENT)
-                else []
-            )
+            expressions = [
+                self.expression(
+                    exp.Sample,
+                    sample=sample,
+                    kind=self._prev.text.upper() if self._match(TokenType.PERCENT) else None,
+                )
+            ]
 
         return self.expression(
             exp.Statistics, kind=kind, option=option, this=this, expressions=expressions
         )
 
-    def _parse_analyze_columns(self, this: str) -> t.Optional[exp.AnalyzeColumns]:
+    # https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/ANALYZE.html
+    def _parse_analyze_validate(self) -> exp.AnalyzeValidate:
+        kind = None
+        this = None
+        expression: t.Optional[exp.Expression] = None
+        if self._match_text_seq("REF", "UPDATE"):
+            kind = "REF"
+            this = "UPDATE"
+            if self._match_text_seq("SET", "DANGLING", "TO", "NULL"):
+                this = "UPDATE SET DANGLING TO NULL"
+        elif self._match_text_seq("STRUCTURE"):
+            kind = "STRUCTURE"
+            if self._match_text_seq("CASCADE", "FAST"):
+                this = "CASCADE FAST"
+            elif self._match_text_seq("CASCADE", "COMPLETE") and self._match_texts(
+                ("ONLINE", "OFFLINE")
+            ):
+                this = f"CASCADE COMPLETE {self._prev.text.upper()}"
+                expression = self._parse_into()
+
+        return self.expression(exp.AnalyzeValidate, kind=kind, this=this, expression=expression)
+
+    def _parse_analyze_columns(self) -> t.Optional[exp.AnalyzeColumns]:
+        this = self._prev.text.upper()
         if self._match_text_seq("COLUMNS"):
             return self.expression(exp.AnalyzeColumns, this=f"{this} {self._prev.text.upper()}")
         self.raise_error("Expecting COLUMNS")
         return None
 
     # https://dev.mysql.com/doc/refman/8.4/en/analyze-table.html
-    def _parse_analyze_histogram(self, this: str) -> exp.Histogram:
+    def _parse_analyze_histogram(self) -> exp.Histogram:
+        this = self._prev.text.upper()
         expression: t.Optional[exp.Expression] = None
         expressions = []
         update_options = None
@@ -7240,7 +7270,7 @@ class Parser(metaclass=_Parser):
                     buckets = self._parse_number()
                     if self._match_text_seq("BUCKETS"):
                         with_expressions.append(f"{buckets} BUCKETS")
-            if len(with_expressions):
+            if with_expressions:
                 expression = self.expression(exp.AnalyzeWith, expressions=with_expressions)
 
             if self._match_texts(("MANUAL", "AUTO")) and self._match(

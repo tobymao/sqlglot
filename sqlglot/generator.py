@@ -4656,6 +4656,11 @@ class Generator(metaclass=_Generator):
 
         return f"NAME {name} VALUE {values}"
 
+    def sample_sql(self, expression: exp.Sample) -> str:
+        kind = self.sql(expression, "kind")
+        sample = self.sql(expression, "sample")
+        return f"SAMPLE {sample} {kind}"
+
     def statistics_sql(self, expression: exp.Statistics) -> str:
         kind = self.sql(expression, "kind")
         option = self.sql(expression, "option")
@@ -4683,11 +4688,18 @@ class Generator(metaclass=_Generator):
         return self.sql(expression, "this")
 
     def analyzewith_sql(self, expression: exp.AnalyzeColumns) -> str:
-        expressions = " WITH ".join(expression.args.get("expressions") or [])
-        return f"WITH {expressions}" if expressions else ""
+        return self.expressions(expression, prefix="WITH ", sep=" ")
+
+    def analyzevalidate_sql(self, expression: exp.AnalyzeValidate) -> str:
+        kind = self.sql(expression, "kind")
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        inner_expression = self.sql(expression, "expression")[1:]  # INTO has a leading space.
+        inner_expression = f" {inner_expression}" if inner_expression else ""
+        return f"VALIDATE {kind}{this}{inner_expression}"
 
     def analyze_sql(self, expression: exp.Analyze) -> str:
-        options = " ".join(expression.args.get("options") or [])
+        options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""

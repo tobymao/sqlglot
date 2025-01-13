@@ -146,9 +146,7 @@ class Scope:
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-            elif _is_derived_table(node) and isinstance(
-                node.parent, (exp.From, exp.Join, exp.Subquery)
-            ):
+            elif _is_derived_table(node) and _is_from_or_join(node):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.UNWRAPPED_QUERIES):
                 self._subqueries.append(node)
@@ -659,6 +657,19 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
     return isinstance(expression, exp.Subquery) and bool(
         expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
     )
+
+
+def _is_from_or_join(expression: exp.Expression) -> bool:
+    """
+    Determine if `expression` is the FROM or JOIN clause of a SELECT statement.
+    """
+    parent = expression.parent
+
+    # Subqueries can be arbitrarily nested
+    while isinstance(parent, exp.Subquery):
+        parent = parent.parent
+
+    return isinstance(parent, (exp.From, exp.Join))
 
 
 def _traverse_tables(scope):

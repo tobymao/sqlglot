@@ -77,6 +77,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT MATCH_CONDITION")
         self.validate_identity("SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t")
         self.validate_identity("1 /* /* */")
+        self.validate_identity("TO_TIMESTAMP(col, fmt)")
         self.validate_identity(
             "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )
@@ -104,7 +105,10 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
-        self.validate_identity("TO_TIMESTAMP(col, fmt)")
+        self.validate_identity(
+            "GET_PATH(json_data, '$id')",
+            """GET_PATH(json_data, '["$id"]')""",
+        )
         self.validate_identity(
             "CAST(x AS GEOGRAPHY)",
             "TO_GEOGRAPHY(x)",

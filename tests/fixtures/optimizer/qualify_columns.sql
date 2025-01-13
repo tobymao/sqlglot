@@ -277,6 +277,10 @@ SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x UNION SELECT x.a A
 SELECT a FROM (SELECT a FROM x UNION SELECT a FROM x) ORDER BY a;
 SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x) AS _q_0 ORDER BY a;
 
+# title: nested subqueries in union
+((select a from x where a < 1)) UNION ((select a from x where a > 2));
+((SELECT x.a AS a FROM x AS x WHERE x.a < 1)) UNION ((SELECT x.a AS a FROM x AS x WHERE x.a > 2));
+
 --------------------------------------
 -- Subqueries
 --------------------------------------

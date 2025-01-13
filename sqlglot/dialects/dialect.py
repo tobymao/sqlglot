@@ -1584,9 +1584,9 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
                     ):
                         equal_lhs.replace(exp.column(equal_lhs.this))
             if isinstance(then, exp.Insert):
-                column_list = then.args.get("this")
-                if column_list is not None:
-                    for column in column_list.find_all(exp.Column):
+                column_list = then.this
+                if isinstance(column_list, exp.Tuple):
+                    for column in column_list.expressions:
                         if normalize(column.args.get("table")) in targets:
                             column.replace(exp.column(column.this))
 

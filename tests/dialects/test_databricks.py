@@ -291,3 +291,15 @@ class TestDatabricks(Validator):
         self.validate_identity("GRANT SELECT ON TABLE sample_data TO `alf@melmak.et`")
         self.validate_identity("GRANT ALL PRIVILEGES ON TABLE forecasts TO finance")
         self.validate_identity("GRANT SELECT ON TABLE t TO `fab9e00e-ca35-11ec-9d64-0242ac120002`")
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR ALL COLUMNS")
+        self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR COLUMNS foo, bar")
+        self.validate_identity("ANALYZE TABLE ctlg.db.tbl COMPUTE DELTA STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLES COMPUTE STATISTICS NOSCAN")
+        self.validate_identity("ANALYZE TABLES FROM db COMPUTE STATISTICS")
+        self.validate_identity("ANALYZE TABLES IN db COMPUTE STATISTICS")
+        self.validate_identity(
+            "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
+        )

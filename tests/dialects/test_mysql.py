@@ -1378,3 +1378,13 @@ COMMENT='客户账户表'"""
                 "mysql": "SELECT FORMAT(12332.2, 2, 'de_DE')",
             },
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE LOCAL TABLE tbl")
+        self.validate_identity("ANALYZE NO_WRITE_TO_BINLOG TABLE tbl")
+        self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1")
+        self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 USING DATA 'json_data'")
+        self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS")
+        self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS AUTO UPDATE")
+        self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS MANUAL UPDATE")
+        self.validate_identity("ANALYZE tbl DROP HISTOGRAM ON col1")

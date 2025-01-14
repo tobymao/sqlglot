@@ -654,3 +654,26 @@ WHERE
             "'W'",
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE tbl")
+        self.validate_identity("ANALYZE INDEX ndx")
+        self.validate_identity("ANALYZE TABLE db.tbl PARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE INDEX db.ndx PARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE INDEX db.ndx PARTITION(part1)")
+        self.validate_identity("ANALYZE CLUSTER db.cluster")
+        self.validate_identity("ANALYZE TABLE tbl VALIDATE REF UPDATE")
+        self.validate_identity("ANALYZE LIST CHAINED ROWS")
+        self.validate_identity("ANALYZE LIST CHAINED ROWS INTO tbl")
+        self.validate_identity("ANALYZE DELETE STATISTICS")
+        self.validate_identity("ANALYZE DELETE SYSTEM STATISTICS")
+        self.validate_identity("ANALYZE VALIDATE REF UPDATE")
+        self.validate_identity("ANALYZE VALIDATE REF UPDATE SET DANGLING TO NULL")
+        self.validate_identity("ANALYZE VALIDATE STRUCTURE")
+        self.validate_identity("ANALYZE VALIDATE STRUCTURE CASCADE FAST")
+        self.validate_identity(
+            "ANALYZE TABLE tbl VALIDATE STRUCTURE CASCADE COMPLETE ONLINE INTO db.tbl"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE tbl VALIDATE STRUCTURE CASCADE COMPLETE OFFLINE INTO db.tbl"
+        )

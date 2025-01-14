@@ -620,7 +620,9 @@ class DuckDB(Dialect):
             exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
-            exp.StrPosition: str_position_sql,
+            exp.StrPosition: lambda self, e: str_position_sql(
+                self, e, func_name="STRPOS", supports_position=False, supports_occurrence=False,
+            ),
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),

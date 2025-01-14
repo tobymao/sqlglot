@@ -204,14 +204,13 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "STRPOS('ABC', 'A', 3)",
-            read={
-                "trino": "STRPOS('ABC', 'A', 3)",
-            },
+            "STRPOS(haystack, needle, occurence)",
             write={
-                "presto": "STRPOS('ABC', 'A', 3)",
-                "trino": "STRPOS('ABC', 'A', 3)",
-                "snowflake": "POSITION('A', 'ABC')",
+                "bigquery": "INSTR(haystack, needle, 1, occurence)",
+                "oracle": "INSTR(haystack, needle, 1, occurence)",
+                "presto": "STRPOS(haystack, needle, occurence)",
+                "trino": "STRPOS(haystack, needle)",
+                "teradata": "INSTR(haystack, needle, 1, occurence)",
             },
         )
 

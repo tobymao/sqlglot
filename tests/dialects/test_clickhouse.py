@@ -85,8 +85,6 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
-        self.validate_identity("position(haystack, needle)")
-        self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS DateTime)")
         self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS DateTime)")
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
@@ -397,10 +395,6 @@ class TestClickhouse(Validator):
             write={
                 "clickhouse": "SELECT quantileIf(0.5)(a, TRUE)",
             },
-        )
-        self.validate_all(
-            "SELECT position(needle IN haystack)",
-            write={"clickhouse": "SELECT position(haystack, needle)"},
         )
         self.validate_identity(
             "SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result = 'break'"

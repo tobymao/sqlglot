@@ -1591,14 +1591,6 @@ WHERE
             },
         )
         self.validate_all(
-            "SELECT STRPOS('foo@example.com', '@')",
-            write={
-                "bigquery": "SELECT STRPOS('foo@example.com', '@')",
-                "duckdb": "SELECT STRPOS('foo@example.com', '@')",
-                "snowflake": "SELECT POSITION('@', 'foo@example.com')",
-            },
-        )
-        self.validate_all(
             "SELECT ts + MAKE_INTERVAL(1, 2, minute => 5, day => 3)",
             write={
                 "bigquery": "SELECT ts + MAKE_INTERVAL(1, 2, day => 3, minute => 5)",
@@ -2239,8 +2231,8 @@ OPTIONS (
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
         self.validate_identity(
-            r"REGEXP_SUBSTR(value, pattern, position, occurence)",
-            r"REGEXP_EXTRACT(value, pattern, position, occurence)",
+            r"REGEXP_SUBSTR(value, pattern, position, occurrence)",
+            r"REGEXP_EXTRACT(value, pattern, position, occurrence)",
         )
 
         self.validate_all(

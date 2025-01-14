@@ -12,7 +12,6 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     isnull_to_is_null,
     length_or_char_length_sql,
-    locate_to_strposition,
     max_or_greatest,
     min_or_least,
     no_ilike_sql,
@@ -23,7 +22,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     build_date_delta_with_interval,
     rename_func,
-    strposition_to_locate_sql,
+    str_position_sql,
     unit_to_var,
     trim_sql,
     timestrtotime_sql,
@@ -311,7 +310,6 @@ class MySQL(Dialect):
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "ISNULL": isnull_to_is_null,
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
-            "LOCATE": locate_to_strposition,
             "MAKETIME": exp.TimeFromParts.from_arg_list,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "MONTHNAME": lambda args: exp.TimeToStr(
@@ -750,7 +748,9 @@ class MySQL(Dialect):
                     transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
-            exp.StrPosition: strposition_to_locate_sql,
+            exp.StrPosition: lambda self, e: str_position_sql(
+                self, e, func_name="LOCATE", supports_position=True, supports_occurrence=False,
+            ),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),

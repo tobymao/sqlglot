@@ -201,7 +201,7 @@ class SQLite(Dialect):
                 ]
             ),
             exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, str_position_func_name="INSTR"
+                self, e, func_name="INSTR", supports_position=False, supports_occurrence=False,
             ),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),

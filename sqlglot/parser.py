@@ -213,7 +213,6 @@ class Parser(metaclass=_Parser):
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "HEX": build_hex,
-        "INSTR": lambda args: exp.StrPosition(this=seq_get(args, 0), substr=seq_get(args, 1)),
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
@@ -232,6 +231,27 @@ class Parser(metaclass=_Parser):
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
+        "STRPOS": lambda args: exp.StrPosition(
+            this=seq_get(args, 0),
+            substr=seq_get(args, 1),
+            position=seq_get(args, 2),
+        ),
+        "CHARINDEX": lambda args: exp.StrPosition(
+            this=seq_get(args, 1),
+            substr=seq_get(args, 0),
+            position=seq_get(args, 2), 
+        ),
+        "INSTR": lambda args: exp.StrPosition(
+            this=seq_get(args, 0),
+            substr=seq_get(args, 1),
+            position=seq_get(args, 2), 
+            occurrence=seq_get(args, 3), 
+        ),
+        "LOCATE": lambda args: exp.StrPosition(
+            this=seq_get(args, 1),
+            substr=seq_get(args, 0),
+            position=seq_get(args, 2), 
+        ),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -6467,12 +6487,8 @@ class Parser(metaclass=_Parser):
                 exp.StrPosition, this=self._parse_bitwise(), substr=seq_get(args, 0)
             )
 
-        if haystack_first:
-            haystack = seq_get(args, 0)
-            needle = seq_get(args, 1)
-        else:
-            needle = seq_get(args, 0)
-            haystack = seq_get(args, 1)
+        haystack = seq_get(args, 0 if haystack_first else 1)
+        needle = seq_get(args, 1 if haystack_first else 0)
 
         return self.expression(
             exp.StrPosition, this=haystack, substr=needle, position=seq_get(args, 2)

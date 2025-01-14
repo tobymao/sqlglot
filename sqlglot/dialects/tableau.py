@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, rename_func
+from sqlglot.helper import seq_get
 
 
 class Tableau(Dialect):
@@ -39,9 +40,24 @@ class Tableau(Dialect):
                 return self.func("COUNTD", *this.expressions)
             return self.func("COUNT", this)
 
+        def strposition_sql(self, expression: exp.StrPosition) -> str:
+            position = expression.args.get("position")
+            return self.func(
+                "FINDNTH" if position else "FIND",
+                expression.this,
+                expression.args.get("substr"),
+                position,
+            )
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
+            "FIND": lambda args: exp.StrPosition(this=seq_get(args, 0), substr=seq_get(args, 1)),
+            "FINDNTH": lambda args: exp.StrPosition(
+                this=seq_get(args, 0),
+                substr=seq_get(args, 1),
+                position=seq_get(args, 2),
+            ),
         }
         NO_PAREN_IF_COMMANDS = False

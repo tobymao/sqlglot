@@ -142,6 +142,9 @@ class Drill(Dialect):
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
+            exp.StrPosition: lambda self, e: str_position_sql(
+                self, e, func_name="STRPOS", supports_position=False, supports_occurrence=False,
+            ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,

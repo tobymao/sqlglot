@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     map_date_part,
     no_safe_divide_sql,
     no_timestamp_sql,
+    str_position_sql,
     timestampdiff_sql,
     no_make_interval_sql,
 )
@@ -959,8 +960,8 @@ class Snowflake(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
-            exp.StrPosition: lambda self, e: self.func(
-                "POSITION", e.args.get("substr"), e.this, e.args.get("position")
+            exp.StrPosition: lambda self, e: str_position_sql(
+                self, e, func_name="CHARINDEX", supports_position=True, supports_occurrence=False,
             ),
             exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
             exp.Stuff: rename_func("INSERT"),

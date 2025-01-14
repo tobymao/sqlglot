@@ -2329,7 +2329,7 @@ class LoadData(Expression):
 
 
 class Partition(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "subpartition": False}
 
 
 class PartitionRange(Expression):
@@ -4728,7 +4728,7 @@ class Analyze(Expression):
     }
 
 
-class Statistics(Expression):
+class AnalyzeStatistics(Expression):
     arg_types = {
         "kind": True,
         "option": False,
@@ -4737,7 +4737,7 @@ class Statistics(Expression):
     }
 
 
-class Histogram(Expression):
+class AnalyzeHistogram(Expression):
     arg_types = {
         "this": True,
         "expressions": True,
@@ -4746,29 +4746,20 @@ class Histogram(Expression):
     }
 
 
-class Sample(Expression):
-    arg_types = {
-        "kind": True,
-        "sample": True,
-    }
+class AnalyzeSample(Expression):
+    arg_types = {"kind": True, "sample": True}
 
 
 class AnalyzeListChainedRows(Expression):
-    arg_types = {
-        "expression": False,
-    }
+    arg_types = {"expression": False}
 
 
 class AnalyzeDelete(Expression):
-    arg_types = {
-        "kind": False,
-    }
+    arg_types = {"kind": False}
 
 
 class AnalyzeWith(Expression):
-    arg_types = {
-        "expressions": True,
-    }
+    arg_types = {"expressions": True}
 
 
 class AnalyzeValidate(Expression):

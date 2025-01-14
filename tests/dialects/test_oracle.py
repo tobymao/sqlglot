@@ -659,6 +659,7 @@ WHERE
         self.validate_identity("ANALYZE TABLE tbl")
         self.validate_identity("ANALYZE INDEX ndx")
         self.validate_identity("ANALYZE TABLE db.tbl PARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE TABLE db.tbl SUBPARTITION(foo = 'foo', bar = 'bar')")
         self.validate_identity("ANALYZE INDEX db.ndx PARTITION(foo = 'foo', bar = 'bar')")
         self.validate_identity("ANALYZE INDEX db.ndx PARTITION(part1)")
         self.validate_identity("ANALYZE CLUSTER db.cluster")

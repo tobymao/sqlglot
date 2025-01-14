@@ -4656,12 +4656,12 @@ class Generator(metaclass=_Generator):
 
         return f"NAME {name} VALUE {values}"
 
-    def sample_sql(self, expression: exp.Sample) -> str:
+    def analyzesample_sql(self, expression: exp.AnalyzeSample) -> str:
         kind = self.sql(expression, "kind")
         sample = self.sql(expression, "sample")
         return f"SAMPLE {sample} {kind}"
 
-    def statistics_sql(self, expression: exp.Statistics) -> str:
+    def analyzestatistics_sql(self, expression: exp.AnalyzeStatistics) -> str:
         kind = self.sql(expression, "kind")
         option = self.sql(expression, "option")
         option = f" {option}" if option else ""
@@ -4671,7 +4671,7 @@ class Generator(metaclass=_Generator):
         columns = f" {columns}" if columns else ""
         return f"{kind}{option} STATISTICS{this}{columns}"
 
-    def histogram_sql(self, expression: exp.Histogram) -> str:
+    def analyzehistogram_sql(self, expression: exp.AnalyzeHistogram) -> str:
         this = self.sql(expression, "this")
         columns = self.expressions(expression)
         inner_expression = self.sql(expression, "expression")

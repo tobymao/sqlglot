@@ -1,6 +1,48 @@
 Changelog
 =========
 
+## [v26.2.0] - 2025-01-14
+### :boom: BREAKING CHANGES
+- due to [`f3fcc10`](https://github.com/tobymao/sqlglot/commit/f3fcc1013dfcfdaa388ba3426ed82c4fe0eefab1) - allow limit, offset to be used as both modifiers and aliases *(PR [#4589](https://github.com/tobymao/sqlglot/pull/4589) by [@georgesittas](https://github.com/georgesittas))*:
+
+  allow limit, offset to be used as both modifiers and aliases (#4589)
+
+- due to [`b7ab3f1`](https://github.com/tobymao/sqlglot/commit/b7ab3f1697bda3d67a1183e6cd78dbd13777112b) - exp.Merge condition for Trino/Postgres *(PR [#4596](https://github.com/tobymao/sqlglot/pull/4596) by [@MikeWallis42](https://github.com/MikeWallis42))*:
+
+  exp.Merge condition for Trino/Postgres (#4596)
+
+- due to [`e617d40`](https://github.com/tobymao/sqlglot/commit/e617d407ece96d3c3311c95936ccdca6ecd35a70) - extend ANALYZE common syntax to cover multiple dialects *(PR [#4591](https://github.com/tobymao/sqlglot/pull/4591) by [@zashroof](https://github.com/zashroof))*:
+
+  extend ANALYZE common syntax to cover multiple dialects (#4591)
+
+
+### :sparkles: New Features
+- [`c75016a`](https://github.com/tobymao/sqlglot/commit/c75016a83cda5eb328f854a8628884b90dec10e4) - parse analyze compute statistics *(PR [#4547](https://github.com/tobymao/sqlglot/pull/4547) by [@zashroof](https://github.com/zashroof))*
+- [`986a1da`](https://github.com/tobymao/sqlglot/commit/986a1da98fa5648bc3e364ae436dc4168a1b33ed) - Druid dialect *(PR [#4579](https://github.com/tobymao/sqlglot/pull/4579) by [@betodealmeida](https://github.com/betodealmeida))*
+- [`bc9975f`](https://github.com/tobymao/sqlglot/commit/bc9975fe80d66b0c25b8755f1757f049edb4d0be) - move to rustc fx hashmap *(PR [#4588](https://github.com/tobymao/sqlglot/pull/4588) by [@benfdking](https://github.com/benfdking))*
+- [`853cbe6`](https://github.com/tobymao/sqlglot/commit/853cbe655f2aa3fa4debb8091b335eb6f9530390) - cleaner IS_ASCII for TSQL *(PR [#4592](https://github.com/tobymao/sqlglot/pull/4592) by [@pruzko](https://github.com/pruzko))*
+- [`3ebd879`](https://github.com/tobymao/sqlglot/commit/3ebd87919a4a9947c077c657c03ba2d2b3799620) - LOGICAL_AND and LOGICAL_OR for Oracle *(PR [#4593](https://github.com/tobymao/sqlglot/pull/4593) by [@pruzko](https://github.com/pruzko))*
+- [`e617d40`](https://github.com/tobymao/sqlglot/commit/e617d407ece96d3c3311c95936ccdca6ecd35a70) - extend ANALYZE common syntax to cover multiple dialects *(PR [#4591](https://github.com/tobymao/sqlglot/pull/4591) by [@zashroof](https://github.com/zashroof))*
+
+### :bug: Bug Fixes
+- [`766d698`](https://github.com/tobymao/sqlglot/commit/766d69886ac088de7dd9a22d71124ffa1b36d003) - **postgres**: Revert exp.StrPos generation *(PR [#4586](https://github.com/tobymao/sqlglot/pull/4586) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`f3fcc10`](https://github.com/tobymao/sqlglot/commit/f3fcc1013dfcfdaa388ba3426ed82c4fe0eefab1) - **parser**: allow limit, offset to be used as both modifiers and aliases *(PR [#4589](https://github.com/tobymao/sqlglot/pull/4589) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4575](https://github.com/tobymao/sqlglot/issues/4575) opened by [@baruchoxman](https://github.com/baruchoxman)*
+- [`2bea466`](https://github.com/tobymao/sqlglot/commit/2bea466cbef3adfc09185176ee38ddf820b3f7ab) - **optimizer**: unions on nested subqueries *(PR [#4603](https://github.com/tobymao/sqlglot/pull/4603) by [@barakalon](https://github.com/barakalon))*
+- [`199508a`](https://github.com/tobymao/sqlglot/commit/199508a77c62f75b5e12fee47828d34e4903c706) - **snowflake**: treat $ as part of the json path key identifier *(PR [#4604](https://github.com/tobymao/sqlglot/pull/4604) by [@georgesittas](https://github.com/georgesittas))*
+- [`b7ab3f1`](https://github.com/tobymao/sqlglot/commit/b7ab3f1697bda3d67a1183e6cd78dbd13777112b) - exp.Merge condition for Trino/Postgres *(PR [#4596](https://github.com/tobymao/sqlglot/pull/4596) by [@MikeWallis42](https://github.com/MikeWallis42))*
+  - :arrow_lower_right: *fixes issue [#4595](https://github.com/tobymao/sqlglot/issues/4595) opened by [@MikeWallis42](https://github.com/MikeWallis42)*
+
+### :recycle: Refactors
+- [`c0f7309`](https://github.com/tobymao/sqlglot/commit/c0f7309327e21204a0a0f273712d3097f02f6796) - simplify `trie_filter` closure in `Tokenizer` initialization *(PR [#4599](https://github.com/tobymao/sqlglot/pull/4599) by [@gvozdvmozgu](https://github.com/gvozdvmozgu))*
+- [`fb93219`](https://github.com/tobymao/sqlglot/commit/fb932198087e5e3aa1a42e65ac30f28e24c6d84f) - replace `std::mem::replace` with `std::mem::take` and `Vec::drain` *(PR [#4600](https://github.com/tobymao/sqlglot/pull/4600) by [@gvozdvmozgu](https://github.com/gvozdvmozgu))*
+
+### :wrench: Chores
+- [`672d656`](https://github.com/tobymao/sqlglot/commit/672d656eb5a014ba42492ba2c2a9a33ebd145bd8) - clean up ANALYZE implementation *(PR [#4607](https://github.com/tobymao/sqlglot/pull/4607) by [@georgesittas](https://github.com/georgesittas))*
+- [`e58a8cb`](https://github.com/tobymao/sqlglot/commit/e58a8cb4d388d22eff8fd2cca08f38e4c42075d6) - apply clippy fixes *(PR [#4608](https://github.com/tobymao/sqlglot/pull/4608) by [@benfdking](https://github.com/benfdking))*
+- [`5502c94`](https://github.com/tobymao/sqlglot/commit/5502c94d665a2ed354e44beb145e767bab00adfa) - bump sqlglotrs to 0.3.5 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.1.3] - 2025-01-09
 ### :bug: Bug Fixes
 - [`d250846`](https://github.com/tobymao/sqlglot/commit/d250846d05711ac62a45efd4930f0ca712841b11) - **snowflake**: generate LIMIT when OFFSET exists [#4575](https://github.com/tobymao/sqlglot/pull/4575) *(PR [#4581](https://github.com/tobymao/sqlglot/pull/4581) by [@geooo109](https://github.com/geooo109))*
@@ -5600,3 +5642,4 @@ Changelog
 [v26.1.1]: https://github.com/tobymao/sqlglot/compare/v26.1.0...v26.1.1
 [v26.1.2]: https://github.com/tobymao/sqlglot/compare/v26.1.1...v26.1.2
 [v26.1.3]: https://github.com/tobymao/sqlglot/compare/v26.1.2...v26.1.3
+[v26.2.0]: https://github.com/tobymao/sqlglot/compare/v26.1.3...v26.2.0

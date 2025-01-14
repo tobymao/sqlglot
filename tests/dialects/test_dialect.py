@@ -1715,6 +1715,7 @@ class TestDialect(Validator):
             read={
                 "clickhouse": "POSITION(haystack, needle, position)",
                 "mysql": "LOCATE(needle, haystack, position)",
+                "snowflake": "POSITION(needle, haystack, position)",
                 "sqlite": "INSTR(haystack, needle, position)",
                 "tableau": "FINDNTH(haystack, needle, position)",
                 # "teradata": "INDEX(haystack, needle, position)",

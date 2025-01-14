@@ -1352,6 +1352,8 @@ class Parser(metaclass=_Parser):
         "VALIDATE": lambda self: self._parse_analyze_validate(),
     }
 
+    PARTITION_KEYWORDS = {"PARTITION", "SUBPARTITION"}
+
     AMBIGUOUS_ALIAS_TOKENS = (TokenType.LIMIT, TokenType.OFFSET)
 
     OPERATION_MODIFIERS: t.Set[str] = set()
@@ -2984,11 +2986,13 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_partition(self) -> t.Optional[exp.Partition]:
-        if not self._match(TokenType.PARTITION):
+        if not self._match_texts(self.PARTITION_KEYWORDS):
             return None
 
         return self.expression(
-            exp.Partition, expressions=self._parse_wrapped_csv(self._parse_assignment)
+            exp.Partition,
+            subpartition=self._prev.text.upper() == "SUBPARTITION",
+            expressions=self._parse_wrapped_csv(self._parse_assignment),
         )
 
     def _parse_value(self) -> t.Optional[exp.Tuple]:
@@ -7148,19 +7152,17 @@ class Parser(metaclass=_Parser):
         this: t.Optional[exp.Expression] = None
         inner_expression: t.Optional[exp.Expression] = None
 
+        kind = self._curr and self._curr.text.upper()
+
         if self._match(TokenType.TABLE) or self._match(TokenType.INDEX):
-            kind = self._prev.text.upper()
             this = self._parse_table_parts()
         elif self._match_text_seq("TABLES"):
-            kind = self._prev.text.upper()
             if self._match_set((TokenType.FROM, TokenType.IN)):
                 kind = f"{kind} {self._prev.text.upper()}"
                 this = self._parse_table(schema=True, is_db_reference=True)
         elif self._match_text_seq("DATABASE"):
-            kind = self._prev.text.upper()
             this = self._parse_table(schema=True, is_db_reference=True)
         elif self._match_text_seq("CLUSTER"):
-            kind = self._prev.text.upper()
             this = self._parse_table()
         # Try matching inner expr keywords before fallback to parse table.
         elif self._match_texts(self.ANALYZE_EXPRESSION_PARSERS):
@@ -7172,15 +7174,14 @@ class Parser(metaclass=_Parser):
             this = self._parse_table_parts()
 
         partition = self._try_parse(self._parse_partition)
-        if not partition and self._match(TokenType.PARTITION):
+        if not partition and self._match_texts(self.PARTITION_KEYWORDS):
             return self._parse_as_command(start)
 
         # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/ANALYZE_TABLE/
-        if self._match_text_seq("WITH", "SYNC", "MODE", advance=False) or self._match_text_seq(
-            "WITH", "ASYNC", "MODE", advance=False
+        if self._match_text_seq("WITH", "SYNC", "MODE") or self._match_text_seq(
+            "WITH", "ASYNC", "MODE"
         ):
-            mode = f"WITH {self._next.text.upper()} MODE"
-            self._advance(3)
+            mode = f"WITH {self._tokens[self._index-2].text.upper()} MODE"
         else:
             mode = None
 
@@ -7257,20 +7258,17 @@ class Parser(metaclass=_Parser):
         this = self._prev.text.upper()
         if self._match_text_seq("COLUMNS"):
             return self.expression(exp.AnalyzeColumns, this=f"{this} {self._prev.text.upper()}")
-        self.raise_error("Expecting COLUMNS")
         return None
 
     def _parse_analyze_delete(self) -> t.Optional[exp.AnalyzeDelete]:
         kind = self._prev.text.upper() if self._match_text_seq("SYSTEM") else None
         if self._match_text_seq("STATISTICS"):
             return self.expression(exp.AnalyzeDelete, kind=kind)
-        self.raise_error("Expecting STATISTICS")
         return None
 
     def _parse_analyze_list(self) -> t.Optional[exp.AnalyzeListChainedRows]:
         if self._match_text_seq("CHAINED", "ROWS"):
             return self.expression(exp.AnalyzeListChainedRows, expression=self._parse_into())
-        self.raise_error("Expecting CHAINED ROWS")
         return None
 
     # https://dev.mysql.com/doc/refman/8.4/en/analyze-table.html

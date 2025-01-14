@@ -2329,7 +2329,7 @@ class LoadData(Expression):
 
 
 class Partition(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "subpartition": False}
 
 
 class PartitionRange(Expression):

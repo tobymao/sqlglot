@@ -114,6 +114,8 @@ class Generator(metaclass=_Generator):
         **JSON_PATH_PART_TRANSFORMS,
         exp.AllowedValuesProperty: lambda self,
         e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
+        exp.AnalyzeColumns: lambda self, e: self.sql(e, "this"),
+        exp.AnalyzeWith: lambda self, e: self.expressions(e, prefix="WITH ", sep=" "),
         exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
         exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
@@ -198,6 +200,7 @@ class Generator(metaclass=_Generator):
         exp.TransientProperty: lambda *_: "TRANSIENT",
         exp.Union: lambda self, e: self.set_operations(e),
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
+        exp.UsingData: lambda self, e: f"USING DATA {self.sql(e, 'this')}",
         exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
@@ -1558,7 +1561,8 @@ class Generator(metaclass=_Generator):
         return f"{prefix}{string}"
 
     def partition_sql(self, expression: exp.Partition) -> str:
-        return f"PARTITION({self.expressions(expression, flat=True)})"
+        partition_keyword = "SUBPARTITION" if expression.args.get("subpartition") else "PARTITION"
+        return f"{partition_keyword}({self.expressions(expression, flat=True)})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
         root_properties = []
@@ -4680,20 +4684,10 @@ class Generator(metaclass=_Generator):
         update_options = f" {update_options} UPDATE" if update_options else ""
         return f"{this} HISTOGRAM ON {columns}{inner_expression}{update_options}"
 
-    def usingdata_sql(self, expression: exp.UsingData) -> str:
-        data = self.sql(expression, "this")
-        return f"USING DATA {data}"
-
-    def analyzecolumns_sql(self, expression: exp.AnalyzeColumns) -> str:
-        return self.sql(expression, "this")
-
     def analyzedelete_sql(self, expression: exp.AnalyzeDelete) -> str:
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
         return f"DELETE{kind} STATISTICS"
-
-    def analyzewith_sql(self, expression: exp.AnalyzeWith) -> str:
-        return self.expressions(expression, prefix="WITH ", sep=" ")
 
     def analyzelistchainedrows_sql(self, expression: exp.AnalyzeListChainedRows) -> str:
         inner_expression = self.sql(expression, "expression")

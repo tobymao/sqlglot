@@ -4696,8 +4696,7 @@ class Generator(metaclass=_Generator):
         return self.expressions(expression, prefix="WITH ", sep=" ")
 
     def analyzelistchainedrows_sql(self, expression: exp.AnalyzeListChainedRows) -> str:
-        inner_expression = self.sql(expression, "expression")[1:]  # INTO has a leading space.
-        inner_expression = f" {inner_expression}" if inner_expression else ""
+        inner_expression = self.sql(expression, "expression")
         return f"LIST CHAINED ROWS{inner_expression}"
 
     def analyzevalidate_sql(self, expression: exp.AnalyzeValidate) -> str:

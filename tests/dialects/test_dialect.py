@@ -1708,7 +1708,7 @@ class TestDialect(Validator):
                 "tableau": "FIND(haystack, needle)",
                 "teradata": "INSTR(haystack, needle)",
                 "tsql": "CHARINDEX(needle, haystack)",
-            }
+            },
         )
         self.validate_all(
             "STR_POSITION(haystack, needle, position)",
@@ -1737,7 +1737,7 @@ class TestDialect(Validator):
                 "tableau": "FINDNTH(haystack, needle, position)",
                 "teradata": "INSTR(haystack, needle, position)",
                 "tsql": "CHARINDEX(needle, haystack, position)",
-            }
+            },
         )
         self.validate_all(
             "STR_POSITION(haystack, needle, position, occurrence)",
@@ -1746,7 +1746,7 @@ class TestDialect(Validator):
                 "oracle": "INSTR(haystack, needle, position, occurrence)",
                 "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
                 "teradata": "INSTR(haystack, needle, position, occurrence)",
-            }
+            },
         )
         self.validate_all(
             "CONCAT_WS('-', 'a', 'b')",

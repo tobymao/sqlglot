@@ -1073,12 +1073,12 @@ def property_sql(self: Generator, expression: exp.Property) -> str:
     return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
 
 
-def str_position_sql(
+def strposition_sql(
     self: Generator,
     expression: exp.StrPosition,
     func_name: str,
-    supports_position: bool,
-    supports_occurrence: bool,
+    supports_position: bool = True,
+    supports_occurrence: bool = False,
 ) -> str:
     string = expression.this
     substr = expression.args.get("substr")
@@ -1113,39 +1113,6 @@ def str_position_sql(
         )
 
     return self.sql(func)
-
-
-
-# def str_position_sql(
-#     self: Generator,
-#     expression: exp.StrPosition,
-#     generate_instance: bool = False,
-#     str_position_func_name: str = "STRPOS",
-# ) -> str:
-#     this = self.sql(expression, "this")
-#     substr = self.sql(expression, "substr")
-#     position = self.sql(expression, "position")
-#     instance = expression.args.get("instance") if generate_instance else None
-#     position_offset = ""
-
-#     if position:
-#         # Normalize third 'pos' argument into 'SUBSTR(..) + offset' across dialects
-#         this = self.func("SUBSTR", this, position)
-#         position_offset = f" + {position} - 1"
-
-#     strpos_sql = self.func(str_position_func_name, this, substr, instance)
-
-#     if position_offset:
-#         zero = exp.Literal.number(0)
-#         # If match is not found (returns 0) the position offset should not be applied
-#         case = exp.If(
-#             this=exp.EQ(this=strpos_sql, expression=zero),
-#             true=zero,
-#             false=strpos_sql + position_offset,
-#         )
-#         strpos_sql = self.sql(case)
-
-#     return strpos_sql
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:

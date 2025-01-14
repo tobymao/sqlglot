@@ -8,7 +8,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestampdiff_sql,
     unit_to_var,
-
 )
 from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast

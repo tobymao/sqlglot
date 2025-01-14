@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
-    str_position_sql,
+    strposition_sql,
 )
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
@@ -200,8 +200,8 @@ class SQLite(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="INSTR", supports_position=False, supports_occurrence=False,
+            exp.StrPosition: lambda self, e: (
+                strposition_sql(self, e, func_name="INSTR", supports_position=False)
             ),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),

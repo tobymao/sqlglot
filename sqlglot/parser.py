@@ -239,18 +239,18 @@ class Parser(metaclass=_Parser):
         "CHARINDEX": lambda args: exp.StrPosition(
             this=seq_get(args, 1),
             substr=seq_get(args, 0),
-            position=seq_get(args, 2), 
+            position=seq_get(args, 2),
         ),
         "INSTR": lambda args: exp.StrPosition(
             this=seq_get(args, 0),
             substr=seq_get(args, 1),
-            position=seq_get(args, 2), 
-            occurrence=seq_get(args, 3), 
+            position=seq_get(args, 2),
+            occurrence=seq_get(args, 3),
         ),
         "LOCATE": lambda args: exp.StrPosition(
             this=seq_get(args, 1),
             substr=seq_get(args, 0),
-            position=seq_get(args, 2), 
+            position=seq_get(args, 2),
         ),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),

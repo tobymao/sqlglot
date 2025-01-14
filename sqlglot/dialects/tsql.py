@@ -17,7 +17,7 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     build_date_delta,
     rename_func,
-    str_position_sql,
+    strposition_sql,
     trim_sql,
     timestrtotime_sql,
 )
@@ -936,9 +936,7 @@ class TSQL(Dialect):
                 ]
             ),
             exp.Stddev: rename_func("STDEV"),
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="CHARINDEX", supports_position=True, supports_occurrence=False,
-            ),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="CHARINDEX"),
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(

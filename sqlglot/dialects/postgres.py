@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     trim_sql,
     ts_or_ds_add_cast,
-    str_position_sql,
+    strposition_sql,
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
@@ -584,8 +584,8 @@ class Postgres(Dialect):
                 ]
             ),
             exp.SHA2: sha256_sql,
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="POSITION", supports_position=False, supports_occurrence=False,
+            exp.StrPosition: lambda self, e: (
+                strposition_sql(self, e, func_name="POSITION", supports_position=False)
             ),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),

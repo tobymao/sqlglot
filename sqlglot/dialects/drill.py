@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     no_trycast_sql,
     rename_func,
-    str_position_sql,
+    strposition_sql,
     timestrtotime_sql,
 )
 from sqlglot.dialects.mysql import date_add_sql
@@ -136,14 +136,13 @@ class Drill(Dialect):
             ),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
-            exp.StrPosition: str_position_sql,
             exp.StrToDate: _str_to_date,
             exp.Pow: rename_func("POW"),
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="STRPOS", supports_position=False, supports_occurrence=False,
+            exp.StrPosition: lambda self, e: (
+                strposition_sql(self, e, func_name="STRPOS", supports_position=False)
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),

@@ -25,7 +25,7 @@ from sqlglot.dialects.dialect import (
     regexp_replace_sql,
     rename_func,
     right_to_substring_sql,
-    str_position_sql,
+    strposition_sql,
     struct_extract_sql,
     time_format,
     timestrtotime_sql,
@@ -562,9 +562,7 @@ class Hive(Dialect):
                     transforms.any_to_exists,
                 ]
             ),
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="LOCATE", supports_position=True, supports_occurrence=False,
-            ),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="LOCATE"),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,

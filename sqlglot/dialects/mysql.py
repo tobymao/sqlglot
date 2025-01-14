@@ -22,7 +22,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     build_date_delta_with_interval,
     rename_func,
-    str_position_sql,
+    strposition_sql,
     unit_to_var,
     trim_sql,
     timestrtotime_sql,
@@ -748,9 +748,7 @@ class MySQL(Dialect):
                     transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="LOCATE", supports_position=True, supports_occurrence=False,
-            ),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="LOCATE"),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),

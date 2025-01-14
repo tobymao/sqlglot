@@ -22,7 +22,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     right_to_substring_sql,
     sha256_sql,
-    str_position_sql,
+    strposition_sql,
     struct_extract_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
@@ -430,8 +430,8 @@ class Presto(Dialect):
                 ]
             ),
             exp.SortArray: _no_sort_array,
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="STRPOS", supports_position=False, supports_occurrence=True,
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="STRPOS", supports_position=False, supports_occurrence=True
             ),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),

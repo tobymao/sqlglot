@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     is_parse_json,
     pivot_column_names,
     rename_func,
-    str_position_sql,    
+    strposition_sql,
     trim_sql,
     unit_to_str,
 )
@@ -298,9 +298,7 @@ class Spark2(Hive):
                     transforms.any_to_exists,
                 ]
             ),
-            exp.StrPosition: lambda self, e: str_position_sql(
-                self, e, func_name="LOCATE", supports_position=True, supports_occurrence=False,
-            ),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="LOCATE"),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),

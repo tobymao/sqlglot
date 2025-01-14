@@ -4703,8 +4703,7 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
-        inner_expression = self.sql(expression, "expression")[1:]  # INTO has a leading space.
-        inner_expression = f" {inner_expression}" if inner_expression else ""
+        inner_expression = self.sql(expression, "expression")
         return f"VALIDATE {kind}{this}{inner_expression}"
 
     def analyze_sql(self, expression: exp.Analyze) -> str:

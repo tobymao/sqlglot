@@ -245,6 +245,7 @@ class ClickHouse(Dialect):
         # * select x from t1 union all (select x from t2 limit 1);
         MODIFIERS_ATTACHED_TO_SET_OP = False
         INTERVAL_SPANS = False
+        OPTIONAL_ALIAS_TOKEN_CTE = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

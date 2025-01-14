@@ -106,6 +106,10 @@ class TestSnowflake(Validator):
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
+            "WITH t (SELECT 1 AS c) SELECT c FROM t",
+            "WITH t AS (SELECT 1 AS c) SELECT c FROM t",
+        )
+        self.validate_identity(
             "GET_PATH(json_data, '$id')",
             """GET_PATH(json_data, '["$id"]')""",
         )

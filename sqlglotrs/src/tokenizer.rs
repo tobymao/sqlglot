@@ -143,7 +143,7 @@ impl<'a> TokenizerState<'a> {
             }
 
             if !self.settings.white_space.contains_key(&self.current_char) {
-                if self.current_char.is_digit(10) {
+                if self.current_char.is_ascii_digit() {
                     self.scan_number()?;
                 } else if let Some(identifier_end) =
                     self.settings.identifiers.get(&self.current_char)
@@ -202,7 +202,7 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn char_at(&self, index: usize) -> Result<char, TokenizerError> {
-        self.sql.get(index).map(|c| *c).ok_or_else(|| {
+        self.sql.get(index).copied().ok_or_else(|| {
             self.error(format!(
                 "Index {} is out of bound (size {})",
                 index, self.size
@@ -500,7 +500,7 @@ impl<'a> TokenizerState<'a> {
         let mut scientific = 0;
 
         loop {
-            if self.peek_char.is_digit(10) {
+            if self.peek_char.is_ascii_digit() {
                 self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
                 if self.tokens.last().map(|t| t.token_type) == Some(self.token_types.parameter) {
@@ -534,8 +534,7 @@ impl<'a> TokenizerState<'a> {
                             .numeric_literals
                             .get(&literal.to_uppercase())
                             .unwrap_or(&String::from("")),
-                    )
-                    .map(|x| *x);
+                    ).copied();
 
                 let replaced = literal.replace("_", "");
 
@@ -604,8 +603,7 @@ impl<'a> TokenizerState<'a> {
             } else {
                 self.settings
                     .keywords
-                    .get(&self.text().to_uppercase())
-                    .map(|x| *x)
+                    .get(&self.text().to_uppercase()).copied()
                     .unwrap_or(self.token_types.var)
             };
         self.add(token_type, None)
@@ -715,13 +713,13 @@ impl<'a> TokenizerState<'a> {
             if i == 0 {
                 self.is_alphabetic_or_underscore(c)
             } else {
-                self.is_alphabetic_or_underscore(c) || c.is_digit(10)
+                self.is_alphabetic_or_underscore(c) || c.is_ascii_digit()
             }
         })
     }
 
     fn is_numeric(&mut self, s: &str) -> bool {
-        s.chars().all(|c| c.is_digit(10))
+        s.chars().all(|c| c.is_ascii_digit())
     }
 
     fn extract_value(&mut self) -> Result<String, TokenizerError> {

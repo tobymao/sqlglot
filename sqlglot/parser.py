@@ -1413,7 +1413,7 @@ class Parser(metaclass=_Parser):
     WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
 
     # Whether the 'AS' keyword is optional in the CTE definition syntax
-    OPTIONAL_ALIAS_TOKEN_CTE = False
+    OPTIONAL_ALIAS_TOKEN_CTE = True
 
     __slots__ = (
         "error_level",

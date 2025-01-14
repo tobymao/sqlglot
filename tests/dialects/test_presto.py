@@ -1296,3 +1296,7 @@ MATCH_RECOGNIZE (
 
             # If the setting is overriden to False, then generate ROW access (dot notation)
             self.assertEqual(s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"')
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE tbl")
+        self.validate_identity("ANALYZE tbl WITH (prop1=val1, prop2=val2)")

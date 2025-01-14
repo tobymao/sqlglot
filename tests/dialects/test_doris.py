@@ -100,3 +100,8 @@ class TestDoris(Validator):
                 "doris": "SELECT REGEXP(abc, '%foo%')",
             },
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE tbl")
+        self.validate_identity("ANALYZE DATABASE db")
+        self.validate_identity("ANALYZE TABLE TBL(c1, c2)")

@@ -4718,18 +4718,73 @@ class Alter(Expression):
 
 class Analyze(Expression):
     arg_types = {
-        "kind": True,
+        "kind": False,
         "this": False,
+        "options": False,
+        "mode": False,
         "partition": False,
-        "expression": True,
+        "expression": False,
+        "properties": False,
     }
 
 
-class ComputeStatistics(Expression):
+class Statistics(Expression):
     arg_types = {
+        "kind": True,
+        "option": False,
         "this": False,
         "expressions": False,
     }
+
+
+class Histogram(Expression):
+    arg_types = {
+        "this": True,
+        "expressions": True,
+        "expression": False,
+        "update_options": False,
+    }
+
+
+class Sample(Expression):
+    arg_types = {
+        "kind": True,
+        "sample": True,
+    }
+
+
+class AnalyzeListChainedRows(Expression):
+    arg_types = {
+        "expression": False,
+    }
+
+
+class AnalyzeDelete(Expression):
+    arg_types = {
+        "kind": False,
+    }
+
+
+class AnalyzeWith(Expression):
+    arg_types = {
+        "expressions": True,
+    }
+
+
+class AnalyzeValidate(Expression):
+    arg_types = {
+        "kind": True,
+        "this": False,
+        "expression": False,
+    }
+
+
+class AnalyzeColumns(Expression):
+    pass
+
+
+class UsingData(Expression):
+    pass
 
 
 class AddConstraint(Expression):

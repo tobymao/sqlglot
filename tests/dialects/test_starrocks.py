@@ -126,3 +126,24 @@ class TestStarrocks(Validator):
                         "spark": "SELECT id, t.col FROM tbl LATERAL VIEW EXPLODE(scores) t AS col",
                     },
                 )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE TABLE TBL(c1, c2) PROPERTIES ('prop1'=val1)")
+        self.validate_identity("ANALYZE FULL TABLE TBL(c1, c2) PROPERTIES ('prop1'=val1)")
+        self.validate_identity("ANALYZE SAMPLE TABLE TBL(c1, c2) PROPERTIES ('prop1'=val1)")
+        self.validate_identity("ANALYZE TABLE TBL(c1, c2) WITH SYNC MODE PROPERTIES ('prop1'=val1)")
+        self.validate_identity(
+            "ANALYZE TABLE TBL(c1, c2) WITH ASYNC MODE PROPERTIES ('prop1'=val1)"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 PROPERTIES ('prop1'=val1)"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 WITH 5 BUCKETS PROPERTIES ('prop1'=val1)"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 WITH SYNC MODE WITH 5 BUCKETS PROPERTIES ('prop1'=val1)"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 WITH ASYNC MODE WITH 5 BUCKETS PROPERTIES ('prop1'=val1)"
+        )

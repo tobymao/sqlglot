@@ -237,3 +237,7 @@ class TestSQLite(Validator):
         self.validate_identity(
             "CREATE TABLE store (store_id INTEGER PRIMARY KEY AUTOINCREMENT, mgr_id INTEGER NOT NULL UNIQUE REFERENCES staff ON UPDATE CASCADE)"
         )
+
+    def test_analyze(self):
+        self.validate_identity("ANALYZE tbl")
+        self.validate_identity("ANALYZE schma.tbl")

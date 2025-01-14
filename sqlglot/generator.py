@@ -4692,7 +4692,7 @@ class Generator(metaclass=_Generator):
         kind = f" {kind}" if kind else ""
         return f"DELETE{kind} STATISTICS"
 
-    def analyzewith_sql(self, expression: exp.AnalyzeColumns) -> str:
+    def analyzewith_sql(self, expression: exp.AnalyzeWith) -> str:
         return self.expressions(expression, prefix="WITH ", sep=" ")
 
     def analyzelistchainedrows_sql(self, expression: exp.AnalyzeListChainedRows) -> str:

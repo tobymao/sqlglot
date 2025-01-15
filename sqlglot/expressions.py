@@ -6455,6 +6455,10 @@ class Repeat(Func):
     arg_types = {"this": True, "times": True}
 
 
+class Reverse(Func):
+    pass
+
+
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16
 # tsql third argument function == trunctaion if not 0
 class Round(Func):

@@ -1106,11 +1106,12 @@ def strposition_sql(
 
     if position and not supports_position:
         func_with_offset = exp.Sub(this=func + position, expression=one)
-        func = exp.If(
+        func_wrapped = exp.If(
             this=exp.EQ(this=func, expression=zero),
             true=zero,
             false=func_with_offset,
         )
+        return self.sql(func_wrapped)
 
     return self.sql(func)
 

@@ -742,6 +742,9 @@ class TestClickhouse(Validator):
             "CREATE TABLE a ENGINE=Memory AS SELECT 1 AS c COMMENT 'foo'",
             "CREATE TABLE a ENGINE=Memory AS (SELECT 1 AS c) COMMENT 'foo'",
         )
+        self.validate_identity(
+            'CREATE TABLE t1 ("x" UInt32, "y" Dynamic, "z" Dynamic(max_types = 10)) ENGINE=MergeTree ORDER BY x'
+        )
 
         self.validate_all(
             "CREATE DATABASE x",

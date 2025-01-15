@@ -447,6 +447,17 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS.pop("MATCH")
 
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+        }
+
+        PROPERTY_PARSERS.pop("DYNAMIC")
+
+        ENUM_TYPE_TOKENS = {
+            *parser.Parser.ENUM_TYPE_TOKENS,
+            TokenType.DYNAMIC,
+        }
+
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
         NO_PAREN_FUNCTION_PARSERS.pop("ANY")
 
@@ -953,6 +964,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.MULTIPOLYGON: "MultiPolygon",
             exp.DataType.Type.AGGREGATEFUNCTION: "AggregateFunction",
             exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
+            exp.DataType.Type.DYNAMIC: "Dynamic",
         }
 
         TRANSFORMS = {

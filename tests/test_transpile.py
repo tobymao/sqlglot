@@ -668,7 +668,7 @@ FROM tbl1""",
         )
         self.validate(
             "WITH A(filter) AS (VALUES 1, 2, 3) SELECT * FROM A WHERE filter >= 2",
-            "WITH A(filter) AS (VALUES (1), (2), (3)) SELECT * FROM A WHERE filter >= 2",
+            "WITH A(filter) AS (SELECT * FROM (VALUES (1), (2), (3)) AS _values) SELECT * FROM A WHERE filter >= 2",
             read="presto",
         )
         self.validate(

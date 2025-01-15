@@ -3,6 +3,9 @@
 install:
 	pip install -e .
 
+bench: install-dev-rs-release
+	python benchmarks/bench.py
+
 install-dev-rs-release:
 	cd sqlglotrs/ && python -m maturin develop -r
 

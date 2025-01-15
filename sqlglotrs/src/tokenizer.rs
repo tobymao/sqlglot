@@ -245,7 +245,7 @@ impl<'a> TokenizerState<'a> {
                 || self
                     .settings
                     .command_prefix_tokens
-                    .contains(&self.tokens[self.tokens.len() - 2].token_type))
+                    .contains(&self.tokens[self.tokens.len() - 2].token_type_index))
         {
             let start = self.current;
             let tokens_len = self.tokens.len();
@@ -401,7 +401,7 @@ impl<'a> TokenizerState<'a> {
             && self
                 .settings
                 .tokens_preceding_hint
-                .contains(&self.tokens.last().unwrap().token_type)
+                .contains(&self.tokens.last().unwrap().token_type_index)
         {
             self.add(self.token_types.hint, None)?;
         }
@@ -503,7 +503,9 @@ impl<'a> TokenizerState<'a> {
             if self.peek_char.is_ascii_digit() {
                 self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
-                if self.tokens.last().map(|t| t.token_type) == Some(self.token_types.parameter) {
+                if self.tokens.last().map(|t| t.token_type_index)
+                    == Some(self.token_types.parameter)
+                {
                     return self.add(self.token_types.number, None);
                 }
                 decimal = true;
@@ -534,7 +536,8 @@ impl<'a> TokenizerState<'a> {
                             .numeric_literals
                             .get(&literal.to_uppercase())
                             .unwrap_or(&String::from("")),
-                    ).copied();
+                    )
+                    .copied();
 
                 let replaced = literal.replace("_", "");
 
@@ -598,12 +601,13 @@ impl<'a> TokenizerState<'a> {
         }
 
         let token_type =
-            if self.tokens.last().map(|t| t.token_type) == Some(self.token_types.parameter) {
+            if self.tokens.last().map(|t| t.token_type_index) == Some(self.token_types.parameter) {
                 self.token_types.var
             } else {
                 self.settings
                     .keywords
-                    .get(&self.text().to_uppercase()).copied()
+                    .get(&self.text().to_uppercase())
+                    .copied()
                     .unwrap_or(self.token_types.var)
             };
         self.add(token_type, None)

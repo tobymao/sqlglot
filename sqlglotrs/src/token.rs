@@ -1,17 +1,15 @@
 use crate::settings::TokenType;
-use pyo3::prelude::PyListMethods;
-use pyo3::types::{PyList, PyNone, PyString};
-use pyo3::{pyclass, IntoPy, Py, PyObject, Python};
+use pyo3::types::{PyNone};
+use pyo3::{pyclass, pymethods, IntoPy, PyObject, Python};
 
 #[derive(Debug)]
 #[pyclass]
 pub struct Token {
-    #[pyo3(get, name = "token_type_index")]
-    pub token_type: TokenType,
-    #[pyo3(get, set, name = "token_type")]
-    pub token_type_py: PyObject,
     #[pyo3(get)]
-    pub text: Py<PyString>,
+    pub token_type_index: TokenType,
+    pub token_type: Option<PyObject>,
+    #[pyo3(get)]
+    pub text: String,
     #[pyo3(get)]
     pub line: usize,
     #[pyo3(get)]
@@ -20,8 +18,7 @@ pub struct Token {
     pub start: usize,
     #[pyo3(get)]
     pub end: usize,
-    #[pyo3(get)]
-    pub comments: Py<PyList>,
+    pub comments: Vec<String>,
 }
 
 impl Token {
@@ -34,26 +31,45 @@ impl Token {
         end: usize,
         comments: Vec<String>,
     ) -> Token {
-        Python::with_gil(|py| Token {
-            token_type,
-            token_type_py: PyNone::get_bound(py).into_py(py),
-            text: PyString::new_bound(py, &text).into_py(py),
+        Token {
+            token_type_index: token_type,
+            token_type: None,
+            text,
             line,
             col,
             start,
             end,
-            comments: PyList::new_bound(py, &comments).into(),
-        })
+            comments,
+        }
     }
 
-    pub fn append_comments(&self, comments: &mut Vec<String>) {
-        Python::with_gil(|py| {
-            let pylist = self.comments.bind(py);
-            for comment in comments.drain(..) {
-                if let Err(_) = pylist.append(comment) {
-                    panic!("Failed to append comments to the Python list");
-                }
-            }
-        });
+    pub fn append_comments(&mut self, new_comments: &mut Vec<String>) {
+        self.comments.append(new_comments);
+    }
+}
+
+#[pymethods]
+impl Token {
+    #[getter(comments)]
+    fn comments(&self) -> Vec<String> {
+        self.comments.clone()
+    }
+
+    #[getter(text)]
+    fn text(&self) -> &str {
+        &self.text
+    }
+
+    #[getter(token_type)]
+    fn token_type(&self, py: Python) -> PyObject {
+        match &self.token_type {
+            Some(token_type) => token_type.clone_ref(py),
+            None => PyNone::get_bound(py).into_py(py),
+        }
+    }
+
+    #[setter(token_type)]
+    fn set_token_type(&mut self, token_type: PyObject) {
+        self.token_type = Some(token_type);
     }
 }

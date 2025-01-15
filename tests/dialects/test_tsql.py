@@ -184,7 +184,7 @@ class TestTSQL(Validator):
                 "tsql": "CREATE TABLE #mytemptable (a INTEGER)",
                 "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
-                "oracle": "CREATE GLOBAL TEMPORARY TABLE mytemptable (a NUMBER)",
+                "oracle": "CREATE GLOBAL TEMPORARY TABLE mytemptable (a INT)",
                 "hive": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "spark2": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
                 "spark": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",

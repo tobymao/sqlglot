@@ -266,10 +266,10 @@ class Oracle(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TINYINT: "NUMBER",
-            exp.DataType.Type.SMALLINT: "NUMBER",
-            exp.DataType.Type.INT: "NUMBER",
-            exp.DataType.Type.BIGINT: "NUMBER",
+            exp.DataType.Type.TINYINT: "SMALLINT",
+            exp.DataType.Type.SMALLINT: "SMALLINT",
+            exp.DataType.Type.INT: "INT",
+            exp.DataType.Type.BIGINT: "INT",
             exp.DataType.Type.DECIMAL: "NUMBER",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
             exp.DataType.Type.VARCHAR: "VARCHAR2",

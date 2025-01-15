@@ -314,7 +314,7 @@ class TestDialect(Validator):
                 "materialize": "CAST(a AS SMALLINT)",
                 "mysql": "CAST(a AS SIGNED)",
                 "hive": "CAST(a AS SMALLINT)",
-                "oracle": "CAST(a AS NUMBER)",
+                "oracle": "CAST(a AS SMALLINT)",
                 "postgres": "CAST(a AS SMALLINT)",
                 "presto": "CAST(a AS SMALLINT)",
                 "redshift": "CAST(a AS SMALLINT)",
@@ -374,10 +374,10 @@ class TestDialect(Validator):
                 "mysql": "TIMESTAMP(a)",
             },
         )
-        self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
-        self.validate_all("CAST(a AS SMALLINT)", write={"oracle": "CAST(a AS NUMBER)"})
-        self.validate_all("CAST(a AS BIGINT)", write={"oracle": "CAST(a AS NUMBER)"})
-        self.validate_all("CAST(a AS INT)", write={"oracle": "CAST(a AS NUMBER)"})
+        self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS SMALLINT)"})
+        self.validate_all("CAST(a AS SMALLINT)", write={"oracle": "CAST(a AS SMALLINT)"})
+        self.validate_all("CAST(a AS BIGINT)", write={"oracle": "CAST(a AS INT)"})
+        self.validate_all("CAST(a AS INT)", write={"oracle": "CAST(a AS INT)"})
         self.validate_all(
             "CAST(a AS DECIMAL)",
             read={"oracle": "CAST(a AS NUMBER)"},

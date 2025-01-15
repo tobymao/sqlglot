@@ -3197,13 +3197,18 @@ class Parser(metaclass=_Parser):
         else:
             materialized = None
 
-        return self.expression(
+        cte = self.expression(
             exp.CTE,
             this=self._parse_wrapped(self._parse_statement),
             alias=alias,
             materialized=materialized,
             comments=comments,
         )
+
+        if isinstance(cte.this, exp.Values):
+            cte.set("this", exp.select("*").from_(exp.alias_(cte.this, "_values", table=True)))
+
+        return cte
 
     def _parse_table_alias(
         self, alias_tokens: t.Optional[t.Collection[TokenType]] = None

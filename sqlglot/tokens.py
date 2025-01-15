@@ -1002,7 +1002,7 @@ class Tokenizer(metaclass=_Tokenizer):
         # initialize `use_rs_tokenizer`, and allow it to be overwritten per Tokenizer instance
         self.use_rs_tokenizer = use_rs_tokenizer
 
-        if USE_RS_TOKENIZER:
+        if self.use_rs_tokenizer:
             self._rs_dialect_settings = RsTokenizerDialectSettings(
                 unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,

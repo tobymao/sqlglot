@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.2.1] - 2025-01-15
+### :wrench: Chores
+- [`b447322`](https://github.com/tobymao/sqlglot/commit/b4473220f0f50a9ce2463b3a98a77bf2fdd897af) - parser accepts ctes without as keyword again, except for clickhouse *(PR [#4612](https://github.com/tobymao/sqlglot/pull/4612) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.2.0] - 2025-01-14
 ### :boom: BREAKING CHANGES
 - due to [`f3fcc10`](https://github.com/tobymao/sqlglot/commit/f3fcc1013dfcfdaa388ba3426ed82c4fe0eefab1) - allow limit, offset to be used as both modifiers and aliases *(PR [#4589](https://github.com/tobymao/sqlglot/pull/4589) by [@georgesittas](https://github.com/georgesittas))*:
@@ -5643,3 +5648,4 @@ Changelog
 [v26.1.2]: https://github.com/tobymao/sqlglot/compare/v26.1.1...v26.1.2
 [v26.1.3]: https://github.com/tobymao/sqlglot/compare/v26.1.2...v26.1.3
 [v26.2.0]: https://github.com/tobymao/sqlglot/compare/v26.1.3...v26.2.0
+[v26.2.1]: https://github.com/tobymao/sqlglot/compare/v26.2.0...v26.2.1

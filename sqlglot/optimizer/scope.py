@@ -311,6 +311,12 @@ class Scope:
             result = {}
 
             for name, node in self.references:
+                parent = node.parent
+                if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
+                    # The RHS table of SEMI/ANTI joins shouldn't be collected as a
+                    # selected source
+                    continue
+
                 if name in result:
                     raise OptimizeError(f"Alias already used: {name}")
                 if name in self.sources:

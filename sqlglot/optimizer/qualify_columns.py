@@ -174,7 +174,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
         ordered.append(join_table)
 
         using = join.args.get("using")
-        if not using:
+        if not using or join.is_semi_or_anti_join:
             continue
 
         join_columns = resolver.get_source_columns(join_table)

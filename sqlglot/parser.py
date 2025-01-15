@@ -3206,7 +3206,7 @@ class Parser(metaclass=_Parser):
         )
 
         if isinstance(cte.this, exp.Values):
-            cte.set("this", exp.select("*").from_(cte.this))
+            cte.set("this", exp.select("*").from_(exp.alias_(cte.this, "_values", table=True)))
 
         return cte
 

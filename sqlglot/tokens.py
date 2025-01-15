@@ -993,14 +993,16 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(
-        self, dialect: DialectType = None, use_rs_tokenizer: bool = USE_RS_TOKENIZER
+        self, dialect: DialectType = None, use_rs_tokenizer: t.Optional[bool] = None
     ) -> None:
         from sqlglot.dialects import Dialect
 
         self.dialect = Dialect.get_or_raise(dialect)
 
         # initialize `use_rs_tokenizer`, and allow it to be overwritten per Tokenizer instance
-        self.use_rs_tokenizer = use_rs_tokenizer
+        self.use_rs_tokenizer = (
+            use_rs_tokenizer if use_rs_tokenizer is not None else USE_RS_TOKENIZER
+        )
 
         if self.use_rs_tokenizer:
             self._rs_dialect_settings = RsTokenizerDialectSettings(

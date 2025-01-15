@@ -436,6 +436,13 @@ class TestTSQL(Validator):
             "'a' + 'b'",
         )
 
+        self.validate_identity(
+            "CREATE TABLE db.t1 (a INTEGER, b VARCHAR(50), CONSTRAINT c PRIMARY KEY (a DESC))",
+        )
+        self.validate_identity(
+            "CREATE TABLE db.t1 (a INTEGER, b INTEGER, CONSTRAINT c PRIMARY KEY (a DESC, b))"
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

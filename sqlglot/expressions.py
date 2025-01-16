@@ -4382,6 +4382,7 @@ class DataType(Expression):
         DECIMAL128 = auto()
         DECIMAL256 = auto()
         DOUBLE = auto()
+        DYNAMIC = auto()
         ENUM = auto()
         ENUM8 = auto()
         ENUM16 = auto()

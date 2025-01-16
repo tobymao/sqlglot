@@ -216,6 +216,7 @@ class TokenType(AutoName):
     TDIGEST = auto()
     UNKNOWN = auto()
     VECTOR = auto()
+    DYNAMIC = auto()
 
     # keywords
     ALIAS = auto()
@@ -950,6 +951,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "USER-DEFINED": TokenType.USERDEFINED,
         "FOR VERSION": TokenType.VERSION_SNAPSHOT,
         "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
+        "DYNAMIC": TokenType.DYNAMIC,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

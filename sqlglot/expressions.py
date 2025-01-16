@@ -2453,6 +2453,10 @@ class Join(Expression):
     def alias_or_name(self) -> str:
         return self.this.alias_or_name
 
+    @property
+    def is_semi_or_anti_join(self) -> bool:
+        return self.kind in ("SEMI", "ANTI")
+
     def on(
         self,
         *expressions: t.Optional[ExpOrStr],

@@ -100,6 +100,7 @@ class Scope:
         self._join_hints = None
         self._pivots = None
         self._references = None
+        self._semi_anti_join_tables = None
 
     def branch(
         self, expression, scope_type, sources=None, cte_sources=None, lateral_sources=None, **kwargs
@@ -126,6 +127,7 @@ class Scope:
         self._raw_columns = []
         self._stars = []
         self._join_hints = []
+        self._semi_anti_join_tables = set()
 
         for node in self.walk(bfs=False):
             if node is self.expression:
@@ -139,6 +141,10 @@ class Scope:
                 else:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
+                parent = node.parent
+                if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
+                    self._semi_anti_join_tables.add(node.alias_or_name)
+
                 self._tables.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
@@ -311,6 +317,11 @@ class Scope:
             result = {}
 
             for name, node in self.references:
+                if name in self._semi_anti_join_tables:
+                    # The RHS table of SEMI/ANTI joins shouldn't be collected as a
+                    # selected source
+                    continue
+
                 if name in result:
                     raise OptimizeError(f"Alias already used: {name}")
                 if name in self.sources:
@@ -351,7 +362,10 @@ class Scope:
                 self._external_columns = left.external_columns + right.external_columns
             else:
                 self._external_columns = [
-                    c for c in self.columns if c.table not in self.selected_sources
+                    c
+                    for c in self.columns
+                    if c.table not in self.selected_sources
+                    and c.table not in self.semi_or_anti_join_tables
                 ]
 
         return self._external_columns
@@ -386,6 +400,10 @@ class Scope:
             ]
 
         return self._pivots
+
+    @property
+    def semi_or_anti_join_tables(self):
+        return self._semi_anti_join_tables or set()
 
     def source_columns(self, source_name):
         """

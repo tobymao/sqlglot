@@ -811,3 +811,24 @@ SELECT X.A AS FOO FROM X AS X GROUP BY X.A = 1;
 # execute: false
 SELECT x.a AS foo FROM x WHERE foo = 1;
 SELECT X.A AS FOO FROM X AS X WHERE X.A = 1;
+
+
+--------------------------------------
+-- SEMI / ANTI Joins
+--------------------------------------
+
+# title: SEMI JOIN table is excluded from the scope
+SELECT * FROM x SEMI JOIN y USING (b);
+SELECT x.a AS a, x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
+
+# title: ANTI JOIN table is excluded from the scope
+SELECT * FROM x ANTI JOIN y USING (b);
+SELECT x.a AS a, x.b AS b FROM x AS x ANTI JOIN y AS y ON x.b = y.b;
+
+# title: SEMI + normal joins reinclude the table on scope
+SELECT * FROM x SEMI JOIN y USING (b) JOIN y USING (b);
+SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
+
+# title: ANTI + normal joins reinclude the table on scope
+SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
+SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;

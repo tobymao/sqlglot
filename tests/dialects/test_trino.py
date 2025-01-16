@@ -13,6 +13,9 @@ class TestTrino(Validator):
         self.validate_identity(
             "JSON_QUERY(description, 'strict $.comment' OMIT QUOTES ON SCALAR STRING)"
         )
+        self.validate_identity(
+            "JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER KEEP QUOTES)"
+        )
 
     def test_listagg(self):
         self.validate_identity(

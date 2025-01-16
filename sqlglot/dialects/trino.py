@@ -35,9 +35,12 @@ class Trino(Presto):
         }
 
         def _parse_json_query_quote(self) -> t.Optional[exp.JSONExtractQuote]:
-            option = None
-            if self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES"):
-                option = self._tokens[self._index - 2].text.upper()
+            if not (
+                self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES")
+            ):
+                return None
+
+            option = self._tokens[self._index - 2].text.upper()
 
             if option:
                 scalar = (
@@ -77,11 +80,6 @@ class Trino(Presto):
             exp.JSONPathRoot,
             exp.JSONPathSubscript,
         }
-
-        def jsonextractquote_sql(self, expression: exp.JSONExtractQuote) -> str:
-            scalar = expression.args.get("scalar")
-            scalar = f" {scalar}" if scalar else ""
-            return f"{expression.args.get('option')} QUOTES" + scalar
 
         def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
             if not expression.args.get("json_query"):

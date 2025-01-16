@@ -357,8 +357,6 @@ class Snowflake(Dialect):
         "mi": "%M",
         "SS": "%S",
         "ss": "%S",
-        "FF": "%f",
-        "ff": "%f",
         "FF6": "%f",
         "ff6": "%f",
     }

@@ -4431,6 +4431,10 @@ class Generator(metaclass=_Generator):
 
         return f"{empty}{error}{null}"
 
+    def jsonextractquote_sql(self, expression: exp.JSONExtractQuote) -> str:
+        scalar = " ON SCALAR STRING" if expression.args.get("scalar") else ""
+        return f"{self.sql(expression, 'option')} QUOTES{scalar}"
+
     def jsonexists_sql(self, expression: exp.JSONExists) -> str:
         this = self.sql(expression, "this")
         path = self.sql(expression, "path")

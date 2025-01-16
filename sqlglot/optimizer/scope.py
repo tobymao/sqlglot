@@ -127,7 +127,7 @@ class Scope:
         self._raw_columns = []
         self._stars = []
         self._join_hints = []
-        self._semi_anti_join_tables = []
+        self._semi_anti_join_tables = set()
 
         for node in self.walk(bfs=False):
             if node is self.expression:
@@ -143,7 +143,7 @@ class Scope:
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
                 parent = node.parent
                 if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
-                    self._semi_anti_join_tables.append(node.alias_or_name)
+                    self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)
             elif isinstance(node, exp.JoinHint):
@@ -403,9 +403,7 @@ class Scope:
 
     @property
     def semi_or_anti_join_tables(self):
-        if self._semi_anti_join_tables is None:
-            return []
-        return self._semi_anti_join_tables
+        return self._semi_anti_join_tables or set()
 
     def source_columns(self, source_name):
         """

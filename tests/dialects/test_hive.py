@@ -740,6 +740,7 @@ class TestHive(Validator):
                 "presto": "SET_AGG(x)",
                 "snowflake": "ARRAY_UNIQUE_AGG(x)",
                 "spark": "COLLECT_SET(x)",
+                "trino": "ARRAY_AGG(DISTINCT x)",
             },
         )
         self.validate_all(

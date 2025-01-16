@@ -4,6 +4,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql, timestrtotime_sql
 from sqlglot.dialects.presto import Presto
 from sqlglot.tokens import TokenType
+import typing as t
 
 
 class Trino(Presto):
@@ -33,13 +34,26 @@ class Trino(Presto):
             ),
         }
 
-        def _parse_json_query(self):
+        def _parse_json_query_quote(self) -> t.Optional[exp.JSONExtractQuote]:
+            if not (
+                self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES")
+            ):
+                return None
+
+            return self.expression(
+                exp.JSONExtractQuote,
+                option=self._tokens[self._index - 2].text.upper(),
+                scalar=self._match_text_seq("ON", "SCALAR", "STRING"),
+            )
+
+        def _parse_json_query(self) -> exp.JSONExtract:
             return self.expression(
                 exp.JSONExtract,
                 this=self._parse_bitwise(),
                 expression=self._match(TokenType.COMMA) and self._parse_bitwise(),
                 option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
                 json_query=True,
+                quote=self._parse_json_query_quote(),
             )
 
     class Generator(Presto.Generator):
@@ -68,7 +82,10 @@ class Trino(Presto):
             option = self.sql(expression, "option")
             option = f" {option}" if option else ""
 
-            return self.func("JSON_QUERY", expression.this, json_path + option)
+            quote = self.sql(expression, "quote")
+            quote = f" {quote}" if quote else ""
+
+            return self.func("JSON_QUERY", expression.this, json_path + option + quote)
 
         def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
             this = expression.this

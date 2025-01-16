@@ -4,6 +4,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql, timestrtotime_sql
 from sqlglot.dialects.presto import Presto
 from sqlglot.tokens import TokenType
+import typing as t
 
 
 class Trino(Presto):
@@ -33,13 +34,29 @@ class Trino(Presto):
             ),
         }
 
-        def _parse_json_query(self):
+        def _parse_json_query_quote(self) -> t.Optional[exp.JSONExtractQuote]:
+            option = None
+            if self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES"):
+                option = self._tokens[self._index - 2].text.upper()
+
+            scalar = "ON SCALAR STRING" if self._match_text_seq("ON", "SCALAR", "STRING") else None
+
+            if option:
+                return self.expression(
+                    exp.JSONExtractQuote,
+                    option=option,
+                    scalar=scalar,
+                )
+            return None
+
+        def _parse_json_query(self) -> exp.JSONExtract:
             return self.expression(
                 exp.JSONExtract,
                 this=self._parse_bitwise(),
                 expression=self._match(TokenType.COMMA) and self._parse_bitwise(),
                 option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
                 json_query=True,
+                quote=self._parse_json_query_quote(),
             )
 
     class Generator(Presto.Generator):
@@ -60,6 +77,11 @@ class Trino(Presto):
             exp.JSONPathSubscript,
         }
 
+        def jsonextractquote_sql(self, expression: exp.JSONExtractQuote) -> str:
+            scalar = expression.args.get("scalar")
+            scalar = f" {scalar}" if scalar else ""
+            return f"{expression.args.get('option')} QUOTES" + scalar
+
         def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
             if not expression.args.get("json_query"):
                 return super().jsonextract_sql(expression)
@@ -68,7 +90,10 @@ class Trino(Presto):
             option = self.sql(expression, "option")
             option = f" {option}" if option else ""
 
-            return self.func("JSON_QUERY", expression.this, json_path + option)
+            quote = self.sql(expression, "quote")
+            quote = f" {quote}" if quote else ""
+
+            return self.func("JSON_QUERY", expression.this, json_path + option + quote)
 
         def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
             this = expression.this

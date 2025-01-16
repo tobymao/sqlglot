@@ -9,6 +9,10 @@ class TestTrino(Validator):
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
+        self.validate_identity("JSON_QUERY(description, 'strict $.comment' KEEP QUOTES)")
+        self.validate_identity(
+            "JSON_QUERY(description, 'strict $.comment' OMIT QUOTES ON SCALAR STRING)"
+        )
 
     def test_listagg(self):
         self.validate_identity(

@@ -174,12 +174,13 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
         ordered.append(join_table)
 
         using = join.args.get("using")
-        if not using or join.is_semi_or_anti_join:
+        if not using:
             continue
 
         join_columns = resolver.get_source_columns(join_table)
         conditions = []
         using_identifier_count = len(using)
+        is_semi_or_anti_join = join.is_semi_or_anti_join
 
         for identifier in using:
             identifier = identifier.name
@@ -208,10 +209,14 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
 
             # Set all values in the dict to None, because we only care about the key ordering
             tables = column_tables.setdefault(identifier, {})
-            if table not in tables:
-                tables[table] = None
-            if join_table not in tables:
-                tables[join_table] = None
+
+            # Do not update the dict if this was a SEMI/ANTI join in
+            # order to avoid generating COALESCE columns for this join pair
+            if not is_semi_or_anti_join:
+                if table not in tables:
+                    tables[table] = None
+                if join_table not in tables:
+                    tables[join_table] = None
 
         join.args.pop("using")
         join.set("on", exp.and_(*conditions, copy=False))

@@ -276,6 +276,7 @@ class Parser(metaclass=_Parser):
     }
 
     ENUM_TYPE_TOKENS = {
+        TokenType.DYNAMIC,
         TokenType.ENUM,
         TokenType.ENUM8,
         TokenType.ENUM16,

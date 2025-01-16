@@ -513,10 +513,10 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
   LEVEL,
   SYS_CONNECT_BY_PATH(last_name, '/') AS "Path"
 FROM employees
-START WITH last_name = 'King'
-CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4
 WHERE
-  level <= 3 AND department_id = 80"""
+  level <= 3 AND department_id = 80
+START WITH last_name = 'King'
+CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
 
         for query in (f"{body}{start}{connect}", f"{body}{connect}{start}"):
             self.validate_identity(query, pretty, pretty=True)

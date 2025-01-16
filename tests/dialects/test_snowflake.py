@@ -106,6 +106,9 @@ class TestSnowflake(Validator):
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
+            """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DD"T"hh24:mi:ss.ff3TZHTZM')"""
+        )
+        self.validate_identity(
             "WITH t (SELECT 1 AS c) SELECT c FROM t",
             "WITH t AS (SELECT 1 AS c) SELECT c FROM t",
         )
@@ -294,6 +297,13 @@ class TestSnowflake(Validator):
             "SELECT * RENAME (a AS b), c AS d FROM xxx",
         )
 
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2025-01-16 14:45:30.123', 'yyyy-mm-DD hh24:mi:ss.ff6')",
+            write={
+                "": "SELECT STR_TO_TIME('2025-01-16 14:45:30.123', '%Y-%m-%d %H:%M:%S.%f')",
+                "snowflake": "SELECT TO_TIMESTAMP('2025-01-16 14:45:30.123', 'yyyy-mm-DD hh24:mi:ss.ff6')",
+            },
+        )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT(1, null, 2)",
             write={

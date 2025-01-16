@@ -67,8 +67,9 @@ def _build_datetime(
                     expr.set("safe", safe)
                     return expr
 
-        if kind == exp.DataType.Type.DATE and not int_value:
-            formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
+        if kind in (exp.DataType.Type.DATE, exp.DataType.Type.TIME) and not int_value:
+            klass = exp.TsOrDsToDate if kind == exp.DataType.Type.DATE else exp.TsOrDsToTime
+            formatted_exp = build_formatted_time(klass, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp
 
@@ -449,6 +450,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_NTZ_FROM_PARTS": build_timestamp_from_parts,
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
+            "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DataType.Type.TIME, safe=True),
             "TRY_TO_TIMESTAMP": _build_datetime(
                 "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
             ),
@@ -978,6 +980,9 @@ class Snowflake(Dialect):
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: lambda self, e: self.func(
                 "TRY_TO_DATE" if e.args.get("safe") else "TO_DATE", e.this, self.format_time(e)
+            ),
+            exp.TsOrDsToTime: lambda self, e: self.func(
+                "TRY_TO_TIME" if e.args.get("safe") else "TO_TIME", e.this, self.format_time(e)
             ),
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.Uuid: rename_func("UUID_STRING"),

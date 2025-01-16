@@ -3934,6 +3934,16 @@ class Generator(metaclass=_Generator):
 
     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
         this = expression.this
+        time_format = self.format_time(expression)
+
+        if time_format:
+            return self.sql(
+                exp.cast(
+                    exp.StrToTime(this=this, format=expression.args["format"]),
+                    exp.DataType.Type.TIME,
+                )
+            )
+
         if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
             return self.sql(this)
 

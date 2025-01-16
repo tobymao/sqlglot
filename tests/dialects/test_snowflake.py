@@ -36,7 +36,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR) RENAME FIELDS)")
         self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR, y VARCHAR) ADD FIELDS)")
         self.validate_identity("SELECT TO_TIMESTAMP(123.4)").selects[0].assert_is(exp.Anonymous)
-        self.validate_identity("SELECT TO_TIME(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP_NTZ(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP_LTZ(x) FROM t")
@@ -731,13 +730,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT TO_TIME('12:05:00')",
-            write={
-                "bigquery": "SELECT CAST('12:05:00' AS TIME)",
-                "snowflake": "SELECT CAST('12:05:00' AS TIME)",
-            },
-        )
-        self.validate_all(
             "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
             read={
                 "bigquery": "SELECT PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', '04/05/2013 01:02:03')",
@@ -1293,6 +1285,37 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "TRY_TO_DATE('01-01-2000', 'mm-DD-yyyy')",
                 "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
+            },
+        )
+
+        self.validate_identity("SELECT TO_TIME(x) FROM t")
+        self.validate_all(
+            "SELECT TO_TIME('12:05:00')",
+            write={
+                "bigquery": "SELECT CAST('12:05:00' AS TIME)",
+                "snowflake": "SELECT CAST('12:05:00' AS TIME)",
+                "duckdb": "SELECT CAST('12:05:00' AS TIME)",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIME(CONVERT_TIMEZONE('UTC', 'US/Pacific', '2024-08-06 09:10:00.000')) AS pst_time",
+            write={
+                "snowflake": "SELECT TO_TIME(CONVERT_TIMEZONE('UTC', 'US/Pacific', '2024-08-06 09:10:00.000')) AS pst_time",
+                "duckdb": "SELECT CAST(CAST('2024-08-06 09:10:00.000' AS TIMESTAMP) AT TIME ZONE 'UTC' AT TIME ZONE 'US/Pacific' AS TIME) AS pst_time",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIME('11.15.00', 'hh24.mi.ss')",
+            write={
+                "snowflake": "SELECT TO_TIME('11.15.00', 'hh24.mi.ss')",
+                "duckdb": "SELECT CAST(STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
+            write={
+                "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
+                "duckdb": "SELECT CAST(STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
             },
         )
 

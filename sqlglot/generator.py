@@ -2491,11 +2491,11 @@ class Generator(metaclass=_Generator):
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
-            self.sql(expression, "connect"),
             self.sql(expression, "match"),
             *[self.sql(lateral) for lateral in expression.args.get("laterals") or []],
             self.sql(expression, "prewhere"),
             self.sql(expression, "where"),
+            self.sql(expression, "connect"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
             *[gen(self, expression) for gen in self.AFTER_HAVING_MODIFIER_TRANSFORMS.values()],

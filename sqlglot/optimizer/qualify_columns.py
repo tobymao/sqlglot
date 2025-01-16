@@ -56,7 +56,21 @@ def qualify_columns(
     dialect = Dialect.get_or_raise(schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
+    snowflake_or_oracle = dialect in ("oracle", "snowflake")
+
     for scope in traverse_scope(expression):
+        scope_expression = scope.expression
+        is_select = isinstance(scope_expression, exp.Select)
+
+        if is_select and snowflake_or_oracle and scope_expression.args.get("connect"):
+            # In Snowflake / Oracle queries that have a CONNECT BY clause, one can use the LEVEL
+            # pseudocolumn, which doesn't belong to a table, so we change it into an identifier
+            scope_expression.transform(
+                lambda n: n.this if isinstance(n, exp.Column) and n.name == "LEVEL" else n,
+                copy=False,
+            )
+            scope.clear_cache()
+
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
@@ -76,7 +90,7 @@ def qualify_columns(
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 
-        if isinstance(scope.expression, exp.Select):
+        if is_select:
             if expand_stars:
                 _expand_stars(
                     scope,
@@ -898,21 +912,9 @@ class Resolver:
                     for (name, alias) in itertools.zip_longest(columns, column_aliases)
                 ]
 
-            pseudocolumns = self._get_source_pseudocolumns(name)
-            if pseudocolumns:
-                columns = list(columns)
-                columns.extend(c for c in pseudocolumns if c not in columns)
-
             self._get_source_columns_cache[cache_key] = columns
 
         return self._get_source_columns_cache[cache_key]
-
-    def _get_source_pseudocolumns(self, name: str) -> t.Sequence[str]:
-        if self.schema.dialect == "snowflake" and self.scope.expression.args.get("connect"):
-            # When there is a CONNECT BY clause, there is only one table being scanned
-            # See: https://docs.snowflake.com/en/sql-reference/constructs/connect-by
-            return ["LEVEL"]
-        return []
 
     def _get_all_source_columns(self) -> t.Dict[str, t.Sequence[str]]:
         if self._source_columns is None:

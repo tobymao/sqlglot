@@ -768,7 +768,7 @@ class TSQL(Dialect):
 
             if isinstance(create, exp.Create):
                 table = create.this.this if isinstance(create.this, exp.Schema) else create.this
-                if isinstance(table, exp.Table) and table.this.args.get("temporary"):
+                if isinstance(table, exp.Table) and table.this and table.this.args.get("temporary"):
                     if not create.args.get("properties"):
                         create.set("properties", exp.Properties(expressions=[]))
 

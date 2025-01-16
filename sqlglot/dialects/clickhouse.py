@@ -447,10 +447,7 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS.pop("MATCH")
 
-        PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,
-        }
-
+        PROPERTY_PARSERS = parser.Parser.PROPERTY_PARSERS.copy()
         PROPERTY_PARSERS.pop("DYNAMIC")
 
         ENUM_TYPE_TOKENS = {

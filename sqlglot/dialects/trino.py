@@ -40,18 +40,11 @@ class Trino(Presto):
             ):
                 return None
 
-            option = self._tokens[self._index - 2].text.upper()
-
-            if option:
-                scalar = (
-                    "ON SCALAR STRING" if self._match_text_seq("ON", "SCALAR", "STRING") else None
-                )
-                return self.expression(
-                    exp.JSONExtractQuote,
-                    option=option,
-                    scalar=scalar,
-                )
-            return None
+            return self.expression(
+                exp.JSONExtractQuote,
+                option=self._tokens[self._index - 2].text.upper(),
+                scalar=self._match_text_seq("ON", "SCALAR", "STRING"),
+            )
 
         def _parse_json_query(self) -> exp.JSONExtract:
             return self.expression(

@@ -200,6 +200,7 @@ class ClickHouse(Dialect):
             "DATE32": TokenType.DATE32,
             "DATETIME64": TokenType.DATETIME64,
             "DICTIONARY": TokenType.DICTIONARY,
+            "DYNAMIC": TokenType.DYNAMIC,
             "ENUM8": TokenType.ENUM8,
             "ENUM16": TokenType.ENUM16,
             "FINAL": TokenType.FINAL,
@@ -449,11 +450,6 @@ class ClickHouse(Dialect):
 
         PROPERTY_PARSERS = parser.Parser.PROPERTY_PARSERS.copy()
         PROPERTY_PARSERS.pop("DYNAMIC")
-
-        ENUM_TYPE_TOKENS = {
-            *parser.Parser.ENUM_TYPE_TOKENS,
-            TokenType.DYNAMIC,
-        }
 
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
         NO_PAREN_FUNCTION_PARSERS.pop("ANY")

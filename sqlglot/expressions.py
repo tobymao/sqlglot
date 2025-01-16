@@ -6156,6 +6156,7 @@ class JSONExtract(Binary, Func):
         "variant_extract": False,
         "json_query": False,
         "option": False,
+        "quote": False,
     }
     _sql_names = ["JSON_EXTRACT"]
     is_var_len_args = True
@@ -6163,6 +6164,14 @@ class JSONExtract(Binary, Func):
     @property
     def output_name(self) -> str:
         return self.expression.output_name if not self.expressions else ""
+
+
+# https://trino.io/docs/current/functions/json.html#json-query
+class JSONExtractQuote(Expression):
+    arg_types = {
+        "option": True,
+        "scalar": False,
+    }
 
 
 class JSONExtractArray(Func):

@@ -39,9 +39,10 @@ class Trino(Presto):
             if self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES"):
                 option = self._tokens[self._index - 2].text.upper()
 
-            scalar = "ON SCALAR STRING" if self._match_text_seq("ON", "SCALAR", "STRING") else None
-
             if option:
+                scalar = (
+                    "ON SCALAR STRING" if self._match_text_seq("ON", "SCALAR", "STRING") else None
+                )
                 return self.expression(
                     exp.JSONExtractQuote,
                     option=option,

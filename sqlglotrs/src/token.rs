@@ -1,5 +1,5 @@
 use crate::settings::TokenType;
-use pyo3::types::{PyNone};
+use pyo3::types::PyNone;
 use pyo3::{pyclass, pymethods, IntoPy, PyObject, Python};
 
 #[derive(Debug)]

@@ -197,7 +197,7 @@ impl<'a> TokenizerState<'a> {
         if end <= self.size {
             self.sql[start..end].iter().collect()
         } else {
-            String::from("")
+            String::new()
         }
     }
 
@@ -433,7 +433,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
 
                 let tag = if self.current_char.to_string() == *end {
-                    String::from("")
+                    String::new()
                 } else {
                     self.extract_string(end, false, true, !self.settings.heredoc_tag_is_identifier)?
                 };
@@ -518,7 +518,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
             } else if self.is_alphabetic_or_underscore(self.peek_char) {
                 let number_text = self.text();
-                let mut literal = String::from("");
+                let mut literal = String::new();
 
                 while !self.peek_char.is_whitespace()
                     && !self.is_end
@@ -535,7 +535,7 @@ impl<'a> TokenizerState<'a> {
                         self.settings
                             .numeric_literals
                             .get(&literal.to_uppercase())
-                            .unwrap_or(&String::from("")),
+                            .unwrap_or(&String::new()),
                     )
                     .copied();
 
@@ -626,19 +626,23 @@ impl<'a> TokenizerState<'a> {
         raw_string: bool,
         raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
-        let mut text = String::from("");
+        let mut text = String::new();
+        // Build a single combined escapes list once, if needed
+        // We were cloning identifier_escapes on every loop iteration. If your delimiter doesn’t
+        // change throughout the loop, you can consider building this extended escapes set once
+        // outside the loop.
+        let mut combined_identifier_escapes = None;
+        if use_identifier_escapes {
+            let mut tmp = self.settings.identifier_escapes.clone();
+            tmp.extend(delimiter.chars());
+            combined_identifier_escapes = Some(tmp);
+        }
+        let escapes = match combined_identifier_escapes {
+            Some(ref v) => v,
+            None => &self.settings.string_escapes,
+        };
 
         loop {
-            let mut new_identifier_escapes;
-            let escapes = if use_identifier_escapes {
-                new_identifier_escapes = self.settings.identifier_escapes.clone();
-                new_identifier_escapes.extend(delimiter.chars());
-                &new_identifier_escapes
-            } else {
-                &self.settings.string_escapes
-            };
-            let peek_char_str = self.peek_char.to_string();
-
             if !raw_string
                 && !self.dialect_settings.unescaped_sequences.is_empty()
                 && !self.peek_char.is_whitespace()
@@ -656,63 +660,65 @@ impl<'a> TokenizerState<'a> {
 
             if (self.settings.string_escapes_allowed_in_raw_strings || !raw_string)
                 && escapes.contains(&self.current_char)
-                && (peek_char_str == delimiter || escapes.contains(&self.peek_char))
                 && (self.current_char == self.peek_char
                     || !self
                         .settings
                         .quotes
                         .contains_key(&self.current_char.to_string()))
             {
-                if peek_char_str == delimiter {
-                    text.push(self.peek_char);
-                } else {
-                    text.push(self.current_char);
-                    text.push(self.peek_char);
-                }
-                if self.current + 1 < self.size {
-                    self.advance(2)?;
-                } else {
-                    return self.error_result(format!(
-                        "Missing {} from {}:{}",
-                        delimiter, self.line, self.current
-                    ));
-                }
-            } else {
-                if self.chars(delimiter.len()) == delimiter {
-                    if delimiter.len() > 1 {
-                        self.advance((delimiter.len() - 1) as isize)?;
-                    }
-                    break;
-                }
-                if self.is_end {
-                    if !raise_unmatched {
+                let peek_char_str = self.peek_char.to_string();
+                if peek_char_str == delimiter || escapes.contains(&self.peek_char) {
+                    if peek_char_str == delimiter {
+                        text.push(self.peek_char);
+                    } else {
                         text.push(self.current_char);
-                        return Ok(text);
+                        text.push(self.peek_char);
                     }
-
-                    return self.error_result(format!(
-                        "Missing {} from {}:{}",
-                        delimiter, self.line, self.current
-                    ));
+                    if self.current + 1 < self.size {
+                        self.advance(2)?;
+                    } else {
+                        return self.error_result(format!(
+                            "Missing {} from {}:{}",
+                            delimiter, self.line, self.current
+                        ));
+                    }
+                    continue;
+                }
+            }
+            if self.chars(delimiter.len()) == delimiter {
+                if delimiter.len() > 1 {
+                    self.advance((delimiter.len() - 1) as isize)?;
+                }
+                break;
+            }
+            if self.is_end {
+                if !raise_unmatched {
+                    text.push(self.current_char);
+                    return Ok(text);
                 }
 
-                let current = self.current - 1;
-                self.advance(1)?;
-                text.push_str(
-                    &self.sql[current..self.current - 1]
-                        .iter()
-                        .collect::<String>(),
-                );
+                return self.error_result(format!(
+                    "Missing {} from {}:{}",
+                    delimiter, self.line, self.current
+                ));
             }
+
+            let current = self.current - 1;
+            self.advance(1)?;
+            text.push_str(
+                &self.sql[current..self.current - 1]
+                    .iter()
+                    .collect::<String>(),
+            );
         }
         Ok(text)
     }
 
-    fn is_alphabetic_or_underscore(&mut self, name: char) -> bool {
+    fn is_alphabetic_or_underscore(&self, name: char) -> bool {
         name.is_alphabetic() || name == '_'
     }
 
-    fn is_identifier(&mut self, s: &str) -> bool {
+    fn is_identifier(&self, s: &str) -> bool {
         s.chars().enumerate().all(|(i, c)| {
             if i == 0 {
                 self.is_alphabetic_or_underscore(c)
@@ -722,7 +728,7 @@ impl<'a> TokenizerState<'a> {
         })
     }
 
-    fn is_numeric(&mut self, s: &str) -> bool {
+    fn is_numeric(&self, s: &str) -> bool {
         s.chars().all(|c| c.is_ascii_digit())
     }
 

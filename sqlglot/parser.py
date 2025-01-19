@@ -153,6 +153,16 @@ def build_coalesce(args: t.List, is_nvl: t.Optional[bool] = None) -> exp.Coalesc
     return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl)
 
 
+def build_strposition(args: t.List, func_name: str):
+    if func_name in ["LOCATE", "CHARINDEX"]:
+        return exp.StrPosition(
+            this=seq_get(args, 1),
+            substr=seq_get(args, 0),
+            position=seq_get(args, 2),
+        )
+    return exp.StrPosition.from_arg_list(args)
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -231,27 +241,10 @@ class Parser(metaclass=_Parser):
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
-        "STRPOS": lambda args: exp.StrPosition(
-            this=seq_get(args, 0),
-            substr=seq_get(args, 1),
-            position=seq_get(args, 2),
-        ),
-        "CHARINDEX": lambda args: exp.StrPosition(
-            this=seq_get(args, 1),
-            substr=seq_get(args, 0),
-            position=seq_get(args, 2),
-        ),
-        "INSTR": lambda args: exp.StrPosition(
-            this=seq_get(args, 0),
-            substr=seq_get(args, 1),
-            position=seq_get(args, 2),
-            occurrence=seq_get(args, 3),
-        ),
-        "LOCATE": lambda args: exp.StrPosition(
-            this=seq_get(args, 1),
-            substr=seq_get(args, 0),
-            position=seq_get(args, 2),
-        ),
+        "STRPOS": lambda args: build_strposition(args, func_name="STRPOS"),
+        "CHARINDEX": lambda args: build_strposition(args, func_name="CHARINDEX"),
+        "INSTR": lambda args: build_strposition(args, func_name="INSTR"),
+        "LOCATE": lambda args: build_strposition(args, func_name="LOCATE"),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

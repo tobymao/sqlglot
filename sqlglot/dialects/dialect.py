@@ -1286,27 +1286,6 @@ def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
     return self.sql(exp.cast(exp.Add(this=this, expression=expr), exp.DataType.Type.TIMESTAMP))
 
 
-# def locate_to_strposition(args: t.List) -> exp.Expression:
-#     return exp.StrPosition(
-#         this=seq_get(args, 1), substr=seq_get(args, 0), position=seq_get(args, 2)
-#     )
-
-# @unsupported_args("occurrence")
-# def strposition_to_charindex_sql(self: Generator, expression: exp.StrPosition) -> str:
-#     return self.func(
-#         "CHARINDEX",
-#         expression.args.get("substr"),
-#         expression.this,
-#         expression.args.get("position"),
-#     )
-
-# @unsupported_args("occurrence")
-# def strposition_to_locate_sql(self: Generator, expression: exp.StrPosition) -> str:
-#     return self.func(
-#         "LOCATE", expression.args.get("substr"), expression.this, expression.args.get("position")
-#     )
-
-
 def left_to_substring_sql(self: Generator, expression: exp.Left) -> str:
     return self.sql(
         exp.Substring(

@@ -748,7 +748,9 @@ class MySQL(Dialect):
                     transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
-            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="LOCATE"),
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="LOCATE", supports_position=True
+            ),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),

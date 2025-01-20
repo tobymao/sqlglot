@@ -168,7 +168,6 @@ class Teradata(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CARDINALITY": exp.ArraySize.from_arg_list,
-            # "INDEX": lambda args: exp.StrPosition(this=seq_get(args, 0), substr=seq_get(args, 1)),
             "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
         }
 
@@ -258,7 +257,9 @@ class Teradata(Dialect):
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
             exp.StrPosition: lambda self, e: (
-                strposition_sql(self, e, func_name="INSTR", supports_occurrence=True)
+                strposition_sql(
+                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
+                )
             ),
             exp.StrToDate: lambda self,
             e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",

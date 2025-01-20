@@ -298,7 +298,6 @@ class Spark2(Hive):
                     transforms.any_to_exists,
                 ]
             ),
-            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="LOCATE"),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),

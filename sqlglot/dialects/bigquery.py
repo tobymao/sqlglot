@@ -935,7 +935,9 @@ class BigQuery(Dialect):
             ),
             exp.String: rename_func("STRING"),
             exp.StrPosition: lambda self, e: (
-                strposition_sql(self, e, func_name="INSTR", supports_occurrence=True)
+                strposition_sql(
+                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
+                )
             ),
             exp.StrToDate: _str_to_datetime_sql,
             exp.StrToTime: _str_to_datetime_sql,

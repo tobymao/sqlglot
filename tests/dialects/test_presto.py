@@ -204,13 +204,13 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "STRPOS(haystack, needle, occurence)",
+            "STRPOS(haystack, needle, occurrence)",
             write={
-                "bigquery": "INSTR(haystack, needle, 1, occurence)",
-                "oracle": "INSTR(haystack, needle, 1, occurence)",
-                "presto": "STRPOS(haystack, needle, occurence)",
-                "trino": "STRPOS(haystack, needle)",
-                "teradata": "INSTR(haystack, needle, 1, occurence)",
+                "bigquery": "INSTR(haystack, needle, 1, occurrence)",
+                "oracle": "INSTR(haystack, needle, 1, occurrence)",
+                "presto": "STRPOS(haystack, needle, occurrence)",
+                "trino": "STRPOS(haystack, needle, occurrence)",
+                "teradata": "INSTR(haystack, needle, 1, occurrence)",
             },
         )
 

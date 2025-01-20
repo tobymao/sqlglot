@@ -68,11 +68,7 @@ class Trino(Presto):
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
             exp.Merge: merge_without_target_sql,
-            exp.StrPosition: (
-                lambda self, e: strposition_sql(
-                    self, e, func_name="STRPOS", supports_position=False
-                )
-            ),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
             exp.JSONExtract: lambda self, e: self.jsonextract_sql(e),

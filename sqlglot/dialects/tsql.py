@@ -936,7 +936,9 @@ class TSQL(Dialect):
                 ]
             ),
             exp.Stddev: rename_func("STDEV"),
-            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="CHARINDEX"),
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="CHARINDEX", supports_position=True
+            ),
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(

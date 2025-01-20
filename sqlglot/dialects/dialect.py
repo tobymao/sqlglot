@@ -1076,8 +1076,8 @@ def property_sql(self: Generator, expression: exp.Property) -> str:
 def strposition_sql(
     self: Generator,
     expression: exp.StrPosition,
-    func_name: str,
-    supports_position: bool = True,
+    func_name: str = "STRPOS",
+    supports_position: bool = False,
     supports_occurrence: bool = False,
 ) -> str:
     string = expression.this

@@ -562,7 +562,9 @@ class Hive(Dialect):
                     transforms.any_to_exists,
                 ]
             ),
-            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="LOCATE"),
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="LOCATE", supports_position=True
+            ),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,

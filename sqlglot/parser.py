@@ -6480,8 +6480,12 @@ class Parser(metaclass=_Parser):
                 exp.StrPosition, this=self._parse_bitwise(), substr=seq_get(args, 0)
             )
 
-        haystack = seq_get(args, 0 if haystack_first else 1)
-        needle = seq_get(args, 1 if haystack_first else 0)
+        if haystack_first:
+            haystack = seq_get(args, 0)
+            needle = seq_get(args, 1)
+        else:
+            haystack = seq_get(args, 1)
+            needle = seq_get(args, 0)
 
         return self.expression(
             exp.StrPosition, this=haystack, substr=needle, position=seq_get(args, 2)

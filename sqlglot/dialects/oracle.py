@@ -301,7 +301,9 @@ class Oracle(Dialect):
                 ]
             ),
             exp.StrPosition: lambda self, e: (
-                strposition_sql(self, e, func_name="INSTR", supports_occurrence=True)
+                strposition_sql(
+                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
+                )
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),

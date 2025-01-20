@@ -1037,18 +1037,6 @@ def no_recursive_cte_sql(self: Generator, expression: exp.With) -> str:
     return self.with_sql(expression)
 
 
-def no_safe_divide_sql(self: Generator, expression: exp.SafeDivide) -> str:
-    n = exp._wrap(expression.args.get("this"), exp.Binary)
-    d = exp._wrap(expression.args.get("expression"), exp.Binary)
-    return self.sql(
-        exp.If(
-            this=exp.NEQ(this=d, expression=exp.Literal.number(0)),
-            true=exp.Div(this=n, expression=d),
-            false=exp.Null(),
-        )
-    )
-
-
 def no_tablesample_sql(self: Generator, expression: exp.TableSample) -> str:
     self.unsupported("TABLESAMPLE unsupported")
     return self.sql(expression.this)

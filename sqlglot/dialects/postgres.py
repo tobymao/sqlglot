@@ -33,7 +33,6 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     ts_or_ds_add_cast,
     str_position_sql,
-    no_safe_divide_sql,
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
@@ -611,7 +610,6 @@ class Postgres(Dialect):
             exp.Unicode: rename_func("ASCII"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.Levenshtein: _levenshtein_sql,
-            exp.SafeDivide: no_safe_divide_sql,
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)

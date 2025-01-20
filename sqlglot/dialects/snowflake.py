@@ -22,7 +22,6 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     var_map_sql,
     map_date_part,
-    no_safe_divide_sql,
     no_timestamp_sql,
     timestampdiff_sql,
     no_make_interval_sql,
@@ -955,7 +954,6 @@ class Snowflake(Dialect):
                     _transform_generate_date_array,
                 ]
             ),
-            exp.SafeDivide: no_safe_divide_sql,
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

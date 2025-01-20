@@ -20,7 +20,6 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     no_ilike_sql,
     no_recursive_cte_sql,
-    no_safe_divide_sql,
     no_trycast_sql,
     regexp_extract_sql,
     regexp_replace_sql,
@@ -550,7 +549,6 @@ class Hive(Dialect):
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
             exp.Right: right_to_substring_sql,
-            exp.SafeDivide: no_safe_divide_sql,
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: self.func(

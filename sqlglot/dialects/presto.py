@@ -16,7 +16,6 @@ from sqlglot.dialects.dialect import (
     left_to_substring_sql,
     no_ilike_sql,
     no_pivot_sql,
-    no_safe_divide_sql,
     no_timestamp_sql,
     regexp_extract_sql,
     rename_func,
@@ -418,7 +417,6 @@ class Presto(Dialect):
             exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpExtractAll: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
-            exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Select: transforms.preprocess(

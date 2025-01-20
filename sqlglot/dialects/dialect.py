@@ -1038,12 +1038,8 @@ def no_recursive_cte_sql(self: Generator, expression: exp.With) -> str:
 
 
 def no_safe_divide_sql(self: Generator, expression: exp.SafeDivide) -> str:
-    n = expression.args.get("this")
-    if issubclass(type(n), exp.Binary):
-        n = exp.Paren(this=expression.args.get("this"))
-    d = expression.args.get("expression")
-    if issubclass(type(d), exp.Binary):
-        d = exp.Paren(this=d)
+    n = exp._wrap(expression.args.get("this"), exp.Binary)
+    d = exp._wrap(expression.args.get("expression"), exp.Binary)
     return self.sql(
         exp.If(
             this=exp.NEQ(this=d, expression=exp.Literal.number(0)),

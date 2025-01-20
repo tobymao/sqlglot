@@ -1700,10 +1700,20 @@ class TestDialect(Validator):
                 "spark2": "POSITION(needle in haystack)",
                 "teradata": "POSITION(needle in haystack)",
                 "trino": "POSITION(needle in haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
                 "clickhouse": "POSITION(haystack, needle)",
                 "databricks": "POSITION(needle, haystack)",
                 "snowflake": "POSITION(needle, haystack)",
                 "spark2": "POSITION(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
                 "athena": "STRPOS(haystack, needle)",
                 "bigquery": "STRPOS(haystack, needle)",
                 "drill": "STRPOS(haystack, needle)",
@@ -1712,6 +1722,11 @@ class TestDialect(Validator):
                 "presto": "STRPOS(haystack, needle)",
                 "redshift": "STRPOS(haystack, needle)",
                 "trino": "STRPOS(haystack, needle)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
                 "bigquery": "INSTR(haystack, needle)",
                 "databricks": "INSTR(haystack, needle)",
                 "doris": "INSTR(haystack, needle)",
@@ -1724,6 +1739,11 @@ class TestDialect(Validator):
                 "sqlite": "INSTR(haystack, needle)",
                 "starrocks": "INSTR(haystack, needle)",
                 "teradata": "INSTR(haystack, needle)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
                 "clickhouse": "LOCATE(needle, haystack)",
                 "databricks": "LOCATE(needle, haystack)",
                 "doris": "LOCATE(needle, haystack)",
@@ -1733,10 +1753,20 @@ class TestDialect(Validator):
                 "spark2": "LOCATE(needle, haystack)",
                 "starrocks": "LOCATE(needle, haystack)",
                 "teradata": "LOCATE(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
                 "athena": "CHARINDEX(needle, haystack)",
                 "databricks": "CHARINDEX(needle, haystack)",
                 "snowflake": "CHARINDEX(needle, haystack)",
                 "tsql": "CHARINDEX(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
                 "tableau": "FIND(haystack, needle)",
             },
             write={
@@ -1768,28 +1798,48 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_POSITION(haystack, needle, position)",
             read={
-                "bigquery": "INSTR(haystack, needle, position)",
                 "clickhouse": "POSITION(haystack, needle, position)",
-                "clickhouse": "LOCATE(needle, haystack, position)",
                 "databricks": "POSITION(needle, haystack, position)",
-                "databricks": "LOCATE(needle, haystack, position)",
-                "databricks": "CHARINDEX(needle, haystack, position)",
+                "snowflake": "POSITION(needle, haystack, position)",
+                "spark": "POSITION(needle, haystack, position)",
+                "spark2": "POSITION(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
                 "doris": "LOCATE(needle, haystack, position)",
-                "doris": "INSTR(haystack, needle, position)",
                 "hive": "LOCATE(needle, haystack, position)",
                 "mysql": "LOCATE(needle, haystack, position)",
-                "oracle": "INSTR(haystack, needle, position)",
-                "snowflake": "POSITION(needle, haystack, position)",
-                "snowflake": "CHARINDEX(needle, haystack, position)",
-                "spark": "POSITION(needle, haystack, position)",
                 "spark": "LOCATE(needle, haystack, position)",
-                "spark2": "POSITION(needle, haystack, position)",
                 "spark2": "LOCATE(needle, haystack, position)",
                 "starrocks": "LOCATE(needle, haystack, position)",
-                "tableau": "FINDNTH(haystack, needle, position)",
-                "teradata": "INSTR(haystack, needle, position)",
                 "teradata": "LOCATE(needle, haystack, position)",
+                "clickhouse": "LOCATE(needle, haystack, position)",
+                "databricks": "LOCATE(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "bigquery": "INSTR(haystack, needle, position)",
+                "doris": "INSTR(haystack, needle, position)",
+                "oracle": "INSTR(haystack, needle, position)",
+                "teradata": "INSTR(haystack, needle, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "databricks": "CHARINDEX(needle, haystack, position)",
+                "snowflake": "CHARINDEX(needle, haystack, position)",
                 "tsql": "CHARINDEX(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "tableau": "FINDNTH(haystack, needle, position)",
             },
             write={
                 "athena": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
@@ -1819,6 +1869,11 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "STR_POSITION(haystack, needle, position, occurrence)",
+            read={
+                "bigquery": "INSTR(haystack, needle, position, occurrence)",
+                "oracle": "INSTR(haystack, needle, position, occurrence)",
+                "teradata": "INSTR(haystack, needle, position, occurrence)",
+            },
             write={
                 "bigquery": "INSTR(haystack, needle, position, occurrence)",
                 "oracle": "INSTR(haystack, needle, position, occurrence)",

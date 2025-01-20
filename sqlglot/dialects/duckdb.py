@@ -608,6 +608,9 @@ class DuckDB(Dialect):
                 e.args.get("modifiers"),
             ),
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
+            exp.RegexpILike: lambda self, e: self.func(
+                "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
+            ),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",

@@ -957,6 +957,7 @@ class BigQuery(Dialect):
             exp.Uuid: lambda *_: "GENERATE_UUID()",
             exp.Values: _derived_table_values_to_unnest,
             exp.VariancePop: rename_func("VAR_POP"),
+            exp.SafeDivide: rename_func("SAFE_DIVIDE"),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

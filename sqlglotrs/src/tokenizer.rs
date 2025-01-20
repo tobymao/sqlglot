@@ -662,7 +662,7 @@ impl<'a> TokenizerState<'a> {
             {
                 let peek_char_str = self.peek_char.to_string();
                 let equal_delimiter = delimiter == peek_char_str;
-                if peek_char_str == delimiter || escapes.contains(&self.peek_char) {
+                if equal_delimiter || escapes.contains(&self.peek_char) {
                     if equal_delimiter {
                         text.push(self.peek_char);
                     } else {

@@ -533,7 +533,7 @@ impl<'a> TokenizerState<'a> {
                         self.settings
                             .numeric_literals
                             .get(&literal.to_uppercase())
-                            .unwrap_or(&String::from("")),
+                            .unwrap_or(&String::new()),
                     )
                     .copied();
 
@@ -625,18 +625,18 @@ impl<'a> TokenizerState<'a> {
         raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
         let mut text = String::new();
+        let mut combined_identifier_escapes = None;
+        if use_identifier_escapes {
+            let mut tmp = self.settings.identifier_escapes.clone();
+            tmp.extend(delimiter.chars());
+            combined_identifier_escapes = Some(tmp);
+        }
+        let escapes = match combined_identifier_escapes {
+            Some(ref v) => v,
+            None => &self.settings.string_escapes,
+        };
 
         loop {
-            let mut new_identifier_escapes;
-            let escapes = if use_identifier_escapes {
-                new_identifier_escapes = self.settings.identifier_escapes.clone();
-                new_identifier_escapes.extend(delimiter.chars());
-                &new_identifier_escapes
-            } else {
-                &self.settings.string_escapes
-            };
-            let peek_char_str = self.peek_char.to_string();
-
             if !raw_string
                 && !self.dialect_settings.unescaped_sequences.is_empty()
                 && !self.peek_char.is_whitespace()
@@ -654,54 +654,57 @@ impl<'a> TokenizerState<'a> {
 
             if (self.settings.string_escapes_allowed_in_raw_strings || !raw_string)
                 && escapes.contains(&self.current_char)
-                && (peek_char_str == delimiter || escapes.contains(&self.peek_char))
                 && (self.current_char == self.peek_char
                     || !self
                         .settings
                         .quotes
                         .contains_key(&self.current_char.to_string()))
             {
-                if peek_char_str == delimiter {
-                    text.push(self.peek_char);
-                } else {
-                    text.push(self.current_char);
-                    text.push(self.peek_char);
-                }
-                if self.current + 1 < self.size {
-                    self.advance(2)?;
-                } else {
-                    return self.error_result(format!(
-                        "Missing {} from {}:{}",
-                        delimiter, self.line, self.current
-                    ));
-                }
-            } else {
-                if self.chars(delimiter.len()) == delimiter {
-                    if delimiter.len() > 1 {
-                        self.advance((delimiter.len() - 1) as isize)?;
-                    }
-                    break;
-                }
-                if self.is_end {
-                    if !raise_unmatched {
+                let peek_char_str = self.peek_char.to_string();
+                let equal_delimiter = delimiter == peek_char_str;
+                if peek_char_str == delimiter || escapes.contains(&self.peek_char) {
+                    if equal_delimiter {
+                        text.push(self.peek_char);
+                    } else {
                         text.push(self.current_char);
-                        return Ok(text);
+                        text.push(self.peek_char);
                     }
-
-                    return self.error_result(format!(
-                        "Missing {} from {}:{}",
-                        delimiter, self.line, self.current
-                    ));
+                    if self.current + 1 < self.size {
+                        self.advance(2)?;
+                    } else {
+                        return self.error_result(format!(
+                            "Missing {} from {}:{}",
+                            delimiter, self.line, self.current
+                        ));
+                    }
+                    continue;
+                }
+            }
+            if self.chars(delimiter.len()) == delimiter {
+                if delimiter.len() > 1 {
+                    self.advance((delimiter.len() - 1) as isize)?;
+                }
+                break;
+            }
+            if self.is_end {
+                if !raise_unmatched {
+                    text.push(self.current_char);
+                    return Ok(text);
                 }
 
-                let current = self.current - 1;
-                self.advance(1)?;
-                text.push_str(
-                    &self.sql[current..self.current - 1]
-                        .iter()
-                        .collect::<String>(),
-                );
+                return self.error_result(format!(
+                    "Missing {} from {}:{}",
+                    delimiter, self.line, self.current
+                ));
             }
+
+            let current = self.current - 1;
+            self.advance(1)?;
+            text.push_str(
+                &self.sql[current..self.current - 1]
+                    .iter()
+                    .collect::<String>(),
+            );
         }
         Ok(text)
     }

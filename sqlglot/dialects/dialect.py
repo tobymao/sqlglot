@@ -1043,7 +1043,7 @@ def no_safe_divide_sql(self: Generator, expression: exp.SafeDivide) -> str:
     return self.sql(
         exp.If(
             this=exp.NEQ(this=d, expression=exp.Literal.number(0)),
-            true=exp.Div(this=n, expression=d, type=True),
+            true=exp.Div(this=n, expression=d),
             false=exp.Null(),
         )
     )

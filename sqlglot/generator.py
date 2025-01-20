@@ -3410,6 +3410,11 @@ class Generator(metaclass=_Generator):
 
         return self.binary(expression, "/")
 
+    def safedivide_sql(self, expression: exp.SafeDivide) -> str:
+        n = exp._wrap(expression.this, exp.Binary)
+        d = exp._wrap(expression.expression, exp.Binary)
+        return self.sql(exp.If(this=d.neq(0), true=n / d, false=exp.Null()))
+
     def overlaps_sql(self, expression: exp.Overlaps) -> str:
         return self.binary(expression, "OVERLAPS")
 

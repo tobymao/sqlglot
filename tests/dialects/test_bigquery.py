@@ -1572,14 +1572,30 @@ WHERE
             "SAFE_DIVIDE(x, y)",
             write={
                 "bigquery": "SAFE_DIVIDE(x, y)",
-                "duckdb": "IF((y) <> 0, (x) / (y), NULL)",
-                "presto": "IF((y) <> 0, (x) / (y), NULL)",
-                "trino": "IF((y) <> 0, (x) / (y), NULL)",
-                "hive": "IF((y) <> 0, (x) / (y), NULL)",
-                "spark2": "IF((y) <> 0, (x) / (y), NULL)",
-                "spark": "IF((y) <> 0, (x) / (y), NULL)",
-                "databricks": "IF((y) <> 0, (x) / (y), NULL)",
-                "snowflake": "IFF((y) <> 0, (x) / (y), NULL)",
+                "duckdb": "CASE WHEN y <> 0 THEN x / y ELSE NULL END",
+                "presto": "IF(y <> 0, CAST(x AS DOUBLE) / y, NULL)",
+                "trino": "IF(y <> 0, CAST(x AS DOUBLE) / y, NULL)",
+                "hive": "IF(y <> 0, x / y, NULL)",
+                "spark2": "IF(y <> 0, x / y, NULL)",
+                "spark": "IF(y <> 0, x / y, NULL)",
+                "databricks": "IF(y <> 0, x / y, NULL)",
+                "snowflake": "IFF(y <> 0, x / y, NULL)",
+                "postgres": "CASE WHEN y <> 0 THEN CAST(x AS DOUBLE PRECISION) / y ELSE NULL END",
+            },
+        )
+        self.validate_all(
+            "SAFE_DIVIDE(x + 1, 2 * y)",
+            write={
+                "bigquery": "SAFE_DIVIDE(x + 1, 2 * y)",
+                "duckdb": "CASE WHEN (2 * y) <> 0 THEN (x + 1) / (2 * y) ELSE NULL END",
+                "presto": "IF((2 * y) <> 0, CAST((x + 1) AS DOUBLE) / (2 * y), NULL)",
+                "trino": "IF((2 * y) <> 0, CAST((x + 1) AS DOUBLE) / (2 * y), NULL)",
+                "hive": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "spark2": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "spark": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "databricks": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "snowflake": "IFF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "postgres": "CASE WHEN (2 * y) <> 0 THEN CAST((x + 1) AS DOUBLE PRECISION) / (2 * y) ELSE NULL END",
             },
         )
         self.validate_all(

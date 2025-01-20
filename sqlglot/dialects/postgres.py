@@ -611,6 +611,7 @@ class Postgres(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.Levenshtein: _levenshtein_sql,
         }
+
         TRANSFORMS.pop(exp.CommentColumnConstraint)
 
         PROPERTIES_LOCATION = {

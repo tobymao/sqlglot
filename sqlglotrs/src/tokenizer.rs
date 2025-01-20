@@ -533,8 +533,9 @@ impl<'a> TokenizerState<'a> {
                         self.settings
                             .numeric_literals
                             .get(&literal.to_uppercase())
-                            .unwrap_or(&String::new()),
-                    ).copied();
+                            .unwrap_or(&String::from("")),
+                    )
+                    .copied();
 
                 let replaced = literal.replace("_", "");
 
@@ -603,7 +604,8 @@ impl<'a> TokenizerState<'a> {
             } else {
                 self.settings
                     .keywords
-                    .get(&self.text().to_uppercase()).copied()
+                    .get(&self.text().to_uppercase())
+                    .copied()
                     .unwrap_or(self.token_types.var)
             };
         self.add(token_type, None)
@@ -704,11 +706,11 @@ impl<'a> TokenizerState<'a> {
         Ok(text)
     }
 
-    fn is_alphabetic_or_underscore(&mut self, name: char) -> bool {
+    fn is_alphabetic_or_underscore(&self, name: char) -> bool {
         name.is_alphabetic() || name == '_'
     }
 
-    fn is_identifier(&mut self, s: &str) -> bool {
+    fn is_identifier(&self, s: &str) -> bool {
         s.chars().enumerate().all(|(i, c)| {
             if i == 0 {
                 self.is_alphabetic_or_underscore(c)
@@ -718,7 +720,7 @@ impl<'a> TokenizerState<'a> {
         })
     }
 
-    fn is_numeric(&mut self, s: &str) -> bool {
+    fn is_numeric(&self, s: &str) -> bool {
         s.chars().all(|c| c.is_ascii_digit())
     }
 

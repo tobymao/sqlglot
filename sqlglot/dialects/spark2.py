@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     is_parse_json,
     pivot_column_names,
     rename_func,
-    strposition_sql,
     trim_sql,
     unit_to_str,
 )

@@ -903,6 +903,13 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT REGEXP_MATCHES('ThOmAs', 'thomas', 'i')",
+            read={
+                "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
+            },
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

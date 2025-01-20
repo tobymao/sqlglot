@@ -197,7 +197,7 @@ impl<'a> TokenizerState<'a> {
         if end <= self.size {
             self.sql[start..end].iter().collect()
         } else {
-            String::from("")
+            String::new()
         }
     }
 
@@ -433,7 +433,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
 
                 let tag = if self.current_char.to_string() == *end {
-                    String::from("")
+                    String::new()
                 } else {
                     self.extract_string(end, false, true, !self.settings.heredoc_tag_is_identifier)?
                 };
@@ -516,7 +516,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
             } else if self.is_alphabetic_or_underscore(self.peek_char) {
                 let number_text = self.text();
-                let mut literal = String::from("");
+                let mut literal = String::new();
 
                 while !self.peek_char.is_whitespace()
                     && !self.is_end
@@ -624,7 +624,7 @@ impl<'a> TokenizerState<'a> {
         raw_string: bool,
         raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
-        let mut text = String::from("");
+        let mut text = String::new();
 
         loop {
             let mut new_identifier_escapes;

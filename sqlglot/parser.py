@@ -6218,8 +6218,7 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("XMLNAMESPACES", "("):
             namespaces = self._parse_xml_namespace()
-            self._match_text_seq(")")
-            self._match(TokenType.COMMA)
+            self._match_text_seq(")", ",")
 
         this = self._parse_string()
 

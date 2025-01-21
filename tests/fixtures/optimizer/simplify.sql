@@ -363,6 +363,9 @@ x * (1 - y);
 ANY(t.value);
 ANY(t.value);
 
+SELECT (ARRAY_AGG(foo))[1];
+SELECT (ARRAY_AGG(foo))[1];
+
 --------------------------------------
 -- Literals
 --------------------------------------

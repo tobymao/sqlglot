@@ -6212,10 +6212,16 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, safe=safe)
 
     def _parse_xml_table(self) -> exp.XMLTable:
-        this = self._parse_string()
-
+        namespaces = None
         passing = None
         columns = None
+
+        if self._match_text_seq("XMLNAMESPACES", "("):
+            namespaces = self._parse_xml_namespace()
+            self._match_text_seq(")")
+            self._match(TokenType.COMMA)
+
+        this = self._parse_string()
 
         if self._match_text_seq("PASSING"):
             # The BY VALUE keywords are optional and are provided for semantic clarity
@@ -6228,8 +6234,28 @@ class Parser(metaclass=_Parser):
             columns = self._parse_csv(self._parse_field_def)
 
         return self.expression(
-            exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref
+            exp.XMLTable,
+            this=this,
+            namespaces=namespaces,
+            passing=passing,
+            columns=columns,
+            by_ref=by_ref,
         )
+
+    def _parse_xml_namespace(self) -> t.List[exp.XMLNamespace]:
+        namespaces = []
+
+        while True:
+            if self._match_text_seq("DEFAULT"):
+                uri = self._parse_string()
+            else:
+                uri = self._parse_alias(self._parse_string())
+            namespaces.append(exp.XMLNamespace(this=uri))
+
+            if not self._match(TokenType.COMMA):
+                break
+
+        return namespaces
 
     def _parse_decode(self) -> t.Optional[exp.Decode | exp.Case]:
         """

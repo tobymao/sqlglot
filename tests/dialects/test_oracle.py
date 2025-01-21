@@ -394,6 +394,9 @@ JOIN departments
         self.validate_identity(
             "XMLTABLE('x' RETURNING SEQUENCE BY REF COLUMNS a VARCHAR2, b FLOAT)"
         )
+        self.validate_identity(
+            "SELECT x.* FROM example t, XMLTABLE(XMLNAMESPACES(DEFAULT 'http://example.com/default', 'http://example.com/ns1' AS \"ns1\"), '/root/data' PASSING t.xml COLUMNS id NUMBER PATH '@id', value VARCHAR2(100) PATH 'ns1:value/text()') x"
+        )
 
         self.validate_all(
             """SELECT warehouse_name warehouse,

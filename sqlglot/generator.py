@@ -4738,9 +4738,15 @@ class Generator(metaclass=_Generator):
 
     def xmltable_sql(self, expression: exp.XMLTable) -> str:
         this = self.sql(expression, "this")
+        namespaces = self.expressions(expression, key="namespaces")
+        namespaces = f"XMLNAMESPACES({namespaces}), " if namespaces else ""
         passing = self.expressions(expression, key="passing")
         passing = f"{self.sep()}PASSING{self.seg(passing)}" if passing else ""
         columns = self.expressions(expression, key="columns")
         columns = f"{self.sep()}COLUMNS{self.seg(columns)}" if columns else ""
         by_ref = f"{self.sep()}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
-        return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')', sep='')}"
+        return f"XMLTABLE({self.sep('')}{self.indent(namespaces + this + passing + by_ref + columns)}{self.seg(')', sep='')}"
+
+    def xmlnamespace_sql(self, expression: exp.XMLNamespace) -> str:
+        this = self.sql(expression, "this")
+        return this if isinstance(expression.this, exp.Alias) else f"DEFAULT {this}"

@@ -53,11 +53,7 @@ class Tableau(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
-            "FIND": lambda args: exp.StrPosition(this=seq_get(args, 0), substr=seq_get(args, 1)),
-            "FINDNTH": lambda args: exp.StrPosition(
-                this=seq_get(args, 0),
-                substr=seq_get(args, 1),
-                position=seq_get(args, 2),
-            ),
+            "FIND": exp.StrPosition.from_arg_list,
+            "FINDNTH": exp.StrPosition.from_arg_list,
         }
         NO_PAREN_IF_COMMANDS = False

@@ -749,7 +749,7 @@ def simplify_parens(expression):
 
     if (
         not isinstance(this, exp.Select)
-        and not isinstance(parent, exp.SubqueryPredicate)
+        and not isinstance(parent, (exp.SubqueryPredicate, exp.Bracket))
         and (
             not isinstance(parent, (exp.Condition, exp.Binary))
             or isinstance(parent, exp.Paren)

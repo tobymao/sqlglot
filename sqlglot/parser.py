@@ -6249,8 +6249,7 @@ class Parser(metaclass=_Parser):
                 uri = self._parse_string()
             else:
                 uri = self._parse_alias(self._parse_string())
-            namespaces.append(exp.XMLNamespace(this=uri))
-
+            namespaces.append(self.expression(exp.XMLNamespace, this=uri))
             if not self._match(TokenType.COMMA):
                 break
 

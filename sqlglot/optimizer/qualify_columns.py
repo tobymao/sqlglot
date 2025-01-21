@@ -173,6 +173,9 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     names = {join.alias_or_name for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
+    if names and not ordered:
+        raise OptimizeError(f"Joins {names} missing source table {scope.expression}")
+
     # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables: t.Dict[str, t.Dict[str, t.Any]] = {}
 

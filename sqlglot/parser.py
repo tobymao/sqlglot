@@ -6603,7 +6603,7 @@ class Parser(metaclass=_Parser):
         # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16
         if self._match_text_seq("WITHIN", "GROUP"):
             order = self._parse_wrapped(self._parse_order)
-            if self._match(TokenType.FILTER):
+            if self.dialect.SUPPORTS_WITHIN_GROUP_FILTER and self._match(TokenType.FILTER):
                 where_clause = self._parse_wrapped(self._parse_where)
                 this = self.expression(exp.WithinGroup, this=this, expression=order, filter=where_clause)
             else:

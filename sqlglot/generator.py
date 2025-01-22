@@ -2725,7 +2725,7 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")[1:]  # order has a leading space
         filter_sql = self.sql(expression, "filter")[1:]
-        if filter_sql:
+        if filter_sql and self.dialect.SUPPORTS_WITHIN_GROUP_FILTER:
             return f"{this} WITHIN GROUP ({expression_sql}) FILTER ({filter_sql})"
         return f"{this} WITHIN GROUP ({expression_sql})"
 

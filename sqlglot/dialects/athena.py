@@ -32,6 +32,18 @@ def _generate_as_hive(expression: exp.Expression) -> bool:
     return False
 
 
+def _is_iceberg_table(properties: exp.Properties) -> bool:
+    table_type_property = next(
+        (
+            p
+            for p in properties.expressions
+            if isinstance(p, exp.Property) and p.name == "table_type"
+        ),
+        None,
+    )
+    return bool(table_type_property and table_type_property.text("value").lower() == "iceberg")
+
+
 def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
     # If table_type='iceberg', the LocationProperty is called 'location'
     # Otherwise, it's called 'external_location'
@@ -40,16 +52,21 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
     prop_name = "external_location"
 
     if isinstance(e.parent, exp.Properties):
-        table_type_property = next(
-            (
-                p
-                for p in e.parent.expressions
-                if isinstance(p, exp.Property) and p.name == "table_type"
-            ),
-            None,
-        )
-        if table_type_property and table_type_property.text("value").lower() == "iceberg":
+        if _is_iceberg_table(e.parent):
             prop_name = "location"
+
+    return f"{prop_name}={self.sql(e, 'this')}"
+
+
+def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByProperty):
+    # If table_type='iceberg' then the table property for partitioning is called 'partitioning'
+    # If table_type='hive' it's called 'partitioned_by'
+    # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
+
+    prop_name = "partitioned_by"
+    if isinstance(e.parent, exp.Properties):
+        if _is_iceberg_table(e.parent):
+            prop_name = "partitioning"
 
     return f"{prop_name}={self.sql(e, 'this')}"
 
@@ -132,7 +149,7 @@ class Athena(Trino):
         TRANSFORMS = {
             **Trino.Generator.TRANSFORMS,
             exp.FileFormatProperty: lambda self, e: f"format={self.sql(e, 'this')}",
-            exp.PartitionedByProperty: lambda self, e: f"partitioned_by={self.sql(e, 'this')}",
+            exp.PartitionedByProperty: _partitioned_by_property_sql,
             exp.LocationProperty: _location_property_sql,
         }
 

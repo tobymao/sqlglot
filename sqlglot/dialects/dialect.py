@@ -411,7 +411,7 @@ class Dialect(metaclass=_Dialect):
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
 
-    SUPPORTS_WITHIN_GROUP_FILTER = False
+    SUPPORTS_WITHIN_GROUP_FILTER = True
     """Whether WITHIN GROUP ( order_by ) FILTER syntax is supported for aggregate functions."""
 
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False

@@ -267,7 +267,6 @@ class Postgres(Dialect):
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
-    SUPPORTS_WITHIN_GROUP_FILTER = True
 
     TIME_MAPPING = {
         "AM": "%p",

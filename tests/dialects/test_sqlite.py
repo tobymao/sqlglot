@@ -7,6 +7,7 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_sqlite(self):
+        self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")
         self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")

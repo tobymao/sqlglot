@@ -1085,7 +1085,8 @@ def strposition_sql(
     if supports_occurrence and occurrence and supports_position and not position:
         position = one
 
-    if position and not supports_position:
+    transpile_position = position and not supports_position
+    if transpile_position:
         string = exp.Substring(this=string, start=position)
 
     if func_name == "POSITION" and use_ansi_position:
@@ -1101,7 +1102,7 @@ def strposition_sql(
                 self.unsupported(f"{func_name} does not support the occurrence parameter.")
         func = exp.Anonymous(this=func_name, expressions=args)
 
-    if position and not supports_position:
+    if transpile_position:
         func_with_offset = exp.Sub(this=func + position, expression=one)
         func_wrapped = exp.If(this=func.eq(zero), true=zero, false=func_with_offset)
         return self.sql(func_wrapped)

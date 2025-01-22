@@ -6530,7 +6530,7 @@ class StrPosition(Func):
         "this": True,
         "substr": True,
         "position": False,
-        "instance": False,
+        "occurrence": False,
     }
 
 

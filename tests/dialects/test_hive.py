@@ -588,8 +588,8 @@ class TestHive(Validator):
         self.validate_all(
             "LOCATE('a', x, 3)",
             write={
-                "duckdb": "CASE WHEN STRPOS(SUBSTR(x, 3), 'a') = 0 THEN 0 ELSE STRPOS(SUBSTR(x, 3), 'a') + 3 - 1 END",
-                "presto": "IF(STRPOS(SUBSTR(x, 3), 'a') = 0, 0, STRPOS(SUBSTR(x, 3), 'a') + 3 - 1)",
+                "duckdb": "CASE WHEN STRPOS(SUBSTRING(x, 3), 'a') = 0 THEN 0 ELSE STRPOS(SUBSTRING(x, 3), 'a') + 3 - 1 END",
+                "presto": "IF(STRPOS(SUBSTRING(x, 3), 'a') = 0, 0, STRPOS(SUBSTRING(x, 3), 'a') + 3 - 1)",
                 "hive": "LOCATE('a', x, 3)",
                 "spark": "LOCATE('a', x, 3)",
             },

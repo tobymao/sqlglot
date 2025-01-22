@@ -2724,6 +2724,9 @@ class Generator(metaclass=_Generator):
     def withingroup_sql(self, expression: exp.WithinGroup) -> str:
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")[1:]  # order has a leading space
+        filter_sql = self.sql(expression, "filter")[1:]
+        if filter_sql:
+            return f"{this} WITHIN GROUP ({expression_sql}) FILTER ({filter_sql})"
         return f"{this} WITHIN GROUP ({expression_sql})"
 
     def between_sql(self, expression: exp.Between) -> str:

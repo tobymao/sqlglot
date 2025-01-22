@@ -1682,42 +1682,202 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "POSITION(needle IN haystack)",
-            write={
-                "drill": "STRPOS(haystack, needle)",
-                "duckdb": "STRPOS(haystack, needle)",
-                "postgres": "STRPOS(haystack, needle)",
-                "presto": "STRPOS(haystack, needle)",
-                "spark": "LOCATE(needle, haystack)",
-                "clickhouse": "position(haystack, needle)",
-                "snowflake": "POSITION(needle, haystack)",
-                "mysql": "LOCATE(needle, haystack)",
+            "STR_POSITION(haystack, needle)",
+            read={
+                "athena": "POSITION(needle in haystack)",
+                "clickhouse": "POSITION(needle in haystack)",
+                "databricks": "POSITION(needle in haystack)",
+                "drill": "POSITION(needle in haystack)",
+                "duckdb": "POSITION(needle in haystack)",
+                "materialize": "POSITION(needle in haystack)",
+                "mysql": "POSITION(needle in haystack)",
+                "postgres": "POSITION(needle in haystack)",
+                "presto": "POSITION(needle in haystack)",
+                "redshift": "POSITION(needle in haystack)",
+                "risingwave": "POSITION(needle in haystack)",
+                "snowflake": "POSITION(needle in haystack)",
+                "spark": "POSITION(needle in haystack)",
+                "spark2": "POSITION(needle in haystack)",
+                "teradata": "POSITION(needle in haystack)",
+                "trino": "POSITION(needle in haystack)",
             },
         )
         self.validate_all(
             "STR_POSITION(haystack, needle)",
-            write={
+            read={
+                "clickhouse": "POSITION(haystack, needle)",
+                "databricks": "POSITION(needle, haystack)",
+                "snowflake": "POSITION(needle, haystack)",
+                "spark2": "POSITION(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
+                "athena": "STRPOS(haystack, needle)",
+                "bigquery": "STRPOS(haystack, needle)",
                 "drill": "STRPOS(haystack, needle)",
                 "duckdb": "STRPOS(haystack, needle)",
                 "postgres": "STRPOS(haystack, needle)",
                 "presto": "STRPOS(haystack, needle)",
-                "bigquery": "STRPOS(haystack, needle)",
-                "spark": "LOCATE(needle, haystack)",
-                "clickhouse": "position(haystack, needle)",
-                "snowflake": "POSITION(needle, haystack)",
-                "mysql": "LOCATE(needle, haystack)",
+                "redshift": "STRPOS(haystack, needle)",
+                "trino": "STRPOS(haystack, needle)",
             },
         )
         self.validate_all(
-            "POSITION(needle, haystack, pos)",
+            "STR_POSITION(haystack, needle)",
+            read={
+                "bigquery": "INSTR(haystack, needle)",
+                "databricks": "INSTR(haystack, needle)",
+                "doris": "INSTR(haystack, needle)",
+                "duckdb": "INSTR(haystack, needle)",
+                "hive": "INSTR(haystack, needle)",
+                "mysql": "INSTR(haystack, needle)",
+                "oracle": "INSTR(haystack, needle)",
+                "spark": "INSTR(haystack, needle)",
+                "spark2": "INSTR(haystack, needle)",
+                "sqlite": "INSTR(haystack, needle)",
+                "starrocks": "INSTR(haystack, needle)",
+                "teradata": "INSTR(haystack, needle)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
+                "clickhouse": "LOCATE(needle, haystack)",
+                "databricks": "LOCATE(needle, haystack)",
+                "doris": "LOCATE(needle, haystack)",
+                "hive": "LOCATE(needle, haystack)",
+                "mysql": "LOCATE(needle, haystack)",
+                "spark": "LOCATE(needle, haystack)",
+                "spark2": "LOCATE(needle, haystack)",
+                "starrocks": "LOCATE(needle, haystack)",
+                "teradata": "LOCATE(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
+                "athena": "CHARINDEX(needle, haystack)",
+                "databricks": "CHARINDEX(needle, haystack)",
+                "snowflake": "CHARINDEX(needle, haystack)",
+                "tsql": "CHARINDEX(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle)",
+            read={
+                "tableau": "FIND(haystack, needle)",
+            },
             write={
-                "drill": "`IF`(STRPOS(SUBSTR(haystack, pos), needle) = 0, 0, STRPOS(SUBSTR(haystack, pos), needle) + pos - 1)",
-                "presto": "IF(STRPOS(SUBSTR(haystack, pos), needle) = 0, 0, STRPOS(SUBSTR(haystack, pos), needle) + pos - 1)",
-                "postgres": "CASE WHEN STRPOS(SUBSTR(haystack, pos), needle) = 0 THEN 0 ELSE STRPOS(SUBSTR(haystack, pos), needle) + pos - 1 END",
-                "spark": "LOCATE(needle, haystack, pos)",
-                "clickhouse": "position(haystack, needle, pos)",
-                "snowflake": "POSITION(needle, haystack, pos)",
-                "mysql": "LOCATE(needle, haystack, pos)",
+                "athena": "STRPOS(haystack, needle)",
+                "bigquery": "INSTR(haystack, needle)",
+                "clickhouse": "POSITION(haystack, needle)",
+                "databricks": "LOCATE(needle, haystack)",
+                "doris": "LOCATE(needle, haystack)",
+                "drill": "STRPOS(haystack, needle)",
+                "duckdb": "STRPOS(haystack, needle)",
+                "hive": "LOCATE(needle, haystack)",
+                "materialize": "POSITION(needle IN haystack)",
+                "mysql": "LOCATE(needle, haystack)",
+                "oracle": "INSTR(haystack, needle)",
+                "postgres": "POSITION(needle IN haystack)",
+                "presto": "STRPOS(haystack, needle)",
+                "redshift": "POSITION(needle IN haystack)",
+                "risingwave": "POSITION(needle IN haystack)",
+                "snowflake": "CHARINDEX(needle, haystack)",
+                "spark": "LOCATE(needle, haystack)",
+                "spark2": "LOCATE(needle, haystack)",
+                "sqlite": "INSTR(haystack, needle)",
+                "tableau": "FIND(haystack, needle)",
+                "teradata": "INSTR(haystack, needle)",
+                "trino": "STRPOS(haystack, needle)",
+                "tsql": "CHARINDEX(needle, haystack)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "clickhouse": "POSITION(haystack, needle, position)",
+                "databricks": "POSITION(needle, haystack, position)",
+                "snowflake": "POSITION(needle, haystack, position)",
+                "spark": "POSITION(needle, haystack, position)",
+                "spark2": "POSITION(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "doris": "LOCATE(needle, haystack, position)",
+                "hive": "LOCATE(needle, haystack, position)",
+                "mysql": "LOCATE(needle, haystack, position)",
+                "spark": "LOCATE(needle, haystack, position)",
+                "spark2": "LOCATE(needle, haystack, position)",
+                "starrocks": "LOCATE(needle, haystack, position)",
+                "teradata": "LOCATE(needle, haystack, position)",
+                "clickhouse": "LOCATE(needle, haystack, position)",
+                "databricks": "LOCATE(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "bigquery": "INSTR(haystack, needle, position)",
+                "doris": "INSTR(haystack, needle, position)",
+                "oracle": "INSTR(haystack, needle, position)",
+                "teradata": "INSTR(haystack, needle, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            read={
+                "databricks": "CHARINDEX(needle, haystack, position)",
+                "snowflake": "CHARINDEX(needle, haystack, position)",
+                "tsql": "CHARINDEX(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position)",
+            write={
+                "athena": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "bigquery": "INSTR(haystack, needle, position)",
+                "clickhouse": "POSITION(haystack, needle, position)",
+                "databricks": "LOCATE(needle, haystack, position)",
+                "doris": "LOCATE(needle, haystack, position)",
+                "drill": "`IF`(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "duckdb": "CASE WHEN STRPOS(SUBSTRING(haystack, position), needle) = 0 THEN 0 ELSE STRPOS(SUBSTRING(haystack, position), needle) + position - 1 END",
+                "hive": "LOCATE(needle, haystack, position)",
+                "materialize": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
+                "mysql": "LOCATE(needle, haystack, position)",
+                "oracle": "INSTR(haystack, needle, position)",
+                "postgres": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
+                "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "redshift": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
+                "risingwave": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
+                "snowflake": "CHARINDEX(needle, haystack, position)",
+                "spark": "LOCATE(needle, haystack, position)",
+                "spark2": "LOCATE(needle, haystack, position)",
+                "sqlite": "IIF(INSTR(SUBSTRING(haystack, position), needle) = 0, 0, INSTR(SUBSTRING(haystack, position), needle) + position - 1)",
+                "tableau": "IF FIND(SUBSTRING(haystack, position), needle) = 0 THEN 0 ELSE FIND(SUBSTRING(haystack, position), needle) + position - 1 END",
+                "teradata": "INSTR(haystack, needle, position)",
+                "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "tsql": "CHARINDEX(needle, haystack, position)",
+            },
+        )
+        self.validate_all(
+            "STR_POSITION(haystack, needle, position, occurrence)",
+            read={
+                "bigquery": "INSTR(haystack, needle, position, occurrence)",
+                "oracle": "INSTR(haystack, needle, position, occurrence)",
+                "teradata": "INSTR(haystack, needle, position, occurrence)",
+            },
+            write={
+                "bigquery": "INSTR(haystack, needle, position, occurrence)",
+                "oracle": "INSTR(haystack, needle, position, occurrence)",
+                "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
+                "tableau": "IF FINDNTH(SUBSTRING(haystack, position), needle, occurrence) = 0 THEN 0 ELSE FINDNTH(SUBSTRING(haystack, position), needle, occurrence) + position - 1 END",
+                "teradata": "INSTR(haystack, needle, position, occurrence)",
+                "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
             },
         )
         self.validate_all(

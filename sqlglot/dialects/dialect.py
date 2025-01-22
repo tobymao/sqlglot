@@ -1067,36 +1067,46 @@ def property_sql(self: Generator, expression: exp.Property) -> str:
     return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
 
 
-def str_position_sql(
+def strposition_sql(
     self: Generator,
     expression: exp.StrPosition,
-    generate_instance: bool = False,
-    str_position_func_name: str = "STRPOS",
+    func_name: str = "STRPOS",
+    supports_position: bool = False,
+    supports_occurrence: bool = False,
+    use_ansi_position: bool = True,
 ) -> str:
-    this = self.sql(expression, "this")
-    substr = self.sql(expression, "substr")
-    position = self.sql(expression, "position")
-    instance = expression.args.get("instance") if generate_instance else None
-    position_offset = ""
+    string = expression.this
+    substr = expression.args.get("substr")
+    position = expression.args.get("position")
+    occurrence = expression.args.get("occurrence")
+    zero = exp.Literal.number(0)
+    one = exp.Literal.number(1)
 
-    if position:
-        # Normalize third 'pos' argument into 'SUBSTR(..) + offset' across dialects
-        this = self.func("SUBSTR", this, position)
-        position_offset = f" + {position} - 1"
+    if supports_occurrence and occurrence and supports_position and not position:
+        position = one
 
-    strpos_sql = self.func(str_position_func_name, this, substr, instance)
+    if position and not supports_position:
+        string = exp.Substring(this=string, start=position)
 
-    if position_offset:
-        zero = exp.Literal.number(0)
-        # If match is not found (returns 0) the position offset should not be applied
-        case = exp.If(
-            this=exp.EQ(this=strpos_sql, expression=zero),
-            true=zero,
-            false=strpos_sql + position_offset,
-        )
-        strpos_sql = self.sql(case)
+    if func_name == "POSITION" and use_ansi_position:
+        func = exp.Anonymous(this=func_name, expressions=[exp.In(this=substr, field=string)])
+    else:
+        args = [substr, string] if func_name in ("LOCATE", "CHARINDEX") else [string, substr]
+        if supports_position:
+            args.append(position)
+        if occurrence:
+            if supports_occurrence:
+                args.append(occurrence)
+            else:
+                self.unsupported(f"{func_name} does not support the occurrence parameter.")
+        func = exp.Anonymous(this=func_name, expressions=args)
 
-    return strpos_sql
+    if position and not supports_position:
+        func_with_offset = exp.Sub(this=func + position, expression=one)
+        func_wrapped = exp.If(this=func.eq(zero), true=zero, false=func_with_offset)
+        return self.sql(func_wrapped)
+
+    return self.sql(func)
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
@@ -1267,18 +1277,6 @@ def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
     expr = exp.cast(expr, exp.DataType.Type.TIME)
 
     return self.sql(exp.cast(exp.Add(this=this, expression=expr), exp.DataType.Type.TIMESTAMP))
-
-
-def locate_to_strposition(args: t.List) -> exp.Expression:
-    return exp.StrPosition(
-        this=seq_get(args, 1), substr=seq_get(args, 0), position=seq_get(args, 2)
-    )
-
-
-def strposition_to_locate_sql(self: Generator, expression: exp.StrPosition) -> str:
-    return self.func(
-        "LOCATE", expression.args.get("substr"), expression.this, expression.args.get("position")
-    )
 
 
 def left_to_substring_sql(self: Generator, expression: exp.Left) -> str:

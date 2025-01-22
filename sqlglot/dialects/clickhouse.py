@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     rename_func,
     sha256_sql,
+    strposition_sql,
     var_map_sql,
     timestamptrunc_sql,
     unit_to_var,
@@ -997,8 +998,12 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
-            exp.StrPosition: lambda self, e: self.func(
-                "position", e.this, e.args.get("substr"), e.args.get("position")
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self,
+                e,
+                func_name="POSITION",
+                supports_position=True,
+                use_ansi_position=False,
             ),
             exp.TimeToStr: lambda self, e: self.func(
                 "formatDateTime", e.this, self.format_time(e), e.args.get("zone")

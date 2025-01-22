@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     max_or_greatest,
     min_or_least,
     rename_func,
+    strposition_sql,
     to_number_with_nls_param,
 )
 from sqlglot.helper import seq_get
@@ -254,6 +255,11 @@ class Teradata(Dialect):
             exp.Rand: lambda self, e: self.func("RANDOM", e.args.get("lower"), e.args.get("upper")),
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+            ),
+            exp.StrPosition: lambda self, e: (
+                strposition_sql(
+                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
+                )
             ),
             exp.StrToDate: lambda self,
             e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",

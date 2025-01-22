@@ -24,7 +24,7 @@ from sqlglot.dialects.dialect import (
     no_timestamp_sql,
     pivot_column_names,
     rename_func,
-    str_position_sql,
+    strposition_sql,
     str_to_time_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
@@ -618,7 +618,7 @@ class DuckDB(Dialect):
             exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
-            exp.StrPosition: str_position_sql,
+            exp.StrPosition: strposition_sql,
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),

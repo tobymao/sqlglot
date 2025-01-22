@@ -153,6 +153,14 @@ def build_coalesce(args: t.List, is_nvl: t.Optional[bool] = None) -> exp.Coalesc
     return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl)
 
 
+def build_locate_strposition(args: t.List):
+    return exp.StrPosition(
+        this=seq_get(args, 1),
+        substr=seq_get(args, 0),
+        position=seq_get(args, 2),
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -213,7 +221,6 @@ class Parser(metaclass=_Parser):
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "HEX": build_hex,
-        "INSTR": lambda args: exp.StrPosition(this=seq_get(args, 0), substr=seq_get(args, 1)),
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
@@ -232,6 +239,10 @@ class Parser(metaclass=_Parser):
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
+        "STRPOS": exp.StrPosition.from_arg_list,
+        "CHARINDEX": lambda args: build_locate_strposition(args),
+        "INSTR": exp.StrPosition.from_arg_list,
+        "LOCATE": lambda args: build_locate_strposition(args),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -6495,8 +6506,8 @@ class Parser(metaclass=_Parser):
             haystack = seq_get(args, 0)
             needle = seq_get(args, 1)
         else:
-            needle = seq_get(args, 0)
             haystack = seq_get(args, 1)
+            needle = seq_get(args, 0)
 
         return self.expression(
             exp.StrPosition, this=haystack, substr=needle, position=seq_get(args, 2)

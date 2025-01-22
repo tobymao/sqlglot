@@ -1607,11 +1607,11 @@ WHERE
             },
         )
         self.validate_all(
-            "SELECT STRPOS('foo@example.com', '@')",
+            "SELECT INSTR('foo@example.com', '@')",
             write={
-                "bigquery": "SELECT STRPOS('foo@example.com', '@')",
+                "bigquery": "SELECT INSTR('foo@example.com', '@')",
                 "duckdb": "SELECT STRPOS('foo@example.com', '@')",
-                "snowflake": "SELECT POSITION('@', 'foo@example.com')",
+                "snowflake": "SELECT CHARINDEX('@', 'foo@example.com')",
             },
         )
         self.validate_all(
@@ -2255,8 +2255,8 @@ OPTIONS (
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
         self.validate_identity(
-            r"REGEXP_SUBSTR(value, pattern, position, occurence)",
-            r"REGEXP_EXTRACT(value, pattern, position, occurence)",
+            r"REGEXP_SUBSTR(value, pattern, position, occurrence)",
+            r"REGEXP_EXTRACT(value, pattern, position, occurrence)",
         )
 
         self.validate_all(

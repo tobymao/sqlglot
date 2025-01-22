@@ -6679,7 +6679,7 @@ class TsOrDiToDi(Func):
 
 
 class Unhex(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Unicode(Func):

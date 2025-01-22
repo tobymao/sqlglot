@@ -153,14 +153,12 @@ def build_coalesce(args: t.List, is_nvl: t.Optional[bool] = None) -> exp.Coalesc
     return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl)
 
 
-def build_strposition(args: t.List, func_name: str):
-    if func_name in ["LOCATE", "CHARINDEX"]:
-        return exp.StrPosition(
-            this=seq_get(args, 1),
-            substr=seq_get(args, 0),
-            position=seq_get(args, 2),
-        )
-    return exp.StrPosition.from_arg_list(args)
+def build_locate_strposition(args: t.List):
+    return exp.StrPosition(
+        this=seq_get(args, 1),
+        substr=seq_get(args, 0),
+        position=seq_get(args, 2),
+    )
 
 
 class _Parser(type):
@@ -241,10 +239,10 @@ class Parser(metaclass=_Parser):
         "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
         if len(args) != 2
         else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
-        "STRPOS": lambda args: build_strposition(args, func_name="STRPOS"),
-        "CHARINDEX": lambda args: build_strposition(args, func_name="CHARINDEX"),
-        "INSTR": lambda args: build_strposition(args, func_name="INSTR"),
-        "LOCATE": lambda args: build_strposition(args, func_name="LOCATE"),
+        "STRPOS": exp.StrPosition.from_arg_list,
+        "CHARINDEX": lambda args: build_locate_strposition(args),
+        "INSTR": exp.StrPosition.from_arg_list,
+        "LOCATE": lambda args: build_locate_strposition(args),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

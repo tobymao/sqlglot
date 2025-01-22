@@ -999,7 +999,11 @@ class ClickHouse(Dialect):
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
             exp.StrPosition: lambda self, e: strposition_sql(
-                self, e, func_name="LOCATE", supports_position=True
+                self,
+                e,
+                func_name="POSITION",
+                supports_position=True,
+                use_ansi_position=False,
             ),
             exp.TimeToStr: lambda self, e: self.func(
                 "formatDateTime", e.this, self.format_time(e), e.args.get("zone")

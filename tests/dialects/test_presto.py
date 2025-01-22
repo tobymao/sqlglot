@@ -209,6 +209,7 @@ class TestPresto(Validator):
                 "bigquery": "INSTR(haystack, needle, 1, occurrence)",
                 "oracle": "INSTR(haystack, needle, 1, occurrence)",
                 "presto": "STRPOS(haystack, needle, occurrence)",
+                "tableau": "FINDNTH(haystack, needle, occurrence)",
                 "trino": "STRPOS(haystack, needle, occurrence)",
                 "teradata": "INSTR(haystack, needle, 1, occurrence)",
             },

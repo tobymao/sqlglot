@@ -1772,7 +1772,7 @@ class TestDialect(Validator):
             write={
                 "athena": "STRPOS(haystack, needle)",
                 "bigquery": "INSTR(haystack, needle)",
-                "clickhouse": "LOCATE(needle, haystack)",
+                "clickhouse": "POSITION(haystack, needle)",
                 "databricks": "LOCATE(needle, haystack)",
                 "doris": "LOCATE(needle, haystack)",
                 "drill": "STRPOS(haystack, needle)",
@@ -1838,13 +1838,10 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "STR_POSITION(haystack, needle, position)",
-            read={
-                "tableau": "FINDNTH(haystack, needle, position)",
-            },
             write={
                 "athena": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
                 "bigquery": "INSTR(haystack, needle, position)",
-                "clickhouse": "LOCATE(needle, haystack, position)",
+                "clickhouse": "POSITION(haystack, needle, position)",
                 "databricks": "LOCATE(needle, haystack, position)",
                 "doris": "LOCATE(needle, haystack, position)",
                 "drill": "`IF`(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
@@ -1861,7 +1858,7 @@ class TestDialect(Validator):
                 "spark": "LOCATE(needle, haystack, position)",
                 "spark2": "LOCATE(needle, haystack, position)",
                 "sqlite": "IIF(INSTR(SUBSTRING(haystack, position), needle) = 0, 0, INSTR(SUBSTRING(haystack, position), needle) + position - 1)",
-                "tableau": "FINDNTH(haystack, needle, position)",
+                "tableau": "IF FIND(SUBSTRING(haystack, position), needle) = 0 THEN 0 ELSE FIND(SUBSTRING(haystack, position), needle) + position - 1 END",
                 "teradata": "INSTR(haystack, needle, position)",
                 "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
                 "tsql": "CHARINDEX(needle, haystack, position)",
@@ -1878,6 +1875,7 @@ class TestDialect(Validator):
                 "bigquery": "INSTR(haystack, needle, position, occurrence)",
                 "oracle": "INSTR(haystack, needle, position, occurrence)",
                 "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
+                "tableau": "IF FINDNTH(SUBSTRING(haystack, position), needle, occurrence) = 0 THEN 0 ELSE FINDNTH(SUBSTRING(haystack, position), needle, occurrence) + position - 1 END",
                 "teradata": "INSTR(haystack, needle, position, occurrence)",
                 "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
             },

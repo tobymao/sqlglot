@@ -1079,6 +1079,7 @@ def strposition_sql(
     func_name: str = "STRPOS",
     supports_position: bool = False,
     supports_occurrence: bool = False,
+    use_ansi_position: bool = True,
 ) -> str:
     string = expression.this
     substr = expression.args.get("substr")
@@ -1093,24 +1094,22 @@ def strposition_sql(
     if position and not supports_position:
         string = exp.Substring(this=string, start=position)
 
-    args = [substr, string] if func_name in ["LOCATE", "CHARINDEX"] else [string, substr]
-    if supports_position:
-        args.append(position)
-    if supports_occurrence:
-        args.append(occurrence)
-
-    if func_name == "POSITION":
-        args = [exp.In(this=substr, field=string)]
-
-    func = exp.Anonymous(this=func_name, expressions=args)
+    if func_name == "POSITION" and use_ansi_position:
+        func = exp.Anonymous(this=func_name, expressions=[exp.In(this=substr, field=string)])
+    else:
+        args = [substr, string] if func_name in ("LOCATE", "CHARINDEX") else [string, substr]
+        if supports_position:
+            args.append(position)
+        if occurrence:
+            if supports_occurrence:
+                args.append(occurrence)
+            else:
+                self.unsupported(f"{func_name} does not support the occurrence parameter.")
+        func = exp.Anonymous(this=func_name, expressions=args)
 
     if position and not supports_position:
         func_with_offset = exp.Sub(this=func + position, expression=one)
-        func_wrapped = exp.If(
-            this=exp.EQ(this=func, expression=zero),
-            true=zero,
-            false=func_with_offset,
-        )
+        func_wrapped = exp.If(this=func.eq(zero), true=zero, false=func_with_offset)
         return self.sql(func_wrapped)
 
     return self.sql(func)

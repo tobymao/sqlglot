@@ -584,7 +584,7 @@ class Postgres(Dialect):
                 ]
             ),
             exp.SHA2: sha256_sql,
-            exp.StrPosition: lambda self, e: (strposition_sql(self, e, func_name="POSITION")),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StructExtract: struct_extract_sql,

@@ -1591,6 +1591,14 @@ WHERE
             },
         )
         self.validate_all(
+            "SELECT INSTR('foo@example.com', '@')",
+            write={
+                "bigquery": "SELECT INSTR('foo@example.com', '@')",
+                "duckdb": "SELECT STRPOS('foo@example.com', '@')",
+                "snowflake": "SELECT CHARINDEX('@', 'foo@example.com')",
+            },
+        )
+        self.validate_all(
             "SELECT ts + MAKE_INTERVAL(1, 2, minute => 5, day => 3)",
             write={
                 "bigquery": "SELECT ts + MAKE_INTERVAL(1, 2, day => 3, minute => 5)",

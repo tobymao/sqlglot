@@ -86,7 +86,7 @@ jobs:
     - name: Upload sdist
       uses: actions/upload-artifact@v4
       with:
-        name: sdist
+        name: wheels-sdist
         path: sqlglotrs/dist
 
   deploy-rs:
@@ -103,7 +103,7 @@ jobs:
         MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
       with:
         command: upload
-        args: --non-interactive --skip-existing *
+        args: --non-interactive --skip-existing wheels-*
 
   deploy:
     runs-on: ubuntu-latest

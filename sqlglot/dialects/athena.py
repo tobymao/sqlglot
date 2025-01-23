@@ -58,7 +58,7 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
-def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByProperty):
+def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByProperty) -> str:
     # If table_type='iceberg' then the table property for partitioning is called 'partitioning'
     # If table_type='hive' it's called 'partitioned_by'
     # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties

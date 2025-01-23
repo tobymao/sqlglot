@@ -834,7 +834,7 @@ class TestPostgres(Validator):
         )
 
         self.validate_identity(
-            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY a) FILTER (WHERE CAST(b AS BOOLEAN)) AS mean_value FROM (VALUES (0, 't')) AS fake_data(a, b)"
+            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY a) FILTER(WHERE CAST(b AS BOOLEAN)) AS mean_value FROM (VALUES (0, 't')) AS fake_data(a, b)"
         )
 
     def test_ddl(self):

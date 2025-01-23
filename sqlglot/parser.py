@@ -6603,24 +6603,18 @@ class Parser(metaclass=_Parser):
         func = this
         comments = func.comments if isinstance(func, exp.Expression) else None
 
+        # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
+        # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16
+        if self._match_text_seq("WITHIN", "GROUP"):
+            order = self._parse_wrapped(self._parse_order)
+            this = self.expression(exp.WithinGroup, this=this, expression=order)
+
         if self._match_pair(TokenType.FILTER, TokenType.L_PAREN):
             self._match(TokenType.WHERE)
             this = self.expression(
                 exp.Filter, this=this, expression=self._parse_where(skip_where_token=True)
             )
             self._match_r_paren()
-
-        # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
-        # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16
-        if self._match_text_seq("WITHIN", "GROUP"):
-            order = self._parse_wrapped(self._parse_order)
-            if self._match(TokenType.FILTER):
-                where_clause = self._parse_wrapped(self._parse_where)
-                this = self.expression(
-                    exp.WithinGroup, this=this, expression=order, filter=where_clause
-                )
-            else:
-                this = self.expression(exp.WithinGroup, this=this, expression=order)
 
         # SQL spec defines an optional [ { IGNORE | RESPECT } NULLS ] OVER
         # Some dialects choose to implement and some do not.

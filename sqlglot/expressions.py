@@ -1577,7 +1577,7 @@ class With(Expression):
 
 
 class WithinGroup(Expression):
-    arg_types = {"this": True, "expression": False, "filter": False}
+    arg_types = {"this": True, "expression": False}
 
 
 # clickhouse supports scalar ctes

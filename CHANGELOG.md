@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v26.3.1] - 2025-01-23
+### :wrench: Chores
+- [`ff9ea0c`](https://github.com/tobymao/sqlglot/commit/ff9ea0c4554ef0fa46b3460d01374d4a3f9c36ff) - change upload-artifact to v4 *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`61c4784`](https://github.com/tobymao/sqlglot/commit/61c4784033940e34e91732e2464e4baba77e6b7c) - bump sqlglotrs to 0.3.7 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.3.0] - 2025-01-23
 ### :boom: BREAKING CHANGES
 - due to [`8b465d4`](https://github.com/tobymao/sqlglot/commit/8b465d498e0aa9feee53306f631e258443ee3060) - expand single VALUES clause in CTE into a SELECT * *(PR [#4617](https://github.com/tobymao/sqlglot/pull/4617) by [@georgesittas](https://github.com/georgesittas))*:
@@ -5720,3 +5726,4 @@ Changelog
 [v26.2.0]: https://github.com/tobymao/sqlglot/compare/v26.1.3...v26.2.0
 [v26.2.1]: https://github.com/tobymao/sqlglot/compare/v26.2.0...v26.2.1
 [v26.3.0]: https://github.com/tobymao/sqlglot/compare/v26.2.1...v26.3.0
+[v26.3.1]: https://github.com/tobymao/sqlglot/compare/v26.3.0...v26.3.1

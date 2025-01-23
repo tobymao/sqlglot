@@ -833,6 +833,10 @@ class TestPostgres(Validator):
             "/* + some comment */ SELECT b.foo, b.bar FROM baz AS b",
         )
 
+        self.validate_identity(
+            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY a) FILTER (WHERE CAST(b AS BOOLEAN)) AS mean_value FROM (VALUES (0, 't')) AS fake_data(a, b)"
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

@@ -104,7 +104,7 @@ jobs:
         MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
       with:
         command: upload
-        args: --non-interactive --skip-existing wheels-*/*
+        args: --non-interactive --skip-existing dist/wheels-*/*
         working-directory: ./sqlglotrs
 
   deploy:

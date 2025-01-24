@@ -316,6 +316,8 @@ class MySQL(Dialect):
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
                 format=exp.Literal.string("%B"),
             ),
+            "SCHEMA": exp.CurrentSchema.from_arg_list,
+            "DATABASE": exp.CurrentSchema.from_arg_list,
             "STR_TO_DATE": _str_to_date,
             "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
             "TO_DAYS": lambda args: exp.paren(
@@ -739,6 +741,7 @@ class MySQL(Dialect):
             exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
             exp.NumberToStr: rename_func("FORMAT"),
             exp.Pivot: no_pivot_sql,
+            exp.CurrentSchema: rename_func("SCHEMA"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

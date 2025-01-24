@@ -253,8 +253,7 @@ class TestMySQL(Validator):
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("SET TRANSACTION READ ONLY")
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE")
-        self.validate_identity("SELECT SCHEMA()")
-        self.validate_identity("SELECT DATABASE()")
+        self.validate_identity("DATABASE()", "SCHEMA()")
         self.validate_identity(
             "SET GLOBAL sort_buffer_size = 1000000, SESSION sort_buffer_size = 1000000"
         )

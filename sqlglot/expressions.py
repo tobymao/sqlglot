@@ -5628,6 +5628,10 @@ class CurrentTimestamp(Func):
     arg_types = {"this": False, "sysdate": False}
 
 
+class CurrentSchema(Func):
+    arg_types = {"this": False}
+
+
 class CurrentUser(Func):
     arg_types = {"this": False}
 

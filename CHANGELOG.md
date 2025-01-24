@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.3.6] - 2025-01-24
+### :wrench: Chores
+- [`085fef6`](https://github.com/tobymao/sqlglot/commit/085fef6971a4ebd43b5c7013c6bbcb0d00dfdc30) - bump sqlglotrs to 0.3.12 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.3.5] - 2025-01-24
 ### :wrench: Chores
 - [`acb7217`](https://github.com/tobymao/sqlglot/commit/acb7217d89e12de549663b67af4687a08512993f) - bump sqlglotrs to 0.3.11 *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -5753,3 +5758,4 @@ Changelog
 [v26.3.3]: https://github.com/tobymao/sqlglot/compare/v26.3.2...v26.3.3
 [v26.3.4]: https://github.com/tobymao/sqlglot/compare/v26.3.3...v26.3.4
 [v26.3.5]: https://github.com/tobymao/sqlglot/compare/v26.3.4...v26.3.5
+[v26.3.6]: https://github.com/tobymao/sqlglot/compare/v26.3.5...v26.3.6

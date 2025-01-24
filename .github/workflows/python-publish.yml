@@ -96,6 +96,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
+        name: wheels-*
         path: sqlglotrs/dist
     - name: Publish to PyPI
       uses: PyO3/maturin-action@v1

@@ -179,6 +179,7 @@ class SQLite(Dialect):
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentSchema: lambda *_: "'main'",
             exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),

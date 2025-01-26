@@ -3318,7 +3318,7 @@ FROM subquery2""",
             write={
                 "sqlite": "'main'",
                 "mysql": "SCHEMA()",
-                "postgres": "CURRENT_SCHEMA()",
+                "postgres": "CURRENT_SCHEMA",
                 "tsql": "SCHEMA_NAME()",
             },
         )

@@ -250,6 +250,7 @@ class TokenType(AutoName):
     CUBE = auto()
     CURRENT_DATE = auto()
     CURRENT_DATETIME = auto()
+    CURRENT_SCHEMA = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     CURRENT_USER = auto()
@@ -713,6 +714,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
+        "CURRENT_SCHEMA": TokenType.CURRENT_SCHEMA,
         "CURRENT_TIME": TokenType.CURRENT_TIME,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "CURRENT_USER": TokenType.CURRENT_USER,

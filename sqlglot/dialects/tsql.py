@@ -575,7 +575,7 @@ class TSQL(Dialect):
             "RIGHT": _build_with_arg_as_text(exp.Right),
             "PARSENAME": _build_parsename,
             "REPLICATE": exp.Repeat.from_arg_list,
-            "SCHEMA_NAME": exp.CurrentSchema.from_arg_list,
+            "SCHEMA_NAME": lambda args: exp.CurrentSchema(id=seq_get(args, 0)),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "SUSER_NAME": exp.CurrentUser.from_arg_list,

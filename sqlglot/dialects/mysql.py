@@ -27,6 +27,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     timestrtotime_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
@@ -741,7 +742,6 @@ class MySQL(Dialect):
             exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
             exp.NumberToStr: rename_func("FORMAT"),
             exp.Pivot: no_pivot_sql,
-            exp.CurrentSchema: rename_func("SCHEMA"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -1268,3 +1268,7 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
+
+        @unsupported_args("id")
+        def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
+            return self.func("SCHEMA")

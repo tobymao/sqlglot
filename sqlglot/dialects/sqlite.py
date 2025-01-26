@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
@@ -179,7 +180,6 @@ class SQLite(Dialect):
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.CurrentSchema: lambda *_: "'main'",
             exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
@@ -303,3 +303,7 @@ class SQLite(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"(NOT {self.sql(expression.this)} GLOB CAST(x'2a5b5e012d7f5d2a' AS TEXT))"
+
+        @unsupported_args("id")
+        def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
+            return "'main'"

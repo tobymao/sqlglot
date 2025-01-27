@@ -85,6 +85,10 @@ class TestTrino(Validator):
         self.validate_identity(
             "ALTER VIEW people SET AUTHORIZATION alice", check_command_warning=True
         )
+        self.validate_identity("CREATE SCHEMA foo WITH (LOCATION='s3://bucket/foo')")
+        self.validate_identity(
+            "CREATE TABLE foo.bar WITH (LOCATION='s3://bucket/foo/bar') AS SELECT 1"
+        )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")

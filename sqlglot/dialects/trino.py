@@ -57,11 +57,17 @@ class Trino(Presto):
             )
 
     class Generator(Presto.Generator):
+        PROPERTIES_LOCATION = {
+            **Presto.Generator.PROPERTIES_LOCATION,
+            exp.LocationProperty: exp.Properties.Location.POST_WITH,
+        }
+
         TRANSFORMS = {
             **Presto.Generator.TRANSFORMS,
             exp.ArraySum: lambda self,
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
+            exp.LocationProperty: lambda self, e: self.property_sql(e),
             exp.Merge: merge_without_target_sql,
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,

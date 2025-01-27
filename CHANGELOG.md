@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v26.3.9] - 2025-01-27
+### :bug: Bug Fixes
+- [`b091f2f`](https://github.com/tobymao/sqlglot/commit/b091f2f4e4779fb9a4187d1665ca40e1648d9ccb) - **trino**: Correctly render exp.LocationProperty in CREATE TABLE / CREATE SCHEMA *(PR [#4659](https://github.com/tobymao/sqlglot/pull/4659) by [@erindru](https://github.com/erindru))*
+- [`c4de945`](https://github.com/tobymao/sqlglot/commit/c4de94538cd69540f772b9b13e968ee16ffbbe67) - **Trino**: Prevent first_value and last_value from being converted *(PR [#4661](https://github.com/tobymao/sqlglot/pull/4661) by [@MikeWallis42](https://github.com/MikeWallis42))*
+  - :arrow_lower_right: *fixes issue [#4660](https://github.com/tobymao/sqlglot/issues/4660) opened by [@MikeWallis42](https://github.com/MikeWallis42)*
+
+### :wrench: Chores
+- [`bae0489`](https://github.com/tobymao/sqlglot/commit/bae0489044a1368556f03f637c171a1873b6f05c) - reduce sdist size *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v26.3.8] - 2025-01-24
 ### :wrench: Chores
 - [`5f54f16`](https://github.com/tobymao/sqlglot/commit/5f54f168ee75c5a344747a035e63e1df70fe652c) - bump sqlglotrs to 0.3.14 *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -5771,3 +5781,4 @@ Changelog
 [v26.3.6]: https://github.com/tobymao/sqlglot/compare/v26.3.5...v26.3.6
 [v26.3.7]: https://github.com/tobymao/sqlglot/compare/v26.3.6...v26.3.7
 [v26.3.8]: https://github.com/tobymao/sqlglot/compare/v26.3.7...v26.3.8
+[v26.3.9]: https://github.com/tobymao/sqlglot/compare/v26.3.8...v26.3.9

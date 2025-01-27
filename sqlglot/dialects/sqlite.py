@@ -19,7 +19,6 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.tokens import TokenType
-from sqlglot.generator import unsupported_args
 
 
 def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:

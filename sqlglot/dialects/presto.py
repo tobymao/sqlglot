@@ -272,17 +272,12 @@ class Presto(Dialect):
             "ELEMENT_AT": lambda args: exp.Bracket(
                 this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
             ),
-            "FIRST_VALUE": exp.FirstValue.from_arg_list,
             "FROM_HEX": exp.Unhex.from_arg_list,
             "FROM_UNIXTIME": _build_from_unixtime,
             "FROM_UTF8": lambda args: exp.Decode(
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
-            "LAST_VALUE": exp.LastValue.from_arg_list,
-            "LAG": exp.Lag.from_arg_list,
-            "LEAD": exp.Lead.from_arg_list,
             "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
-            "NTH_VALUE": exp.NthValue.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
             "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),

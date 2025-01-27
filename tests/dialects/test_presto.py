@@ -1083,6 +1083,9 @@ class TestPresto(Validator):
                 "snowflake": "CURRENT_USER()",
             },
         )
+        self.validate_identity(
+            "SELECT id, FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS first_is_deleted, NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted, LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS last_is_deleted FROM my_table"
+        )
 
     def test_encode_decode(self):
         self.validate_identity("FROM_UTF8(x, y)")

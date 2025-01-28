@@ -3306,3 +3306,19 @@ FROM subquery2""",
                     "postgres": f"PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
             )
+
+    def test_current_schema(self):
+        self.validate_all(
+            "CURRENT_SCHEMA()",
+            read={
+                "mysql": "SCHEMA()",
+                "postgres": "CURRENT_SCHEMA()",
+                "tsql": "SCHEMA_NAME()",
+            },
+            write={
+                "sqlite": "'main'",
+                "mysql": "SCHEMA()",
+                "postgres": "CURRENT_SCHEMA",
+                "tsql": "SCHEMA_NAME()",
+            },
+        )

@@ -34,9 +34,11 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
     strposition_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
+
 
 DATE_DIFF_FACTOR = {
     "MICROSECOND": " * 1000000",
@@ -393,6 +395,11 @@ class Postgres(Dialect):
             "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
         }
 
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
+        }
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
@@ -723,3 +730,7 @@ class Postgres(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"
+
+        @unsupported_args("this")
+        def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
+            return "CURRENT_SCHEMA"

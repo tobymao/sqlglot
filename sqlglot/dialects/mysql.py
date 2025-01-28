@@ -27,6 +27,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     timestrtotime_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
@@ -316,6 +317,8 @@ class MySQL(Dialect):
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
                 format=exp.Literal.string("%B"),
             ),
+            "SCHEMA": exp.CurrentSchema.from_arg_list,
+            "DATABASE": exp.CurrentSchema.from_arg_list,
             "STR_TO_DATE": _str_to_date,
             "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
             "TO_DAYS": lambda args: exp.paren(
@@ -1265,3 +1268,7 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
+
+        @unsupported_args("this")
+        def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
+            return self.func("SCHEMA")

@@ -17,8 +17,8 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
 )
-from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
+from sqlglot.tokens import TokenType
 
 
 def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
@@ -302,3 +302,7 @@ class SQLite(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"(NOT {self.sql(expression.this)} GLOB CAST(x'2a5b5e012d7f5d2a' AS TEXT))"
+
+        @unsupported_args("this")
+        def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
+            return "'main'"

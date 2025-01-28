@@ -160,6 +160,26 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
     return self.sql(exp.cast(ts, datatype, dialect=self.dialect))
 
 
+def _map_sql(self: ClickHouse.Generator, expression: exp.Map | exp.VarMap) -> str:
+    if not (expression.parent and expression.parent.arg_key == "settings"):
+        return _lower_func(var_map_sql(self, expression))
+
+    keys = expression.args.get("keys")
+    values = expression.args.get("values")
+
+    if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
+        self.unsupported("Cannot convert array columns into map.")
+        return ""
+
+    args = []
+    for key, value in zip(keys.expressions, values.expressions):
+        args.append(f"{self.sql(key)}: {self.sql(value)}")
+
+    csv_args = ", ".join(args)
+
+    return f"{{{csv_args}}}"
+
+
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
@@ -989,7 +1009,7 @@ class ClickHouse(Dialect):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
             exp.Length: length_or_char_length_sql,
-            exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.Map: _map_sql,
             exp.Median: rename_func("median"),
             exp.Nullif: rename_func("nullIf"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
@@ -1011,7 +1031,7 @@ class ClickHouse(Dialect):
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
             exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
-            exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.VarMap: _map_sql,
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
             exp.MD5Digest: rename_func("MD5"),
             exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),

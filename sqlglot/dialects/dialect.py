@@ -1119,8 +1119,8 @@ def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
 def var_map_sql(
     self: Generator, expression: exp.Map | exp.VarMap, map_func_name: str = "MAP"
 ) -> str:
-    keys = expression.args["keys"]
-    values = expression.args["values"]
+    keys = expression.args.get("keys")
+    values = expression.args.get("values")
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")

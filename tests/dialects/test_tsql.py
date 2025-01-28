@@ -443,6 +443,16 @@ class TestTSQL(Validator):
             "CREATE TABLE db.t1 (a INTEGER, b INTEGER, CONSTRAINT c PRIMARY KEY (a DESC, b))"
         )
 
+        self.validate_all(
+            "SCHEMA_NAME(id)",
+            write={
+                "sqlite": "'main'",
+                "mysql": "SCHEMA()",
+                "postgres": "CURRENT_SCHEMA",
+                "tsql": "SCHEMA_NAME(id)",
+            },
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

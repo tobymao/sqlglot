@@ -164,8 +164,8 @@ def _map_sql(self: ClickHouse.Generator, expression: exp.Map | exp.VarMap) -> st
     if not (expression.parent and expression.parent.arg_key == "settings"):
         return _lower_func(var_map_sql(self, expression))
 
-    keys = expression.args["keys"]
-    values = expression.args["values"]
+    keys = expression.args.get("keys")
+    values = expression.args.get("values")
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")

@@ -395,6 +395,11 @@ class Postgres(Dialect):
             "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
         }
 
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
+        }
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
@@ -726,6 +731,6 @@ class Postgres(Dialect):
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"
 
-        @unsupported_args("id")
+        @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "CURRENT_SCHEMA"

@@ -1269,6 +1269,6 @@ class MySQL(Dialect):
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
 
-        @unsupported_args("id")
+        @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return self.func("SCHEMA")

@@ -266,7 +266,6 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_DATETIME: exp.CurrentDate,
         TokenType.CURRENT_TIME: exp.CurrentTime,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
-        TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
         TokenType.CURRENT_USER: exp.CurrentUser,
     }
 
@@ -488,6 +487,7 @@ class Parser(metaclass=_Parser):
         TokenType.CONSTRAINT,
         TokenType.COPY,
         TokenType.CUBE,
+        TokenType.CURRENT_SCHEMA,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -590,9 +590,9 @@ class Parser(metaclass=_Parser):
         TokenType.COMMAND,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,
+        TokenType.CURRENT_SCHEMA,
         TokenType.CURRENT_TIMESTAMP,
         TokenType.CURRENT_TIME,
-        TokenType.CURRENT_SCHEMA,
         TokenType.CURRENT_USER,
         TokenType.FILTER,
         TokenType.FIRST,

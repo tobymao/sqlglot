@@ -303,6 +303,6 @@ class SQLite(Dialect):
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"(NOT {self.sql(expression.this)} GLOB CAST(x'2a5b5e012d7f5d2a' AS TEXT))"
 
-        @unsupported_args("id")
+        @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "'main'"

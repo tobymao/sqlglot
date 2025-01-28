@@ -5629,7 +5629,7 @@ class CurrentTimestamp(Func):
 
 
 class CurrentSchema(Func):
-    arg_types = {"this": False, "id": False}
+    arg_types = {"this": False}
 
 
 class CurrentUser(Func):

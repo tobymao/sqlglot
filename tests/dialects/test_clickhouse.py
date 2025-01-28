@@ -551,6 +551,9 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT 1_2_3_4_5", "SELECT 12345")
         self.validate_identity("SELECT 1_b", "SELECT 1_b")
+        self.validate_identity(
+            "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"
+        )
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

@@ -382,6 +382,8 @@ def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
 
 
 class TSQL(Dialect):
+    ALIASES = ["mssql", "sqlserver"]
+
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
     TYPED_DIVISION = True

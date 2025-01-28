@@ -129,7 +129,15 @@ class _Dialect(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
         enum = Dialects.__members__.get(clsname.upper())
+
         cls.classes[enum.value if enum is not None else clsname.lower()] = klass
+
+        aliases = klass.__dict__.get("ALIASES")
+        if aliases:
+            for alias in aliases:
+                cls.classes[alias.lower()] = klass
+        else:
+            klass.ALIASES = []
 
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
         klass.FORMAT_TRIE = (
@@ -223,6 +231,9 @@ class _Dialect(type):
 
 
 class Dialect(metaclass=_Dialect):
+    ALIASES: t.List[str] = []
+    """Other names by which this dialect can be referred to."""
+
     INDEX_OFFSET = 0
     """The base index offset for arrays."""
 

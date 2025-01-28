@@ -10,7 +10,7 @@ from sqlglot import (
     exp,
     parse_one,
 )
-from sqlglot.dialects import BigQuery, Hive, Snowflake
+from sqlglot.dialects import BigQuery, Hive, Snowflake, TSQL
 from sqlglot.parser import logger as parser_logger
 
 
@@ -90,6 +90,10 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect[dialect.value])
 
     def test_get_or_raise(self):
+        self.assertIsInstance(Dialect.get_or_raise("tsql"), TSQL)
+        self.assertIsInstance(Dialect.get_or_raise("mssql"), TSQL)
+        self.assertIsInstance(Dialect.get_or_raise("sqlserver"), TSQL)
+
         self.assertIsInstance(Dialect.get_or_raise(Hive), Hive)
         self.assertIsInstance(Dialect.get_or_raise(Hive()), Hive)
         self.assertIsInstance(Dialect.get_or_raise("hive"), Hive)

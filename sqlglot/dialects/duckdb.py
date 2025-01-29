@@ -662,6 +662,8 @@ class DuckDB(Dialect):
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("LEVENSHTEIN")
             ),
+            exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
+            exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
         }
 

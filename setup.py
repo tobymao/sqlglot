@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 
 def sqlglotrs_version():
-    with open("sqlglotrs/Cargo.toml") as fd:
+    with open("sqlglotrs/Cargo.toml", encoding="utf-8") as fd:
         for line in fd.readlines():
             if line.strip().startswith("version"):
                 return line.split("=")[1].strip().strip('"')

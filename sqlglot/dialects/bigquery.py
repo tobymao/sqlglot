@@ -1229,3 +1229,11 @@ class BigQuery(Dialect):
                 expr = expr.this
 
             return self.func("CONTAINS_SUBSTR", this, expr)
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            this = expression.this
+
+            if isinstance(this, exp.Array):
+                return f"{self.sql(expression, 'to')}{self.sql(this)}"
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)

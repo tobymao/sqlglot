@@ -2035,10 +2035,10 @@ OPTIONS (
         )
 
         self.validate_all(
-            "SELECT ARRAY<INT>[1, 2, 3]",
+            "SELECT ARRAY<FLOAT64>[1, 2, 3]",
             write={
-                "bigquery": "SELECT CAST([1, 2, 3] AS ARRAY<INT64>)",
-                "duckdb": "SELECT CAST([1, 2, 3] AS INT[])",
+                "bigquery": "SELECT ARRAY<FLOAT64>[1, 2, 3]",
+                "duckdb": "SELECT CAST([1, 2, 3] AS DOUBLE[])",
             },
         )
         self.validate_all(
@@ -2051,14 +2051,14 @@ OPTIONS (
         self.validate_all(
             "SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])",
             write={
-                "bigquery": "SELECT * FROM UNNEST(CAST([] AS ARRAY<STRUCT<x INT64>>))",
+                "bigquery": "SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])",
                 "duckdb": "SELECT * FROM (SELECT UNNEST(CAST([] AS STRUCT(x BIGINT)[]), max_depth => 2))",
             },
         )
         self.validate_all(
             "SELECT * FROM UNNEST(ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>[STRUCT(1, DATETIME '2023-11-01 09:34:01', 74, 'INACTIVE'),STRUCT(4, DATETIME '2023-11-01 09:38:01', 80, 'ACTIVE')])",
             write={
-                "bigquery": "SELECT * FROM UNNEST(CAST([STRUCT(1, CAST('2023-11-01 09:34:01' AS DATETIME), 74, 'INACTIVE'), STRUCT(4, CAST('2023-11-01 09:38:01' AS DATETIME), 80, 'ACTIVE')] AS ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>))",
+                "bigquery": "SELECT * FROM UNNEST(ARRAY<STRUCT<device_id INT64, time DATETIME, signal INT64, state STRING>>[STRUCT(1, CAST('2023-11-01 09:34:01' AS DATETIME), 74, 'INACTIVE'), STRUCT(4, CAST('2023-11-01 09:38:01' AS DATETIME), 80, 'ACTIVE')])",
                 "duckdb": "SELECT * FROM (SELECT UNNEST(CAST([ROW(1, CAST('2023-11-01 09:34:01' AS TIMESTAMP), 74, 'INACTIVE'), ROW(4, CAST('2023-11-01 09:38:01' AS TIMESTAMP), 80, 'ACTIVE')] AS STRUCT(device_id BIGINT, time TIMESTAMP, signal BIGINT, state TEXT)[]), max_depth => 2))",
             },
         )

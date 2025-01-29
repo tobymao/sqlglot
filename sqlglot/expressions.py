@@ -6068,6 +6068,14 @@ class JSONObjectAgg(AggFunc):
     }
 
 
+# https://www.postgresql.org/docs/9.5/functions-aggregate.html
+class JSONBObjectAgg(AggFunc):
+    arg_types = {
+        "key": True,
+        "value": True,
+    }
+
+
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAY.html
 class JSONArray(Func):
     arg_types = {

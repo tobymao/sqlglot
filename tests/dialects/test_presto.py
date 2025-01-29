@@ -104,7 +104,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
             write={
-                "bigquery": "CAST([1, 2] AS ARRAY<INT64>)",
+                "bigquery": "ARRAY<INT64>[1, 2]",
                 "duckdb": "CAST([1, 2] AS BIGINT[])",
                 "presto": "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
                 "spark": "CAST(ARRAY(1, 2) AS ARRAY<BIGINT>)",

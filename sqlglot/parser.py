@@ -6122,7 +6122,12 @@ class Parser(metaclass=_Parser):
         fmt = None
         to = self._parse_types()
 
-        if self._match(TokenType.FORMAT):
+        default = self._match(TokenType.DEFAULT)
+        if default:
+            default = self._parse_bitwise()
+            self._match_text_seq("ON", "CONVERSION", "ERROR")
+
+        if self._match_set((TokenType.FORMAT, TokenType.COMMA)):
             fmt_string = self._parse_string()
             fmt = self._parse_at_time_zone(fmt_string)
 
@@ -6160,6 +6165,7 @@ class Parser(metaclass=_Parser):
             format=fmt,
             safe=safe,
             action=self._parse_var_from_options(self.CAST_ACTIONS, raise_unmatched=False),
+            default=default,
         )
 
     def _parse_string_agg(self) -> exp.GroupConcat:
@@ -6263,7 +6269,7 @@ class Parser(metaclass=_Parser):
         namespaces = []
 
         while True:
-            if self._match_text_seq("DEFAULT"):
+            if self._match(TokenType.DEFAULT):
                 uri = self._parse_string()
             else:
                 uri = self._parse_alias(self._parse_string())

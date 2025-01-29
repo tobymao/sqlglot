@@ -857,6 +857,14 @@ class TestPostgres(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT DATE_BIN('30 days', timestamp_col, (SELECT MIN(TIMESTAMP) from table)) FROM table",
+            write={
+                "postgres": "SELECT DATE_BIN('30 days', timestamp_col, (SELECT MIN(TIMESTAMP) FROM table)) FROM table",
+                "duckdb": 'SELECT TIME_BUCKET(\'30 days\', timestamp_col, (SELECT MIN(TIMESTAMP) FROM "table")) FROM "table"',
+            },
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

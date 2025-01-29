@@ -617,7 +617,7 @@ class Postgres(Dialect):
             exp.Unicode: rename_func("ASCII"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.Levenshtein: _levenshtein_sql,
-            exp.DateBin: rename_func('DATE_BIN')
+            exp.DateBin: rename_func("DATE_BIN"),
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)

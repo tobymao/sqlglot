@@ -842,7 +842,7 @@ class TestPostgres(Validator):
             "SELECT DATE_BIN('30 days', timestamp_col, (SELECT MIN(TIMESTAMP) from table)) FROM table",
             write={
                 "postgres": "SELECT DATE_BIN('30 days', timestamp_col, (SELECT MIN(TIMESTAMP) FROM table)) FROM table",
-                "duckdb": "SELECT TIME_BUCKET('30 days', timestamp_col, (SELECT MIN(TIMESTAMP) FROM \"table\")) FROM \"table\"",
+                "duckdb": 'SELECT TIME_BUCKET(\'30 days\', timestamp_col, (SELECT MIN(TIMESTAMP) FROM "table")) FROM "table"',
             },
         )
 

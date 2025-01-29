@@ -5639,8 +5639,10 @@ class CurrentUser(Func):
 class DateAdd(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
+
 class DateBin(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
+
 
 class DateSub(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}

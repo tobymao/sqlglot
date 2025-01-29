@@ -5518,6 +5518,7 @@ class Cast(Func):
         "format": False,
         "safe": False,
         "action": False,
+        "default": False,
     }
 
     @property

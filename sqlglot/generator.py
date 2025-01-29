@@ -3182,7 +3182,9 @@ class Generator(metaclass=_Generator):
         to_sql = f" {to_sql}" if to_sql else ""
         action = self.sql(expression, "action")
         action = f" {action}" if action else ""
-        return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS{to_sql}{format_sql}{action})"
+        default = self.sql(expression, "default")
+        default = f" DEFAULT {default} ON CONVERSION ERROR" if default else ""
+        return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS{to_sql}{default}{format_sql}{action})"
 
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")

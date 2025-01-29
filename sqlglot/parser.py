@@ -5118,7 +5118,12 @@ class Parser(metaclass=_Parser):
         while self._curr:
             datatype_token = self._prev.token_type
             matched_l_bracket = self._match(TokenType.L_BRACKET)
-            if not matched_l_bracket and not matched_array:
+
+            if (not matched_l_bracket and not matched_array) or (
+                datatype_token == TokenType.ARRAY and self._match(TokenType.R_BRACKET)
+            ):
+                # Postgres allows casting empty arrays such as ARRAY[]::INT[],
+                # not to be confused with the fixed size array parsing
                 break
 
             matched_array = False

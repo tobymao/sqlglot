@@ -146,10 +146,6 @@ class TestPostgres(Validator):
             "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
         )
         self.validate_identity(
-            "SELECT ARRAY[]::INT[] AS foo",
-            "SELECT CAST(ARRAY[] AS INT[]) AS foo",
-        )
-        self.validate_identity(
             "SELECT DATE_PART('isodow'::varchar(6), current_date)",
             "SELECT EXTRACT(CAST('isodow' AS VARCHAR(6)) FROM CURRENT_DATE)",
         )
@@ -350,6 +346,13 @@ class TestPostgres(Validator):
             "CAST(x AS BIGINT)",
         )
 
+        self.validate_all(
+            "SELECT ARRAY[]::INT[] AS foo",
+            write={
+                "postgres": "SELECT CAST(ARRAY[] AS INT[]) AS foo",
+                "duckdb": "SELECT CAST([] AS INT[]) AS foo",
+            },
+        )
         self.validate_all(
             "STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')",
             read={

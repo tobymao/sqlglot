@@ -556,10 +556,10 @@ TPCDS_SCHEMA = {
 
 
 def rewrite_fixtures(in_path, out_path, schema, num, kind):
-    with open(out_path, "w", encoding="UTF-8") as fixture:
+    with open(out_path, "w", encoding="utf-8") as fixture:
         for i in range(num):
             i = i + 1
-            with open(in_path.format(i=i), encoding="UTF-8") as file:
+            with open(in_path.format(i=i), encoding="utf-8") as file:
                 original = "\n".join(
                     line.rstrip()
                     for line in file.read().split(";")[0].split("\n")

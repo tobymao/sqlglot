@@ -408,6 +408,7 @@ class DuckDB(Dialect):
             "STRUCT_PACK": exp.Struct.from_arg_list,
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
+            "TIME_BUCKET": exp.DateBin.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
@@ -664,6 +665,7 @@ class DuckDB(Dialect):
             ),
             exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
+            exp.DateBin: rename_func("TIME_BUCKET"),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

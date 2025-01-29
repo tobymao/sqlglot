@@ -26,6 +26,8 @@ class Trino(Presto):
             **dict.fromkeys(
                 ("WITH", "WITHOUT"),
                 (
+                    ("WRAPPER"),
+                    ("ARRAY", "WRAPPER"),
                     ("CONDITIONAL", "WRAPPER"),
                     ("CONDITIONAL", "ARRAY", "WRAPPED"),
                     ("UNCONDITIONAL", "WRAPPER"),

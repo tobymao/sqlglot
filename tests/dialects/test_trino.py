@@ -7,6 +7,8 @@ class TestTrino(Validator):
     def test_trino(self):
         self.validate_identity("JSON_EXTRACT(content, json_path)")
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
+        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH WRAPPER)")
+        self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH ARRAY WRAPPER)")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER)")
         self.validate_identity("JSON_QUERY(content, 'strict $.HY.*' WITHOUT CONDITIONAL WRAPPER)")
         self.validate_identity("JSON_QUERY(description, 'strict $.comment' KEEP QUOTES)")

@@ -393,9 +393,7 @@ class Postgres(Dialect):
             "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
-            "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(
-                expressions=[seq_get(args, 0), seq_get(args, 1)]
-            ),
+            "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
             "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
         }
 

@@ -838,8 +838,21 @@ class TestPostgres(Validator):
             "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY a) FILTER(WHERE CAST(b AS BOOLEAN)) AS mean_value FROM (VALUES (0, 't')) AS fake_data(a, b)"
         )
 
-        self.validate_identity("SELECT JSON_OBJECT_AGG(k, v) FROM t")
-        self.validate_identity("SELECT JSONB_OBJECT_AGG(k, v) FROM t")
+        self.validate_all(
+            "SELECT JSON_OBJECT_AGG(k, v) FROM t",
+            write={
+                "postgres": "SELECT JSON_OBJECT_AGG(k, v) FROM t",
+                "duckdb": "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
+            },
+        )
+
+        self.validate_all(
+            "SELECT JSONB_OBJECT_AGG(k, v) FROM t",
+            write={
+                "postgres": "SELECT JSONB_OBJECT_AGG(k, v) FROM t",
+                "duckdb": "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
+            },
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

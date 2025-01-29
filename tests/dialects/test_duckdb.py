@@ -910,26 +910,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_all(
-            "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
-            read={
-                "postgres": "SELECT JSON_OBJECT_AGG(k, v) FROM t",
-            },
-            write={
-                "duckdb": "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
-            },
-        )
-
-        self.validate_all(
-            "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
-            read={
-                "postgres": "SELECT JSONB_OBJECT_AGG(k, v) FROM t",
-            },
-            write={
-                "duckdb": "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
-            },
-        )
-
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

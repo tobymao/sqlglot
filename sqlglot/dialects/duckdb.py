@@ -662,6 +662,7 @@ class DuckDB(Dialect):
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("LEVENSHTEIN")
             ),
+            exp.DateBin: rename_func("TIME_BUCKET")
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

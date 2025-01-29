@@ -621,7 +621,6 @@ class Postgres(Dialect):
             exp.Levenshtein: _levenshtein_sql,
             exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
             exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
-            exp.DateBin: rename_func("DATE_BIN"),
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)

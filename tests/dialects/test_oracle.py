@@ -300,6 +300,14 @@ class TestOracle(Validator):
             "SELECT /*+ ORDERED */ * /* test */ FROM tbl",
         )
 
+        self.validate_all(
+            "SELECT * FROM t FETCH FIRST 10 ROWS ONLY",
+            write={
+                "oracle": "SELECT * FROM t FETCH FIRST 10 ROWS ONLY",
+                "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH FIRST 10 ROWS ONLY",
+            },
+        )
+
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
 

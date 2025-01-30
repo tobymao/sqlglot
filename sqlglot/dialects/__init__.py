@@ -61,31 +61,54 @@ dialect implementations in order to understand how their various components can 
 ----
 """
 
-from sqlglot.dialects.athena import Athena
-from sqlglot.dialects.bigquery import BigQuery
-from sqlglot.dialects.clickhouse import ClickHouse
-from sqlglot.dialects.databricks import Databricks
-from sqlglot.dialects.dialect import Dialect, Dialects
-from sqlglot.dialects.doris import Doris
-from sqlglot.dialects.drill import Drill
-from sqlglot.dialects.druid import Druid
-from sqlglot.dialects.duckdb import DuckDB
-from sqlglot.dialects.dune import Dune
-from sqlglot.dialects.hive import Hive
-from sqlglot.dialects.materialize import Materialize
-from sqlglot.dialects.mysql import MySQL
-from sqlglot.dialects.oracle import Oracle
-from sqlglot.dialects.postgres import Postgres
-from sqlglot.dialects.presto import Presto
-from sqlglot.dialects.prql import PRQL
-from sqlglot.dialects.redshift import Redshift
-from sqlglot.dialects.risingwave import RisingWave
-from sqlglot.dialects.snowflake import Snowflake
-from sqlglot.dialects.spark import Spark
-from sqlglot.dialects.spark2 import Spark2
-from sqlglot.dialects.sqlite import SQLite
-from sqlglot.dialects.starrocks import StarRocks
-from sqlglot.dialects.tableau import Tableau
-from sqlglot.dialects.teradata import Teradata
-from sqlglot.dialects.trino import Trino
-from sqlglot.dialects.tsql import TSQL
+DIALECTS = [
+    "Athena",
+    "BigQuery",
+    "ClickHouse",
+    "Databricks",
+    "Doris",
+    "Drill",
+    "Druid",
+    "DuckDB",
+    "Dune",
+    "Hive",
+    "Materialize",
+    "MySQL",
+    "Oracle",
+    "Postgres",
+    "Presto",
+    "PRQL",
+    "Redshift",
+    "RisingWave",
+    "Snowflake",
+    "Spark",
+    "Spark2",
+    "SQLite",
+    "StarRocks",
+    "Tableau",
+    "Teradata",
+    "Trino",
+    "TSQL",
+]
+
+MODULE_BY_DIALECT = {name: name.lower() for name in DIALECTS}
+DIALECT_MODULE_NAMES = MODULE_BY_DIALECT.values()
+
+MODULE_BY_ATTRIBUTE = {
+    **MODULE_BY_DIALECT,
+    "Dialect": "dialect",
+    "Dialects": "dialect",
+}
+
+__all__ = list(MODULE_BY_ATTRIBUTE)
+
+
+def __getattr__(name):
+    module_name = MODULE_BY_ATTRIBUTE.get(name)
+    if module_name:
+        import importlib
+
+        module = importlib.import_module(f"sqlglot.dialects.{module_name}")
+        return getattr(module, name)
+
+    raise AttributeError(f"module {__name__} has no attribute {name}")

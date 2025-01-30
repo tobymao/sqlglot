@@ -931,13 +931,6 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
-            "SELECT CAST(STRUCT(1) AS STRUCT<INT64>)",
-            write={
-                "bigquery": "SELECT CAST(STRUCT(1) AS STRUCT<INT64>)",
-                "snowflake": "SELECT CAST(OBJECT_CONSTRUCT('_0', 1) AS OBJECT)",
-            },
-        )
-        self.validate_all(
             "cast(x as date format 'MM/DD/YYYY')",
             write={
                 "bigquery": "PARSE_DATE('%m/%d/%Y', x)",
@@ -2025,15 +2018,30 @@ OPTIONS (
         )
 
     def test_inline_constructor(self):
-        self.validate_identity(
-            """SELECT STRUCT<ARRAY<STRING>>(["2023-01-17"])""",
-            """SELECT CAST(STRUCT(['2023-01-17']) AS STRUCT<ARRAY<STRING>>)""",
-        )
-        self.validate_identity(
-            """SELECT STRUCT<STRING>((SELECT 'foo')).*""",
-            """SELECT CAST(STRUCT((SELECT 'foo')) AS STRUCT<STRING>).*""",
-        )
+        self.validate_identity("SELECT STRUCT<STRING>((SELECT 'foo')).*")
+        self.validate_identity("SELECT CAST(STRUCT(1 AS col) AS STRUCT<test INT64>)")
 
+        self.validate_all(
+            "SELECT CAST(STRUCT(1) AS STRUCT<INT64>)",
+            write={
+                "bigquery": "SELECT STRUCT<INT64>(1)",
+                "snowflake": "SELECT CAST(OBJECT_CONSTRUCT('_0', 1) AS OBJECT)",
+            },
+        )
+        self.validate_all(
+            "SELECT STRUCT<x INT64, y STRING>(1, 'bar')",
+            write={
+                "bigquery": "SELECT STRUCT<x INT64, y STRING>(1, 'bar')",
+                "duckdb": "SELECT CAST(ROW(1, 'bar') AS STRUCT(x BIGINT, y TEXT))",
+            },
+        )
+        self.validate_all(
+            "SELECT STRUCT<foo ARRAY<STRING>>(['2023-01-17'])",
+            write={
+                "bigquery": "SELECT STRUCT<foo ARRAY<STRING>>(['2023-01-17'])",
+                "duckdb": "SELECT CAST(ROW(['2023-01-17']) AS STRUCT(foo TEXT[]))",
+            },
+        )
         self.validate_all(
             "SELECT ARRAY<FLOAT64>[1, 2, 3]",
             write={
@@ -2044,7 +2052,7 @@ OPTIONS (
         self.validate_all(
             "CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)",
             write={
-                "bigquery": "CAST(CAST(STRUCT(1) AS STRUCT<a INT64>) AS STRUCT<a INT64>)",
+                "bigquery": "CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)",
                 "duckdb": "CAST(CAST(ROW(1) AS STRUCT(a BIGINT)) AS STRUCT(a BIGINT))",
             },
         )
@@ -2065,7 +2073,7 @@ OPTIONS (
         self.validate_all(
             "SELECT STRUCT<a INT64, b STRUCT<c STRING>>(1, STRUCT('c_str'))",
             write={
-                "bigquery": "SELECT CAST(STRUCT(1, STRUCT('c_str')) AS STRUCT<a INT64, b STRUCT<c STRING>>)",
+                "bigquery": "SELECT STRUCT<a INT64, b STRUCT<c STRING>>(1, STRUCT('c_str'))",
                 "duckdb": "SELECT CAST(ROW(1, ROW('c_str')) AS STRUCT(a BIGINT, b STRUCT(c TEXT)))",
             },
         )

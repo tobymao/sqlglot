@@ -1236,4 +1236,10 @@ class BigQuery(Dialect):
             if isinstance(this, exp.Array):
                 return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
+            if isinstance(this, exp.Struct) and not this.find(exp.PropertyEQ):
+                # We can inline the cast into a typed STRUCT if the fields aren't named, e.g:
+                # Fine: CAST(STRUCT(1) AS STRUCT<INT64>) --> STRUCT<INT64>(1)
+                # Not fine: CAST(STRUCT(1 AS foo) AS STRUCT<bar INT64>) -/-> STRUCT<bar INT64>(1 AS foo)
+                return f"{self.sql(expression, 'to')}({self.expressions(this)})"
+
             return super().cast_sql(expression, safe_prefix=safe_prefix)

@@ -64,6 +64,7 @@ class Dialects(str, Enum):
     DRILL = "drill"
     DRUID = "druid"
     DUCKDB = "duckdb"
+    DUNE = "dune"
     HIVE = "hive"
     MATERIALIZE = "materialize"
     MYSQL = "mysql"

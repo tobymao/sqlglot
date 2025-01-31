@@ -346,6 +346,15 @@ def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -
     return sql
 
 
+def _export_sql(self: BigQuery.Generator, expression: exp.Export) -> str:
+    return (
+        f"EXPORT DATA "
+        f"{f'WITH CONNECTION {self.sql(expression, 'with_connection')} ' if expression.args.get('with_connection') else ''}"
+        f"{f'{self.sql(expression, "options")} ' if expression.args.get("options") else ''}"
+        f"{self.sql(expression, 'this')}"
+    )
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -832,22 +841,9 @@ class BigQuery(Dialect):
             return expr
 
         def _parse_export_data(self) -> exp.Export:
-            """Parse BigQuery EXPORT DATA statement.
-            
-            Example:
-            EXPORT DATA 
-            [WITH CONNECTION `project.location.connection`]
-            OPTIONS(
-              uri='gs://bucket/folder/*.csv',
-              format='CSV',
-              overwrite=true,
-              header=true,
-              field_delimiter=','
-            )
-            [AS] SELECT * FROM dataset.table
-            """
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements
             if not self._match_text_seq("DATA"):
-                return self._parse_as_command(self._prev)
+                self.raise_error("Expected 'DATA' after 'EXPORT'")
 
             with_connection = None
             options = None
@@ -1007,12 +1003,7 @@ class BigQuery(Dialect):
             exp.Values: _derived_table_values_to_unnest,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.SafeDivide: rename_func("SAFE_DIVIDE"),
-            exp.Export: lambda self, e: (
-                f"EXPORT DATA "
-                f"{f'WITH CONNECTION {self.sql(e, 'with_connection')} ' if e.args.get('with_connection') else ''}"
-                f"OPTIONS({self.sql(e, 'options')}) "
-                f"{self.sql(e, 'this')}"
-            ),
+            exp.Export: _export_sql,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

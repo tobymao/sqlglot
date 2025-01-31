@@ -1662,7 +1662,7 @@ WHERE
         self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
 
         self.validate_identity(
-            "EXPORT DATA OPTIONS( uri='gs://path*.csv.gz', format='CSV' ) SELECT * FROM all_rows"
+            "EXPORT DATA OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') SELECT * FROM all_rows"
         )
 
     def test_errors(self):

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import importlib
 import logging
 import typing as t
 from enum import Enum, auto
 from functools import reduce
 
 from sqlglot import exp
+from sqlglot.dialects import DIALECT_MODULE_NAMES
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
 from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses, to_bool
@@ -119,8 +121,6 @@ class _Dialect(type):
 
     def __getattr__(cls, name):
         if name == "classes":
-            from sqlglot.dialects import DIALECT_MODULE_NAMES
-
             # We want `<DialectSubclass>.classes` to return *all* available dialects
             if len(DIALECT_MODULE_NAMES) != len(cls._classes):
                 for key in DIALECT_MODULE_NAMES:
@@ -133,9 +133,6 @@ class _Dialect(type):
     @classmethod
     def _try_load(cls, key: str | Dialects) -> None:
         try:
-            import importlib
-            from sqlglot.dialects import DIALECT_MODULE_NAMES
-
             if isinstance(key, Dialects):
                 key = key.value
 
@@ -827,7 +824,6 @@ class Dialect(metaclass=_Dialect):
             result = cls.get(dialect_name.strip())
             if not result:
                 from difflib import get_close_matches
-                from sqlglot.dialects import DIALECT_MODULE_NAMES
 
                 close_matches = get_close_matches(dialect_name, list(DIALECT_MODULE_NAMES), n=1)
 

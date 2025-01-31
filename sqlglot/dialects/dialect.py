@@ -119,16 +119,13 @@ class _Dialect(type):
     def __hash__(cls) -> int:
         return hash(cls.__name__.lower())
 
-    def __getattr__(cls, name):
-        if name == "classes":
-            # We want `<DialectSubclass>.classes` to return *all* available dialects
-            if len(DIALECT_MODULE_NAMES) != len(cls._classes):
-                for key in DIALECT_MODULE_NAMES:
-                    cls._try_load(key)
+    @property
+    def classes(cls):
+        if len(DIALECT_MODULE_NAMES) != len(cls._classes):
+            for key in DIALECT_MODULE_NAMES:
+                cls._try_load(key)
 
-            return cls._classes
-
-        return super().__getattr__(name)
+        return cls._classes
 
     @classmethod
     def _try_load(cls, key: str | Dialects) -> None:

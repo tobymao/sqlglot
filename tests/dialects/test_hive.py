@@ -336,8 +336,8 @@ class TestHive(Validator):
                 "bigquery": "FORMAT_DATE('%Y-%m-%d %H:%M:%S', CAST('2020-01-01' AS DATETIME))",
                 "duckdb": "STRFTIME(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d %T')",
-                "hive": "DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss')",
-                "spark": "DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss')",
+                "hive": "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+                "spark": "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
             },
         )
         self.validate_all(
@@ -758,7 +758,7 @@ class TestHive(Validator):
         self.validate_all(
             "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(b, 'yyyy'), GROUPING SETS ((a, DATE_FORMAT(b, 'yyyy')), a)",
             write={
-                "hive": "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy'), GROUPING SETS ((a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy')), a)",
+                "hive": "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(b, 'yyyy'), GROUPING SETS ((a, DATE_FORMAT(b, 'yyyy')), a)",
             },
         )
         self.validate_all(

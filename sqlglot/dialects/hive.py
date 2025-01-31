@@ -572,7 +572,6 @@ class Hive(Dialect):
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimestampTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
-            exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.ToBase64: rename_func("BASE64"),
             exp.TsOrDiToDi: lambda self,
@@ -718,8 +717,15 @@ class Hive(Dialect):
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"
 
-        def exists_sql(self, expression: exp.Exists):
+        def exists_sql(self, expression: exp.Exists) -> str:
             if expression.expression:
                 return self.function_fallback_sql(expression)
 
             return super().exists_sql(expression)
+
+        def timetostr_sql(self, expression: exp.TimeToStr) -> str:
+            this = expression.this
+            if isinstance(this, exp.TimeStrToTime):
+                this = this.this
+
+            return self.func("DATE_FORMAT", this, self.format_time(expression))

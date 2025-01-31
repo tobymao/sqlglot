@@ -342,7 +342,7 @@ TBLPROPERTIES (
             "SELECT DATE_FORMAT(DATE '2020-01-01', 'EEEE') AS weekday",
             write={
                 "presto": "SELECT DATE_FORMAT(CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP), '%W') AS weekday",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP), 'EEEE') AS weekday",
+                "spark": "SELECT DATE_FORMAT(CAST('2020-01-01' AS DATE), 'EEEE') AS weekday",
             },
         )
         self.validate_all(

@@ -83,11 +83,20 @@ class TestDialect(Validator):
     maxDiff = None
 
     def test_enum(self):
+        dialect_by_key = Dialect.classes
         for dialect in Dialects:
             self.assertIsNotNone(Dialect[dialect])
             self.assertIsNotNone(Dialect.get(dialect))
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
+            self.assertIn(dialect, dialect_by_key)
+
+    def test_lazy_load(self):
+        import subprocess
+
+        code = "import sqlglot; assert len(sqlglot.Dialect._classes) == 1; print('Success')"
+        result = subprocess.run(["python", "-c", code], capture_output=True, text=True)
+        assert "Success" in result.stdout
 
     def test_get_or_raise(self):
         self.assertIsInstance(Dialect.get_or_raise(Hive), Hive)

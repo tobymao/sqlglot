@@ -474,6 +474,7 @@ class BigQuery(Dialect):
             "DECLARE": TokenType.COMMAND,
             "ELSEIF": TokenType.COMMAND,
             "EXCEPTION": TokenType.COMMAND,
+            "EXPORT": TokenType.EXPORT,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "MODEL": TokenType.MODEL,
@@ -596,6 +597,7 @@ class BigQuery(Dialect):
             TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
             TokenType.END: lambda self: self._parse_as_command(self._prev),
             TokenType.FOR: lambda self: self._parse_for_in(),
+            TokenType.EXPORT: lambda self: self._parse_export_data(),
         }
 
         BRACKET_OFFSETS = {
@@ -829,6 +831,49 @@ class BigQuery(Dialect):
 
             return expr
 
+        def _parse_export_data(self) -> exp.Export:
+            """Parse BigQuery EXPORT DATA statement.
+            
+            Example:
+            EXPORT DATA 
+            [WITH CONNECTION `project.location.connection`]
+            OPTIONS(
+              uri='gs://bucket/folder/*.csv',
+              format='CSV',
+              overwrite=true,
+              header=true,
+              field_delimiter=','
+            )
+            [AS] SELECT * FROM dataset.table
+            """
+            if not self._match_text_seq("DATA"):
+                return self._parse_as_command(self._prev)
+
+            with_connection = None
+            options = None
+
+            if self._match_text_seq("WITH", "CONNECTION"):
+                with_connection = self._parse_id_var()
+
+            if self._match_text_seq("OPTIONS"):
+                self._match(TokenType.L_PAREN)
+                options = self._parse_properties()
+                self._match(TokenType.R_PAREN)
+
+            self._match_text_seq("AS")
+
+            # Parse the full SELECT statement
+            query = self._parse_statement()
+            if not isinstance(query, exp.Select):
+                self.raise_error("Expected SELECT statement in EXPORT DATA")
+
+            return self.expression(
+                exp.Export,
+                this=query,
+                with_connection=with_connection,
+                options=options,
+            )
+
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
@@ -962,6 +1007,12 @@ class BigQuery(Dialect):
             exp.Values: _derived_table_values_to_unnest,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.SafeDivide: rename_func("SAFE_DIVIDE"),
+            exp.Export: lambda self, e: (
+                f"EXPORT DATA "
+                f"{f'WITH CONNECTION {self.sql(e, 'with_connection')} ' if e.args.get('with_connection') else ''}"
+                f"OPTIONS({self.sql(e, 'options')}) "
+                f"{self.sql(e, 'this')}"
+            ),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

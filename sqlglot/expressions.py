@@ -8650,3 +8650,18 @@ CONSTANTS = (
     Boolean,
     Null,
 )
+
+class Export(Expression):
+    """
+    Represents a BigQuery EXPORT DATA statement.
+
+    Examples:
+        EXPORT DATA OPTIONS(uri='gs://bucket/*.csv') SELECT * FROM table
+        EXPORT DATA WITH CONNECTION `project.connection` OPTIONS(...) SELECT * FROM table
+    """
+
+    arg_types = {
+        "this": True,  # The SELECT query to export
+        "with_connection": False,  # Optional connection identifier 
+        "options": False,  # Export options like uri, format, etc.
+    }

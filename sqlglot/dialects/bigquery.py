@@ -346,15 +346,6 @@ def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -
     return sql
 
 
-def _export_sql(self: BigQuery.Generator, expression: exp.Export) -> str:
-    return (
-        f"EXPORT DATA "
-        f"{f'WITH CONNECTION {self.sql(expression, 'with_connection')} ' if expression.args.get('with_connection') else ''}"
-        f"{f'{self.sql(expression, "options")} ' if expression.args.get("options") else ''}"
-        f"{self.sql(expression, 'this')}"
-    )
-
-
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -499,6 +490,11 @@ class BigQuery(Dialect):
         PREFIXED_PIVOT_COLUMNS = True
         LOG_DEFAULTS_TO_LN = True
         SUPPORTS_IMPLICIT_UNNEST = True
+
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.EXPORT,
+        }
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -1003,7 +999,6 @@ class BigQuery(Dialect):
             exp.Values: _derived_table_values_to_unnest,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.SafeDivide: rename_func("SAFE_DIVIDE"),
-            exp.Export: _export_sql,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -1279,3 +1274,16 @@ class BigQuery(Dialect):
                 return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def export_sql(self, expression: exp.Export) -> str:
+            parts = ["EXPORT DATA"]
+
+            if with_connection := expression.args.get("with_connection"):
+                parts.append(f"WITH CONNECTION {self.sql(with_connection)}")
+
+            if options := expression.args.get("options"):
+                parts.append(self.sql(options))
+
+            parts.append(self.sql(expression, "this"))
+
+            return " ".join(parts)

@@ -8654,7 +8654,7 @@ CONSTANTS = (
 
 class Export(Expression):
     arg_types = {
-        "this": True,  # The SELECT query to export
-        "with_connection": False,  # Optional connection identifier
-        "options": False,  # Export options like uri, format, etc.
+        "this": True,
+        "with_connection": False,
+        "options": False,
     }

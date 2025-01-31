@@ -845,12 +845,14 @@ class BigQuery(Dialect):
             options = None
 
             if self._match_text_seq("WITH", "CONNECTION"):
-                with_connection = self._parse_id_var()
+                with_connection = self._parse_table_parts()
 
             if self._match_text_seq("OPTIONS"):
                 self._match(TokenType.L_PAREN)
                 options = self._parse_properties()
                 self._match(TokenType.R_PAREN)
+            else:
+                self.raise_error("Expected 'OPTIONS' after 'EXPORT DATA'")
 
             self._match_text_seq("AS")
 
@@ -1276,16 +1278,9 @@ class BigQuery(Dialect):
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def export_sql(self, expression: exp.Export) -> str:
-            parts = ["EXPORT DATA"]
-
-            with_connection = expression.args.get("with_connection")
-            if with_connection:
-                parts.append(f"WITH CONNECTION {self.sql(with_connection)}")
-
-            options = expression.args.get("options")
-            if options:
-                parts.append(self.sql(options))
-
-            parts.append(self.sql(expression, "this"))
-
-            return " ".join(parts)
+            this = self.sql(expression, "this")
+            with_connection = self.sql(expression, "with_connection")
+            with_connection = f"WITH CONNECTION {with_connection} " if with_connection else ""
+            options = self.sql(expression, "options")
+            options = f"{options} " if options else ""
+            return f"EXPORT DATA {with_connection}{options}{this}"

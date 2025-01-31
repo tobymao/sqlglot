@@ -1278,10 +1278,12 @@ class BigQuery(Dialect):
         def export_sql(self, expression: exp.Export) -> str:
             parts = ["EXPORT DATA"]
 
-            if with_connection := expression.args.get("with_connection"):
+            with_connection = expression.args.get("with_connection")
+            if with_connection:
                 parts.append(f"WITH CONNECTION {self.sql(with_connection)}")
 
-            if options := expression.args.get("options"):
+            options = expression.args.get("options")
+            if options:
                 parts.append(self.sql(options))
 
             parts.append(self.sql(expression, "this"))

@@ -93,6 +93,11 @@ SELECT x.a AS a, x.b AS b FROM main.x AS x;
 WITH y AS (SELECT a, b FROM x) SELECT a, b FROM y AS z;
 SELECT x.a AS a, x.b AS b FROM x AS x;
 
+# title: CTE with conflicting table name
+# execute: false
+WITH CTE AS (SELECT a, b FROM x LEFT JOIN y as z on x.a <= z.b) SELECT a, b FROM CTE LEFT JOIN z as y;
+SELECT x.a AS a, b AS b FROM x AS x LEFT JOIN y AS z_2 ON x.a <= z_2.b LEFT JOIN z AS y;
+
 # title: Nested CTE
 WITH x2 AS (SELECT a FROM main.x), x3 AS (SELECT a FROM x2) SELECT a FROM x3;
 SELECT x.a AS a FROM main.x AS x;

@@ -227,7 +227,11 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
     """
     inner_taken = set(inner_scope.selected_sources)
 
-    outer_taken = set(outer_scope.selected_sources) | set(node.name for node, _ in outer_scope.selected_sources.values() if isinstance(node, exp.Table))
+    outer_taken = set(outer_scope.selected_sources) | set(
+        node.name
+        for node, _ in outer_scope.selected_sources.values()
+        if isinstance(node, exp.Table)
+    )
 
     conflicts = outer_taken.intersection(inner_taken)
     conflicts -= {alias}

@@ -845,7 +845,19 @@ class BigQuery(Dialect):
             options = None
 
             if self._match_text_seq("WITH", "CONNECTION"):
-                with_connection = self._parse_table_parts()
+                parts = []
+                while True:
+                    part = self._parse_var()
+                    if not part:
+                        break
+                    parts.append(part.name)
+                    if not self._match(TokenType.DOT):
+                        break
+
+                if not parts:
+                    self.raise_error("Expected connection name after WITH CONNECTION")
+
+                with_connection = exp.Identifier(this=".".join(parts))
 
             if self._match_text_seq("OPTIONS"):
                 self._match(TokenType.L_PAREN)

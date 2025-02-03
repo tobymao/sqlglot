@@ -1005,6 +1005,10 @@ class Snowflake(Dialect):
             exp.DataType.Type.STRUCT: "OBJECT",
         }
 
+        TOKEN_MAPPING = {
+            TokenType.AUTO_INCREMENT: "AUTOINCREMENT",
+        }
+
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,

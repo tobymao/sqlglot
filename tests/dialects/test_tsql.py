@@ -453,6 +453,8 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_identity("SELECT 'BEGIN'")
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

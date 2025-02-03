@@ -558,8 +558,6 @@ class Parser(metaclass=_Parser):
     }
     ID_VAR_TOKENS.remove(TokenType.UNION)
 
-    INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.END}
-
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.ANTI,
         TokenType.APPLY,

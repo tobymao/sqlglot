@@ -2067,7 +2067,7 @@
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">simplify</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span>,</span><span class="param">	<span class="n">constant_propagation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
+        <span class="name">simplify</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span>,</span><span class="param">	<span class="n">constant_propagation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="../dialects.html#Dialect">sqlglot.dialects.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="../dialects.html#Dialect">sqlglot.dialects.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
                 <label class="view-source-button" for="simplify-view-source"><span>View Source</span></label>
 
@@ -3223,7 +3223,7 @@ prefix are statically known.</p>
                 </section>
                 <section id="DATETRUNC_BINARY_COMPARISONS">
                     <div class="attr variable">
-            <span class="name">DATETRUNC_BINARY_COMPARISONS</span><span class="annotation">: Dict[Type[<a href="../expressions.html#Expression">sqlglot.expressions.Expression</a>], Callable[[<a href="../expressions.html#Expression">sqlglot.expressions.Expression</a>, datetime.date, str, <a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a>, <a href="../expressions.html#DataType">sqlglot.expressions.DataType</a>], Optional[<a href="../expressions.html#Expression">sqlglot.expressions.Expression</a>]]]</span>        =
+            <span class="name">DATETRUNC_BINARY_COMPARISONS</span><span class="annotation">: Dict[Type[<a href="../expressions.html#Expression">sqlglot.expressions.Expression</a>], Callable[[<a href="../expressions.html#Expression">sqlglot.expressions.Expression</a>, datetime.date, str, <a href="../dialects.html#Dialect">sqlglot.dialects.Dialect</a>, <a href="../expressions.html#DataType">sqlglot.expressions.DataType</a>], Optional[<a href="../expressions.html#Expression">sqlglot.expressions.Expression</a>]]]</span>        =
 <input id="DATETRUNC_BINARY_COMPARISONS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
             <label class="view-value-button pdoc-button" for="DATETRUNC_BINARY_COMPARISONS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#LT">sqlglot.expressions.LT</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#GT">sqlglot.expressions.GT</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LTE">sqlglot.expressions.LTE</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#GTE">sqlglot.expressions.GTE</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EQ">sqlglot.expressions.EQ</a>&#39;&gt;: &lt;function _datetrunc_eq&gt;, &lt;class &#39;<a href="../expressions.html#NEQ">sqlglot.expressions.NEQ</a>&#39;&gt;: &lt;function _datetrunc_neq&gt;}</span>
 
@@ -3238,7 +3238,7 @@ prefix are statically known.</p>
                     <div class="attr variable">
             <span class="name">DATETRUNC_COMPARISONS</span>        =
 <input id="DATETRUNC_COMPARISONS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="DATETRUNC_COMPARISONS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#GTE">sqlglot.expressions.GTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#EQ">sqlglot.expressions.EQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LTE">sqlglot.expressions.LTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LT">sqlglot.expressions.LT</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GT">sqlglot.expressions.GT</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#In">sqlglot.expressions.In</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#NEQ">sqlglot.expressions.NEQ</a>&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="DATETRUNC_COMPARISONS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#In">sqlglot.expressions.In</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LT">sqlglot.expressions.LT</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#NEQ">sqlglot.expressions.NEQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#EQ">sqlglot.expressions.EQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GTE">sqlglot.expressions.GTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LTE">sqlglot.expressions.LTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GT">sqlglot.expressions.GT</a>&#39;&gt;}</span>
 
         
     </div>
@@ -3322,7 +3322,7 @@ prefix are statically known.</p>
                 <section id="JOINS">
                     <div class="attr variable">
             <span class="name">JOINS</span>        =
-<span class="default_value">{(&#39;RIGHT&#39;, &#39;&#39;), (&#39;RIGHT&#39;, &#39;OUTER&#39;), (&#39;&#39;, &#39;INNER&#39;), (&#39;&#39;, &#39;&#39;)}</span>
+<span class="default_value">{(&#39;&#39;, &#39;&#39;), (&#39;&#39;, &#39;INNER&#39;), (&#39;RIGHT&#39;, &#39;&#39;), (&#39;RIGHT&#39;, &#39;OUTER&#39;)}</span>
 
         
     </div>
@@ -3736,7 +3736,7 @@ prefix are statically known.</p>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">date_floor</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">d</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>,</span><span class="param">	<span class="n">unit</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span></span><span class="return-annotation">) -> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>:</span></span>
+        <span class="name">date_floor</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">d</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>,</span><span class="param">	<span class="n">unit</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n"><a href="../dialects.html#Dialect">sqlglot.dialects.Dialect</a></span></span><span class="return-annotation">) -> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>:</span></span>
 
                 <label class="view-source-button" for="date_floor-view-source"><span>View Source</span></label>
 
@@ -3774,7 +3774,7 @@ prefix are statically known.</p>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">date_ceil</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">d</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>,</span><span class="param">	<span class="n">unit</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n"><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span></span><span class="return-annotation">) -> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>:</span></span>
+        <span class="name">date_ceil</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">d</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>,</span><span class="param">	<span class="n">unit</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n"><a href="../dialects.html#Dialect">sqlglot.dialects.Dialect</a></span></span><span class="return-annotation">) -> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span>:</span></span>
 
                 <label class="view-source-button" for="date_ceil-view-source"><span>View Source</span></label>
 

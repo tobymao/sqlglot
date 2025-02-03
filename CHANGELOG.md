@@ -1,6 +1,57 @@
 Changelog
 =========
 
+## [v26.4.0] - 2025-02-03
+### :boom: BREAKING CHANGES
+- due to [`48145a3`](https://github.com/tobymao/sqlglot/commit/48145a399b076bd3189af8ed8187ca45767d018d) - CurrentSchema for SQLite, MySQL, Postgres, and TSQL *(PR [#4658](https://github.com/tobymao/sqlglot/pull/4658) by [@pruzko](https://github.com/pruzko))*:
+
+  CurrentSchema for SQLite, MySQL, Postgres, and TSQL (#4658)
+
+- due to [`1a91913`](https://github.com/tobymao/sqlglot/commit/1a91913eea97e2008a0fe4282d60d7c693a79fc3) - Parse empty bracketed ARRAY with cast *(PR [#4679](https://github.com/tobymao/sqlglot/pull/4679) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Parse empty bracketed ARRAY with cast (#4679)
+
+- due to [`f6482fb`](https://github.com/tobymao/sqlglot/commit/f6482fbb782b13a0f180f67b8b5eb3149eba0251) - transpile postgres DATE_BIN function to duckdb TIME_BUCKET *(PR [#4681](https://github.com/tobymao/sqlglot/pull/4681) by [@dor-bernstein](https://github.com/dor-bernstein))*:
+
+  transpile postgres DATE_BIN function to duckdb TIME_BUCKET (#4681)
+
+- due to [`ade8b82`](https://github.com/tobymao/sqlglot/commit/ade8b826541ecfb00e218d16d995d34adab0335a) - load dialects lazily *(PR [#4687](https://github.com/tobymao/sqlglot/pull/4687) by [@georgesittas](https://github.com/georgesittas))*:
+
+  load dialects lazily (#4687)
+
+
+### :sparkles: New Features
+- [`48145a3`](https://github.com/tobymao/sqlglot/commit/48145a399b076bd3189af8ed8187ca45767d018d) - CurrentSchema for SQLite, MySQL, Postgres, and TSQL *(PR [#4658](https://github.com/tobymao/sqlglot/pull/4658) by [@pruzko](https://github.com/pruzko))*
+  - :arrow_lower_right: *addresses issue [#4655](https://github.com/tobymao/sqlglot/issues/4655) opened by [@pruzko](https://github.com/pruzko)*
+- [`f6482fb`](https://github.com/tobymao/sqlglot/commit/f6482fbb782b13a0f180f67b8b5eb3149eba0251) - transpile postgres DATE_BIN function to duckdb TIME_BUCKET *(PR [#4681](https://github.com/tobymao/sqlglot/pull/4681) by [@dor-bernstein](https://github.com/dor-bernstein))*
+- [`b2a6041`](https://github.com/tobymao/sqlglot/commit/b2a6041ace9a97fab947364b22d5ddf0e842e278) - **oracle**: add support for CAST(... DEFAULT <value> ON CONVERSION FAILURE) *(PR [#4683](https://github.com/tobymao/sqlglot/pull/4683) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4682](https://github.com/tobymao/sqlglot/issues/4682) opened by [@jaredschwartz-ofs](https://github.com/jaredschwartz-ofs)*
+- [`1ad656e`](https://github.com/tobymao/sqlglot/commit/1ad656e4572bf7b3d38805e92f7202f4dcc4f9f8) - enable parsing of (u)int128,256 types for all dialects *(PR [#4685](https://github.com/tobymao/sqlglot/pull/4685) by [@georgesittas](https://github.com/georgesittas))*
+- [`6f5fb04`](https://github.com/tobymao/sqlglot/commit/6f5fb0423e970920fa5abda3f7e4356e2fb441e1) - implement Dune dialect *(PR [#4686](https://github.com/tobymao/sqlglot/pull/4686) by [@georgesittas](https://github.com/georgesittas))*
+- [`9ea15c7`](https://github.com/tobymao/sqlglot/commit/9ea15c732d76e0d6a393e553a42e6b9ed30ef286) - **bigquery**: add EXPORT DATA statement support *(PR [#4688](https://github.com/tobymao/sqlglot/pull/4688) by [@ArnoldHueteG](https://github.com/ArnoldHueteG))*
+
+### :bug: Bug Fixes
+- [`cd53f7e`](https://github.com/tobymao/sqlglot/commit/cd53f7ec03e99129b430c435d23907ef7d0e0c34) - **clickhouse**: Generate bracket notation for exp.VarMap *(PR [#4664](https://github.com/tobymao/sqlglot/pull/4664) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4662](https://github.com/tobymao/sqlglot/issues/4662) opened by [@martijnthe](https://github.com/martijnthe)*
+- [`0920f77`](https://github.com/tobymao/sqlglot/commit/0920f778b2d94d94f3c8cccf280a87a6a14b12f7) - use utf-8 encoding in open calls, fixes [#4676](https://github.com/tobymao/sqlglot/pull/4676) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`e71c4c0`](https://github.com/tobymao/sqlglot/commit/e71c4c0b60811f26828d7719fe941dfbc3693be1) - **trino**: Add more JSON_QUERY options *(PR [#4673](https://github.com/tobymao/sqlglot/pull/4673) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4672](https://github.com/tobymao/sqlglot/issues/4672) opened by [@JustGui](https://github.com/JustGui)*
+- [`1a91913`](https://github.com/tobymao/sqlglot/commit/1a91913eea97e2008a0fe4282d60d7c693a79fc3) - **postgres**: Parse empty bracketed ARRAY with cast *(PR [#4679](https://github.com/tobymao/sqlglot/pull/4679) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4674](https://github.com/tobymao/sqlglot/issues/4674) opened by [@dor-bernstein](https://github.com/dor-bernstein)*
+- [`c45f174`](https://github.com/tobymao/sqlglot/commit/c45f17455477790f53ef7e347a7e85cfdb82c4ab) - **bigquery**: Inline type-annotated ARRAY literals *(PR [#4671](https://github.com/tobymao/sqlglot/pull/4671) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4670](https://github.com/tobymao/sqlglot/issues/4670) opened by [@sean-rose](https://github.com/sean-rose)*
+- [`df75edd`](https://github.com/tobymao/sqlglot/commit/df75eddf698af9fe36e7121a63cc2b9fdd468363) - **duckdb**: support postgres JSON/JSONB_OBJECT_AGG to duckdb JSON_GROUP_OBJECT *(PR [#4677](https://github.com/tobymao/sqlglot/pull/4677) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4667](https://github.com/tobymao/sqlglot/issues/4667) opened by [@dor-bernstein](https://github.com/dor-bernstein)*
+- [`69680c1`](https://github.com/tobymao/sqlglot/commit/69680c146f67175ab6e4c4d9898b0991033a4188) - **tsql**: Transpile exp.Fetch limits *(PR [#4680](https://github.com/tobymao/sqlglot/pull/4680) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4665](https://github.com/tobymao/sqlglot/issues/4665) opened by [@WillAyd](https://github.com/WillAyd)*
+- [`b3b0962`](https://github.com/tobymao/sqlglot/commit/b3b09624cdefb1baa46ddbb888b24648f330a963) - **hive**: Simplify DATE_FORMAT roundtrip *(PR [#4689](https://github.com/tobymao/sqlglot/pull/4689) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`ade8b82`](https://github.com/tobymao/sqlglot/commit/ade8b826541ecfb00e218d16d995d34adab0335a) - load dialects lazily *(PR [#4687](https://github.com/tobymao/sqlglot/pull/4687) by [@georgesittas](https://github.com/georgesittas))*
+- [`47c0236`](https://github.com/tobymao/sqlglot/commit/47c023650dad8b0091248c608a211018b841042a) - **bigquery**: Refactor EXPORT DATA statement *(PR [#4693](https://github.com/tobymao/sqlglot/pull/4693) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`1904b76`](https://github.com/tobymao/sqlglot/commit/1904b7605a7308608ac64e5cfb3c8424d3e55c17) - **tsql**: remove BEGIN from identifiers *(PR [#4695](https://github.com/tobymao/sqlglot/pull/4695) by [@geooo109](https://github.com/geooo109))*
+- [`a688b6c`](https://github.com/tobymao/sqlglot/commit/a688b6cff01b9cd828c0467b0aa09fba728d751a) - **snowflake**: support correct AUTO INCREMENT transpilation *(PR [#4696](https://github.com/tobymao/sqlglot/pull/4696) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4694](https://github.com/tobymao/sqlglot/issues/4694) opened by [@sfc-gh-tdwojak](https://github.com/sfc-gh-tdwojak)*
+
+
 ## [v26.3.9] - 2025-01-27
 ### :bug: Bug Fixes
 - [`b091f2f`](https://github.com/tobymao/sqlglot/commit/b091f2f4e4779fb9a4187d1665ca40e1648d9ccb) - **trino**: Correctly render exp.LocationProperty in CREATE TABLE / CREATE SCHEMA *(PR [#4659](https://github.com/tobymao/sqlglot/pull/4659) by [@erindru](https://github.com/erindru))*
@@ -5782,3 +5833,4 @@ Changelog
 [v26.3.7]: https://github.com/tobymao/sqlglot/compare/v26.3.6...v26.3.7
 [v26.3.8]: https://github.com/tobymao/sqlglot/compare/v26.3.7...v26.3.8
 [v26.3.9]: https://github.com/tobymao/sqlglot/compare/v26.3.8...v26.3.9
+[v26.4.0]: https://github.com/tobymao/sqlglot/compare/v26.3.9...v26.4.0

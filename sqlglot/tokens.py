@@ -414,6 +414,7 @@ class TokenType(AutoName):
     SOURCE = auto()
     ANALYZE = auto()
     NAMESPACE = auto()
+    EXPORT = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)

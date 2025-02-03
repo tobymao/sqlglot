@@ -8650,3 +8650,11 @@ CONSTANTS = (
     Boolean,
     Null,
 )
+
+
+class Export(Expression):
+    arg_types = {
+        "this": True,
+        "with_connection": False,
+        "options": False,
+    }

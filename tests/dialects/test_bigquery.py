@@ -1661,6 +1661,13 @@ WHERE
         )
         self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
 
+        self.validate_identity(
+            "EXPORT DATA OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') SELECT * FROM all_rows"
+        )
+        self.validate_identity(
+            "EXPORT DATA WITH CONNECTION myproject.us.myconnection OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') SELECT * FROM all_rows"
+        )
+
     def test_errors(self):
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")

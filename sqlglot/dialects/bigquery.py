@@ -474,6 +474,7 @@ class BigQuery(Dialect):
             "DECLARE": TokenType.COMMAND,
             "ELSEIF": TokenType.COMMAND,
             "EXCEPTION": TokenType.COMMAND,
+            "EXPORT": TokenType.EXPORT,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "MODEL": TokenType.MODEL,
@@ -489,6 +490,11 @@ class BigQuery(Dialect):
         PREFIXED_PIVOT_COLUMNS = True
         LOG_DEFAULTS_TO_LN = True
         SUPPORTS_IMPLICIT_UNNEST = True
+
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.EXPORT,
+        }
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -596,6 +602,7 @@ class BigQuery(Dialect):
             TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
             TokenType.END: lambda self: self._parse_as_command(self._prev),
             TokenType.FOR: lambda self: self._parse_for_in(),
+            TokenType.EXPORT: lambda self: self._parse_export_data(),
         }
 
         BRACKET_OFFSETS = {
@@ -828,6 +835,50 @@ class BigQuery(Dialect):
                     expr.set(arg.this.name, arg)
 
             return expr
+
+        def _parse_export_data(self) -> exp.Export:
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements
+            if not self._match_text_seq("DATA"):
+                self.raise_error("Expected 'DATA' after 'EXPORT'")
+
+            with_connection = None
+            options = None
+
+            if self._match_text_seq("WITH", "CONNECTION"):
+                parts = []
+                while True:
+                    part = self._parse_var()
+                    if not part:
+                        break
+                    parts.append(part.name)
+                    if not self._match(TokenType.DOT):
+                        break
+
+                if not parts:
+                    self.raise_error("Expected connection name after WITH CONNECTION")
+
+                with_connection = exp.Identifier(this=".".join(parts))
+
+            if self._match_text_seq("OPTIONS"):
+                self._match(TokenType.L_PAREN)
+                options = self._parse_properties()
+                self._match(TokenType.R_PAREN)
+            else:
+                self.raise_error("Expected 'OPTIONS' after 'EXPORT DATA'")
+
+            self._match_text_seq("AS")
+
+            # Parse the full SELECT statement
+            query = self._parse_statement()
+            if not isinstance(query, exp.Select):
+                self.raise_error("Expected SELECT statement in EXPORT DATA")
+
+            return self.expression(
+                exp.Export,
+                this=query,
+                with_connection=with_connection,
+                options=options,
+            )
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
@@ -1237,3 +1288,11 @@ class BigQuery(Dialect):
                 return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def export_sql(self, expression: exp.Export) -> str:
+            this = self.sql(expression, "this")
+            with_connection = self.sql(expression, "with_connection")
+            with_connection = f"WITH CONNECTION {with_connection} " if with_connection else ""
+            options = self.sql(expression, "options")
+            options = f"{options} " if options else ""
+            return f"EXPORT DATA {with_connection}{options}{this}"

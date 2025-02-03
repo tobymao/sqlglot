@@ -451,6 +451,9 @@ class Generator(metaclass=_Generator):
     # The function name of the exp.ArraySize expression
     ARRAY_SIZE_NAME: str = "ARRAY_LENGTH"
 
+    # The syntax to use when altering the type of a column
+    ALTER_SET_TYPE = "SET DATA TYPE"
+
     # Whether exp.ArraySize should generate the dimension arg too (valid for Postgres & DuckDB)
     # None -> Doesn't support it at all
     # False (DuckDB) -> Has backwards-compatible support, but preferably generated without
@@ -3252,7 +3255,7 @@ class Generator(metaclass=_Generator):
             collate = f" COLLATE {collate}" if collate else ""
             using = self.sql(expression, "using")
             using = f" USING {using}" if using else ""
-            return f"ALTER COLUMN {this} SET DATA TYPE {dtype}{collate}{using}"
+            return f"ALTER COLUMN {this} {self.ALTER_SET_TYPE} {dtype}{collate}{using}"
 
         default = self.sql(expression, "default")
         if default:

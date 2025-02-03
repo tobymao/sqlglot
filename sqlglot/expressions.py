@@ -2064,6 +2064,11 @@ class Drop(Expression):
         return kind and kind.upper()
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements
+class Export(Expression):
+    arg_types = {"this": True, "connection": False, "options": True}
+
+
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
 
@@ -8650,11 +8655,3 @@ CONSTANTS = (
     Boolean,
     Null,
 )
-
-
-class Export(Expression):
-    arg_types = {
-        "this": True,
-        "with_connection": False,
-        "options": False,
-    }

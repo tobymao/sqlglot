@@ -491,11 +491,6 @@ class BigQuery(Dialect):
         LOG_DEFAULTS_TO_LN = True
         SUPPORTS_IMPLICIT_UNNEST = True
 
-        ID_VAR_TOKENS = {
-            *parser.Parser.ID_VAR_TOKENS,
-            TokenType.EXPORT,
-        }
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CONTAINS_SUBSTR": _build_contains_substring,
@@ -837,47 +832,13 @@ class BigQuery(Dialect):
             return expr
 
         def _parse_export_data(self) -> exp.Export:
-            # https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements
-            if not self._match_text_seq("DATA"):
-                self.raise_error("Expected 'DATA' after 'EXPORT'")
-
-            with_connection = None
-            options = None
-
-            if self._match_text_seq("WITH", "CONNECTION"):
-                parts = []
-                while True:
-                    part = self._parse_var()
-                    if not part:
-                        break
-                    parts.append(part.name)
-                    if not self._match(TokenType.DOT):
-                        break
-
-                if not parts:
-                    self.raise_error("Expected connection name after WITH CONNECTION")
-
-                with_connection = exp.Identifier(this=".".join(parts))
-
-            if self._match_text_seq("OPTIONS"):
-                self._match(TokenType.L_PAREN)
-                options = self._parse_properties()
-                self._match(TokenType.R_PAREN)
-            else:
-                self.raise_error("Expected 'OPTIONS' after 'EXPORT DATA'")
-
-            self._match_text_seq("AS")
-
-            # Parse the full SELECT statement
-            query = self._parse_statement()
-            if not isinstance(query, exp.Select):
-                self.raise_error("Expected SELECT statement in EXPORT DATA")
+            self._match_text_seq("DATA")
 
             return self.expression(
                 exp.Export,
-                this=query,
-                with_connection=with_connection,
-                options=options,
+                connection=self._match_text_seq("WITH", "CONNECTION") and self._parse_table_parts(),
+                options=self._parse_properties(),
+                this=self._match_text_seq("AS") and self._parse_select(),
             )
 
     class Generator(generator.Generator):
@@ -1288,11 +1249,3 @@ class BigQuery(Dialect):
                 return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
-
-        def export_sql(self, expression: exp.Export) -> str:
-            this = self.sql(expression, "this")
-            with_connection = self.sql(expression, "with_connection")
-            with_connection = f"WITH CONNECTION {with_connection} " if with_connection else ""
-            options = self.sql(expression, "options")
-            options = f"{options} " if options else ""
-            return f"EXPORT DATA {with_connection}{options}{this}"

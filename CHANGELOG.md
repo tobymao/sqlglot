@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.4.1] - 2025-02-03
+### :bug: Bug Fixes
+- [`dd1cdb0`](https://github.com/tobymao/sqlglot/commit/dd1cdb0b91ac597a9cb1f1f517a616c264f5b654) - **redshift**: generate proper syntax for column type alteration *(PR [#4698](https://github.com/tobymao/sqlglot/pull/4698) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.4.0] - 2025-02-03
 ### :boom: BREAKING CHANGES
 - due to [`48145a3`](https://github.com/tobymao/sqlglot/commit/48145a399b076bd3189af8ed8187ca45767d018d) - CurrentSchema for SQLite, MySQL, Postgres, and TSQL *(PR [#4658](https://github.com/tobymao/sqlglot/pull/4658) by [@pruzko](https://github.com/pruzko))*:
@@ -5834,3 +5839,4 @@ Changelog
 [v26.3.8]: https://github.com/tobymao/sqlglot/compare/v26.3.7...v26.3.8
 [v26.3.9]: https://github.com/tobymao/sqlglot/compare/v26.3.8...v26.3.9
 [v26.4.0]: https://github.com/tobymao/sqlglot/compare/v26.3.9...v26.4.0
+[v26.4.1]: https://github.com/tobymao/sqlglot/compare/v26.4.0...v26.4.1

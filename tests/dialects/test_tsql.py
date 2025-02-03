@@ -453,7 +453,8 @@ class TestTSQL(Validator):
             },
         )
 
-        self.validate_identity("SELECT 'BEGIN'")
+        with self.assertRaises(ParseError):
+            parse_one("SELECT begin", read="tsql")
 
     def test_option(self):
         possible_options = [

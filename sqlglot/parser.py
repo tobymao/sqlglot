@@ -497,6 +497,7 @@ class Parser(metaclass=_Parser):
         TokenType.DIV,
         TokenType.END,
         TokenType.EXECUTE,
+        TokenType.EXPORT,
         TokenType.ESCAPE,
         TokenType.FALSE,
         TokenType.FIRST,

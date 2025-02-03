@@ -453,6 +453,9 @@ class TestTSQL(Validator):
             },
         )
 
+        with self.assertRaises(ParseError):
+            parse_one("SELECT begin", read="tsql")
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

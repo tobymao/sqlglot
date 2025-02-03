@@ -3250,7 +3250,7 @@ class Table(Expression):
 
     @property
     def name(self) -> str:
-        if isinstance(self.this, Func):
+        if not self.this or isinstance(self.this, Func):
             return ""
         return self.this.name
 

@@ -4752,3 +4752,10 @@ class Generator(metaclass=_Generator):
     def xmlnamespace_sql(self, expression: exp.XMLNamespace) -> str:
         this = self.sql(expression, "this")
         return this if isinstance(expression.this, exp.Alias) else f"DEFAULT {this}"
+
+    def export_sql(self, expression: exp.Export) -> str:
+        this = self.sql(expression, "this")
+        connection = self.sql(expression, "connection")
+        connection = f"WITH CONNECTION {connection} " if connection else ""
+        options = self.sql(expression, "options")
+        return f"EXPORT DATA {connection}{options} AS {this}"

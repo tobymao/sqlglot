@@ -272,7 +272,7 @@ def _json_extract_value_array_sql(
 
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
-    SUPPORTS_USER_DEFINED_TYPES = False
+    SUPPORTS_USER_DEFINED_TYPES = True
     SAFE_DIVISION = True
     INDEX_OFFSET = 1
     CONCAT_COALESCE = True

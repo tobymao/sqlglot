@@ -71,6 +71,13 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Athena.Parser], exp.Show]:
+    def _parse(self: Athena.Parser) -> exp.Show:
+        return self._parse_show_athena(*args, **kwargs)
+
+    return _parse
+
+
 class Athena(Trino):
     """
     Over the years, it looks like AWS has taken various execution engines, bolted on AWS-specific modifications and then
@@ -114,6 +121,8 @@ class Athena(Trino):
             "UNLOAD": TokenType.COMMAND,
         }
 
+        COMMANDS = Trino.Tokenizer.COMMANDS - {TokenType.SHOW}
+
     class Parser(Trino.Parser):
         """
         Parse queries for the Athena Trino execution engine
@@ -122,7 +131,54 @@ class Athena(Trino):
         STATEMENT_PARSERS = {
             **Trino.Parser.STATEMENT_PARSERS,
             TokenType.USING: lambda self: self._parse_as_command(self._prev),
+            TokenType.SHOW: lambda self: self._parse_show(),
         }
+
+        SHOW_PARSERS = {
+            "COLUMNS FROM": _show_parser("COLUMNS", target="FROM"),
+            "COLUMNS IN": _show_parser("COLUMNS", target="IN"),
+            "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
+            "CREATE VIEW": _show_parser("CREATE VIEW", target=True),
+            "DATABASES": _show_parser("DATABASES"),
+            "PARTITIONS": _show_parser("PARTITIONS", target=True),
+            "SCHEMAS": _show_parser("SCHEMAS"),
+            "TABLES": _show_parser("TABLES", target="IN"),
+            "TBLPROPERTIES": _show_parser("TBLPROPERTIES", target=True),
+            "VIEWS": _show_parser("VIEWS", target="IN"),
+        }
+
+        def _parse_show_athena(
+            self,
+            this: str,
+            target: bool | str = False,
+            full: t.Optional[bool] = None,
+            global_: t.Optional[bool] = None,
+        ) -> exp.Show:
+            if target:
+                if isinstance(target, str):
+                    self._match_text_seq(target)
+                target_id = self._parse_id_var()
+            else:
+                target_id = None
+
+            db = None
+
+            if self._match(TokenType.FROM) or self._match(TokenType.IN):
+                db = self._parse_id_var()
+            elif self._match(TokenType.DOT):
+                db = target_id
+                target_id = self._parse_id_var()
+
+            like = self._parse_string() if self._match_text_seq("LIKE") else None
+
+            return self.expression(
+                exp.Show,
+                this=this,
+                target=target_id,
+                db=db,
+                like=like,
+                **{"global": global_},  # type: ignore
+            )
 
     class _HiveGenerator(Hive.Generator):
         def alter_sql(self, expression: exp.Alter) -> str:

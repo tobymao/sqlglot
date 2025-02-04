@@ -3,8 +3,8 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.trino import Trino
 from sqlglot.dialects.hive import Hive
+from sqlglot.dialects.trino import Trino
 from sqlglot.tokens import TokenType
 
 
@@ -22,13 +22,8 @@ def _generate_as_hive(expression: exp.Expression) -> bool:
 
     # https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html
     elif isinstance(expression, (exp.Alter, exp.Drop, exp.Describe)):
-        if isinstance(expression, exp.Drop) and expression.kind == "VIEW":
-            # DROP VIEW is Trino (I guess because CREATE VIEW is)
-            return False
-
-        # Everything else is Hive
-        return True
-
+        # DROP VIEW is Trino (I guess because CREATE VIEW is), everything else is Hive
+        return not (isinstance(expression, exp.Drop) and expression.kind == "VIEW")
     return False
 
 
@@ -51,9 +46,8 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
 
     prop_name = "external_location"
 
-    if isinstance(e.parent, exp.Properties):
-        if _is_iceberg_table(e.parent):
-            prop_name = "location"
+    if isinstance(e.parent, exp.Properties) and _is_iceberg_table(e.parent):
+        prop_name = "location"
 
     return f"{prop_name}={self.sql(e, 'this')}"
 
@@ -64,9 +58,8 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
 
     prop_name = "partitioned_by"
-    if isinstance(e.parent, exp.Properties):
-        if _is_iceberg_table(e.parent):
-            prop_name = "partitioning"
+    if isinstance(e.parent, exp.Properties) and _is_iceberg_table(e.parent):
+        prop_name = "partitioning"
 
     return f"{prop_name}={self.sql(e, 'this')}"
 

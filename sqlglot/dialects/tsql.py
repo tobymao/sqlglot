@@ -736,6 +736,16 @@ class TSQL(Dialect):
             convert.set("strict", strict)
             return convert
 
+        def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_def(this)
+            if not this:
+                return None
+            if self._match(TokenType.EQ):
+                this.set("default", self._parse_expression())
+            if self._match_texts(("OUT", "OUTPUT", "READ_ONLY")):
+                this.set("output", self._prev.text)
+            return this
+
         def _parse_user_defined_function(
             self, kind: t.Optional[TokenType] = None
         ) -> t.Optional[exp.Expression]:
@@ -1290,3 +1300,11 @@ class TSQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"(PATINDEX(CONVERT(VARCHAR(MAX), 0x255b5e002d7f5d25) COLLATE Latin1_General_BIN, {self.sql(expression.this)}) = 0)"
+
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            this = super().columndef_sql(expression, sep)
+            default = self.sql(expression, "default")
+            default = f" = {default}" if default else ""
+            output = self.sql(expression, "output")
+            output = f" {output}" if output else ""
+            return f"{this}{default}{output}"

@@ -610,7 +610,7 @@ FROM tbl1""",
         self.validate("CAST(x AS INT)::BOOLEAN", "CAST(CAST(x AS INT) AS BOOLEAN)")
 
         with self.assertRaises(ParseError):
-            transpile("x::z", read="duckdb")
+            transpile("x::z", read="clickhouse")
 
     def test_not_range(self):
         self.validate("a NOT LIKE b", "NOT a LIKE b")

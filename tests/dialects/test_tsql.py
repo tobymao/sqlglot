@@ -456,6 +456,14 @@ class TestTSQL(Validator):
         with self.assertRaises(ParseError):
             parse_one("SELECT begin", read="tsql")
 
+        self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
+        self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c')")
+
+        for output in ("OUT", "OUTPUT", "READ_ONLY"):
+            self.validate_identity(
+                f"CREATE PROCEDURE test(@v1 INTEGER {output}, @v2 CHAR(1) {output})"
+            )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

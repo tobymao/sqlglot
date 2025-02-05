@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     ts_or_ds_add_cast,
     strposition_sql,
+    count_if_to_sum,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -621,6 +622,7 @@ class Postgres(Dialect):
             exp.Levenshtein: _levenshtein_sql,
             exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
             exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
+            exp.CountIf: count_if_to_sum,
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)

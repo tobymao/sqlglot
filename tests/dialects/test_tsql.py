@@ -464,11 +464,9 @@ class TestTSQL(Validator):
                 f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output})"
             )
 
-        self.validate_all(
+        self.validate_identity(
+            "CREATE PROCEDURE test(@v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c')",
             "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')",
-            read={
-                "tsql": "CREATE PROCEDURE test(@v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c')",
-            },
         )
 
     def test_option(self):

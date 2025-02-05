@@ -739,9 +739,9 @@ class TSQL(Dialect):
             return convert
 
         def _parse_column_def(
-            self, this: t.Optional[exp.Expression], as_use_declare: bool = False
+            self, this: t.Optional[exp.Expression], computed_column: bool = True
         ) -> t.Optional[exp.Expression]:
-            this = super()._parse_column_def(this=this, as_use_declare=as_use_declare)
+            this = super()._parse_column_def(this=this, computed_column=computed_column)
             if not this:
                 return None
             if self._match(TokenType.EQ):

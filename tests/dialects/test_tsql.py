@@ -462,7 +462,7 @@ class TestTSQL(Validator):
 
         for output in ("OUT", "OUTPUT", "READ_ONLY"):
             self.validate_identity(
-                f"CREATE PROCEDURE test(@v1 INTEGER {output}, @v2 CHAR(1) {output})"
+                f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output})"
             )
 
         self.validate_all(

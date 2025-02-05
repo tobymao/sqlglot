@@ -129,16 +129,15 @@ class _Dialect(type):
 
     @classmethod
     def _try_load(cls, key: str | Dialects) -> None:
-        try:
-            if isinstance(key, Dialects):
-                key = key.value
+        if isinstance(key, Dialects):
+            key = key.value
 
-            # This import will lead to a new dialect being loaded, and hence, registered.
-            # We assert that the key is an actual module to avoid blindly importing files.
-            assert key in DIALECT_MODULE_NAMES
+        # This import will lead to a new dialect being loaded, and hence, registered.
+        # We check that the key is an actual sqlglot module to avoid blindly importing
+        # files. Custom user dialects need to be imported at the top-level package, in
+        # order for them to be registered as soon as possible.
+        if key in DIALECT_MODULE_NAMES:
             importlib.import_module(f"sqlglot.dialects.{key}")
-        except Exception:
-            pass
 
     @classmethod
     def __getitem__(cls, key: str) -> t.Type[Dialect]:

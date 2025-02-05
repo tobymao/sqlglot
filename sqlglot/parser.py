@@ -3176,9 +3176,11 @@ class Parser(metaclass=_Parser):
         last_comments = None
         expressions = []
         while True:
-            expressions.append(self._parse_cte())
-            if last_comments:
-                expressions[-1].add_comments(last_comments)
+            cte = self._parse_cte()
+            if isinstance(cte, exp.CTE):
+                expressions.append(cte)
+                if last_comments:
+                    cte.add_comments(last_comments)
 
             if not self._match(TokenType.COMMA) and not self._match(TokenType.WITH):
                 break

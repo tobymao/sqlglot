@@ -1675,6 +1675,8 @@ class ColumnDef(Expression):
         "constraints": False,
         "exists": False,
         "position": False,
+        "default": False,
+        "output": False,
     }
 
     @property

@@ -738,3 +738,8 @@ class Postgres(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "CURRENT_SCHEMA"
+
+        def countif_sql(self, expression: exp.CountIf) -> str:
+            cond = expression.this
+            filter = exp.Filter(this=exp.Count(this=exp.Star()), expression=exp.Where(this=cond))
+            return self.sql(filter)

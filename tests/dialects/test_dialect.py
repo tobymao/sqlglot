@@ -2633,7 +2633,8 @@ SELECT
                 "snowflake": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
                 "sqlite": "SELECT SUM(IIF(col % 2 = 0, 1, 0)) FROM foo",
                 "tsql": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
-                "postgres": "SELECT COUNT(*) FILTER(WHERE col % 2 = 0) FROM foo",
+                "postgres": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FROM foo",
+                "redshift": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FROM foo",
             },
         )
         self.validate_all(

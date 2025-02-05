@@ -5551,7 +5551,7 @@ class Parser(metaclass=_Parser):
         return self._parse_statement()
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
-        return self._parse_column_def(self._parse_id_var())
+        return self._parse_column_def(this=self._parse_id_var(), as_use_declare=True)
 
     def _parse_user_defined_function(
         self, kind: t.Optional[TokenType] = None
@@ -5638,10 +5638,15 @@ class Parser(metaclass=_Parser):
     def _parse_field_def(self) -> t.Optional[exp.Expression]:
         return self._parse_column_def(self._parse_field(any_token=True))
 
-    def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    def _parse_column_def(
+        self, this: t.Optional[exp.Expression], as_use_declare: bool = False
+    ) -> t.Optional[exp.Expression]:
         # column defs are not really columns, they're identifiers
         if isinstance(this, exp.Column):
             this = this.this
+
+        if as_use_declare and self._match(TokenType.ALIAS):
+            return self.expression(exp.ColumnDef, this=this, kind=self._parse_types(schema=True))
 
         kind = self._parse_types(schema=True)
 

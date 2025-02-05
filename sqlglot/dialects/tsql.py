@@ -736,8 +736,10 @@ class TSQL(Dialect):
             convert.set("strict", strict)
             return convert
 
-        def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-            this = super()._parse_column_def(this)
+        def _parse_column_def(
+            self, this: t.Optional[exp.Expression], as_use_declare: bool = False
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_def(this=this, as_use_declare=as_use_declare)
             if not this:
                 return None
             if self._match(TokenType.EQ):

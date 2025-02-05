@@ -598,7 +598,7 @@ class TSQL(Dialect):
             ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
         )
 
-        COLUMN_DEFINTION_OUTPUTS = {"OUT", "OUTPUT", "READ_ONLY"}
+        COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READ_ONLY"}
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
@@ -746,7 +746,7 @@ class TSQL(Dialect):
                 return None
             if self._match(TokenType.EQ):
                 this.set("default", self._parse_disjunction())
-            if self._match_texts(self.COLUMN_DEFINTION_OUTPUTS):
+            if self._match_texts(self.COLUMN_DEFINITION_MODES):
                 this.set("output", self._prev.text)
             return this
 

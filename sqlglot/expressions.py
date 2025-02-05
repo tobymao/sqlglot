@@ -637,7 +637,7 @@ class Expression(metaclass=_Expression):
 
             if not root:
                 root = new_node
-            elif new_node is not node:
+            elif parent and arg_key and new_node is not node:
                 parent.set(arg_key, new_node, index)
 
         assert root

@@ -187,6 +187,12 @@ def _build_with_ignore_nulls(
     return _parse
 
 
+def _build_to_date(args: t.List) -> exp.TsOrDsToDate:
+    expr = build_formatted_time(exp.TsOrDsToDate, "hive")(args)
+    expr.set("safe", True)
+    return expr
+
+
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -318,7 +324,7 @@ class Hive(Dialect):
                 pair_delim=seq_get(args, 1) or exp.Literal.string(","),
                 key_value_delim=seq_get(args, 2) or exp.Literal.string(":"),
             ),
-            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "hive"),
+            "TO_DATE": _build_to_date,
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "TRUNC": exp.TimestampTrunc.from_arg_list,
             "UNBASE64": exp.FromBase64.from_arg_list,

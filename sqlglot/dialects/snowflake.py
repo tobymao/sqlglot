@@ -978,7 +978,9 @@ class Snowflake(Dialect):
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: lambda self, e: self.func(
-                "TRY_TO_DATE" if e.args.get("safe") else "TO_DATE", e.this, self.format_time(e)
+                "TRY_TO_DATE" if e.args.get("safe") is not False else "TO_DATE",
+                e.this,
+                self.format_time(e),
             ),
             exp.TsOrDsToTime: lambda self, e: self.func(
                 "TRY_TO_TIME" if e.args.get("safe") else "TO_TIME", e.this, self.format_time(e)

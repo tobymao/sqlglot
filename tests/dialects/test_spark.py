@@ -312,7 +312,7 @@ TBLPROPERTIES (
             write={
                 "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
                 "spark": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
-                "duckdb": "SELECT ([1, 2, 3])[2]",
+                "duckdb": "SELECT [1, 2, 3][2]",
                 "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 2)",
             },
         )
@@ -352,7 +352,7 @@ TBLPROPERTIES (
             },
             write={
                 "databricks": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
-                "duckdb": "SELECT (MAP([1, 2], ['a', 'b'])[2])[1]",
+                "duckdb": "SELECT MAP([1, 2], ['a', 'b'])[2]",
                 "spark": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
             },
         )

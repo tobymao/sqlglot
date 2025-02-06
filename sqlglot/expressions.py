@@ -5087,7 +5087,6 @@ class Bracket(Condition):
         "expressions": True,
         "offset": False,
         "safe": False,
-        "returns_list_for_maps": False,
     }
 
     @property

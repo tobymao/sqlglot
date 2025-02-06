@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
+    Version,
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     binary_from_function,
@@ -466,6 +467,17 @@ class DuckDB(Dialect):
 
             return sample
 
+        def _parse_bracket(
+            self, this: t.Optional[exp.Expression] = None
+        ) -> t.Optional[exp.Expression]:
+            bracket = super()._parse_bracket(this)
+
+            if self.dialect.version < Version("1.2.0") and isinstance(bracket, exp.Bracket):
+                # https://duckdb.org/2025/02/05/announcing-duckdb-120.html#breaking-changes
+                bracket.set("returns_list_for_maps", True)
+
+            return bracket
+
         def _parse_map(self) -> exp.ToMap | exp.Map:
             if self._match(TokenType.L_BRACE, advance=False):
                 return self.expression(exp.ToMap, this=self._parse_bracket())
@@ -884,6 +896,28 @@ class DuckDB(Dialect):
                 return rename_func("RANGE")(self, expression)
 
             return self.function_fallback_sql(expression)
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            if self.dialect.version >= Version("1.2"):
+                return super().bracket_sql(expression)
+
+            # https://duckdb.org/2025/02/05/announcing-duckdb-120.html#breaking-changes
+            this = expression.this
+            if isinstance(this, exp.Array):
+                this.replace(exp.paren(this))
+
+            bracket = super().bracket_sql(expression)
+
+            if not expression.args.get("returns_list_for_maps"):
+                if not this.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    this = annotate_types(this)
+
+                if this.is_type(exp.DataType.Type.MAP):
+                    bracket = f"({bracket})[1]"
+
+            return bracket
 
         def withingroup_sql(self, expression: exp.WithinGroup) -> str:
             expression_sql = self.sql(expression, "expression")

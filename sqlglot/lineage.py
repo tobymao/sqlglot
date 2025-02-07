@@ -234,6 +234,10 @@ def to_node(
                 Node(name=select.sql(comments=False), source=source, expression=source)
             )
 
+    # Process the select expression to extract its source column information,
+    # handling any aliases or nested column references
+    select = _extract_source_column(select)
+
     # Find all columns that went into creating this one to list their lineage nodes.
     source_columns = set(find_all_in_scope(select, exp.Column))
 
@@ -277,7 +281,7 @@ def to_node(
 
     for c in source_columns:
         table = c.table
-        source = scope.sources.get(table)
+        source = _find_table_source(scope, table)
 
         if isinstance(source, Scope):
             reference_node_name = None
@@ -343,6 +347,71 @@ def to_node(
             )
 
     return node
+
+def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Column]:
+    """
+    Safely extracts source column from expression.
+
+    Args:
+        expr: An exp.Expression instance from which to extract column information
+
+    Returns:
+        Optional[exp.Column]: Extracted column information or None
+
+    Raises:
+        TypeError: If input is not of the correct type
+    """
+    if not isinstance(expr, exp.Expression):
+        raise TypeError(f"Expected exp.Expression, got {type(expr)}")
+
+    if expr is None:
+        return None
+
+    try:
+        if isinstance(expr, exp.Alias):
+            expr = expr.this
+
+        if isinstance(expr, exp.Dot):
+            if not hasattr(expr, 'expression') or not hasattr(expr.expression, 'name'):
+                return expr
+
+            if isinstance(expr.this, exp.Column):
+                column = expr.this
+                # Safely extract original table and column information
+                return exp.Column(
+                    this=exp.Identifier(this=getattr(expr.expression, 'name', None)),
+                    table=getattr(column, 'table', None)
+                )
+        return expr
+
+    except AttributeError:
+        return expr  # Return original expression on error
+
+def _find_table_source(scope: Scope, table: str):
+    """
+    Find the source node of a table.
+    Returns the original table node for UNPIVOT/PIVOT cases, and returns scope.sources node for regular tables.
+
+    Args:
+        scope: Scope object from sqlglot optimizer
+        table: Name of the table to find
+
+    Returns:
+        The table node if found, None otherwise
+    """
+    if not isinstance(scope, Scope) or not table:
+        return None
+
+    # Check for PIVOT/UNPIVOT
+    for name, node in scope.references:
+        pivots = node.args.get("pivots")
+        if pivots:
+            for pivot in pivots:
+                if pivot.alias == table:
+                    return node
+
+    # Regular table
+    return scope.sources.get(table)
 
 
 class GraphHTML:

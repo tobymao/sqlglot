@@ -112,6 +112,8 @@ class Version(int):
             parts.extend(["0"] * (3 - len(parts)))
             v = int("".join([p.zfill(3) for p in parts]))
         else:
+            # No version defined means we should support the latest engine semantics, so
+            # the comparison to any specific version should yield that latest is greater
             v = sys.maxsize
 
         return super(Version, cls).__new__(cls, v)

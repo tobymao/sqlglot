@@ -144,7 +144,7 @@ class Spark(Spark2):
             **Spark2.Generator.TYPE_MAPPING,
             exp.DataType.Type.MONEY: "DECIMAL(15, 4)",
             exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
-            exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",
+            exp.DataType.Type.UUID: "STRING",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP_LTZ",
             exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP_NTZ",
         }

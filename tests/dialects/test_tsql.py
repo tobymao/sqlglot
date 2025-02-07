@@ -929,6 +929,15 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "CREATE TABLE x (a UNIQUEIDENTIFIER, b VARBINARY)",
+            write={
+                "duckdb": "CREATE TABLE x (a UUID, b BLOB)",
+                "presto": "CREATE TABLE x (a UUID, b VARBINARY)",
+                "spark": "CREATE TABLE x (a STRING, b BINARY)",
+                "postgres": "CREATE TABLE x (a UUID, b BYTEA)",
+            },
+        )
+        self.validate_all(
             "SELECT * INTO foo.bar.baz FROM (SELECT * FROM a.b.c) AS temp",
             read={
                 "": "CREATE TABLE foo.bar.baz AS SELECT * FROM a.b.c",

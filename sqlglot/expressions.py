@@ -6748,7 +6748,7 @@ class UnixSeconds(Func):
 
 
 class Uuid(Func):
-    _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "NEWID", "UUID_STRING"]
+    _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 
     arg_types = {"this": False, "name": False}
 

@@ -579,6 +579,7 @@ class TSQL(Dialect):
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),
             "LEFT": _build_with_arg_as_text(exp.Left),
+            "NEWID": exp.Uuid.from_arg_list,
             "RIGHT": _build_with_arg_as_text(exp.Right),
             "PARSENAME": _build_parsename,
             "REPLICATE": exp.Repeat.from_arg_list,

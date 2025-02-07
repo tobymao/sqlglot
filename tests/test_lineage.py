@@ -576,3 +576,143 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].name, "t.empid")
         self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+
+    def test_unpivot_column_with_join(self) -> None:
+        """
+        Tests the behavior of unpivoting columns in a SQL query combined with a join clause and validates lineage mapping for specific fields.
+        The test examines the downstream nodes of a lineage graph for fields such as id, month, and sales, ensuring the correctness of their source mappings.
+
+        :return: None
+        """
+        sql = """
+        SELECT
+            unpvt.id,
+            unpvt.product_id,
+            pi.product_name,
+            pi.category,
+            unpvt.month,
+            unpvt.sales
+        FROM sales_data
+            UNPIVOT (
+                sales FOR month IN (jan_sales, feb_sales, mar_sales)
+            ) unpvt
+        JOIN product_info pi
+            ON unpvt.product_id = pi.product_id
+        """
+        node = lineage("id", sql)
+        self.assertEqual(node.downstream[0].name, "unpvt.id")
+        self.assertEqual(node.downstream[0].source.alias_or_name, "sales_data")
+
+        node = lineage("month", sql)
+        self.assertEqual(node.downstream[0].name, "unpvt.month")
+        self.assertEqual(node.downstream[0].source.alias_or_name, "sales_data")
+
+        node = lineage("sales", sql)
+        self.assertEqual(node.downstream[0].name, "unpvt.sales")
+        self.assertEqual(node.downstream[0].source.name, "sales_data")
+
+    def test_unpivot_column_without_join_and_with_subquery(self) -> None:
+        """
+        Tests the ability of the system to trace the lineage of columns in a SQL query, particularly focusing on columns that involve unpivoting, subqueries, and joins. This includes verifying the downstream references and ensuring correctness of mapped lineage for specific columns such as `app_id` and `daily_active_users`.
+
+        :return: None
+        """
+        sql = """
+        SELECT
+           user_data.search_date,
+           user_data.app_id,
+           app_info.app_name,
+           app_info.publisher_name,
+           genre_info.genre_name,
+           app_info.launch_date,
+           content_info.content_name,
+           content_info.category_name,
+           content_info.country_code,
+           content_info.country_name,
+           content_info.country_name_local,
+           device_info.device_type,
+           SUM(user_data.user_count) AS daily_active_users,
+           DATEADD(hour, 9, SYSDATE()) AS last_updated
+        FROM (
+           SELECT
+               raw_data.search_date,
+               raw_data.app_id,
+               raw_data.country_code,
+               COALESCE(device_map.device_code, '99') AS device_code,
+               raw_data.user_count
+           FROM (
+               SELECT
+                   s.date AS search_date,
+                   s.app_id,
+                   s.country AS country_code,
+                   s.last_updated,
+                   s.device_type_code,
+                   s.user_count
+               FROM app_usage_statistics
+               UNPIVOT(
+                   user_count FOR device_type_code IN (
+                       android_users,
+                       ipad_users,
+                       iphone_users
+                   )
+               ) AS s
+               WHERE search_date = 'MM-DD-YYYY'
+           ) AS raw_data
+           LEFT OUTER JOIN device_mapping AS device_map
+               ON device_map.device_name = SPLIT_PART(raw_data.device_type_code, '_', 1)
+        ) user_data
+        LEFT OUTER JOIN applications app_info
+           ON user_data.app_id = app_info.app_id
+        LEFT OUTER JOIN (
+           SELECT
+               country_code,
+               country_name,
+               country_name_local,
+               LISTAGG(DISTINCT content_name, ',') AS content_name,
+               LISTAGG(DISTINCT category_name, ',') AS category_name
+           FROM content_details
+           GROUP BY country_code, country_name, country_name_local
+        ) content_info
+           ON user_data.country_code = content_info.country_code
+        LEFT OUTER JOIN device_types device_info
+           ON user_data.device_code = device_info.device_code
+        LEFT OUTER JOIN (
+           SELECT
+               app_id,
+               LISTAGG(DISTINCT genre_name, ',') AS genre_name
+           FROM app_genres
+           GROUP BY app_id
+        ) genre_info
+           ON user_data.app_id = genre_info.app_id
+        GROUP BY
+           user_data.search_date,
+           user_data.app_id,
+           app_info.app_name,
+           app_info.publisher_name,
+           genre_info.genre_name,
+           app_info.launch_date,
+           content_info.content_name,
+           content_info.category_name,
+           content_info.country_code,
+           content_info.country_name,
+           content_info.country_name_local,
+           device_info.device_type
+        """
+        node = lineage("app_id", sql)
+        self.assertEqual(node.downstream[0].name, "user_data.app_id")
+        self.assertEqual(node.downstream[0].reference_node_name, "user_data")
+        self.assertEqual(node.downstream[0].downstream[0].name, "raw_data.app_id")
+        self.assertEqual(node.downstream[0].downstream[0].reference_node_name, "raw_data")
+        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.app_id")
+        self.assertEqual(node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics")
+
+        node = lineage("daily_active_users", sql)
+        self.assertEqual(node.downstream[0].name, "user_data.user_count")
+        self.assertEqual(node.downstream[0].reference_node_name, "user_data")
+        self.assertEqual(node.downstream[0].downstream[0].name, "raw_data.user_count")
+        self.assertEqual(node.downstream[0].downstream[0].reference_node_name, "raw_data")
+        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.user_count")
+        self.assertEqual(node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics")
+
+
+        

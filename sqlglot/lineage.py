@@ -7,13 +7,7 @@ from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.errors import SqlglotError
-from sqlglot.optimizer import (
-    Scope,
-    build_scope,
-    find_all_in_scope,
-    normalize_identifiers,
-    qualify,
-)
+from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, normalize_identifiers, qualify
 from sqlglot.optimizer.scope import ScopeType
 
 if t.TYPE_CHECKING:
@@ -50,9 +44,7 @@ class Node:
                 label = node.expression.sql(pretty=True, dialect=dialect)
                 source = node.source.transform(
                     lambda n: (
-                        exp.Tag(this=n, prefix="<b>", postfix="</b>")
-                        if n is node.expression
-                        else n
+                        exp.Tag(this=n, prefix="<b>", postfix="</b>") if n is node.expression else n
                     ),
                     copy=False,
                 ).sql(pretty=True, dialect=dialect)
@@ -105,10 +97,7 @@ def lineage(
     if sources:
         expression = exp.expand(
             expression,
-            {
-                k: t.cast(exp.Query, maybe_parse(v, dialect=dialect))
-                for k, v in sources.items()
-            },
+            {k: t.cast(exp.Query, maybe_parse(v, dialect=dialect)) for k, v in sources.items()},
             dialect=dialect,
         )
 
@@ -147,11 +136,7 @@ def to_node(
         scope.expression.selects[column]
         if isinstance(column, int)
         else next(
-            (
-                select
-                for select in scope.expression.selects
-                if select.alias_or_name == column
-            ),
+            (select for select in scope.expression.selects if select.alias_or_name == column),
             exp.Star() if scope.expression.is_star else scope.expression,
         )
     )
@@ -169,9 +154,7 @@ def to_node(
             )
     if isinstance(scope.expression, exp.SetOperation):
         name = type(scope.expression).__name__.upper()
-        upstream = upstream or Node(
-            name=name, source=scope.expression, expression=select
-        )
+        upstream = upstream or Node(name=name, source=scope.expression, expression=select)
 
         index = (
             column
@@ -224,8 +207,7 @@ def to_node(
         upstream.downstream.append(node)
 
     subquery_scopes = {
-        id(subquery_scope.expression): subquery_scope
-        for subquery_scope in scope.subquery_scopes
+        id(subquery_scope.expression): subquery_scope for subquery_scope in scope.subquery_scopes
     }
 
     for subquery in find_all_in_scope(select, exp.UNWRAPPED_QUERIES):
@@ -303,10 +285,7 @@ def to_node(
 
         if isinstance(source, Scope):
             reference_node_name = None
-            if (
-                source.scope_type == ScopeType.DERIVED_TABLE
-                and table not in source_names
-            ):
+            if source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
                 reference_node_name = table
             elif source.scope_type == ScopeType.CTE:
                 selected_node, _ = scope.selected_sources.get(table, (None, None))
@@ -369,7 +348,6 @@ def to_node(
 
     return node
 
-
 def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Expression]:
     """
     Safely extracts source column from expression.
@@ -394,21 +372,20 @@ def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Expression]:
             expr = expr.this
 
         if isinstance(expr, exp.Dot):
-            if not hasattr(expr, "expression") or not hasattr(expr.expression, "name"):
+            if not hasattr(expr, 'expression') or not hasattr(expr.expression, 'name'):
                 return expr
 
             if isinstance(expr.this, exp.Column):
                 column = expr.this
                 # Safely extract original table and column information
                 return exp.Column(
-                    this=exp.Identifier(this=getattr(expr.expression, "name", None)),
-                    table=getattr(column, "table", None),
+                    this=exp.Identifier(this=getattr(expr.expression, 'name', None)),
+                    table=getattr(column, 'table', None)
                 )
         return expr
 
     except AttributeError:
         return expr  # Return original expression on error
-
 
 def _find_table_source(scope: Scope, table: str):
     """
@@ -444,11 +421,7 @@ class GraphHTML:
     """
 
     def __init__(
-        self,
-        nodes: t.Dict,
-        edges: t.List,
-        imports: bool = True,
-        options: t.Optional[t.Dict] = None,
+        self, nodes: t.Dict, edges: t.List, imports: bool = True, options: t.Optional[t.Dict] = None
     ):
         self.imports = imports
 

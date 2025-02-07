@@ -348,7 +348,7 @@ def to_node(
 
     return node
 
-def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Column]:
+def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Expression]:
     """
     Safely extracts source column from expression.
 

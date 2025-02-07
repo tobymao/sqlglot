@@ -68,17 +68,23 @@ def qualify_tables(
                 unnested = derived_table.unnest()
                 if isinstance(unnested, exp.Table):
                     joins = unnested.args.pop("joins", None)
-                    derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
+                    derived_table.this.replace(
+                        exp.select("*").from_(unnested.copy(), copy=False)
+                    )
                     derived_table.this.set("joins", joins)
 
             if not derived_table.args.get("alias"):
                 alias_ = next_alias_name()
-                derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
+                derived_table.set(
+                    "alias", exp.TableAlias(this=exp.to_identifier(alias_))
+                )
                 scope.rename_source(None, alias_)
 
             pivots = derived_table.args.get("pivots")
             if pivots and not pivots[0].alias:
-                pivots[0].set("alias", exp.TableAlias(this=exp.to_identifier(next_alias_name())))
+                pivots[0].set(
+                    "alias", exp.TableAlias(this=exp.to_identifier(next_alias_name()))
+                )
 
         table_aliases = {}
 
@@ -91,20 +97,30 @@ def qualify_tables(
                         name = source.name
 
                     # Mutates the source by attaching an alias to it
-                    alias(source, name or source.name or next_alias_name(), copy=False, table=True)
+                    alias(
+                        source,
+                        name or source.name or next_alias_name(),
+                        copy=False,
+                        table=True,
+                    )
 
-                table_aliases[".".join(p.name for p in source.parts)] = exp.to_identifier(
-                    source.alias
+                table_aliases[".".join(p.name for p in source.parts)] = (
+                    exp.to_identifier(source.alias)
                 )
 
                 _qualify(source)
 
                 if pivots and not pivots[0].alias:
                     pivots[0].set(
-                        "alias", exp.TableAlias(this=exp.to_identifier(next_alias_name()))
+                        "alias",
+                        exp.TableAlias(this=exp.to_identifier(next_alias_name())),
                     )
 
-                if infer_csv_schemas and schema and isinstance(source.this, exp.ReadCSV):
+                if (
+                    infer_csv_schemas
+                    and schema
+                    and isinstance(source.this, exp.ReadCSV)
+                ):
                     with csv_reader(source.this) as reader:
                         header = next(reader)
                         columns = next(reader)
@@ -137,7 +153,9 @@ def qualify_tables(
 
         for column in scope.columns:
             if column.db:
-                table_alias = table_aliases.get(".".join(p.name for p in column.parts[0:-1]))
+                table_alias = table_aliases.get(
+                    ".".join(p.name for p in column.parts[0:-1])
+                )
 
                 if table_alias:
                     for p in exp.COLUMN_PARTS[1:]:

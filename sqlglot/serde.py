@@ -26,7 +26,9 @@ def dump(node: Node) -> JSON:
             klass = f"{node.__module__}.{klass}"
         obj: t.Dict = {
             "class": klass,
-            "args": {k: dump(v) for k, v in node.args.items() if v is not None and v != []},
+            "args": {
+                k: dump(v) for k, v in node.args.items() if v is not None and v != []
+            },
         }
         if node.type:
             obj["type"] = dump(node.type)

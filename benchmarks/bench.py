@@ -215,7 +215,9 @@ for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.it
     table.append(row)
     for lib in libs:
         try:
-            row[lib] = np.mean(timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=3))
+            row[lib] = np.mean(
+                timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=3)
+            )
         except Exception as e:
             print(e)
             row[lib] = "error"
@@ -223,7 +225,10 @@ for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.it
 print(
     ascii_table(
         [
-            {k: v if v == "Query" else str(row[k])[0:7] + diff(row, k) for k, v in row.items()}
+            {
+                k: v if v == "Query" else str(row[k])[0:7] + diff(row, k)
+                for k, v in row.items()
+            }
             for row in table
         ]
     )

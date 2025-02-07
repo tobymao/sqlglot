@@ -60,7 +60,8 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
         if primary_key and len(primary_key.expressions) == 1:
             column = defs[primary_key.expressions[0].name]
             column.append(
-                "constraints", exp.ColumnConstraint(kind=exp.PrimaryKeyColumnConstraint())
+                "constraints",
+                exp.ColumnConstraint(kind=exp.PrimaryKeyColumnConstraint()),
             )
             schema.expressions.remove(primary_key)
         else:
@@ -91,7 +92,8 @@ def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
             t.cast(exp.ColumnConstraint, not_null.parent).pop()
 
         expression.append(
-            "constraints", exp.ColumnConstraint(kind=exp.AutoIncrementColumnConstraint())
+            "constraints",
+            exp.ColumnConstraint(kind=exp.AutoIncrementColumnConstraint()),
         )
 
     return expression
@@ -186,9 +188,9 @@ class SQLite(Dialect):
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("EDITDIST3")
-            ),
+            exp.Levenshtein: unsupported_args(
+                "ins_cost", "del_cost", "sub_cost", "max_dist"
+            )(rename_func("EDITDIST3")),
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Pivot: no_pivot_sql,
@@ -200,10 +202,14 @@ class SQLite(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
-            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="INSTR"),
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="INSTR"
+            ),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
-            exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.args.get("format"), e.this),
+            exp.TimeToStr: lambda self, e: self.func(
+                "STRFTIME", e.args.get("format"), e.this
+            ),
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
         }
@@ -222,7 +228,9 @@ class SQLite(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
-        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+        def cast_sql(
+            self, expression: exp.Cast, safe_prefix: t.Optional[str] = None
+        ) -> str:
             if expression.is_type("date"):
                 return self.func("DATE", expression.this)
 
@@ -236,7 +244,9 @@ class SQLite(Dialect):
                 column_alias = alias.columns[0]
                 alias.set("columns", None)
                 sql = self.sql(
-                    exp.select(exp.alias_("value", column_alias)).from_(expression).subquery()
+                    exp.select(exp.alias_("value", column_alias))
+                    .from_(expression)
+                    .subquery()
                 )
             else:
                 sql = self.function_fallback_sql(expression)

@@ -29,7 +29,9 @@ DIR_TPCH = FIXTURES_DIR + "/optimizer/tpc-h/"
 DIR_TPCDS = FIXTURES_DIR + "/optimizer/tpc-ds/"
 
 
-@unittest.skipIf(SKIP_INTEGRATION, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
+@unittest.skipIf(
+    SKIP_INTEGRATION, "Skipping Integration Tests since `SKIP_INTEGRATION` is set"
+)
 class TestExecutor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -85,7 +87,9 @@ class TestExecutor(unittest.TestCase):
         for i, (_, sql, optimized) in enumerate(self.tpch_sqls, start=1):
             with self.subTest(f"{i}, {sql}"):
                 a = self.cached_execute(sql, tpch=True)
-                b = self.tpch_conn.execute(transpile(optimized, write="duckdb")[0]).fetchdf()
+                b = self.tpch_conn.execute(
+                    transpile(optimized, write="duckdb")[0]
+                ).fetchdf()
                 self.rename_anonymous(b, a)
                 assert_frame_equal(a, b)
 
@@ -131,7 +135,9 @@ class TestExecutor(unittest.TestCase):
 
         for i, (meta, sql, _) in enumerate(self.tpcds_sqls):
             if string_to_bool(meta.get("execute")):
-                table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+                table = execute(
+                    parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA
+                )
                 self.subtestHelper(i, table, tpch=False)
 
     def test_execute_callable(self):
@@ -331,7 +337,10 @@ class TestExecutor(unittest.TestCase):
             ("SELECT 1 / 0 AS a", ["a"], ZeroDivisionError),
             (
                 exp.select(
-                    exp.alias_(exp.Literal.number(1).div(exp.Literal.number(2), typed=True), "a")
+                    exp.alias_(
+                        exp.Literal.number(1).div(exp.Literal.number(2), typed=True),
+                        "a",
+                    )
                 ),
                 ["a"],
                 [
@@ -340,7 +349,9 @@ class TestExecutor(unittest.TestCase):
             ),
             (
                 exp.select(
-                    exp.alias_(exp.Literal.number(1).div(exp.Literal.number(0), safe=True), "a")
+                    exp.alias_(
+                        exp.Literal.number(1).div(exp.Literal.number(0), safe=True), "a"
+                    )
                 ),
                 ["a"],
                 [
@@ -495,8 +506,15 @@ class TestExecutor(unittest.TestCase):
         )
 
         table1_view = exp.Select().select("id", "sub_type").from_("table1").subquery()
-        select_from_sub_query = exp.Select().select("id AS id_alias", "sub_type").from_(table1_view)
-        expression = exp.Select().select("*").from_("cte1").with_("cte1", as_=select_from_sub_query)
+        select_from_sub_query = (
+            exp.Select().select("id AS id_alias", "sub_type").from_(table1_view)
+        )
+        expression = (
+            exp.Select()
+            .select("*")
+            .from_("cte1")
+            .with_("cte1", as_=select_from_sub_query)
+        )
 
         schema = {"table1": {"id": "str", "sub_type": "str"}}
         executed = execute(expression, tables={t: [] for t in schema}, schema=schema)
@@ -713,10 +731,15 @@ class TestExecutor(unittest.TestCase):
                 "UNIXTOTIME(1659981729)",
                 datetime.datetime(2022, 8, 8, 18, 2, 9, tzinfo=datetime.timezone.utc),
             ),
-            ("TIMESTRTOTIME('2013-04-05 01:02:03')", datetime.datetime(2013, 4, 5, 1, 2, 3)),
+            (
+                "TIMESTRTOTIME('2013-04-05 01:02:03')",
+                datetime.datetime(2013, 4, 5, 1, 2, 3),
+            ),
             (
                 "UNIXTOTIME(40 * 365 * 86400)",
-                datetime.datetime(2009, 12, 22, 00, 00, 00, tzinfo=datetime.timezone.utc),
+                datetime.datetime(
+                    2009, 12, 22, 00, 00, 00, tzinfo=datetime.timezone.utc
+                ),
             ),
             (
                 "STRTOTIME('08/03/2024 12:34:56', '%d/%m/%Y %H:%M:%S')",
@@ -750,7 +773,9 @@ class TestExecutor(unittest.TestCase):
             }
         }
 
-        result = execute("SELECT * FROM some_catalog.some_schema.some_table s", tables=tables)
+        result = execute(
+            "SELECT * FROM some_catalog.some_schema.some_table s", tables=tables
+        )
 
         self.assertEqual(result.columns, ("id", "price"))
         self.assertEqual(result.rows, [(1, 1.0), (2, 2.0), (3, 3.0)])
@@ -831,19 +856,27 @@ class TestExecutor(unittest.TestCase):
     def test_nested_values(self):
         tables = {"foo": [{"raw": {"name": "Hello, World", "a": [{"b": 1}]}}]}
 
-        result = execute("SELECT raw:name AS name FROM foo", read="snowflake", tables=tables)
+        result = execute(
+            "SELECT raw:name AS name FROM foo", read="snowflake", tables=tables
+        )
         self.assertEqual(result.columns, ("NAME",))
         self.assertEqual(result.rows, [("Hello, World",)])
 
-        result = execute("SELECT raw:a[0].b AS b FROM foo", read="snowflake", tables=tables)
+        result = execute(
+            "SELECT raw:a[0].b AS b FROM foo", read="snowflake", tables=tables
+        )
         self.assertEqual(result.columns, ("B",))
         self.assertEqual(result.rows, [(1,)])
 
-        result = execute("SELECT raw:a[1].b AS b FROM foo", read="snowflake", tables=tables)
+        result = execute(
+            "SELECT raw:a[1].b AS b FROM foo", read="snowflake", tables=tables
+        )
         self.assertEqual(result.columns, ("B",))
         self.assertEqual(result.rows, [(None,)])
 
-        result = execute("SELECT raw:a[0].c AS c FROM foo", read="snowflake", tables=tables)
+        result = execute(
+            "SELECT raw:a[0].c AS c FROM foo", read="snowflake", tables=tables
+        )
         self.assertEqual(result.columns, ("C",))
         self.assertEqual(result.rows, [(None,)])
 
@@ -854,7 +887,9 @@ class TestExecutor(unittest.TestCase):
                 {"id": 3, "attributes": {"flavor": "apple", "taste": None}},
             ]
         }
-        result = execute("SELECT i.attributes.flavor FROM `ITEM` i", read="bigquery", tables=tables)
+        result = execute(
+            "SELECT i.attributes.flavor FROM `ITEM` i", read="bigquery", tables=tables
+        )
 
         self.assertEqual(result.columns, ("flavor",))
         self.assertEqual(result.rows, [("cherry",), ("lime",), ("apple",)])

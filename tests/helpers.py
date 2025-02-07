@@ -5,7 +5,9 @@ FIXTURES_DIR = os.path.join(FILE_DIR, "fixtures")
 
 
 def _filter_comments(s):
-    return "\n".join([line for line in s.splitlines() if line and not line.startswith("--")])
+    return "\n".join(
+        [line for line in s.splitlines() if line and not line.startswith("--")]
+    )
 
 
 def _extract_meta(sql):
@@ -21,7 +23,9 @@ def _extract_meta(sql):
 
 
 def assert_logger_contains(message, logger, level="error"):
-    output = "\n".join(str(args[0][0]) for args in getattr(logger, level).call_args_list)
+    output = "\n".join(
+        str(args[0][0]) for args in getattr(logger, level).call_args_list
+    )
     if message not in output:
         print(f"Expected '{message}' not in {output}")
         raise
@@ -494,7 +498,11 @@ TPCDS_SCHEMA = {
         "p_purpose": "string",
         "p_discount_active": "string",
     },
-    "reason": {"r_reason_sk": "bigint", "r_reason_id": "string", "r_reason_desc": "string"},
+    "reason": {
+        "r_reason_sk": "bigint",
+        "r_reason_id": "string",
+        "r_reason_desc": "string",
+    },
     "ship_mode": {
         "sm_ship_mode_sk": "bigint",
         "sm_ship_mode_id": "string",

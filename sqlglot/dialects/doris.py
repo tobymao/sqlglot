@@ -61,11 +61,17 @@ class Doris(MySQL):
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
-            exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
-            exp.GroupConcat: lambda self, e: self.func(
-                "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
+            exp.DateTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", e.this, unit_to_str(e)
             ),
-            exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
+            exp.GroupConcat: lambda self, e: self.func(
+                "GROUP_CONCAT",
+                e.this,
+                e.args.get("separator") or exp.Literal.string(","),
+            ),
+            exp.JSONExtractScalar: lambda self, e: self.func(
+                "JSON_EXTRACT", e.this, e.expression
+            ),
             exp.Lag: _lag_lead_sql,
             exp.Lead: _lag_lead_sql,
             exp.Map: rename_func("ARRAY_MAP"),
@@ -73,12 +79,16 @@ class Doris(MySQL):
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.StringToArray: rename_func("SPLIT_BY_STRING"),
-            exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
+            exp.StrToUnix: lambda self, e: self.func(
+                "UNIX_TIMESTAMP", e.this, self.format_time(e)
+            ),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
+            exp.TimestampTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", e.this, unit_to_str(e)
+            ),
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, time_format("doris")(self, e)
             ),

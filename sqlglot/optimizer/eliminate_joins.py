@@ -45,7 +45,10 @@ def _should_eliminate_join(scope, join, alias):
         isinstance(inner_source, Scope)
         and not _join_is_used(scope, join, alias)
         and (
-            (join.side == "LEFT" and _is_joined_on_all_unique_outputs(inner_source, join))
+            (
+                join.side == "LEFT"
+                and _is_joined_on_all_unique_outputs(inner_source, join)
+            )
             or (not join.args.get("on") and _has_single_output_row(inner_source))
         )
     )
@@ -60,7 +63,9 @@ def _join_is_used(scope, join, alias):
     else:
         on_clause_columns = set()
     return any(
-        column for column in scope.source_columns(alias) if id(column) not in on_clause_columns
+        column
+        for column in scope.source_columns(alias)
+        if id(column) not in on_clause_columns
     )
 
 

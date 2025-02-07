@@ -31,7 +31,9 @@ class TestGenerator(unittest.TestCase):
         self.assertEqual(expression.sql(), "SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x")
 
         self.assertEqual(
-            exp.DateTrunc(this=exp.to_column("event_date"), unit=exp.var("MONTH")).sql(),
+            exp.DateTrunc(
+                this=exp.to_column("event_date"), unit=exp.var("MONTH")
+            ).sql(),
             "DATE_TRUNC('MONTH', event_date)",
         )
 

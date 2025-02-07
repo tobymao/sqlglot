@@ -7,7 +7,9 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
-        self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
+        self.validate_identity(
+            "DEALLOCATE PREPARE my_query", check_command_warning=True
+        )
         self.validate_identity("DESCRIBE INPUT x", check_command_warning=True)
         self.validate_identity("DESCRIBE OUTPUT x", check_command_warning=True)
         self.validate_identity(
@@ -414,7 +416,10 @@ class TestPresto(Validator):
         self.validate_all(
             "CAST(x AS TIMESTAMP)",
             write={"presto": "CAST(x AS TIMESTAMP)"},
-            read={"mysql": "CAST(x AS DATETIME)", "clickhouse": "CAST(x AS DATETIME64)"},
+            read={
+                "mysql": "CAST(x AS DATETIME)",
+                "clickhouse": "CAST(x AS DATETIME64)",
+            },
         )
         self.validate_all(
             "CAST(x AS TIMESTAMP)",
@@ -549,8 +554,12 @@ class TestPresto(Validator):
             },
         )
 
-        self.validate_identity("""CREATE OR REPLACE VIEW v SECURITY DEFINER AS SELECT id FROM t""")
-        self.validate_identity("""CREATE OR REPLACE VIEW v SECURITY INVOKER AS SELECT id FROM t""")
+        self.validate_identity(
+            """CREATE OR REPLACE VIEW v SECURITY DEFINER AS SELECT id FROM t"""
+        )
+        self.validate_identity(
+            """CREATE OR REPLACE VIEW v SECURITY INVOKER AS SELECT id FROM t"""
+        )
 
     def test_quotes(self):
         self.validate_all(
@@ -640,9 +649,10 @@ class TestPresto(Validator):
 
     def test_presto(self):
         self.assertEqual(
-            exp.func("md5", exp.func("concat", exp.cast("x", "text"), exp.Literal.string("s"))).sql(
-                dialect="presto"
-            ),
+            exp.func(
+                "md5",
+                exp.func("concat", exp.cast("x", "text"), exp.Literal.string("s")),
+            ).sql(dialect="presto"),
             "LOWER(TO_HEX(MD5(TO_UTF8(CONCAT(CAST(x AS VARCHAR), CAST('s' AS VARCHAR))))))",
         )
 
@@ -664,7 +674,9 @@ class TestPresto(Validator):
                 },
             )
 
-        self.validate_identity("SELECT a FROM t GROUP BY a, ROLLUP (b), ROLLUP (c), ROLLUP (d)")
+        self.validate_identity(
+            "SELECT a FROM t GROUP BY a, ROLLUP (b), ROLLUP (c), ROLLUP (d)"
+        )
         self.validate_identity("SELECT a FROM test TABLESAMPLE BERNOULLI (50)")
         self.validate_identity("SELECT a FROM test TABLESAMPLE SYSTEM (75)")
         self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
@@ -672,7 +684,9 @@ class TestPresto(Validator):
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
         self.validate_identity("SELECT * FROM (VALUES (1))")
-        self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
+        self.validate_identity(
+            "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE"
+        )
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
         self.validate_identity(
@@ -1289,16 +1303,24 @@ MATCH_RECOGNIZE (
         for dialect in ("trino", "presto"):
             s = parse_one('SELECT col:x:y."special string"', read="snowflake")
 
-            dialect_json_extract_setting = f"{dialect}, variant_extract_is_json_extract=True"
-            dialect_row_access_setting = f"{dialect}, variant_extract_is_json_extract=False"
+            dialect_json_extract_setting = (
+                f"{dialect}, variant_extract_is_json_extract=True"
+            )
+            dialect_row_access_setting = (
+                f"{dialect}, variant_extract_is_json_extract=False"
+            )
 
             # By default, Snowflake VARIANT will generate JSON_EXTRACT() in Presto/Trino
-            json_extract_result = """SELECT JSON_EXTRACT(col, '$.x.y["special string"]')"""
+            json_extract_result = (
+                """SELECT JSON_EXTRACT(col, '$.x.y["special string"]')"""
+            )
             self.assertEqual(s.sql(dialect), json_extract_result)
             self.assertEqual(s.sql(dialect_json_extract_setting), json_extract_result)
 
             # If the setting is overriden to False, then generate ROW access (dot notation)
-            self.assertEqual(s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"')
+            self.assertEqual(
+                s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"'
+            )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")

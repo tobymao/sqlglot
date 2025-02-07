@@ -46,7 +46,9 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
 
             try:
                 node = node.replace(
-                    while_changing(node, lambda e: distributive_law(e, dnf, max_distance))
+                    while_changing(
+                        node, lambda e: distributive_law(e, dnf, max_distance)
+                    )
                 )
             except OptimizeError as e:
                 logger.info(e)
@@ -81,7 +83,8 @@ def normalized(expression: exp.Expression, dnf: bool = False) -> bool:
     """
     ancestor, root = (exp.And, exp.Or) if dnf else (exp.Or, exp.And)
     return not any(
-        connector.find_ancestor(ancestor) for connector in find_all_in_scope(expression, root)
+        connector.find_ancestor(ancestor)
+        for connector in find_all_in_scope(expression, root)
     )
 
 
@@ -157,7 +160,9 @@ def distributive_law(expression, dnf, max_distance):
     distance = normalization_distance(expression, dnf=dnf, max_=max_distance)
 
     if distance > max_distance:
-        raise OptimizeError(f"Normalization distance {distance} exceeds max {max_distance}")
+        raise OptimizeError(
+            f"Normalization distance {distance} exceeds max {max_distance}"
+        )
 
     exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance))
     to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
@@ -169,7 +174,9 @@ def distributive_law(expression, dnf, max_distance):
         to_func = exp.and_ if to_exp == exp.And else exp.or_
 
         if isinstance(a, to_exp) and isinstance(b, to_exp):
-            if len(tuple(a.find_all(exp.Connector))) > len(tuple(b.find_all(exp.Connector))):
+            if len(tuple(a.find_all(exp.Connector))) > len(
+                tuple(b.find_all(exp.Connector))
+            ):
                 return _distribute(a, b, from_func, to_func)
             return _distribute(b, a, from_func, to_func)
         if isinstance(a, to_exp):

@@ -9,7 +9,9 @@ from sqlglot.helper import is_date_unit, is_iso_date, is_iso_datetime
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
-def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp.Expression:
+def canonicalize(
+    expression: exp.Expression, dialect: DialectType = None
+) -> exp.Expression:
     """Converts a sql expression into a standard form.
 
     This method relies on annotate_types because many of the
@@ -34,7 +36,11 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
 
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
-    if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
+    if (
+        isinstance(node, exp.Add)
+        and node.type
+        and node.type.this in exp.DataType.TEXT_TYPES
+    ):
         node = exp.Concat(expressions=[node.left, node.right])
     return node
 
@@ -72,7 +78,9 @@ COERCIBLE_DATE_OPS = (
 )
 
 
-def coerce_type(node: exp.Expression, promote_to_inferred_datetime_type: bool) -> exp.Expression:
+def coerce_type(
+    node: exp.Expression, promote_to_inferred_datetime_type: bool
+) -> exp.Expression:
     if isinstance(node, COERCIBLE_DATE_OPS):
         _coerce_date(node.left, node.right, promote_to_inferred_datetime_type)
     elif isinstance(node, exp.Between):
@@ -165,7 +173,9 @@ def _coerce_date(
                 b_type = exp.DataType.Type.DATETIME
 
             target_type = (
-                b_type if b_type in TypeAnnotator.COERCES_TO.get(a_type.this, {}) else a_type
+                b_type
+                if b_type in TypeAnnotator.COERCES_TO.get(a_type.this, {})
+                else a_type
             )
         else:
             target_type = a_type
@@ -176,7 +186,9 @@ def _coerce_date(
         _replace_cast(b, target_type)
 
 
-def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:
+def _coerce_timeunit_arg(
+    arg: exp.Expression, unit: t.Optional[exp.Expression]
+) -> exp.Expression:
     if not arg.type:
         return arg
 

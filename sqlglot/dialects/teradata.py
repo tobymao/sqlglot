@@ -33,7 +33,9 @@ def _date_add_sql(
             kind_to_op = {"+": "+", "-": "-"}
             value.set("is_string", True)
 
-        return f"{this} {kind_to_op[kind]} {self.sql(exp.Interval(this=value, unit=unit))}"
+        return (
+            f"{this} {kind_to_op[kind]} {self.sql(exp.Interval(this=value, unit=unit))}"
+        )
 
     return func
 
@@ -168,7 +170,9 @@ class Teradata(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CARDINALITY": exp.ArraySize.from_arg_list,
-            "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+            "RANDOM": lambda args: exp.Rand(
+                lower=seq_get(args, 0), upper=seq_get(args, 1)
+            ),
         }
 
         EXPONENT = {
@@ -185,9 +189,13 @@ class Teradata(Dialect):
                 charset_split = self._prev.text.split("_TO_")
                 to = self.expression(exp.CharacterSet, this=charset_split[1])
             else:
-                self.raise_error("Expected a character set translator after USING in TRANSLATE")
+                self.raise_error(
+                    "Expected a character set translator after USING in TRANSLATE"
+                )
 
-            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+            return self.expression(
+                exp.Cast if strict else exp.TryCast, this=this, to=to
+            )
 
         # FROM before SET in Teradata UPDATE syntax
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
@@ -210,7 +218,9 @@ class Teradata(Dialect):
             expressions = self._parse_csv(self._parse_assignment)
             each = self._match_text_seq("EACH") and self._parse_assignment()
 
-            return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
+            return self.expression(
+                exp.RangeN, this=this, expressions=expressions, each=each
+            )
 
         def _parse_index_params(self) -> exp.IndexParameters:
             this = super()._parse_index_params()
@@ -252,13 +262,22 @@ class Teradata(Dialect):
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Pow: lambda self, e: self.binary(e, "**"),
-            exp.Rand: lambda self, e: self.func("RANDOM", e.args.get("lower"), e.args.get("upper")),
+            exp.Rand: lambda self, e: self.func(
+                "RANDOM", e.args.get("lower"), e.args.get("upper")
+            ),
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_semi_and_anti_joins,
+                ]
             ),
             exp.StrPosition: lambda self, e: (
                 strposition_sql(
-                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
+                    self,
+                    e,
+                    func_name="INSTR",
+                    supports_position=True,
+                    supports_occurrence=True,
                 )
             ),
             exp.StrToDate: lambda self,
@@ -268,15 +287,23 @@ class Teradata(Dialect):
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
-            exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
+            exp.Quarter: lambda self, e: self.sql(
+                exp.Extract(this="QUARTER", expression=e.this)
+            ),
         }
 
         def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
             prefix, suffix = ("(", ")") if expression.this else ("", "")
-            return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
+            return self.func(
+                "CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix
+            )
 
-        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if expression.to.this == exp.DataType.Type.UNKNOWN and expression.args.get("format"):
+        def cast_sql(
+            self, expression: exp.Cast, safe_prefix: t.Optional[str] = None
+        ) -> str:
+            if expression.to.this == exp.DataType.Type.UNKNOWN and expression.args.get(
+                "format"
+            ):
                 # We don't actually want to print the unknown type in CAST(<value> AS FORMAT <format>)
                 expression.to.pop()
 
@@ -290,9 +317,13 @@ class Teradata(Dialect):
             expression: exp.TableSample,
             tablesample_keyword: t.Optional[str] = None,
         ) -> str:
-            return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
+            return (
+                f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
+            )
 
-        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+        def partitionedbyproperty_sql(
+            self, expression: exp.PartitionedByProperty
+        ) -> str:
             return f"PARTITION BY {self.sql(expression, 'this')}"
 
         # FROM before SET in Teradata UPDATE syntax
@@ -321,12 +352,16 @@ class Teradata(Dialect):
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
 
-        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+        def createable_sql(
+            self, expression: exp.Create, locations: t.DefaultDict
+        ) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind == "TABLE" and locations.get(exp.Properties.Location.POST_NAME):
                 this_name = self.sql(expression.this, "this")
                 this_properties = self.properties(
-                    exp.Properties(expressions=locations[exp.Properties.Location.POST_NAME]),
+                    exp.Properties(
+                        expressions=locations[exp.Properties.Location.POST_NAME]
+                    ),
                     wrapped=False,
                     prefix=",",
                 )
@@ -340,7 +375,9 @@ class Teradata(Dialect):
             if this.upper() != "QUARTER":
                 return super().extract_sql(expression)
 
-            to_char = exp.func("to_char", expression.expression, exp.Literal.string("Q"))
+            to_char = exp.func(
+                "to_char", expression.expression, exp.Literal.string("Q")
+            )
             return self.sql(exp.cast(to_char, exp.DataType.Type.INT))
 
         def interval_sql(self, expression: exp.Interval) -> str:

@@ -144,7 +144,9 @@ class Step:
             return bool(agg_funcs)
 
         def set_ops_and_aggs(step):
-            step.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
+            step.operands = tuple(
+                alias(operand, alias_) for operand, alias_ in operands.items()
+            )
             step.aggregations = list(aggregations)
 
         for e in expression.expressions:
@@ -209,8 +211,12 @@ class Step:
         if order:
             if aggregate and isinstance(step, Aggregate):
                 for i, ordered in enumerate(order.expressions):
-                    if extract_agg_operands(exp.alias_(ordered.this, f"_o_{i}", quoted=True)):
-                        ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))
+                    if extract_agg_operands(
+                        exp.alias_(ordered.this, f"_o_{i}", quoted=True)
+                    ):
+                        ordered.this.replace(
+                            exp.column(f"_o_{i}", step.name, quoted=True)
+                        )
 
                 set_ops_and_aggs(aggregate)
 
@@ -359,7 +365,9 @@ class Join(Step):
         lines = [f"{indent}Source: {self.source_name or self.name}"]
         for name, join in self.joins.items():
             lines.append(f"{indent}{name}: {join['side'] or 'INNER'}")
-            join_key = ", ".join(str(key) for key in t.cast(list, join.get("join_key") or []))
+            join_key = ", ".join(
+                str(key) for key in t.cast(list, join.get("join_key") or [])
+            )
             if join_key:
                 lines.append(f"{indent}Key: {join_key}")
             if join.get("condition"):

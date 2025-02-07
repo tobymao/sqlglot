@@ -15,8 +15,12 @@ class TestDiff(unittest.TestCase):
             [
                 Remove(expression=parse_one("a + b")),  # the Add node
                 Insert(expression=parse_one("a - b")),  # the Sub node
-                Move(source=parse_one("a"), target=parse_one("a")),  # the `a` Column node
-                Move(source=parse_one("b"), target=parse_one("b")),  # the `b` Column node
+                Move(
+                    source=parse_one("a"), target=parse_one("a")
+                ),  # the `a` Column node
+                Move(
+                    source=parse_one("b"), target=parse_one("b")
+                ),  # the `b` Column node
             ],
         )
 
@@ -50,15 +54,18 @@ class TestDiff(unittest.TestCase):
     def test_lambda(self):
         self._validate_delta_only(
             diff_delta_only(
-                parse_one("SELECT a, b, c, x(a -> a)"), parse_one("SELECT a, b, c, x(b -> b)")
+                parse_one("SELECT a, b, c, x(a -> a)"),
+                parse_one("SELECT a, b, c, x(b -> b)"),
             ),
             [
                 Update(
                     source=exp.Lambda(
-                        this=exp.to_identifier("a"), expressions=[exp.to_identifier("a")]
+                        this=exp.to_identifier("a"),
+                        expressions=[exp.to_identifier("a")],
                     ),
                     target=exp.Lambda(
-                        this=exp.to_identifier("b"), expressions=[exp.to_identifier("b")]
+                        this=exp.to_identifier("b"),
+                        expressions=[exp.to_identifier("b")],
                     ),
                 ),
             ],
@@ -67,7 +74,8 @@ class TestDiff(unittest.TestCase):
     def test_udf(self):
         self._validate_delta_only(
             diff_delta_only(
-                parse_one('SELECT a, b, "my.udf1"()'), parse_one('SELECT a, b, "my.udf2"()')
+                parse_one('SELECT a, b, "my.udf1"()'),
+                parse_one('SELECT a, b, "my.udf2"()'),
             ),
             [
                 Insert(expression=parse_one('"my.udf2"()')),
@@ -122,8 +130,14 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff_delta_only(expr_src, expr_tgt),
             [
-                Move(source=expr_src.selects[0].left.left, target=expr_tgt.selects[0].right),
-                Move(source=expr_src.selects[0].right, target=expr_tgt.selects[0].left.left),
+                Move(
+                    source=expr_src.selects[0].left.left,
+                    target=expr_tgt.selects[0].right,
+                ),
+                Move(
+                    source=expr_src.selects[0].right,
+                    target=expr_tgt.selects[0].left.left,
+                ),
             ],
         )
 
@@ -133,11 +147,16 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff_delta_only(expr_src, expr_tgt),
             [
-                Move(source=expr_src.selects[1], target=expr_tgt.find(exp.Concat).expressions[-1]),
+                Move(
+                    source=expr_src.selects[1],
+                    target=expr_tgt.find(exp.Concat).expressions[-1],
+                ),
             ],
         )
 
-        expr_src = parse_one("SELECT a as a, b as b FROM t WHERE CONCAT('a', 'b') = 'ab'")
+        expr_src = parse_one(
+            "SELECT a as a, b as b FROM t WHERE CONCAT('a', 'b') = 'ab'"
+        )
         expr_tgt = parse_one("SELECT a as a FROM t WHERE CONCAT('a', 'b', b) = 'ab'")
 
         b_alias = expr_src.selects[1]
@@ -146,7 +165,10 @@ class TestDiff(unittest.TestCase):
             diff_delta_only(expr_src, expr_tgt),
             [
                 Remove(expression=b_alias),
-                Move(source=b_alias.this, target=expr_tgt.find(exp.Concat).expressions[-1]),
+                Move(
+                    source=b_alias.this,
+                    target=expr_tgt.find(exp.Concat).expressions[-1],
+                ),
             ],
         )
 
@@ -208,7 +230,9 @@ class TestDiff(unittest.TestCase):
         )
 
         expr_src = parse_one("SELECT MAX(x) OVER (ORDER BY y) FROM z", "oracle")
-        expr_tgt = parse_one("SELECT MAX(x) KEEP (DENSE_RANK LAST ORDER BY y) FROM z", "oracle")
+        expr_tgt = parse_one(
+            "SELECT MAX(x) KEEP (DENSE_RANK LAST ORDER BY y) FROM z", "oracle"
+        )
 
         self._validate_delta_only(
             diff_delta_only(expr_src, expr_tgt),
@@ -242,7 +266,9 @@ class TestDiff(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             diff_delta_only(
-                expr_src, expr_tgt, matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)]
+                expr_src,
+                expr_tgt,
+                matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)],
             )
 
     def test_identifier(self):

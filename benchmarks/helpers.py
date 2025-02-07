@@ -22,7 +22,10 @@ def ascii_table(table: list[dict[str, t.Any]]) -> str:
 
     for row in table:
         lines.append(
-            border(str(row[column]).rjust(width)[0:width] for column, width in widths.items())
+            border(
+                str(row[column]).rjust(width)[0:width]
+                for column, width in widths.items()
+            )
         )
 
     return "\n".join(lines)

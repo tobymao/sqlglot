@@ -154,7 +154,10 @@ class AbstractMappingSchema:
         return [part.name for part in reversed(table.parts)]
 
     def find(
-        self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+        self,
+        table: exp.Table,
+        raise_on_missing: bool = True,
+        ensure_data_types: bool = False,
     ) -> t.Optional[t.Any]:
         """
         Returns the schema of a given table.
@@ -187,7 +190,10 @@ class AbstractMappingSchema:
         return self.nested_get(parts, raise_on_missing=raise_on_missing)
 
     def nested_get(
-        self, parts: t.Sequence[str], d: t.Optional[t.Dict] = None, raise_on_missing=True
+        self,
+        parts: t.Sequence[str],
+        d: t.Optional[t.Dict] = None,
+        raise_on_missing=True,
     ) -> t.Optional[t.Any]:
         return nested_get(
             d or self.mapping,
@@ -241,10 +247,15 @@ class MappingSchema(AbstractMappingSchema, Schema):
         )
 
     def find(
-        self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+        self,
+        table: exp.Table,
+        raise_on_missing: bool = True,
+        ensure_data_types: bool = False,
     ) -> t.Optional[t.Any]:
         schema = super().find(
-            table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
+            table,
+            raise_on_missing=raise_on_missing,
+            ensure_data_types=ensure_data_types,
         )
         if ensure_data_types and isinstance(schema, dict):
             schema = {
@@ -284,9 +295,15 @@ class MappingSchema(AbstractMappingSchema, Schema):
             normalize: whether to normalize identifiers according to the dialect of interest.
             match_depth: whether to enforce that the table must match the schema's depth or not.
         """
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        normalized_table = self._normalize_table(
+            table, dialect=dialect, normalize=normalize
+        )
 
-        if match_depth and not self.empty and len(normalized_table.parts) != self.depth():
+        if (
+            match_depth
+            and not self.empty
+            and len(normalized_table.parts) != self.depth()
+        ):
             raise SchemaError(
                 f"Table {normalized_table.sql(dialect=self.dialect)} must match the "
                 f"schema's nesting level: {self.depth()}."
@@ -313,7 +330,9 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> t.List[str]:
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        normalized_table = self._normalize_table(
+            table, dialect=dialect, normalize=normalize
+        )
 
         schema = self.find(normalized_table)
         if schema is None:
@@ -322,7 +341,9 @@ class MappingSchema(AbstractMappingSchema, Schema):
         if not only_visible or not self.visible:
             return list(schema)
 
-        visible = self.nested_get(self.table_parts(normalized_table), self.visible) or []
+        visible = (
+            self.nested_get(self.table_parts(normalized_table), self.visible) or []
+        )
         return [col for col in schema if col in visible]
 
     def get_column_type(
@@ -332,10 +353,14 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        normalized_table = self._normalize_table(
+            table, dialect=dialect, normalize=normalize
+        )
 
         normalized_column_name = self._normalize_name(
-            column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
+            column if isinstance(column, str) else column.this,
+            dialect=dialect,
+            normalize=normalize,
         )
 
         table_schema = self.find(normalized_table, raise_on_missing=False)
@@ -356,10 +381,14 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> bool:
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        normalized_table = self._normalize_table(
+            table, dialect=dialect, normalize=normalize
+        )
 
         normalized_column_name = self._normalize_name(
-            column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
+            column if isinstance(column, str) else column.this,
+            dialect=dialect,
+            normalize=normalize,
         )
 
         table_schema = self.find(normalized_table, raise_on_missing=False)
@@ -383,13 +412,18 @@ class MappingSchema(AbstractMappingSchema, Schema):
             columns = nested_get(schema, *zip(keys, keys))
 
             if not isinstance(columns, dict):
-                raise SchemaError(error_msg.format(".".join(keys[:-1]), len(flattened_schema[0])))
+                raise SchemaError(
+                    error_msg.format(".".join(keys[:-1]), len(flattened_schema[0]))
+                )
             if not columns:
-                raise SchemaError(f"Table {'.'.join(keys[:-1])} must have at least one column")
+                raise SchemaError(
+                    f"Table {'.'.join(keys[:-1])} must have at least one column"
+                )
             if isinstance(first(columns.values()), dict):
                 raise SchemaError(
                     error_msg.format(
-                        ".".join(keys + flatten_schema(columns)[0]), len(flattened_schema[0])
+                        ".".join(keys + flatten_schema(columns)[0]),
+                        len(flattened_schema[0]),
                     ),
                 )
 
@@ -412,13 +446,17 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect = dialect or self.dialect
         normalize = self.normalize if normalize is None else normalize
 
-        normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=normalize)
+        normalized_table = exp.maybe_parse(
+            table, into=exp.Table, dialect=dialect, copy=normalize
+        )
 
         if normalize:
             for part in normalized_table.parts:
                 if isinstance(part, exp.Identifier):
                     part.replace(
-                        normalize_name(part, dialect=dialect, is_table=True, normalize=normalize)
+                        normalize_name(
+                            part, dialect=dialect, is_table=True, normalize=normalize
+                        )
                     )
 
         return normalized_table
@@ -443,7 +481,9 @@ class MappingSchema(AbstractMappingSchema, Schema):
             self._depth = super().depth() - 1
         return self._depth
 
-    def _to_data_type(self, schema_type: str, dialect: DialectType = None) -> exp.DataType:
+    def _to_data_type(
+        self, schema_type: str, dialect: DialectType = None
+    ) -> exp.DataType:
         """
         Convert a type represented as a string to the corresponding `sqlglot.exp.DataType` object.
 

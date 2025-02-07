@@ -63,7 +63,11 @@ def reorder_joins(expression):
         dag = {name: other_table_names(join) for name, join in joins.items()}
         parent.set(
             "joins",
-            [joins[name] for name in tsort(dag) if name != from_.alias_or_name and name in joins],
+            [
+                joins[name]
+                for name in tsort(dag)
+                if name != from_.alias_or_name and name in joins
+            ],
         )
     return expression
 

@@ -61,7 +61,8 @@ class Table:
 
             lines.append(
                 " ".join(
-                    str(row[column]).rjust(widths[column])[0 : widths[column]] for column in columns
+                    str(row[column]).rjust(widths[column])[0 : widths[column]]
+                    for column in columns
                 )
             )
         return "\n".join(lines)
@@ -97,7 +98,9 @@ class RangeReader:
 class RowReader:
     def __init__(self, columns, column_range=None):
         self.columns = {
-            column: i for i, column in enumerate(columns) if not column_range or i in column_range
+            column: i
+            for i, column in enumerate(columns)
+            if not column_range or i in column_range
         }
         self.row = None
 
@@ -140,7 +143,9 @@ def _ensure_tables(d: t.Optional[t.Dict], dialect: DialectType = None) -> t.Dict
                 }
                 for row in table
             ]
-            column_names = tuple(column_name for column_name in table[0]) if table else ()
+            column_names = (
+                tuple(column_name for column_name in table[0]) if table else ()
+            )
             rows = [tuple(row[name] for name in column_names) for row in table]
             result[table_name] = Table(columns=column_names, rows=rows)
 

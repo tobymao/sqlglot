@@ -107,7 +107,9 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
             alias = subquery.alias_or_name
             inner_scope = outer_scope.sources[alias]
-            if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
+            if _mergeable(
+                outer_scope, inner_scope, leave_tables_isolated, from_or_join
+            ):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
                 _merge_expressions(outer_scope, inner_scope, alias)
@@ -121,7 +123,10 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
 
 
 def _mergeable(
-    outer_scope: Scope, inner_scope: Scope, leave_tables_isolated: bool, from_or_join: FromOrJoin
+    outer_scope: Scope,
+    inner_scope: Scope,
+    leave_tables_isolated: bool,
+    from_or_join: FromOrJoin,
 ) -> bool:
     """
     Return True if `inner_select` can be merged into outer query.
@@ -130,7 +135,9 @@ def _mergeable(
 
     def _is_a_window_expression_in_unmergable_operation():
         window_expressions = inner_select.find_all(exp.Window)
-        window_alias_names = {window.parent.alias_or_name for window in window_expressions}
+        window_alias_names = {
+            window.parent.alias_or_name for window in window_expressions
+        }
         inner_select_name = from_or_join.alias_or_name
         unmergable_window_columns = [
             column
@@ -200,7 +207,10 @@ def _mergeable(
         and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
         and inner_select.args.get("from") is not None
         and not outer_scope.pivots
-        and not any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions)
+        and not any(
+            e.find(exp.AggFunc, exp.Select, exp.Explode)
+            for e in inner_select.expressions
+        )
         and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
         and not (
             isinstance(from_or_join, exp.Join)
@@ -211,7 +221,8 @@ def _mergeable(
             isinstance(from_or_join, exp.From)
             and inner_select.args.get("where")
             and any(
-                j.side in ("FULL", "RIGHT") for j in outer_scope.expression.args.get("joins", [])
+                j.side in ("FULL", "RIGHT")
+                for j in outer_scope.expression.args.get("joins", [])
             )
         )
         and not _outer_select_joins_on_inner_select_join()
@@ -274,7 +285,9 @@ def _merge_from(
     )
 
 
-def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:
+def _merge_joins(
+    outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin
+) -> None:
     """
     Merge JOIN clauses of inner query into outer query.
     """
@@ -284,7 +297,9 @@ def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
     joins = inner_scope.expression.args.get("joins") or []
     for join in joins:
         new_joins.append(join)
-        outer_scope.add_source(join.alias_or_name, inner_scope.sources[join.alias_or_name])
+        outer_scope.add_source(
+            join.alias_or_name, inner_scope.sources[join.alias_or_name]
+        )
 
     if new_joins:
         outer_joins = outer_scope.expression.args.get("joins", [])
@@ -327,13 +342,18 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         for column in columns_to_replace:
             # Ensures we don't alter the intended operator precedence if there's additional
             # context surrounding the outer expression (i.e. it's not a simple projection).
-            if isinstance(column.parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
+            if (
+                isinstance(column.parent, (exp.Unary, exp.Binary))
+                and must_wrap_expression
+            ):
                 expression = exp.paren(expression, copy=False)
 
             column.replace(expression.copy())
 
 
-def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:
+def _merge_where(
+    outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin
+) -> None:
     """
     Merge WHERE clause of inner query into outer query.
 
@@ -378,10 +398,14 @@ def _merge_order(outer_scope: Scope, inner_scope: Scope) -> None:
     """
     if (
         any(
-            outer_scope.expression.args.get(arg) for arg in ["group", "distinct", "having", "order"]
+            outer_scope.expression.args.get(arg)
+            for arg in ["group", "distinct", "having", "order"]
         )
         or len(outer_scope.selected_sources) != 1
-        or any(expression.find(exp.AggFunc) for expression in outer_scope.expression.expressions)
+        or any(
+            expression.find(exp.AggFunc)
+            for expression in outer_scope.expression.expressions
+        )
     ):
         return
 

@@ -18,12 +18,18 @@ def gen_condition(n):
 
 BENCHMARKS = {
     "tpch": lambda: (
-        [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")],
+        [
+            parse_one(sql)
+            for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
+        ],
         TPCH_SCHEMA,
         3,
     ),
     "tpcds": lambda: (
-        [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")],
+        [
+            parse_one(sql)
+            for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")
+        ],
         TPCDS_SCHEMA,
         3,
     ),

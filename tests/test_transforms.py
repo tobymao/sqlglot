@@ -16,7 +16,10 @@ class TestTransforms(unittest.TestCase):
     def validate(self, transform, sql, target, dialect=None):
         with self.subTest(f"{dialect} - {sql}"):
             self.assertEqual(
-                parse_one(sql, dialect=dialect).transform(transform).sql(dialect=dialect), target
+                parse_one(sql, dialect=dialect)
+                .transform(transform)
+                .sql(dialect=dialect),
+                target,
             )
 
     def test_unalias_group(self):

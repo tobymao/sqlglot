@@ -48,7 +48,11 @@ from sqlglot.expressions import (
 from sqlglot.generator import Generator as Generator
 from sqlglot.parser import Parser as Parser
 from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
-from sqlglot.tokens import Token as Token, Tokenizer as Tokenizer, TokenType as TokenType
+from sqlglot.tokens import (
+    Token as Token,
+    Tokenizer as Tokenizer,
+    TokenType as TokenType,
+)
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -69,7 +73,9 @@ pretty = False
 """Whether to format generated SQL by default."""
 
 
-def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> t.List[Token]:
+def tokenize(
+    sql: str, read: DialectType = None, dialect: DialectType = None
+) -> t.List[Token]:
     """
     Tokenizes the given SQL string.
 

@@ -174,14 +174,19 @@ class TestHive(Validator):
             """CREATE EXTERNAL TABLE `my_table` (`a7` ARRAY<DATE>) ROW FORMAT SERDE 'a' STORED AS INPUTFORMAT 'b' OUTPUTFORMAT 'c' LOCATION 'd' TBLPROPERTIES ('e'='f')"""
         )
         self.validate_identity("ALTER VIEW v1 AS SELECT x, UPPER(s) AS s FROM t2")
-        self.validate_identity("ALTER VIEW v1 (c1, c2) AS SELECT x, UPPER(s) AS s FROM t2")
+        self.validate_identity(
+            "ALTER VIEW v1 (c1, c2) AS SELECT x, UPPER(s) AS s FROM t2"
+        )
         self.validate_identity(
             "ALTER VIEW v7 (c1 COMMENT 'Comment for c1', c2) AS SELECT t1.c1, t1.c2 FROM t1"
         )
         self.validate_identity("ALTER VIEW db1.v1 RENAME TO db2.v2")
-        self.validate_identity("ALTER VIEW v1 SET TBLPROPERTIES ('tblp1'='1', 'tblp2'='2')")
         self.validate_identity(
-            "ALTER VIEW v1 UNSET TBLPROPERTIES ('tblp1', 'tblp2')", check_command_warning=True
+            "ALTER VIEW v1 SET TBLPROPERTIES ('tblp1'='1', 'tblp2'='2')"
+        )
+        self.validate_identity(
+            "ALTER VIEW v1 UNSET TBLPROPERTIES ('tblp1', 'tblp2')",
+            check_command_warning=True,
         )
 
     def test_lateral_view(self):
@@ -368,10 +373,13 @@ class TestHive(Validator):
                 "tsql": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
         )
-        self.validate_all("DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"})
+        self.validate_all(
+            "DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"}
+        )
         self.validate_all("DATE_ADD(a, b * -1)", read={"": "DATE_SUB(a, b)"})
         self.validate_all(
-            "ADD_MONTHS('2020-01-01', -2)", read={"": "DATE_SUB('2020-01-01', 2, month)"}
+            "ADD_MONTHS('2020-01-01', -2)",
+            read={"": "DATE_SUB('2020-01-01', 2, month)"},
         )
         self.validate_all(
             "DATEDIFF(TO_DATE(y), x)",
@@ -420,8 +428,12 @@ class TestHive(Validator):
         self.validate_identity("SELECT * FROM t WHERE col IN ('stream')")
         self.validate_identity("SET hiveconf:some_var = 5", check_command_warning=True)
         self.validate_identity("(VALUES (1 AS a, 2 AS b, 3))")
-        self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
-        self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
+        self.validate_identity(
+            "SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)"
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)"
+        )
         self.validate_identity(
             "SELECT WEEKOFYEAR('2024-05-22'), DAYOFMONTH('2024-05-22'), DAYOFWEEK('2024-05-22')"
         )
@@ -430,7 +442,9 @@ class TestHive(Validator):
             "SELECT ROW() OVER (PARTITION BY x ORDER BY y)",
         )
         self.validate_identity("SELECT transform")
-        self.validate_identity("SELECT * FROM test DISTRIBUTE BY y SORT BY x DESC ORDER BY l")
+        self.validate_identity(
+            "SELECT * FROM test DISTRIBUTE BY y SORT BY x DESC ORDER BY l"
+        )
         self.validate_identity(
             "SELECT * FROM test WHERE RAND() <= 0.1 DISTRIBUTE BY RAND() SORT BY RAND()"
         )

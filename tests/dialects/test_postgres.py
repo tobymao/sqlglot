@@ -1088,7 +1088,8 @@ class TestPostgres(Validator):
                 "duckdb": "CREATE TABLE x (a UUID, b BLOB)",
                 "presto": "CREATE TABLE x (a UUID, b VARBINARY)",
                 "hive": "CREATE TABLE x (a UUID, b BINARY)",
-                "spark": "CREATE TABLE x (a UUID, b BINARY)",
+                "spark": "CREATE TABLE x (a STRING, b BINARY)",
+                "tsql": "CREATE TABLE x (a UNIQUEIDENTIFIER, b VARBINARY)",
             },
         )
 

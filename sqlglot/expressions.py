@@ -4476,7 +4476,6 @@ class DataType(Expression):
         UMEDIUMINT = auto()
         UDECIMAL = auto()
         UNION = auto()
-        UNIQUEIDENTIFIER = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
         USERDEFINED = "USER-DEFINED"
         USMALLINT = auto()

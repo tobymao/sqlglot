@@ -348,6 +348,7 @@ def to_node(
 
     return node
 
+
 def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Expression]:
     """
     Safely extracts source column from expression.
@@ -372,20 +373,21 @@ def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Expression]:
             expr = expr.this
 
         if isinstance(expr, exp.Dot):
-            if not hasattr(expr, 'expression') or not hasattr(expr.expression, 'name'):
+            if not hasattr(expr, "expression") or not hasattr(expr.expression, "name"):
                 return expr
 
             if isinstance(expr.this, exp.Column):
                 column = expr.this
                 # Safely extract original table and column information
                 return exp.Column(
-                    this=exp.Identifier(this=getattr(expr.expression, 'name', None)),
-                    table=getattr(column, 'table', None)
+                    this=exp.Identifier(this=getattr(expr.expression, "name", None)),
+                    table=getattr(column, "table", None),
                 )
         return expr
 
     except AttributeError:
         return expr  # Return original expression on error
+
 
 def _find_table_source(scope: Scope, table: str):
     """

@@ -703,16 +703,21 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].reference_node_name, "user_data")
         self.assertEqual(node.downstream[0].downstream[0].name, "raw_data.app_id")
         self.assertEqual(node.downstream[0].downstream[0].reference_node_name, "raw_data")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.app_id")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics")
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.app_id"
+        )
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics"
+        )
 
         node = lineage("daily_active_users", sql)
         self.assertEqual(node.downstream[0].name, "user_data.user_count")
         self.assertEqual(node.downstream[0].reference_node_name, "user_data")
         self.assertEqual(node.downstream[0].downstream[0].name, "raw_data.user_count")
         self.assertEqual(node.downstream[0].downstream[0].reference_node_name, "raw_data")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.user_count")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics")
-
-
-        
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.user_count"
+        )
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics"
+        )

@@ -156,7 +156,9 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.source_name, "")
 
         downstream = node.downstream[0]
-        self.assertEqual(downstream.source.sql(), "SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)")
+        self.assertEqual(
+            downstream.source.sql(), "SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)"
+        )
         self.assertEqual(downstream.expression.sql(), "t.a AS a")
         self.assertEqual(downstream.source_name, "y")
 
@@ -186,7 +188,9 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.source_name, "")
 
         downstream = downstream.downstream[0]
-        self.assertEqual(downstream.source.sql(), "SELECT t2.c2 AS c2 FROM a.b.t2 AS t2")
+        self.assertEqual(
+            downstream.source.sql(), "SELECT t2.c2 AS c2 FROM a.b.t2 AS t2"
+        )
         self.assertEqual(downstream.expression.sql(), "t2.c2 AS c2")
         self.assertEqual(downstream.source_name, "")
 
@@ -229,7 +233,9 @@ class TestLineage(unittest.TestCase):
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TEST_TABLE.RESULT")
-        self.assertEqual(downstream.source.sql(dialect="snowflake"), "TEST_TABLE AS TEST_TABLE")
+        self.assertEqual(
+            downstream.source.sql(dialect="snowflake"), "TEST_TABLE AS TEST_TABLE"
+        )
 
         node = lineage(
             "FIELD",
@@ -262,10 +268,12 @@ class TestLineage(unittest.TestCase):
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TABLE.A")
         self.assertEqual(
-            downstream.source.sql(dialect="snowflake"), "SNOWFLAKE.SCHEMA.TABLE AS TABLE"
+            downstream.source.sql(dialect="snowflake"),
+            "SNOWFLAKE.SCHEMA.TABLE AS TABLE",
         )
         self.assertEqual(
-            downstream.expression.sql(dialect="snowflake"), "SNOWFLAKE.SCHEMA.TABLE AS TABLE"
+            downstream.expression.sql(dialect="snowflake"),
+            "SNOWFLAKE.SCHEMA.TABLE AS TABLE",
         )
 
     def test_subquery(self) -> None:
@@ -380,11 +388,15 @@ class TestLineage(unittest.TestCase):
 
         downstream_a = node.downstream[0]
         self.assertEqual(downstream_a.name, "0")
-        self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        self.assertEqual(
+            downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a"
+        )
         self.assertEqual(downstream_a.reference_node_name, "dataset")
         downstream_b = node.downstream[1]
         self.assertEqual(downstream_b.name, "0")
-        self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+        self.assertEqual(
+            downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b"
+        )
         self.assertEqual(downstream_b.reference_node_name, "dataset")
 
     def test_lineage_source_union(self) -> None:
@@ -410,12 +422,16 @@ class TestLineage(unittest.TestCase):
         downstream_a = node.downstream[0]
         self.assertEqual(downstream_a.name, "0")
         self.assertEqual(downstream_a.source_name, "dataset")
-        self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        self.assertEqual(
+            downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a"
+        )
         self.assertEqual(downstream_a.reference_node_name, "")
         downstream_b = node.downstream[1]
         self.assertEqual(downstream_b.name, "0")
         self.assertEqual(downstream_b.source_name, "dataset")
-        self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+        self.assertEqual(
+            downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b"
+        )
         self.assertEqual(downstream_b.reference_node_name, "")
 
     def test_select_star(self) -> None:
@@ -439,11 +455,15 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.name, "b")
 
     def test_lineage_normalize(self) -> None:
-        node = lineage("a", "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
+        node = lineage(
+            "a", "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake"
+        )
         self.assertEqual(node.name, "A")
 
         with self.assertRaises(sqlglot.errors.SqlglotError):
-            lineage('"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
+            lineage(
+                '"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake"
+            )
 
     def test_ddl_lineage(self) -> None:
         sql = """
@@ -467,7 +487,8 @@ class TestLineage(unittest.TestCase):
         downstream = node.downstream[0]
         self.assertEqual(downstream.name, "SUBQ.Y")
         self.assertEqual(
-            downstream.expression.sql(dialect="oracle"), "TO_DATE('2023-12-19', 'YYYY-MM-DD') AS Y"
+            downstream.expression.sql(dialect="oracle"),
+            "TO_DATE('2023-12-19', 'YYYY-MM-DD') AS Y",
         )
 
     def test_trim(self) -> None:
@@ -486,7 +507,9 @@ class TestLineage(unittest.TestCase):
 
         downstream = node.downstream[0]
         self.assertEqual(downstream.name, "z.a")
-        self.assertEqual(downstream.source.sql(), "SELECT y.a AS a, y.b AS b, y.c AS c FROM y AS y")
+        self.assertEqual(
+            downstream.source.sql(), "SELECT y.a AS a, y.b AS b, y.c AS c FROM y AS y"
+        )
 
     def test_node_name_doesnt_contain_comment(self) -> None:
         sql = "SELECT * FROM (SELECT x /* c */ FROM t1) AS t2"
@@ -702,17 +725,30 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].name, "user_data.app_id")
         self.assertEqual(node.downstream[0].reference_node_name, "user_data")
         self.assertEqual(node.downstream[0].downstream[0].name, "raw_data.app_id")
-        self.assertEqual(node.downstream[0].downstream[0].reference_node_name, "raw_data")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.app_id")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics")
+        self.assertEqual(
+            node.downstream[0].downstream[0].reference_node_name, "raw_data"
+        )
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].name,
+            "app_usage_statistics.app_id",
+        )
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].source.name,
+            "app_usage_statistics",
+        )
 
         node = lineage("daily_active_users", sql)
         self.assertEqual(node.downstream[0].name, "user_data.user_count")
         self.assertEqual(node.downstream[0].reference_node_name, "user_data")
         self.assertEqual(node.downstream[0].downstream[0].name, "raw_data.user_count")
-        self.assertEqual(node.downstream[0].downstream[0].reference_node_name, "raw_data")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "app_usage_statistics.user_count")
-        self.assertEqual(node.downstream[0].downstream[0].downstream[0].source.name, "app_usage_statistics")
-
-
-        
+        self.assertEqual(
+            node.downstream[0].downstream[0].reference_node_name, "raw_data"
+        )
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].name,
+            "app_usage_statistics.user_count",
+        )
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].source.name,
+            "app_usage_statistics",
+        )

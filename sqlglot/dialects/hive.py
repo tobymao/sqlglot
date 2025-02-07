@@ -74,9 +74,7 @@ def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
         multiplier *= -1
 
     if expression.expression.is_number:
-        modified_increment = exp.Literal.number(
-            expression.expression.to_py() * multiplier
-        )
+        modified_increment = exp.Literal.number(expression.expression.to_py() * multiplier)
     else:
         modified_increment = expression.expression
         if multiplier != 1:
@@ -87,9 +85,7 @@ def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
     return self.func(func, expression.this, modified_increment)
 
 
-def _date_diff_sql(
-    self: Hive.Generator, expression: exp.DateDiff | exp.TsOrDsDiff
-) -> str:
+def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
     unit = expression.text("unit").upper()
 
     factor = TIME_DIFF_FACTOR.get(unit)
@@ -134,17 +130,13 @@ def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
     return self.func("TO_JSON", this, expression.args.get("options"))
 
 
-@generator.unsupported_args(
-    ("expression", "Hive's SORT_ARRAY does not support a comparator.")
-)
+@generator.unsupported_args(("expression", "Hive's SORT_ARRAY does not support a comparator."))
 def _array_sort_sql(self: Hive.Generator, expression: exp.ArraySort) -> str:
     return self.func("SORT_ARRAY", expression.this)
 
 
 def _str_to_unix_sql(self: Hive.Generator, expression: exp.StrToUnix) -> str:
-    return self.func(
-        "UNIX_TIMESTAMP", expression.this, time_format("hive")(self, expression)
-    )
+    return self.func("UNIX_TIMESTAMP", expression.this, time_format("hive")(self, expression))
 
 
 def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
@@ -285,14 +277,10 @@ class Hive(Dialect):
             **parser.Parser.FUNCTIONS,
             "ASCII": exp.Unicode.from_arg_list,
             "BASE64": exp.ToBase64.from_arg_list,
-            "COLLECT_LIST": lambda args: exp.ArrayAgg(
-                this=seq_get(args, 0), nulls_excluded=True
-            ),
+            "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                unit=exp.Literal.string("DAY"),
+                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
             ),
             "DATE_FORMAT": lambda args: build_formatted_time(exp.TimeToStr, "hive")(
                 [
@@ -302,9 +290,7 @@ class Hive(Dialect):
             ),
             "DATE_SUB": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0),
-                expression=exp.Mul(
-                    this=seq_get(args, 1), expression=exp.Literal.number(-1)
-                ),
+                expression=exp.Mul(this=seq_get(args, 1), expression=exp.Literal.number(-1)),
                 unit=exp.Literal.string("DAY"),
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
@@ -336,9 +322,9 @@ class Hive(Dialect):
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "TRUNC": exp.TimestampTrunc.from_arg_list,
             "UNBASE64": exp.FromBase64.from_arg_list,
-            "UNIX_TIMESTAMP": lambda args: build_formatted_time(
-                exp.StrToUnix, "hive", True
-            )(args or [exp.CurrentTimestamp()]),
+            "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
+                args or [exp.CurrentTimestamp()]
+            ),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
@@ -394,10 +380,7 @@ class Hive(Dialect):
             )
 
         def _parse_types(
-            self,
-            check_func: bool = False,
-            schema: bool = False,
-            allow_identifiers: bool = True,
+            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:
             """
             Spark (and most likely Hive) treats casts to CHAR(length) and VARCHAR(length) as casts to
@@ -418,17 +401,14 @@ class Hive(Dialect):
             Reference: https://spark.apache.org/docs/latest/sql-ref-datatypes.html
             """
             this = super()._parse_types(
-                check_func=check_func,
-                schema=schema,
-                allow_identifiers=allow_identifiers,
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
             )
 
             if this and not schema:
                 return this.transform(
                     lambda node: (
                         node.replace(exp.DataType.build("text"))
-                        if isinstance(node, exp.DataType)
-                        and node.is_type("char", "varchar")
+                        if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
                         else node
                     ),
                     copy=False,
@@ -442,9 +422,7 @@ class Hive(Dialect):
             return (
                 (
                     self._parse_csv(self._parse_assignment)
-                    if self._match_set(
-                        {TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY}
-                    )
+                    if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
                     else []
                 ),
                 super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
@@ -520,9 +498,7 @@ class Hive(Dialect):
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
             exp.ArrayConcat: rename_func("CONCAT"),
-            exp.ArrayToString: lambda self, e: self.func(
-                "CONCAT_WS", e.expression, e.this
-            ),
+            exp.ArrayToString: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
             exp.ArraySort: _array_sort_sql,
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date_sql,
@@ -541,9 +517,7 @@ class Hive(Dialect):
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.IsNan: rename_func("ISNAN"),
-            exp.JSONExtract: lambda self, e: self.func(
-                "GET_JSON_OBJECT", e.this, e.expression
-            ),
+            exp.JSONExtract: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
             exp.JSONExtractScalar: lambda self, e: self.func(
                 "GET_JSON_OBJECT", e.this, e.expression
             ),
@@ -553,9 +527,7 @@ class Hive(Dialect):
             exp.Max: max_or_greatest,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
-            exp.MonthsBetween: lambda self, e: self.func(
-                "MONTHS_BETWEEN", e.this, e.expression
-            ),
+            exp.MonthsBetween: lambda self, e: self.func("MONTHS_BETWEEN", e.this, e.expression),
             exp.NotNullColumnConstraint: lambda _, e: (
                 "" if e.args.get("allow_null") else "NOT NULL"
             ),
@@ -584,9 +556,7 @@ class Hive(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    partial(
-                        transforms.unnest_to_explode, unnest_using_arrays_zip=False
-                    ),
+                    partial(transforms.unnest_to_explode, unnest_using_arrays_zip=False),
                     transforms.any_to_exists,
                 ]
             ),
@@ -601,9 +571,7 @@ class Hive(Dialect):
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimestampTrunc: lambda self, e: self.func(
-                "TRUNC", e.this, unit_to_str(e)
-            ),
+            exp.TimestampTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.ToBase64: rename_func("BASE64"),
             exp.TsOrDiToDi: lambda self,
@@ -619,8 +587,7 @@ class Hive(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.Unnest: rename_func("EXPLODE"),
-            exp.PartitionedByProperty: lambda self,
-            e: f"PARTITIONED BY {self.sql(e, 'this')}",
+            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
             exp.ClusteredColumnConstraint: lambda self,
@@ -633,9 +600,9 @@ class Hive(Dialect):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
-            exp.Levenshtein: unsupported_args(
-                "ins_cost", "del_cost", "sub_cost", "max_dist"
-            )(rename_func("LEVENSHTEIN")),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("LEVENSHTEIN")
+            ),
         }
 
         PROPERTIES_LOCATION = {
@@ -684,9 +651,7 @@ class Hive(Dialect):
             expressions = self.expressions(expression, sep=" ", flat=True)
             return f"CONSTRAINT {this} {expressions}"
 
-        def rowformatserdeproperty_sql(
-            self, expression: exp.RowFormatSerdeProperty
-        ) -> str:
+        def rowformatserdeproperty_sql(self, expression: exp.RowFormatSerdeProperty) -> str:
             serde_props = self.sql(expression, "serde_properties")
             serde_props = f" {serde_props}" if serde_props else ""
             return f"ROW FORMAT SERDE {self.sql(expression, 'this')}{serde_props}"
@@ -694,9 +659,7 @@ class Hive(Dialect):
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
             return self.func(
                 "COLLECT_LIST",
-                expression.this.this
-                if isinstance(expression.this, exp.Order)
-                else expression.this,
+                expression.this.this if isinstance(expression.this, exp.Order) else expression.this,
             )
 
         def datatype_sql(self, expression: exp.DataType) -> str:
@@ -713,9 +676,7 @@ class Hive(Dialect):
                 if size_expression:
                     size = int(size_expression.name)
                     expression = (
-                        exp.DataType.build("float")
-                        if size <= 32
-                        else exp.DataType.build("double")
+                        exp.DataType.build("float") if size <= 32 else exp.DataType.build("double")
                     )
 
             return super().datatype_sql(expression)
@@ -741,9 +702,7 @@ class Hive(Dialect):
             exprs = f" {exprs}" if exprs else ""
             location = self.sql(expression, "location")
             location = f" LOCATION {location}" if location else ""
-            file_format = self.expressions(
-                expression, key="file_format", flat=True, sep=" "
-            )
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
             file_format = f" FILEFORMAT {file_format}" if file_format else ""
             serde = self.sql(expression, "serde")
             serde = f" SERDE {serde}" if serde else ""

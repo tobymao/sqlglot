@@ -38,9 +38,7 @@ class TestAthena(Validator):
 
     def test_ddl(self):
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
-        self.validate_identity(
-            "CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'"
-        )
+        self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")
         self.validate_identity(
             "CREATE EXTERNAL TABLE foo (id INT, val STRING) CLUSTERED BY (id, val) INTO 10 BUCKETS"
         )
@@ -84,9 +82,7 @@ class TestAthena(Validator):
     def test_dml(self):
         self.validate_all(
             "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
-            read={
-                "": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)"
-            },
+            read={"": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)"},
             write={
                 "hive": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
                 "trino": "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
@@ -98,12 +94,8 @@ class TestAthena(Validator):
         self.validate_identity("CREATE SCHEMA `foo`")
         self.validate_identity("CREATE SCHEMA foo")
 
-        self.validate_identity(
-            "CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'"
-        )
-        self.validate_identity(
-            "CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'"
-        )
+        self.validate_identity("CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'")
+        self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'")
         self.validate_identity(
             "CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'",
             write_sql="CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
@@ -120,9 +112,7 @@ class TestAthena(Validator):
 
         self.validate_identity("DROP TABLE `foo`")
         self.validate_identity("DROP TABLE foo")
-        self.validate_identity(
-            "DROP TABLE foo", write_sql="DROP TABLE `foo`", identify=True
-        )
+        self.validate_identity("DROP TABLE foo", write_sql="DROP TABLE `foo`", identify=True)
 
         self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
         self.validate_identity("CREATE VIEW foo AS SELECT id FROM tbl")
@@ -153,8 +143,7 @@ class TestAthena(Validator):
             write_sql="ALTER TABLE `foo` ADD COLUMNS (`id` STRING)",
         )
         self.validate_identity(
-            'ALTER TABLE "foo" DROP COLUMN "id"',
-            write_sql="ALTER TABLE `foo` DROP COLUMN `id`",
+            'ALTER TABLE "foo" DROP COLUMN "id"', write_sql="ALTER TABLE `foo` DROP COLUMN `id`"
         )
 
         self.validate_identity(
@@ -165,9 +154,7 @@ class TestAthena(Validator):
             write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
         )
 
-        self.validate_identity(
-            "DESCRIBE foo.bar", write_sql="DESCRIBE `foo`.`bar`", identify=True
-        )
+        self.validate_identity("DESCRIBE foo.bar", write_sql="DESCRIBE `foo`.`bar`", identify=True)
 
     def test_dml_quoting(self):
         self.validate_identity("SELECT a AS foo FROM tbl")
@@ -238,9 +225,7 @@ class TestAthena(Validator):
             kind="TABLE",
             properties=exp.Properties(
                 expressions=[
-                    exp.Property(
-                        this=exp.var("table_type"), value=exp.Literal.string("iceberg")
-                    ),
+                    exp.Property(this=exp.var("table_type"), value=exp.Literal.string("iceberg")),
                     exp.LocationProperty(this=exp.Literal.string("s3://foo")),
                     exp.PartitionedByProperty(
                         this=exp.Schema(expressions=[exp.to_column("partition_col")])

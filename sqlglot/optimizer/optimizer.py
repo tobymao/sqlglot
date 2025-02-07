@@ -87,9 +87,7 @@ def optimize(
         # Find any additional rule parameters, beyond `expression`
         rule_params = inspect.getfullargspec(rule).args
         rule_kwargs = {
-            param: possible_kwargs[param]
-            for param in rule_params
-            if param in possible_kwargs
+            param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }
         optimized = rule(optimized, **rule_kwargs)
 

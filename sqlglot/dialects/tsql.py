@@ -133,9 +133,7 @@ def _build_format(args: t.List) -> exp.NumberToStr | exp.TimeToStr:
     fmt = seq_get(args, 1)
     culture = seq_get(args, 2)
 
-    number_fmt = fmt and (
-        fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name)
-    )
+    number_fmt = fmt and (fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name))
 
     if number_fmt:
         return exp.NumberToStr(this=this, format=fmt, culture=culture)
@@ -184,9 +182,7 @@ def _build_hashbytes(args: t.List) -> exp.Expression:
 DATEPART_ONLY_FORMATS = {"DW", "WK", "HOUR", "QUARTER"}
 
 
-def _format_sql(
-    self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr
-) -> str:
+def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = expression.args["format"]
 
     if not isinstance(expression, exp.NumberToStr):
@@ -242,9 +238,7 @@ def _build_date_delta(
             else:
                 # We currently don't handle float values, i.e. they're not converted to equivalent DATETIMEs.
                 # This is not a problem when generating T-SQL code, it is when transpiling to other dialects.
-                return exp_class(
-                    this=seq_get(args, 2), expression=start_date, unit=unit
-                )
+                return exp_class(this=seq_get(args, 2), expression=start_date, unit=unit)
 
         return exp_class(
             this=exp.TimeStrToTime(this=seq_get(args, 2)),
@@ -271,9 +265,7 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
         # are added and hence we won't be able to reach these newly added Alias parents
         query = expression.this
         unaliased_column_indexes = (
-            i
-            for i, c in enumerate(query.selects)
-            if isinstance(c, exp.Column) and not c.alias
+            i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
 
         qualify_outputs(query)
@@ -557,9 +549,7 @@ class TSQL(Dialect):
         ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.BEGIN}
         ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.BEGIN}
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
-        COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {
-            TokenType.BEGIN
-        }
+        COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
         UPDATE_ALIAS_TOKENS = parser.Parser.UPDATE_ALIAS_TOKENS - {TokenType.BEGIN}
 
         FUNCTIONS = {
@@ -576,9 +566,7 @@ class TSQL(Dialect):
                 this=seq_get(args, 0), expressions=args[1:], big_int=True
             ),
             "DATEADD": build_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
-            "DATEDIFF": _build_date_delta(
-                exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL
-            ),
+            "DATEDIFF": _build_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _build_formatted_time(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _build_formatted_time(exp.TimeToStr),
             "DATETIMEFROMPARTS": _build_datetimefromparts,
@@ -595,9 +583,7 @@ class TSQL(Dialect):
             "PARSENAME": _build_parsename,
             "REPLICATE": exp.Repeat.from_arg_list,
             "SCHEMA_NAME": exp.CurrentSchema.from_arg_list,
-            "SQUARE": lambda args: exp.Pow(
-                this=seq_get(args, 0), expression=exp.Literal.number(2)
-            ),
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "SUSER_NAME": exp.CurrentUser.from_arg_list,
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
@@ -609,14 +595,7 @@ class TSQL(Dialect):
         JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
 
         PROCEDURE_OPTIONS = dict.fromkeys(
-            (
-                "ENCRYPTION",
-                "RECOMPILE",
-                "SCHEMABINDING",
-                "NATIVE_COMPILATION",
-                "EXECUTE",
-            ),
-            tuple(),
+            ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
         )
 
         COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READ_ONLY"}
@@ -648,9 +627,7 @@ class TSQL(Dialect):
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
-            TokenType.DCOLON: lambda self, this, to: self.expression(
-                exp.Cast, this=this, to=to
-            )
+            TokenType.DCOLON: lambda self, this, to: self.expression(exp.Cast, this=this, to=to)
             if isinstance(to, exp.DataType) and to.this != exp.DataType.Type.USERDEFINED
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
@@ -674,9 +651,7 @@ class TSQL(Dialect):
 
                 self._match(TokenType.EQ)
                 return self.expression(
-                    exp.QueryOption,
-                    this=option,
-                    expression=self._parse_primary_or_var(),
+                    exp.QueryOption, this=option, expression=self._parse_primary_or_var()
                 )
 
             return self._parse_wrapped_csv(_parse_option)
@@ -691,8 +666,7 @@ class TSQL(Dialect):
             return [
                 (
                     exp.alias_(projection.expression, projection.this.this, copy=False)
-                    if isinstance(projection, exp.EQ)
-                    and isinstance(projection.this, exp.Column)
+                    if isinstance(projection, exp.EQ) and isinstance(projection.this, exp.Column)
                     else projection
                 )
                 for projection in super()._parse_projections()
@@ -739,9 +713,7 @@ class TSQL(Dialect):
             ]
             """
             if self._match_texts(("TRAN", "TRANSACTION")):
-                transaction = self.expression(
-                    exp.Transaction, this=self._parse_id_var()
-                )
+                transaction = self.expression(exp.Transaction, this=self._parse_id_var())
                 if self._match_text_seq("WITH", "MARK"):
                     transaction.set("mark", self._parse_string())
 
@@ -750,9 +722,7 @@ class TSQL(Dialect):
             return self._parse_as_command(self._prev)
 
         def _parse_returns(self) -> exp.ReturnsProperty:
-            table = self._parse_id_var(
-                any_token=False, tokens=self.RETURNS_TABLE_TOKENS
-            )
+            table = self._parse_id_var(any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
             returns = super()._parse_returns()
             returns.set("table", table)
             return returns
@@ -797,9 +767,7 @@ class TSQL(Dialect):
             else:
                 expressions = None
 
-            return self.expression(
-                exp.UserDefinedFunction, this=this, expressions=expressions
-            )
+            return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
         def _parse_id_var(
             self,
@@ -822,22 +790,12 @@ class TSQL(Dialect):
             create = super()._parse_create()
 
             if isinstance(create, exp.Create):
-                table = (
-                    create.this.this
-                    if isinstance(create.this, exp.Schema)
-                    else create.this
-                )
-                if (
-                    isinstance(table, exp.Table)
-                    and table.this
-                    and table.this.args.get("temporary")
-                ):
+                table = create.this.this if isinstance(create.this, exp.Schema) else create.this
+                if isinstance(table, exp.Table) and table.this and table.this.args.get("temporary"):
                     if not create.args.get("properties"):
                         create.set("properties", exp.Properties(expressions=[]))
 
-                    create.args["properties"].append(
-                        "expressions", exp.TemporaryProperty()
-                    )
+                    create.args["properties"].append("expressions", exp.TemporaryProperty())
 
             return create
 
@@ -846,9 +804,7 @@ class TSQL(Dialect):
 
             if self._match_text_seq("OBJECT_ID"):
                 self._parse_wrapped_csv(self._parse_string)
-                if self._match_text_seq("IS", "NOT", "NULL") and self._match(
-                    TokenType.DROP
-                ):
+                if self._match_text_seq("IS", "NOT", "NULL") and self._match(TokenType.DROP):
                     return self._parse_drop(exists=True)
                 self._retreat(index)
 
@@ -871,9 +827,7 @@ class TSQL(Dialect):
                 high = self._parse_bitwise() if self._match_text_seq("TO") else None
 
                 return (
-                    self.expression(exp.PartitionRange, this=low, expression=high)
-                    if high
-                    else low
+                    self.expression(exp.PartitionRange, this=low, expression=high) if high else low
                 )
 
             partition = self.expression(
@@ -886,9 +840,7 @@ class TSQL(Dialect):
 
         def _parse_declare(self) -> exp.Declare | exp.Command:
             index = self._index
-            expressions = self._try_parse(
-                partial(self._parse_csv, self._parse_declareitem)
-            )
+            expressions = self._try_parse(partial(self._parse_csv, self._parse_declareitem))
 
             if not expressions or self._curr:
                 self._retreat(index)
@@ -910,9 +862,7 @@ class TSQL(Dialect):
                 if self._match(TokenType.EQ):
                     value = self._parse_bitwise()
 
-            return self.expression(
-                exp.DeclareItem, this=var, kind=data_type, default=value
-            )
+            return self.expression(exp.DeclareItem, this=var, kind=data_type, default=value)
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
@@ -995,9 +945,7 @@ class TSQL(Dialect):
             exp.LastDay: lambda self, e: self.func("EOMONTH", e.this),
             exp.Ln: rename_func("LOG"),
             exp.Max: max_or_greatest,
-            exp.MD5: lambda self, e: self.func(
-                "HASHBYTES", exp.Literal.string("MD5"), e.this
-            ),
+            exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.Repeat: rename_func("REPLICATE"),
@@ -1015,13 +963,9 @@ class TSQL(Dialect):
                 self, e, func_name="CHARINDEX", supports_position=True
             ),
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
-            exp.SHA: lambda self, e: self.func(
-                "HASHBYTES", exp.Literal.string("SHA1"), e.this
-            ),
+            exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
-                "HASHBYTES",
-                exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"),
-                e.this,
+                "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: _timestrtotime_sql,
@@ -1070,19 +1014,14 @@ class TSQL(Dialect):
         def convert_sql(self, expression: exp.Convert) -> str:
             name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"
             return self.func(
-                name,
-                expression.this,
-                expression.expression,
-                expression.args.get("style"),
+                name, expression.this, expression.expression, expression.args.get("style")
             )
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:
             option = self.sql(expression, "this")
             value = self.sql(expression, "expression")
             if value:
-                optional_equal_sign = (
-                    "= " if option in OPTIONS_THAT_REQUIRE_EQUAL else ""
-                )
+                optional_equal_sign = "= " if option in OPTIONS_THAT_REQUIRE_EQUAL else ""
                 return f"{option} {optional_equal_sign}{value}"
             return option
 
@@ -1104,10 +1043,7 @@ class TSQL(Dialect):
             part_index = expression.args.get("part_index")
 
             if (
-                not all(
-                    isinstance(arg, exp.Literal)
-                    for arg in (this, delimiter, part_index)
-                )
+                not all(isinstance(arg, exp.Literal) for arg in (this, delimiter, part_index))
                 or (delimiter and delimiter.name != ".")
                 or not part_index
                 or split_count > 4
@@ -1118,18 +1054,14 @@ class TSQL(Dialect):
                 return ""
 
             return self.func(
-                "PARSENAME",
-                this,
-                exp.Literal.number(split_count + 1 - part_index.to_py()),
+                "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
             )
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")
             if nano is not None:
                 nano.pop()
-                self.unsupported(
-                    "Specifying nanoseconds is not supported in TIMEFROMPARTS."
-                )
+                self.unsupported("Specifying nanoseconds is not supported in TIMEFROMPARTS.")
 
             if expression.args.get("fractions") is None:
                 expression.set("fractions", exp.Literal.number(0))
@@ -1147,9 +1079,7 @@ class TSQL(Dialect):
             nano = expression.args.get("nano")
             if nano is not None:
                 nano.pop()
-                self.unsupported(
-                    "Specifying nanoseconds is not supported in DATETIMEFROMPARTS."
-                )
+                self.unsupported("Specifying nanoseconds is not supported in DATETIMEFROMPARTS.")
 
             if expression.args.get("milli") is None:
                 expression.set("milli", exp.Literal.number(0))
@@ -1177,9 +1107,7 @@ class TSQL(Dialect):
                 return self.binary(expression, "=")
             return self.binary(expression, "IS")
 
-        def createable_sql(
-            self, expression: exp.Create, locations: t.DefaultDict
-        ) -> str:
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             sql = self.sql(expression, "this")
             properties = expression.args.get("properties")
 
@@ -1219,9 +1147,7 @@ class TSQL(Dialect):
                 if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
                     ctas_expression = ctas_expression.subquery()
 
-                select_into = exp.select("*").from_(
-                    exp.alias_(ctas_expression, "temp", table=True)
-                )
+                select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
 
                 if like_property:
@@ -1230,9 +1156,7 @@ class TSQL(Dialect):
                 sql = self.sql(select_into)
 
             if exists:
-                identifier = self.sql(
-                    exp.Literal.string(exp.table_name(table) if table else "")
-                )
+                identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
                 sql_with_ctes = self.prepend_ctes(expression, sql)
                 sql_literal = self.sql(exp.Literal.string(sql_with_ctes))
                 if kind == "SCHEMA":
@@ -1242,9 +1166,7 @@ class TSQL(Dialect):
                     where = exp.and_(
                         exp.column("table_name").eq(table.name),
                         exp.column("table_schema").eq(table.db) if table.db else None,
-                        exp.column("table_catalog").eq(table.catalog)
-                        if table.catalog
-                        else None,
+                        exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
                     )
                     return f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql_literal})"""
                 elif kind == "INDEX":
@@ -1270,9 +1192,7 @@ class TSQL(Dialect):
             if kind in ("FROM", "BETWEEN"):
                 args = expr.expressions
                 sep = "TO" if kind == "FROM" else "AND"
-                expr_sql = (
-                    f"{self.sql(seq_get(args, 0))} {sep} {self.sql(seq_get(args, 1))}"
-                )
+                expr_sql = f"{self.sql(seq_get(args, 0))} {sep} {self.sql(seq_get(args, 1))}"
             else:
                 expr_sql = self.sql(expr)
 
@@ -1287,9 +1207,7 @@ class TSQL(Dialect):
         def returning_sql(self, expression: exp.Returning) -> str:
             into = self.sql(expression, "into")
             into = self.seg(f"INTO {into}") if into else ""
-            return (
-                f"{self.seg('OUTPUT')} {self.expressions(expression, flat=True)}{into}"
-            )
+            return f"{self.seg('OUTPUT')} {self.expressions(expression, flat=True)}{into}"
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = self.sql(expression, "this")

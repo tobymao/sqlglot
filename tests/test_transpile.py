@@ -28,18 +28,12 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(transpile("SELECT SUM(y) KEEP")[0], "SELECT SUM(y) AS KEEP")
         self.assertEqual(transpile("SELECT 1 overwrite")[0], "SELECT 1 AS overwrite")
         self.assertEqual(transpile("SELECT 1 is")[0], "SELECT 1 AS is")
-        self.assertEqual(
-            transpile("SELECT 1 current_time")[0], "SELECT 1 AS current_time"
-        )
+        self.assertEqual(transpile("SELECT 1 current_time")[0], "SELECT 1 AS current_time")
         self.assertEqual(
             transpile("SELECT 1 current_timestamp")[0], "SELECT 1 AS current_timestamp"
         )
-        self.assertEqual(
-            transpile("SELECT 1 current_date")[0], "SELECT 1 AS current_date"
-        )
-        self.assertEqual(
-            transpile("SELECT 1 current_datetime")[0], "SELECT 1 AS current_datetime"
-        )
+        self.assertEqual(transpile("SELECT 1 current_date")[0], "SELECT 1 AS current_date")
+        self.assertEqual(transpile("SELECT 1 current_datetime")[0], "SELECT 1 AS current_datetime")
         self.assertEqual(transpile("SELECT 1 row")[0], "SELECT 1 AS row")
 
         self.assertEqual(
@@ -171,8 +165,7 @@ class TestTranspile(unittest.TestCase):
             "SELECT 1 /* inline */ FROM foo /* comment */",
         )
         self.validate(
-            "SELECT FUN(x) /*x*/, [1,2,3] /*y*/",
-            "SELECT FUN(x) /* x */, ARRAY(1, 2, 3) /* y */",
+            "SELECT FUN(x) /*x*/, [1,2,3] /*y*/", "SELECT FUN(x) /* x */, ARRAY(1, 2, 3) /* y */"
         )
         self.validate(
             """
@@ -643,9 +636,7 @@ FROM tbl1""",
             "extract(month from '2021-01-31'::timestamp without time zone)",
             "EXTRACT(MONTH FROM CAST('2021-01-31' AS TIMESTAMP))",
         )
-        self.validate(
-            "extract(week from current_date + 2)", "EXTRACT(WEEK FROM CURRENT_DATE + 2)"
-        )
+        self.validate("extract(week from current_date + 2)", "EXTRACT(WEEK FROM CURRENT_DATE + 2)")
         self.validate(
             "EXTRACT(minute FROM datetime1 - datetime2)",
             "EXTRACT(MINUTE FROM datetime1 - datetime2)",
@@ -664,9 +655,7 @@ FROM tbl1""",
             "SELECT IF a > 1 THEN b ELSE c END",
             "SELECT CASE WHEN a > 1 THEN b ELSE c END",
         )
-        self.validate(
-            "SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo"
-        )
+        self.validate("SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo")
 
     def test_with(self):
         self.validate(
@@ -709,9 +698,7 @@ FROM tbl1""",
         self.validate("INTERVAL 1 day", "INTERVAL '1' DAY")
         self.validate("INTERVAL 2 months", "INTERVAL '2' MONTHS")
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
-        self.validate(
-            "TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)"
-        )
+        self.validate("TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)")
         self.validate(
             "TIMESTAMP(9) WITH TIME ZONE '2020-01-01'",
             "CAST('2020-01-01' AS TIMESTAMPTZ(9))",
@@ -737,9 +724,7 @@ FROM tbl1""",
         self.validate("DATE '2020-01-01'", "CAST('2020-01-01' AS DATE)")
         self.validate("'2020-01-01'::DATE", "CAST('2020-01-01' AS DATE)")
         self.validate("STR_TO_TIME('x', 'y')", "STRPTIME('x', 'y')", write="duckdb")
-        self.validate(
-            "STR_TO_UNIX('x', 'y')", "EPOCH(STRPTIME('x', 'y'))", write="duckdb"
-        )
+        self.validate("STR_TO_UNIX('x', 'y')", "EPOCH(STRPTIME('x', 'y'))", write="duckdb")
         self.validate("TIME_TO_STR(x, 'y')", "STRFTIME(x, 'y')", write="duckdb")
         self.validate("TIME_TO_UNIX(x)", "EPOCH(x)", write="duckdb")
         self.validate(
@@ -792,12 +777,8 @@ FROM tbl1""",
         self.validate("TIME_STR_TO_DATE(x)", "TIME_STR_TO_DATE(x)", write=None)
 
         self.validate("TIME_STR_TO_DATE(x)", "TO_DATE(x)", write="hive")
-        self.validate(
-            "UNIX_TO_STR(x, 'yyyy-MM-dd HH:mm:ss')", "FROM_UNIXTIME(x)", write="hive"
-        )
-        self.validate(
-            "STR_TO_UNIX(x, 'yyyy-MM-dd HH:mm:ss')", "UNIX_TIMESTAMP(x)", write="hive"
-        )
+        self.validate("UNIX_TO_STR(x, 'yyyy-MM-dd HH:mm:ss')", "FROM_UNIXTIME(x)", write="hive")
+        self.validate("STR_TO_UNIX(x, 'yyyy-MM-dd HH:mm:ss')", "UNIX_TIMESTAMP(x)", write="hive")
         self.validate("IF(x > 1, x + 1)", "IF(x > 1, x + 1)", write="presto")
         self.validate("IF(x > 1, 1 + 1)", "IF(x > 1, 1 + 1)", write="hive")
         self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write="hive")
@@ -830,9 +811,7 @@ FROM tbl1""",
         self.validate("UNIX_TO_TIME(123)", "FROM_UNIXTIME(123)", write="presto")
 
         self.validate("STR_TO_TIME('x', 'y')", "TO_TIMESTAMP('x', 'y')", write="spark")
-        self.validate(
-            "STR_TO_UNIX('x', 'y')", "UNIX_TIMESTAMP('x', 'y')", write="spark"
-        )
+        self.validate("STR_TO_UNIX('x', 'y')", "UNIX_TIMESTAMP('x', 'y')", write="spark")
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="spark")
 
         self.validate(
@@ -865,9 +844,7 @@ FROM tbl1""",
                 identity=False,
             )
             self.validate("x[3 - 1]", "x[3]", write="presto", identity=False)
-            self.validate(
-                "MAP(a, b)[0]", "MAP(a, b)[0]", write="presto", identity=False
-            )
+            self.validate("MAP(a, b)[0]", "MAP(a, b)[0]", write="presto", identity=False)
 
             self.assertEqual(
                 cm.output,
@@ -923,21 +900,16 @@ FROM tbl1""",
 
     def test_normalize_name(self):
         self.assertEqual(
-            transpile(
-                "cardinality(x)",
-                read="presto",
-                write="presto",
-                normalize_functions="lower",
-            )[0],
+            transpile("cardinality(x)", read="presto", write="presto", normalize_functions="lower")[
+                0
+            ],
             "cardinality(x)",
         )
 
     def test_partial(self):
         for sql in load_sql_fixtures("partial.sql"):
             with self.subTest(sql):
-                self.assertEqual(
-                    transpile(sql, error_level=ErrorLevel.IGNORE)[0], sql.strip()
-                )
+                self.assertEqual(transpile(sql, error_level=ErrorLevel.IGNORE)[0], sql.strip())
 
     def test_pretty(self):
         for _, sql, pretty in load_sql_fixture_pairs("pretty.sql"):
@@ -949,9 +921,7 @@ FROM tbl1""",
     def test_pretty_line_breaks(self):
         self.assertEqual(transpile("SELECT '1\n2'", pretty=True)[0], "SELECT\n  '1\n2'")
         self.assertEqual(
-            transpile(
-                "SELECT '1\n2'", pretty=True, unsupported_level=ErrorLevel.IGNORE
-            )[0],
+            transpile("SELECT '1\n2'", pretty=True, unsupported_level=ErrorLevel.IGNORE)[0],
             "SELECT\n  '1\n2'",
         )
 

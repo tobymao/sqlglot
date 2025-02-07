@@ -103,9 +103,7 @@ def ensure_collection(value):
     if value is None:
         return []
     return (
-        value
-        if isinstance(value, Collection) and not isinstance(value, (str, bytes))
-        else [value]
+        value if isinstance(value, Collection) and not isinstance(value, (str, bytes)) else [value]
     )
 
 
@@ -143,9 +141,7 @@ def subclasses(
         obj
         for _, obj in inspect.getmembers(
             sys.modules[module_name],
-            lambda obj: inspect.isclass(obj)
-            and issubclass(obj, classes)
-            and obj not in exclude,
+            lambda obj: inspect.isclass(obj) and issubclass(obj, classes) and obj not in exclude,
         )
     ]
 
@@ -350,9 +346,7 @@ def name_sequence(prefix: str) -> t.Callable[[], str]:
 def object_to_dict(obj: t.Any, **kwargs) -> t.Dict:
     """Returns a dictionary created from an object's attributes."""
     return {
-        **{
-            k: v.copy() if hasattr(v, "copy") else copy(v) for k, v in vars(obj).items()
-        },
+        **{k: v.copy() if hasattr(v, "copy") else copy(v) for k, v in vars(obj).items()},
         **kwargs,
     }
 
@@ -404,9 +398,7 @@ def is_iterable(value: t.Any) -> bool:
     """
     from sqlglot import Expression
 
-    return hasattr(value, "__iter__") and not isinstance(
-        value, (str, bytes, Expression)
-    )
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expression))
 
 
 def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:

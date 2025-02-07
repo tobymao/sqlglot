@@ -28,9 +28,7 @@ if __name__ == "__main__":
         opts.modules = ["sqlglot"]
         opts.footer_text = "Copyright (c) 2023 Toby Mao"
         opts.template_directory = Path(__file__).parent.joinpath("templates").absolute()
-        opts.edit_url = [
-            "sqlglot=https://github.com/tobymao/sqlglot/tree/main/sqlglot/"
-        ]
+        opts.edit_url = ["sqlglot=https://github.com/tobymao/sqlglot/tree/main/sqlglot/"]
 
         with mock.patch("pdoc.__main__.parser", **{"parse_args.return_value": opts}):
             cli()

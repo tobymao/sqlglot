@@ -21,9 +21,7 @@ def isolate_table_selects(expression, schema=None):
                 continue
 
             if not source.alias:
-                raise OptimizeError(
-                    "Tables require an alias. Run qualify_tables optimization."
-                )
+                raise OptimizeError("Tables require an alias. Run qualify_tables optimization.")
 
             source.replace(
                 exp.select("*")

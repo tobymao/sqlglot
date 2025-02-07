@@ -66,9 +66,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         pass
 
     @t.overload
-    def _match(
-        token_type: TokenType, raise_unmatched: Lit[False] = False
-    ) -> t.Optional[Token]:
+    def _match(token_type: TokenType, raise_unmatched: Lit[False] = False) -> t.Optional[Token]:
         pass
 
     def _match(token_type, raise_unmatched=False):

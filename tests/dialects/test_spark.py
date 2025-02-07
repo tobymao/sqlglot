@@ -150,6 +150,8 @@ TBLPROPERTIES (
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "spark": "TO_DATE(x)",
+                "snowflake": "TRY_TO_DATE(x, 'yyyy-mm-DD')",
+                "databricks": "TO_DATE(x)",
             },
         )
         self.validate_all(
@@ -159,6 +161,8 @@ TBLPROPERTIES (
                 "hive": "TO_DATE(x, 'yyyy')",
                 "presto": "CAST(DATE_PARSE(x, '%Y') AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy')",
+                "snowflake": "TRY_TO_DATE(x, 'yyyy')",
+                "databricks": "TO_DATE(x, 'yyyy')",
             },
         )
 

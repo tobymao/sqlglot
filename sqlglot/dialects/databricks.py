@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
     timestamptrunc_sql,
+    build_formatted_time,
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
@@ -46,6 +47,7 @@ class Databricks(Spark):
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
             "GET_JSON_OBJECT": _build_json_extract,
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
         }
 
         FACTOR = {

@@ -4476,7 +4476,6 @@ class DataType(Expression):
         UMEDIUMINT = auto()
         UDECIMAL = auto()
         UNION = auto()
-        UNIQUEIDENTIFIER = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
         USERDEFINED = "USER-DEFINED"
         USMALLINT = auto()
@@ -6749,7 +6748,7 @@ class UnixSeconds(Func):
 
 
 class Uuid(Func):
-    _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
+    _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "NEWID", "UUID_STRING"]
 
     arg_types = {"this": False, "name": False}
 

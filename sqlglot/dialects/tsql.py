@@ -525,7 +525,7 @@ class TSQL(Dialect):
             "TOP": TokenType.TOP,
             "TIMESTAMP": TokenType.ROWVERSION,
             "TINYINT": TokenType.UTINYINT,
-            "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
+            "UNIQUEIDENTIFIER": TokenType.UUID,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
         }
@@ -919,6 +919,7 @@ class TSQL(Dialect):
             exp.DataType.Type.SMALLDATETIME: "SMALLDATETIME",
             exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
+            exp.DataType.Type.UUID: "UNIQUEIDENTIFIER",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)
@@ -974,6 +975,7 @@ class TSQL(Dialect):
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TimestampTrunc: lambda self, e: self.func("DATETRUNC", e.unit, e.this),
+            exp.Uuid: lambda *_: "NEWID()",
             exp.DateFromParts: rename_func("DATEFROMPARTS"),
         }
 

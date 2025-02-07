@@ -3184,6 +3184,7 @@ FROM subquery2""",
                 "postgres": "GEN_RANDOM_UUID()",
                 "bigquery": "GENERATE_UUID()",
                 "snowflake": "UUID_STRING()",
+                "tsql": "NEWID()",
             },
             write={
                 "hive": "UUID()",
@@ -3197,6 +3198,7 @@ FROM subquery2""",
                 "postgres": "GEN_RANDOM_UUID()",
                 "bigquery": "GENERATE_UUID()",
                 "snowflake": "UUID_STRING()",
+                "tsql": "NEWID()",
             },
         )
 

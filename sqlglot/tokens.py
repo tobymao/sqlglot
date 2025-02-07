@@ -192,7 +192,6 @@ class TokenType(AutoName):
     BIGSERIAL = auto()
     XML = auto()
     YEAR = auto()
-    UNIQUEIDENTIFIER = auto()
     USERDEFINED = auto()
     MONEY = auto()
     SMALLMONEY = auto()

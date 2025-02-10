@@ -1,6 +1,38 @@
 Changelog
 =========
 
+## [v26.5.0] - 2025-02-10
+### :boom: BREAKING CHANGES
+- due to [`da52181`](https://github.com/tobymao/sqlglot/commit/da52181f1cd3ec22e5ac597de50036278d2e66e5) - TO_DATE parsing with safe flag true *(PR [#4713](https://github.com/tobymao/sqlglot/pull/4713) by [@geooo109](https://github.com/geooo109))*:
+
+  TO_DATE parsing with safe flag true (#4713)
+
+- due to [`b12aba9`](https://github.com/tobymao/sqlglot/commit/b12aba9be6043053f79ff50f7bdcdfdff19ddf52) - Improve UUID support *(PR [#4718](https://github.com/tobymao/sqlglot/pull/4718) by [@amachanic](https://github.com/amachanic))*:
+
+  Improve UUID support (#4718)
+
+- due to [`27ec74b`](https://github.com/tobymao/sqlglot/commit/27ec74bab67afba930c4ea66130bcba5e9bb5ba1) - Properly set 'this' when parsing IDENTITY *(PR [#4719](https://github.com/tobymao/sqlglot/pull/4719) by [@amachanic](https://github.com/amachanic))*:
+
+  Properly set 'this' when parsing IDENTITY (#4719)
+
+
+### :sparkles: New Features
+- [`c31947b`](https://github.com/tobymao/sqlglot/commit/c31947b2386f579d9d12d2d4053461a75855b9be) - **postgres**: Support generation of exp.CountIf *(PR [#4709](https://github.com/tobymao/sqlglot/pull/4709) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :bug: Bug Fixes
+- [`b842d93`](https://github.com/tobymao/sqlglot/commit/b842d9383827d18482e36d6ea3041180a74d0abf) - **postgres**: enable qualification of queries using the ROWS FROM syntax *(PR [#4699](https://github.com/tobymao/sqlglot/pull/4699) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3777](https://github.com/TobikoData/sqlmesh/issues/3777) opened by [@simon-pactum](https://github.com/simon-pactum)*
+- [`5f90307`](https://github.com/tobymao/sqlglot/commit/5f9030786f8489e70aee70acabee440ecf23699c) - **duckdb**: enable support for user-defined types *(PR [#4702](https://github.com/tobymao/sqlglot/pull/4702) by [@georgesittas](https://github.com/georgesittas))*
+- [`23283ca`](https://github.com/tobymao/sqlglot/commit/23283cacda3c4d6e4f6453cdef1a9e73e3bc8d24) - avoid concealing dialect module exception in _try_load *(PR [#4708](https://github.com/tobymao/sqlglot/pull/4708) by [@georgesittas](https://github.com/georgesittas))*
+- [`707d45e`](https://github.com/tobymao/sqlglot/commit/707d45ecc7e233f57ada8d6dfaf6c621d6ee3f51) - **tsql**: support default values on definitons and the OUTPUT/OUT/READ_ONLY syntax *(PR [#4704](https://github.com/tobymao/sqlglot/pull/4704) by [@geooo109](https://github.com/geooo109))*
+- [`da52181`](https://github.com/tobymao/sqlglot/commit/da52181f1cd3ec22e5ac597de50036278d2e66e5) - **hive**: TO_DATE parsing with safe flag true *(PR [#4713](https://github.com/tobymao/sqlglot/pull/4713) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4707](https://github.com/tobymao/sqlglot/issues/4707) opened by [@jiangli001](https://github.com/jiangli001)*
+- [`b12aba9`](https://github.com/tobymao/sqlglot/commit/b12aba9be6043053f79ff50f7bdcdfdff19ddf52) - **tsql, postgres**: Improve UUID support *(PR [#4718](https://github.com/tobymao/sqlglot/pull/4718) by [@amachanic](https://github.com/amachanic))*
+- [`27ec74b`](https://github.com/tobymao/sqlglot/commit/27ec74bab67afba930c4ea66130bcba5e9bb5ba1) - **tsql**: Properly set 'this' when parsing IDENTITY *(PR [#4719](https://github.com/tobymao/sqlglot/pull/4719) by [@amachanic](https://github.com/amachanic))*
+- [`f7e22d4`](https://github.com/tobymao/sqlglot/commit/f7e22d40cddfdee4a3d4912aef3161546528d400) - don't change query if no join marks in eliminate_join_marks, fixes [#4721](https://github.com/tobymao/sqlglot/pull/4721) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`b918ff1`](https://github.com/tobymao/sqlglot/commit/b918ff1bc4e256bd1b84802327ffe4acf36d2d45) - **bigquery**: type-annotated array literal logic edge case *(PR [#4724](https://github.com/tobymao/sqlglot/pull/4724) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.4.1] - 2025-02-03
 ### :bug: Bug Fixes
 - [`dd1cdb0`](https://github.com/tobymao/sqlglot/commit/dd1cdb0b91ac597a9cb1f1f517a616c264f5b654) - **redshift**: generate proper syntax for column type alteration *(PR [#4698](https://github.com/tobymao/sqlglot/pull/4698) by [@georgesittas](https://github.com/georgesittas))*
@@ -5840,3 +5872,4 @@ Changelog
 [v26.3.9]: https://github.com/tobymao/sqlglot/compare/v26.3.8...v26.3.9
 [v26.4.0]: https://github.com/tobymao/sqlglot/compare/v26.3.9...v26.4.0
 [v26.4.1]: https://github.com/tobymao/sqlglot/compare/v26.4.0...v26.4.1
+[v26.5.0]: https://github.com/tobymao/sqlglot/compare/v26.4.1...v26.5.0

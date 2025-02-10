@@ -144,9 +144,12 @@ class TestOptimizer(unittest.TestCase):
                 title = meta.get("title") or f"{i}, {sql}"
                 if only and title != only:
                     continue
-                dialect = meta.get("dialect")
 
                 func_kwargs = {**kwargs}
+
+                dialect = meta.get("dialect")
+                if dialect:
+                    func_kwargs["dialect"] = dialect
 
                 for bool_param_name in [
                     "leave_tables_isolated",
@@ -156,9 +159,6 @@ class TestOptimizer(unittest.TestCase):
                     value = meta.get(bool_param_name)
                     if value is not None:
                         func_kwargs[bool_param_name] = string_to_bool(value)
-
-                if dialect:
-                    func_kwargs["dialect"] = dialect
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (

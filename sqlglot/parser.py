@@ -5707,7 +5707,9 @@ class Parser(metaclass=_Parser):
             increment = self._parse_bitwise()
 
         if start and increment:
-            return exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
+            return exp.GeneratedAsIdentityColumnConstraint(
+                start=start, increment=increment, this=False
+            )
 
         return exp.AutoIncrementColumnConstraint()
 

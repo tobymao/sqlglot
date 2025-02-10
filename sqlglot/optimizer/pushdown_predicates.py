@@ -2,6 +2,7 @@ from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
+from sqlglot.transforms import eliminate_join_marks
 
 
 def pushdown_predicates(expression, dialect=None):
@@ -27,6 +28,7 @@ def pushdown_predicates(expression, dialect=None):
 
         for scope in reversed(list(root.traverse())):
             select = scope.expression
+            select = eliminate_join_marks(select)
             where = select.args.get("where")
             if where:
                 selected_sources = scope.selected_sources

@@ -934,7 +934,8 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             new_from_name = list(only_old_joins)[0]
             query.set("from", exp.From(this=old_joins[new_from_name].this))
 
-        query.set("joins", list(new_joins.values()))
+        if new_joins:
+            query.set("joins", list(new_joins.values()))
 
         if not where.this:
             where.pop()

@@ -174,6 +174,13 @@ class TestTransforms(unittest.TestCase):
 
     def test_eliminate_join_marks(self):
         for dialect in ("oracle", "redshift"):
+            # No join marks => query remains unaffected
+            self.validate(
+                eliminate_join_marks,
+                "SELECT a.f1, b.f2 FROM a JOIN b ON a.id = b.id WHERE a.blabla = 'a'",
+                "SELECT a.f1, b.f2 FROM a JOIN b ON a.id = b.id WHERE a.blabla = 'a'",
+                dialect,
+            )
             self.validate(
                 eliminate_join_marks,
                 "SELECT T1.d, T2.c FROM T1, T2 WHERE T1.x = T2.x (+) and T2.y (+) > 5",

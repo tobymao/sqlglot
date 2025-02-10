@@ -1245,7 +1245,12 @@ class BigQuery(Dialect):
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             this = expression.this
 
+            # This ensures that inline type-annotated ARRAY literals like ARRAY<INT64>[1, 2, 3]
+            # are roundtripped unaffected. The inner check excludes ARRAY(SELECT ...) expressions,
+            # because they aren't literals and so the above syntax is invalid BigQuery.
             if isinstance(this, exp.Array):
-                return f"{self.sql(expression, 'to')}{self.sql(this)}"
+                elem = seq_get(this.expressions, 0)
+                if not (elem and elem.find(exp.Query)):
+                    return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)

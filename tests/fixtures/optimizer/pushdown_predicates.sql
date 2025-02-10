@@ -45,7 +45,7 @@ SELECT x.cnt AS cnt FROM (SELECT COUNT(1) AS cnt FROM x AS x HAVING COUNT(1) > 0
 SELECT x.cnt AS cnt FROM (SELECT COUNT(1) AS cnt, COUNT(x.a) AS cnt_a, COUNT(x.b) AS cnt_b FROM x AS x) AS x WHERE (x.cnt_a > 0 AND x.cnt_b > 0) OR x.cnt > 0;
 SELECT x.cnt AS cnt FROM (SELECT COUNT(1) AS cnt, COUNT(x.a) AS cnt_a, COUNT(x.b) AS cnt_b FROM x AS x HAVING COUNT(1) > 0 OR (COUNT(x.a) > 0 AND COUNT(x.b) > 0)) AS x WHERE x.cnt > 0 OR (x.cnt_a > 0 AND x.cnt_b > 0);
 
--- Correctly treat join marks while pushing predicates down
+# title: Correctly treat join marks while pushing predicates down
 # dialect: oracle, redshift
 SELECT x.a FROM x, (SELECT * FROM y) AS y WHERE x.a = y.a(+) and y.b(+) = 1;
 SELECT x.a FROM x LEFT JOIN (SELECT * FROM y WHERE y.b = 1) y ON x.a = y.a AND TRUE;

@@ -185,8 +185,12 @@ class Spark2(Hive):
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DOUBLE": _build_as_cast("double"),
             "FLOAT": _build_as_cast("float"),
-            "FROM_UTC_TIMESTAMP": lambda args: exp.AtTimeZone(
-                this=exp.cast(seq_get(args, 0) or exp.Var(this=""), exp.DataType.Type.TIMESTAMP),
+            "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(
+                this=exp.cast(
+                    seq_get(args, 0) or exp.Var(this=""),
+                    exp.DataType.Type.TIMESTAMP,
+                    dialect=dialect,
+                ),
                 zone=seq_get(args, 1),
             ),
             "INT": _build_as_cast("int"),
@@ -202,8 +206,12 @@ class Spark2(Hive):
                 else build_formatted_time(exp.StrToTime, "spark")(args)
             ),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
-            "TO_UTC_TIMESTAMP": lambda args: exp.FromTimeZone(
-                this=exp.cast(seq_get(args, 0) or exp.Var(this=""), exp.DataType.Type.TIMESTAMP),
+            "TO_UTC_TIMESTAMP": lambda args, dialect: exp.FromTimeZone(
+                this=exp.cast(
+                    seq_get(args, 0) or exp.Var(this=""),
+                    exp.DataType.Type.TIMESTAMP,
+                    dialect=dialect,
+                ),
                 zone=seq_get(args, 1),
             ),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),

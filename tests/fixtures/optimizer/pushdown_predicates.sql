@@ -47,5 +47,6 @@ SELECT x.cnt AS cnt FROM (SELECT COUNT(1) AS cnt, COUNT(x.a) AS cnt_a, COUNT(x.b
 
 # title: Correctly treat join marks while pushing predicates down
 # dialect: oracle
+# eliminate_join_marks: True
 SELECT x.a FROM x, (SELECT * FROM y) AS y WHERE x.a = y.a(+) and y.b(+) = 1;
 SELECT x.a FROM x LEFT JOIN (SELECT * FROM y WHERE y.b = 1) y ON x.a = y.a AND TRUE;

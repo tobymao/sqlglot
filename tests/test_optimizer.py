@@ -145,17 +145,17 @@ class TestOptimizer(unittest.TestCase):
                 if only and title != only:
                     continue
                 dialect = meta.get("dialect")
-                leave_tables_isolated = meta.get("leave_tables_isolated")
-                validate_qualify_columns = meta.get("validate_qualify_columns")
 
                 func_kwargs = {**kwargs}
-                if leave_tables_isolated is not None:
-                    func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
-                if validate_qualify_columns is not None:
-                    func_kwargs["validate_qualify_columns"] = string_to_bool(
-                        validate_qualify_columns
-                    )
+                for bool_param_name in [
+                    "leave_tables_isolated",
+                    "validate_qualify_columns",
+                    "eliminate_join_marks",
+                ]:
+                    value = meta.get(bool_param_name)
+                    if value is not None:
+                        func_kwargs[bool_param_name] = string_to_bool(value)
 
                 if dialect:
                     func_kwargs["dialect"] = dialect

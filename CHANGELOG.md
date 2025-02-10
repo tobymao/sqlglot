@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v26.6.0] - 2025-02-10
+### :boom: BREAKING CHANGES
+- due to [`a790e41`](https://github.com/tobymao/sqlglot/commit/a790e41736884bde7a8172f458db92d80064556f) - avoid redundant casts in FROM/TO_UTC_TIMESTAMP *(PR [#4725](https://github.com/tobymao/sqlglot/pull/4725) by [@georgesittas](https://github.com/georgesittas))*:
+
+  avoid redundant casts in FROM/TO_UTC_TIMESTAMP (#4725)
+
+
+### :bug: Bug Fixes
+- [`a790e41`](https://github.com/tobymao/sqlglot/commit/a790e41736884bde7a8172f458db92d80064556f) - **spark**: avoid redundant casts in FROM/TO_UTC_TIMESTAMP *(PR [#4725](https://github.com/tobymao/sqlglot/pull/4725) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.5.0] - 2025-02-10
 ### :boom: BREAKING CHANGES
 - due to [`da52181`](https://github.com/tobymao/sqlglot/commit/da52181f1cd3ec22e5ac597de50036278d2e66e5) - TO_DATE parsing with safe flag true *(PR [#4713](https://github.com/tobymao/sqlglot/pull/4713) by [@geooo109](https://github.com/geooo109))*:
@@ -5873,3 +5884,4 @@ Changelog
 [v26.4.0]: https://github.com/tobymao/sqlglot/compare/v26.3.9...v26.4.0
 [v26.4.1]: https://github.com/tobymao/sqlglot/compare/v26.4.0...v26.4.1
 [v26.5.0]: https://github.com/tobymao/sqlglot/compare/v26.4.1...v26.5.0
+[v26.6.0]: https://github.com/tobymao/sqlglot/compare/v26.5.0...v26.6.0

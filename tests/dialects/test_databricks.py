@@ -33,10 +33,6 @@ class TestDatabricks(Validator):
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )
         self.validate_identity(
-            "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(foo, 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
-            "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
-        )
-        self.validate_identity(
             "SELECT * FROM sales UNPIVOT INCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
         )
         self.validate_identity(
@@ -55,12 +51,20 @@ class TestDatabricks(Validator):
             "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
         )
         self.validate_identity(
+            "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(foo, 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
+            "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
+        )
+        self.validate_identity(
             "DATE_DIFF(day, created_at, current_date())",
             "DATEDIFF(DAY, created_at, CURRENT_DATE)",
         ).args["unit"].assert_is(exp.Var)
         self.validate_identity(
             r'SELECT r"\\foo.bar\"',
             r"SELECT '\\\\foo.bar\\'",
+        )
+        self.validate_identity(
+            "FROM_UTC_TIMESTAMP(x::TIMESTAMP, tz)",
+            "FROM_UTC_TIMESTAMP(CAST(x AS TIMESTAMP), tz)",
         )
 
         self.validate_all(

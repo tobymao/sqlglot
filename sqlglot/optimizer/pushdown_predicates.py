@@ -3,10 +3,10 @@ from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.sqlglot.dialects.dialect import Dialect
-from sqlglot.transforms import eliminate_join_marks
+from sqlglot.transforms import eliminate_join_marks as eliminate_jm
 
 
-def pushdown_predicates(expression, dialect: Dialect | None = None):
+def pushdown_predicates(expression, dialect: Dialect | None = None, eliminate_join_marks: bool = False):
     """
     Rewrite sqlglot AST to pushdown predicates in FROMS and JOINS
 
@@ -19,11 +19,12 @@ def pushdown_predicates(expression, dialect: Dialect | None = None):
 
     Args:
         expression (sqlglot.Expression): expression to optimize
+        eliminate_join_marks (Optional[bool]): override to eliminate legacy join marks for eligible dialects
     Returns:
         sqlglot.Expression: optimized expression
     """
-    if dialect and dialect.SUPPORTS_COLUMN_JOIN_MARKS:
-        expression = eliminate_join_marks(expression)
+    if dialect and dialect.SUPPORTS_COLUMN_JOIN_MARKS and eliminate_join_marks:
+        expression = eliminate_jm(expression)
 
     root = build_scope(expression)
 

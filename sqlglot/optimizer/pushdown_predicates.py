@@ -3,7 +3,7 @@ from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.sqlglot.dialects.dialect import Dialect
-from sqlglot.transforms import eliminate_join_marks as eliminate_join_marks
+from sqlglot.transforms import eliminate_join_marks
 
 
 def pushdown_predicates(expression, dialect: Dialect | None = None):
@@ -22,13 +22,13 @@ def pushdown_predicates(expression, dialect: Dialect | None = None):
     Returns:
         sqlglot.Expression: optimized expression
     """
+    if dialect and dialect.SUPPORTS_COLUMN_JOIN_MARKS:
+        expression = eliminate_join_marks(expression)
+
     root = build_scope(expression)
 
     if root:
         scope_ref_count = root.ref_count()
-
-        if dialect and dialect.SUPPORTS_COLUMN_JOIN_MARKS:
-            expression = eliminate_join_marks(expression)
 
         for scope in reversed(list(root.traverse())):
             select = scope.expression

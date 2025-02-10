@@ -406,7 +406,7 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "SELECT AT_TIMEZONE(CAST(CAST('2012-10-31 00:00' AS TIMESTAMP WITH TIME ZONE) AS TIMESTAMP), 'America/Sao_Paulo')",
+            "SELECT AT_TIMEZONE(CAST('2012-10-31 00:00' AS TIMESTAMP WITH TIME ZONE), 'America/Sao_Paulo')",
             read={
                 "spark": "SELECT FROM_UTC_TIMESTAMP(TIMESTAMP '2012-10-31 00:00', 'America/Sao_Paulo')",
             },

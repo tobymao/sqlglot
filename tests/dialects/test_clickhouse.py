@@ -682,6 +682,33 @@ class TestClickhouse(Validator):
             with self.subTest(f"Casting to ClickHouse {data_type}"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
 
+    def test_aggregate_function_column_with_any_keyword(self):
+        # Regression test for https://github.com/tobymao/sqlglot/issues/4723
+        self.validate_all(
+            """
+            CREATE TABLE my_db.my_table
+            (
+                someId UUID,
+                aggregatedColumn AggregateFunction(any, String),
+                aggregatedColumnWithParams AggregateFunction(any(somecolumn), String),
+            )
+            ENGINE = AggregatingMergeTree()
+            ORDER BY (someId)
+                    """,
+            write={
+                "clickhouse": """CREATE TABLE my_db.my_table (
+  someId UUID,
+  aggregatedColumn AggregateFunction(any, String),
+  aggregatedColumnWithParams AggregateFunction(any(somecolumn), String)
+)
+ENGINE=AggregatingMergeTree()
+ORDER BY (
+  someId
+)""",
+            },
+            pretty=True,
+        )
+
     def test_ddl(self):
         db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
         create_with_cluster = exp.Create(

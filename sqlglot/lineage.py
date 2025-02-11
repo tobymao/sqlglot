@@ -349,68 +349,86 @@ def to_node(
     return node
 
 
-def _extract_source_column(expr: exp.Expression) -> t.Optional[exp.Expression]:
+def _extract_source_column(expr: exp.Expression) -> exp.Expression:
     """
-    Safely extracts source column from expression.
+    Extracts the source `exp.Column` from a given expression by traversing and analyzing the structure of the expression. Handles various types of expressions including `exp.Dot`, complex nested expressions like `exp.Case`, `exp.SetOperation`, `exp.Window`, `exp.MatchRecognize`, and `exp.Pivot`. Recursively looks into the arguments or properties to locate the desired column reference.
 
-    Args:
-        expr: An exp.Expression instance from which to extract column information
-
-    Returns:
-        Optional[exp.Column]: Extracted column information or None
-
-    Raises:
-        TypeError: If input is not of the correct type
+    :param expr: The expression to be analyzed and traversed. It can be an instance of `exp.Expression` or derived classes.
+    :return: The extracted `exp.Column` with updated attributes if a matching expression is found, otherwise the original input expression.
     """
-    if not isinstance(expr, exp.Expression):
-        raise TypeError(f"Expected exp.Expression, got {type(expr)}")
-
     if expr is None:
         return None
 
-    try:
-        if isinstance(expr, exp.Alias):
-            expr = expr.this
+    def find_dot_in_expression(current_expr):
+        if current_expr is None:
+            return None
 
-        if isinstance(expr, exp.Dot):
-            if not hasattr(expr, "expression") or not hasattr(expr.expression, "name"):
-                return expr
-
-            if isinstance(expr.this, exp.Column):
-                column = expr.this
-                # Safely extract original table and column information
+        # Handle Dot expressions
+        if isinstance(current_expr, exp.Dot):
+            if isinstance(current_expr.this, exp.Column):
+                column = current_expr.this
                 return exp.Column(
-                    this=exp.Identifier(this=getattr(expr.expression, "name", None)),
-                    table=getattr(column, "table", None),
+                    this=exp.Identifier(this=current_expr.expression.name), table=column.table
                 )
-        return expr
+            return None
 
-    except AttributeError:
-        return expr  # Return original expression on error
+        # Handle complex nested expressions
+        if isinstance(
+            current_expr, (exp.Case, exp.SetOperation, exp.Window, exp.MatchRecognize, exp.Pivot)
+        ):
+            # Iterate through all arguments of the expression
+            for arg_name, arg_value in current_expr.args.items():
+                if arg_value is None:
+                    continue
+
+                # Process list-type arguments
+                if isinstance(arg_value, list):
+                    for item in arg_value:
+                        if isinstance(item, exp.Expression):
+                            result = find_dot_in_expression(item)
+                            if result:
+                                return result
+
+                # Process single Expression-type arguments
+                elif isinstance(arg_value, exp.Expression):
+                    result = find_dot_in_expression(arg_value)
+                    if result:
+                        return result
+
+            return None
+
+        # Handle standard expressions
+        if hasattr(current_expr, "this"):
+            result = find_dot_in_expression(current_expr.this)
+            if result:
+                return result
+
+        if hasattr(current_expr, "expressions"):
+            for item in current_expr.expressions or []:
+                result = find_dot_in_expression(item)
+                if result:
+                    return result
+
+        return None
+
+    result = find_dot_in_expression(expr)
+    return result if result else expr
 
 
 def _find_table_source(scope: Scope, table: str):
     """
-    Find the source node of a table.
-    Returns the original table node for UNPIVOT/PIVOT cases, and returns scope.sources node for regular tables.
-
-    Args:
-        scope: Scope object from sqlglot optimizer
-        table: Name of the table to find
-
-    Returns:
-        The table node if found, None otherwise
+    :param scope: The current scope containing the context of SQL sources and pivots.
+    :type scope: Scope
+    :param table: The name of the table to search for within the scope.
+    :type table: str
+    :return: The parent source of a pivoted table if found or a regular table source from the scope. Returns None if no match is found.
+    :rtype: Optional[Any]
     """
-    if not isinstance(scope, Scope) or not table:
-        return None
 
-    # Check for PIVOT/UNPIVOT
-    for name, node in scope.references:
-        pivots = node.args.get("pivots")
-        if pivots:
-            for pivot in pivots:
-                if pivot.alias == table:
-                    return node
+    # Check for PIVOTS
+    for pivot in scope.pivots:
+        if pivot.alias == table:
+            return pivot.parent
 
     # Regular table
     return scope.sources.get(table)

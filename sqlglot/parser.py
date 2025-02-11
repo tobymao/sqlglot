@@ -5003,7 +5003,7 @@ class Parser(metaclass=_Parser):
                 expressions = self._parse_csv(self._parse_equality)
             elif is_aggregate:
                 func_or_ident = self._parse_function(anonymous=True) or self._parse_id_var(
-                    any_token=False, tokens=(TokenType.VAR,)
+                    any_token=False, tokens=(TokenType.VAR, TokenType.ANY)
                 )
                 if not func_or_ident or not self._match(TokenType.COMMA):
                     return None

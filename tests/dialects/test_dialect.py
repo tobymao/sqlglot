@@ -168,6 +168,18 @@ class TestDialect(Validator):
         self.assertFalse(snowflake_class in {"bigquery", "redshift"})
         self.assertFalse(snowflake_object in {"bigquery", "redshift"})
 
+    def test_compare_dialect_versions(self):
+        ddb_v1 = Dialect.get_or_raise("duckdb, version=1.0")
+        ddb_v1_2 = Dialect.get_or_raise("duckdb, foo=bar, version=1.0")
+        ddb_v2 = Dialect.get_or_raise("duckdb, version=2.2.4")
+        ddb_latest = Dialect.get_or_raise("duckdb")
+
+        self.assertTrue(ddb_latest.version > ddb_v2.version)
+        self.assertTrue(ddb_v1.version < ddb_v2.version)
+
+        self.assertTrue(ddb_v1.version == ddb_v1_2.version)
+        self.assertTrue(ddb_latest.version == Dialect.get_or_raise("duckdb").version)
+
     def test_cast(self):
         self.validate_all(
             "CAST(a AS TEXT)",

@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib
 import logging
 import typing as t
+import sys
+
 from enum import Enum, auto
 from functools import reduce
 
@@ -101,6 +103,20 @@ class NormalizationStrategy(str, AutoName):
 
     CASE_INSENSITIVE = auto()
     """Always case-insensitive, regardless of quotes."""
+
+
+class Version(int):
+    def __new__(cls, version_str: t.Optional[str], *args, **kwargs):
+        if version_str:
+            parts = version_str.split(".")
+            parts.extend(["0"] * (3 - len(parts)))
+            v = int("".join([p.zfill(3) for p in parts]))
+        else:
+            # No version defined means we should support the latest engine semantics, so
+            # the comparison to any specific version should yield that latest is greater
+            v = sys.maxsize
+
+        return super(Version, cls).__new__(cls, v)
 
 
 class _Dialect(type):
@@ -1001,6 +1017,10 @@ class Dialect(metaclass=_Dialect):
 
     def generator(self, **opts) -> Generator:
         return self.generator_class(dialect=self, **opts)
+
+    @property
+    def version(self) -> Version:
+        return Version(self.settings.get("version", None))
 
 
 DialectType = t.Union[str, Dialect, t.Type[Dialect], None]

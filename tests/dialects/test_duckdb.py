@@ -910,6 +910,10 @@ class TestDuckDB(Validator):
                 "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
             },
         )
+        self.validate_identity(
+            "SELECT DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '1' DAY",
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

@@ -76,7 +76,10 @@ def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
 
     this = exp.cast(this, to_type) if to_type else this
 
-    return f"{self.sql(this)} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    expr = expression.expression
+    interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
+
+    return f"{self.sql(this)} {op} {self.sql(interval)}"
 
 
 # BigQuery -> DuckDB conversion for the DATE function

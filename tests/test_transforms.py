@@ -147,7 +147,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_qualify,
             "SELECT x AS z FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY z)",
-            "SELECT z FROM (SELECT x AS z, ROW_NUMBER() OVER (PARTITION BY x) AS _w, x FROM y) AS _t WHERE _w",
+            "SELECT z FROM (SELECT x AS z, ROW_NUMBER() OVER (PARTITION BY x) AS _w FROM y) AS _t WHERE _w",
         )
         self.validate(
             eliminate_qualify,
@@ -162,7 +162,12 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_qualify,
             "SELECT y.x AS x, y.t AS z FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY x DESC, z)",
-            "SELECT x, z FROM (SELECT y.x AS x, y.t AS z, ROW_NUMBER() OVER (PARTITION BY y.x ORDER BY y.x DESC, y.t) AS _w, y.t FROM y) AS _t WHERE _w",
+            "SELECT x, z FROM (SELECT y.x AS x, y.t AS z, ROW_NUMBER() OVER (PARTITION BY y.x ORDER BY y.x DESC, y.t) AS _w FROM y) AS _t WHERE _w",
+        )
+        self.validate(
+            eliminate_qualify,
+            "select max(col) over (partition by col_id) as col, from some_table qualify row_number() over (partition by col_id order by col asc)=1",
+            "SELECT col FROM (SELECT MAX(col) OVER (PARTITION BY col_id) AS col, ROW_NUMBER() OVER (PARTITION BY col_id ORDER BY MAX(col) OVER (PARTITION BY col_id) ASC) AS _w, col_id FROM some_table) AS _t WHERE _w = 1",
         )
 
     def test_remove_precision_parameterized_types(self):

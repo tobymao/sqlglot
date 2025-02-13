@@ -176,19 +176,27 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     return trunc
 
 
-def _unqualify_unpivot_columns(expression: exp.Expression) -> exp.Expression:
+def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
     """
     Snowflake doesn't allow columns referenced in UNPIVOT to be qualified,
-    so we need to unqualify them.
+    so we need to unqualify them. Same goes for ANY ORDER BY <column>.
 
     Example:
         >>> from sqlglot import parse_one
         >>> expr = parse_one("SELECT * FROM m_sales UNPIVOT(sales FOR month IN (m_sales.jan, feb, mar, april))")
-        >>> print(_unqualify_unpivot_columns(expr).sql(dialect="snowflake"))
+        >>> print(_unqualify_pivot_columns(expr).sql(dialect="snowflake"))
         SELECT * FROM m_sales UNPIVOT(sales FOR month IN (jan, feb, mar, april))
     """
-    if isinstance(expression, exp.Pivot) and expression.unpivot:
-        expression = transforms.unqualify_columns(expression)
+    if isinstance(expression, exp.Pivot):
+        if expression.unpivot:
+            expression = transforms.unqualify_columns(expression)
+        else:
+            field = expression.args.get("field")
+            field_expr = seq_get(field.expressions if field else [], 0)
+
+            if isinstance(field_expr, exp.PivotAny):
+                unqualified_field_expr = transforms.unqualify_columns(field_expr)
+                t.cast(exp.Expression, field).set("expressions", unqualified_field_expr, 0)
 
     return expression
 
@@ -942,7 +950,7 @@ class Snowflake(Dialect):
             exp.PercentileDisc: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
             ),
-            exp.Pivot: transforms.preprocess([_unqualify_unpivot_columns]),
+            exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
             exp.RegexpExtract: _regexpextract_sql,
             exp.RegexpExtractAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,

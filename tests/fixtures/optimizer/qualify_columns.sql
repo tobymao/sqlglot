@@ -264,6 +264,11 @@ SELECT t.a AS a, t.b AS b FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES
 SELECT generate_series FROM generate_series(0, 10) AS g;
 SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(generate_series);
 
+# execute: false
+# dialect: snowflake
+SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid;
+SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _Q_0 ORDER BY _Q_0.EMPID;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

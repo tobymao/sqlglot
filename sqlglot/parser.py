@@ -318,6 +318,7 @@ class Parser(metaclass=_Parser):
         TokenType.FIXEDSTRING,
         TokenType.FLOAT,
         TokenType.DOUBLE,
+        TokenType.UDOUBLE,
         TokenType.CHAR,
         TokenType.NCHAR,
         TokenType.VARCHAR,
@@ -418,6 +419,7 @@ class Parser(metaclass=_Parser):
         TokenType.SMALLINT: TokenType.USMALLINT,
         TokenType.TINYINT: TokenType.UTINYINT,
         TokenType.DECIMAL: TokenType.UDECIMAL,
+        TokenType.DOUBLE: TokenType.UDOUBLE,
     }
 
     SUBQUERY_PREDICATES = {

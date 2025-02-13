@@ -159,6 +159,13 @@ class TestClickhouse(Validator):
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
         )
         self.validate_identity(
+            "SELECT generate_series FROM generate_series(0, 10) AS g(x)",
+        )
+        self.validate_identity(
+            "SELECT generate_series FROM generate_series(0, 10) AS g",
+            "SELECT generate_series FROM generate_series(0, 10) AS g(generate_series)",
+        )
+        self.validate_identity(
             "INSERT INTO tab VALUES ({'key1': 1, 'key2': 10}), ({'key1': 2, 'key2': 20}), ({'key1': 3, 'key2': 30})",
             "INSERT INTO tab VALUES (map('key1', 1, 'key2', 10)), (map('key1', 2, 'key2', 20)), (map('key1', 3, 'key2', 30))",
         )
@@ -226,9 +233,9 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT a, b FROM (SELECT * FROM x) AS t",
+            "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
             read={
-                "clickhouse": "SELECT a, b FROM (SELECT * FROM x) AS t",
+                "clickhouse": "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
                 "duckdb": "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
             },
         )

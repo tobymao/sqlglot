@@ -259,6 +259,11 @@ WITH T1 AS (SELECT 1 AS C1, 1 AS C2, 'Y' AS TOP_PARENT_INDICATOR, 1 AS ID FROM D
 SELECT * FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
 SELECT t.a AS a, t.b AS b FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
 
+# execute: false
+# dialect: clickhouse
+SELECT generate_series FROM generate_series(0, 10) AS g;
+SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(generate_series);
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

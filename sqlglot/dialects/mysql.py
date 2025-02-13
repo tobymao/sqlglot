@@ -792,6 +792,7 @@ class MySQL(Dialect):
             exp.DataType.Type.USMALLINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "TINYINT",
             exp.DataType.Type.UDECIMAL: "DECIMAL",
+            exp.DataType.Type.UDOUBLE: "DOUBLE",
         }
 
         TIMESTAMP_TYPE_MAPPING = {

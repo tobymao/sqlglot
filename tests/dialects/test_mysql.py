@@ -14,6 +14,7 @@ class TestMySQL(Validator):
             self.validate_identity(f"CREATE TABLE t (id {t} UNSIGNED)")
             self.validate_identity(f"CREATE TABLE t (id {t}(10) UNSIGNED)")
 
+        self.validate_identity("CREATE TABLE bar (abacate DOUBLE(10, 2) UNSIGNED)")
         self.validate_identity("CREATE TABLE t (id DECIMAL(20, 4) UNSIGNED)")
         self.validate_identity("CREATE TABLE foo (a BIGINT, UNIQUE (b) USING BTREE)")
         self.validate_identity("CREATE TABLE foo (id BIGINT)")

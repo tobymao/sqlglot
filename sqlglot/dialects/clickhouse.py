@@ -649,6 +649,13 @@ class ClickHouse(Dialect):
                 is_db_reference=is_db_reference,
             )
 
+            if isinstance(this, exp.Table):
+                inner = this.this
+                alias = this.args.get("alias")
+
+                if isinstance(inner, exp.GenerateSeries) and alias and not alias.columns:
+                    alias.set("columns", [exp.to_identifier("generate_series")])
+
             if self._match(TokenType.FINAL):
                 this = self.expression(exp.Final, this=this)
 
@@ -902,7 +909,6 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
-        SUPPORTS_TABLE_ALIAS_COLUMNS = False
         VALUES_AS_TABLE = False
         ARRAY_SIZE_NAME = "LENGTH"
 

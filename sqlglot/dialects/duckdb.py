@@ -580,6 +580,7 @@ class DuckDB(Dialect):
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.GenerateDateArray: _generate_datetime_array_sql,
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
+            exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr=True),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
@@ -1046,6 +1047,3 @@ class DuckDB(Dialect):
 
             self.unsupported("Only integer formats are supported by NumberToStr")
             return self.function_fallback_sql(expression)
-
-        def hexstring_sql(self, expression: exp.HexString) -> str:
-            return self.func("FROM_HEX", exp.Literal.string(expression.this))

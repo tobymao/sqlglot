@@ -1276,11 +1276,19 @@ class Generator(metaclass=_Generator):
             return f"{self.dialect.BIT_START}{this}{self.dialect.BIT_END}"
         return f"{int(this, 2)}"
 
-    def hexstring_sql(self, expression: exp.HexString) -> str:
+    def hexstring_sql(self, expression: exp.HexString, binary_function_repr: bool = False) -> str:
         this = self.sql(expression, "this")
-        if self.dialect.HEX_START:
-            return f"{self.dialect.HEX_START}{this}{self.dialect.HEX_END}"
-        return f"{int(this, 16)}"
+        is_integer_type = expression.args.get("is_integer")
+
+        if is_integer_type or (not self.dialect.HEX_START and not binary_function_repr):
+            return f"{int(this, 16)}"
+        elif not is_integer_type and self.dialect.HEX_STRING_IS_INTEGER_TYPE:
+            self.unsupported("Unsupported transpilation from BINARY/BLOB hex string")
+
+        if binary_function_repr:
+            return self.func("FROM_HEX", exp.Literal.string(expression.this))
+
+        return f"{self.dialect.HEX_START}{this}{self.dialect.HEX_END}"
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")

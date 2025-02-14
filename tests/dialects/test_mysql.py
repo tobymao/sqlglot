@@ -386,8 +386,8 @@ class TestMySQL(Validator):
 
     def test_hexadecimal_literal(self):
         write_CC = {
-            "bigquery": "SELECT 0xCC",
-            "clickhouse": "SELECT 0xCC",
+            "bigquery": "SELECT FROM_HEX('CC')",
+            "clickhouse": UnsupportedError,
             "databricks": "SELECT X'CC'",
             "drill": "SELECT 204",
             "duckdb": "SELECT FROM_HEX('CC')",
@@ -407,8 +407,8 @@ class TestMySQL(Validator):
             "tsql": "SELECT 0xCC",
         }
         write_CC_with_leading_zeros = {
-            "bigquery": "SELECT 0x0000CC",
-            "clickhouse": "SELECT 0x0000CC",
+            "bigquery": "SELECT FROM_HEX('0000CC')",
+            "clickhouse": UnsupportedError,
             "databricks": "SELECT X'0000CC'",
             "drill": "SELECT 204",
             "duckdb": "SELECT FROM_HEX('0000CC')",

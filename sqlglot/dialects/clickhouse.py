@@ -190,6 +190,7 @@ class ClickHouse(Dialect):
     PRESERVE_ORIGINAL_NAMES = True
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
+    HEX_STRING_IS_INTEGER_TYPE = True
 
     # https://github.com/ClickHouse/ClickHouse/issues/33935#issue-1112165779
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE

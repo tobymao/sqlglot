@@ -1608,7 +1608,7 @@ class BitString(Condition):
 
 
 class HexString(Condition):
-    pass
+    arg_types = {"this": True, "is_integer": False}
 
 
 class ByteString(Condition):

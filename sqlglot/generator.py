@@ -1276,11 +1276,30 @@ class Generator(metaclass=_Generator):
             return f"{self.dialect.BIT_START}{this}{self.dialect.BIT_END}"
         return f"{int(this, 2)}"
 
-    def hexstring_sql(self, expression: exp.HexString) -> str:
+    def hexstring_sql(
+        self, expression: exp.HexString, binary_function_repr: t.Optional[str] = None
+    ) -> str:
         this = self.sql(expression, "this")
-        if self.dialect.HEX_START:
-            return f"{self.dialect.HEX_START}{this}{self.dialect.HEX_END}"
-        return f"{int(this, 16)}"
+        is_integer_type = expression.args.get("is_integer")
+
+        if (is_integer_type and not self.dialect.HEX_STRING_IS_INTEGER_TYPE) or (
+            not self.dialect.HEX_START and not binary_function_repr
+        ):
+            # Integer representation will be returned if:
+            # - The read dialect treats the hex value as integer literal but not the write
+            # - The transpilation is not supported (write dialect hasn't set HEX_START or the param flag)
+            return f"{int(this, 16)}"
+
+        if not is_integer_type:
+            # Read dialect treats the hex value as BINARY/BLOB
+            if binary_function_repr:
+                # The write dialect supports the transpilation to its equivalent BINARY/BLOB
+                return self.func(binary_function_repr, exp.Literal.string(this))
+            if self.dialect.HEX_STRING_IS_INTEGER_TYPE:
+                # The write dialect does not support the transpilation, it'll treat the hex value as INTEGER
+                self.unsupported("Unsupported transpilation from BINARY/BLOB hex string")
+
+        return f"{self.dialect.HEX_START}{this}{self.dialect.HEX_END}"
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")

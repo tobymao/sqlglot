@@ -112,25 +112,25 @@ class Dremio(Dialect):
     
     class Parser(parser.Parser):
         """
-    The Dremio-specific SQL parser for SQLGlot.
+        The Dremio-specific SQL parser for SQLGlot.
 
-    This class extends the base SQLGlot parser to handle Dremio's SQL syntax and functions.
-    It defines a mapping between Dremio's built-in functions and SQLGlot's expression classes,
-    ensuring proper parsing and transformation of SQL queries.
+        This class extends the base SQLGlot parser to handle Dremio's SQL syntax and functions.
+        It defines a mapping between Dremio's built-in functions and SQLGlot's expression classes,
+        ensuring proper parsing and transformation of SQL queries.
 
-    Key Responsibilities:
-    - Map Dremio functions to SQLGlot expressions (e.g., DATE_ADD → exp.DateAdd).
-    - Support Dremio-specific syntax (e.g., QUALIFY, FLATTEN, CONVERT_FROM).
-    - Enable conversion between Dremio SQL and other SQL dialects via SQLGlot.
+        Key Responsibilities:
+        - Map Dremio functions to SQLGlot expressions (e.g., DATE_ADD → exp.DateAdd).
+        - Support Dremio-specific syntax (e.g., QUALIFY, FLATTEN, CONVERT_FROM).
+        - Enable conversion between Dremio SQL and other SQL dialects via SQLGlot.
 
-    The FUNCTIONS dictionary maps function names to SQLGlot expressions, allowing
-    SQLGlot to recognize and convert them accordingly.
+        The FUNCTIONS dictionary maps function names to SQLGlot expressions, allowing
+        SQLGlot to recognize and convert them accordingly.
 
-    Example:
+        Example:
         "DATE_ADD": lambda args: exp.DateAdd(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
-    This ensures that SQL using DATE_ADD in Dremio is correctly parsed and transformed
-    when working with different SQL dialects.
+        This ensures that SQL using DATE_ADD in Dremio is correctly parsed and transformed
+        when working with different SQL dialects.
         """
         FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
@@ -184,7 +184,6 @@ class Dremio(Dialect):
         "LEFT": left_to_substring_sql,
         "RIGHT": right_to_substring_sql,
         "TRANSLATE": exp.Translate.from_arg_list,
-        "REGEXP_EXTRACT": regexp_extract_sql,
         "FLATTEN": lambda args: exp.Explode(this=seq_get(args, 0)),
         "NDV": exp.ApproxDistinct.from_arg_list,
         "PERCENTILE_CONT": exp.PercentileCont.from_arg_list,
@@ -206,24 +205,24 @@ class Dremio(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
-    """
-    The Dremio-specific SQL tokenizer.
+        """
+        The Dremio-specific SQL tokenizer.
 
-    This class is responsible for breaking down SQL statements into individual tokens
-    for parsing. It ensures that Dremio's specific SQL keywords, operators, and 
-    function names are correctly identified and processed.
+        This class is responsible for breaking down SQL statements into individual tokens
+        for parsing. It ensures that Dremio's specific SQL keywords, operators, and 
+        function names are correctly identified and processed.
 
-    Key Responsibilities:
-    - Recognize Dremio-specific keywords such as QUALIFY, ILIKE, and ARRAY.
-    - Properly tokenize data types like STRUCT, LIST, and MAP.
-    - Handle special operators and syntax unique to Dremio.
-    - Ensure all Dremio functions and expressions are correctly tokenized.
+        Key Responsibilities:
+        - Recognize Dremio-specific keywords such as QUALIFY, ILIKE, and ARRAY.
+        - Properly tokenize data types like STRUCT, LIST, and MAP.
+        - Handle special operators and syntax unique to Dremio.
+        - Ensure all Dremio functions and expressions are correctly tokenized.
 
-    This tokenizer extends the base SQLGlot tokenizer and overrides the KEYWORDS
-    dictionary to include Dremio-specific SQL elements.
-    """
+        This tokenizer extends the base SQLGlot tokenizer and overrides the KEYWORDS
+        dictionary to include Dremio-specific SQL elements.
+        """
 
-    KEYWORDS = {
+        KEYWORDS = {
         **tokens.Tokenizer.KEYWORDS,
         
         # Comparison & Conditional
@@ -257,7 +256,6 @@ class Dremio(Dialect):
         "TRIM": TokenType.FUNCTION,
         "LTRIM": TokenType.FUNCTION,
         "RTRIM": TokenType.FUNCTION,
-        "REGEXP_EXTRACT": TokenType.FUNCTION,
         "REGEXP_REPLACE": TokenType.FUNCTION,
         "TO_DATE": TokenType.FUNCTION,
         "TO_TIMESTAMP": TokenType.FUNCTION,
@@ -355,22 +353,22 @@ class Dremio(Dialect):
     }
 
     class Generator(generator.Generator):
-    """
-    The Dremio-specific SQL generator.
+        """
+        The Dremio-specific SQL generator.
 
-    This class is responsible for converting SQLGlot expressions into properly formatted
-    Dremio SQL syntax. It defines transformation rules for functions, expressions, and
-    special syntax constructs that differ from standard SQL.
+        This class is responsible for converting SQLGlot expressions into properly formatted
+        Dremio SQL syntax. It defines transformation rules for functions, expressions, and
+        special syntax constructs that differ from standard SQL.
 
-    Key Responsibilities:
-    - Ensure Dremio SQL syntax is correctly formatted.
-    - Define function translations where Dremio’s implementation differs from ANSI SQL.
-    - Handle special expressions like DATE_ADD, QUALIFY, FLATTEN, and LISTAGG.
+        Key Responsibilities:
+        - Ensure Dremio SQL syntax is correctly formatted.
+        - Define function translations where Dremio’s implementation differs from ANSI SQL.
+        - Handle special expressions like DATE_ADD, QUALIFY, FLATTEN, and LISTAGG.
 
-    This generator extends SQLGlot’s base generator and overrides necessary transformations.
-    """
+        This generator extends SQLGlot’s base generator and overrides necessary transformations.
+        """
 
-    TRANSFORMS = {
+        TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
 
         # Date/Time Functions
@@ -460,8 +458,9 @@ class Dremio(Dialect):
         exp.CovarSamp: lambda self, e: f"COVAR_SAMP({self.sql(e.this)}, {self.sql(e.expression)})",  
 
         # PIVOT and UNPIVOT  
-        exp.Pivot: lambda self, e: f"PIVOT(({self.sql(e.args.get('pivot_clause'))}) FOR {self.sql(e.args.get('pivot_for_clause'))} IN ({self.expressions(e, key='pivot_in_clause')}))",
-        exp.Unpivot: lambda self, e: f"UNPIVOT({self.sql(e.this)} INCLUDE NULLS)",
+        exp.Pivot: lambda self, e: f"PIVOT({self.sql(e.args.get('pivot_clause'))} FOR {self.sql(e.args.get('pivot_for_clause'))} IN ({self.expressions(e, key='pivot_in_clause')}))" if e.args.get('pivot_clause') and e.args.get('pivot_for_clause') else "",
+        exp.Unpivot: lambda self, e: f"UNPIVOT({self.sql(e.this)}) INCLUDE NULLS" if e.this else "",
+
 
         # WITH (Common Table Expressions - CTEs)  
         exp.With: lambda self, e: f"WITH {self.sql(e.this)} {self.parenthesized('expressions', e, flat=True)} AS ({self.sql(e.expression)}) {self.sql(e.args.get('recursive'), '')}",
@@ -475,15 +474,13 @@ class Dremio(Dialect):
         exp.Table: lambda self, e: f"TABLE({self.sql(e.this)}({self.sql(e.expression)}))",
 
         # REGEXP_EXTRACT
-        exp.RegexpExtract: lambda self, e: f"REGEXP_EXTRACT({self.sql(e.this)}, {self.sql(e.expression)}{self.format_arg(e.args.get('group'))})",
+        exp.RegexpExtract: lambda self, e: f"REGEXP_EXTRACT({self.sql(e.this)}, {self.sql(e.expression)}{',' + self.sql(e.args.get('group')) if e.args.get('group') else ''})",
 
         # MAP_KEYS
         exp.MapKeys: lambda self, e: f"MAP_KEYS({self.sql(e.this)})",
 
         # MAP_VALUES
-        exp.MapValues: lambda self, e: f"MAP_VALUES({self.sql(e.this)})",
-
-
+        exp.MapValues: lambda self, e: f"MAP_VALUES({self.sql(e.this)})"
 
     }
 

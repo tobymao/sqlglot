@@ -1042,7 +1042,7 @@ class ClickHouse(Dialect):
             exp.SHA2: sha256_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
-            exp.Trim: trim_sql,
+            exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),

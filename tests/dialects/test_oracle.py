@@ -118,6 +118,13 @@ class TestOracle(Validator):
         )
 
         self.validate_all(
+            "SELECT TRIM('|' FROM '||Hello ||| world||')",
+            write={
+                "clickhouse": "SELECT TRIM(BOTH '|' FROM '||Hello ||| world||')",
+                "oracle": "SELECT TRIM('|' FROM '||Hello ||| world||')",
+            },
+        )
+        self.validate_all(
             "SELECT department_id, department_name INTO v_department_id, v_department_name FROM departments FETCH FIRST 1 ROWS ONLY",
             write={
                 "oracle": "SELECT department_id, department_name INTO v_department_id, v_department_name FROM departments FETCH FIRST 1 ROWS ONLY",

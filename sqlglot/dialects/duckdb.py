@@ -1046,3 +1046,6 @@ class DuckDB(Dialect):
 
             self.unsupported("Only integer formats are supported by NumberToStr")
             return self.function_fallback_sql(expression)
+
+        def hexstring_sql(self, expression: exp.HexString) -> str:
+            return self.func("FROM_HEX", exp.Literal.string(expression.this))

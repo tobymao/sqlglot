@@ -30,6 +30,17 @@ from sqlglot.generator import unsupported_args
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
 
+def _trim_sql(self: ClickHouse.Generator, expression: exp.Trim) -> str:
+    position = expression.args.get("position")
+
+    if not position:
+        expression = expression.copy()
+        expression.set("position", "BOTH")
+        return trim_sql(self, expression)
+
+    return trim_sql(self, expression)
+
+
 def _build_date_format(args: t.List) -> exp.TimeToStr:
     expr = build_formatted_time(exp.TimeToStr, "clickhouse")(args)
 
@@ -1042,7 +1053,7 @@ class ClickHouse(Dialect):
             exp.SHA2: sha256_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
-            exp.Trim: trim_sql,
+            exp.Trim: _trim_sql,
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),

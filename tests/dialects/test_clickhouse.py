@@ -187,6 +187,13 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "SELECT TRIM(BOTH '|' FROM '||Hello ||| world||')",
+            read={
+                "clickhouse": "SELECT TRIM(BOTH '|' FROM '||Hello ||| world||')",
+                "oracle": "SELECT TRIM('|' FROM '||Hello ||| world||')",
+            },
+        )
+        self.validate_all(
             "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",
             read={
                 "clickhouse": "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",

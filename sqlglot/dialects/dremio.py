@@ -191,6 +191,7 @@ class Dremio(Dialect):
         "LISTAGG": exp.GroupConcat.from_arg_list,
         "QUALIFY": lambda args: exp.Qualify(this=seq_get(args, 0)),
         # REGEXP_EXTRACT
+        "REGEXP_REPLACE": TokenType.FUNCTION,  
         "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
             this=seq_get(args, 0),  # Input string
             expression=seq_get(args, 1),  # Regex pattern

@@ -187,6 +187,13 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",
+            read={
+                "clickhouse": "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",
+                "oracle": "SELECT to_date(substr(a.eta, 1,10), 'YYYY-MM-DD')",
+            },
+        )
+        self.validate_all(
             "CHAR(67) || CHAR(65) || CHAR(84)",
             read={
                 "clickhouse": "CHAR(67) || CHAR(65) || CHAR(84)",
@@ -208,13 +215,13 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+            "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",
             read={
-                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",
                 "postgres": "SELECT TO_DATE('05 12 2000', 'DD MM YYYY')",
             },
             write={
-                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",
                 "postgres": "SELECT CAST(CAST(TO_DATE('05 12 2000', 'DD MM YYYY') AS TIMESTAMP) AS DATE)",
             },
         )

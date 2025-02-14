@@ -1276,7 +1276,9 @@ class Generator(metaclass=_Generator):
             return f"{self.dialect.BIT_START}{this}{self.dialect.BIT_END}"
         return f"{int(this, 2)}"
 
-    def hexstring_sql(self, expression: exp.HexString, binary_function_repr: bool = False) -> str:
+    def hexstring_sql(
+        self, expression: exp.HexString, binary_function_repr: t.Optional[str] = None
+    ) -> str:
         this = self.sql(expression, "this")
         is_integer_type = expression.args.get("is_integer")
 
@@ -1292,8 +1294,8 @@ class Generator(metaclass=_Generator):
             # Read dialect treats the hex value as BINARY/BLOB
             if binary_function_repr:
                 # The write dialect supports the transpilation to its equivalent BINARY/BLOB
-                return self.func("FROM_HEX", exp.Literal.string(this))
-            elif self.dialect.HEX_STRING_IS_INTEGER_TYPE:
+                return self.func(binary_function_repr, exp.Literal.string(this))
+            if self.dialect.HEX_STRING_IS_INTEGER_TYPE:
                 # The write dialect does not support the transpilation, it'll treat the hex value as INTEGER
                 self.unsupported("Unsupported transpilation from BINARY/BLOB hex string")
 

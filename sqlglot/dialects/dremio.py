@@ -191,6 +191,18 @@ class Dremio(Dialect):
         "PERCENTILE_DISC": exp.PercentileDisc.from_arg_list,
         "LISTAGG": exp.GroupConcat.from_arg_list,
         "QUALIFY": lambda args: exp.Qualify(this=seq_get(args, 0)),
+        # REGEXP_EXTRACT
+        "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
+            this=seq_get(args, 0),  # Input string
+            expression=seq_get(args, 1),  # Regex pattern
+            group=seq_get(args, 2),  # Group index (optional)
+        ),
+
+        # MAP_KEYS
+        "MAP_KEYS": lambda args: exp.MapKeys(this=seq_get(args, 0)),
+
+        # MAP_VALUES
+        "MAP_VALUES": lambda args: exp.MapValues(this=seq_get(args, 0)),
     }
 
     class Tokenizer(tokens.Tokenizer):
@@ -215,7 +227,7 @@ class Dremio(Dialect):
         **tokens.Tokenizer.KEYWORDS,
         
         # Comparison & Conditional
-        "ILIKE": TokenType.FUNCTION,
+        "ILIKE": TokenType.ILIKE,
         "QUALIFY": TokenType.QUALIFY,
         "IS DISTINCT FROM": TokenType.IS_DISTINCT_FROM,
         "IS NOT DISTINCT FROM": TokenType.IS_NOT_DISTINCT_FROM,
@@ -249,14 +261,6 @@ class Dremio(Dialect):
         "REGEXP_REPLACE": TokenType.FUNCTION,
         "TO_DATE": TokenType.FUNCTION,
         "TO_TIMESTAMP": TokenType.FUNCTION,
-
-        # Operators & Syntax
-        "PARTITION BY": TokenType.PARTITION_BY,
-        "ORDER BY": TokenType.ORDER_BY,
-        "GROUP BY": TokenType.GROUP_BY,
-        "WINDOW": TokenType.WINDOW,
-        "ROWS BETWEEN": TokenType.ROWSBETWEEN,
-        "RANGE BETWEEN": TokenType.RANGEBETWEEN,
 
         # Joins
         "LEFT JOIN": TokenType.LEFT_JOIN,
@@ -341,6 +345,13 @@ class Dremio(Dialect):
         "LAST_VALUE": TokenType.FUNCTION,  
         "NTH_VALUE": TokenType.FUNCTION,  
 
+        # REGEXP functions
+        "REGEXP_EXTRACT": TokenType.FUNCTION,
+
+        # MAP functions
+        "MAP_KEYS": TokenType.FUNCTION,
+        "MAP_VALUES": TokenType.FUNCTION,
+
     }
 
     class Generator(generator.Generator):
@@ -406,9 +417,6 @@ class Dremio(Dialect):
         exp.LastValue: lambda self, e: f"LAST_VALUE({self.sql(e.this)})",
         exp.NthValue: lambda self, e: f"NTH_VALUE({self.sql(e.this)}, {self.sql(e.expression)})",
 
-        # JSON Functions
-        exp.JSONExtract: lambda self, e: f"JSON_VALUE({self.sql(e.this)}, {self.sql(e.expression)})",
-
         # Conversion Functions
         exp.Unhex: lambda self, e: f"CONVERT_FROM({self.sql(e.this)}, 'HEX')",
         exp.Hex: lambda self, e: f"CONVERT_TO({self.sql(e.this)}, 'HEX')",
@@ -450,6 +458,32 @@ class Dremio(Dialect):
         exp.Corr: lambda self, e: f"CORR({self.sql(e.this)}, {self.sql(e.expression)})",  
         exp.CovarPop: lambda self, e: f"COVAR_POP({self.sql(e.this)}, {self.sql(e.expression)})",  
         exp.CovarSamp: lambda self, e: f"COVAR_SAMP({self.sql(e.this)}, {self.sql(e.expression)})",  
+
+        # PIVOT and UNPIVOT  
+        exp.Pivot: lambda self, e: f"PIVOT(({self.sql(e.args.get('pivot_clause'))}) FOR {self.sql(e.args.get('pivot_for_clause'))} IN ({self.expressions(e, key='pivot_in_clause')}))",
+        exp.Unpivot: lambda self, e: f"UNPIVOT({self.sql(e.this)} INCLUDE NULLS)",
+
+        # WITH (Common Table Expressions - CTEs)  
+        exp.With: lambda self, e: f"WITH {self.sql(e.this)} {self.parenthesized('expressions', e, flat=True)} AS ({self.sql(e.expression)}) {self.sql(e.args.get('recursive'), '')}",
+
+        exp.From: lambda self, e: f"FROM {self.expressions(e)}",
+        exp.Filter: lambda self, e: f"{self.sql(e.this)} FILTER (WHERE {self.sql(e.expression)})" if e.this else f"FILTER (WHERE {self.sql(e.expression)})",
+        exp.On: lambda self, e: f"ON {self.sql(e.this)}",
+        exp.AtTime: lambda self, e: f"{self.sql(e.this)} AT {self.sql(e.expression)}",
+        exp.Unnest: lambda self, e: f"UNNEST({self.sql(e.this)}) WITH ORDINALITY" if e.args.get("ordinality") else f"UNNEST({self.sql(e.this)})",
+        exp.Hint: lambda self, e: f"/*+ {self.sql(e.this)} */",
+        exp.Table: lambda self, e: f"TABLE({self.sql(e.this)}({self.sql(e.expression)}))",
+
+        # REGEXP_EXTRACT
+        exp.RegexpExtract: lambda self, e: f"REGEXP_EXTRACT({self.sql(e.this)}, {self.sql(e.expression)}{self.format_arg(e.args.get('group'))})",
+
+        # MAP_KEYS
+        exp.MapKeys: lambda self, e: f"MAP_KEYS({self.sql(e.this)})",
+
+        # MAP_VALUES
+        exp.MapValues: lambda self, e: f"MAP_VALUES({self.sql(e.this)})",
+
+
 
     }
 

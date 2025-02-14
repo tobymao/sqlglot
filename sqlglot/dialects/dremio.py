@@ -20,6 +20,43 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 class Dremio(Dialect):
+    """
+    The Dremio SQL dialect for SQLGlot.
+
+    This class defines the necessary components to parse, generate, and tokenize
+    SQL statements specific to Dremio, ensuring compatibility with SQLGlot’s
+    framework for SQL translation.
+
+    Key Responsibilities:
+    - Define Dremio's reserved keywords to prevent conflicts during parsing.
+    - Implement custom parsing rules for Dremio-specific SQL functions and expressions.
+    - Configure the SQL generator to produce valid Dremio SQL syntax.
+    - Set up a tokenizer to correctly recognize SQL tokens used in Dremio.
+
+    The Dremio dialect consists of the following required subclasses:
+
+    1. **Tokenizer (class Tokenizer)**:
+        - Responsible for breaking down SQL statements into tokens.
+        - Ensures Dremio-specific keywords (e.g., QUALIFY, ILIKE, ARRAY) are recognized.
+        - Overrides default token mappings where necessary.
+
+    2. **Parser (class Parser)**:
+        - Defines how Dremio SQL constructs are mapped to SQLGlot expressions.
+        - Maps built-in functions (e.g., DATE_ADD, FLATTEN, NDV) to SQLGlot AST nodes.
+        - Ensures correct parsing of Dremio-specific syntax, such as QUALIFY and LISTAGG.
+
+    3. **Generator (class Generator)**:
+        - Converts parsed SQLGlot expressions back into valid Dremio SQL syntax.
+        - Implements transformation rules for expressions that differ from standard SQL.
+        - Ensures functions and operators are formatted correctly according to Dremio's syntax.
+
+    Example:
+        - Parsing: Converts `DATE_ADD(start_date, INTERVAL 5 DAY)` into SQLGlot’s `exp.DateAdd`
+        - Generation: Translates `exp.DateAdd` back into `DATE_ADD(start_date, INTERVAL 5 DAY)`
+
+    By implementing these components, the Dremio dialect enables seamless SQL parsing,
+    translation, and generation within SQLGlot.
+    """
     INDEX_OFFSET = 0
     TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -74,7 +111,28 @@ class Dremio(Dialect):
         "MERGE", "ALTER", "UPDATE", "DROP", "INSERT"}
     
     class Parser(parser.Parser):
-    FUNCTIONS = {
+        """
+    The Dremio-specific SQL parser for SQLGlot.
+
+    This class extends the base SQLGlot parser to handle Dremio's SQL syntax and functions.
+    It defines a mapping between Dremio's built-in functions and SQLGlot's expression classes,
+    ensuring proper parsing and transformation of SQL queries.
+
+    Key Responsibilities:
+    - Map Dremio functions to SQLGlot expressions (e.g., DATE_ADD → exp.DateAdd).
+    - Support Dremio-specific syntax (e.g., QUALIFY, FLATTEN, CONVERT_FROM).
+    - Enable conversion between Dremio SQL and other SQL dialects via SQLGlot.
+
+    The FUNCTIONS dictionary maps function names to SQLGlot expressions, allowing
+    SQLGlot to recognize and convert them accordingly.
+
+    Example:
+        "DATE_ADD": lambda args: exp.DateAdd(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+
+    This ensures that SQL using DATE_ADD in Dremio is correctly parsed and transformed
+    when working with different SQL dialects.
+        """
+        FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         "ABS": exp.Abs.from_arg_list,
         "ACOS": exp.Acos.from_arg_list,
@@ -134,3 +192,264 @@ class Dremio(Dialect):
         "LISTAGG": exp.GroupConcat.from_arg_list,
         "QUALIFY": lambda args: exp.Qualify(this=seq_get(args, 0)),
     }
+
+    class Tokenizer(tokens.Tokenizer):
+    """
+    The Dremio-specific SQL tokenizer.
+
+    This class is responsible for breaking down SQL statements into individual tokens
+    for parsing. It ensures that Dremio's specific SQL keywords, operators, and 
+    function names are correctly identified and processed.
+
+    Key Responsibilities:
+    - Recognize Dremio-specific keywords such as QUALIFY, ILIKE, and ARRAY.
+    - Properly tokenize data types like STRUCT, LIST, and MAP.
+    - Handle special operators and syntax unique to Dremio.
+    - Ensure all Dremio functions and expressions are correctly tokenized.
+
+    This tokenizer extends the base SQLGlot tokenizer and overrides the KEYWORDS
+    dictionary to include Dremio-specific SQL elements.
+    """
+
+    KEYWORDS = {
+        **tokens.Tokenizer.KEYWORDS,
+        
+        # Comparison & Conditional
+        "ILIKE": TokenType.FUNCTION,
+        "QUALIFY": TokenType.QUALIFY,
+        "IS DISTINCT FROM": TokenType.IS_DISTINCT_FROM,
+        "IS NOT DISTINCT FROM": TokenType.IS_NOT_DISTINCT_FROM,
+
+        # Data Types
+        "ARRAY": TokenType.ARRAY,
+        "STRUCT": TokenType.STRUCT,
+        "MAP": TokenType.MAP,
+        "LIST": TokenType.ARRAY,  # Dremio treats LIST similar to ARRAY
+
+        # Functions
+        "FLATTEN": TokenType.EXPLODE,  # Tokenize FLATTEN as EXPLODE for handling nested arrays
+        "EXTRACT": TokenType.EXTRACT,
+        "PERCENTILE_CONT": TokenType.FUNCTION,
+        "PERCENTILE_DISC": TokenType.FUNCTION,
+        "NDV": TokenType.FUNCTION,
+        "CONVERT_FROM": TokenType.FUNCTION,
+        "CONVERT_TO": TokenType.FUNCTION,
+        "DATE_ADD": TokenType.FUNCTION,
+        "DATE_SUB": TokenType.FUNCTION,
+        "DATE_TRUNC": TokenType.FUNCTION,
+        "GREATEST": TokenType.FUNCTION,
+        "LEAST": TokenType.FUNCTION,
+        "STRPOS": TokenType.FUNCTION,
+        "SPLIT_PART": TokenType.FUNCTION,
+        "LISTAGG": TokenType.FUNCTION,
+        "TRIM": TokenType.FUNCTION,
+        "LTRIM": TokenType.FUNCTION,
+        "RTRIM": TokenType.FUNCTION,
+        "REGEXP_EXTRACT": TokenType.FUNCTION,
+        "REGEXP_REPLACE": TokenType.FUNCTION,
+        "TO_DATE": TokenType.FUNCTION,
+        "TO_TIMESTAMP": TokenType.FUNCTION,
+
+        # Operators & Syntax
+        "PARTITION BY": TokenType.PARTITION_BY,
+        "ORDER BY": TokenType.ORDER_BY,
+        "GROUP BY": TokenType.GROUP_BY,
+        "WINDOW": TokenType.WINDOW,
+        "ROWS BETWEEN": TokenType.ROWSBETWEEN,
+        "RANGE BETWEEN": TokenType.RANGEBETWEEN,
+
+        # Joins
+        "LEFT JOIN": TokenType.LEFT_JOIN,
+        "RIGHT JOIN": TokenType.RIGHT_JOIN,
+        "FULL JOIN": TokenType.FULL_JOIN,
+        "INNER JOIN": TokenType.INNER_JOIN,
+        "CROSS JOIN": TokenType.CROSS_JOIN,
+        "LATERAL": TokenType.LATERAL,
+
+        # Miscellaneous
+        "IF": TokenType.IF,
+        "CASE": TokenType.CASE,
+        "WHEN": TokenType.WHEN,
+        "THEN": TokenType.THEN,
+        "ELSE": TokenType.ELSE,
+        "END": TokenType.END,
+
+                # Additional Data Types  
+        "DECIMAL": TokenType.DECIMAL,  
+        "NUMERIC": TokenType.NUMERIC,  
+        "DOUBLE": TokenType.DOUBLE,  
+        "FLOAT": TokenType.FLOAT,  
+        "BOOLEAN": TokenType.BOOLEAN,  
+        "BINARY": TokenType.BINARY,  
+        "VARBINARY": TokenType.BINARY,  
+
+        # String Functions  
+        "CHAR_LENGTH": TokenType.FUNCTION,  
+        "CHARACTER_LENGTH": TokenType.FUNCTION,  
+        "POSITION": TokenType.FUNCTION,  
+        "ASCII": TokenType.FUNCTION,  
+        "REPEAT": TokenType.FUNCTION,  
+        "REVERSE": TokenType.FUNCTION,  
+        "INITCAP": TokenType.FUNCTION,  
+
+        # Date/Time Functions  
+        "NOW": TokenType.FUNCTION,  
+        "CURRENT_DATE": TokenType.FUNCTION,  
+        "CURRENT_TIME": TokenType.FUNCTION,  
+        "CURRENT_TIMESTAMP": TokenType.FUNCTION,  
+        "DAYOFWEEK": TokenType.FUNCTION,  
+        "DAYOFMONTH": TokenType.FUNCTION,  
+        "DAYOFYEAR": TokenType.FUNCTION,  
+        "MONTH": TokenType.FUNCTION,  
+        "YEAR": TokenType.FUNCTION,  
+        "HOUR": TokenType.FUNCTION,  
+        "MINUTE": TokenType.FUNCTION,  
+        "SECOND": TokenType.FUNCTION,  
+
+        # Aggregation Functions  
+        "APPROX_COUNT_DISTINCT": TokenType.FUNCTION,  
+        "CORR": TokenType.FUNCTION,  
+        "COVAR_POP": TokenType.FUNCTION,  
+        "COVAR_SAMP": TokenType.FUNCTION,  
+        "VAR_POP": TokenType.FUNCTION,  
+        "VAR_SAMP": TokenType.FUNCTION,  
+
+        # Bitwise Functions  
+        "BIT_AND": TokenType.FUNCTION,  
+        "BIT_OR": TokenType.FUNCTION,  
+        "BIT_XOR": TokenType.FUNCTION,  
+        "BITWISE_AND": TokenType.FUNCTION,  
+        "BITWISE_OR": TokenType.FUNCTION,  
+        "BITWISE_XOR": TokenType.FUNCTION,  
+        "BITWISE_NOT": TokenType.FUNCTION,  
+
+        # JSON Functions  
+        "JSON_ARRAY": TokenType.FUNCTION,  
+        "JSON_OBJECT": TokenType.FUNCTION,  
+        "JSON_VALUE": TokenType.FUNCTION,  
+
+        # Table Functions  
+        "UNNEST": TokenType.UNNEST,  
+        "PIVOT": TokenType.PIVOT,  
+        "UNPIVOT": TokenType.UNPIVOT,  
+
+        # Miscellaneous  
+        "QUALIFY": TokenType.QUALIFY,  
+        "LAG": TokenType.FUNCTION,  
+        "LEAD": TokenType.FUNCTION,  
+        "FIRST_VALUE": TokenType.FUNCTION,  
+        "LAST_VALUE": TokenType.FUNCTION,  
+        "NTH_VALUE": TokenType.FUNCTION,  
+
+    }
+
+    class Generator(generator.Generator):
+    """
+    The Dremio-specific SQL generator.
+
+    This class is responsible for converting SQLGlot expressions into properly formatted
+    Dremio SQL syntax. It defines transformation rules for functions, expressions, and
+    special syntax constructs that differ from standard SQL.
+
+    Key Responsibilities:
+    - Ensure Dremio SQL syntax is correctly formatted.
+    - Define function translations where Dremio’s implementation differs from ANSI SQL.
+    - Handle special expressions like DATE_ADD, QUALIFY, FLATTEN, and LISTAGG.
+
+    This generator extends SQLGlot’s base generator and overrides necessary transformations.
+    """
+
+    TRANSFORMS = {
+        **generator.Generator.TRANSFORMS,
+
+        # Date/Time Functions
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e.this)}, INTERVAL {self.sql(e.expression)} {self.sql(e.unit)})",
+        exp.DateSub: lambda self, e: f"DATE_SUB({self.sql(e.this)}, INTERVAL {self.sql(e.expression)} {self.sql(e.unit)})",
+        exp.DateTrunc: timestamptrunc_sql(),
+
+        # String Functions
+        exp.StrToDate: lambda self, e: f"CAST({self.sql(e.this)} AS DATE)",
+        exp.StrToTime: timestrtotime_sql,
+        exp.Length: lambda self, e: f"LENGTH({self.sql(e.this)})",
+        exp.Lower: lambda self, e: f"LOWER({self.sql(e.this)})",
+        exp.Upper: lambda self, e: f"UPPER({self.sql(e.this)})",
+        exp.Trim: lambda self, e: f"TRIM({self.sql(e.this)})",
+        exp.Ltrim: lambda self, e: f"LTRIM({self.sql(e.this)})",
+        exp.Rtrim: lambda self, e: f"RTRIM({self.sql(e.this)})",
+        exp.Concat: lambda self, e: f"CONCAT({self.expressions(e)})",
+        exp.Replace: lambda self, e: f"REPLACE({self.sql(e.this)}, {self.sql(e.args.get('pattern'))}, {self.sql(e.args.get('replacement'))})",
+        exp.Translate: lambda self, e: f"TRANSLATE({self.sql(e.this)}, {self.sql(e.args.get('from'))}, {self.sql(e.args.get('to'))})",
+
+        # Array and Aggregation Functions
+        exp.Explode: lambda self, e: f"FLATTEN({self.sql(e.this)})",
+        exp.ApproxDistinct: lambda self, e: f"NDV({self.sql(e.this)})",
+        exp.PercentileCont: lambda self, e: f"PERCENTILE_CONT({self.sql(e.this)}, {self.sql(e.args.get('quantile'))})",
+        exp.PercentileDisc: lambda self, e: f"PERCENTILE_DISC({self.sql(e.this)}, {self.sql(e.args.get('quantile'))})",
+        exp.ListAgg: lambda self, e: f"LISTAGG({self.sql(e.this)}, {self.sql(e.args.get('separator'))})",
+
+        # Mathematical Functions
+        exp.Greatest: lambda self, e: f"GREATEST({self.expressions(e)})",
+        exp.Least: lambda self, e: f"LEAST({self.expressions(e)})",
+        exp.Pow: lambda self, e: f"POWER({self.sql(e.this)}, {self.sql(e.expression)})",
+        exp.Sqrt: lambda self, e: f"SQRT({self.sql(e.this)})",
+        exp.Log: lambda self, e: f"LOG({self.sql(e.args.get('base'))}, {self.sql(e.this)})" if e.args.get("base") else f"LN({self.sql(e.this)})",
+
+        # Regex Functions
+        exp.RegexpExtract: lambda self, e: f"REGEXP_EXTRACT({self.sql(e.this)}, {self.sql(e.expression)})",
+        exp.RegexpReplace: lambda self, e: f"REGEXP_REPLACE({self.sql(e.this)}, {self.sql(e.args.get('pattern'))}, {self.sql(e.args.get('replacement'))})",
+
+        # Window & Analytical Functions
+        exp.Qualify: lambda self, e: f"QUALIFY {self.sql(e.this)}",
+        exp.Lag: lambda self, e: f"LAG({self.sql(e.this)})",
+        exp.Lead: lambda self, e: f"LEAD({self.sql(e.this)})",
+        exp.FirstValue: lambda self, e: f"FIRST_VALUE({self.sql(e.this)})",
+        exp.LastValue: lambda self, e: f"LAST_VALUE({self.sql(e.this)})",
+        exp.NthValue: lambda self, e: f"NTH_VALUE({self.sql(e.this)}, {self.sql(e.expression)})",
+
+        # JSON Functions
+        exp.JSONExtract: lambda self, e: f"JSON_VALUE({self.sql(e.this)}, {self.sql(e.expression)})",
+
+        # Conversion Functions
+        exp.Unhex: lambda self, e: f"CONVERT_FROM({self.sql(e.this)}, 'HEX')",
+        exp.Hex: lambda self, e: f"CONVERT_TO({self.sql(e.this)}, 'HEX')",
+
+        # Additional Date/Time Functions  
+        exp.Now: lambda self, e: "NOW()",  
+        exp.CurrentDate: lambda self, e: "CURRENT_DATE",  
+        exp.CurrentTime: lambda self, e: "CURRENT_TIME",  
+        exp.CurrentTimestamp: lambda self, e: "CURRENT_TIMESTAMP",  
+        exp.DayOfWeek: lambda self, e: f"DAYOFWEEK({self.sql(e.this)})",  
+        exp.DayOfMonth: lambda self, e: f"DAYOFMONTH({self.sql(e.this)})",  
+        exp.DayOfYear: lambda self, e: f"DAYOFYEAR({self.sql(e.this)})",  
+        exp.Month: lambda self, e: f"MONTH({self.sql(e.this)})",  
+        exp.Year: lambda self, e: f"YEAR({self.sql(e.this)})",  
+        exp.Hour: lambda self, e: f"HOUR({self.sql(e.this)})",  
+        exp.Minute: lambda self, e: f"MINUTE({self.sql(e.this)})",  
+        exp.Second: lambda self, e: f"SECOND({self.sql(e.this)})",  
+
+        # Additional String Functions  
+        exp.InitCap: lambda self, e: f"INITCAP({self.sql(e.this)})",  
+        exp.Repeat: lambda self, e: f"REPEAT({self.sql(e.this)}, {self.sql(e.expression)})",  
+        exp.Reverse: lambda self, e: f"REVERSE({self.sql(e.this)})",  
+        exp.Ascii: lambda self, e: f"ASCII({self.sql(e.this)})",  
+
+        # Additional Aggregation Functions  
+        exp.Median: lambda self, e: f"MEDIAN({self.sql(e.this)})",  
+        exp.StddevPop: lambda self, e: f"STDDEV_POP({self.sql(e.this)})",  
+        exp.StddevSamp: lambda self, e: f"STDDEV_SAMP({self.sql(e.this)})",  
+        exp.VarPop: lambda self, e: f"VAR_POP({self.sql(e.this)})",  
+        exp.VarSamp: lambda self, e: f"VAR_SAMP({self.sql(e.this)})",  
+
+        # Additional Window Functions  
+        exp.RowNumber: lambda self, e: "ROW_NUMBER() OVER ()",  
+        exp.DenseRank: lambda self, e: "DENSE_RANK() OVER ()",  
+        exp.PercentRank: lambda self, e: "PERCENT_RANK() OVER ()",  
+        exp.CumeDist: lambda self, e: "CUME_DIST() OVER ()",  
+
+        # Additional Mathematical Functions  
+        exp.Corr: lambda self, e: f"CORR({self.sql(e.this)}, {self.sql(e.expression)})",  
+        exp.CovarPop: lambda self, e: f"COVAR_POP({self.sql(e.this)}, {self.sql(e.expression)})",  
+        exp.CovarSamp: lambda self, e: f"COVAR_SAMP({self.sql(e.this)}, {self.sql(e.expression)})",  
+
+    }
+

@@ -1098,7 +1098,7 @@ class ClickHouse(Dialect):
             if not isinstance(expression.parent, exp.Cast):
                 # StrToDate returns DATEs in other dialects (eg. postgres), so
                 # this branch aims to improve the transpilation to clickhouse
-                return self.cast_sql(exp.cast(expression, 'DATE'))
+                return self.cast_sql(exp.cast(expression, "DATE"))
 
             return strtodate_sql
 

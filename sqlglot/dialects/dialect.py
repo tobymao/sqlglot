@@ -1404,9 +1404,9 @@ def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
     return self.func("sum", exp.func("if", cond, 1, 0))
 
 
-def trim_sql(self: Generator, expression: exp.Trim) -> str:
+def trim_sql(self: Generator, expression: exp.Trim, default_trim_type: str = "") -> str:
     target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position")
+    trim_type = self.sql(expression, "position") or default_trim_type
     remove_chars = self.sql(expression, "expression")
     collation = self.sql(expression, "collation")
 

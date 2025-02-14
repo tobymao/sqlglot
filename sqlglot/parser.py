@@ -868,7 +868,9 @@ class Parser(metaclass=_Parser):
         TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
         TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
         TokenType.HEX_STRING: lambda self, token: self.expression(
-            exp.HexString, this=token.text, is_integer=self.dialect.HEX_STRING_IS_INTEGER_TYPE
+            exp.HexString,
+            this=token.text,
+            is_integer=self.dialect.HEX_STRING_IS_INTEGER_TYPE or None,
         ),
         TokenType.NUMBER: lambda self, token: self.expression(
             exp.Literal, this=token.text, is_string=False

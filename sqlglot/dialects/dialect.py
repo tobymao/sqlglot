@@ -469,7 +469,7 @@ class Dialect(metaclass=_Dialect):
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = False
     """Whether number literals can include underscores for better readability"""
 
-    HEX_STRING_IS_INTEGER_TYPE: t.Optional[bool] = None
+    HEX_STRING_IS_INTEGER_TYPE: bool = False
     """Whether hex strings such as x'CC' evaluate to integer or binary/blob type"""
 
     REGEXP_EXTRACT_DEFAULT_GROUP = 0

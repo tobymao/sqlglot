@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     build_default_decimal_type,
+    count_if_to_sum,
     date_trunc_to_time,
     datestrtodate_sql,
     no_datetime_sql,
@@ -555,6 +556,11 @@ class DuckDB(Dialect):
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.BitwiseXor: rename_func("XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
+            # DuckDB COUNT_IF was only fixed to work as an aggregate function fully in
+            #  1.2.0, but it does not function correctly in previous versions.
+            # (https://github.com/duckdb/duckdb/pull/15061). This works for prior
+            # versions and 1.2.0+ 
+            exp.CountIf: count_if_to_sum,
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",

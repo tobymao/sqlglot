@@ -789,7 +789,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT COUNT_IF(x)",
             write={
-                "duckdb": "SELECT COUNT_IF(x)",
+                "duckdb": "SUM(CASE WHEN x THEN 1 ELSE 0 END)",
                 "bigquery": "SELECT COUNTIF(x)",
             },
         )

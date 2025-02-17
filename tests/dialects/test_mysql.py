@@ -14,6 +14,7 @@ class TestMySQL(Validator):
             self.validate_identity(f"CREATE TABLE t (id {t} UNSIGNED)")
             self.validate_identity(f"CREATE TABLE t (id {t}(10) UNSIGNED)")
 
+        self.validate_identity("CREATE TABLE bar (abacate DOUBLE(10, 2) UNSIGNED)")
         self.validate_identity("CREATE TABLE t (id DECIMAL(20, 4) UNSIGNED)")
         self.validate_identity("CREATE TABLE foo (a BIGINT, UNIQUE (b) USING BTREE)")
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
@@ -385,16 +386,16 @@ class TestMySQL(Validator):
 
     def test_hexadecimal_literal(self):
         write_CC = {
-            "bigquery": "SELECT 0xCC",
-            "clickhouse": "SELECT 0xCC",
+            "bigquery": "SELECT FROM_HEX('CC')",
+            "clickhouse": UnsupportedError,
             "databricks": "SELECT X'CC'",
             "drill": "SELECT 204",
-            "duckdb": "SELECT 204",
+            "duckdb": "SELECT FROM_HEX('CC')",
             "hive": "SELECT 204",
             "mysql": "SELECT x'CC'",
             "oracle": "SELECT 204",
             "postgres": "SELECT x'CC'",
-            "presto": "SELECT 204",
+            "presto": "SELECT x'CC'",
             "redshift": "SELECT 204",
             "snowflake": "SELECT x'CC'",
             "spark": "SELECT X'CC'",
@@ -402,20 +403,20 @@ class TestMySQL(Validator):
             "starrocks": "SELECT x'CC'",
             "tableau": "SELECT 204",
             "teradata": "SELECT X'CC'",
-            "trino": "SELECT X'CC'",
+            "trino": "SELECT x'CC'",
             "tsql": "SELECT 0xCC",
         }
         write_CC_with_leading_zeros = {
-            "bigquery": "SELECT 0x0000CC",
-            "clickhouse": "SELECT 0x0000CC",
+            "bigquery": "SELECT FROM_HEX('0000CC')",
+            "clickhouse": UnsupportedError,
             "databricks": "SELECT X'0000CC'",
             "drill": "SELECT 204",
-            "duckdb": "SELECT 204",
+            "duckdb": "SELECT FROM_HEX('0000CC')",
             "hive": "SELECT 204",
             "mysql": "SELECT x'0000CC'",
             "oracle": "SELECT 204",
             "postgres": "SELECT x'0000CC'",
-            "presto": "SELECT 204",
+            "presto": "SELECT x'0000CC'",
             "redshift": "SELECT 204",
             "snowflake": "SELECT x'0000CC'",
             "spark": "SELECT X'0000CC'",
@@ -423,7 +424,7 @@ class TestMySQL(Validator):
             "starrocks": "SELECT x'0000CC'",
             "tableau": "SELECT 204",
             "teradata": "SELECT X'0000CC'",
-            "trino": "SELECT X'0000CC'",
+            "trino": "SELECT x'0000CC'",
             "tsql": "SELECT 0x0000CC",
         }
 

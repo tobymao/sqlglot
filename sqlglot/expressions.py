@@ -1608,7 +1608,7 @@ class BitString(Condition):
 
 
 class HexString(Condition):
-    pass
+    arg_types = {"this": True, "is_integer": False}
 
 
 class ByteString(Condition):
@@ -4475,6 +4475,7 @@ class DataType(Expression):
         UINT256 = auto()
         UMEDIUMINT = auto()
         UDECIMAL = auto()
+        UDOUBLE = auto()
         UNION = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
         USERDEFINED = "USER-DEFINED"
@@ -4558,6 +4559,7 @@ class DataType(Expression):
         Type.MONEY,
         Type.SMALLMONEY,
         Type.UDECIMAL,
+        Type.UDOUBLE,
     }
 
     NUMERIC_TYPES = {

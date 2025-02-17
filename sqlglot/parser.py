@@ -318,6 +318,7 @@ class Parser(metaclass=_Parser):
         TokenType.FIXEDSTRING,
         TokenType.FLOAT,
         TokenType.DOUBLE,
+        TokenType.UDOUBLE,
         TokenType.CHAR,
         TokenType.NCHAR,
         TokenType.VARCHAR,
@@ -418,6 +419,7 @@ class Parser(metaclass=_Parser):
         TokenType.SMALLINT: TokenType.USMALLINT,
         TokenType.TINYINT: TokenType.UTINYINT,
         TokenType.DECIMAL: TokenType.UDECIMAL,
+        TokenType.DOUBLE: TokenType.UDOUBLE,
     }
 
     SUBQUERY_PREDICATES = {
@@ -865,7 +867,11 @@ class Parser(metaclass=_Parser):
     NUMERIC_PARSERS = {
         TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
         TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
-        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
+        TokenType.HEX_STRING: lambda self, token: self.expression(
+            exp.HexString,
+            this=token.text,
+            is_integer=self.dialect.HEX_STRING_IS_INTEGER_TYPE or None,
+        ),
         TokenType.NUMBER: lambda self, token: self.expression(
             exp.Literal, this=token.text, is_string=False
         ),
@@ -4205,15 +4211,19 @@ class Parser(metaclass=_Parser):
             names = self._pivot_column_names(t.cast(t.List[exp.Expression], expressions))
 
             columns: t.List[exp.Expression] = []
-            for fld in pivot.args["field"].expressions:
-                field_name = fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
-                for name in names:
-                    if self.PREFIXED_PIVOT_COLUMNS:
-                        name = f"{name}_{field_name}" if name else field_name
-                    else:
-                        name = f"{field_name}_{name}" if name else field_name
+            pivot_field_expressions = pivot.args["field"].expressions
 
-                    columns.append(exp.to_identifier(name))
+            # The `PivotAny` expression corresponds to `ANY ORDER BY <column>`; we can't infer in this case.
+            if not isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
+                for fld in pivot_field_expressions:
+                    field_name = fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
+                    for name in names:
+                        if self.PREFIXED_PIVOT_COLUMNS:
+                            name = f"{name}_{field_name}" if name else field_name
+                        else:
+                            name = f"{field_name}_{name}" if name else field_name
+
+                        columns.append(exp.to_identifier(name))
 
             pivot.set("columns", columns)
 

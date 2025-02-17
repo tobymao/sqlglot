@@ -469,6 +469,9 @@ class Dialect(metaclass=_Dialect):
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = False
     """Whether number literals can include underscores for better readability"""
 
+    HEX_STRING_IS_INTEGER_TYPE: bool = False
+    """Whether hex strings such as x'CC' evaluate to integer or binary/blob type"""
+
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
 
@@ -1404,9 +1407,9 @@ def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
     return self.func("sum", exp.func("if", cond, 1, 0))
 
 
-def trim_sql(self: Generator, expression: exp.Trim) -> str:
+def trim_sql(self: Generator, expression: exp.Trim, default_trim_type: str = "") -> str:
     target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position")
+    trim_type = self.sql(expression, "position") or default_trim_type
     remove_chars = self.sql(expression, "expression")
     collation = self.sql(expression, "collation")
 

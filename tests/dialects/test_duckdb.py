@@ -404,10 +404,25 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "COUNT_IF(x)",
+            write={
+                "duckdb": "COUNT_IF(x)",
+                "duckdb, version=1.0": "SUM(CASE WHEN x THEN 1 ELSE 0 END)",
+                "duckdb, version=1.2": "COUNT_IF(x)",
+            },
+        )
+        self.validate_all(
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={
                 "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
                 "tsql": "SELECT FORMAT(CAST('2020-01-01' AS DATETIME2), CONCAT('yyyy', 'MM'))",
+            },
+        )
+        self.validate_all(
+            """SELECT CAST('{"x": 1}' AS JSON)""",
+            read={
+                "duckdb": """SELECT '{"x": 1}'::JSON""",
+                "postgres": """SELECT '{"x": 1}'::JSONB""",
             },
         )
         self.validate_all(
@@ -909,6 +924,10 @@ class TestDuckDB(Validator):
             read={
                 "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
             },
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '1' DAY",
         )
 
     def test_array_index(self):

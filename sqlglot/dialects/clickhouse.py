@@ -190,6 +190,7 @@ class ClickHouse(Dialect):
     PRESERVE_ORIGINAL_NAMES = True
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
+    HEX_STRING_IS_INTEGER_TYPE = True
 
     # https://github.com/ClickHouse/ClickHouse/issues/33935#issue-1112165779
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
@@ -649,6 +650,13 @@ class ClickHouse(Dialect):
                 is_db_reference=is_db_reference,
             )
 
+            if isinstance(this, exp.Table):
+                inner = this.this
+                alias = this.args.get("alias")
+
+                if isinstance(inner, exp.GenerateSeries) and alias and not alias.columns:
+                    alias.set("columns", [exp.to_identifier("generate_series")])
+
             if self._match(TokenType.FINAL):
                 this = self.expression(exp.Final, this=this)
 
@@ -902,7 +910,6 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
-        SUPPORTS_TABLE_ALIAS_COLUMNS = False
         VALUES_AS_TABLE = False
         ARRAY_SIZE_NAME = "LENGTH"
 
@@ -982,6 +989,7 @@ class ClickHouse(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
+            exp.ArrayConcat: rename_func("arrayConcat"),
             exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
             exp.ArraySum: rename_func("arraySum"),
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
@@ -1036,7 +1044,7 @@ class ClickHouse(Dialect):
             exp.SHA2: sha256_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
-            exp.Trim: trim_sql,
+            exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Stddev: rename_func("stddevSamp"),
@@ -1092,7 +1100,7 @@ class ClickHouse(Dialect):
             if not isinstance(expression.parent, exp.Cast):
                 # StrToDate returns DATEs in other dialects (eg. postgres), so
                 # this branch aims to improve the transpilation to clickhouse
-                return f"CAST({strtodate_sql} AS DATE)"
+                return self.cast_sql(exp.cast(expression, "DATE"))
 
             return strtodate_sql
 

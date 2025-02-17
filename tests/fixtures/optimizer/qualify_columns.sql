@@ -259,6 +259,16 @@ WITH T1 AS (SELECT 1 AS C1, 1 AS C2, 'Y' AS TOP_PARENT_INDICATOR, 1 AS ID FROM D
 SELECT * FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
 SELECT t.a AS a, t.b AS b FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
 
+# execute: false
+# dialect: clickhouse
+SELECT generate_series FROM generate_series(0, 10) AS g;
+SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(generate_series);
+
+# execute: false
+# dialect: snowflake
+SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid;
+SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _Q_0 ORDER BY _Q_0.EMPID;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

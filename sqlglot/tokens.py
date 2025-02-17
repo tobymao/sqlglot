@@ -123,6 +123,7 @@ class TokenType(AutoName):
     UINT256 = auto()
     FLOAT = auto()
     DOUBLE = auto()
+    UDOUBLE = auto()
     DECIMAL = auto()
     DECIMAL32 = auto()
     DECIMAL64 = auto()

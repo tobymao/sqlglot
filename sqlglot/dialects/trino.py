@@ -11,9 +11,6 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
 
-    class Tokenizer(Presto.Tokenizer):
-        HEX_STRINGS = [("X'", "'")]
-
     class Parser(Presto.Parser):
         FUNCTION_PARSERS = {
             **Presto.Parser.FUNCTION_PARSERS,

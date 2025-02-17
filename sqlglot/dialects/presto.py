@@ -222,6 +222,7 @@ class Presto(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
+        HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         UNICODE_STRINGS = [
             (prefix + q, q)
             for q in t.cast(t.List[str], tokens.Tokenizer.QUOTES)

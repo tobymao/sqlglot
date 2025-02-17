@@ -18,6 +18,6 @@ class TestDune(Validator):
             write={
                 "dune": "SELECT 0xdeadbeef",
                 "postgres": "SELECT x'deadbeef'",
-                "trino": "SELECT X'deadbeef'",
+                "trino": "SELECT x'deadbeef'",
             },
         )

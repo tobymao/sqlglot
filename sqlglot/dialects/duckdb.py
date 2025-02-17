@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     build_default_decimal_type,
+    count_if_to_sum,
     date_trunc_to_time,
     datestrtodate_sql,
     no_datetime_sql,
@@ -76,7 +77,10 @@ def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
 
     this = exp.cast(this, to_type) if to_type else this
 
-    return f"{self.sql(this)} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    expr = expression.expression
+    interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
+
+    return f"{self.sql(this)} {op} {self.sql(interval)}"
 
 
 # BigQuery -> DuckDB conversion for the DATE function
@@ -577,6 +581,7 @@ class DuckDB(Dialect):
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.GenerateDateArray: _generate_datetime_array_sql,
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
+            exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr="FROM_HEX"),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
@@ -685,6 +690,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.CHAR: "TEXT",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.FLOAT: "REAL",
+            exp.DataType.Type.JSONB: "JSON",
             exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
             exp.DataType.Type.UINT: "UINTEGER",
@@ -896,6 +902,13 @@ class DuckDB(Dialect):
                 return rename_func("RANGE")(self, expression)
 
             return self.function_fallback_sql(expression)
+
+        def countif_sql(self, expression: exp.CountIf) -> str:
+            if self.dialect.version >= Version("1.2"):
+                return self.function_fallback_sql(expression)
+
+            # https://github.com/tobymao/sqlglot/pull/4749
+            return count_if_to_sum(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if self.dialect.version >= Version("1.2"):

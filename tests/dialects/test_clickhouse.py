@@ -159,6 +159,13 @@ class TestClickhouse(Validator):
             "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
         )
         self.validate_identity(
+            "SELECT generate_series FROM generate_series(0, 10) AS g(x)",
+        )
+        self.validate_identity(
+            "SELECT generate_series FROM generate_series(0, 10) AS g",
+            "SELECT generate_series FROM generate_series(0, 10) AS g(generate_series)",
+        )
+        self.validate_identity(
             "INSERT INTO tab VALUES ({'key1': 1, 'key2': 10}), ({'key1': 2, 'key2': 20}), ({'key1': 3, 'key2': 30})",
             "INSERT INTO tab VALUES (map('key1', 1, 'key2', 10)), (map('key1', 2, 'key2', 20)), (map('key1', 3, 'key2', 30))",
         )
@@ -179,6 +186,13 @@ class TestClickhouse(Validator):
             "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
         )
 
+        self.validate_all(
+            "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",
+            read={
+                "clickhouse": "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",
+                "oracle": "SELECT to_date(substr(a.eta, 1,10), 'YYYY-MM-DD')",
+            },
+        )
         self.validate_all(
             "CHAR(67) || CHAR(65) || CHAR(84)",
             read={
@@ -201,13 +215,13 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+            "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",
             read={
-                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",
                 "postgres": "SELECT TO_DATE('05 12 2000', 'DD MM YYYY')",
             },
             write={
-                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS DATE)",
+                "clickhouse": "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",
                 "postgres": "SELECT CAST(CAST(TO_DATE('05 12 2000', 'DD MM YYYY') AS TIMESTAMP) AS DATE)",
             },
         )
@@ -226,9 +240,9 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT a, b FROM (SELECT * FROM x) AS t",
+            "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
             read={
-                "clickhouse": "SELECT a, b FROM (SELECT * FROM x) AS t",
+                "clickhouse": "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
                 "duckdb": "SELECT a, b FROM (SELECT * FROM x) AS t(a, b)",
             },
         )
@@ -557,6 +571,7 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"
         )
+        self.validate_identity("SELECT arrayConcat([1, 2], [3, 4])")
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

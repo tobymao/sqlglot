@@ -3347,3 +3347,26 @@ FROM subquery2""",
                 "tsql": "SCHEMA_NAME()",
             },
         )
+
+    def test_integer_hex_strings(self):
+        # Hex strings such as 0xCC represent INTEGER values in the read dialects
+        integer_dialects = ("bigquery", "clickhouse")
+        for read_dialect in integer_dialects:
+            for write_dialect in (
+                "",
+                "duckdb",
+                "databricks",
+                "snowflake",
+                "spark",
+                "redshift",
+            ):
+                with self.subTest(f"Testing hex string -> INTEGER evaluation for {read_dialect}"):
+                    self.assertEqual(
+                        parse_one("SELECT 0xCC", read=read_dialect).sql(write_dialect), "SELECT 204"
+                    )
+
+            for other_integer_dialects in integer_dialects:
+                self.assertEqual(
+                    parse_one("SELECT 0xCC", read=read_dialect).sql(other_integer_dialects),
+                    "SELECT 0xCC",
+                )

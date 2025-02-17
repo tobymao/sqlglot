@@ -404,6 +404,14 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "COUNT_IF(x)",
+            write={
+                "duckdb": "COUNT_IF(x)",
+                "duckdb, version=1.0": "SUM(CASE WHEN x THEN 1 ELSE 0 END)",
+                "duckdb, version=1.2": "COUNT_IF(x)",
+            },
+        )
+        self.validate_all(
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={
                 "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",

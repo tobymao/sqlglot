@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     build_default_decimal_type,
+    count_if_to_sum,
     date_trunc_to_time,
     datestrtodate_sql,
     no_datetime_sql,
@@ -901,6 +902,13 @@ class DuckDB(Dialect):
                 return rename_func("RANGE")(self, expression)
 
             return self.function_fallback_sql(expression)
+
+        def countif_sql(self, expression: exp.CountIf) -> str:
+            if self.dialect.version >= Version("1.2"):
+                return self.function_fallback_sql(expression)
+
+            # https://github.com/tobymao/sqlglot/pull/4749
+            return count_if_to_sum(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if self.dialect.version >= Version("1.2"):

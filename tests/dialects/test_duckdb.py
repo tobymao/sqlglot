@@ -411,6 +411,13 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            """SELECT CAST('{"x": 1}' AS JSON)""",
+            read={
+                "duckdb": """SELECT '{"x": 1}'::JSON""",
+                "postgres": """SELECT '{"x": 1}'::JSONB""",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",
             read={
                 "duckdb": "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",

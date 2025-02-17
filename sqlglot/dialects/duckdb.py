@@ -689,6 +689,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.CHAR: "TEXT",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.FLOAT: "REAL",
+            exp.DataType.Type.JSONB: "JSON",
             exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
             exp.DataType.Type.UINT: "UINTEGER",

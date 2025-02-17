@@ -564,6 +564,7 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"
         )
+        self.validate_identity("SELECT arrayConcat([1, 2], [3, 4])")
 
     def test_clickhouse_values(self):
         values = exp.select("*").from_(

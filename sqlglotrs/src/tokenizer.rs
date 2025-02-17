@@ -142,7 +142,7 @@ impl<'a> TokenizerState<'a> {
                 break;
             }
 
-            if !self.settings.white_space.contains_key(&self.current_char) {
+            if !self.current_char.is_whitespace() {
                 if self.current_char.is_ascii_digit() {
                     self.scan_number()?;
                 } else if let Some(identifier_end) =

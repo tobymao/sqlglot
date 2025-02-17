@@ -23,6 +23,11 @@ class TestTranspile(unittest.TestCase):
 
     def test_weird_chars(self):
         self.assertEqual(transpile("0Êß")[0], "0 AS Êß")
+        self.assertEqual(
+            # Ideographic space after SELECT (\u3000)
+            transpile("SELECT　* FROM t WHERE c = 1")[0],
+            "SELECT * FROM t WHERE c = 1",
+        )
 
     def test_alias(self):
         self.assertEqual(transpile("SELECT SUM(y) KEEP")[0], "SELECT SUM(y) AS KEEP")

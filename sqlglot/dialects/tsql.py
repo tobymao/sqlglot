@@ -1282,20 +1282,6 @@ class TSQL(Dialect):
                 expression.this.set("catalog", None)
             return super().drop_sql(expression)
 
-        def declare_sql(self, expression: exp.Declare) -> str:
-            return f"DECLARE {self.expressions(expression, flat=True)}"
-
-        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
-            variable = self.sql(expression, "this")
-            default = self.sql(expression, "default")
-            default = f" = {default}" if default else ""
-
-            kind = self.sql(expression, "kind")
-            if isinstance(expression.args.get("kind"), exp.Schema):
-                kind = f"TABLE {kind}"
-
-            return f"{variable} AS {kind}{default}"
-
         def options_modifier(self, expression: exp.Expression) -> str:
             options = self.expressions(expression, key="options")
             return f" OPTION{self.wrap(options)}" if options else ""

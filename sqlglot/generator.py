@@ -2303,9 +2303,7 @@ class Generator(metaclass=_Generator):
         return f"{global_}{kind}{this}{expressions}{collate}"
 
     def set_sql(self, expression: exp.Set) -> str:
-        expressions = (
-            f" {self.expressions(expression, flat=True)}" if expression.expressions else ""
-        )
+        expressions = f" {self.expressions(expression, flat=True)}"
         tag = " TAG" if expression.args.get("tag") else ""
         return f"{'UNSET' if expression.args.get('unset') else 'SET'}{tag}{expressions}"
 
@@ -4781,3 +4779,17 @@ class Generator(metaclass=_Generator):
         connection = f"WITH CONNECTION {connection} " if connection else ""
         options = self.sql(expression, "options")
         return f"EXPORT DATA {connection}{options} AS {this}"
+
+    def declare_sql(self, expression: exp.Declare) -> str:
+        return f"DECLARE {self.expressions(expression, flat=True)}"
+
+    def declareitem_sql(self, expression: exp.DeclareItem) -> str:
+        variable = self.sql(expression, "this")
+        default = self.sql(expression, "default")
+        default = f" = {default}" if default else ""
+
+        kind = self.sql(expression, "kind")
+        if isinstance(expression.args.get("kind"), exp.Schema):
+            kind = f"TABLE {kind}"
+
+        return f"{variable} AS {kind}{default}"

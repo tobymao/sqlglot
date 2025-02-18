@@ -701,3 +701,69 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity(
             "ANALYZE TABLE tbl VALIDATE STRUCTURE CASCADE COMPLETE OFFLINE INTO db.tbl"
         )
+        self.validate_all(
+            "x::LONG",
+            write={
+                "": "CAST(x AS INT)",
+            },
+        )
+        self.validate_all(
+            "x::NCLOB",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::ROWID",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::ROWID",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::ANYTYPE",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::ANYDATA",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::ANYDATASET",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::SDO_GEOMETRY",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::SDO_GEORASTER",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::SDO_TOPO_GEOMETRY",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "x::XMLTYPE",
+            write={
+                "": "CAST(x AS TEXT)",
+            },
+        )

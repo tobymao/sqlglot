@@ -94,18 +94,29 @@ class Oracle(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
+            "ANYDATA": TokenType.TEXT,
+            "ANYDATASET": TokenType.TEXT,
+            "ANYTYPE": TokenType.TEXT,
             "BINARY_DOUBLE": TokenType.DOUBLE,
             "BINARY_FLOAT": TokenType.FLOAT,
             "BULK COLLECT INTO": TokenType.BULK_COLLECT_INTO,
             "COLUMNS": TokenType.COLUMN,
+            "LONG": TokenType.INT,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
+            "NCLOB": TokenType.TEXT,
             "NVARCHAR2": TokenType.NVARCHAR,
             "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
+            "ROWID": TokenType.TEXT,
             "SAMPLE": TokenType.TABLE_SAMPLE,
+            "SDO_GEOMETRY": TokenType.TEXT,
+            "SDO_TOPO_GEOMETRY": TokenType.TEXT,
+            "SDO_GEORASTER": TokenType.TEXT,
             "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,
+            "UROWID": TokenType.TEXT,
             "VARCHAR2": TokenType.VARCHAR,
+            "XMLTYPE": TokenType.TEXT
         }
 
     class Parser(parser.Parser):

@@ -116,7 +116,7 @@ class Oracle(Dialect):
             "TOP": TokenType.TOP,
             "UROWID": TokenType.TEXT,
             "VARCHAR2": TokenType.VARCHAR,
-            "XMLTYPE": TokenType.TEXT
+            "XMLTYPE": TokenType.TEXT,
         }
 
     class Parser(parser.Parser):

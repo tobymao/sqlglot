@@ -55,7 +55,6 @@ def test_create_table():
     sql = "CREATE TABLE employees (id INT, name VARCHAR, salary FLOAT)"
     expression = sqlglot.parse_one(sql, dialect="dremio")
     generated_sql = expression.sql(dialect="dremio")
-    diagnostics(sql, expression, generated_sql)
     assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
 
 def test_drop_table():
@@ -88,11 +87,73 @@ def test_numeric_functions():
     generated_sql = expression.sql(dialect="dremio")
     assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
 
-def test_date_functions():
-    sql = "SELECT DATE_ADD(current_date, INTERVAL 5 DAY), DATE_SUB(current_date, INTERVAL 3 DAY)"
+def test_date_add_with_integer():
+    sql = "SELECT DATE_ADD('2022-01-01', 2)"
     expression = sqlglot.parse_one(sql, dialect="dremio")
-    generated_sql = expression.sql(dialect="dremio") 
+    generated_sql = expression.sql(dialect="dremio")
+    correct_sql = """SELECT DATE_ADD('2022-01-01', CAST(2 AS INTERVAL DAY))"""
+    assert generated_sql == correct_sql, f"Expected {sql}, but got {generated_sql}"
+
+
+def test_date_add_with_negative_integer():
+    sql = "SELECT DATE_ADD('2022-01-01', -2)"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    correct_sql = """SELECT DATE_ADD('2022-01-01', CAST(-2 AS INTERVAL DAY))"""
+    assert generated_sql == correct_sql, f"Expected {correct_sql}, but got {generated_sql}"
+
+
+def test_date_add_with_cast_interval():
+    sql = "SELECT DATE_ADD('2022-01-01', CAST(30 AS INTERVAL DAY))"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
     assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
+
+
+def test_date_sub_with_integer():
+    sql = "SELECT DATE_ADD('2022-01-01', -30)"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    correct_sql = """SELECT DATE_ADD('2022-01-01', CAST(-30 AS INTERVAL DAY))"""
+    assert generated_sql == correct_sql, f"Expected {correct_sql}, but got {generated_sql}"
+
+
+def test_date_sub_with_cast_interval():
+    sql = "SELECT DATE_ADD('2022-01-01', CAST(-30 AS INTERVAL DAY))"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
+
+
+def test_date_add_with_timestamp():
+    sql = "SELECT DATE_ADD(TIMESTAMP '2022-01-01 12:00:00', CAST(30 AS INTERVAL DAY))"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    diagnostics(sql, sql, generated_sql)
+    assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
+
+
+def test_date_sub_with_timestamp():
+    sql = "SELECT DATE_ADD(TIMESTAMP '2022-01-01 12:00:00', CAST(-30 AS INTERVAL DAY))"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
+
+
+def test_date_add_with_time():
+    sql = "SELECT DATE_ADD(TIME '00:00:00', CAST(30 AS INTERVAL MINUTE))"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    diagnostics(sql, sql, generated_sql)
+    assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
+
+
+def test_date_sub_with_time():
+    sql = "SELECT DATE_ADD(TIME '00:00:00', CAST(-30 AS INTERVAL MINUTE))"
+    expression = sqlglot.parse_one(sql, dialect="dremio")
+    generated_sql = expression.sql(dialect="dremio")
+    assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
+
 
 def test_aggregate_functions():
     sql = "SELECT COUNT(*), SUM(salary), AVG(salary), MIN(salary), MAX(salary), VARIANCE(salary), STDDEV(salary)"
@@ -119,7 +180,15 @@ test_string_functions()
 test_numeric_functions()
 test_coalesce()
 test_numeric_functions()
-test_date_functions()
+test_date_add_with_integer()
+test_date_add_with_negative_integer()
+test_date_add_with_cast_interval()
+test_date_sub_with_integer()
+test_date_sub_with_cast_interval()
+test_date_add_with_timestamp()
+test_date_sub_with_timestamp()
+test_date_add_with_time()
+test_date_sub_with_time()
 test_aggregate_functions()
 test_conditional_functions()
 

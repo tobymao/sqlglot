@@ -96,6 +96,80 @@ class DremioParser(parser.Parser):
     }
     
 
+######################################
+# Generator Support Functions and Generator Class
+######################################
+    
+def dremio_date_add(self, e):
+    """
+    Handles DATE_ADD transformations for Dremio.
+    """
+    date_expr = e.this
+    interval_expr = e.expression
+
+    # Convert CAST('00:00:00' AS TIME) → TIME '00:00:00'
+    if isinstance(date_expr, exp.Cast):
+        if date_expr.to.this == exp.DataType.Type.TIMESTAMP:
+            date_expr = f"TIMESTAMP {self.sql(date_expr.this)}"
+        elif date_expr.to.this == exp.DataType.Type.TIME:
+            date_expr = f"TIME {self.sql(date_expr.this)}"
+        else:
+            date_expr = self.sql(date_expr)
+    else:
+        date_expr = self.sql(date_expr)
+
+    # Extract interval unit, default to DAY for DATE expressions
+    interval_unit = self.sql(interval_expr, "unit")
+    
+    if not interval_unit:
+        if "TIME" in date_expr:
+            interval_unit = "MINUTE"
+        else:
+            interval_unit = "DAY"  # Default to DAY for DATE and TIMESTAMP
+
+    # Handle Negation (e.g., -2 should become CAST(-2 AS INTERVAL DAY))
+    if isinstance(interval_expr, exp.Neg):
+        return f"DATE_ADD({date_expr}, CAST(-{self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+
+    # Handle interval-based DATE_ADD
+    return f"DATE_ADD({date_expr}, CAST({self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+
+
+def dremio_date_sub(self, e):
+    """
+    Handles DATE_SUB transformations for Dremio.
+    """
+    date_expr = e.this
+    interval_expr = e.expression
+
+    # Convert CAST('00:00:00' AS TIME) → TIME '00:00:00'
+    if isinstance(date_expr, exp.Cast):
+        if date_expr.to.this == exp.DataType.Type.TIMESTAMP:
+            date_expr = f"TIMESTAMP {self.sql(date_expr.this)}"
+        elif date_expr.to.this == exp.DataType.Type.TIME:
+            date_expr = f"TIME {self.sql(date_expr.this)}"
+        else:
+            date_expr = self.sql(date_expr)
+    else:
+        date_expr = self.sql(date_expr)
+
+    # Extract interval unit, default to DAY for DATE expressions
+    interval_unit = self.sql(interval_expr, "unit")
+    
+    if not interval_unit:
+        if "TIME" in date_expr:
+            interval_unit = "MINUTE"
+        else:
+            interval_unit = "DAY"  # Default to DAY for DATE and TIMESTAMP
+
+    # Handle Negation (e.g., -2 should become CAST(-2 AS INTERVAL DAY))
+    if isinstance(interval_expr, exp.Neg):
+        return f"DATE_SUB({date_expr}, CAST({self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+
+    # Handle interval-based DATE_SUB by negating the interval inside CAST
+    return f"DATE_SUB({date_expr}, CAST(-{self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+
+
 class DremioGenerator(generator.Generator):
     print("Dremio generator initialized")
     """SQL generator for Dremio."""
@@ -106,8 +180,12 @@ class DremioGenerator(generator.Generator):
         exp.Pow: lambda self, e: f"POWER({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Ln: lambda self, e: f"LOG({self.sql(e, 'this')})",  # LOG(x) -> Natural log
         exp.Exp: lambda self, e: f"EXP({self.sql(e, 'this')})",
-        exp.DateAdd: lambda self, e: diagnostics(f"DATE_ADD({self.sql(e, 'this')}, INTERVAL {self.sql(e, 'expression.this')} DAY)"),
-        exp.DateSub: lambda self, e: diagnostics(f"DATE_SUB({self.sql(e, 'this')}, INTERVAL {self.sql(e, 'expression.this')} DAY)"),
+        exp.DateAdd: lambda self, e: dremio_date_add(self, e),
+        exp.DateSub: lambda self, e: dremio_date_sub(self, e),
+
+
+
+
     }
     def sql(self, expression, *args, **kwargs):
         return super().sql(expression, *args, **kwargs)

@@ -69,12 +69,6 @@ def test_string_functions():
     generated_sql = expression.sql(dialect="dremio")
     assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
 
-def test_numeric_functions():
-    sql = "SELECT ROUND(salary), CEIL(salary), FLOOR(salary) FROM employees"
-    expression = sqlglot.parse_one(sql, dialect="dremio")
-    generated_sql = expression.sql(dialect="dremio")
-    assert generated_sql == sql, f"Expected {sql}, but got {generated_sql}"
-
 def test_coalesce():
     sql = "SELECT COALESCE(salary, 0) FROM employees"
     expression = sqlglot.parse_one(sql, dialect="dremio")

@@ -107,7 +107,7 @@ def dremio_date_add(self, e):
     date_expr = e.this
     interval_expr = e.expression
 
-    # Convert CAST('00:00:00' AS TIME) → TIME '00:00:00'
+    # Convert CAST('2022-01-01 12:00:00' AS TIMESTAMP) → TIMESTAMP '2022-01-01 12:00:00'
     if isinstance(date_expr, exp.Cast):
         if date_expr.to.this == exp.DataType.Type.TIMESTAMP:
             date_expr = f"TIMESTAMP {self.sql(date_expr.this)}"
@@ -118,21 +118,22 @@ def dremio_date_add(self, e):
     else:
         date_expr = self.sql(date_expr)
 
-    # Extract interval unit, default to DAY for DATE expressions
-    interval_unit = self.sql(interval_expr, "unit")
-    
-    if not interval_unit:
-        if "TIME" in date_expr:
-            interval_unit = "MINUTE"
-        else:
-            interval_unit = "DAY"  # Default to DAY for DATE and TIMESTAMP
+    # If interval is a plain integer (Literal), cast it as INTERVAL DAY
+    if isinstance(interval_expr, exp.Literal):
+        return f"DATE_ADD({date_expr}, CAST({self.sql(interval_expr)} AS INTERVAL DAY))"
 
     # Handle Negation (e.g., -2 should become CAST(-2 AS INTERVAL DAY))
     if isinstance(interval_expr, exp.Neg):
-        return f"DATE_ADD({date_expr}, CAST(-{self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+        interval_value = self.sql(interval_expr.this)
+        return f"DATE_ADD({date_expr}, CAST(-{interval_value} AS INTERVAL DAY))"
 
-    # Handle interval-based DATE_ADD
-    return f"DATE_ADD({date_expr}, CAST({self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+    # Handle explicit CAST(30 AS INTERVAL DAY or MINUTE)
+    if isinstance(interval_expr, exp.Cast) and isinstance(interval_expr.to.this, exp.Interval):
+        interval_value = self.sql(interval_expr.this)
+        interval_unit = self.sql(interval_expr.to.this.unit)  # Extract the correct unit
+        return f"DATE_ADD({date_expr}, CAST({interval_value} AS INTERVAL {interval_unit}))"
+
+    return f"DATE_ADD({date_expr}, {self.sql(interval_expr)})"
 
 
 def dremio_date_sub(self, e):
@@ -142,7 +143,7 @@ def dremio_date_sub(self, e):
     date_expr = e.this
     interval_expr = e.expression
 
-    # Convert CAST('00:00:00' AS TIME) → TIME '00:00:00'
+    # Convert CAST('2022-01-01 12:00:00' AS TIMESTAMP) → TIMESTAMP '2022-01-01 12:00:00'
     if isinstance(date_expr, exp.Cast):
         if date_expr.to.this == exp.DataType.Type.TIMESTAMP:
             date_expr = f"TIMESTAMP {self.sql(date_expr.this)}"
@@ -153,21 +154,22 @@ def dremio_date_sub(self, e):
     else:
         date_expr = self.sql(date_expr)
 
-    # Extract interval unit, default to DAY for DATE expressions
-    interval_unit = self.sql(interval_expr, "unit")
-    
-    if not interval_unit:
-        if "TIME" in date_expr:
-            interval_unit = "MINUTE"
-        else:
-            interval_unit = "DAY"  # Default to DAY for DATE and TIMESTAMP
+    # If interval is a plain integer (Literal), cast it as INTERVAL DAY and negate it
+    if isinstance(interval_expr, exp.Literal):
+        return f"DATE_ADD({date_expr}, CAST(-{self.sql(interval_expr)} AS INTERVAL DAY))"
 
     # Handle Negation (e.g., -2 should become CAST(-2 AS INTERVAL DAY))
     if isinstance(interval_expr, exp.Neg):
-        return f"DATE_SUB({date_expr}, CAST({self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+        interval_value = self.sql(interval_expr.this)
+        return f"DATE_ADD({date_expr}, CAST(-{interval_value} AS INTERVAL DAY))"
 
-    # Handle interval-based DATE_SUB by negating the interval inside CAST
-    return f"DATE_SUB({date_expr}, CAST(-{self.sql(interval_expr.this)} AS INTERVAL {interval_unit}))"
+    # Handle explicit CAST(30 AS INTERVAL DAY or MINUTE) and negate the value
+    if isinstance(interval_expr, exp.Cast) and isinstance(interval_expr.to.this, exp.Interval):
+        interval_value = self.sql(interval_expr.this)
+        interval_unit = self.sql(interval_expr.to.this.unit)  # Extract the correct unit
+        return f"DATE_ADD({date_expr}, CAST(-{interval_value} AS INTERVAL {interval_unit}))"
+
+    return f"DATE_ADD({date_expr}, {self.sql(interval_expr)})"
 
 
 class DremioGenerator(generator.Generator):

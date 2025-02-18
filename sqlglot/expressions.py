@@ -6822,7 +6822,7 @@ class Year(Func):
 
 
 class Use(Expression):
-    arg_types = {"this": True, "kind": False}
+    arg_types = {"this": False, "expressions": False, "kind": False}
 
 
 class Merge(DML):

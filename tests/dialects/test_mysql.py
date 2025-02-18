@@ -730,6 +730,13 @@ class TestMySQL(Validator):
                 )
 
         self.validate_all(
+            "CURDATE()",
+            write={
+                "mysql": "CURRENT_DATE",
+                "postgres": "CURRENT_DATE",
+            },
+        )
+        self.validate_all(
             "SELECT CONCAT('11', '22')",
             read={
                 "postgres": "SELECT '11' || '22'",

@@ -3540,7 +3540,7 @@ class Generator(metaclass=_Generator):
     def use_sql(self, expression: exp.Use) -> str:
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
-        this = self.sql(expression, "this")
+        this = self.sql(expression, "this") or self.expressions(expression, flat=True)
         this = f" {this}" if this else ""
         return f"USE{kind}{this}"
 

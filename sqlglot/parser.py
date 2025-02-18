@@ -829,11 +829,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UNPIVOT: lambda self: self._parse_simplified_pivot(is_unpivot=True),
         TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.USE: lambda self: self.expression(
-            exp.Use,
-            kind=self._parse_var_from_options(self.USABLES, raise_unmatched=False),
-            this=self._parse_table(schema=False),
-        ),
+        TokenType.USE: lambda self: self._parse_use(),
         TokenType.SEMICOLON: lambda self: exp.Semicolon(),
     }
 
@@ -2971,6 +2967,13 @@ class Parser(metaclass=_Parser):
                 "order": self._parse_order(),
                 "limit": self._parse_limit(),
             },
+        )
+
+    def _parse_use(self) -> exp.Use:
+        return self.expression(
+            exp.Use,
+            kind=self._parse_var_from_options(self.USABLES, raise_unmatched=False),
+            this=self._parse_table(schema=False),
         )
 
     def _parse_uncache(self) -> exp.Uncache:

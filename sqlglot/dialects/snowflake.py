@@ -573,6 +573,16 @@ class Snowflake(Dialect):
             ),
         }
 
+        def _parse_use(self) -> exp.Use:
+            if self._match_text_seq("SECONDARY", "ROLES"):
+                this = self._match_texts(("ALL", "NONE")) and exp.var(self._prev.text.upper())
+                roles = None if this else self._parse_csv(lambda: self._parse_table(schema=False))
+                return self.expression(
+                    exp.Use, kind="SECONDARY ROLES", this=this, expressions=roles
+                )
+
+            return super()._parse_use()
+
         def _negate_range(
             self, this: t.Optional[exp.Expression] = None
         ) -> t.Optional[exp.Expression]:

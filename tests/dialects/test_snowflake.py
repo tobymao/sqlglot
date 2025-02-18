@@ -1427,18 +1427,10 @@ class TestSnowflake(Validator):
                     "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
                 )
 
+        self.validate_identity("USE SECONDARY ROLES ALL")
+        self.validate_identity("USE SECONDARY ROLES NONE")
+        self.validate_identity("USE SECONDARY ROLES a, b, c")
         self.validate_identity("CREATE SECURE VIEW table1 AS (SELECT a FROM table2)")
-        self.validate_identity(
-            """create external table et2(
-  col1 date as (parse_json(metadata$external_table_partition):COL1::date),
-  col2 varchar as (parse_json(metadata$external_table_partition):COL2::varchar),
-  col3 number as (parse_json(metadata$external_table_partition):COL3::number))
-  partition by (col1,col2,col3)
-  location=@s2/logs/
-  partition_type = user_specified
-  file_format = (type = parquet)""",
-            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL(38, 0) AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL(38, 0)))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
-        )
         self.validate_identity("CREATE OR REPLACE VIEW foo (uid) COPY GRANTS AS (SELECT 1)")
         self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
@@ -1503,6 +1495,17 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "CREATE SEQUENCE seq1 WITH START=1 INCREMENT=1 ORDER",
             "CREATE SEQUENCE seq1 START=1 INCREMENT=1 ORDER",
+        )
+        self.validate_identity(
+            """create external table et2(
+  col1 date as (parse_json(metadata$external_table_partition):COL1::date),
+  col2 varchar as (parse_json(metadata$external_table_partition):COL2::varchar),
+  col3 number as (parse_json(metadata$external_table_partition):COL3::number))
+  partition by (col1,col2,col3)
+  location=@s2/logs/
+  partition_type = user_specified
+  file_format = (type = parquet)""",
+            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL(38, 0) AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL(38, 0)))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
         )
 
         self.validate_all(

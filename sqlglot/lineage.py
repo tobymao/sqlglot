@@ -235,7 +235,36 @@ def to_node(
             )
 
     # Find all columns that went into creating this one to list their lineage nodes.
-    source_columns = set(find_all_in_scope(select, exp.Column))
+    # Purpose: This code extracts source column lineage information from a SQL select statement
+
+    # Step 1: Check for dot notation references (e.g., table.column)
+    # - Use find_all_in_scope() to search for Dot expressions in the select statement
+    # - Store results in source_columns list
+    source_columns: set[exp.Column] = set(find_all_in_scope(select, exp.Dot))
+
+    if source_columns:
+        # Step 2: If dot notation columns found, convert them to Column objects
+        # - Filter to only include cases where dot.this is a Column
+        # - Create new Column objects with:
+        #   * this = Identifier with the column name from dot.expression.name
+        #   * table = original table reference from dot.this.table
+        source_columns = set(
+            exp.Column(this=exp.Identifier(this=dot.expression.name), table=dot.this.table)
+            for dot in source_columns
+            if isinstance(dot.this, exp.Column)
+        )
+
+        if not source_columns:
+            # Step 3: Find all Column references within scope
+            # - Search again to catch any remaining Column objects
+            source_columns = set(find_all_in_scope(select, exp.Column))
+    else:
+        # Step 4: Fallback - if no dot notation found
+        # - Directly search for all Column objects in scope
+        source_columns = set(find_all_in_scope(select, exp.Column))
+
+    # The final source_columns list contains all source columns that contribute
+    # to the target column's lineage, either from dot notation or direct column references
 
     # If the source is a UDTF find columns used in the UTDF to generate the table
     if isinstance(source, exp.UDTF):
@@ -255,17 +284,9 @@ def to_node(
     }
 
     pivots = scope.pivots
-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
-    if pivot:
-        # For each aggregation function, the pivot creates a new column for each field in category
-        # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
-        # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
-        # belongs to the column indices 0, 2, and the aggfunc 'max(price)' without an alias belongs
-        # to the column indices 1, 3. Here, only the columns used in the aggregations are of interest
-        # in the lineage, so lookup the pivot column name by index and map that with the columns used
-        # in the aggregation.
-        #
-        # Example: PIVOT (SUM(value) AS value_sum, MAX(price)) FOR category IN ('a' AS cat_a, 'b')
+    pivot = pivots[0] if len(pivots) == 1 else None
+    if pivot and not pivot.unpivot:
+        # Existing PIVOT processing logic
         pivot_columns = pivot.args["columns"]
         pivot_aggs_count = len(pivot.expressions)
 
@@ -274,6 +295,39 @@ def to_node(
             agg_cols = list(agg.find_all(exp.Column))
             for col_index in range(i, len(pivot_columns), pivot_aggs_count):
                 pivot_column_mapping[pivot_columns[col_index].name] = agg_cols
+
+    elif pivot and pivot.unpivot:
+        # Value column information
+        value_columns = pivot.expressions
+
+        # Name column and unpivot target columns information
+        field_info = pivot.args.get("field")
+        name_column = field_info.this if field_info else None
+        unpivot_source_columns = field_info.expressions if field_info else []
+        unpivot_column_mapping = {}
+
+        # Value column mapping
+        value_column_mapping = {}
+        for value_column in value_columns:
+            if column == value_column.name:
+                table_name = pivot.parent.this.name
+                value_column_mapping[value_column.name] = [
+                    exp.Column(this=col.this, table=exp.to_identifier(table_name))
+                    for col in unpivot_source_columns
+                ]
+
+        # If the current column being processed is a value column
+        if value_column_mapping:
+            unpivot_column_mapping.update(value_column_mapping)
+        # If the current column being processed is a name column
+        elif name_column is not None and column == name_column.name:
+            # Name column has no source as it's a newly generated column
+            unpivot_column_mapping[name_column.name] = []
+        # Other columns pass through unchanged
+        else:
+            unpivot_column_mapping[column] = [
+                exp.Column(this=exp.Identifier(this=column), table=pivot.parent)
+            ]
 
     for c in source_columns:
         table = c.table
@@ -300,14 +354,20 @@ def to_node(
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []
-
             column_name = c.name
-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
-                downstream_columns.extend(pivot_column_mapping[column_name])
+
+            if pivot.unpivot:
+                if any(
+                    column_name == unpivot_column.name for unpivot_column in unpivot_source_columns
+                ):
+                    downstream_columns.extend(unpivot_column_mapping[column_name])
+                else:
+                    downstream_columns.append(exp.column(c.this, table=pivot.parent.this))
             else:
-                # The column is not in the pivot, so it must be an implicit column of the
-                # pivoted source -- adapt column to be from the implicit pivoted source.
-                downstream_columns.append(exp.column(c.this, table=pivot.parent.this))
+                if any(column_name == pivot_column.name for pivot_column in pivot_columns):
+                    downstream_columns.extend(pivot_column_mapping[column_name])
+                else:
+                    downstream_columns.append(exp.column(c.this, table=pivot.parent.this))
 
             for downstream_column in downstream_columns:
                 table = downstream_column.table

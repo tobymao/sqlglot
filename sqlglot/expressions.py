@@ -1568,8 +1568,12 @@ class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 
 
+class RecursiveWithSearch(Expression):
+    arg_types = {"kind": True, "this": True, "expression": True, "using": False}
+
+
 class With(Expression):
-    arg_types = {"expressions": True, "recursive": False}
+    arg_types = {"expressions": True, "recursive": False, "search": False}
 
     @property
     def recursive(self) -> bool:

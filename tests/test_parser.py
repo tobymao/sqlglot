@@ -851,9 +851,7 @@ class TestParser(unittest.TestCase):
             """
         )
 
-        self.assertEqual(
-            ";\n".join(e.sql() for e in expressions), "SELECT * FROM x;\n/* my comment */"
-        )
+        self.assertEqual("".join(e.sql() for e in expressions), "SELECT * FROM x; /* my comment */")
 
         expressions = parse_one(
             """
@@ -866,7 +864,7 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(
             expressions.sql(),
-            "/* vacuum after */ /* VACUUM VERBOSE */ /* ANALYZE table1 */ /* ; */",
+            "; /* vacuum after */ /* VACUUM VERBOSE */ /* ANALYZE table1 */ /* ; */",
         )
 
     def test_parse_prop_eq(self):

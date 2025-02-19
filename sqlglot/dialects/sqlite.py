@@ -140,6 +140,7 @@ class SQLite(Dialect):
         SUPPORTS_TO_NUMBER = False
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = False
+        JSON_KEY_VALUE_PAIR_SEP = ","
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

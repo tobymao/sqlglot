@@ -1373,6 +1373,8 @@ class Parser(metaclass=_Parser):
 
     OPERATION_MODIFIERS: t.Set[str] = set()
 
+    RECURSIVE_CTE_SEARCH_KIND = {"BREADTH", "DEPTH", "CYCLE"}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -3177,7 +3179,7 @@ class Parser(metaclass=_Parser):
     def _parse_recursive_with_search(self) -> t.Optional[exp.RecursiveWithSearch]:
         self._match_text_seq("SEARCH")
 
-        kind = self._match_texts(("BREADTH", "DEPTH", "CYCLE")) and self._prev.text.upper()
+        kind = self._match_texts(self.RECURSIVE_CTE_SEARCH_KIND) and self._prev.text.upper()
 
         if not kind:
             return None

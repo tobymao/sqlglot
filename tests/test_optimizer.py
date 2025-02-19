@@ -218,6 +218,28 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_tables(self):
         self.assertEqual(
             optimizer.qualify_tables.qualify_tables(
+                parse_one(
+                    "WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y'))"
+                ),
+                db="db",
+                catalog="catalog",
+            ).sql(),
+            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _q_0",
+        )
+
+        self.assertEqual(
+            optimizer.qualify_tables.qualify_tables(
+                parse_one(
+                    "WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS pivot_alias"
+                ),
+                db="db",
+                catalog="catalog",
+            ).sql(),
+            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS pivot_alias",
+        )
+
+        self.assertEqual(
+            optimizer.qualify_tables.qualify_tables(
                 parse_one("select a from b"), catalog="catalog"
             ).sql(),
             "SELECT a FROM b AS b",

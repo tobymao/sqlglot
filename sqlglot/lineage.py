@@ -331,9 +331,30 @@ def to_node(
 
     for c in source_columns:
         table = c.table
-        source = scope.sources.get(table)
+        source = scope.sources.get(table) or (pivot.parent if pivot else None)
 
-        if isinstance(source, Scope):
+        if isinstance(source, (exp.Subquery, exp.CTE)):
+            manual_source_scope = build_scope(source)
+            if manual_source_scope is None:
+                # Handle the case where build_scope returns None
+                # This could happen if the source is not a valid SELECT statement
+                source = source or exp.Placeholder()
+                node.downstream.append(
+                    Node(name=c.sql(comments=False), source=source, expression=source)
+                )
+                continue
+
+            to_node(
+                c.name,
+                scope=manual_source_scope,  # Now we know manual_source_scope is not None
+                dialect=dialect,
+                scope_name=table,
+                upstream=node,
+                source_name=source_names.get(table) or source_name,
+                reference_node_name=reference_node_name,
+                trim_selects=trim_selects,
+            )
+        elif isinstance(source, Scope):
             reference_node_name = None
             if source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
                 reference_node_name = table

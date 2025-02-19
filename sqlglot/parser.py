@@ -3174,6 +3174,24 @@ class Parser(metaclass=_Parser):
 
         return self._parse_set_operations(this) if parse_set_operation else this
 
+    def _parse_recursive_with_search(self) -> t.Optional[exp.RecursiveWithSearch]:
+        self._match_text_seq("SEARCH")
+
+        kind = self._match_texts(("BREADTH", "DEPTH", "CYCLE")) and self._prev.text.upper()
+
+        if not kind:
+            return None
+
+        self._match_text_seq("FIRST", "BY")
+
+        return self.expression(
+            exp.RecursiveWithSearch,
+            kind=kind,
+            this=self._parse_id_var(),
+            expression=self._match_text_seq("SET") and self._parse_id_var(),
+            using=self._match_text_seq("USING") and self._parse_id_var(),
+        )
+
     def _parse_with(self, skip_with_token: bool = False) -> t.Optional[exp.With]:
         if not skip_with_token and not self._match(TokenType.WITH):
             return None
@@ -3198,7 +3216,11 @@ class Parser(metaclass=_Parser):
             last_comments = self._prev_comments
 
         return self.expression(
-            exp.With, comments=comments, expressions=expressions, recursive=recursive
+            exp.With,
+            comments=comments,
+            expressions=expressions,
+            recursive=recursive,
+            search=self._parse_recursive_with_search(),
         )
 
     def _parse_cte(self) -> t.Optional[exp.CTE]:

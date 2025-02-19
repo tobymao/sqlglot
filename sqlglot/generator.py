@@ -1238,8 +1238,10 @@ class Generator(metaclass=_Generator):
             if self.CTE_RECURSIVE_KEYWORD_REQUIRED and expression.args.get("recursive")
             else ""
         )
+        search = self.sql(expression, "search")
+        search = f" {search}" if search else ""
 
-        return f"WITH {recursive}{sql}"
+        return f"WITH {recursive}{sql}{search}"
 
     def cte_sql(self, expression: exp.CTE) -> str:
         alias = expression.args.get("alias")
@@ -4793,3 +4795,14 @@ class Generator(metaclass=_Generator):
             kind = f"TABLE {kind}"
 
         return f"{variable} AS {kind}{default}"
+
+    def recursivewithsearch_sql(self, expression: exp.RecursiveWithSearch) -> str:
+        kind = self.sql(expression, "kind")
+        this = self.sql(expression, "this")
+        set = self.sql(expression, "expression")
+        using = self.sql(expression, "using")
+        using = f" USING {using}" if using else ""
+
+        kind_sql = kind if kind == "CYCLE" else f"SEARCH {kind} FIRST BY"
+
+        return f"{kind_sql} {this} SET {set}{using}"

@@ -1358,3 +1358,13 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity("ANALYZE TBL(col1, col2)")
         self.validate_identity("ANALYZE VERBOSE SKIP_LOCKED TBL(col1, col2)")
         self.validate_identity("ANALYZE BUFFER_USAGE_LIMIT 1337 TBL")
+
+    def test_recursive_cte(self):
+        for kind in ("BREADTH", "DEPTH"):
+            self.validate_identity(
+                f"WITH RECURSIVE search_tree(id, link, data) AS (SELECT t.id, t.link, t.data FROM tree AS t UNION ALL SELECT t.id, t.link, t.data FROM tree AS t, search_tree AS st WHERE t.id = st.link) SEARCH {kind} FIRST BY id SET ordercol SELECT * FROM search_tree ORDER BY ordercol"
+            )
+
+        self.validate_identity(
+            "WITH RECURSIVE search_graph(id, link, data, depth) AS (SELECT g.id, g.link, g.data, 1 FROM graph AS g UNION ALL SELECT g.id, g.link, g.data, sg.depth + 1 FROM graph AS g, search_graph AS sg WHERE g.id = sg.link) CYCLE id SET is_cycle USING path SELECT * FROM search_graph"
+        )

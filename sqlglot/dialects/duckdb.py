@@ -284,6 +284,7 @@ class DuckDB(Dialect):
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_FIXED_SIZE_ARRAYS = True
     STRICT_JSON_PATH_SYNTAX = False
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

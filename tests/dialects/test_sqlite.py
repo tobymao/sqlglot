@@ -108,6 +108,9 @@ class TestSQLite(Validator):
             "SELECT * FROM station WHERE city IS NOT ''",
             "SELECT * FROM station WHERE NOT city IS ''",
         )
+        self.validate_identity(
+            "SELECT JSON_OBJECT('col1', 1, 'col2', '1')"
+        )
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

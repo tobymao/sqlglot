@@ -97,12 +97,16 @@ def qualify_tables(
                     source.alias
                 )
 
-                _qualify(source)
+                if pivots:
+                    if not pivots[0].alias:
+                        pivot_alias = next_alias_name()
+                        pivots[0].set("alias", exp.TableAlias(this=exp.to_identifier(pivot_alias)))
 
-                if pivots and not pivots[0].alias:
-                    pivots[0].set(
-                        "alias", exp.TableAlias(this=exp.to_identifier(next_alias_name()))
-                    )
+                    # This case corresponds to a pivoted CTE, we don't want to qualify that
+                    if isinstance(scope.sources.get(source.alias_or_name), Scope):
+                        continue
+
+                _qualify(source)
 
                 if infer_csv_schemas and schema and isinstance(source.this, exp.ReadCSV):
                     with csv_reader(source.this) as reader:

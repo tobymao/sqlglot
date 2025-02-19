@@ -50,8 +50,17 @@ def qualify_tables(
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
 
+    # First collect all CTE names
+    cte_names = set()
+    for scope in traverse_scope(expression):
+        for cte in scope.ctes:
+            cte_names.add(cte.alias)
+
     def _qualify(table: exp.Table) -> None:
         if isinstance(table.this, exp.Identifier):
+            # Skip qualification if table is a CTE reference
+            if table.name in cte_names:
+                return
             if not table.args.get("db"):
                 table.set("db", db)
             if not table.args.get("catalog") and table.args.get("db"):

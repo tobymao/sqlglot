@@ -8,7 +8,8 @@ class TestAthena(Validator):
 
     def test_athena(self):
         self.validate_identity(
-            "CREATE TABLE IF NOT EXISTS t (name STRING) LOCATION 's3://bucket/tmp/mytable/' TBLPROPERTIES ('table_type'='iceberg', 'FORMAT'='parquet')"
+            "CREATE TABLE IF NOT EXISTS t (name STRING) LOCATION 's3://bucket/tmp/mytable/'"
+            " TBLPROPERTIES ('table_type'='iceberg', 'FORMAT'='parquet')"
         )
         self.validate_identity(
             "UNLOAD (SELECT name1, address1, comment1, key1 FROM table1) "
@@ -43,31 +44,42 @@ class TestAthena(Validator):
             "CREATE EXTERNAL TABLE foo (id INT, val STRING) CLUSTERED BY (id, val) INTO 10 BUCKETS"
         )
         self.validate_identity(
-            "CREATE EXTERNAL TABLE foo (id INT, val STRING) STORED AS PARQUET LOCATION 's3://foo' TBLPROPERTIES ('has_encryped_data'='true', 'classification'='test')"
+            "CREATE EXTERNAL TABLE foo (id INT, val STRING) STORED AS PARQUET LOCATION 's3://foo'"
+            " TBLPROPERTIES ('has_encryped_data'='true', 'classification'='test')"
         )
         self.validate_identity(
-            "CREATE EXTERNAL TABLE IF NOT EXISTS foo (a INT, b STRING) ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe' WITH SERDEPROPERTIES ('case.insensitive'='FALSE') LOCATION 's3://table/path'"
+            "CREATE EXTERNAL TABLE IF NOT EXISTS foo (a INT, b STRING) ROW FORMAT SERDE "
+            "'org.openx.data.jsonserde.JsonSerDe' WITH SERDEPROPERTIES ('case.insensitive'='FALSE')"
+            " LOCATION 's3://table/path'"
         )
         self.validate_identity(
-            """CREATE EXTERNAL TABLE x (y INT) ROW FORMAT SERDE 'serde' ROW FORMAT DELIMITED FIELDS TERMINATED BY '1' WITH SERDEPROPERTIES ('input.regex'='')""",
+            "CREATE EXTERNAL TABLE x (y INT) ROW FORMAT SERDE 'serde' ROW FORMAT DELIMITED FIELDS"
+            " TERMINATED BY '1' WITH SERDEPROPERTIES ('input.regex'='')"
         )
         self.validate_identity(
-            """CREATE EXTERNAL TABLE `my_table` (`a7` ARRAY<DATE>) ROW FORMAT SERDE 'a' STORED AS INPUTFORMAT 'b' OUTPUTFORMAT 'c' LOCATION 'd' TBLPROPERTIES ('e'='f')"""
+            "CREATE EXTERNAL TABLE `my_table` (`a7` ARRAY<DATE>) ROW FORMAT SERDE 'a' STORED AS"
+            " INPUTFORMAT 'b' OUTPUTFORMAT 'c' LOCATION 'd' TBLPROPERTIES ('e'='f')"
         )
 
         # Iceberg, https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-creating-tables.html
         self.validate_identity(
-            "CREATE TABLE iceberg_table (`id` BIGINT, `data` STRING, category STRING) PARTITIONED BY (category, BUCKET(16, id)) LOCATION 's3://amzn-s3-demo-bucket/your-folder/' TBLPROPERTIES ('table_type'='ICEBERG', 'write_compression'='snappy')"
+            "CREATE TABLE iceberg_table (`id` BIGINT, `data` STRING, category STRING) PARTITIONED"
+            " BY (category, BUCKET(16, id)) LOCATION 's3://amzn-s3-demo-bucket/your-folder/'"
+            " TBLPROPERTIES ('table_type'='ICEBERG', 'write_compression'='snappy')"
         )
 
-        # CTAS goes to the Trino engine, where the table properties cant be encased in single quotes like they can for Hive
+        # CTAS goes to the Trino engine, where the table properties cant be encased in single quotes
+        # like they can for Hive
         # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
-        # They're also case sensitive and need to be lowercase, otherwise you get eg "Table properties [FORMAT] are not supported."
+        # They're also case sensitive and need to be lowercase, otherwise you get
+        # eg "Table properties [FORMAT] are not supported."
         self.validate_identity(
-            "CREATE TABLE foo WITH (table_type='ICEBERG', location='s3://foo/', format='orc', partitioning=ARRAY['bucket(id, 5)']) AS SELECT * FROM a"
+            "CREATE TABLE foo WITH (table_type='ICEBERG', location='s3://foo/', format='orc',"
+            " partitioning=ARRAY['bucket(id, 5)']) AS SELECT * FROM a"
         )
         self.validate_identity(
-            "CREATE TABLE foo WITH (table_type='HIVE', external_location='s3://foo/', format='parquet', partitioned_by=ARRAY['ds']) AS SELECT * FROM a"
+            "CREATE TABLE foo WITH (table_type='HIVE', external_location='s3://foo/',"
+            " format='parquet', partitioned_by=ARRAY['ds']) AS SELECT * FROM a"
         )
         self.validate_identity(
             "CREATE TABLE foo AS WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo"
@@ -91,9 +103,6 @@ class TestAthena(Validator):
         )
 
     def test_ddl_quoting(self):
-        self.validate_identity("CREATE SCHEMA `foo`")
-        self.validate_identity("CREATE SCHEMA foo")
-
         self.validate_identity("CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'")
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'")
         self.validate_identity(
@@ -101,43 +110,31 @@ class TestAthena(Validator):
             write_sql="CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
             identify=True,
         )
-
-        self.validate_identity("CREATE TABLE foo AS SELECT * FROM a")
-        self.validate_identity('CREATE TABLE "foo" AS SELECT * FROM "a"')
+        self.validate_identity("CREATE SCHEMA `foo`")
+        self.validate_identity("CREATE SCHEMA foo")
         self.validate_identity(
             "CREATE TABLE `foo` AS SELECT * FROM `a`",
             write_sql='CREATE TABLE "foo" AS SELECT * FROM "a"',
             identify=True,
         )
-
-        self.validate_identity("DROP TABLE `foo`")
-        self.validate_identity("DROP TABLE foo")
-        self.validate_identity("DROP TABLE foo", write_sql="DROP TABLE `foo`", identify=True)
-
-        self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
+        self.validate_identity("CREATE TABLE foo AS SELECT * FROM a")
         self.validate_identity("CREATE VIEW foo AS SELECT id FROM tbl")
         self.validate_identity(
             "CREATE VIEW foo AS SELECT id FROM tbl",
             write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
             identify=True,
         )
+        self.validate_identity("DROP TABLE `foo`")
+        self.validate_identity("DROP TABLE foo")
+        self.validate_identity("DROP TABLE foo", write_sql="DROP TABLE `foo`", identify=True)
+        self.validate_identity('CREATE TABLE "foo" AS SELECT * FROM "a"')
+        self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
 
-        # As a side effect of being able to parse both quote types, we can also fix the quoting on incorrectly quoted source queries
-        self.validate_identity('CREATE SCHEMA "foo"', write_sql="CREATE SCHEMA `foo`")
+        # As a side effect of being able to parse both quote types, we can also fix the quoting on
+        # incorrectly quoted source queries
         self.validate_identity(
-            'CREATE EXTERNAL TABLE "foo" ("id" INT) LOCATION \'s3://foo/\'',
-            write_sql="CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
+            "DROP VIEW IF EXISTS `foo`.`bar`", write_sql='DROP VIEW IF EXISTS "foo"."bar"'
         )
-        self.validate_identity('DROP TABLE "foo"', write_sql="DROP TABLE `foo`")
-        self.validate_identity(
-            'CREATE VIEW `foo` AS SELECT "id" FROM `tbl`',
-            write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
-        )
-        self.validate_identity(
-            "DROP VIEW IF EXISTS `foo`.`bar`",
-            write_sql='DROP VIEW IF EXISTS "foo"."bar"',
-        )
-
         self.validate_identity(
             'ALTER TABLE "foo" ADD COLUMNS ("id" STRING)',
             write_sql="ALTER TABLE `foo` ADD COLUMNS (`id` STRING)",
@@ -145,16 +142,27 @@ class TestAthena(Validator):
         self.validate_identity(
             'ALTER TABLE "foo" DROP COLUMN "id"', write_sql="ALTER TABLE `foo` DROP COLUMN `id`"
         )
-
         self.validate_identity(
             'CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"'
         )
         self.validate_identity(
             'CREATE TABLE `foo` AS WITH `foo` AS (SELECT "a", `b` FROM "bar") SELECT * FROM "foo"',
-            write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
+            write_sql=(
+                'CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar")'
+                ' SELECT * FROM "foo"',
+            ),
         )
-
         self.validate_identity("DESCRIBE foo.bar", write_sql="DESCRIBE `foo`.`bar`", identify=True)
+        self.validate_identity(
+            'CREATE EXTERNAL TABLE "foo" ("id" INT) LOCATION \'s3://foo/\'',
+            write_sql="CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
+        )
+        self.validate_identity('CREATE SCHEMA "foo"', write_sql="CREATE SCHEMA `foo`")
+        self.validate_identity(
+            'CREATE VIEW `foo` AS SELECT "id" FROM `tbl`',
+            write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
+        )
+        self.validate_identity('DROP TABLE "foo"', write_sql="DROP TABLE `foo`")
 
     def test_dml_quoting(self):
         self.validate_identity("SELECT a AS foo FROM tbl")
@@ -197,9 +205,14 @@ class TestAthena(Validator):
         )
 
     def test_ctas(self):
-        # Hive tables use 'external_location' to specify the table location, Iceberg tables use 'location' to specify the table location
-        # In addition, Hive tables used 'partitioned_by' to specify the partition fields and Iceberg tables use 'partitioning' to specify the partition fields
-        # The 'table_type' property is used to determine if it's a Hive or an Iceberg table. If it's omitted, it defaults to Hive
+        # Hive tables use 'external_location' to specify the table location, Iceberg tables use
+        # 'location' to specify the table location
+        #
+        # In addition, Hive tables used 'partitioned_by' to specify the partition fields and Iceberg
+        # tables use 'partitioning' to specify the partition fields
+        #
+        # The 'table_type' property is used to determine if it's a Hive or an Iceberg table. If it's
+        # omitted, it defaults to Hive
         # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
         ctas_hive = exp.Create(
             this=exp.to_table("foo.bar"),
@@ -217,7 +230,8 @@ class TestAthena(Validator):
         )
         self.assertEqual(
             ctas_hive.sql(dialect=self.dialect, identify=True),
-            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo', partitioned_by=ARRAY['partition_col']) AS SELECT 1",
+            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo',"
+            " partitioned_by=ARRAY['partition_col']) AS SELECT 1",
         )
 
         ctas_iceberg = exp.Create(
@@ -236,5 +250,6 @@ class TestAthena(Validator):
         )
         self.assertEqual(
             ctas_iceberg.sql(dialect=self.dialect, identify=True),
-            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col']) AS SELECT 1",
+            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo',"
+            " partitioning=ARRAY['partition_col']) AS SELECT 1",
         )

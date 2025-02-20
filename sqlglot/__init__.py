@@ -1,4 +1,4 @@
-# ruff: noqa: F401
+# ruff: noqa: F401, PLC0414, I001
 """
 .. include:: ../README.md
 
@@ -69,7 +69,7 @@ pretty = False
 """Whether to format generated SQL by default."""
 
 
-def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> t.List[Token]:
+def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> list[Token]:
     """
     Tokenizes the given SQL string.
 
@@ -86,7 +86,7 @@ def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) ->
 
 def parse(
     sql: str, read: DialectType = None, dialect: DialectType = None, **opts
-) -> t.List[t.Optional[Expression]]:
+) -> list[Expression | None]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
@@ -103,7 +103,7 @@ def parse(
 
 
 @t.overload
-def parse_one(sql: str, *, into: t.Type[E], **opts) -> E: ...
+def parse_one(sql: str, *, into: type[E], **opts) -> E: ...
 
 
 @t.overload
@@ -114,7 +114,7 @@ def parse_one(
     sql: str,
     read: DialectType = None,
     dialect: DialectType = None,
-    into: t.Optional[exp.IntoType] = None,
+    into: exp.IntoType | None = None,
     **opts,
 ) -> Expression:
     """
@@ -133,17 +133,12 @@ def parse_one(
 
     dialect = Dialect.get_or_raise(read or dialect)
 
-    if into:
-        result = dialect.parse_into(into, sql, **opts)
-    else:
-        result = dialect.parse(sql, **opts)
+    result = dialect.parse_into(into, sql, **opts) if into else dialect.parse(sql, **opts)
 
-    for expression in result:
-        if not expression:
-            raise ParseError(f"No expression was parsed from '{sql}'")
-        return expression
-    else:
+    expression = next(iter(result), None)
+    if not expression:
         raise ParseError(f"No expression was parsed from '{sql}'")
+    return expression
 
 
 def transpile(
@@ -151,9 +146,9 @@ def transpile(
     read: DialectType = None,
     write: DialectType = None,
     identity: bool = True,
-    error_level: t.Optional[ErrorLevel] = None,
+    error_level: ErrorLevel | None = None,
     **opts,
-) -> t.List[str]:
+) -> list[str]:
     """
     Parses the given SQL string in accordance with the source dialect and returns a list of SQL strings transformed
     to conform to the target dialect. Each string in the returned list represents a single transformed SQL statement.

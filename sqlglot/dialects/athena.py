@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Any, Callable, ClassVar
 
 from sqlglot import exp
 from sqlglot.dialects.hive import Hive
@@ -11,19 +11,18 @@ from sqlglot.tokens import TokenType
 def _generate_as_hive(expression: exp.Expression) -> bool:
     if isinstance(expression, exp.Create):
         if expression.kind == "TABLE":
-            properties: t.Optional[exp.Properties] = expression.args.get("properties")
+            properties: exp.Properties | None = expression.args.get("properties")
             if properties and properties.find(exp.ExternalProperty):
                 return True  # CREATE EXTERNAL TABLE is Hive
-
             if not isinstance(expression.expression, exp.Select):
                 return True  # any CREATE TABLE other than CREATE TABLE AS SELECT is Hive
         else:
             return expression.kind != "VIEW"  # CREATE VIEW is never Hive but CREATE SCHEMA etc is
-
     # https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html
     elif isinstance(expression, (exp.Alter, exp.Drop, exp.Describe)):
         # DROP VIEW is Trino (I guess because CREATE VIEW is), everything else is Hive
         return not (isinstance(expression, exp.Drop) and expression.kind == "VIEW")
+
     return False
 
 
@@ -36,6 +35,7 @@ def _is_iceberg_table(properties: exp.Properties) -> bool:
         ),
         None,
     )
+
     return bool(table_type_property and table_type_property.text("value").lower() == "iceberg")
 
 
@@ -58,13 +58,14 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
 
     prop_name = "partitioned_by"
+
     if isinstance(e.parent, exp.Properties) and _is_iceberg_table(e.parent):
         prop_name = "partitioning"
 
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
-def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Athena.Parser], exp.Show]:
+def _show_parser(*args: Any, **kwargs: Any) -> Callable[[Athena.Parser], exp.Show]:
     def _parse(self: Athena.Parser) -> exp.Show:
         return self._parse_show_athena(*args, **kwargs)
 
@@ -73,18 +74,20 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Athena.Parser], e
 
 class Athena(Trino):
     """
-    Over the years, it looks like AWS has taken various execution engines, bolted on AWS-specific modifications and then
-    built the Athena service around them.
+    Over the years, it looks like AWS has taken various execution engines, bolted on AWS-specific
+    modifications and then built the Athena service around them.
 
-    Thus, Athena is not simply hosted Trino, it's more like a router that routes SQL queries to an execution engine depending
-    on the query type.
+    Thus, Athena is not simply hosted Trino, it's more like a router that routes SQL queries to an
+    execution engine depending on the query type.
 
-    As at 2024-09-10, assuming your Athena workgroup is configured to use "Athena engine version 3", the following engines exist:
+    As at 2024-09-10, assuming your Athena workgroup is configured to use "Athena engine version 3",
+    the following engines exist:
 
     Hive:
      - Accepts mostly the same syntax as Hadoop / Hive
      - Uses backticks to quote identifiers
-     - Has a distinctive DDL syntax (around things like setting table properties, storage locations etc) that is different from Trino
+     - Has a distinctive DDL syntax (around things like setting table properties, storage locations
+       etc) that is different from Trino
      - Used for *most* DDL, with some exceptions that get routed to the Trino engine instead:
         - CREATE [EXTERNAL] TABLE (without AS SELECT)
         - ALTER
@@ -98,8 +101,9 @@ class Athena(Trino):
       - Used for DML operations
         - SELECT, INSERT, UPDATE, DELETE, MERGE
 
-    The SQLGlot Athena dialect tries to identify which engine a query would be routed to and then uses the parser / generator for that engine
-    rather than trying to create a universal syntax that can handle both types.
+    The SQLGlot Athena dialect tries to identify which engine a query would be routed to and then
+    uses the parser / generator for that engine rather than trying to create a universal syntax that
+    can handle both types.
     """
 
     class Tokenizer(Trino.Tokenizer):
@@ -107,27 +111,27 @@ class Athena(Trino):
         The Tokenizer is flexible enough to tokenize queries across both the Hive and Trino engines
         """
 
-        IDENTIFIERS = ['"', "`"]
-        KEYWORDS = {
+        IDENTIFIERS: ClassVar[list] = ['"', "`"]
+        KEYWORDS: ClassVar[dict] = {
             **Hive.Tokenizer.KEYWORDS,
             **Trino.Tokenizer.KEYWORDS,
             "UNLOAD": TokenType.COMMAND,
         }
 
-        COMMANDS = Trino.Tokenizer.COMMANDS - {TokenType.SHOW}
+        COMMANDS: ClassVar[set] = Trino.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(Trino.Parser):
         """
         Parse queries for the Athena Trino execution engine
         """
 
-        STATEMENT_PARSERS = {
+        STATEMENT_PARSERS: ClassVar[dict] = {
             **Trino.Parser.STATEMENT_PARSERS,
             TokenType.USING: lambda self: self._parse_as_command(self._prev),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
-        SHOW_PARSERS = {
+        SHOW_PARSERS: ClassVar[dict] = {
             "COLUMNS FROM": _show_parser("COLUMNS", target="FROM"),
             "COLUMNS IN": _show_parser("COLUMNS", target="IN"),
             "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
@@ -178,10 +182,14 @@ class Athena(Trino):
             # package any ALTER TABLE ADD actions into a Schema object
             # so it gets generated as `ALTER TABLE .. ADD COLUMNS(...)`
             # instead of `ALTER TABLE ... ADD COLUMN` which is invalid syntax on Athena
-            if isinstance(expression, exp.Alter) and expression.kind == "TABLE":
-                if expression.actions and isinstance(expression.actions[0], exp.ColumnDef):
-                    new_actions = exp.Schema(expressions=expression.actions)
-                    expression.set("actions", [new_actions])
+            if (
+                isinstance(expression, exp.Alter)
+                and expression.kind == "TABLE"
+                and expression.actions
+                and isinstance(expression.actions[0], exp.ColumnDef)
+            ):
+                new_actions = exp.Schema(expressions=expression.actions)
+                expression.set("actions", [new_actions])
 
             return super().alter_sql(expression)
 
@@ -190,12 +198,12 @@ class Athena(Trino):
         Generate queries for the Athena Trino execution engine
         """
 
-        PROPERTIES_LOCATION = {
+        PROPERTIES_LOCATION: ClassVar[dict] = {
             **Trino.Generator.PROPERTIES_LOCATION,
             exp.LocationProperty: exp.Properties.Location.POST_WITH,
         }
 
-        TRANSFORMS = {
+        TRANSFORMS: ClassVar[dict] = {
             **Trino.Generator.TRANSFORMS,
             exp.FileFormatProperty: lambda self, e: f"format={self.sql(e, 'this')}",
             exp.PartitionedByProperty: _partitioned_by_property_sql,

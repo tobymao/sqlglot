@@ -5294,11 +5294,11 @@ class AnonymousAggFunc(AggFunc):
 
 # https://clickhouse.com/docs/en/sql-reference/aggregate-functions/combinators
 class CombinedAggFunc(AnonymousAggFunc):
-    arg_types = {"this": True, "expressions": False, "parts": True}
+    arg_types = {"this": True, "expressions": False}
 
 
 class CombinedParameterizedAgg(ParameterizedAgg):
-    arg_types = {"this": True, "expressions": True, "params": True, "parts": True}
+    arg_types = {"this": True, "expressions": True, "params": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/hll

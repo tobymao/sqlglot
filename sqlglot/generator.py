@@ -4806,3 +4806,16 @@ class Generator(metaclass=_Generator):
         kind_sql = kind if kind == "CYCLE" else f"SEARCH {kind} FIRST BY"
 
         return f"{kind_sql} {this} SET {set}{using}"
+
+    def parameterizedagg_sql(self, expression: exp.ParameterizedAgg) -> str:
+        params = self.expressions(expression, key="params", flat=True)
+        return self.func(expression.name, *expression.expressions) + f"({params})"
+
+    def anonymousaggfunc_sql(self, expression: exp.AnonymousAggFunc) -> str:
+        return self.func(expression.name, *expression.expressions)
+
+    def combinedaggfunc_sql(self, expression: exp.CombinedAggFunc) -> str:
+        return self.anonymousaggfunc_sql(expression)
+
+    def combinedparameterizedagg_sql(self, expression: exp.CombinedParameterizedAgg) -> str:
+        return self.parameterizedagg_sql(expression)

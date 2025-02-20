@@ -224,3 +224,22 @@ class Athena(Trino):
                 return self._hive_generator.generate(expression, copy)
 
             return super().generate(expression, copy)
+
+        def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
+            sql = self.sql(expression, arg)
+            return f"{prefix} {sql}" if sql else ""
+
+        def show_sql(self, expression: exp.Show) -> str:
+            this = f"{expression.name}"
+            db = self.sql(expression, "db") or ""
+            target = self.sql(expression, "target") or ""
+            if db and target:
+                target = f"{db}.{target}"
+                db = ""
+            if this in ["COLUMNS", "TABLES", "VIEWS"]:
+                target = f"IN {target}"
+            like = self._prefixed_sql("LIKE", expression, "like")
+            rlike = self._prefixed_sql("LIKE", expression, "rlike")
+            print(this, target, db, like, rlike)
+
+            return " ".join(f"SHOW {this} {target} {db} {like or rlike}".split())

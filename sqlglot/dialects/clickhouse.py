@@ -82,7 +82,7 @@ def _build_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
     if len(args) == 1:
         return exp.CountIf(this=seq_get(args, 0))
 
-    return exp.CombinedAggFunc(this="countIf", expressions=args, parts=("count", "If"))
+    return exp.CombinedAggFunc(this="countIf", expressions=args)
 
 
 def _build_str_to_date(args: t.List) -> exp.Cast | exp.Anonymous:
@@ -743,7 +743,6 @@ class ClickHouse(Dialect):
                     "expressions": anon_func.expressions,
                 }
                 if parts[1]:
-                    kwargs["parts"] = parts
                     exp_class: t.Type[exp.Expression] = (
                         exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
                     )
@@ -1208,19 +1207,6 @@ class ClickHouse(Dialect):
                     else ""
                 ),
             ]
-
-        def parameterizedagg_sql(self, expression: exp.ParameterizedAgg) -> str:
-            params = self.expressions(expression, key="params", flat=True)
-            return self.func(expression.name, *expression.expressions) + f"({params})"
-
-        def anonymousaggfunc_sql(self, expression: exp.AnonymousAggFunc) -> str:
-            return self.func(expression.name, *expression.expressions)
-
-        def combinedaggfunc_sql(self, expression: exp.CombinedAggFunc) -> str:
-            return self.anonymousaggfunc_sql(expression)
-
-        def combinedparameterizedagg_sql(self, expression: exp.CombinedParameterizedAgg) -> str:
-            return self.parameterizedagg_sql(expression)
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"

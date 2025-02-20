@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 import sqlglot
+from sqlglot.expressions import Placeholder, Select
 from sqlglot.lineage import lineage
 from sqlglot.schema import MappingSchema
 
@@ -584,3 +585,505 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].name, "t.empid")
         self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+
+    def test_pivot_in_subquery(self) -> None:
+        sql = """
+       SELECT 
+           sub.product_id,
+           sub.q1,
+           sub.q2
+       FROM (
+           SELECT *
+           FROM sales_data
+           PIVOT (
+               SUM(amount)
+               FOR quarter IN ('Q1' as q1, 'Q2' as q2)
+           )
+       ) sub;
+       """
+        # Track lineage through subquery with PIVOT
+        product_id_node = lineage("product_id", sql)
+        q1_node = lineage("q1", sql)
+        q2_node = lineage("q2", sql)
+
+        # Verify lineage for each column
+        self.assertEqual(product_id_node.name, "product_id")
+        self.assertEqual(product_id_node.downstream[0].name, "sub.product_id")
+        self.assertEqual(product_id_node.downstream[0].downstream[0].source.name, "sales_data")
+
+        self.assertEqual(q1_node.name, "q1")
+        self.assertEqual(q1_node.downstream[0].name, "sub.q1")
+        self.assertEqual(q1_node.downstream[0].downstream[0].source.name, "sales_data")
+
+        self.assertEqual(q2_node.name, "q2")
+        self.assertEqual(q2_node.downstream[0].name, "sub.q2")
+        self.assertEqual(q2_node.downstream[0].downstream[0].source.name, "sales_data")
+
+    def test_pivot_with_correlated_subquery(self) -> None:
+        sql = """
+       SELECT 
+           p.product_id,
+           p.q1_amount,
+           (
+               SELECT AVG(amount)
+               FROM sales_data s2
+               PIVOT (
+                   AVG(amount)
+                   FOR quarter IN ('Q1' as q1_avg)
+               )
+               WHERE s2.product_id = p.product_id
+           ) as avg_amount
+       FROM sales_data s1
+       PIVOT (
+           SUM(amount)
+           FOR quarter IN ('Q1' as q1_amount)
+       ) p;
+       """
+        # Track lineage with correlated subquery containing PIVOT
+        product_id_node = lineage("product_id", sql)
+        q1_amount_node = lineage("q1_amount", sql)
+        avg_amount_node = lineage("avg_amount", sql)
+
+        # Verify lineage across query contexts
+        self.assertEqual(product_id_node.name, "product_id")
+        self.assertEqual(product_id_node.downstream[0].name, "s1.product_id")
+        self.assertEqual(product_id_node.downstream[0].source.name, "sales_data")
+
+        self.assertEqual(q1_amount_node.name, "q1_amount")
+        self.assertEqual(q1_amount_node.downstream[0].name, "s1.q1_amount")
+        self.assertEqual(q1_amount_node.downstream[0].source.name, "sales_data")
+
+        self.assertEqual(avg_amount_node.name, "avg_amount")
+        self.assertIsInstance(avg_amount_node.downstream[0].source, Select)
+        self.assertEqual(avg_amount_node.downstream[0].downstream[0].name, "s1.amount")
+        self.assertEqual(avg_amount_node.downstream[0].downstream[0].source.name, "sales_data")
+
+    def test_pivot_subquery_in_from(self) -> None:
+        sql = """
+       SELECT 
+           t1.product_id,
+           t1.q1_sales,
+           t2.q1_inventory
+       FROM (
+           SELECT *
+           FROM sales_data
+           PIVOT (
+               SUM(amount)
+               FOR quarter IN ('Q1' as q1_sales)
+           )
+       ) t1
+       LEFT JOIN (
+           SELECT *
+           FROM inventory_data
+           PIVOT (
+               SUM(quantity)
+               FOR quarter IN ('Q1' as q1_inventory)
+           )
+       ) t2 ON t1.product_id = t2.product_id;
+       """
+        # Track lineage from multiple subqueries with PIVOT in FROM clause
+        product_id_node = lineage("product_id", sql)
+        q1_sales_node = lineage("q1_sales", sql)
+        q1_inventory_node = lineage("q1_inventory", sql)
+
+        # Verify lineage through complex query structure
+        self.assertEqual(product_id_node.name, "product_id")
+        self.assertEqual(product_id_node.downstream[0].reference_node_name, "t1")
+        self.assertEqual(product_id_node.downstream[0].name, "t1.product_id")
+        self.assertEqual(product_id_node.downstream[0].downstream[0].name, "*")
+        self.assertEqual(product_id_node.downstream[0].downstream[0].source.name, "sales_data")
+
+        self.assertEqual(q1_sales_node.name, "q1_sales")
+        self.assertEqual(q1_sales_node.downstream[0].reference_node_name, "t1")
+        self.assertEqual(q1_sales_node.downstream[0].name, "t1.q1_sales")
+        self.assertEqual(q1_sales_node.downstream[0].downstream[0].name, "*")
+        self.assertEqual(q1_sales_node.downstream[0].downstream[0].source.name, "sales_data")
+
+        self.assertEqual(q1_inventory_node.name, "q1_inventory")
+        self.assertEqual(q1_inventory_node.downstream[0].reference_node_name, "t2")
+        self.assertEqual(q1_inventory_node.downstream[0].name, "t2.q1_inventory")
+        self.assertEqual(q1_inventory_node.downstream[0].downstream[0].name, "*")
+        self.assertEqual(
+            q1_inventory_node.downstream[0].downstream[0].source.name, "inventory_data"
+        )
+
+    def test_pivot_with_cte_and_subquery(self) -> None:
+        sql = """
+       WITH base_pivot AS (
+           SELECT *
+           FROM sales_data
+           PIVOT (
+               SUM(amount)
+               FOR quarter IN ('Q1' as q1_amount, 'Q2' as q2_amount)
+           )
+       )
+       SELECT 
+           b.product_id,
+           b.q1_amount,
+           (
+               SELECT MAX(q1_amount)
+               FROM base_pivot
+               WHERE category = b.category
+           ) as max_q1_amount
+       FROM base_pivot b;
+       """
+        # Track lineage through CTE and subquery combination
+        product_id_node = lineage("product_id", sql)
+        q1_amount_node = lineage("q1_amount", sql)
+        max_q1_amount_node = lineage("max_q1_amount", sql)
+
+        # Verify lineage through CTE and correlated subquery
+        self.assertEqual(product_id_node.name, "product_id")
+        self.assertEqual(product_id_node.downstream[0].reference_node_name, "base_pivot")
+        self.assertEqual(product_id_node.downstream[0].name, "b.product_id")
+        self.assertEqual(product_id_node.downstream[0].downstream[0].name, "*")
+        self.assertEqual(product_id_node.downstream[0].downstream[0].source.name, "sales_data")
+
+        self.assertEqual(q1_amount_node.name, "q1_amount")
+        self.assertEqual(q1_amount_node.downstream[0].reference_node_name, "base_pivot")
+        self.assertEqual(q1_amount_node.downstream[0].name, "b.q1_amount")
+        self.assertEqual(q1_amount_node.downstream[0].downstream[0].name, "*")
+        self.assertEqual(q1_amount_node.downstream[0].downstream[0].source.name, "sales_data")
+
+        self.assertEqual(max_q1_amount_node.name, "max_q1_amount")
+        self.assertEqual(
+            max_q1_amount_node.downstream[0].downstream[0].reference_node_name, "base_pivot"
+        )
+        self.assertEqual(
+            max_q1_amount_node.downstream[0].downstream[0].name, "base_pivot.q1_amount"
+        )
+        self.assertEqual(max_q1_amount_node.downstream[0].downstream[0].downstream[0].name, "*")
+        self.assertEqual(
+            max_q1_amount_node.downstream[0].downstream[0].downstream[0].source.name, "sales_data"
+        )
+
+    def test_unpivot_without_alias(self) -> None:
+        sql = """
+        SELECT 
+            value as other_value,
+            category
+        FROM sample_data
+        UNPIVOT (
+            value
+            FOR category IN (a, b)
+        );
+        """
+        # Track lineage of value and category columns from UNPIVOT
+        value_node = lineage("other_value", sql)
+        category_node = lineage("category", sql)
+
+        # Verify both value and category columns coming from sample_data
+        self.assertEqual(value_node.name, "other_value")
+        self.assertEqual(value_node.downstream[0].name, "sample_data.value")
+        self.assertEqual(value_node.downstream[0].source.name, "sample_data")
+
+        self.assertEqual(category_node.name, "category")
+        self.assertEqual(category_node.downstream[0].name, "sample_data.category")
+        self.assertEqual(category_node.downstream[0].source.name, "sample_data")
+
+    def test_unpivot_with_alias(self) -> None:
+        sql = """
+        SELECT 
+            unpvt.val as other_value,
+            unpvt.category
+        FROM sample_data
+        UNPIVOT (
+            value
+            FOR category IN (a , b)
+        ) unpvt
+        """
+        # Track lineage of aliased value and category columns
+        value_node = lineage("other_value", sql)
+        category_node = lineage("category", sql)
+
+        # Verify both columns' source table with alias
+        self.assertEqual(value_node.name, "other_value")
+        self.assertEqual(value_node.downstream[0].name, "sample_data.val")
+        self.assertEqual(value_node.downstream[0].source.name, "sample_data")
+
+        self.assertEqual(category_node.name, "category")
+        self.assertEqual(category_node.downstream[0].name, "sample_data.category")
+        self.assertEqual(category_node.downstream[0].source.name, "sample_data")
+
+    def test_unpivot_with_cte(self) -> None:
+        sql = """
+        WITH t as (
+            SELECT 
+                value as other_value,
+                category
+            FROM sample_data
+            UNPIVOT (
+                value
+                FOR category IN (a, b)
+            )
+        )
+        select other_value, category from t
+        """
+        # Track lineage of both columns through CTE
+        value_node = lineage("other_value", sql)
+        category_node = lineage("category", sql)
+
+        # Verify source table for both columns through CTE
+        self.assertEqual(value_node.name, "other_value")
+        self.assertEqual(value_node.downstream[0].reference_node_name, "t")
+        self.assertEqual(value_node.downstream[0].downstream[0].source.name, "sample_data")
+
+        self.assertEqual(category_node.name, "category")
+        self.assertEqual(category_node.downstream[0].reference_node_name, "t")
+        self.assertEqual(category_node.downstream[0].downstream[0].source.name, "sample_data")
+
+    def test_unpivot_multiple_value_columns(self) -> None:
+        sql = """
+        SELECT 
+            amount,
+            quantity,
+            year,
+            region  -- pass-through column
+        FROM sales_data
+        UNPIVOT (
+            (amount, quantity)
+            FOR year IN (
+                (amount_2021, qty_2021) AS '2021',
+                (amount_2022, qty_2022) AS '2022'
+            )
+        );
+        """
+        # Track lineage of value, category and pass-through columns
+        amount_node = lineage("amount", sql)
+        quantity_node = lineage("quantity", sql)
+        year_node = lineage("year", sql)
+        region_node = lineage("region", sql)  # pass-through column
+
+        # Verify source table for all columns
+        self.assertEqual(amount_node.name, "amount")
+        self.assertEqual(amount_node.downstream[0].name, "sales_data.amount")
+        self.assertEqual(amount_node.downstream[0].source.name, "sales_data")
+
+        self.assertEqual(quantity_node.name, "quantity")
+        self.assertEqual(quantity_node.downstream[0].name, "sales_data.quantity")
+        self.assertEqual(quantity_node.downstream[0].source.name, "sales_data")
+
+        self.assertEqual(year_node.name, "year")
+        self.assertEqual(year_node.downstream[0].name, "sales_data.year")
+        self.assertEqual(year_node.downstream[0].source.name, "sales_data")
+
+        self.assertEqual(region_node.name, "region")
+        self.assertEqual(region_node.downstream[0].name, "sales_data.region")
+        self.assertEqual(region_node.downstream[0].source.name, "sales_data")
+
+    def test_unpivot_nested_cte(self) -> None:
+        sql = """
+        WITH base_unpivot AS (
+            SELECT value, category, created_at  -- pass-through column
+            FROM sample_data
+            UNPIVOT (
+                value
+                FOR category IN (a, b)
+            )
+        ),
+        second_level AS (
+            SELECT 
+                value as transformed_value,
+                category as item_category,
+                created_at
+            FROM base_unpivot
+        )
+        SELECT transformed_value, item_category, created_at 
+        FROM second_level;
+        """
+        # Track lineage through multiple CTEs including pass-through column
+        value_node = lineage("transformed_value", sql)
+        category_node = lineage("item_category", sql)
+        created_at_node = lineage("created_at", sql)  # pass-through column
+
+        # Verify source table through CTE chain
+        self.assertEqual(value_node.name, "transformed_value")
+        self.assertEqual(value_node.downstream[0].reference_node_name, "second_level")
+        self.assertEqual(value_node.downstream[0].downstream[0].reference_node_name, "base_unpivot")
+        self.assertEqual(
+            value_node.downstream[0].downstream[0].downstream[0].name, "sample_data.value"
+        )
+        self.assertEqual(
+            value_node.downstream[0].downstream[0].downstream[0].source.name, "sample_data"
+        )
+
+        self.assertEqual(category_node.name, "item_category")
+        self.assertEqual(category_node.downstream[0].reference_node_name, "second_level")
+        self.assertEqual(
+            category_node.downstream[0].downstream[0].reference_node_name, "base_unpivot"
+        )
+        self.assertEqual(
+            category_node.downstream[0].downstream[0].downstream[0].name, "sample_data.category"
+        )
+        self.assertEqual(
+            category_node.downstream[0].downstream[0].downstream[0].source.name, "sample_data"
+        )
+
+        self.assertEqual(created_at_node.name, "created_at")
+        self.assertEqual(created_at_node.downstream[0].reference_node_name, "second_level")
+        self.assertEqual(
+            created_at_node.downstream[0].downstream[0].reference_node_name, "base_unpivot"
+        )
+        self.assertEqual(
+            created_at_node.downstream[0].downstream[0].downstream[0].name, "sample_data.created_at"
+        )
+        self.assertEqual(
+            created_at_node.downstream[0].downstream[0].downstream[0].source.name, "sample_data"
+        )
+
+    def test_unpivot_with_join(self) -> None:
+        sql = """
+        WITH unpivoted_data AS (
+            SELECT value, category, status  -- pass-through column
+            FROM sample_data
+            UNPIVOT (
+                value
+                FOR category IN (a, b)
+            )
+        )
+        SELECT 
+            u.value,
+            u.category,
+            u.status,
+            m.category_name
+        FROM unpivoted_data u
+        JOIN metadata m ON u.category = m.category_code;
+        """
+        # Track lineage of all columns including pass-through
+        value_node = lineage("value", sql)
+        category_node = lineage("category", sql)
+        status_node = lineage("status", sql)  # pass-through column
+        category_name_node = lineage("category_name", sql)
+
+        # Verify source tables for all columns
+        self.assertEqual(value_node.name, "value")
+        self.assertEqual(value_node.downstream[0].reference_node_name, "unpivoted_data")
+        self.assertEqual(value_node.downstream[0].downstream[0].name, "sample_data.value")
+        self.assertEqual(value_node.downstream[0].downstream[0].source.name, "sample_data")
+
+        self.assertEqual(category_node.name, "category")
+        self.assertEqual(category_node.downstream[0].reference_node_name, "unpivoted_data")
+        self.assertEqual(category_node.downstream[0].downstream[0].name, "sample_data.category")
+        self.assertEqual(category_node.downstream[0].downstream[0].source.name, "sample_data")
+
+        self.assertEqual(status_node.name, "status")
+        self.assertEqual(status_node.downstream[0].reference_node_name, "unpivoted_data")
+        self.assertEqual(status_node.downstream[0].downstream[0].name, "sample_data.status")
+        self.assertEqual(status_node.downstream[0].downstream[0].source.name, "sample_data")
+
+        self.assertEqual(category_name_node.name, "category_name")
+        self.assertEqual(category_name_node.downstream[0].name, "m.category_name")
+        self.assertEqual(category_name_node.downstream[0].source.name, "metadata")
+
+    def test_unpivot_in_subquery(self) -> None:
+        sql = """
+       SELECT 
+           sub.other_value,
+           sub.category
+       FROM (
+           SELECT 
+               value as other_value,
+               category
+           FROM sample_data
+           UNPIVOT (
+               value
+               FOR category IN (a, b)
+           )
+       ) sub;
+       """
+        # Track column lineage through subquery
+        value_node = lineage("other_value", sql)
+        category_node = lineage("category", sql)
+
+        # Verify lineage
+        self.assertEqual(value_node.name, "other_value")
+        self.assertEqual(value_node.downstream[0].reference_node_name, "sub")
+        self.assertEqual(value_node.downstream[0].downstream[0].name, "sample_data.value")
+        self.assertEqual(value_node.downstream[0].downstream[0].source.name, "sample_data")
+
+        self.assertEqual(category_node.name, "category")
+        self.assertEqual(category_node.downstream[0].reference_node_name, "sub")
+        self.assertEqual(category_node.downstream[0].downstream[0].name, "sample_data.category")
+        self.assertEqual(category_node.downstream[0].downstream[0].source.name, "sample_data")
+
+    def test_unpivot_with_correlated_subquery(self) -> None:
+        sql = """
+       SELECT 
+           value,
+           category,
+           (
+               SELECT MAX(value)
+               FROM sample_data s2
+               UNPIVOT (
+                   value
+                   FOR category IN (a, b)
+               )
+               WHERE s2.category = s1.category
+           ) as max_value
+       FROM sample_data s1
+       UNPIVOT (
+           value
+           FOR category IN (a, b)
+       );
+       """
+        # Track lineage with correlated subquery
+        outer_value_node = lineage("value", sql)
+        category_node = lineage("category", sql)
+        max_value_node = lineage("max_value", sql)
+
+        # Verify lineage tracking across query contexts
+        self.assertEqual(outer_value_node.name, "value")
+        self.assertIsInstance(outer_value_node.downstream[0].source, Placeholder)
+        self.assertEqual(outer_value_node.downstream[0].name, "sample_data.value")
+
+        self.assertEqual(category_node.name, "category")
+        self.assertIsInstance(category_node.downstream[0].source, Placeholder)
+        self.assertEqual(category_node.downstream[0].name, "sample_data.category")
+
+        self.assertEqual(max_value_node.name, "max_value")
+        self.assertIsInstance(max_value_node.downstream[0].source, Select)
+        self.assertEqual(max_value_node.downstream[0].downstream[0].source.name, "sample_data")
+
+    def test_unpivot_subquery_in_from(self) -> None:
+        sql = """
+       SELECT 
+           t1.value as main_value,
+           t1.category as main_category,
+           t2.value as sub_value
+       FROM (
+           SELECT value, category
+           FROM main_data
+           UNPIVOT (
+               value
+               FOR category IN (a, b)
+           )
+       ) t1
+       LEFT JOIN (
+           SELECT value, category
+           FROM sub_data
+           UNPIVOT (
+               value
+               FOR category IN (x, y)
+           )
+       ) t2 ON t1.category = t2.category;
+       """
+        # Track lineage from multiple subqueries in FROM clause
+        main_value_node = lineage("main_value", sql)
+        main_category_node = lineage("main_category", sql)
+        sub_value_node = lineage("sub_value", sql)
+
+        # Verify source tables through subquery structure
+        self.assertEqual(main_value_node.name, "main_value")
+        self.assertEqual(main_value_node.downstream[0].reference_node_name, "t1")
+        self.assertEqual(main_value_node.downstream[0].downstream[0].name, "main_data.value")
+        self.assertEqual(main_value_node.downstream[0].downstream[0].source.name, "main_data")
+
+        self.assertEqual(main_category_node.name, "main_category")
+        self.assertEqual(main_category_node.downstream[0].reference_node_name, "t1")
+        self.assertEqual(main_category_node.downstream[0].downstream[0].name, "main_data.category")
+        self.assertEqual(main_category_node.downstream[0].downstream[0].source.name, "main_data")
+
+        self.assertEqual(sub_value_node.name, "sub_value")
+        self.assertEqual(sub_value_node.downstream[0].reference_node_name, "t2")
+        self.assertEqual(sub_value_node.downstream[0].downstream[0].name, "sub_data.value")
+        self.assertEqual(sub_value_node.downstream[0].downstream[0].source.name, "sub_data")

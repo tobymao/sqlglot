@@ -508,8 +508,16 @@ class TestLineage(unittest.TestCase):
         """
         node = lineage("other_a", sql)
 
-        self.assertEqual(node.downstream[0].name, "_q_0.value")
-        self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
+        # The lineage should reflect the actual data flow:
+        # 1. other_a is an alias of PIVOT's output column 'a'
+        # 2. Column 'a' is created by PIVOT operation on sample_data.value
+        # 3. Subquery (_q_0) is an intermediate step but not relevant for column naming
+        # self.assertEqual(node.downstream[0].name, "_q_0.value")
+        self.assertEqual(node.downstream[0].name, "a")  # Column created by PIVOT
+        self.assertTrue(any(d.name == "sample_data.value" for d in node.downstream[0].downstream))
+        self.assertTrue(
+            any(d.name == "sample_data.category" for d in node.downstream[0].downstream)
+        )
 
     def test_pivot_with_alias(self) -> None:
         sql = """

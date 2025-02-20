@@ -148,8 +148,6 @@ class Athena(Trino):
             self,
             this: str,
             target: bool | str = False,
-            full: t.Optional[bool] = None,
-            global_: t.Optional[bool] = None,
         ) -> exp.Show:
             if target:
                 if isinstance(target, str):
@@ -166,15 +164,19 @@ class Athena(Trino):
                 db = target_id
                 target_id = self._parse_id_var()
 
-            like = self._parse_string() if self._match_text_seq("LIKE") else None
+            _like = {"like": self._match_text_seq("LIKE") and self._parse_string()}
+            if this in ["DATABASES", "SCHEMAS", "TABLES", "VIEWS"]:
+                _like = {"rlike": _like["like"]}
 
+            # 1. if using a regular expression in `SHOW TABLES` prefix it with `LIKE` this is valid athena syntax,
+            #    despite missing from the current AWS docs
+            # 2. `SHOW TBLPROPERTIES` does not currently parse optional `('property_name')`.
             return self.expression(
                 exp.Show,
                 this=this,
                 target=target_id,
                 db=db,
-                like=like,
-                **{"global": global_},  # type: ignore
+                **_like,
             )
 
     class _HiveGenerator(Hive.Generator):

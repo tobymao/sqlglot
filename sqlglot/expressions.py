@@ -11,6 +11,7 @@ SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
+
 import datetime
 import math
 import numbers
@@ -37,6 +38,7 @@ from sqlglot.tokens import Token, TokenError
 
 if t.TYPE_CHECKING:
     from typing_extensions import Self
+
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import DialectType
 
@@ -1545,6 +1547,7 @@ class Show(Expression):
         "limit": False,
         "from": False,
         "like": False,
+        "rlike": False,
         "where": False,
         "db": False,
         "scope": False,

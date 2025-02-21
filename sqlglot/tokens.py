@@ -37,6 +37,7 @@ class TokenType(AutoName):
     DASH = auto()
     PLUS = auto()
     COLON = auto()
+    DOTCOLON = auto()
     DCOLON = auto()
     DQMARK = auto()
     SEMICOLON = auto()

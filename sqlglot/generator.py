@@ -4269,7 +4269,7 @@ class Generator(metaclass=_Generator):
         return f"COPY{this}{kind} {files}{credentials}{params}"
 
     def semicolon_sql(self, expression: exp.Semicolon) -> str:
-        return ";"
+        return ""
 
     def datadeletionproperty_sql(self, expression: exp.DataDeletionProperty) -> str:
         on_sql = "ON" if expression.args.get("on") else "OFF"

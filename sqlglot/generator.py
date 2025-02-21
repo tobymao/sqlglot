@@ -3518,6 +3518,9 @@ class Generator(metaclass=_Generator):
     def trycast_sql(self, expression: exp.TryCast) -> str:
         return self.cast_sql(expression, safe_prefix="TRY_")
 
+    def jsoncast_sql(self, expression: exp.JSONCast) -> str:
+        return self.cast_sql(expression)
+
     def try_sql(self, expression: exp.Try) -> str:
         if not self.TRY_SUPPORTED:
             self.unsupported("Unsupported TRY function")

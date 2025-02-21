@@ -5564,6 +5564,11 @@ class TryCast(Cast):
     pass
 
 
+# https://clickhouse.com/docs/sql-reference/data-types/newjson#reading-json-paths-as-sub-columns
+class JSONCast(Cast):
+    pass
+
+
 class Try(Func):
     pass
 

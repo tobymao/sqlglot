@@ -735,6 +735,11 @@ class Parser(metaclass=_Parser):
 
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
+        TokenType.DOTCOLON: lambda self, this, to: self.expression(
+            exp.JSONCast,
+            this=this,
+            to=to,
+        ),
         TokenType.DCOLON: lambda self, this, to: self.expression(
             exp.Cast if self.STRICT_CAST else exp.TryCast,
             this=this,
@@ -5318,7 +5323,7 @@ class Parser(metaclass=_Parser):
             op_token = self._prev.token_type
             op = self.COLUMN_OPERATORS.get(op_token)
 
-            if op_token == TokenType.DCOLON:
+            if op_token in (TokenType.DCOLON, TokenType.DOTCOLON):
                 field = self._parse_dcolon()
                 if not field:
                     self.raise_error("Expected type")

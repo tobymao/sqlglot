@@ -218,6 +218,7 @@ class ClickHouse(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            ".:": TokenType.DOTCOLON,
             "ATTACH": TokenType.COMMAND,
             "DATE32": TokenType.DATE32,
             "DATETIME64": TokenType.DATETIME64,
@@ -1008,6 +1009,7 @@ class ClickHouse(Dialect):
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
+            exp.JSONCast: lambda self, e: f"{self.sql(e, 'this')}.:{self.sql(e, 'to')}",
             exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
             exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
             exp.JSONPathKey: json_path_key_only_name,

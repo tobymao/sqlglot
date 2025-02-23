@@ -292,7 +292,7 @@ class Scope:
                     or (
                         isinstance(ancestor, exp.Order)
                         and (
-                            isinstance(ancestor.parent, exp.Window)
+                            isinstance(ancestor.parent, (exp.Window, exp.WithinGroup))
                             or column.name not in named_selects
                         )
                     )

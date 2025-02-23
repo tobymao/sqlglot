@@ -650,7 +650,7 @@ class Postgres(Dialect):
                     if isinstance(expression.parent, (exp.From, exp.Join)):
                         generate_series = (
                             exp.select("value::date")
-                            .from_(generate_series.as_("value"))
+                            .from_(exp.Table(this=generate_series).as_("_t", table=["value"]))
                             .subquery(expression.args.get("alias") or "_unnested_generate_series")
                         )
                     return self.sql(generate_series)

@@ -2083,6 +2083,11 @@ MATCH_RECOGNIZE (
         self.assertEqual(ast.this, "PROCEDURES")
         self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
 
+    def test_show_warehouses(self):
+        self.validate_identity("SHOW WAREHOUSES")
+        ast = parse_one("SHOW WAREHOUSES", read="snowflake")
+        self.assertEqual(ast.this, "WAREHOUSES")
+
     def test_show_schemas(self):
         self.validate_identity(
             "show terse schemas in database db1 starts with 'a' limit 10 from 'b'",

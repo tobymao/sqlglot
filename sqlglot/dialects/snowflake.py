@@ -543,6 +543,7 @@ class Snowflake(Dialect):
             "TERSE USERS": _show_parser("USERS"),
             "FUNCTIONS": _show_parser("FUNCTIONS"),
             "PROCEDURES": _show_parser("PROCEDURES"),
+            "WAREHOUSES": _show_parser("WAREHOUSES"),
         }
 
         CONSTRAINT_PARSERS = {

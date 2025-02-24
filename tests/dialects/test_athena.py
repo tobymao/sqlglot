@@ -82,7 +82,7 @@ class TestAthena(Validator):
         # SHOW DDL Statements
         self.validate_identity("SHOW COLUMNS IN foo")
         self.validate_identity("SHOW COLUMNS IN foo.bar")
-        self.validate_identity("SHOW COLUMNS IN foo IN bar", write_sql="SHOW COLUMNS IN foo.bar")
+        self.validate_identity("SHOW COLUMNS IN bar IN foo", write_sql="SHOW COLUMNS IN foo.bar")
         self.validate_identity("SHOW CREATE TABLE foo")
         self.validate_identity("SHOW CREATE TABLE foo.bar")
         self.validate_identity("SHOW CREATE VIEW foo")

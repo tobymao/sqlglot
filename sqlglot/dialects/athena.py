@@ -71,8 +71,10 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
-def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Athena.Parser], exp.Show]:
-    def _parse(self: Athena.Parser) -> exp.Show:
+def _show_parser(
+    *args: t.Any, **kwargs: t.Any
+) -> t.Callable[[Athena.Parser], exp.Show | exp.Command]:
+    def _parse(self: Athena.Parser) -> exp.Show | exp.Command:
         _sql = self.sql.upper()
         # parse edge cases as commands
         if "TBLPROPERTIES" in _sql and "(" in self.sql:
@@ -177,9 +179,11 @@ class Athena(Trino):
                 target_id = self._parse_id_var()
 
             # using `rlike` for the specific commands where athena uses regex in a `LIKE`
-            _like = {"like": self._match_text_seq("LIKE") and self._parse_string()}
+            like = (self._match_text_seq("LIKE") and self._parse_string()) or None
+            rlike = None
             if this in ["DATABASES", "SCHEMAS", "TABLES", "VIEWS"]:
-                _like = {"rlike": _like["like"]}
+                rlike = like
+                like = None
 
             # 1. if using a regular expression in `SHOW TABLES` you will need prefix with `LIKE`
             #    to parse as a `SHOW` - this is valid, despite missing from the current docs.
@@ -189,7 +193,8 @@ class Athena(Trino):
                 this=this,
                 target=target_id,
                 db=db,
-                **_like,
+                like=like,
+                rlike=rlike,
             )
 
     class _HiveGenerator(Hive.Generator):

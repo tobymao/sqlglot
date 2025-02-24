@@ -3089,10 +3089,21 @@ class Parser(metaclass=_Parser):
             )
 
             if distinct:
-                distinct = self.expression(
-                    exp.Distinct,
-                    on=self._parse_value() if self._match(TokenType.ON) else None,
-                )
+                on = self._parse_value() if self._match(TokenType.ON) else None
+
+                # In `SELECT DISTINCT ON (p1, t.c2)`, p1 is an identifier, while c2 is a column reference.
+                # The reason is that `p1` can be a projection alias or a column, but engines resolve it as
+                # the projection alias (e.g. postgres, duckdb, clickhouse).
+                if isinstance(on, exp.Tuple):
+                    on.set(
+                        "expressions",
+                        [
+                            c.this if isinstance(c, exp.Column) and not c.table else c
+                            for c in on.expressions
+                        ],
+                    )
+
+                distinct = self.expression(exp.Distinct, on=on)
 
             if all_ and distinct:
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")

@@ -195,7 +195,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
         # would reprocess the entire subtree to coerce the types of its operands' projections
-        self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType.Type]] = {}
+        self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType | exp.DataType.Type]] = {}
 
     def _set_type(
         self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
@@ -312,18 +312,32 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _maybe_coerce(
         self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
-    ) -> exp.DataType.Type:
-        type1_value = type1.this if isinstance(type1, exp.DataType) else type1
-        type2_value = type2.this if isinstance(type2, exp.DataType) else type2
+    ) -> exp.DataType | exp.DataType.Type:
+        """
+        Returns type2 if type1 can be coerced into it, otherwise type1.
+
+        If either type is parameterized (e.g. DECIMAL(18, 2) contains two parameters),
+        we assume type1 does not coerce into type2, so we also return it in this case.
+        """
+        if isinstance(type1, exp.DataType):
+            if type1.expressions:
+                return type1
+            type1_value = type1.this
+        else:
+            type1_value = type1
+
+        if isinstance(type2, exp.DataType):
+            if type2.expressions:
+                return type1
+            type2_value = type2.this
+        else:
+            type2_value = type2
 
         # We propagate the UNKNOWN type upwards if found
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
-        return t.cast(
-            exp.DataType.Type,
-            type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value,
-        )
+        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
     def _annotate_binary(self, expression: B) -> B:
         self._annotate_args(expression)

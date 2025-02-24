@@ -315,3 +315,10 @@ STRING;
 # dialect: bigquery
 STRING(timestamp_expr, timezone);
 STRING;
+
+--------------------------------------
+-- Snowflake
+--------------------------------------
+
+LEAST(x::DECIMAL(18, 2));
+DECIMAL(18, 2);

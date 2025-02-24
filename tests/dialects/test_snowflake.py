@@ -2065,6 +2065,29 @@ MATCH_RECOGNIZE (
         self.validate_identity("SHOW TERSE USERS")
         self.validate_identity("SHOW USERS LIKE '_foo%' STARTS WITH 'bar' LIMIT 5 FROM 'baz'")
 
+    def test_show_databases(self):
+        self.validate_identity("SHOW TERSE DATABASES")
+        ast = parse_one("SHOW DATABASES IN ACCOUNT", read="snowflake")
+        self.assertEqual(ast.this, "DATABASES")
+        self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
+
+    def test_show_functions(self):
+        self.validate_identity("SHOW FUNCTIONS")
+        ast = parse_one("SHOW FUNCTIONS IN ACCOUNT", read="snowflake")
+        self.assertEqual(ast.this, "FUNCTIONS")
+        self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
+
+    def test_show_procedures(self):
+        self.validate_identity("SHOW PROCEDURES")
+        ast = parse_one("SHOW PROCEDURES IN ACCOUNT", read="snowflake")
+        self.assertEqual(ast.this, "PROCEDURES")
+        self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
+
+    def test_show_warehouses(self):
+        self.validate_identity("SHOW WAREHOUSES")
+        ast = parse_one("SHOW WAREHOUSES", read="snowflake")
+        self.assertEqual(ast.this, "WAREHOUSES")
+
     def test_show_schemas(self):
         self.validate_identity(
             "show terse schemas in database db1 starts with 'a' limit 10 from 'b'",

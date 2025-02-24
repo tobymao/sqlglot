@@ -520,6 +520,8 @@ class Snowflake(Dialect):
         }
 
         SHOW_PARSERS = {
+            "DATABASES": _show_parser("DATABASES"),
+            "TERSE DATABASES": _show_parser("DATABASES"),
             "SCHEMAS": _show_parser("SCHEMAS"),
             "TERSE SCHEMAS": _show_parser("SCHEMAS"),
             "OBJECTS": _show_parser("OBJECTS"),
@@ -539,6 +541,9 @@ class Snowflake(Dialect):
             "COLUMNS": _show_parser("COLUMNS"),
             "USERS": _show_parser("USERS"),
             "TERSE USERS": _show_parser("USERS"),
+            "FUNCTIONS": _show_parser("FUNCTIONS"),
+            "PROCEDURES": _show_parser("PROCEDURES"),
+            "WAREHOUSES": _show_parser("WAREHOUSES"),
         }
 
         CONSTRAINT_PARSERS = {

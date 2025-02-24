@@ -87,6 +87,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
+        self.validate_identity("SELECT * FROM foo WHERE x GLOBAL NOT IN (SELECT * FROM bar)")
         self.validate_identity("POSITION(haystack, needle)")
         self.validate_identity("POSITION(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS DateTime)")

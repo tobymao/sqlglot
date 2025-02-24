@@ -79,6 +79,26 @@ class TestAthena(Validator):
             write_sql="ALTER TABLE `foo`.`bar` ADD COLUMNS (`end_ts` BIGINT)",
         )
 
+        # SHOW DDL Statements
+        self.validate_identity("SHOW COLUMNS IN foo")
+        self.validate_identity("SHOW COLUMNS IN foo.bar")
+        self.validate_identity("SHOW COLUMNS IN foo IN bar", write_sql="SHOW COLUMNS IN foo.bar")
+        self.validate_identity("SHOW CREATE TABLE foo")
+        self.validate_identity("SHOW CREATE TABLE foo.bar")
+        self.validate_identity("SHOW CREATE VIEW foo")
+        self.validate_identity("SHOW DATABASES")
+        self.validate_identity("SHOW DATABASES LIKE '.*foo'")
+        self.validate_identity("SHOW SCHEMAS")
+        self.validate_identity("SHOW SCHEMAS LIKE '.*foo'")
+        self.validate_identity("SHOW PARTITIONS foo")
+        self.validate_identity("SHOW TABLES")
+        self.validate_identity("SHOW TABLES IN foo")
+        self.validate_identity("SHOW TABLES IN foo LIKE '*bar*'")
+        self.validate_identity("SHOW TBLPROPERTIES foo")
+        self.validate_identity("SHOW VIEWS")
+        self.validate_identity("SHOW VIEWS IN foo")
+        self.validate_identity("SHOW VIEWS IN foo LIKE '*bar*'")
+
     def test_dml(self):
         self.validate_all(
             "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",

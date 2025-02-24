@@ -71,6 +71,22 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Athena.Parser], exp.Show]:
+    def _parse(self: Athena.Parser) -> exp.Show:
+        _sql = self.sql.upper()
+        # parse edge cases as commands
+        if "TBLPROPERTIES" in _sql and "(" in self.sql:
+            return self._parse_as_command(self._prev)
+        if _sql.startswith("SHOW TABLES") and "LIKE" not in _sql:
+            if "IN" in _sql and len(_sql.split()) > 4:
+                return self._parse_as_command(self._prev)
+            if "IN" not in _sql and len(_sql.split()) > 2:
+                return self._parse_as_command(self._prev)
+        return self._parse_show_athena(*args, **kwargs)
+
+    return _parse
+
+
 class Athena(Trino):
     """
     Over the years, it looks like AWS has taken various execution engines, bolted on AWS-specific modifications and then
@@ -114,6 +130,8 @@ class Athena(Trino):
             "UNLOAD": TokenType.COMMAND,
         }
 
+        COMMANDS = Trino.Tokenizer.COMMANDS - {TokenType.SHOW}
+
     class Parser(Trino.Parser):
         """
         Parse queries for the Athena Trino execution engine
@@ -122,7 +140,57 @@ class Athena(Trino):
         STATEMENT_PARSERS = {
             **Trino.Parser.STATEMENT_PARSERS,
             TokenType.USING: lambda self: self._parse_as_command(self._prev),
+            TokenType.SHOW: lambda self: self._parse_show(),
         }
+
+        SHOW_PARSERS = {
+            "COLUMNS FROM": _show_parser("COLUMNS", target="FROM"),
+            "COLUMNS IN": _show_parser("COLUMNS", target="IN"),
+            "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
+            "CREATE VIEW": _show_parser("CREATE VIEW", target=True),
+            "DATABASES": _show_parser("DATABASES"),
+            "PARTITIONS": _show_parser("PARTITIONS", target=True),
+            "SCHEMAS": _show_parser("SCHEMAS"),
+            "TABLES": _show_parser("TABLES", target="IN"),
+            "TBLPROPERTIES": _show_parser("TBLPROPERTIES", target=True),
+            "VIEWS": _show_parser("VIEWS", target="IN"),
+        }
+
+        def _parse_show_athena(
+            self,
+            this: str,
+            target: bool | str = False,
+        ) -> exp.Show:
+            if target:
+                if isinstance(target, str):
+                    self._match_text_seq(target)
+                target_id = self._parse_id_var()
+            else:
+                target_id = None
+
+            db = None
+
+            if self._match(TokenType.FROM) or self._match(TokenType.IN):
+                db = self._parse_id_var()
+            elif self._match(TokenType.DOT):
+                db = target_id
+                target_id = self._parse_id_var()
+
+            # using `rlike` for the specific commands where athena uses regex in a `LIKE`
+            _like = {"like": self._match_text_seq("LIKE") and self._parse_string()}
+            if this in ["DATABASES", "SCHEMAS", "TABLES", "VIEWS"]:
+                _like = {"rlike": _like["like"]}
+
+            # 1. if using a regular expression in `SHOW TABLES` you will need prefix with `LIKE`
+            #    to parse as a `SHOW` - this is valid, despite missing from the current docs.
+            # 2. `SHOW TBLPROPERTIES` does not currently parse optional `('property_name')`.
+            return self.expression(
+                exp.Show,
+                this=this,
+                target=target_id,
+                db=db,
+                **_like,
+            )
 
     class _HiveGenerator(Hive.Generator):
         def alter_sql(self, expression: exp.Alter) -> str:
@@ -165,3 +233,21 @@ class Athena(Trino):
                 return self._hive_generator.generate(expression, copy)
 
             return super().generate(expression, copy)
+
+        def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
+            sql = self.sql(expression, arg)
+            return f"{prefix} {sql}" if sql else ""
+
+        def show_sql(self, expression: exp.Show) -> str:
+            this = f"{expression.name}"
+            db = self.sql(expression, "db") or ""
+            target = self.sql(expression, "target") or ""
+            if db and target:
+                target = f"{db}.{target}"
+                db = ""
+            if target and this in ["COLUMNS", "TABLES", "VIEWS"]:
+                target = f"IN {target}"
+            like = self._prefixed_sql("LIKE", expression, "like")
+            rlike = self._prefixed_sql("LIKE", expression, "rlike")
+
+            return " ".join(f"SHOW {this} {target} {db} {like or rlike}".split())

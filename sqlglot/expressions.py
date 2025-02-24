@@ -1545,6 +1545,7 @@ class Show(Expression):
         "limit": False,
         "from": False,
         "like": False,
+        "rlike": False,
         "where": False,
         "db": False,
         "scope": False,

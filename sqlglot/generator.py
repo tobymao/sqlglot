@@ -4822,3 +4822,7 @@ class Generator(metaclass=_Generator):
 
     def combinedparameterizedagg_sql(self, expression: exp.CombinedParameterizedAgg) -> str:
         return self.parameterizedagg_sql(expression)
+
+    def show_sql(self, expression: exp.Show) -> str:
+        self.unsupported("Unsupported SHOW statement")
+        return ""

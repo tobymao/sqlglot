@@ -78,11 +78,14 @@ def _show_parser(
         _sql = self.sql.upper()
         # parse edge cases as commands
         if "TBLPROPERTIES" in _sql and "(" in self.sql:
+            self._retreat(1)
             return self._parse_as_command(self._prev)
         if _sql.startswith("SHOW TABLES") and "LIKE" not in _sql:
             if "IN" in _sql and len(_sql.split()) > 4:
+                self._retreat(1)
                 return self._parse_as_command(self._prev)
             if "IN" not in _sql and len(_sql.split()) > 2:
+                self._retreat(1)
                 return self._parse_as_command(self._prev)
         return self._parse_show_athena(*args, **kwargs)
 

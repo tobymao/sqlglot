@@ -1488,10 +1488,17 @@ class Generator(metaclass=_Generator):
         direction = f" {direction}" if direction else ""
         count = self.sql(expression, "count")
         count = f" {count}" if count else ""
-        if expression.args.get("percent"):
-            count = f"{count} PERCENT"
-        with_ties_or_only = "WITH TIES" if expression.args.get("with_ties") else "ONLY"
-        return f"{self.seg('FETCH')}{direction}{count} ROWS {with_ties_or_only}"
+        limit_options = self.sql(expression, "limit_options")
+        limit_options = f"{limit_options}" if limit_options else " ROWS ONLY"
+        return f"{self.seg('FETCH')}{direction}{count}{limit_options}"
+
+    def limitoptions_sql(self, expression: exp.LimitOptions) -> str:
+        percent = " PERCENT" if expression.args.get("percent") else ""
+        rows = " ROWS" if expression.args.get("rows") else ""
+        with_ties = " WITH TIES" if expression.args.get("with_ties") else ""
+        if not with_ties and rows:
+            with_ties = " ONLY"
+        return f"{percent}{rows}{with_ties}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
         if self.AGGREGATE_FILTER_SUPPORTED:
@@ -2282,9 +2289,10 @@ class Generator(metaclass=_Generator):
         args_sql = ", ".join(self.sql(e) for e in args)
         args_sql = f"({args_sql})" if top and any(not e.is_number for e in args) else args_sql
         expressions = self.expressions(expression, flat=True)
+        limit_options = self.sql(expression, "limit_options")
         expressions = f" BY {expressions}" if expressions else ""
 
-        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args_sql}{expressions}"
+        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args_sql}{limit_options}{expressions}"
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")

@@ -575,9 +575,12 @@ impl<'a> TokenizerState<'a> {
     ) -> Result<(), TokenizerError> {
         self.advance(1)?;
         let value = self.extract_value()?[2..].to_string();
-        match u64::from_str_radix(&value, radix) {
-            Ok(_) => self.add(radix_token_type, Some(value)),
-            Err(_) => self.add(self.token_types.identifier, None),
+
+        // Validate if the string consists only of valid hex digits
+        if value.chars().all(|c| c.is_digit(radix)) {
+            self.add(radix_token_type, Some(value))
+        } else {
+            self.add(self.token_types.identifier, None)
         }
     }
 

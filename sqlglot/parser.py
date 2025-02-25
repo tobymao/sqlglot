@@ -4469,10 +4469,8 @@ class Parser(metaclass=_Parser):
     def _parse_limit_options(self) -> exp.LimitOptions:
         percent = self._match(TokenType.PERCENT)
         rows = self._match_set((TokenType.ROW, TokenType.ROWS))
-        only = self._match_text_seq("ONLY")
+        self._match_text_seq("ONLY")
         with_ties = self._match_text_seq("WITH", "TIES")
-        if only and with_ties:
-            self.raise_error("Cannot specify both ONLY and WITH TIES in FETCH clause")
         return self.expression(exp.LimitOptions, percent=percent, rows=rows, with_ties=with_ties)
 
     def _parse_limit(
@@ -4483,7 +4481,6 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         if skip_limit_token or self._match(TokenType.TOP if top else TokenType.LIMIT):
             comments = self._prev_comments
-            limit_options = None
             if top:
                 limit_paren = self._match(TokenType.L_PAREN)
                 expression = self._parse_term() if limit_paren else self._parse_number()
@@ -4493,6 +4490,7 @@ class Parser(metaclass=_Parser):
 
                 limit_options = self._parse_limit_options()
             else:
+                limit_options = None
                 expression = self._parse_term()
 
             if self._match(TokenType.COMMA):

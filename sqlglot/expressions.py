@@ -2357,8 +2357,7 @@ class Fetch(Expression):
     arg_types = {
         "direction": False,
         "count": False,
-        "percent": False,
-        "with_ties": False,
+        "limit_options": False,
     }
 
 
@@ -2400,7 +2399,21 @@ class Lambda(Expression):
 
 
 class Limit(Expression):
-    arg_types = {"this": False, "expression": True, "offset": False, "expressions": False}
+    arg_types = {
+        "this": False,
+        "expression": True,
+        "offset": False,
+        "limit_options": False,
+        "expressions": False,
+    }
+
+
+class LimitOptions(Expression):
+    arg_types = {
+        "percent": False,
+        "rows": False,
+        "with_ties": False,
+    }
 
 
 class Literal(Condition):

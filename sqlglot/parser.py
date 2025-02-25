@@ -4466,6 +4466,13 @@ class Parser(metaclass=_Parser):
             exp.Ordered, this=this, desc=desc, nulls_first=nulls_first, with_fill=with_fill
         )
 
+    def _parse_limit_options(self) -> exp.LimitOptions:
+        percent = self._match(TokenType.PERCENT)
+        rows = self._match_set((TokenType.ROW, TokenType.ROWS))
+        self._match_text_seq("ONLY")
+        with_ties = self._match_text_seq("WITH", "TIES")
+        return self.expression(exp.LimitOptions, percent=percent, rows=rows, with_ties=with_ties)
+
     def _parse_limit(
         self,
         this: t.Optional[exp.Expression] = None,
@@ -4480,7 +4487,10 @@ class Parser(metaclass=_Parser):
 
                 if limit_paren:
                     self._match_r_paren()
+
+                limit_options = self._parse_limit_options()
             else:
+                limit_options = None
                 expression = self._parse_term()
 
             if self._match(TokenType.COMMA):
@@ -4495,6 +4505,7 @@ class Parser(metaclass=_Parser):
                 expression=expression,
                 offset=offset,
                 comments=comments,
+                limit_options=limit_options,
                 expressions=self._parse_limit_by(),
             )
 
@@ -4505,22 +4516,12 @@ class Parser(metaclass=_Parser):
             direction = self._prev.text.upper() if direction else "FIRST"
 
             count = self._parse_field(tokens=self.FETCH_TOKENS)
-            percent = self._match(TokenType.PERCENT)
-
-            self._match_set((TokenType.ROW, TokenType.ROWS))
-
-            only = self._match_text_seq("ONLY")
-            with_ties = self._match_text_seq("WITH", "TIES")
-
-            if only and with_ties:
-                self.raise_error("Cannot specify both ONLY and WITH TIES in FETCH clause")
 
             return self.expression(
                 exp.Fetch,
                 direction=direction,
                 count=count,
-                percent=percent,
-                with_ties=with_ties,
+                limit_options=self._parse_limit_options(),
             )
 
         return this

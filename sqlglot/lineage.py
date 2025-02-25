@@ -249,7 +249,7 @@ def to_node(
         #   * this = Identifier with the column name from dot.expression.name
         #   * table = original table reference from dot.this.table
         source_columns = set(
-            exp.Column(this=exp.Identifier(this=dot.expression.name), table=dot.this.table)
+            exp.column(dot.expression.name, table=dot.this.table)
             for dot in source_columns
             if isinstance(dot.this, exp.Column)
         )
@@ -312,8 +312,7 @@ def to_node(
             if column == value_column.name:
                 table_name = pivot.parent.this.name
                 value_column_mapping[value_column.name] = [
-                    exp.Column(this=col.this, table=exp.to_identifier(table_name))
-                    for col in unpivot_source_columns
+                    exp.column(col.this, table=table_name) for col in unpivot_source_columns
                 ]
 
         # If the current column being processed is a value column
@@ -325,9 +324,7 @@ def to_node(
             unpivot_column_mapping[name_column.name] = []
         # Other columns pass through unchanged
         else:
-            unpivot_column_mapping[column] = [
-                exp.Column(this=exp.Identifier(this=column), table=pivot.parent)
-            ]
+            unpivot_column_mapping[column] = [exp.column(str(column), table=pivot.parent.this.name)]
 
     for c in source_columns:
         table = c.table

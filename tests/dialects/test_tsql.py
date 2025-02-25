@@ -1705,6 +1705,8 @@ WHERE
                 "spark": "SELECT * FROM A LIMIT 3",
             },
         )
+        self.validate_identity("SELECT TOP 10 PERCENT")
+        self.validate_identity("SELECT TOP 10 PERCENT WITH TIES")
 
     def test_format(self):
         self.validate_identity("SELECT FORMAT(foo, 'dddd', 'de-CH')")

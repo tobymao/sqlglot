@@ -53,6 +53,7 @@ class Trino(Presto):
                 option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
                 json_query=True,
                 quote=self._parse_json_query_quote(),
+                on_condition=self._parse_on_condition(),
             )
 
     class Generator(Presto.Generator):
@@ -70,7 +71,6 @@ class Trino(Presto):
             exp.Merge: merge_without_target_sql,
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
-            exp.JSONExtract: lambda self, e: self.jsonextract_sql(e),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -90,7 +90,14 @@ class Trino(Presto):
             quote = self.sql(expression, "quote")
             quote = f" {quote}" if quote else ""
 
-            return self.func("JSON_QUERY", expression.this, json_path + option + quote)
+            on_condition = self.sql(expression, "on_condition")
+            on_condition = f" {on_condition}" if on_condition else ""
+
+            return self.func(
+                "JSON_QUERY",
+                expression.this,
+                json_path + option + quote + on_condition,
+            )
 
         def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
             this = expression.this

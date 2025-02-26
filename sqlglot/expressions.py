@@ -6211,6 +6211,7 @@ class JSONExtract(Binary, Func):
         "json_query": False,
         "option": False,
         "quote": False,
+        "on_condition": False,
     }
     _sql_names = ["JSON_EXTRACT"]
     is_var_len_args = True

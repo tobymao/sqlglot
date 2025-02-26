@@ -439,6 +439,11 @@ class MySQL(Dialect):
             "MODIFY": lambda self: self._parse_alter_table_alter(),
         }
 
+        ALTER_ALTER_PARSERS = {
+            **parser.Parser.ALTER_ALTER_PARSERS,
+            "INDEX": lambda self: self._parse_alter_table_alter_index(),
+        }
+
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "FULLTEXT",
@@ -692,6 +697,18 @@ class MySQL(Dialect):
                 returning=returning,
                 on_condition=self._parse_on_condition(),
             )
+
+        def _parse_alter_table_alter_index(self) -> exp.AlterIndex:
+            index = self._parse_field(any_token=True)
+
+            if self._match_text_seq("VISIBLE"):
+                visible = True
+            elif self._match_text_seq("INVISIBLE"):
+                visible = False
+            else:
+                visible = None
+
+            return self.expression(exp.AlterIndex, this=index, visible=visible)
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False

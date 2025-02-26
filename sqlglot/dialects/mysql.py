@@ -698,7 +698,7 @@ class MySQL(Dialect):
                 on_condition=self._parse_on_condition(),
             )
 
-        def _parse_alter_table_alter_index(self) -> t.Optional[exp.Expression]:
+        def _parse_alter_table_alter_index(self) -> exp.AlterIndex:
             index = self._parse_field(any_token=True)
 
             if self._match_text_seq("VISIBLE"):

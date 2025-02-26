@@ -101,6 +101,7 @@ def qualify_columns(
                 )
             qualify_outputs(scope)
 
+        _expand_distinct_on(scope, dialect)
         _expand_group_by(scope, dialect)
         _expand_order_by(scope, resolver)
 
@@ -357,6 +358,18 @@ def _expand_group_by(scope: Scope, dialect: DialectType) -> None:
 
     group.set("expressions", _expand_positional_references(scope, group.expressions, dialect))
     expression.set("group", group)
+
+
+def _expand_distinct_on(scope: Scope, dialect: DialectType) -> None:
+    expression = scope.expression
+
+    distinct = expression.args.get("distinct")
+    on = distinct.args.get("on") if isinstance(distinct, exp.Distinct) else None
+    if not on:
+        return
+
+    on.set("expressions", _expand_positional_references(scope, on.expressions, dialect))
+    on.transform(lambda n: n.this if isinstance(n, exp.Column) and not n.table else n, copy=False)
 
 
 def _expand_order_by(scope: Scope, resolver: Resolver) -> None:

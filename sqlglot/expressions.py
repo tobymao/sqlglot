@@ -4852,14 +4852,6 @@ class Connector(Binary):
     pass
 
 
-class And(Connector):
-    pass
-
-
-class Or(Connector):
-    pass
-
-
 class BitwiseAnd(Binary):
     pass
 
@@ -5986,6 +5978,14 @@ class Hex(Func):
 
 
 class LowerHex(Hex):
+    pass
+
+
+class And(Connector, Func):
+    pass
+
+
+class Or(Connector, Func):
     pass
 
 

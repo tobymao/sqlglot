@@ -29,6 +29,8 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("SELECT 1 OR (1 = 2)")
+        self.validate_identity("SELECT 1 AND (1 = 2)")
         self.validate_identity("SELECT json.a.:Int64")
         self.validate_identity("SELECT json.a.:JSON.b.:Int64")
         self.validate_identity("WITH arrayJoin([(1, [2, 3])]) AS arr SELECT arr")
@@ -163,6 +165,14 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             "SELECT generate_series FROM generate_series(0, 10) AS g(x)",
+        )
+        self.validate_identity(
+            "SELECT and(1, 2)",
+            "SELECT 1 AND 2",
+        )
+        self.validate_identity(
+            "SELECT or(1, 2)",
+            "SELECT 1 OR 2",
         )
         self.validate_identity(
             "SELECT generate_series FROM generate_series(0, 10) AS g",

@@ -150,6 +150,8 @@ class TestMySQL(Validator):
                 "sqlite": "CREATE TABLE x (id INTEGER NOT NULL AUTOINCREMENT PRIMARY KEY)",
             },
         )
+        self.validate_identity("ALTER TABLE t ALTER INDEX i INVISIBLE")
+        self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
 
     def test_identity(self):
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")

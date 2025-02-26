@@ -3304,6 +3304,14 @@ class Generator(metaclass=_Generator):
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
+    def alterindex_sql(self, expression: exp.AlterIndex) -> str:
+        this = self.sql(expression, "this")
+
+        visible = expression.args.get("visible")
+        visible_sql = "VISIBLE" if visible else "INVISIBLE"
+
+        return f"ALTER INDEX {this} {visible_sql}"
+
     def alterdiststyle_sql(self, expression: exp.AlterDistStyle) -> str:
         this = self.sql(expression, "this")
         if not isinstance(expression.this, exp.Var):

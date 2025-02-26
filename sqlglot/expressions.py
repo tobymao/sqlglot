@@ -1708,10 +1708,7 @@ class AlterColumn(Expression):
 
 # https://dev.mysql.com/doc/refman/8.0/en/invisible-indexes.html
 class AlterIndex(Expression):
-    arg_types = {
-        "this": True,
-        "visible": True,
-    }
+    arg_types = {"this": True, "visible": True}
 
 
 # https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TABLE.html

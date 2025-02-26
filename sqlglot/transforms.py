@@ -914,7 +914,7 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 existing_join.set("on", exp.and_(existing_join.args["on"], join_predicate))
             else:
                 new_joins[join_this.alias_or_name] = exp.Join(
-                    this=join_this, on=join_predicate, kind="LEFT"
+                    this=join_this.copy(), on=join_predicate.copy(), kind="LEFT"
                 )
 
             # If the parent of the target predicate is a binary node, then it now has only one child

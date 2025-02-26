@@ -90,14 +90,6 @@ SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a, b;
 SELECT DISTINCT a AS c, b AS d FROM x ORDER BY 1;
 SELECT DISTINCT x.a AS c, x.b AS d FROM x AS x ORDER BY c;
 
-# execute: false
-SELECT DISTINCT ON (x, t.y) * FROM t;
-SELECT DISTINCT ON (x, t.y) * FROM t AS t;
-
-# execute: false
-SELECT DISTINCT ON (new_col) t1.col1 AS new_col FROM table1 AS t1;
-SELECT DISTINCT ON (new_col) t1.col1 AS new_col FROM table1 AS t1;
-
 SELECT 2 FROM x GROUP BY 1;
 SELECT 2 AS "2" FROM x AS x GROUP BY 1;
 

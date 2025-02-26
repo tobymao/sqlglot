@@ -479,8 +479,7 @@ class ClickHouse(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
-            TokenType.GLOBAL: lambda self, this: self._match(TokenType.IN)
-            and self._parse_in(this, is_global=True),
+            TokenType.GLOBAL: lambda self, this: self._parse_global_in(this),
         }
 
         # The PLACEHOLDER entry is popped because 1) it doesn't affect Clickhouse (it corresponds to
@@ -633,6 +632,11 @@ class ClickHouse(Dialect):
             this = super()._parse_in(this)
             this.set("is_global", is_global)
             return this
+
+        def _parse_global_in(self, this: t.Optional[exp.Expression]) -> exp.Not | exp.In:
+            is_negated = self._match(TokenType.NOT)
+            this = self._match(TokenType.IN) and self._parse_in(this, is_global=True)
+            return self.expression(exp.Not, this=this) if is_negated else this
 
         def _parse_table(
             self,
@@ -1290,3 +1294,18 @@ class ClickHouse(Dialect):
                 is_sql = self.wrap(is_sql)
 
             return is_sql
+
+        def in_sql(self, expression: exp.In) -> str:
+            in_sql = super().in_sql(expression)
+
+            if isinstance(expression.parent, exp.Not) and expression.args.get("is_global"):
+                in_sql = in_sql.replace("GLOBAL IN", "GLOBAL NOT IN", 1)
+
+            return in_sql
+
+        def not_sql(self, expression: exp.Not) -> str:
+            if isinstance(expression.this, exp.In) and expression.this.args.get("is_global"):
+                # let `GLOBAL IN` child interpose `NOT`
+                return self.sql(expression, "this")
+
+            return super().not_sql(expression)

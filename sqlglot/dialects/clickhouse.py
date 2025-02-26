@@ -440,6 +440,8 @@ class ClickHouse(Dialect):
 
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
+            TokenType.AND,
+            TokenType.OR,
             TokenType.SET,
         }
 

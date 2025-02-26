@@ -701,11 +701,12 @@ class MySQL(Dialect):
         def _parse_alter_table_alter_index(self) -> t.Optional[exp.Expression]:
             index = self._parse_field(any_token=True)
 
-            visible = None
             if self._match_text_seq("VISIBLE"):
                 visible = True
             elif self._match_text_seq("INVISIBLE"):
                 visible = False
+            else:
+                visible = None
 
             return self.expression(exp.AlterIndex, this=index, visible=visible)
 

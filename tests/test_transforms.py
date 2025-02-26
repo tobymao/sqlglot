@@ -260,7 +260,7 @@ class TestTransforms(unittest.TestCase):
             # if multiple conditions, we check that after transformations the tree remains consistent
             s = "select a.id from a, b where a.id = b.id (+) AND b.d (+) = const"
             tree = parse_one(s, dialect=dialect)
-            assert ([type(t.parent.parent) for t in tree.find_all(exp.Table)]) == [
+            assert ([type(t.parent_select) for t in tree.find_all(exp.Table)]) == [
                 exp.Select,
                 exp.Select,
             ]

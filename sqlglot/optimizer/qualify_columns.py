@@ -101,9 +101,11 @@ def qualify_columns(
                 )
             qualify_outputs(scope)
 
-        _expand_distinct_on(scope, dialect)
         _expand_group_by(scope, dialect)
-        _expand_order_by(scope, resolver)
+
+        # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
+        # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
+        _expand_order_by_and_distinct_on(scope, resolver)
 
         if dialect == "bigquery":
             annotator.annotate_scope(scope)
@@ -360,48 +362,41 @@ def _expand_group_by(scope: Scope, dialect: DialectType) -> None:
     expression.set("group", group)
 
 
-def _expand_distinct_on(scope: Scope, dialect: DialectType) -> None:
-    expression = scope.expression
+def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+    for modifier_key in ("order", "distinct"):
+        modifier = scope.expression.args.get(modifier_key)
+        if isinstance(modifier, exp.Distinct):
+            modifier = modifier.args.get("on")
 
-    distinct = expression.args.get("distinct")
-    on = distinct.args.get("on") if isinstance(distinct, exp.Distinct) else None
-    if not on:
-        return
+        if not isinstance(modifier, exp.Expression):
+            continue
 
-    on.set("expressions", _expand_positional_references(scope, on.expressions, dialect))
-    on.transform(lambda n: n.this if isinstance(n, exp.Column) and not n.table else n, copy=False)
+        modifier_expressions = modifier.expressions
+        if modifier_key == "order":
+            modifier_expressions = [ordered.this for ordered in modifier_expressions]
 
+        for original, expanded in zip(
+            modifier_expressions,
+            _expand_positional_references(
+                scope, modifier_expressions, resolver.schema.dialect, alias=True
+            ),
+        ):
+            for agg in original.find_all(exp.AggFunc):
+                for col in agg.find_all(exp.Column):
+                    if not col.table:
+                        col.set("table", resolver.get_table(col.name))
 
-def _expand_order_by(scope: Scope, resolver: Resolver) -> None:
-    order = scope.expression.args.get("order")
-    if not order:
-        return
+            original.replace(expanded)
 
-    ordereds = order.expressions
-    for ordered, new_expression in zip(
-        ordereds,
-        _expand_positional_references(
-            scope, (o.this for o in ordereds), resolver.schema.dialect, alias=True
-        ),
-    ):
-        for agg in ordered.find_all(exp.AggFunc):
-            for col in agg.find_all(exp.Column):
-                if not col.table:
-                    col.set("table", resolver.get_table(col.name))
+        if scope.expression.args.get("group"):
+            selects = {s.this: exp.column(s.alias_or_name) for s in scope.expression.selects}
 
-        ordered.set("this", new_expression)
-
-    if scope.expression.args.get("group"):
-        selects = {s.this: exp.column(s.alias_or_name) for s in scope.expression.selects}
-
-        for ordered in ordereds:
-            ordered = ordered.this
-
-            ordered.replace(
-                exp.to_identifier(_select_by_pos(scope, ordered).alias)
-                if ordered.is_int
-                else selects.get(ordered, ordered)
-            )
+            for expression in modifier_expressions:
+                expression.replace(
+                    exp.to_identifier(_select_by_pos(scope, expression).alias)
+                    if expression.is_int
+                    else selects.get(expression, expression)
+                )
 
 
 def _expand_positional_references(

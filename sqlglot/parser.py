@@ -5048,14 +5048,19 @@ class Parser(metaclass=_Parser):
                 func_or_ident = self._parse_function(anonymous=True) or self._parse_id_var(
                     any_token=False, tokens=(TokenType.VAR, TokenType.ANY)
                 )
-                if not func_or_ident or not self._match(TokenType.COMMA):
+                if not func_or_ident:
                     return None
-                expressions = self._parse_csv(
-                    lambda: self._parse_types(
-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                expressions = [func_or_ident]
+                if self._match(TokenType.COMMA):
+                    expressions.extend(
+                        self._parse_csv(
+                            lambda: self._parse_types(
+                                check_func=check_func,
+                                schema=schema,
+                                allow_identifiers=allow_identifiers,
+                            )
+                        )
                     )
-                )
-                expressions.insert(0, func_or_ident)
             else:
                 expressions = self._parse_csv(self._parse_type_size)
 

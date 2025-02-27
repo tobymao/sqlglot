@@ -152,6 +152,8 @@ class TestMySQL(Validator):
         )
         self.validate_identity("ALTER TABLE t ALTER INDEX i INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
+        self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
+        self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
 
     def test_identity(self):
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")

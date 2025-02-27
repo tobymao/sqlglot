@@ -7114,6 +7114,12 @@ class Parser(metaclass=_Parser):
                 this=column,
                 allow_null=False,
             )
+
+        if self._match_text_seq("SET", "VISIBLE"):
+            return self.expression(exp.AlterColumn, this=column, visible="VISIBLE")
+        if self._match_text_seq("SET", "INVISIBLE"):
+            return self.expression(exp.AlterColumn, this=column, visible="INVISIBLE")
+
         self._match_text_seq("SET", "DATA")
         self._match_text_seq("TYPE")
         return self.expression(

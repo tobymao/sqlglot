@@ -766,6 +766,10 @@ WITH RECURSIVE t(c) AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t 
 WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT c + 1 AS c FROM t WHERE c <= 10) SELECT c FROM t;
 WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHERE t.c <= 10) SELECT t.c AS c FROM t AS t;
 
+# title: expand DISTINCT ON ordinals / projection names
+SELECT DISTINCT ON (new_col, b + 1, 1) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
+SELECT DISTINCT ON (new_col, t1.b + 1, t1.a) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
+
 --------------------------------------
 -- Wrapped tables / join constructs
 --------------------------------------

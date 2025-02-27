@@ -1703,6 +1703,7 @@ class AlterColumn(Expression):
         "drop": False,
         "comment": False,
         "allow_null": False,
+        "visible": False,
     }
 
 

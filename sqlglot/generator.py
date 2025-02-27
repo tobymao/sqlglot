@@ -3292,6 +3292,10 @@ class Generator(metaclass=_Generator):
         if comment:
             return f"ALTER COLUMN {this} COMMENT {comment}"
 
+        visible = expression.args.get("visible")
+        if visible:
+            return f"ALTER COLUMN {this} SET {visible}"
+
         allow_null = expression.args.get("allow_null")
         drop = expression.args.get("drop")
 

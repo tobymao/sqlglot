@@ -1116,13 +1116,15 @@ LIFETIME(MIN 0 MAX 0)""",
             CREATE TABLE t (
                 a AggregateFunction(quantiles(0.5, 0.9), UInt64),
                 b AggregateFunction(quantiles, UInt64),
-                c SimpleAggregateFunction(sum, Float64)
+                c SimpleAggregateFunction(sum, Float64),
+                d AggregateFunction(count)
             )""",
             write={
                 "clickhouse": """CREATE TABLE t (
   a AggregateFunction(quantiles(0.5, 0.9), UInt64),
   b AggregateFunction(quantiles, UInt64),
-  c SimpleAggregateFunction(sum, Float64)
+  c SimpleAggregateFunction(sum, Float64),
+  d AggregateFunction(count)
 )"""
             },
             pretty=True,

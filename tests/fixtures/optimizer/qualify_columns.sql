@@ -768,7 +768,7 @@ WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHE
 
 # title: expand DISTINCT ON ordinals / projection names
 SELECT DISTINCT ON (new_col, b + 1, 1) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
-SELECT DISTINCT ON (new_col, t1.b + 1, t1.a) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
+SELECT DISTINCT ON (new_col, t1.b + 1, new_col) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 
 --------------------------------------
 -- Wrapped tables / join constructs

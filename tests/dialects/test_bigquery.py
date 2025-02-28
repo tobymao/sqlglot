@@ -865,6 +865,7 @@ LANGUAGE js AS
                 "presto": "SHA256(x)",
                 "trino": "SHA256(x)",
                 "postgres": "SHA256(x)",
+                "duckdb": "SHA256(x)",
             },
             write={
                 "bigquery": "SHA256(x)",
@@ -875,6 +876,7 @@ LANGUAGE js AS
                 "redshift": "SHA2(x, 256)",
                 "trino": "SHA256(x)",
                 "duckdb": "SHA256(x)",
+                "snowflake": "SHA2(x, 256)",
             },
         )
         self.validate_all(

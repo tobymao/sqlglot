@@ -240,10 +240,27 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
-        with self.assertRaises(ValueError):
+        self._validate_delta_only(
             diff_delta_only(
                 expr_src, expr_tgt, matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)]
-            )
+            ),
+            [
+                Insert(expression=exp.Literal.number(2)),
+                Insert(expression=exp.Literal.number(3)),
+                Insert(expression=exp.Literal.number(4)),
+            ],
+        )
+
+        expr_tgt.selects[0].replace(expr_src.selects[0])
+
+        self._validate_delta_only(
+            diff_delta_only(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt)]),
+            [
+                Insert(expression=exp.Literal.number(2)),
+                Insert(expression=exp.Literal.number(3)),
+                Insert(expression=exp.Literal.number(4)),
+            ],
+        )
 
     def test_identifier(self):
         expr_src = parse_one("SELECT a FROM tbl")

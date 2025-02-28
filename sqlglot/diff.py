@@ -68,7 +68,6 @@ def diff(
     target: exp.Expression,
     matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
     delta_only: bool = False,
-    copy: bool = True,
     **kwargs: t.Any,
 ) -> t.List[Edit]:
     """
@@ -97,9 +96,6 @@ def diff(
             Note: expression references in this list must refer to the same node objects that are
             referenced in the source / target trees.
         delta_only: excludes all `Keep` nodes from the diff.
-        copy: whether to copy the input expressions.
-            Note: if this is set to false, the caller must ensure that there are no shared references
-            in the two trees, otherwise the diffing algorithm may produce unexpected behavior.
         kwargs: additional arguments to pass to the ChangeDistiller instance.
 
     Returns:
@@ -108,44 +104,54 @@ def diff(
         expression tree into the target one.
     """
     matchings = matchings or []
-    matching_ids = {id(n) for pair in matchings for n in pair}
 
     def compute_node_mappings(
-        original: exp.Expression, copy: exp.Expression
+        old_nodes: tuple[exp.Expression, ...], new_nodes: tuple[exp.Expression, ...]
     ) -> t.Dict[int, exp.Expression]:
         node_mapping = {}
-        for old_node, new_node in zip(
-            reversed(tuple(original.walk())), reversed(tuple(copy.walk()))
-        ):
-            # We cache the hash of each new node here to speed up equality comparisons. If the input
-            # trees aren't copied, these hashes will be evicted before returning the edit script.
+        for old_node, new_node in zip(reversed(old_nodes), reversed(new_nodes)):
             new_node._hash = hash(new_node)
-
-            old_node_id = id(old_node)
-            if old_node_id in matching_ids:
-                node_mapping[old_node_id] = new_node
+            node_mapping[id(old_node)] = new_node
 
         return node_mapping
+
+    # if the source and target have any shared objects, that means there's an issue with the ast
+    # the algorithm won't work because the parent / hierarchies will be inaccurate
+    source_nodes = tuple(source.walk())
+    target_nodes = tuple(target.walk())
+    source_ids = {id(n) for n in source_nodes}
+    target_ids = {id(n) for n in target_nodes}
+
+    copy = (
+        len(source_nodes) != len(source_ids)
+        or len(target_nodes) != len(target_ids)
+        or source_ids & target_ids
+    )
 
     source_copy = source.copy() if copy else source
     target_copy = target.copy() if copy else target
 
-    node_mappings = {
-        **compute_node_mappings(source, source_copy),
-        **compute_node_mappings(target, target_copy),
-    }
-    matchings_copy = [(node_mappings[id(s)], node_mappings[id(t)]) for s, t in matchings]
+    try:
+        # We cache the hash of each new node here to speed up equality comparisons. If the input
+        # trees aren't copied, these hashes will be evicted before returning the edit script.
+        if copy and matchings:
+            source_mapping = compute_node_mappings(source_nodes, tuple(source_copy.walk()))
+            target_mapping = compute_node_mappings(target_nodes, tuple(target_copy.walk()))
+            matchings = [(source_mapping[id(s)], target_mapping[id(t)]) for s, t in matchings]
+        else:
+            for node in chain(reversed(source_nodes), reversed(target_nodes)):
+                node._hash = hash(node)
 
-    edit_script = ChangeDistiller(**kwargs).diff(
-        source_copy,
-        target_copy,
-        matchings=matchings_copy,
-        delta_only=delta_only,
-    )
-
-    if not copy:
-        for node in chain(source.walk(), target.walk()):
-            node._hash = None
+        edit_script = ChangeDistiller(**kwargs).diff(
+            source_copy,
+            target_copy,
+            matchings=matchings,
+            delta_only=delta_only,
+        )
+    finally:
+        if not copy:
+            for node in chain(source_nodes, target_nodes):
+                node._hash = None
 
     return edit_script
 
@@ -186,8 +192,6 @@ class ChangeDistiller:
     ) -> t.List[Edit]:
         matchings = matchings or []
         pre_matched_nodes = {id(s): id(t) for s, t in matchings}
-        if len({n for pair in pre_matched_nodes.items() for n in pair}) != 2 * len(matchings):
-            raise ValueError("Each node can be referenced at most once in the list of matchings")
 
         self._source = source
         self._target = target

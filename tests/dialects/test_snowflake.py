@@ -2370,11 +2370,22 @@ SINGLE = TRUE""",
         )
 
     def test_put_to_stage(self):
-        def _test(expression: str, file_url: str, stage_ref: str):
+        def _test(
+            expression: str, file_url: str, stage_ref: str, props: dict = None
+        ) -> exp.Expression:
             ast = parse_one(expression, read="snowflake")
-            assert isinstance(ast, exp.Put)
-            assert ast.this == exp.Var(this=file_url)
-            assert ast.args["target"] == exp.Var(this=stage_ref)
+            self.assertIsInstance(ast, exp.Put)
+            self.assertEqual(ast.this, exp.Var(this=file_url))
+            self.assertEqual(ast.args["target"], exp.Var(this=stage_ref))
+            properties = ast.args.get("properties")
+            props_dict = {}
+            if properties:
+                props_dict = {
+                    prop.this.this: prop.args["value"].this for prop in properties.expressions
+                }
+            if props:
+                self.assertEqual(props, props_dict)
+            return ast
 
         # PUT with verbatim file path and stage (unquoted)
         _test("PUT file:///tmp/my.txt @stage1/folder", "file:///tmp/my.txt", "@stage1/folder")
@@ -2383,6 +2394,25 @@ SINGLE = TRUE""",
 
         # PUT with file path and stage ref containing spaces (wrapped in single quotes)
         _test("PUT 'file://my file.txt' '@s1/my folder'", "file://my file.txt", "@s1/my folder")
+
+        # expression with additional properties
+        _test(
+            "PUT file:///tmp/my.txt @stage1/folder PARALLEL = 1 AUTO_COMPRESS=false source_compression=gzip OVERWRITE=TRUE",
+            "file:///tmp/my.txt",
+            "@stage1/folder",
+            {
+                "PARALLEL": "1",
+                "AUTO_COMPRESS": False,
+                "source_compression": "gzip",
+                "OVERWRITE": True,
+            },
+        )
+
+        # validate identity for different args and properties
+        self.validate_identity("PUT file:///dir/tmp.csv @s1/test")
+        self.validate_identity(
+            "PUT file:///dir/tmp.csv @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE"
+        )
 
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")

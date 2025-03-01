@@ -810,7 +810,8 @@ class Snowflake(Dialect):
             self._match(TokenType.PUT)
             source = self._parse_location_path()
             target = self._parse_location_path()
-            return self.expression(exp.Put, this=source, target=target)
+            props = self._parse_properties()
+            return self.expression(exp.Put, this=source, target=target, properties=props)
 
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
@@ -1286,4 +1287,6 @@ class Snowflake(Dialect):
             return super().select_sql(expression)
 
         def put_sql(self, expression: exp.Put) -> str:
-            return f"PUT {expression.this} {expression.args['target']}"
+            props = expression.args.get("properties")
+            props_sql = self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
+            return f"PUT {expression.this} {expression.args['target']}{props_sql}"

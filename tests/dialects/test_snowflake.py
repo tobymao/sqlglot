@@ -2370,15 +2370,17 @@ SINGLE = TRUE""",
         )
 
     def test_put_to_stage(self):
-        ast = parse_one("PUT 'file:///tmp/my.txt' '@stage1/folder'", read="snowflake")
-        assert isinstance(ast, exp.Put)
-        assert ast.this == exp.Var(this="file:///tmp/my.txt")
-        assert ast.args["target"] == exp.Var(this="@stage1/folder")
-
+        # PUT with verbatim file path and stage (unquoted)
         ast = parse_one("PUT file:///tmp/my.txt @stage1/folder", read="snowflake")
         assert isinstance(ast, exp.Put)
         assert ast.this == exp.Var(this="file:///tmp/my.txt")
         assert ast.args["target"] == exp.Var(this="@stage1/folder")
+
+        # PUT with file path and stage ref containing spaces (wrapped in single quotes)
+        ast = parse_one("PUT 'file:///tmp/my file.txt' '@stage1/my folder'", read="snowflake")
+        assert isinstance(ast, exp.Put)
+        assert ast.this == exp.Var(this="file:///tmp/my file.txt")
+        assert ast.args["target"] == exp.Var(this="@stage1/my folder")
 
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")

@@ -808,29 +808,9 @@ class Snowflake(Dialect):
 
         def _parse_put(self) -> exp.Put:
             self._match(TokenType.PUT)
-
-            # source = self._parse_url_verbatim_or_as_string()
             source = self._parse_location_path()
             target = self._parse_location_path()
-            # target = self._parse_url_verbatim_or_as_string()
-
-            return self.expression(
-                exp.Put,
-                this=source,
-                target=target,
-            )
-
-        # def _parse_url_verbatim_or_as_string(self) -> t.Optional[exp.Expression]:
-        #     string = self._parse_string()
-        #     if isinstance(string, exp.Literal) and "://" in string.this:
-        #         return string
-        #     return self._parse_url()
-
-        # def _parse_url(self) -> t.Optional[exp.Identifier]:
-        #     # token = self._match(TokenType.URL)
-        #     # print(self._next, value)
-        #     value = self._parse_var()
-        #     return value
+            return self.expression(exp.Put, this=source, target=target)
 
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)

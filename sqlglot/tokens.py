@@ -524,7 +524,6 @@ class _Tokenizer(type):
         if klass.HINT_START in klass.KEYWORDS:
             klass._COMMENTS[klass.HINT_START] = "*/"
 
-        print("!klass.KEYWORDS", list(klass.KEYWORDS.keys()))
         klass._KEYWORD_TRIE = new_trie(
             key.upper()
             for key in (
@@ -1442,20 +1441,18 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_url(self) -> bool:
         start = self._current
-        end = -1
-        for idx in range(start, len(self.sql)):
+        end = self.size
+        for idx in range(start, self.size):
             char = self.sql[idx]
             if char.isspace():
                 end = idx
                 break
 
-        if end < 0:
-            return False
-
-        text = self.sql[start - 1: end]
-        if "://" in text:
+        text = self.sql[start - 1 : end]
+        # check if this text token is a verbatim URL like `file://my.txt`
+        if not text.startswith("'") and "://" in text:
             self._add(TokenType.URL, text)
-            self._advance(len(text))
+            self._advance(len(text) - 1)
             return True
         return False
 

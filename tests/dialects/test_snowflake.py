@@ -1029,7 +1029,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
+        self.validate_identity("PUT file:///dir/tmp.csv @%table")
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
@@ -2370,17 +2370,19 @@ SINGLE = TRUE""",
         )
 
     def test_put_to_stage(self):
+        def _test(expression: str, file_url: str, stage_ref: str):
+            ast = parse_one(expression, read="snowflake")
+            assert isinstance(ast, exp.Put)
+            assert ast.this == exp.Var(this=file_url)
+            assert ast.args["target"] == exp.Var(this=stage_ref)
+
         # PUT with verbatim file path and stage (unquoted)
-        ast = parse_one("PUT file:///tmp/my.txt @stage1/folder", read="snowflake")
-        assert isinstance(ast, exp.Put)
-        assert ast.this == exp.Var(this="file:///tmp/my.txt")
-        assert ast.args["target"] == exp.Var(this="@stage1/folder")
+        _test("PUT file:///tmp/my.txt @stage1/folder", "file:///tmp/my.txt", "@stage1/folder")
+        # expression with semicolon in the end
+        _test("PUT file:///tmp/my.txt @stage1/folder;", "file:///tmp/my.txt", "@stage1/folder")
 
         # PUT with file path and stage ref containing spaces (wrapped in single quotes)
-        ast = parse_one("PUT 'file:///tmp/my file.txt' '@stage1/my folder'", read="snowflake")
-        assert isinstance(ast, exp.Put)
-        assert ast.this == exp.Var(this="file:///tmp/my file.txt")
-        assert ast.args["target"] == exp.Var(this="@stage1/my folder")
+        _test("PUT 'file://my file.txt' '@s1/my folder'", "file://my file.txt", "@s1/my folder")
 
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")

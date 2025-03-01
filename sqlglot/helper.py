@@ -19,6 +19,7 @@ if t.TYPE_CHECKING:
 
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
+URL_PATTERN = re.compile(r"\w+://.+")
 PYTHON_VERSION = sys.version_info[:2]
 logger = logging.getLogger("sqlglot")
 
@@ -195,6 +196,11 @@ def apply_index_offset(
 def camel_to_snake_case(name: str) -> str:
     """Converts `name` from camelCase to snake_case and returns the result."""
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
+
+
+def is_url_string(string: str) -> bool:
+    """Determine whether the given string is a URL, e.g., `file://my.txt` or `http://example.com`"""
+    return bool(URL_PATTERN.match(string))
 
 
 def while_changing(expression: Expression, func: t.Callable[[Expression], E]) -> E:

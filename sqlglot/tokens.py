@@ -104,6 +104,7 @@ class TokenType(AutoName):
     RAW_STRING = auto()
     HEREDOC_STRING = auto()
     UNICODE_STRING = auto()
+    URL = auto()
 
     # types
     BIT = auto()
@@ -355,6 +356,7 @@ class TokenType(AutoName):
     PROCEDURE = auto()
     PROPERTIES = auto()
     PSEUDO_TYPE = auto()
+    PUT = auto()
     QUALIFY = auto()
     QUOTE = auto()
     RANGE = auto()
@@ -522,6 +524,7 @@ class _Tokenizer(type):
         if klass.HINT_START in klass.KEYWORDS:
             klass._COMMENTS[klass.HINT_START] = "*/"
 
+        print("!klass.KEYWORDS", list(klass.KEYWORDS.keys()))
         klass._KEYWORD_TRIE = new_trie(
             key.upper()
             for key in (
@@ -1224,6 +1227,9 @@ class Tokenizer(metaclass=_Tokenizer):
             self._add(self.SINGLE_TOKENS[self._char], text=self._char)
             return
 
+        if self._scan_url():
+            return
+
         self._scan_var()
 
     def _scan_comment(self, comment_start: str) -> bool:
@@ -1433,6 +1439,25 @@ class Tokenizer(metaclass=_Tokenizer):
             if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
             else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
         )
+
+    def _scan_url(self) -> bool:
+        start = self._current
+        end = -1
+        for idx in range(start, len(self.sql)):
+            char = self.sql[idx]
+            if char.isspace():
+                end = idx
+                break
+
+        if end < 0:
+            return False
+
+        text = self.sql[start - 1: end]
+        if "://" in text:
+            self._add(TokenType.URL, text)
+            self._advance(len(text))
+            return True
+        return False
 
     def _extract_string(
         self,

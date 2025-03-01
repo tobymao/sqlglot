@@ -2369,6 +2369,17 @@ SINGLE = TRUE""",
             """COPY INTO 's3://example/contacts.csv' FROM "db"."tbl" STORAGE_INTEGRATION = "PROD_S3_SIDETRADE_INTEGRATION" FILE_FORMAT = (FORMAT_NAME="my_csv_format" TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') MATCH_BY_COLUMN_NAME = CASE_SENSITIVE OVERWRITE = TRUE SINGLE = TRUE INCLUDE_METADATA = ("col1" = "METADATA$START_SCAN_TIME")""",
         )
 
+    def test_put_to_stage(self):
+        ast = parse_one("PUT 'file:///tmp/my.txt' '@stage1/folder'", read="snowflake")
+        assert isinstance(ast, exp.Put)
+        assert ast.this == exp.Var(this="file:///tmp/my.txt")
+        assert ast.args["target"] == exp.Var(this="@stage1/folder")
+
+        ast = parse_one("PUT file:///tmp/my.txt @stage1/folder", read="snowflake")
+        assert isinstance(ast, exp.Put)
+        assert ast.this == exp.Var(this="file:///tmp/my.txt")
+        assert ast.args["target"] == exp.Var(this="@stage1/folder")
+
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")
         self.validate_identity("SELECT $1.elem")

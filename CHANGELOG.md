@@ -1,6 +1,41 @@
 Changelog
 =========
 
+## [v26.8.0] - 2025-03-03
+### :boom: BREAKING CHANGES
+- due to [`596b66f`](https://github.com/tobymao/sqlglot/commit/596b66fc289140109db8f689c6e84264d643a47a) - add support for and/2 and or/2 functions *(PR [#4806](https://github.com/tobymao/sqlglot/pull/4806) by [@georgesittas](https://github.com/georgesittas))*:
+
+  add support for and/2 and or/2 functions (#4806)
+
+- due to [`eae860c`](https://github.com/tobymao/sqlglot/commit/eae860ce5b59b9e0b791fe79686899efb83df1dd) - expand DISTINCT ON expressions like we do for GROUP/ORDER by *(PR [#4807](https://github.com/tobymao/sqlglot/pull/4807) by [@georgesittas](https://github.com/georgesittas))*:
+
+  expand DISTINCT ON expressions like we do for GROUP/ORDER by (#4807)
+
+- due to [`83e6a87`](https://github.com/tobymao/sqlglot/commit/83e6a87f8d233eac6d3bcd3a49451a14dc10e06e) - Parse SHA256 *(PR [#4816](https://github.com/tobymao/sqlglot/pull/4816) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Parse SHA256 (#4816)
+
+
+### :sparkles: New Features
+- [`50539ce`](https://github.com/tobymao/sqlglot/commit/50539ced46de3949f6a70acdab86129fb50c9385) - **trino**: add support for ON ... ERROR/NULL syntax for JSON_QUERY *(PR [#4805](https://github.com/tobymao/sqlglot/pull/4805) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3905](https://github.com/TobikoData/sqlmesh/issues/3905) opened by [@darkcofy](https://github.com/darkcofy)*
+- [`596b66f`](https://github.com/tobymao/sqlglot/commit/596b66fc289140109db8f689c6e84264d643a47a) - **clickhouse**: add support for and/2 and or/2 functions *(PR [#4806](https://github.com/tobymao/sqlglot/pull/4806) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4803](https://github.com/tobymao/sqlglot/issues/4803) opened by [@xtess16](https://github.com/xtess16)*
+- [`c5bf122`](https://github.com/tobymao/sqlglot/commit/c5bf122a6aa7ca315ad726e6ea3d4a98eebd68d0) - **mysql**: support setting visibility on `ALTER COLUMN`. *(PR [#4809](https://github.com/tobymao/sqlglot/pull/4809) by [@burnison](https://github.com/burnison))*
+
+### :bug: Bug Fixes
+- [`6441d00`](https://github.com/tobymao/sqlglot/commit/6441d0041ccec7f1c28763f5775b6195d2049dc6) - orphan node(s) in eliminate_join_marks *(PR [#4808](https://github.com/tobymao/sqlglot/pull/4808) by [@snovik75](https://github.com/snovik75))*
+- [`eae860c`](https://github.com/tobymao/sqlglot/commit/eae860ce5b59b9e0b791fe79686899efb83df1dd) - **optimizer**: expand DISTINCT ON expressions like we do for GROUP/ORDER by *(PR [#4807](https://github.com/tobymao/sqlglot/pull/4807) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4791](https://github.com/tobymao/sqlglot/issues/4791) opened by [@Fosly](https://github.com/Fosly)*
+- [`5ef35f2`](https://github.com/tobymao/sqlglot/commit/5ef35f2dc622d96b013a2651c71e1a32933f51cb) - **clickhouse**: unparseable `AggregateFunction(count)` *(PR [#4812](https://github.com/tobymao/sqlglot/pull/4812) by [@pkit](https://github.com/pkit))*
+- [`83e6a87`](https://github.com/tobymao/sqlglot/commit/83e6a87f8d233eac6d3bcd3a49451a14dc10e06e) - **duckdb**: Parse SHA256 *(PR [#4816](https://github.com/tobymao/sqlglot/pull/4816) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4815](https://github.com/tobymao/sqlglot/issues/4815) opened by [@muuuuwa](https://github.com/muuuuwa)*
+- [`faf6d41`](https://github.com/tobymao/sqlglot/commit/faf6d416afe30bf0bc24649fcceccf79fbfb8ca1) - allow duplicate nodes in matchings *(PR [#4817](https://github.com/tobymao/sqlglot/pull/4817) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`e34f3bc`](https://github.com/tobymao/sqlglot/commit/e34f3bc99f832ce2affb3a0297329f3d1cd7244e) - **optimizer**: refactor DISTINCT ON qualification to better match ORDER BY *(PR [#4811](https://github.com/tobymao/sqlglot/pull/4811) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.7.0] - 2025-02-26
 ### :boom: BREAKING CHANGES
 - due to [`466c839`](https://github.com/tobymao/sqlglot/commit/466c839c2cfc94b398dd619b738df165f2876cdb) - Remove extra MAP bracket and ARRAY wrap *(PR [#4712](https://github.com/tobymao/sqlglot/pull/4712) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -6003,3 +6038,4 @@ Changelog
 [v26.5.0]: https://github.com/tobymao/sqlglot/compare/v26.4.1...v26.5.0
 [v26.6.0]: https://github.com/tobymao/sqlglot/compare/v26.5.0...v26.6.0
 [v26.7.0]: https://github.com/tobymao/sqlglot/compare/v26.6.0...v26.7.0
+[v26.8.0]: https://github.com/tobymao/sqlglot/compare/v26.7.0...v26.8.0

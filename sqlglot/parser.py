@@ -527,6 +527,7 @@ class Parser(metaclass=_Parser):
         TokenType.PERCENT,
         TokenType.PIVOT,
         TokenType.PRAGMA,
+        TokenType.PUT,
         TokenType.RANGE,
         TokenType.RECURSIVE,
         TokenType.REFERENCES,

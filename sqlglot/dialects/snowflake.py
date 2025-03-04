@@ -506,6 +506,7 @@ class Snowflake(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
@@ -806,6 +807,14 @@ class Snowflake(Dialect):
                 },
             )
 
+        def _parse_put(self) -> exp.Put | exp.Command:
+            if self._curr.token_type != TokenType.STRING:
+                return self._parse_as_command(self._prev)
+            source = self._parse_string()
+            target = self._parse_location_path()
+            props = self._parse_properties()
+            return self.expression(exp.Put, this=source, target=target, properties=props)
+
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
@@ -871,7 +880,7 @@ class Snowflake(Dialect):
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NCHAR VARYING": TokenType.VARCHAR,
-            "PUT": TokenType.COMMAND,
+            "PUT": TokenType.PUT,
             "REMOVE": TokenType.COMMAND,
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,

@@ -3255,6 +3255,11 @@ class HistoricalData(Expression):
     arg_types = {"this": True, "kind": True, "expression": True}
 
 
+# https://docs.snowflake.com/en/sql-reference/sql/put
+class Put(Expression):
+    arg_types = {"this": True, "target": True, "properties": False}
+
+
 class Table(Expression):
     arg_types = {
         "this": False,

@@ -3094,7 +3094,7 @@ class IncludeProperty(Property):
 
 
 class ForceProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {}
 
 
 class Properties(Expression):

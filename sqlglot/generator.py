@@ -210,6 +210,7 @@ class Generator(metaclass=_Generator):
         exp.WithProcedureOptions: lambda self, e: f"WITH {self.expressions(e, flat=True)}",
         exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
         exp.WithOperator: lambda self, e: f"{self.sql(e, 'this')} WITH {self.sql(e, 'op')}",
+        exp.ForceProperty: lambda *_: "FORCE",
     }
 
     # Whether null ordering is supported in order by
@@ -600,6 +601,7 @@ class Generator(metaclass=_Generator):
         exp.WithProcedureOptions: exp.Properties.Location.POST_SCHEMA,
         exp.WithSchemaBindingProperty: exp.Properties.Location.POST_SCHEMA,
         exp.WithSystemVersioningProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.ForceProperty: exp.Properties.Location.POST_CREATE,
     }
 
     # Keywords that can't be used as unquoted identifier names

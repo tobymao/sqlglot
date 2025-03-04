@@ -4846,3 +4846,10 @@ class Generator(metaclass=_Generator):
     def show_sql(self, expression: exp.Show) -> str:
         self.unsupported("Unsupported SHOW statement")
         return ""
+
+    def put_sql(self, expression: exp.Put) -> str:
+        props = expression.args.get("properties")
+        props_sql = self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
+        this = self.sql(expression, "this")
+        target = self.sql(expression, "target")
+        return f"PUT {this} {target}{props_sql}"

@@ -505,7 +505,6 @@ class Snowflake(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
-            TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
@@ -806,9 +805,10 @@ class Snowflake(Dialect):
                 },
             )
 
-        def _parse_put(self) -> exp.Put:
-            self._match(TokenType.PUT)
-            source = self._parse_location_path()
+        def _parse_put(self) -> exp.Put | exp.Command:
+            if self._curr.token_type != TokenType.STRING:
+                return self._parse_as_command(self._prev)
+            source = self._parse_string()
             target = self._parse_location_path()
             props = self._parse_properties()
             return self.expression(exp.Put, this=source, target=target, properties=props)
@@ -1285,8 +1285,3 @@ class Snowflake(Dialect):
             if offset and not limit:
                 expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)
-
-        def put_sql(self, expression: exp.Put) -> str:
-            props = expression.args.get("properties")
-            props_sql = self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
-            return f"PUT '{expression.this}' {expression.args['target']}{props_sql}"

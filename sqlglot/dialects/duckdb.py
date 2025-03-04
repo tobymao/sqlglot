@@ -36,6 +36,7 @@ from sqlglot.dialects.dialect import (
     build_regexp_extract,
     explode_to_unnest_sql,
     no_make_interval_sql,
+    groupconcat_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -427,7 +428,12 @@ class DuckDB(Dialect):
         FUNCTIONS.pop("DATE_SUB")
         FUNCTIONS.pop("GLOB")
 
-        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            **dict.fromkeys(
+                ("GROUP_CONCAT", "LISTAGG", "STRINGAGG"), lambda self: self._parse_string_agg()
+            ),
+        }
         FUNCTION_PARSERS.pop("DECODE")
 
         NO_PAREN_FUNCTION_PARSERS = {
@@ -583,6 +589,7 @@ class DuckDB(Dialect):
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.GenerateDateArray: _generate_datetime_array_sql,
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
+            exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
             exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr="FROM_HEX"),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),

@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestampdiff_sql,
     no_make_interval_sql,
+    groupconcat_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import flatten, is_float, is_int, seq_get
@@ -439,7 +440,6 @@ class Snowflake(Dialect):
             ),
             "LEN": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
-            "LISTAGG": exp.GroupConcat.from_arg_list,
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
@@ -482,6 +482,7 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
+            "LISTAGG": lambda self: self._parse_string_agg(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -950,7 +951,7 @@ class Snowflake(Dialect):
             exp.GenerateSeries: lambda self, e: self.func(
                 "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")
             ),
-            exp.GroupConcat: rename_func("LISTAGG"),
+            exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
             exp.If: if_sql(name="IFF", false_value="NULL"),
             exp.JSONExtractArray: _json_extract_value_array_sql,
             exp.JSONExtractScalar: lambda self, e: self.func(

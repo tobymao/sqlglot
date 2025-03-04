@@ -42,8 +42,8 @@ class TestRedshift(Validator):
                 "duckdb": "STRING_AGG(sellerid, ', ')",
             },
             write={
-                # GROUP_CONCAT and STRING_AGG are aliases in DuckDB
-                "duckdb": "GROUP_CONCAT(sellerid, ', ')",
+                # GROUP_CONCAT, LISTAGG and STRING_AGG are aliases in DuckDB
+                "duckdb": "LISTAGG(sellerid, ', ')",
                 "redshift": "LISTAGG(sellerid, ', ')",
             },
         )

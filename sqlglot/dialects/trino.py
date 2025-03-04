@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from sqlglot import exp, parser
-from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql, timestrtotime_sql
+from sqlglot.dialects.dialect import (
+    merge_without_target_sql,
+    trim_sql,
+    timestrtotime_sql,
+    groupconcat_sql,
+)
 from sqlglot.dialects.presto import Presto
 from sqlglot.tokens import TokenType
 import typing as t
@@ -67,6 +72,7 @@ class Trino(Presto):
             exp.ArraySum: lambda self,
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
+            exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
             exp.LocationProperty: lambda self, e: self.property_sql(e),
             exp.Merge: merge_without_target_sql,
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
@@ -98,17 +104,3 @@ class Trino(Presto):
                 expression.this,
                 json_path + option + quote + on_condition,
             )
-
-        def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
-            this = expression.this
-            separator = expression.args.get("separator") or exp.Literal.string(",")
-
-            if isinstance(this, exp.Order):
-                if this.this:
-                    this = this.this.pop()
-
-                on_overflow = self.sql(expression, "on_overflow")
-                on_overflow = f" ON OVERFLOW {on_overflow}" if on_overflow else ""
-                return f"LISTAGG({self.format_args(this, separator)}{on_overflow}) WITHIN GROUP ({self.sql(expression.this).lstrip()})"
-
-            return super().groupconcat_sql(expression)

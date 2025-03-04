@@ -2338,6 +2338,11 @@ OPTIONS (
         )
 
     def test_string_agg(self):
+        self.validate_identity(
+            "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
+            "SELECT a, STRING_AGG(b, ',') FROM table GROUP BY a",
+        )
+
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
         self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")

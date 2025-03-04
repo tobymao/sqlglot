@@ -5,7 +5,7 @@ import typing as t
 from enum import auto
 
 from sqlglot.errors import SqlglotError, TokenError
-from sqlglot.helper import AutoName, is_url_string
+from sqlglot.helper import AutoName
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
@@ -1226,9 +1226,6 @@ class Tokenizer(metaclass=_Tokenizer):
             self._add(self.SINGLE_TOKENS[self._char], text=self._char)
             return
 
-        if self._scan_url():
-            return
-
         self._scan_var()
 
     def _scan_comment(self, comment_start: str) -> bool:
@@ -1438,23 +1435,6 @@ class Tokenizer(metaclass=_Tokenizer):
             if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
             else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
         )
-
-    def _scan_url(self) -> bool:
-        start = self._current
-        end = self.size
-        for idx in range(start, self.size):
-            char = self.sql[idx]
-            if char.isspace() or char == ";":
-                end = idx
-                break
-
-        text = self.sql[start - 1 : end]
-        # check if this text token is a verbatim URL like `file://my.txt`
-        if is_url_string(text):
-            self._add(TokenType.URL, text)
-            self._advance(len(text) - 1)
-            return True
-        return False
 
     def _extract_string(
         self,

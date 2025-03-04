@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot.helper import merge_ranges, name_sequence, tsort, is_url_string
+from sqlglot.helper import merge_ranges, name_sequence, tsort
 
 
 class TestHelper(unittest.TestCase):
@@ -46,14 +46,3 @@ class TestHelper(unittest.TestCase):
         self.assertEqual([(0, 1), (2, 3)], merge_ranges([(0, 1), (2, 3)]))
         self.assertEqual([(0, 3)], merge_ranges([(0, 1), (1, 3)]))
         self.assertEqual([(0, 1), (2, 4)], merge_ranges([(2, 3), (0, 1), (3, 4)]))
-
-    def test_is_url_string(self):
-        self.assertTrue(is_url_string("http://test.com"))
-        self.assertTrue(is_url_string("file:///my.txt"))
-        self.assertTrue(is_url_string("file:///my file.txt"))
-        self.assertTrue(is_url_string("s3:///my.bucket/foo/bar"))
-
-        # negative examples
-        self.assertFalse(is_url_string("'http://test.com'"))
-        self.assertFalse(is_url_string("  http://test.com"))
-        self.assertFalse(is_url_string("foo bar"))

@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import UnsupportedError, exp, parse_one, tokens
+from sqlglot import UnsupportedError, exp, parse_one
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
@@ -1029,8 +1029,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        if not tokens.USE_RS_TOKENIZER:  # TODO remove check once Rust tokenizer is fixed!
-            self.validate_identity("PUT file:///dir/tmp.csv @%table")
+        self.validate_identity("PUT 'file:///dir/tmp.csv' @%table")
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
@@ -2371,9 +2370,6 @@ SINGLE = TRUE""",
         )
 
     def test_put_to_stage(self):
-        if tokens.USE_RS_TOKENIZER:  # TODO remove check once Rust tokenizer is fixed!
-            return
-
         def _test(
             expression: str, file_url: str, stage_ref: str, props: dict = None
         ) -> exp.Expression:
@@ -2391,17 +2387,12 @@ SINGLE = TRUE""",
                 self.assertEqual(props, props_dict)
             return ast
 
-        # PUT with verbatim file path and stage (unquoted)
-        _test("PUT file:///tmp/my.txt @stage1/folder", "file:///tmp/my.txt", "@stage1/folder")
-        # expression with semicolon in the end
-        _test("PUT file:///tmp/my.txt @stage1/folder;", "file:///tmp/my.txt", "@stage1/folder")
-
         # PUT with file path and stage ref containing spaces (wrapped in single quotes)
         _test("PUT 'file://my file.txt' '@s1/my folder'", "file://my file.txt", "@s1/my folder")
 
         # expression with additional properties
         _test(
-            "PUT file:///tmp/my.txt @stage1/folder PARALLEL = 1 AUTO_COMPRESS=false source_compression=gzip OVERWRITE=TRUE",
+            "PUT 'file:///tmp/my.txt' @stage1/folder PARALLEL = 1 AUTO_COMPRESS=false source_compression=gzip OVERWRITE=TRUE",
             "file:///tmp/my.txt",
             "@stage1/folder",
             {
@@ -2413,9 +2404,9 @@ SINGLE = TRUE""",
         )
 
         # validate identity for different args and properties
-        self.validate_identity("PUT file:///dir/tmp.csv @s1/test")
+        self.validate_identity("PUT 'file:///dir/tmp.csv' @s1/test")
         self.validate_identity(
-            "PUT file:///dir/tmp.csv @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE"
+            "PUT 'file:///dir/tmp.csv' @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE"
         )
 
     def test_querying_semi_structured_data(self):

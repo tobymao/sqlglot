@@ -1289,4 +1289,4 @@ class Snowflake(Dialect):
         def put_sql(self, expression: exp.Put) -> str:
             props = expression.args.get("properties")
             props_sql = self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
-            return f"PUT {expression.this} {expression.args['target']}{props_sql}"
+            return f"PUT '{expression.this}' {expression.args['target']}{props_sql}"

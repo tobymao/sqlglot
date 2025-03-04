@@ -198,11 +198,6 @@ def camel_to_snake_case(name: str) -> str:
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
 
 
-def is_url_string(string: str) -> bool:
-    """Determine whether the given string is a URL, e.g., `file://my.txt` or `http://example.com`"""
-    return bool(URL_PATTERN.match(string))
-
-
 def while_changing(expression: Expression, func: t.Callable[[Expression], E]) -> E:
     """
     Applies a transformation to a given expression until a fix point is reached.

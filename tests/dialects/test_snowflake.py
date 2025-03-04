@@ -2361,6 +2361,41 @@ SINGLE = TRUE""",
             """COPY INTO 's3://example/contacts.csv' FROM "db"."tbl" STORAGE_INTEGRATION = "PROD_S3_SIDETRADE_INTEGRATION" FILE_FORMAT = (FORMAT_NAME="my_csv_format" TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') MATCH_BY_COLUMN_NAME = CASE_SENSITIVE OVERWRITE = TRUE SINGLE = TRUE INCLUDE_METADATA = ("col1" = "METADATA$START_SCAN_TIME")""",
         )
 
+    def test_put_to_stage(self):
+        # PUT with file path and stage ref containing spaces (wrapped in single quotes)
+        ast = parse_one("PUT 'file://my file.txt' '@s1/my folder'", read="snowflake")
+        self.assertIsInstance(ast, exp.Put)
+        self.assertEqual(ast.this, exp.Literal(this="file://my file.txt", is_string=True))
+        self.assertEqual(ast.args["target"], exp.Var(this="@s1/my folder"))
+
+        # expression with additional properties
+        ast = parse_one(
+            "PUT 'file:///tmp/my.txt' @stage1/folder PARALLEL = 1 AUTO_COMPRESS=false source_compression=gzip OVERWRITE=TRUE",
+            read="snowflake",
+        )
+        self.assertIsInstance(ast, exp.Put)
+        self.assertEqual(ast.this, exp.Literal(this="file:///tmp/my.txt", is_string=True))
+        self.assertEqual(ast.args["target"], exp.Var(this="@stage1/folder"))
+        properties = ast.args.get("properties")
+        props_dict = {prop.this.this: prop.args["value"].this for prop in properties.expressions}
+        self.assertEqual(
+            props_dict,
+            {
+                "PARALLEL": "1",
+                "AUTO_COMPRESS": False,
+                "source_compression": "gzip",
+                "OVERWRITE": True,
+            },
+        )
+
+        # validate identity for different args and properties
+        self.validate_identity("PUT 'file:///dir/tmp.csv' @s1/test")
+        # TODO: the test below is still failing!
+        self.validate_identity("PUT file:///dir/tmp.csv @%table")
+        self.validate_identity(
+            "PUT 'file:///dir/tmp.csv' @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE"
+        )
+
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")
         self.validate_identity("SELECT $1.elem")

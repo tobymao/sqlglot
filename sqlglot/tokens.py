@@ -355,6 +355,7 @@ class TokenType(AutoName):
     PROCEDURE = auto()
     PROPERTIES = auto()
     PSEUDO_TYPE = auto()
+    PUT = auto()
     QUALIFY = auto()
     QUOTE = auto()
     RANGE = auto()

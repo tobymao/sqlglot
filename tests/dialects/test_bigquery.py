@@ -142,7 +142,6 @@ LANGUAGE js AS
         self.validate_identity("SELECT test.Unknown FROM test")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
-        self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
@@ -150,10 +149,6 @@ LANGUAGE js AS
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
-        self.validate_identity("STRING_AGG(a)")
-        self.validate_identity("STRING_AGG(a, ' & ')")
-        self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
-        self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
         self.validate_identity("DATE(2016, 12, 25)")
         self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
         self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")
@@ -1844,12 +1839,6 @@ WHERE
             "CREATE TEMPORARY FUNCTION string_length_0(strings ARRAY<STRING>) RETURNS FLOAT64 LANGUAGE js OPTIONS (library=['gs://ibis-testing-libraries/lodash.min.js']) AS '\\'use strict\\'; function string_length(strings) { return _.sum(_.map(strings, ((x) => x.length))); } return string_length(strings);'",
         )
 
-    def test_group_concat(self):
-        self.validate_all(
-            "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
-            write={"bigquery": "SELECT a, STRING_AGG(b) FROM table GROUP BY a"},
-        )
-
     def test_remove_precision_parameterized_types(self):
         self.validate_identity("CREATE TABLE test (a NUMERIC(10, 2))")
         self.validate_identity(
@@ -2346,4 +2335,20 @@ OPTIONS (
                 "duckdb": "SELECT STRFTIME(CAST(CAST('2050-12-25 15:30:55+00' AS TIMESTAMPTZ) AS TIMESTAMP), '%b-%d-%Y')",
                 "snowflake": "SELECT TO_CHAR(CAST(CAST('2050-12-25 15:30:55+00' AS TIMESTAMPTZ) AS TIMESTAMP), 'mon-DD-yyyy')",
             },
+        )
+
+    def test_string_agg(self):
+        self.validate_identity(
+            "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
+            "SELECT a, STRING_AGG(b, ',') FROM table GROUP BY a",
+        )
+
+        self.validate_identity("STRING_AGG(a, ' & ')")
+        self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
+        self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
+
+        self.validate_identity("STRING_AGG(a)", "STRING_AGG(a, ',')")
+        self.validate_identity(
+            "STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)",
+            "STRING_AGG(DISTINCT a, ',' ORDER BY b DESC, c DESC LIMIT 10)",
         )

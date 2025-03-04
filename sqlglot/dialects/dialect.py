@@ -1825,3 +1825,34 @@ def no_make_interval_sql(self: Generator, expression: exp.MakeInterval, sep: str
 def length_or_char_length_sql(self: Generator, expression: exp.Length) -> str:
     length_func = "LENGTH" if expression.args.get("binary") else "CHAR_LENGTH"
     return self.func(length_func, expression.this)
+
+
+def groupconcat_sql(
+    self: Generator,
+    expression: exp.GroupConcat,
+    func_name="LISTAGG",
+    sep: str = ",",
+    within_group: bool = True,
+    on_overflow: bool = False,
+) -> str:
+    this = expression.this
+    separator = expression.args.get("separator") or exp.Literal.string(sep)
+
+    on_overflow_sql = self.sql(expression, "on_overflow")
+    on_overflow_sql = f" ON OVERFLOW {on_overflow_sql}" if (on_overflow and on_overflow_sql) else ""
+
+    order = this.find(exp.Order)
+
+    if order and order.this:
+        this = order.this.pop()
+
+    args = self.format_args(this, f"{separator}{on_overflow_sql}")
+    listagg: exp.Expression = exp.Anonymous(this=func_name, expressions=[args])
+
+    if order:
+        if within_group:
+            listagg = exp.WithinGroup(this=listagg, expression=order)
+        else:
+            listagg.set("expressions", [f"{args}{self.sql(expression=expression.this)}"])
+
+    return self.sql(listagg)

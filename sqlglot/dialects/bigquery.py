@@ -27,6 +27,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
     unit_to_var,
     strposition_sql,
+    groupconcat_sql,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -902,7 +903,9 @@ class BigQuery(Dialect):
                 "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
             ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
-            exp.GroupConcat: rename_func("STRING_AGG"),
+            exp.GroupConcat: lambda self, e: groupconcat_sql(
+                self, e, func_name="STRING_AGG", within_group=False
+            ),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
             exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr="FROM_HEX"),
             exp.If: if_sql(false_value="NULL"),

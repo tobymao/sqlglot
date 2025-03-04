@@ -6254,7 +6254,8 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.R_PAREN) and args:
             # postgres: STRING_AGG([DISTINCT] expression, separator [ORDER BY expression1 {ASC | DESC} [, ...]])
             # bigquery: STRING_AGG([DISTINCT] expression [, separator] [ORDER BY key [{ASC | DESC}] [, ... ]] [LIMIT n])
-            args[-1] = self._parse_limit(this=self._parse_order(this=args[-1]))
+            # The order is parsed through `this` as a canonicalization for WITHIN GROUPs
+            args[0] = self._parse_limit(this=self._parse_order(this=args[0]))
             return self.expression(exp.GroupConcat, this=args[0], separator=seq_get(args, 1))
 
         # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).

@@ -52,7 +52,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT OBJECT_CONSTRUCT()")
         self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
-        self.validate_identity("LISTAGG(data['some_field'], ',')")
         self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
@@ -850,13 +849,6 @@ class TestSnowflake(Validator):
             write={
                 "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
                 "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
-            },
-        )
-        self.validate_all(
-            "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
-            write={
-                "duckdb": "SELECT GROUP_CONCAT(col1, ', ' ORDER BY col2) FROM t",
-                "snowflake": "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
             },
         )
         self.validate_all(
@@ -2450,3 +2442,20 @@ SINGLE = TRUE""",
                 "trino": "SELECT 1 ORDER BY 1 OFFSET 0",
             },
         )
+
+    def test_listagg(self):
+        self.validate_identity("LISTAGG(data['some_field'], ',')")
+
+        for distinct in ("", "DISTINCT "):
+            self.validate_all(
+                f"SELECT LISTAGG({distinct}col, '|SEPARATOR|') WITHIN GROUP (ORDER BY col2) FROM t",
+                read={
+                    "trino": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|') WITHIN GROUP (ORDER BY col2) FROM t",
+                    "duckdb": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|' ORDER BY col2) FROM t",
+                },
+                write={
+                    "snowflake": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|') WITHIN GROUP (ORDER BY col2) FROM t",
+                    "trino": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|') WITHIN GROUP (ORDER BY col2) FROM t",
+                    "duckdb": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|' ORDER BY col2) FROM t",
+                },
+            )

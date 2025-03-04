@@ -2399,7 +2399,7 @@ SINGLE = TRUE""",
         # validate identity for different args and properties
         self.validate_identity("PUT 'file:///dir/tmp.csv' @s1/test")
         # TODO: the test below is still failing!
-        # self.validate_identity("PUT file:///dir/tmp.csv @%table")
+        self.validate_identity("PUT file:///dir/tmp.csv @%table")
         self.validate_identity(
             "PUT 'file:///dir/tmp.csv' @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE"
         )

@@ -153,6 +153,7 @@ class Oracle(Dialect):
             and self.expression(exp.TemporaryProperty, this="GLOBAL"),
             "PRIVATE": lambda self: self._match_text_seq("TEMPORARY")
             and self.expression(exp.TemporaryProperty, this="PRIVATE"),
+            "FORCE": lambda self: self.expression(exp.ForceProperty),
         }
 
         QUERY_MODIFIER_PARSERS = {

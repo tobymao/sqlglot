@@ -5603,10 +5603,7 @@ class Parser(metaclass=_Parser):
     def _parse_user_defined_function(
         self, kind: t.Optional[TokenType] = None
     ) -> t.Optional[exp.Expression]:
-        this = self._parse_id_var()
-
-        while self._match(TokenType.DOT):
-            this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
+        this = self._parse_table_parts(schema=True)
 
         if not self._match(TokenType.L_PAREN):
             return this

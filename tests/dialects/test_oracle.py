@@ -319,6 +319,8 @@ class TestOracle(Validator):
                 "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH FIRST 10 ROWS ONLY",
             },
         )
+        self.validate_identity("SELECT 1 AS FORCE")
+        self.validate_identity("CREATE OR REPLACE FORCE VIEW foo1.foo2")
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")

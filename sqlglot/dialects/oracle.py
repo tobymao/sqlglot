@@ -153,6 +153,7 @@ class Oracle(Dialect):
             and self.expression(exp.TemporaryProperty, this="GLOBAL"),
             "PRIVATE": lambda self: self._match_text_seq("TEMPORARY")
             and self.expression(exp.TemporaryProperty, this="PRIVATE"),
+            "FORCE": lambda self: self.expression(exp.ForceProperty, this="FORCE"),
         }
 
         QUERY_MODIFIER_PARSERS = {
@@ -319,11 +320,13 @@ class Oracle(Dialect):
             exp.Unicode: lambda self, e: f"ASCII(UNISTR({self.sql(e.this)}))",
             exp.UnixToTime: lambda self,
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
+            exp.ForceProperty: lambda self, e: self.sql(e, "this"),
         }
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.ForceProperty: exp.Properties.Location.POST_CREATE,
         }
 
         def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:

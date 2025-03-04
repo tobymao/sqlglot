@@ -19,7 +19,6 @@ if t.TYPE_CHECKING:
 
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
-URL_PATTERN = re.compile(r"\w+://.+")
 PYTHON_VERSION = sys.version_info[:2]
 logger = logging.getLogger("sqlglot")
 

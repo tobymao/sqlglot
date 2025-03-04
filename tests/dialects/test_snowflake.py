@@ -2370,31 +2370,24 @@ SINGLE = TRUE""",
         )
 
     def test_put_to_stage(self):
-        def _test(
-            expression: str, file_url: str, stage_ref: str, props: dict = None
-        ) -> exp.Expression:
-            ast = parse_one(expression, read="snowflake")
-            self.assertIsInstance(ast, exp.Put)
-            self.assertEqual(ast.this, exp.Var(this=file_url))
-            self.assertEqual(ast.args["target"], exp.Var(this=stage_ref))
-            properties = ast.args.get("properties")
-            props_dict = {}
-            if properties:
-                props_dict = {
-                    prop.this.this: prop.args["value"].this for prop in properties.expressions
-                }
-            if props:
-                self.assertEqual(props, props_dict)
-            return ast
-
         # PUT with file path and stage ref containing spaces (wrapped in single quotes)
-        _test("PUT 'file://my file.txt' '@s1/my folder'", "file://my file.txt", "@s1/my folder")
+        ast = parse_one("PUT 'file://my file.txt' '@s1/my folder'", read="snowflake")
+        self.assertIsInstance(ast, exp.Put)
+        self.assertEqual(ast.this, exp.Var(this="file://my file.txt"))
+        self.assertEqual(ast.args["target"], exp.Var(this="@s1/my folder"))
 
         # expression with additional properties
-        _test(
+        ast = parse_one(
             "PUT 'file:///tmp/my.txt' @stage1/folder PARALLEL = 1 AUTO_COMPRESS=false source_compression=gzip OVERWRITE=TRUE",
-            "file:///tmp/my.txt",
-            "@stage1/folder",
+            read="snowflake",
+        )
+        self.assertIsInstance(ast, exp.Put)
+        self.assertEqual(ast.this, exp.Var(this="file:///tmp/my.txt"))
+        self.assertEqual(ast.args["target"], exp.Var(this="@stage1/folder"))
+        properties = ast.args.get("properties")
+        props_dict = {prop.this.this: prop.args["value"].this for prop in properties.expressions}
+        self.assertEqual(
+            props_dict,
             {
                 "PARALLEL": "1",
                 "AUTO_COMPRESS": False,

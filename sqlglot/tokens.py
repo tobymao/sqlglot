@@ -104,7 +104,6 @@ class TokenType(AutoName):
     RAW_STRING = auto()
     HEREDOC_STRING = auto()
     UNICODE_STRING = auto()
-    URL = auto()
 
     # types
     BIT = auto()

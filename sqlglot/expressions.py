@@ -3093,6 +3093,10 @@ class IncludeProperty(Property):
     arg_types = {"this": True, "alias": False, "column_def": False}
 
 
+class ForceProperty(Property):
+    arg_types = {}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 

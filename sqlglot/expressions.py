@@ -3025,6 +3025,10 @@ class StabilityProperty(Property):
     arg_types = {"this": True}
 
 
+class StorageHandlerProperty(Property):
+    arg_types = {"this": True}
+
+
 class TemporaryProperty(Property):
     arg_types = {"this": False}
 

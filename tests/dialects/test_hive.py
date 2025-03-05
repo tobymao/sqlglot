@@ -173,7 +173,7 @@ class TestHive(Validator):
         self.validate_identity(
             """CREATE EXTERNAL TABLE `my_table` (`a7` ARRAY<DATE>) ROW FORMAT SERDE 'a' STORED AS INPUTFORMAT 'b' OUTPUTFORMAT 'c' LOCATION 'd' TBLPROPERTIES ('e'='f')"""
         )
-        self.validate_identity("""CREATE EXTERNAL TABLE X (y INT) STORED BY 'x'""")
+        self.validate_identity("CREATE EXTERNAL TABLE X (y INT) STORED BY 'x'")
         self.validate_identity("ALTER VIEW v1 AS SELECT x, UPPER(s) AS s FROM t2")
         self.validate_identity("ALTER VIEW v1 (c1, c2) AS SELECT x, UPPER(s) AS s FROM t2")
         self.validate_identity(

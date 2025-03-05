@@ -517,6 +517,7 @@ class Hive(Dialect):
             e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.DATEINT_FORMAT})",
             exp.FileFormatProperty: lambda self,
             e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
+            exp.StorageHandlerProperty: lambda self, e: f"STORED BY {self.sql(e, 'this')}",
             exp.FromBase64: rename_func("UNBASE64"),
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,

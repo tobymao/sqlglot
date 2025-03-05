@@ -2120,22 +2120,28 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Property, this=key, value=value)
 
-    def _parse_stored(self) -> exp.FileFormatProperty:
-        self._match(TokenType.ALIAS)
+    def _parse_stored(
+        self,
+    ) -> t.Optional[t.Union[exp.FileFormatProperty, exp.StorageHandlerProperty]]:
+        if self._match(TokenType.ALIAS):
+            input_format = self._parse_string() if self._match_text_seq("INPUTFORMAT") else None
+            output_format = self._parse_string() if self._match_text_seq("OUTPUTFORMAT") else None
 
-        input_format = self._parse_string() if self._match_text_seq("INPUTFORMAT") else None
-        output_format = self._parse_string() if self._match_text_seq("OUTPUTFORMAT") else None
-
-        return self.expression(
-            exp.FileFormatProperty,
-            this=(
-                self.expression(
-                    exp.InputOutputFormat, input_format=input_format, output_format=output_format
-                )
-                if input_format or output_format
-                else self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
-            ),
-        )
+            return self.expression(
+                exp.FileFormatProperty,
+                this=(
+                    self.expression(
+                        exp.InputOutputFormat,
+                        input_format=input_format,
+                        output_format=output_format,
+                    )
+                    if input_format or output_format
+                    else self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
+                ),
+            )
+        elif self._match_texts("BY"):
+            return self.expression(exp.StorageHandlerProperty, this=self._parse_var_or_string())
+        return None
 
     def _parse_unquoted_field(self) -> t.Optional[exp.Expression]:
         field = self._parse_field()

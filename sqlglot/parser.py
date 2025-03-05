@@ -1291,6 +1291,10 @@ class Parser(metaclass=_Parser):
             "SIMPLE",
         ),
         "INITIALLY": ("DEFERRED", "IMMEDIATE"),
+        "USING": (
+            "BTREE",
+            "HASH",
+        ),
         **dict.fromkeys(("DEFERRABLE", "NORELY"), tuple()),
     }
 

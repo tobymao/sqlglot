@@ -84,6 +84,12 @@ class TestMySQL(Validator):
             "CREATE OR REPLACE VIEW my_view AS SELECT column1 AS `boo`, column2 AS `foo` FROM my_table WHERE column3 = 'some_value' UNION SELECT q.* FROM fruits_table, JSON_TABLE(Fruits, '$[*]' COLUMNS(id VARCHAR(255) PATH '$.$id', value VARCHAR(255) PATH '$.value')) AS q",
         )
         self.validate_identity(
+            "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING BTREE)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING HASH)"
+        )
+        self.validate_identity(
             "/*left*/ EXPLAIN SELECT /*hint*/ col FROM t1 /*right*/",
             "/* left */ DESCRIBE /* hint */ SELECT col FROM t1 /* right */",
         )

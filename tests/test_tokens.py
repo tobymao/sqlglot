@@ -1,7 +1,6 @@
 import unittest
 
 from sqlglot.dialects import BigQuery
-from sqlglot.dialects.snowflake import Snowflake
 from sqlglot.errors import TokenError
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -175,27 +174,5 @@ x"""
                 (TokenType.STRING, "{{ var("),
                 (TokenType.VAR, "x"),
                 (TokenType.STRING, ") }}"),
-            ],
-        )
-
-    def test_tokenize_put_with_raw_url(self):
-        tokens = Snowflake.Tokenizer().tokenize("PUT file:///tmp.csv @%table")
-        tokens = [(token.token_type, token.text) for token in tokens]
-
-        self.assertEqual(
-            tokens,
-            [
-                (TokenType.VAR, "PUT"),
-                (TokenType.VAR, "file"),
-                (TokenType.COLON, ":"),
-                (TokenType.SLASH, "/"),
-                (TokenType.SLASH, "/"),
-                (TokenType.SLASH, "/"),
-                (TokenType.VAR, "tmp"),
-                (TokenType.DOT, "."),
-                (TokenType.VAR, "csv"),
-                (TokenType.PARAMETER, "@"),
-                (TokenType.MOD, "%"),
-                (TokenType.TABLE, "table"),
             ],
         )

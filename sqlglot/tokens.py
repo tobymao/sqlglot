@@ -80,6 +80,8 @@ class TokenType(AutoName):
     XOR = auto()
     DSTAR = auto()
 
+    URI_START = auto()
+
     BLOCK_START = auto()
     BLOCK_END = auto()
 

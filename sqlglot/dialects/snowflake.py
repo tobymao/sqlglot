@@ -810,10 +810,13 @@ class Snowflake(Dialect):
         def _parse_put(self) -> exp.Put | exp.Command:
             if self._curr.token_type != TokenType.STRING:
                 return self._parse_as_command(self._prev)
-            source = self._parse_string()
-            target = self._parse_location_path()
-            props = self._parse_properties()
-            return self.expression(exp.Put, this=source, target=target, properties=props)
+
+            return self.expression(
+                exp.Put,
+                this=self._parse_string(),
+                target=self._parse_location_path(),
+                properties=self._parse_properties(),
+            )
 
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
@@ -870,6 +873,7 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "FILE://": TokenType.URI_START,
             "BYTEINT": TokenType.INT,
             "CHAR VARYING": TokenType.VARCHAR,
             "CHARACTER VARYING": TokenType.VARCHAR,

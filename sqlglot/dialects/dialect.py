@@ -342,8 +342,14 @@ class Dialect(metaclass=_Dialect):
     True means `a / b` is integer division if both `a` and `b` are integers.
     """
 
-    SAFE_DIVISION = False
-    """Whether division by zero throws an error (`False`) or returns NULL (`True`)."""
+    SAFE_DIVISION: t.Optional[bool] = exp.Div.SAFE_DIVISION
+    """Whether division by zero throws an error (`False`), returns NULL (`True`), or "infinity" (`None`)."""
+
+    INFINITY: t.Optional[exp.Expression] = exp.Cast(
+        this=exp.Literal.string("Infinity"),
+        to=exp.DataType(this=exp.DataType.Type.DOUBLE, nested=False),
+    )
+    """An expression that results in "infinity", `None` means it's not supported."""
 
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
@@ -987,6 +993,10 @@ class Dialect(metaclass=_Dialect):
 
         return path
 
+    def error_function(self, msg: str) -> t.Optional[exp.Expression]:
+        """Function that raises an exception with message `msg`."""
+        return None
+
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
 
@@ -1007,6 +1017,12 @@ class Dialect(metaclass=_Dialect):
     def tokenize(self, sql: str) -> t.List[Token]:
         return self.tokenizer.tokenize(sql)
 
+    def parser(self, **opts) -> Parser:
+        return self.parser_class(dialect=self, **opts)
+
+    def generator(self, **opts) -> Generator:
+        return self.generator_class(dialect=self, **opts)
+
     @property
     def tokenizer(self) -> Tokenizer:
         return self.tokenizer_class(dialect=self)
@@ -1014,12 +1030,6 @@ class Dialect(metaclass=_Dialect):
     @property
     def jsonpath_tokenizer(self) -> JSONPathTokenizer:
         return self.jsonpath_tokenizer_class(dialect=self)
-
-    def parser(self, **opts) -> Parser:
-        return self.parser_class(dialect=self, **opts)
-
-    def generator(self, **opts) -> Generator:
-        return self.generator_class(dialect=self, **opts)
 
     @property
     def version(self) -> Version:

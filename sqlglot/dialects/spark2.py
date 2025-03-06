@@ -62,7 +62,7 @@ def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str
     if scale == exp.UnixToTime.MICROS:
         return self.func("TIMESTAMP_MICROS", timestamp)
 
-    unix_seconds = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+    unix_seconds = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale), safe=True)
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
 

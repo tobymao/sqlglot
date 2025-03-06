@@ -107,7 +107,7 @@ def _unix_to_time_sql(self: MySQL.Generator, expression: exp.UnixToTime) -> str:
 
     return self.func(
         "FROM_UNIXTIME",
-        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)),
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale), safe=True),
         self.format_time(expression),
     )
 
@@ -163,6 +163,7 @@ class MySQL(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     SAFE_DIVISION = True
+    INFINITY = None
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {

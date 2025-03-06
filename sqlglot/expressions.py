@@ -932,7 +932,7 @@ class Expression(metaclass=_Expression):
     def rlike(self, other: ExpOrStr) -> RegexpLike:
         return self._binop(RegexpLike, other)
 
-    def div(self, other: ExpOrStr, typed: bool = False, safe: bool = False) -> Div:
+    def div(self, other: ExpOrStr, typed: bool = False, safe: t.Optional[bool] = False) -> Div:
         div = self._binop(Div, other)
         div.args["typed"] = typed
         div.args["safe"] = safe
@@ -4901,7 +4901,14 @@ class BitwiseXor(Binary):
 
 
 class Div(Binary):
+    # Determines semantics of division by zero: False -> error, True -> null, None -> infinity
+    SAFE_DIVISION = False
+
     arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
+
+    def __init__(self, **args):
+        args.setdefault("safe", self.SAFE_DIVISION)
+        super().__init__(**args)
 
 
 class Overlaps(Binary):

@@ -7,6 +7,7 @@ from sqlglot.helper import seq_get
 
 class Tableau(Dialect):
     LOG_BASE_FIRST = False
+    INFINITY = None
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = [("[", "]")]

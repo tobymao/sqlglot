@@ -635,9 +635,9 @@ class TestSnowflake(Validator):
                 "snowflake": "IFF(bar = 0 AND NOT foo IS NULL, 0, foo / bar)",
                 "sqlite": "IIF(bar = 0 AND NOT foo IS NULL, 0, CAST(foo AS REAL) / bar)",
                 "presto": "IF(bar = 0 AND NOT foo IS NULL, 0, CAST(foo AS DOUBLE) / bar)",
-                "spark": "IF(bar = 0 AND NOT foo IS NULL, 0, foo / bar)",
+                "spark": "IF(bar = 0 AND NOT foo IS NULL, 0, foo / IF(bar = 0, RAISE_ERROR('Division by zero error'), bar))",
                 "hive": "IF(bar = 0 AND NOT foo IS NULL, 0, foo / bar)",
-                "duckdb": "CASE WHEN bar = 0 AND NOT foo IS NULL THEN 0 ELSE foo / bar END",
+                "duckdb": "CASE WHEN bar = 0 AND NOT foo IS NULL THEN 0 ELSE foo / CASE WHEN bar = 0 THEN ERROR('Division by zero error') ELSE bar END END",
             },
         )
         self.validate_all(
@@ -646,9 +646,9 @@ class TestSnowflake(Validator):
                 "snowflake": "IFF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / (c - d))",
                 "sqlite": "IIF((c - d) = 0 AND NOT (a - b) IS NULL, 0, CAST((a - b) AS REAL) / (c - d))",
                 "presto": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, CAST((a - b) AS DOUBLE) / (c - d))",
-                "spark": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / (c - d))",
+                "spark": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / IF((c - d) = 0, RAISE_ERROR('Division by zero error'), (c - d)))",
                 "hive": "IF((c - d) = 0 AND NOT (a - b) IS NULL, 0, (a - b) / (c - d))",
-                "duckdb": "CASE WHEN (c - d) = 0 AND NOT (a - b) IS NULL THEN 0 ELSE (a - b) / (c - d) END",
+                "duckdb": "CASE WHEN (c - d) = 0 AND NOT (a - b) IS NULL THEN 0 ELSE (a - b) / CASE WHEN (c - d) = 0 THEN ERROR('Division by zero error') ELSE (c - d) END END",
             },
         )
         self.validate_all(

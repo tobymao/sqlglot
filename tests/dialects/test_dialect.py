@@ -2098,14 +2098,14 @@ class TestDialect(Validator):
             "a / b",
             write={
                 "bigquery": "a / b",
-                "clickhouse": "a / b",
+                "clickhouse": "a / CASE WHEN b = 0 THEN throwIf(TRUE, 'Division by zero error') ELSE b END",
                 "databricks": "a / b",
-                "duckdb": "a / b",
+                "duckdb": "a / CASE WHEN b = 0 THEN ERROR('Division by zero error') ELSE b END",
                 "hive": "a / b",
                 "mysql": "a / b",
                 "oracle": "a / b",
                 "snowflake": "a / b",
-                "spark": "a / b",
+                "spark": "a / IF(b = 0, RAISE_ERROR('Division by zero error'), b)",
                 "starrocks": "a / b",
                 "drill": "CAST(a AS DOUBLE) / b",
                 "postgres": "CAST(a AS DOUBLE PRECISION) / b",
@@ -2189,6 +2189,25 @@ class TestDialect(Validator):
             parse_one("CAST(x AS DECIMAL) / y", read="mysql").sql(dialect="postgres"),
             "CAST(x AS DECIMAL) / NULLIF(y, 0)",
         )
+
+    def test_div_infinity(self):
+        inf_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), safe=None)
+        div = exp.Div(this=exp.column("a"), expression=exp.column("b"), safe=False)
+        inf_div_dialect = "clickhouse"
+        div_dialect = "snowflake"
+
+        for expression, dialect, expected in [
+            (inf_div, inf_div_dialect, "a / b"),
+            (inf_div, div_dialect, "a / IFF(b = 0, CAST('Infinity' AS DOUBLE), b)"),
+            (
+                div,
+                inf_div_dialect,
+                "a / CASE WHEN b = 0 THEN throwIf(TRUE, 'Division by zero error') ELSE b END",
+            ),
+            (div, div_dialect, "a / b"),
+        ]:
+            with self.subTest(f"{expression.__class__.__name__} {dialect} -> {expected}"):
+                self.assertEqual(expected, expression.sql(dialect=dialect))
 
     def test_limit(self):
         self.validate_all(

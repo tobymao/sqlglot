@@ -218,7 +218,10 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
     if scale == exp.UnixToTime.MICROS:
         return self.func("MAKE_TIMESTAMP", timestamp)
 
-    return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
+    return self.func(
+        "TO_TIMESTAMP",
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale), safe=None),
+    )
 
 
 WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In)
@@ -279,7 +282,7 @@ def _json_extract_value_array_sql(
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
-    SAFE_DIVISION = True
+    SAFE_DIVISION = None
     INDEX_OFFSET = 1
     CONCAT_COALESCE = True
     SUPPORTS_ORDER_BY_ALL = True
@@ -289,6 +292,9 @@ class DuckDB(Dialect):
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    def error_function(self, msg: str) -> t.Optional[exp.Expression]:
+        return exp.func("ERROR", exp.Literal.string(msg))
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):

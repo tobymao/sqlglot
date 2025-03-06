@@ -454,7 +454,7 @@ class TestPresto(Validator):
         )
 
         self.validate_all(
-            "DATE_ADD('MINUTE', CAST(FLOOR(CAST(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP) AS DOUBLE) / NULLIF(30, 0)) * 30 AS BIGINT), col)",
+            "DATE_ADD('MINUTE', CAST(FLOOR(CAST(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP) AS DOUBLE) / 30) * 30 AS BIGINT), col)",
             read={
                 "spark": "TIMESTAMPADD(MINUTE, FLOOR(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP)/30)*30, col)",
             },

@@ -3436,7 +3436,11 @@ class Generator(metaclass=_Generator):
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
         return self.sql(
             exp.Cast(
-                this=exp.Div(this=expression.this, expression=expression.expression),
+                this=exp.Div(
+                    this=expression.this,
+                    expression=expression.expression,
+                    safe=self.dialect.SAFE_DIVISION,
+                ),
                 to=exp.DataType(this=exp.DataType.Type.INT),
             )
         )
@@ -3451,28 +3455,40 @@ class Generator(metaclass=_Generator):
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right
 
-        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
-            r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
+        # This ensures that the source dialect's division-by-zero semantics are preserved
+        if not r.is_number or r.name == "0":
+            source_safe = expression.args.get("safe")
+            target_safe = self.dialect.SAFE_DIVISION
 
-        if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
+            # Case 1: division by zero in source dialect raises an error
+            if source_safe is False and target_safe is not False:
+                error_func = self.dialect.error_function("Division by zero error")
+                if error_func:
+                    r.replace(exp.If(this=r.eq(0), true=error_func, false=r.copy()))
+            # Case 2: division by zero in source dialect produces null
+            elif source_safe is True and target_safe is not True:
+                r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
+            # Case 3: division by zero in source dialect produces "infinity"
+            elif source_safe is None and target_safe is not None and self.dialect.INFINITY:
+                r.replace(exp.If(this=r.eq(0), true=self.dialect.INFINITY.copy(), false=r.copy()))
+
+        source_typed = expression.args.get("typed")
+        target_typed = self.dialect.TYPED_DIVISION
+
+        # This ensures that the source dialect's typing division semantics are prserved
+        if not source_typed and target_typed:
             if not l.is_type(*exp.DataType.REAL_TYPES) and not r.is_type(*exp.DataType.REAL_TYPES):
                 l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
-
-        elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
+        elif source_typed and not target_typed:
             if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
-                return self.sql(
-                    exp.cast(
-                        l / r,
-                        to=exp.DataType.Type.BIGINT,
-                    )
-                )
+                return self.sql(exp.cast(l / r, to=exp.DataType.Type.BIGINT))
 
         return self.binary(expression, "/")
 
     def safedivide_sql(self, expression: exp.SafeDivide) -> str:
         n = exp._wrap(expression.this, exp.Binary)
         d = exp._wrap(expression.expression, exp.Binary)
-        return self.sql(exp.If(this=d.neq(0), true=n / d, false=exp.Null()))
+        return self.sql(exp.Div(this=n, expression=d, safe=True))
 
     def overlaps_sql(self, expression: exp.Overlaps) -> str:
         return self.binary(expression, "OVERLAPS")

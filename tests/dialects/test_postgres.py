@@ -797,7 +797,7 @@ FROM json_data, field_ids""",
             },
             write={
                 "sqlite": "1 / CAST(CAST(CAST(4 AS REAL) / 2 AS INTEGER) AS REAL)",
-                "duckdb": "1 / CAST(4 // 2 AS DECIMAL)",
+                "duckdb": "1 / CASE WHEN CAST(4 // 2 AS DECIMAL) = 0 THEN ERROR('Division by zero error') ELSE CAST(4 // 2 AS DECIMAL) END",
                 "bigquery": "1 / CAST(DIV(4, 2) AS NUMERIC)",
             },
         )

@@ -1651,7 +1651,7 @@ def build_json_extract_path(
                 return expr_type.from_arg_list(args)
 
             text = arg.name
-            if is_int(text):
+            if is_int(text) and (not arrow_req_json_type or not arg.is_string):
                 index = int(text)
                 segments.append(
                     exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)

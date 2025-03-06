@@ -474,6 +474,7 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.INET: "INET",
         exp.DataType.Type.ROWVERSION: "VARBINARY",
         exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
+        exp.DataType.Type.BLOB: "VARBINARY",
     }
 
     TIME_PART_SINGULARS = {

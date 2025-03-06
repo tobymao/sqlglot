@@ -930,6 +930,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.TEXT: "String",
             exp.DataType.Type.VARBINARY: "String",
             exp.DataType.Type.VARCHAR: "String",
+            exp.DataType.Type.BLOB: "String",
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

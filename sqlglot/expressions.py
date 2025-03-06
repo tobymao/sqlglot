@@ -4526,6 +4526,7 @@ class DataType(Expression):
         XML = auto()
         YEAR = auto()
         TDIGEST = auto()
+        BLOB = auto()
 
     STRUCT_TYPES = {
         Type.NESTED,

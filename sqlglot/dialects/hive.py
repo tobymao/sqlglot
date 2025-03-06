@@ -493,6 +493,7 @@ class Hive(Dialect):
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.VARBINARY: "BINARY",
+            exp.DataType.Type.BLOB: "BINARY",
         }
 
         TRANSFORMS = {

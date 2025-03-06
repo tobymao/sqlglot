@@ -165,6 +165,7 @@ class SQLite(Dialect):
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.VARBINARY: "BLOB",
         }
+        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
 
         TOKEN_MAPPING = {
             TokenType.AUTO_INCREMENT: "AUTOINCREMENT",

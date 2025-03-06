@@ -407,6 +407,7 @@ class Parser(metaclass=_Parser):
         TokenType.NAME,
         TokenType.TDIGEST,
         TokenType.DYNAMIC,
+        TokenType.BLOB,
         *ENUM_TYPE_TOKENS,
         *NESTED_TYPE_TOKENS,
         *AGGREGATE_TYPE_TOKENS,

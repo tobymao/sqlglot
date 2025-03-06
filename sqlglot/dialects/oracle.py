@@ -283,6 +283,7 @@ class Oracle(Dialect):
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.ROWVERSION: "BLOB",
         }
+        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

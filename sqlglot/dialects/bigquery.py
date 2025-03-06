@@ -1011,6 +1011,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.VARBINARY: "BYTES",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",
+            exp.DataType.Type.BLOB: "BYTES",
         }
 
         PROPERTIES_LOCATION = {

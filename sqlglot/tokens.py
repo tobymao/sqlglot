@@ -220,6 +220,7 @@ class TokenType(AutoName):
     UNKNOWN = auto()
     VECTOR = auto()
     DYNAMIC = auto()
+    BLOB = auto()
 
     # keywords
     ALIAS = auto()

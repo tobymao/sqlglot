@@ -346,6 +346,22 @@ class TestMySQL(Validator):
                 "tsql": "CHAR(10)",
             },
         )
+        self.validate_identity("CREATE TABLE t (foo VARBINARY)")
+        self.validate_all(
+            "CREATE TABLE t (foo BLOB)",
+            write={
+                "mysql": "CREATE TABLE t (foo BLOB)",
+                "oracle": "CREATE TABLE t (foo BLOB)",
+                "postgres": "CREATE TABLE t (foo BYTEA)",
+                "tsql": "CREATE TABLE t (foo VARBINARY)",
+                "sqlite": "CREATE TABLE t (foo BLOB)",
+                "duckdb": "CREATE TABLE t (foo VARBINARY)",
+                "hive": "CREATE TABLE t (foo BINARY)",
+                "bigquery": "CREATE TABLE t (foo BYTES)",
+                "redshift": "CREATE TABLE t (foo VARBYTE)",
+                "clickhouse": "CREATE TABLE t (foo Nullable(String))",
+            },
+        )
 
     def test_escape(self):
         self.validate_identity("""'"abc"'""")

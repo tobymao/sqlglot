@@ -257,6 +257,7 @@ class MySQL(Dialect):
             "_UTF32": TokenType.INTRODUCER,
             "_UTF8MB3": TokenType.INTRODUCER,
             "_UTF8MB4": TokenType.INTRODUCER,
+            "BLOB": TokenType.BLOB,
             "@@": TokenType.SESSION_PARAMETER,
         }
 
@@ -833,6 +834,7 @@ class MySQL(Dialect):
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.TINYBLOB)
+        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

@@ -346,7 +346,7 @@ class TestMySQL(Validator):
                 "tsql": "CHAR(10)",
             },
         )
-        self.validate_identity("CREATE TABLE t (foo VARBINARY)")
+        self.validate_identity("CREATE TABLE t (foo VARBINARY(5))")
         self.validate_all(
             "CREATE TABLE t (foo BLOB)",
             write={

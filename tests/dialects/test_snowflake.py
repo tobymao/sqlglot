@@ -300,6 +300,13 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
+            write={
+                "duckdb": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL)",
+                "snowflake": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL AUTOINCREMENT)",
+            },
+        )
+        self.validate_all(
             "SELECT TO_TIMESTAMP('2025-01-16 14:45:30.123', 'yyyy-mm-DD hh24:mi:ss.ff6')",
             write={
                 "": "SELECT STR_TO_TIME('2025-01-16 14:45:30.123', '%Y-%m-%d %H:%M:%S.%f')",

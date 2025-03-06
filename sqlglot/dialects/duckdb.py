@@ -1065,3 +1065,7 @@ class DuckDB(Dialect):
 
             self.unsupported("Only integer formats are supported by NumberToStr")
             return self.function_fallback_sql(expression)
+
+        def autoincrementcolumnconstraint_sql(self, _) -> str:
+            self.unsupported("The AUTOINCREMENT column constraint is not supported by DuckDB")
+            return ""

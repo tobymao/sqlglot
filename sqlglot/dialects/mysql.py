@@ -163,6 +163,7 @@ class MySQL(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     SAFE_DIVISION = True
+    INFINITY = None
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {

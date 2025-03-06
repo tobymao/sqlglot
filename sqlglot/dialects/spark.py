@@ -92,6 +92,9 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
 
+    def error_function(self, msg: str) -> exp.Expression:
+        return exp.func("RAISE_ERROR", exp.Literal.string(msg))
+
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
 

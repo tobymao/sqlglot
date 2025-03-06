@@ -142,6 +142,7 @@ class TokenType(AutoName):
     TEXT = auto()
     MEDIUMTEXT = auto()
     LONGTEXT = auto()
+    BLOB = auto()
     MEDIUMBLOB = auto()
     LONGBLOB = auto()
     TINYBLOB = auto()

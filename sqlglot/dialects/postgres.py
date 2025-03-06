@@ -527,6 +527,7 @@ class Postgres(Dialect):
             exp.DataType.Type.VARBINARY: "BYTEA",
             exp.DataType.Type.ROWVERSION: "BYTEA",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.BLOB: "BYTEA",
         }
 
         TRANSFORMS = {

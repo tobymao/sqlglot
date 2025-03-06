@@ -192,6 +192,7 @@ class MySQL(Dialect):
             "CHARSET": TokenType.CHARACTER_SET,
             # The DESCRIBE and EXPLAIN statements are synonyms.
             # https://dev.mysql.com/doc/refman/8.4/en/explain.html
+            "BLOB": TokenType.BLOB,
             "EXPLAIN": TokenType.DESCRIBE,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
@@ -830,6 +831,7 @@ class MySQL(Dialect):
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.TINYTEXT)
+        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.TINYBLOB)

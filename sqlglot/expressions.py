@@ -4414,6 +4414,7 @@ class DataType(Expression):
         BIGSERIAL = auto()
         BINARY = auto()
         BIT = auto()
+        BLOB = auto()
         BOOLEAN = auto()
         BPCHAR = auto()
         CHAR = auto()

@@ -920,6 +920,7 @@ class ClickHouse(Dialect):
         ARRAY_SIZE_NAME = "LENGTH"
 
         STRING_TYPE_MAPPING = {
+            exp.DataType.Type.BLOB: "String",
             exp.DataType.Type.CHAR: "String",
             exp.DataType.Type.LONGBLOB: "String",
             exp.DataType.Type.LONGTEXT: "String",

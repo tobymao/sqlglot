@@ -327,6 +327,7 @@ class Parser(metaclass=_Parser):
         TokenType.TEXT,
         TokenType.MEDIUMTEXT,
         TokenType.LONGTEXT,
+        TokenType.BLOB,
         TokenType.MEDIUMBLOB,
         TokenType.LONGBLOB,
         TokenType.BINARY,

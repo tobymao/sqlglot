@@ -468,13 +468,13 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.MEDIUMTEXT: "TEXT",
         exp.DataType.Type.LONGTEXT: "TEXT",
         exp.DataType.Type.TINYTEXT: "TEXT",
+        exp.DataType.Type.BLOB: "VARBINARY",
         exp.DataType.Type.MEDIUMBLOB: "BLOB",
         exp.DataType.Type.LONGBLOB: "BLOB",
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
         exp.DataType.Type.ROWVERSION: "VARBINARY",
         exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
-        exp.DataType.Type.BLOB: "VARBINARY",
     }
 
     TIME_PART_SINGULARS = {

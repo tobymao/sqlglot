@@ -4414,6 +4414,7 @@ class DataType(Expression):
         BIGSERIAL = auto()
         BINARY = auto()
         BIT = auto()
+        BLOB = auto()
         BOOLEAN = auto()
         BPCHAR = auto()
         CHAR = auto()
@@ -4526,7 +4527,6 @@ class DataType(Expression):
         XML = auto()
         YEAR = auto()
         TDIGEST = auto()
-        BLOB = auto()
 
     STRUCT_TYPES = {
         Type.NESTED,

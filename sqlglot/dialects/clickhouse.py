@@ -920,6 +920,7 @@ class ClickHouse(Dialect):
         ARRAY_SIZE_NAME = "LENGTH"
 
         STRING_TYPE_MAPPING = {
+            exp.DataType.Type.BLOB: "String",
             exp.DataType.Type.CHAR: "String",
             exp.DataType.Type.LONGBLOB: "String",
             exp.DataType.Type.LONGTEXT: "String",
@@ -930,7 +931,6 @@ class ClickHouse(Dialect):
             exp.DataType.Type.TEXT: "String",
             exp.DataType.Type.VARBINARY: "String",
             exp.DataType.Type.VARCHAR: "String",
-            exp.DataType.Type.BLOB: "String",
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

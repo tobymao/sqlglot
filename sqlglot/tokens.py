@@ -142,6 +142,7 @@ class TokenType(AutoName):
     TEXT = auto()
     MEDIUMTEXT = auto()
     LONGTEXT = auto()
+    BLOB = auto()
     MEDIUMBLOB = auto()
     LONGBLOB = auto()
     TINYBLOB = auto()
@@ -220,7 +221,6 @@ class TokenType(AutoName):
     UNKNOWN = auto()
     VECTOR = auto()
     DYNAMIC = auto()
-    BLOB = auto()
 
     # keywords
     ALIAS = auto()

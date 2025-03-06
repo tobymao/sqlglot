@@ -166,12 +166,12 @@ class Redshift(Postgres):
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
             exp.DataType.Type.BINARY: "VARBYTE",
+            exp.DataType.Type.BLOB: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.ROWVERSION: "VARBYTE",
-            exp.DataType.Type.BLOB: "VARBYTE",
         }
 
         TRANSFORMS = {

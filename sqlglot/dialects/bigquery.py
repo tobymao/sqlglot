@@ -992,6 +992,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.BIGDECIMAL: "BIGNUMERIC",
             exp.DataType.Type.BIGINT: "INT64",
             exp.DataType.Type.BINARY: "BYTES",
+            exp.DataType.Type.BLOB: "BYTES",
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.CHAR: "STRING",
             exp.DataType.Type.DECIMAL: "NUMERIC",
@@ -1011,7 +1012,6 @@ class BigQuery(Dialect):
             exp.DataType.Type.VARBINARY: "BYTES",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",
-            exp.DataType.Type.BLOB: "BYTES",
         }
 
         PROPERTIES_LOCATION = {

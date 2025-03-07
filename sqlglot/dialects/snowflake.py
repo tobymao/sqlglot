@@ -431,10 +431,10 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
             ),
             "FLATTEN": exp.Explode.from_arg_list,
-            "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
                 this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
             ),
+            "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))

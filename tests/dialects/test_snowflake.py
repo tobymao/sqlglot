@@ -1002,7 +1002,7 @@ class TestSnowflake(Validator):
             "SELECT HEX_DECODE_BINARY('65')",
             write={
                 "bigquery": "SELECT FROM_HEX('65')",
-                "duckdb": "SELECT FROM_HEX('65')",
+                "duckdb": "SELECT UNHEX('65')",
                 "snowflake": "SELECT HEX_DECODE_BINARY('65')",
             },
         )

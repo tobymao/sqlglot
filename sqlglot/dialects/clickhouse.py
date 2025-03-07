@@ -184,7 +184,7 @@ class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
-    SAFE_DIVISION = True
+    SAFE_DIVISION = "inf"
     LOG_BASE_FIRST: t.Optional[bool] = None
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     PRESERVE_ORIGINAL_NAMES = True
@@ -206,6 +206,9 @@ class ClickHouse(Dialect):
         exp.Intersect: False,
         exp.Union: None,
     }
+
+    def error_function(self, msg: str) -> t.Optional[exp.Expression]:
+        return exp.func("throwIf", exp.true(), exp.Literal.string(msg), dialect="clickhouse")
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]

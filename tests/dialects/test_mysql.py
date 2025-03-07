@@ -1289,9 +1289,9 @@ COMMENT='客户账户表'"""
             "a / b",
             write={
                 "bigquery": "a / NULLIF(b, 0)",
-                "clickhouse": "a / b",
+                "clickhouse": "a / nullIf(b, 0)",
                 "databricks": "a / NULLIF(b, 0)",
-                "duckdb": "a / b",
+                "duckdb": "a / NULLIF(b, 0)",
                 "hive": "a / b",
                 "mysql": "a / b",
                 "oracle": "a / NULLIF(b, 0)",

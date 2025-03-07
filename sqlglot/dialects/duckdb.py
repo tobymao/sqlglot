@@ -666,6 +666,7 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, exp.DataType.Type.TIMESTAMP),
                 exp.cast(e.this, exp.DataType.Type.TIMESTAMP),
             ),
+            exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
             ),

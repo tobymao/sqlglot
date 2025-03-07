@@ -3609,7 +3609,8 @@ class Parser(metaclass=_Parser):
         self, skip_join_token: bool = False, parse_bracket: bool = False
     ) -> t.Optional[exp.Join]:
         if self._match(TokenType.COMMA):
-            if (table := self._try_parse(self._parse_table)):
+            table = self._try_parse(self._parse_table)
+            if table:
                 return self.expression(exp.Join, this=table)
             return None
 

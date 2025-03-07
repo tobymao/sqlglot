@@ -3609,7 +3609,10 @@ class Parser(metaclass=_Parser):
         self, skip_join_token: bool = False, parse_bracket: bool = False
     ) -> t.Optional[exp.Join]:
         if self._match(TokenType.COMMA):
-            return self.expression(exp.Join, this=self._parse_table())
+            table = self._try_parse(self._parse_table)
+            if table:
+                return self.expression(exp.Join, this=table)
+            return None
 
         index = self._index
         method, side, kind = self._parse_join_parts()

@@ -434,6 +434,7 @@ class Snowflake(Dialect):
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
                 this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
             ),
+            "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
@@ -1030,6 +1031,7 @@ class Snowflake(Dialect):
             exp.TsOrDsToTime: lambda self, e: self.func(
                 "TRY_TO_TIME" if e.args.get("safe") else "TO_TIME", e.this, self.format_time(e)
             ),
+            exp.Unhex: rename_func("HEX_DECODE_BINARY"),
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.Uuid: rename_func("UUID_STRING"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),

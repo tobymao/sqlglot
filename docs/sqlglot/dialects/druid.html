@@ -178,7 +178,7 @@
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">Druid</span><wbr>(<span class="base"><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span>):
+    <span class="name">Druid</span><wbr>(<span class="base">sqlglot.dialects.dialect.Dialect</span>):
 
                 <label class="view-source-button" for="Druid-view-source"><span>View Source</span></label>
 
@@ -501,77 +501,6 @@
     
 
                             </div>
-                            <div class="inherited">
-                                <h5>Inherited Members</h5>
-                                <dl>
-                                    <div><dt><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
-                                <dd id="Druid.__init__" class="function"><a href="dialect.html#Dialect.__init__">Dialect</a></dd>
-                <dd id="Druid.INDEX_OFFSET" class="variable"><a href="dialect.html#Dialect.INDEX_OFFSET">INDEX_OFFSET</a></dd>
-                <dd id="Druid.WEEK_OFFSET" class="variable"><a href="dialect.html#Dialect.WEEK_OFFSET">WEEK_OFFSET</a></dd>
-                <dd id="Druid.UNNEST_COLUMN_ONLY" class="variable"><a href="dialect.html#Dialect.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
-                <dd id="Druid.ALIAS_POST_TABLESAMPLE" class="variable"><a href="dialect.html#Dialect.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
-                <dd id="Druid.TABLESAMPLE_SIZE_IS_PERCENT" class="variable"><a href="dialect.html#Dialect.TABLESAMPLE_SIZE_IS_PERCENT">TABLESAMPLE_SIZE_IS_PERCENT</a></dd>
-                <dd id="Druid.NORMALIZATION_STRATEGY" class="variable"><a href="dialect.html#Dialect.NORMALIZATION_STRATEGY">NORMALIZATION_STRATEGY</a></dd>
-                <dd id="Druid.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="dialect.html#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
-                <dd id="Druid.DPIPE_IS_STRING_CONCAT" class="variable"><a href="dialect.html#Dialect.DPIPE_IS_STRING_CONCAT">DPIPE_IS_STRING_CONCAT</a></dd>
-                <dd id="Druid.STRICT_STRING_CONCAT" class="variable"><a href="dialect.html#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
-                <dd id="Druid.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="dialect.html#Dialect.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
-                <dd id="Druid.SUPPORTS_SEMI_ANTI_JOIN" class="variable"><a href="dialect.html#Dialect.SUPPORTS_SEMI_ANTI_JOIN">SUPPORTS_SEMI_ANTI_JOIN</a></dd>
-                <dd id="Druid.COPY_PARAMS_ARE_CSV" class="variable"><a href="dialect.html#Dialect.COPY_PARAMS_ARE_CSV">COPY_PARAMS_ARE_CSV</a></dd>
-                <dd id="Druid.NORMALIZE_FUNCTIONS" class="variable"><a href="dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
-                <dd id="Druid.PRESERVE_ORIGINAL_NAMES" class="variable"><a href="dialect.html#Dialect.PRESERVE_ORIGINAL_NAMES">PRESERVE_ORIGINAL_NAMES</a></dd>
-                <dd id="Druid.LOG_BASE_FIRST" class="variable"><a href="dialect.html#Dialect.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
-                <dd id="Druid.NULL_ORDERING" class="variable"><a href="dialect.html#Dialect.NULL_ORDERING">NULL_ORDERING</a></dd>
-                <dd id="Druid.TYPED_DIVISION" class="variable"><a href="dialect.html#Dialect.TYPED_DIVISION">TYPED_DIVISION</a></dd>
-                <dd id="Druid.SAFE_DIVISION" class="variable"><a href="dialect.html#Dialect.SAFE_DIVISION">SAFE_DIVISION</a></dd>
-                <dd id="Druid.CONCAT_COALESCE" class="variable"><a href="dialect.html#Dialect.CONCAT_COALESCE">CONCAT_COALESCE</a></dd>
-                <dd id="Druid.HEX_LOWERCASE" class="variable"><a href="dialect.html#Dialect.HEX_LOWERCASE">HEX_LOWERCASE</a></dd>
-                <dd id="Druid.DATE_FORMAT" class="variable"><a href="dialect.html#Dialect.DATE_FORMAT">DATE_FORMAT</a></dd>
-                <dd id="Druid.DATEINT_FORMAT" class="variable"><a href="dialect.html#Dialect.DATEINT_FORMAT">DATEINT_FORMAT</a></dd>
-                <dd id="Druid.TIME_FORMAT" class="variable"><a href="dialect.html#Dialect.TIME_FORMAT">TIME_FORMAT</a></dd>
-                <dd id="Druid.TIME_MAPPING" class="variable"><a href="dialect.html#Dialect.TIME_MAPPING">TIME_MAPPING</a></dd>
-                <dd id="Druid.FORMAT_MAPPING" class="variable"><a href="dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
-                <dd id="Druid.UNESCAPED_SEQUENCES" class="variable"><a href="dialect.html#Dialect.UNESCAPED_SEQUENCES">UNESCAPED_SEQUENCES</a></dd>
-                <dd id="Druid.PSEUDOCOLUMNS" class="variable"><a href="dialect.html#Dialect.PSEUDOCOLUMNS">PSEUDOCOLUMNS</a></dd>
-                <dd id="Druid.PREFER_CTE_ALIAS_COLUMN" class="variable"><a href="dialect.html#Dialect.PREFER_CTE_ALIAS_COLUMN">PREFER_CTE_ALIAS_COLUMN</a></dd>
-                <dd id="Druid.FORCE_EARLY_ALIAS_REF_EXPANSION" class="variable"><a href="dialect.html#Dialect.FORCE_EARLY_ALIAS_REF_EXPANSION">FORCE_EARLY_ALIAS_REF_EXPANSION</a></dd>
-                <dd id="Druid.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY" class="variable"><a href="dialect.html#Dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY">EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY</a></dd>
-                <dd id="Druid.SUPPORTS_ORDER_BY_ALL" class="variable"><a href="dialect.html#Dialect.SUPPORTS_ORDER_BY_ALL">SUPPORTS_ORDER_BY_ALL</a></dd>
-                <dd id="Druid.HAS_DISTINCT_ARRAY_CONSTRUCTORS" class="variable"><a href="dialect.html#Dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS">HAS_DISTINCT_ARRAY_CONSTRUCTORS</a></dd>
-                <dd id="Druid.SUPPORTS_FIXED_SIZE_ARRAYS" class="variable"><a href="dialect.html#Dialect.SUPPORTS_FIXED_SIZE_ARRAYS">SUPPORTS_FIXED_SIZE_ARRAYS</a></dd>
-                <dd id="Druid.STRICT_JSON_PATH_SYNTAX" class="variable"><a href="dialect.html#Dialect.STRICT_JSON_PATH_SYNTAX">STRICT_JSON_PATH_SYNTAX</a></dd>
-                <dd id="Druid.ON_CONDITION_EMPTY_BEFORE_ERROR" class="variable"><a href="dialect.html#Dialect.ON_CONDITION_EMPTY_BEFORE_ERROR">ON_CONDITION_EMPTY_BEFORE_ERROR</a></dd>
-                <dd id="Druid.ARRAY_AGG_INCLUDES_NULLS" class="variable"><a href="dialect.html#Dialect.ARRAY_AGG_INCLUDES_NULLS">ARRAY_AGG_INCLUDES_NULLS</a></dd>
-                <dd id="Druid.PROMOTE_TO_INFERRED_DATETIME_TYPE" class="variable"><a href="dialect.html#Dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE">PROMOTE_TO_INFERRED_DATETIME_TYPE</a></dd>
-                <dd id="Druid.SUPPORTS_VALUES_DEFAULT" class="variable"><a href="dialect.html#Dialect.SUPPORTS_VALUES_DEFAULT">SUPPORTS_VALUES_DEFAULT</a></dd>
-                <dd id="Druid.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED" class="variable"><a href="dialect.html#Dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED">NUMBERS_CAN_BE_UNDERSCORE_SEPARATED</a></dd>
-                <dd id="Druid.REGEXP_EXTRACT_DEFAULT_GROUP" class="variable"><a href="dialect.html#Dialect.REGEXP_EXTRACT_DEFAULT_GROUP">REGEXP_EXTRACT_DEFAULT_GROUP</a></dd>
-                <dd id="Druid.SET_OP_DISTINCT_BY_DEFAULT" class="variable"><a href="dialect.html#Dialect.SET_OP_DISTINCT_BY_DEFAULT">SET_OP_DISTINCT_BY_DEFAULT</a></dd>
-                <dd id="Druid.CREATABLE_KIND_MAPPING" class="variable"><a href="dialect.html#Dialect.CREATABLE_KIND_MAPPING">CREATABLE_KIND_MAPPING</a></dd>
-                <dd id="Druid.DATE_PART_MAPPING" class="variable"><a href="dialect.html#Dialect.DATE_PART_MAPPING">DATE_PART_MAPPING</a></dd>
-                <dd id="Druid.TYPE_TO_EXPRESSIONS" class="variable"><a href="dialect.html#Dialect.TYPE_TO_EXPRESSIONS">TYPE_TO_EXPRESSIONS</a></dd>
-                <dd id="Druid.ANNOTATORS" class="variable"><a href="dialect.html#Dialect.ANNOTATORS">ANNOTATORS</a></dd>
-                <dd id="Druid.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
-                <dd id="Druid.format_time" class="function"><a href="dialect.html#Dialect.format_time">format_time</a></dd>
-                <dd id="Druid.settings" class="variable"><a href="dialect.html#Dialect.settings">settings</a></dd>
-                <dd id="Druid.normalize_identifier" class="function"><a href="dialect.html#Dialect.normalize_identifier">normalize_identifier</a></dd>
-                <dd id="Druid.case_sensitive" class="function"><a href="dialect.html#Dialect.case_sensitive">case_sensitive</a></dd>
-                <dd id="Druid.can_identify" class="function"><a href="dialect.html#Dialect.can_identify">can_identify</a></dd>
-                <dd id="Druid.quote_identifier" class="function"><a href="dialect.html#Dialect.quote_identifier">quote_identifier</a></dd>
-                <dd id="Druid.to_json_path" class="function"><a href="dialect.html#Dialect.to_json_path">to_json_path</a></dd>
-                <dd id="Druid.parse" class="function"><a href="dialect.html#Dialect.parse">parse</a></dd>
-                <dd id="Druid.parse_into" class="function"><a href="dialect.html#Dialect.parse_into">parse_into</a></dd>
-                <dd id="Druid.generate" class="function"><a href="dialect.html#Dialect.generate">generate</a></dd>
-                <dd id="Druid.transpile" class="function"><a href="dialect.html#Dialect.transpile">transpile</a></dd>
-                <dd id="Druid.tokenize" class="function"><a href="dialect.html#Dialect.tokenize">tokenize</a></dd>
-                <dd id="Druid.tokenizer" class="variable"><a href="dialect.html#Dialect.tokenizer">tokenizer</a></dd>
-                <dd id="Druid.jsonpath_tokenizer" class="variable"><a href="dialect.html#Dialect.jsonpath_tokenizer">jsonpath_tokenizer</a></dd>
-                <dd id="Druid.parser" class="function"><a href="dialect.html#Dialect.parser">parser</a></dd>
-                <dd id="Druid.generator" class="function"><a href="dialect.html#Dialect.generator">generator</a></dd>
-
-            </div>
-                                </dl>
-                            </div>
                 </section>
                 <section id="Druid.Generator">
                             <input id="Druid.Generator-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -641,7 +570,7 @@ Default: True</li>
                                 <div class="attr variable">
             <span class="name">TYPE_MAPPING</span>        =
 <input id="Druid.Generator.TYPE_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Druid.Generator.TYPE_MAPPING-view-value"></label><span class="default_value">{&lt;Type.DATETIME2: &#39;DATETIME2&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.NCHAR: &#39;NCHAR&#39;&gt;: &#39;STRING&#39;, &lt;Type.NVARCHAR: &#39;NVARCHAR&#39;&gt;: &#39;STRING&#39;, &lt;Type.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.LONGTEXT: &#39;LONGTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.TINYTEXT: &#39;TINYTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.LONGBLOB: &#39;LONGBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.TINYBLOB: &#39;TINYBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.INET: &#39;INET&#39;&gt;: &#39;INET&#39;, &lt;Type.ROWVERSION: &#39;ROWVERSION&#39;&gt;: &#39;VARBINARY&#39;, &lt;Type.SMALLDATETIME: &#39;SMALLDATETIME&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.TEXT: &#39;TEXT&#39;&gt;: &#39;STRING&#39;, &lt;Type.UUID: &#39;UUID&#39;&gt;: &#39;STRING&#39;}</span>
+            <label class="view-value-button pdoc-button" for="Druid.Generator.TYPE_MAPPING-view-value"></label><span class="default_value">{&lt;Type.DATETIME2: &#39;DATETIME2&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.NCHAR: &#39;NCHAR&#39;&gt;: &#39;STRING&#39;, &lt;Type.NVARCHAR: &#39;NVARCHAR&#39;&gt;: &#39;STRING&#39;, &lt;Type.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.LONGTEXT: &#39;LONGTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.TINYTEXT: &#39;TINYTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.BLOB: &#39;BLOB&#39;&gt;: &#39;VARBINARY&#39;, &lt;Type.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.LONGBLOB: &#39;LONGBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.TINYBLOB: &#39;TINYBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.INET: &#39;INET&#39;&gt;: &#39;INET&#39;, &lt;Type.ROWVERSION: &#39;ROWVERSION&#39;&gt;: &#39;VARBINARY&#39;, &lt;Type.SMALLDATETIME: &#39;SMALLDATETIME&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.TEXT: &#39;TEXT&#39;&gt;: &#39;STRING&#39;, &lt;Type.UUID: &#39;UUID&#39;&gt;: &#39;STRING&#39;}</span>
 
         
     </div>
@@ -778,6 +707,7 @@ Default: True</li>
                 <dd id="Druid.Generator.SUPPORTS_UNIX_SECONDS" class="variable"><a href="../generator.html#Generator.SUPPORTS_UNIX_SECONDS">SUPPORTS_UNIX_SECONDS</a></dd>
                 <dd id="Druid.Generator.PARSE_JSON_NAME" class="variable"><a href="../generator.html#Generator.PARSE_JSON_NAME">PARSE_JSON_NAME</a></dd>
                 <dd id="Druid.Generator.ARRAY_SIZE_NAME" class="variable"><a href="../generator.html#Generator.ARRAY_SIZE_NAME">ARRAY_SIZE_NAME</a></dd>
+                <dd id="Druid.Generator.ALTER_SET_TYPE" class="variable"><a href="../generator.html#Generator.ALTER_SET_TYPE">ALTER_SET_TYPE</a></dd>
                 <dd id="Druid.Generator.ARRAY_SIZE_DIM_REQUIRED" class="variable"><a href="../generator.html#Generator.ARRAY_SIZE_DIM_REQUIRED">ARRAY_SIZE_DIM_REQUIRED</a></dd>
                 <dd id="Druid.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
                 <dd id="Druid.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
@@ -858,6 +788,7 @@ Default: True</li>
                 <dd id="Druid.Generator.set_operation" class="function"><a href="../generator.html#Generator.set_operation">set_operation</a></dd>
                 <dd id="Druid.Generator.set_operations" class="function"><a href="../generator.html#Generator.set_operations">set_operations</a></dd>
                 <dd id="Druid.Generator.fetch_sql" class="function"><a href="../generator.html#Generator.fetch_sql">fetch_sql</a></dd>
+                <dd id="Druid.Generator.limitoptions_sql" class="function"><a href="../generator.html#Generator.limitoptions_sql">limitoptions_sql</a></dd>
                 <dd id="Druid.Generator.filter_sql" class="function"><a href="../generator.html#Generator.filter_sql">filter_sql</a></dd>
                 <dd id="Druid.Generator.hint_sql" class="function"><a href="../generator.html#Generator.hint_sql">hint_sql</a></dd>
                 <dd id="Druid.Generator.indexparameters_sql" class="function"><a href="../generator.html#Generator.indexparameters_sql">indexparameters_sql</a></dd>
@@ -1031,6 +962,7 @@ Default: True</li>
                 <dd id="Druid.Generator.commit_sql" class="function"><a href="../generator.html#Generator.commit_sql">commit_sql</a></dd>
                 <dd id="Druid.Generator.rollback_sql" class="function"><a href="../generator.html#Generator.rollback_sql">rollback_sql</a></dd>
                 <dd id="Druid.Generator.altercolumn_sql" class="function"><a href="../generator.html#Generator.altercolumn_sql">altercolumn_sql</a></dd>
+                <dd id="Druid.Generator.alterindex_sql" class="function"><a href="../generator.html#Generator.alterindex_sql">alterindex_sql</a></dd>
                 <dd id="Druid.Generator.alterdiststyle_sql" class="function"><a href="../generator.html#Generator.alterdiststyle_sql">alterdiststyle_sql</a></dd>
                 <dd id="Druid.Generator.altersortkey_sql" class="function"><a href="../generator.html#Generator.altersortkey_sql">altersortkey_sql</a></dd>
                 <dd id="Druid.Generator.alterrename_sql" class="function"><a href="../generator.html#Generator.alterrename_sql">alterrename_sql</a></dd>
@@ -1073,6 +1005,7 @@ Default: True</li>
                 <dd id="Druid.Generator.slice_sql" class="function"><a href="../generator.html#Generator.slice_sql">slice_sql</a></dd>
                 <dd id="Druid.Generator.sub_sql" class="function"><a href="../generator.html#Generator.sub_sql">sub_sql</a></dd>
                 <dd id="Druid.Generator.trycast_sql" class="function"><a href="../generator.html#Generator.trycast_sql">trycast_sql</a></dd>
+                <dd id="Druid.Generator.jsoncast_sql" class="function"><a href="../generator.html#Generator.jsoncast_sql">jsoncast_sql</a></dd>
                 <dd id="Druid.Generator.try_sql" class="function"><a href="../generator.html#Generator.try_sql">try_sql</a></dd>
                 <dd id="Druid.Generator.log_sql" class="function"><a href="../generator.html#Generator.log_sql">log_sql</a></dd>
                 <dd id="Druid.Generator.use_sql" class="function"><a href="../generator.html#Generator.use_sql">use_sql</a></dd>
@@ -1186,6 +1119,16 @@ Default: True</li>
                 <dd id="Druid.Generator.analyze_sql" class="function"><a href="../generator.html#Generator.analyze_sql">analyze_sql</a></dd>
                 <dd id="Druid.Generator.xmltable_sql" class="function"><a href="../generator.html#Generator.xmltable_sql">xmltable_sql</a></dd>
                 <dd id="Druid.Generator.xmlnamespace_sql" class="function"><a href="../generator.html#Generator.xmlnamespace_sql">xmlnamespace_sql</a></dd>
+                <dd id="Druid.Generator.export_sql" class="function"><a href="../generator.html#Generator.export_sql">export_sql</a></dd>
+                <dd id="Druid.Generator.declare_sql" class="function"><a href="../generator.html#Generator.declare_sql">declare_sql</a></dd>
+                <dd id="Druid.Generator.declareitem_sql" class="function"><a href="../generator.html#Generator.declareitem_sql">declareitem_sql</a></dd>
+                <dd id="Druid.Generator.recursivewithsearch_sql" class="function"><a href="../generator.html#Generator.recursivewithsearch_sql">recursivewithsearch_sql</a></dd>
+                <dd id="Druid.Generator.parameterizedagg_sql" class="function"><a href="../generator.html#Generator.parameterizedagg_sql">parameterizedagg_sql</a></dd>
+                <dd id="Druid.Generator.anonymousaggfunc_sql" class="function"><a href="../generator.html#Generator.anonymousaggfunc_sql">anonymousaggfunc_sql</a></dd>
+                <dd id="Druid.Generator.combinedaggfunc_sql" class="function"><a href="../generator.html#Generator.combinedaggfunc_sql">combinedaggfunc_sql</a></dd>
+                <dd id="Druid.Generator.combinedparameterizedagg_sql" class="function"><a href="../generator.html#Generator.combinedparameterizedagg_sql">combinedparameterizedagg_sql</a></dd>
+                <dd id="Druid.Generator.show_sql" class="function"><a href="../generator.html#Generator.show_sql">show_sql</a></dd>
+                <dd id="Druid.Generator.put_sql" class="function"><a href="../generator.html#Generator.put_sql">put_sql</a></dd>
 
             </div>
                                 </dl>

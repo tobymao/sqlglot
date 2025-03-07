@@ -1,6 +1,57 @@
 Changelog
 =========
 
+## [v26.9.0] - 2025-03-07
+### :boom: BREAKING CHANGES
+- due to [`6a3973b`](https://github.com/tobymao/sqlglot/commit/6a3973b7da639a19634bc352ea76f75735114c38) - Refactor exp.GroupConcat generation *(PR [#4823](https://github.com/tobymao/sqlglot/pull/4823) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Refactor exp.GroupConcat generation (#4823)
+
+- due to [`813d2ad`](https://github.com/tobymao/sqlglot/commit/813d2ada7afd653b2aaff75cbddd7f011750f861) - use _parse_table_parts for udf parsing *(PR [#4829](https://github.com/tobymao/sqlglot/pull/4829) by [@geooo109](https://github.com/geooo109))*:
+
+  use _parse_table_parts for udf parsing (#4829)
+
+- due to [`7cdbad6`](https://github.com/tobymao/sqlglot/commit/7cdbad688cad7e7ce40df99802e93deb6a4d7abf) - add initial support for PUT statements *(PR [#4818](https://github.com/tobymao/sqlglot/pull/4818) by [@whummer](https://github.com/whummer))*:
+
+  add initial support for PUT statements (#4818)
+
+- due to [`8c0a6be`](https://github.com/tobymao/sqlglot/commit/8c0a6bec6e38f3f6ce9a90b6a9b6457de70c7228) - BLOB transpilation *(PR [#4844](https://github.com/tobymao/sqlglot/pull/4844) by [@geooo109](https://github.com/geooo109))*:
+
+  BLOB transpilation (#4844)
+
+
+### :sparkles: New Features
+- [`7e8975e`](https://github.com/tobymao/sqlglot/commit/7e8975efce0af350142f8fb437cf46dd46f2b8d9) - **oracle**: add FORCE property *(PR [#4828](https://github.com/tobymao/sqlglot/pull/4828) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#4826](https://github.com/tobymao/sqlglot/issues/4826) opened by [@Duchyna1](https://github.com/Duchyna1)*
+- [`7cdbad6`](https://github.com/tobymao/sqlglot/commit/7cdbad688cad7e7ce40df99802e93deb6a4d7abf) - **snowflake**: add initial support for PUT statements *(PR [#4818](https://github.com/tobymao/sqlglot/pull/4818) by [@whummer](https://github.com/whummer))*
+  - :arrow_lower_right: *addresses issue [#4813](https://github.com/tobymao/sqlglot/issues/4813) opened by [@whummer](https://github.com/whummer)*
+- [`f4d1a1f`](https://github.com/tobymao/sqlglot/commit/f4d1a1f4d8104b2efd56f568ca99c7e768466d19) - **hive**: add support for STORED BY syntax for storage handlers *(PR [#4832](https://github.com/tobymao/sqlglot/pull/4832) by [@tsamaras](https://github.com/tsamaras))*
+- [`b7a0df1`](https://github.com/tobymao/sqlglot/commit/b7a0df1b9a9cff2cd57db77ac0095c189b9d67ab) - **parser**: Support trailing commas after from *(PR [#4854](https://github.com/tobymao/sqlglot/pull/4854) by [@omerhadari](https://github.com/omerhadari))*
+
+### :bug: Bug Fixes
+- [`6a3973b`](https://github.com/tobymao/sqlglot/commit/6a3973b7da639a19634bc352ea76f75735114c38) - **duckdb, snowflake**: Refactor exp.GroupConcat generation *(PR [#4823](https://github.com/tobymao/sqlglot/pull/4823) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4821](https://github.com/tobymao/sqlglot/issues/4821) opened by [@asarama](https://github.com/asarama)*
+- [`08eb7f2`](https://github.com/tobymao/sqlglot/commit/08eb7f2032957c2fe3119963f344538b90d8f631) - **snowflake**: clean up PUT implementation *(PR [#4830](https://github.com/tobymao/sqlglot/pull/4830) by [@georgesittas](https://github.com/georgesittas))*
+- [`adf2fef`](https://github.com/tobymao/sqlglot/commit/adf2fef27dc341508c3b9c710da0f835277094a1) - **mysql**: Support for USING BTREE/HASH in PK *(PR [#4837](https://github.com/tobymao/sqlglot/pull/4837) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4833](https://github.com/tobymao/sqlglot/issues/4833) opened by [@Gohoy](https://github.com/Gohoy)*
+- [`8c0a6be`](https://github.com/tobymao/sqlglot/commit/8c0a6bec6e38f3f6ce9a90b6a9b6457de70c7228) - **mysql**: BLOB transpilation *(PR [#4844](https://github.com/tobymao/sqlglot/pull/4844) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4839](https://github.com/tobymao/sqlglot/issues/4839) opened by [@Gohoy](https://github.com/Gohoy)*
+- [`0cb7a71`](https://github.com/tobymao/sqlglot/commit/0cb7a719de33ab1f6cfedf0833df7c79324b21f9) - **postgres**: Fix arrow extraction for string keys representing numbers *(PR [#4842](https://github.com/tobymao/sqlglot/pull/4842) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4840](https://github.com/tobymao/sqlglot/issues/4840) opened by [@superkashyap](https://github.com/superkashyap)*
+- [`2e223cb`](https://github.com/tobymao/sqlglot/commit/2e223cb3e0bc946b8aa97e115e4c0dc02e58d1c9) - **parser**: properly parse qualified columns when parsing "columns ops" *(PR [#4847](https://github.com/tobymao/sqlglot/pull/4847) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4845](https://github.com/tobymao/sqlglot/issues/4845) opened by [@maudlel](https://github.com/maudlel)*
+
+### :recycle: Refactors
+- [`813d2ad`](https://github.com/tobymao/sqlglot/commit/813d2ada7afd653b2aaff75cbddd7f011750f861) - use _parse_table_parts for udf parsing *(PR [#4829](https://github.com/tobymao/sqlglot/pull/4829) by [@geooo109](https://github.com/geooo109))*
+
+### :wrench: Chores
+- [`e4fd354`](https://github.com/tobymao/sqlglot/commit/e4fd354c8fb55752cb883eb3912950c17020a1df) - Simplify Hive's STORED BY property *(PR [#4838](https://github.com/tobymao/sqlglot/pull/4838) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`8115b58`](https://github.com/tobymao/sqlglot/commit/8115b5853e621423eb2697b7253b17ef709dbdf0) - (duckdb): treat auto-increment DDL property as unsupported *(PR [#4849](https://github.com/tobymao/sqlglot/pull/4849) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4841](https://github.com/tobymao/sqlglot/issues/4841) opened by [@sk-](https://github.com/sk-)*
+- [`b05dddb`](https://github.com/tobymao/sqlglot/commit/b05dddbe5a7d45dfebefc3e04cb95d8c4d9802e9) - fix pdoc deployment *(PR [#4856](https://github.com/tobymao/sqlglot/pull/4856) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4853](https://github.com/tobymao/sqlglot/issues/4853) opened by [@tsamaras](https://github.com/tsamaras)*
+
+
 ## [v26.8.0] - 2025-03-03
 ### :boom: BREAKING CHANGES
 - due to [`596b66f`](https://github.com/tobymao/sqlglot/commit/596b66fc289140109db8f689c6e84264d643a47a) - add support for and/2 and or/2 functions *(PR [#4806](https://github.com/tobymao/sqlglot/pull/4806) by [@georgesittas](https://github.com/georgesittas))*:
@@ -6039,3 +6090,4 @@ Changelog
 [v26.6.0]: https://github.com/tobymao/sqlglot/compare/v26.5.0...v26.6.0
 [v26.7.0]: https://github.com/tobymao/sqlglot/compare/v26.6.0...v26.7.0
 [v26.8.0]: https://github.com/tobymao/sqlglot/compare/v26.7.0...v26.8.0
+[v26.9.0]: https://github.com/tobymao/sqlglot/compare/v26.8.0...v26.9.0

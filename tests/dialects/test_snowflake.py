@@ -299,6 +299,20 @@ class TestSnowflake(Validator):
             "SELECT * RENAME (a AS b), c AS d FROM xxx",
         )
 
+        # Support for optional trailing commas after tables in from clause
+        self.validate_identity(
+            "SELECT * FROM xxx, yyy, zzz,",
+            "SELECT * FROM xxx, yyy, zzz",
+        )
+        self.validate_identity(
+            "SELECT * FROM xxx, yyy, zzz, WHERE foo = bar",
+            "SELECT * FROM xxx, yyy, zzz WHERE foo = bar",
+        )
+        self.validate_identity(
+            "SELECT * FROM xxx, yyy, zzz",
+            "SELECT * FROM xxx, yyy, zzz",
+        )
+
         self.validate_all(
             "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
             write={

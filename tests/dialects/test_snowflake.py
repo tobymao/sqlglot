@@ -999,11 +999,11 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE TABLE t (id INT PRIMARY KEY AUTOINCREMENT)")
 
         self.validate_all(
-            "SELECT FROM_HEX_BINARY('65')",
+            "SELECT HEX_DECODE_BINARY('65')",
             write={
                 "bigquery": "SELECT FROM_HEX('65')",
                 "duckdb": "SELECT FROM_HEX('65')",
-                "snowflake": "SELECT FROM_HEX_BINARY('65')",
+                "snowflake": "SELECT HEX_DECODE_BINARY('65')",
             },
         )
 

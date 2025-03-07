@@ -8,6 +8,10 @@ from pdoc.__main__ import cli, parser
 
 # Need this import or else import_module doesn't work
 import sqlglot  # noqa
+from sqlglot.dialects import *
+
+# Load all dialects up front because lazy loading breaks pdoc's dynamic importing
+sqlglot.dialects.__all__ = [globals()[attr_name] for attr_name in sqlglot.dialects.__all__]
 
 
 def mocked_import(*args, **kwargs):

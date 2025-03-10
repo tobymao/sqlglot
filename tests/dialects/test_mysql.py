@@ -1311,7 +1311,7 @@ COMMENT='客户账户表'"""
 
     def test_timestamp_trunc(self):
         hive_dialects = ("spark", "databricks")
-        for dialect in ("postgres", "snowflake", "duckdb", *hive_dialects):
+        for dialect in ("postgres", "snowflake", *hive_dialects):
             for unit in (
                 "SECOND",
                 "DAY",

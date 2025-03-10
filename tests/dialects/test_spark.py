@@ -445,7 +445,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT DATEDIFF(MONTH, CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
             read={
-                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMPTZ), CAST('1997-02-28 10:30:00' AS TIMESTAMPTZ))",
             },
             write={
                 "spark": "SELECT DATEDIFF(MONTH, TO_DATE(CAST('1996-10-30' AS TIMESTAMP)), TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)))",

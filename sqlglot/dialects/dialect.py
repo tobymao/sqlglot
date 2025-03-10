@@ -1858,7 +1858,7 @@ def groupconcat_sql(
     return self.sql(listagg)
 
 
-def build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
+def build_timetostr_or_tochar(args: t.List, dialect: Dialect) -> exp.TimeToStr | exp.ToChar:
     this = seq_get(args, 0)
 
     if this and not this.type:
@@ -1866,6 +1866,7 @@ def build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
 
         annotate_types(this)
         if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            return build_formatted_time(exp.TimeToStr, "oracle", default=True)(args)
+            dialect_name = dialect.__class__.__name__.lower()
+            return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
 
     return exp.ToChar.from_arg_list(args)

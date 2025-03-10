@@ -685,6 +685,7 @@ class Parser(metaclass=_Parser):
 
     TIMESTAMPS = {
         TokenType.TIMESTAMP,
+        TokenType.TIMESTAMPNTZ,
         TokenType.TIMESTAMPTZ,
         TokenType.TIMESTAMPLTZ,
         *TIMES,

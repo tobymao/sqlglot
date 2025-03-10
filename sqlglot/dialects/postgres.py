@@ -262,8 +262,11 @@ class Postgres(Dialect):
     TIME_MAPPING = {
         "AM": "%p",
         "PM": "%p",
+        "d": "%u",  # 1-based day of week
         "D": "%u",  # 1-based day of week
+        "dd": "%d",  # day of month
         "DD": "%d",  # day of month
+        "ddd": "%j",  # zero padded day of year
         "DDD": "%j",  # zero padded day of year
         "FMDD": "%-d",  # - is no leading zero for Python; same for FM in postgres
         "FMDDD": "%-j",  # day of year
@@ -274,9 +277,12 @@ class Postgres(Dialect):
         "FMSS": "%-S",  # Second
         "HH12": "%I",  # 09
         "HH24": "%H",  # 09
+        "mi": "%M",  # zero padded minute
         "MI": "%M",  # zero padded minute
+        "mm": "%m",  # 01
         "MM": "%m",  # 01
         "OF": "%z",  # utc offset
+        "ss": "%S",  # zero padded second
         "SS": "%S",  # zero padded second
         "TMDay": "%A",  # TM is locale dependent
         "TMDy": "%a",
@@ -284,8 +290,11 @@ class Postgres(Dialect):
         "TMMonth": "%B",  # September
         "TZ": "%Z",  # uppercase timezone name
         "US": "%f",  # zero padded microsecond
+        "ww": "%U",  # 1-based week of year
         "WW": "%U",  # 1-based week of year
+        "yy": "%y",  # 15
         "YY": "%y",  # 15
+        "yyyy": "%Y",  # 2015
         "YYYY": "%Y",  # 2015
     }
 

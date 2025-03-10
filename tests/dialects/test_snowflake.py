@@ -588,6 +588,16 @@ class TestSnowflake(Validator):
                 "teradata": "TO_CHAR(x, y)",
             },
         )
+        self.validate_identity(
+            "TO_CHAR(foo::DATE, 'yyyy')", "TO_CHAR(CAST(CAST(foo AS DATE) AS TIMESTAMP), 'yyyy')"
+        )
+        self.validate_all(
+            "TO_CHAR(foo::TIMESTAMP, 'YYYY-MM')",
+            write={
+                "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
+                "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
+            },
+        )
         self.validate_all(
             "SQUARE(x)",
             write={

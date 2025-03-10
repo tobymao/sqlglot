@@ -8,6 +8,10 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("x::timestamp with time zone", "CAST(x AS TIMESTAMPTZ)")
+
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -419,6 +423,7 @@ class TestDuckDB(Validator):
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={
                 "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
+                "spark": "SELECT DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP_NTZ), CONCAT(COALESCE('yyyy', ''), COALESCE('MM', '')))",
                 "tsql": "SELECT FORMAT(CAST('2020-01-01' AS DATETIME2), CONCAT('yyyy', 'MM'))",
             },
         )

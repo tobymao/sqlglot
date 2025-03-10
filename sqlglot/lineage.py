@@ -394,9 +394,7 @@ class GraphHTML:
         edges = json.dumps(self.edges)
         options = json.dumps(self.options)
         imports = (
-            """<script type="text/javascript" src="https://unpkg.com/vis-data@latest/peer/umd/vis-data.min.js"></script>
-  <script type="text/javascript" src="https://unpkg.com/vis-network@latest/peer/umd/vis-network.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="https://unpkg.com/vis-network/styles/vis-network.min.css" />"""
+            """<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>"""
             if self.imports
             else ""
         )

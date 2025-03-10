@@ -465,9 +465,19 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             continue
 
         column_table: t.Optional[str | exp.Identifier] = column.table
+
+        # Check if the column table is an UNPIVOT alias
+        # This prevents treating UNPIVOT result columns as struct field accesses
+        is_unpivot_alias = False
+        if scope.pivots:
+            pivot = scope.pivots[0]
+            if pivot.unpivot and pivot.alias and column_table == pivot.alias:
+                is_unpivot_alias = True
+
         if (
             column_table
             and column_table not in scope.sources
+            and not is_unpivot_alias  # Skip processing if this is an UNPIVOT alias
             and (
                 not scope.parent
                 or column_table not in scope.parent.sources

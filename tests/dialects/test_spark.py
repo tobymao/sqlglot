@@ -489,6 +489,13 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'zZ')",
+            write={
+                "": "SELECT STR_TO_TIME(x, '%Z%z')",
+                "duckdb": "SELECT STRPTIME(x, '%Z%z')",
+            },
+        )
+        self.validate_all(
             "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
             read={
                 "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",

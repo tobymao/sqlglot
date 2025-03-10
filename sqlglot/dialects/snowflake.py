@@ -6,6 +6,7 @@ from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    build_timetostr_or_tochar,
     binary_from_function,
     build_default_decimal_type,
     build_timestamp_from_parts,
@@ -463,6 +464,7 @@ class Snowflake(Dialect):
             "TRY_TO_TIMESTAMP": _build_datetime(
                 "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
             ),
+            "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(
                 this=seq_get(args, 0),

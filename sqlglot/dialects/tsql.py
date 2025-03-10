@@ -388,6 +388,8 @@ class TSQL(Dialect):
     CONCAT_COALESCE = True
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    INFINITY = None
+
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
     TIME_MAPPING = {

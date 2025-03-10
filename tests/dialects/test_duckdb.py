@@ -1482,3 +1482,86 @@ class TestDuckDB(Validator):
 
     def test_analyze(self):
         self.validate_identity("ANALYZE")
+
+    def test_prefix_aliases(self):
+        # https://duckdb.org/2025/02/25/prefix-aliases-in-sql.html
+        self.validate_identity(
+            "SELECT foo: 1",
+            "SELECT 1 AS foo",
+        )
+        self.validate_identity(
+            "SELECT foo: bar",
+            "SELECT bar AS foo",
+        )
+        self.validate_identity(
+            "SELECT foo: t.col FROM t",
+            "SELECT t.col AS foo FROM t",
+        )
+        self.validate_identity(
+            'SELECT "foo" /* bla */: 1',
+            'SELECT 1 AS "foo" /* bla */',
+        )
+        self.validate_identity(
+            'SELECT "foo": 1 /* bla */',
+            'SELECT 1 AS "foo" /* bla */',
+        )
+        self.validate_identity(
+            'SELECT "foo": /* bla */ 1',
+            'SELECT 1 AS "foo" /* bla */',
+        )
+        self.validate_identity(
+            'SELECT "foo": /* bla */ 1 /* foo */',
+            'SELECT 1 AS "foo" /* bla */ /* foo */',
+        )
+        self.validate_identity(
+            'SELECT "foo": 1',
+            'SELECT 1 AS "foo"',
+        )
+        self.validate_identity(
+            "SELECT foo: 1, bar: 2, baz: 3",
+            "SELECT 1 AS foo, 2 AS bar, 3 AS baz",
+        )
+        self.validate_identity(
+            "SELECT e: 1 + 2, f: len('asdf'), s: (SELECT 42)",
+            "SELECT 1 + 2 AS e, LENGTH('asdf') AS f, (SELECT 42) AS s",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo: bar",
+            "SELECT * FROM bar AS foo",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo: c.db.tbl",
+            "SELECT * FROM c.db.tbl AS foo",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo /* bla */: bar",
+            "SELECT * FROM bar AS foo /* bla */",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo /* bla */: bar /* baz */",
+            "SELECT * FROM bar AS foo /* bla */ /* baz */",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo /* bla */: /* baz */ bar /* boo */",
+            "SELECT * FROM bar AS foo /* bla */ /* baz */ /* boo */",
+        )
+        self.validate_identity(
+            "SELECT * FROM r: range(10), v: (VALUES (42)), s: (FROM range(10))",
+            "SELECT * FROM RANGE(0, 10) AS r, (VALUES (42)) AS v, (SELECT * FROM RANGE(0, 10)) AS s",
+        )
+        self.validate_identity(
+            """
+            SELECT
+                l_returnflag,
+                l_linestatus,
+                sum_qty:        sum(l_quantity),
+                sum_base_price: sum(l_extendedprice),
+                sum_disc_price: sum(l_extendedprice * (1-l_discount)),
+                sum_charge:     sum(l_extendedprice * (1-l_discount) * (1+l_tax)),
+                avg_qty:        avg(l_quantity),
+                avg_price:      avg(l_extendedprice),
+                avg_disc:       avg(l_discount),
+                count_order:    count(*)
+            """,
+            "SELECT l_returnflag, l_linestatus, SUM(l_quantity) AS sum_qty, SUM(l_extendedprice) AS sum_base_price, SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price, SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge, AVG(l_quantity) AS avg_qty, AVG(l_extendedprice) AS avg_price, AVG(l_discount) AS avg_disc, COUNT(*) AS count_order",
+        )

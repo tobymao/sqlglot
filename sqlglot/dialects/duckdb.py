@@ -468,6 +468,58 @@ class DuckDB(Dialect):
             TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
         }
 
+        def _parse_expression(self) -> t.Optional[exp.Expression]:
+            # DuckDB supports prefix aliases, e.g. foo: 1
+            if self._next and self._next.token_type == TokenType.COLON:
+                alias = self._parse_id_var(tokens=self.ALIAS_TOKENS)
+                self._match(TokenType.COLON)
+                comments = self._prev_comments or []
+
+                this = self._parse_assignment()
+                if isinstance(this, exp.Expression):
+                    # Moves the comment next to the alias in `alias: expr /* comment */`
+                    comments += this.pop_comments() or []
+
+                return self.expression(exp.Alias, comments=comments, this=this, alias=alias)
+
+            return super()._parse_expression()
+
+        def _parse_table(
+            self,
+            schema: bool = False,
+            joins: bool = False,
+            alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+            parse_bracket: bool = False,
+            is_db_reference: bool = False,
+            parse_partition: bool = False,
+        ) -> t.Optional[exp.Expression]:
+            # DuckDB supports prefix aliases, e.g. FROM foo: bar
+            if self._next and self._next.token_type == TokenType.COLON:
+                alias = self._parse_table_alias(
+                    alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
+                )
+                self._match(TokenType.COLON)
+                comments = self._prev_comments or []
+            else:
+                alias = None
+                comments = []
+
+            table = super()._parse_table(
+                schema=schema,
+                joins=joins,
+                alias_tokens=alias_tokens,
+                parse_bracket=parse_bracket,
+                is_db_reference=is_db_reference,
+                parse_partition=parse_partition,
+            )
+            if isinstance(table, exp.Expression) and isinstance(alias, exp.TableAlias):
+                # Moves the comment next to the alias in `alias: table /* comment */`
+                comments += table.pop_comments() or []
+                alias.comments = alias.pop_comments() + comments
+                table.set("alias", alias)
+
+            return table
+
         def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
             # https://duckdb.org/docs/sql/samples.html
             sample = super()._parse_table_sample(as_modifier=as_modifier)

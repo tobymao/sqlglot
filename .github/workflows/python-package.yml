@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: pip
     - name: Create a virtual environment
       run: |
         python -m venv .venv
@@ -28,8 +29,4 @@ jobs:
     - name: Run checks (linter, code style, tests)
       run: |
         source ./.venv/bin/activate
-        if [[ ${{ matrix.python-version }} == "3.7" ]]; then
-          make test test-rs
-        else
-          make check
-        fi
+        make check

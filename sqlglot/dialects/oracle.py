@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    build_timetostr_or_tochar,
     build_formatted_time,
     no_ilike_sql,
     rename_func,
@@ -19,19 +20,6 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-
-
-def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
-    this = seq_get(args, 0)
-
-    if this and not this.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
-        annotate_types(this)
-        if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            return build_formatted_time(exp.TimeToStr, "oracle", default=True)(args)
-
-    return exp.ToChar.from_arg_list(args)
 
 
 def _trim_sql(self: Oracle.Generator, expression: exp.Trim) -> str:
@@ -117,7 +105,7 @@ class Oracle(Dialect):
             **parser.Parser.FUNCTIONS,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
-            "TO_CHAR": _build_timetostr_or_tochar,
+            "TO_CHAR": build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args: exp.DateTrunc(

@@ -465,14 +465,61 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             continue
 
         column_table: t.Optional[str | exp.Identifier] = column.table
+
+        # Skip if column doesn't have a table
+        if not column_table:
+            continue
+
+        # If the table is in the current scope's sources, it's not a struct field access
+        if column_table in scope.sources:
+            continue
+
+        # Check if the column's table is a PIVOT/UNPIVOT alias in the current scope first
+        is_pivot_unpivot_alias = False
+
+        # Check in current scope
+        if scope.pivots:
+            for pivot in scope.pivots:
+                if pivot.alias and (
+                    (isinstance(column_table, str) and column_table == pivot.alias)
+                    or (
+                        isinstance(column_table, exp.Identifier)
+                        and column_table.name == pivot.alias
+                    )
+                ):
+                    is_pivot_unpivot_alias = True
+                    break
+
+        # Only check parent scopes if not found in current scope
+        if not is_pivot_unpivot_alias and scope.parent:
+            current_scope = scope.parent
+            while current_scope and not is_pivot_unpivot_alias:
+                if current_scope.pivots:
+                    for pivot in current_scope.pivots:
+                        if pivot.alias and (
+                            (isinstance(column_table, str) and column_table == pivot.alias)
+                            or (
+                                isinstance(column_table, exp.Identifier)
+                                and column_table.name == pivot.alias
+                            )
+                        ):
+                            is_pivot_unpivot_alias = True
+                            break
+                current_scope = current_scope.parent
+
+        # Skip dot conversion for columns with tables that are PIVOT/UNPIVOT aliases
+        if is_pivot_unpivot_alias:
+            continue
+
+        # At this point, we have a column with a table that's:
+        # 1. Not in the current scope's sources
+        # 2. Not a PIVOT/UNPIVOT alias in any scope
+        # So it might be a struct field access
+
         if (
-            column_table
-            and column_table not in scope.sources
-            and (
-                not scope.parent
-                or column_table not in scope.parent.sources
-                or not scope.is_correlated_subquery
-            )
+            not scope.parent
+            or column_table not in scope.parent.sources
+            or not scope.is_correlated_subquery
         ):
             root, *parts = column.parts
 

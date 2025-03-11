@@ -410,8 +410,7 @@ class Expression(metaclass=_Expression):
 
     def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
-        # remove tuple when python 3.7 is deprecated
-        for vs in reversed(tuple(self.args.values())) if reverse else self.args.values():  # type: ignore
+        for vs in reversed(self.args.values()) if reverse else self.args.values():  # type: ignore
             if type(vs) is list:
                 for v in reversed(vs) if reverse else vs:  # type: ignore
                     if hasattr(v, "parent"):

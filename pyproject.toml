@@ -1,0 +1,41 @@
+[project]
+name = "sqlglot"
+dynamic = ["version", "optional-dependencies"]
+description = "An easily customizable SQL parser and transpiler"
+readme = "README.md"
+authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
+license = { file = "LICENSE" }
+requires-python = ">= 3.8"
+classifiers=[
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: SQL",
+    "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.urls]
+Homepage = "https://sqlglot.com/"
+Documentation = "https://sqlglot.com/sqlglot.html"
+Repository = "https://github.com/tobymao/sqlglot"
+Issues = "https://github.com/tobymao/sqlglot/issues"
+
+[build-system]
+requires = ["setuptools >= 61.0", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools_scm]
+version_file = "sqlglot/_version.py"
+fallback_version = "0.0.0"
+local_scheme = "no-local-version"
+
+[tool.setuptools.packages.find]
+include=["sqlglot", "sqlglot.*"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]

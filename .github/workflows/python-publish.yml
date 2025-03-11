@@ -55,13 +55,13 @@ jobs:
     - uses: actions/setup-python@v5
       if: matrix.os == 'windows'
       with:
-        python-version: '3.7'
+        python-version: '3.8'
         architecture: ${{ matrix.python-architecture || 'x64' }}
     - name: Build wheels
       uses: PyO3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
-        args: --release --out dist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+        args: --release --out dist --interpreter 3.8 3.9 3.10 3.11 3.12 3.13
         sccache: 'true'
         manylinux: auto
         working-directory: ./sqlglotrs
@@ -122,7 +122,7 @@ jobs:
         python -m venv .venv
         source ./.venv/bin/activate
         python -m pip install --upgrade pip
-        pip install setuptools wheel twine
+        pip install build twine
         make install-dev
     - name: Build and publish
       env:
@@ -130,7 +130,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
         source ./.venv/bin/activate
-        python setup.py sdist bdist_wheel
+        python -m build
         twine upload dist/*
     - name: Update API docs
       run: |

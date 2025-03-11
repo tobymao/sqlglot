@@ -1,9 +1,11 @@
 import sys
 import datetime
 import math
+import typing as t
 import unittest
 
 from sqlglot import ParseError, alias, exp, parse_one
+from sqlglot.expressions import QueryProvider, Query, normalize_table_name
 
 
 class TestExpressions(unittest.TestCase):
@@ -276,6 +278,29 @@ class TestExpressions(unittest.TestCase):
             ).sql(),
             "SELECT * FROM (SELECT 1) AS a /* source: a-b.c */",
         )
+
+    def test_expand_with_lazy_source_provider(self):
+        class DynamicSourceProvider(QueryProvider):
+            def __init__(self, dialect: str = "spark"):
+                self._sources = {
+                    normalize_table_name("`a-b`.`c`",dialect): "select 1"
+                }
+
+            def get(self, name: str) -> t.Optional[Query]:
+                query_sql = self._sources.get(name)
+
+                if query_sql:
+                    return parse_one(query_sql)
+
+        self.assertEqual(
+                exp.expand(
+                    parse_one('select * from "a-b"."C" AS a'),
+                    DynamicSourceProvider(),
+                    dialect="spark",
+                ).sql(),
+                "SELECT * FROM (SELECT 1) AS a /* source: a-b.c */",
+            )
+
 
     def test_replace_placeholders(self):
         self.assertEqual(

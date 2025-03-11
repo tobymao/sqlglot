@@ -17,6 +17,7 @@ import numbers
 import re
 import textwrap
 import typing as t
+from abc import ABC, abstractmethod
 from collections import deque
 from copy import deepcopy
 from decimal import Decimal
@@ -8492,14 +8493,48 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
+class QueryProvider(ABC):
+    """
+    Provides SQL queries on demand, allowing for lazy query resolution during AST transformations.
+    """
+
+    @abstractmethod
+    def get(self, name: str) -> t.Optional[Query]:
+        """
+        Retrieve a query by name.
+
+        Args:
+            name: The name of the query.
+
+        Returns:
+            The corresponding query, or None if not found.
+        """
+        pass
+
+class DictQueryProvider(QueryProvider):
+    """
+    A QueryProvider backed by a dictionary.
+
+    This allows retrieving pre-defined query expressions by name.
+    """
+
+    def __init__(self, sources: t.Dict[str, Query], dialect: DialectType = None):
+        sources = {normalize_table_name(name, dialect=dialect): query for name, query in sources.items()}
+        self._sources = sources
+        self._dialect = dialect
+
+    def get(self, name: str) -> t.Optional[Query]:
+        """Retrieve a query by name, normalizing it based on dialect."""
+        return self._sources.get(name)
+
+
 def expand(
-    expression: Expression,
-    sources: t.Dict[str, Query],
-    dialect: DialectType = None,
-    copy: bool = True,
+        expression: Expression,
+        sources: t.Dict[str, Query] | QueryProvider,
+        dialect: DialectType = None,
+        copy: bool = True,
 ) -> Expression:
     """Transforms an expression by expanding all referenced sources into subqueries.
-
     Examples:
         >>> from sqlglot import parse_one
         >>> expand(parse_one("select * from x AS z"), {"x": parse_one("select * from y")}).sql()
@@ -8510,19 +8545,20 @@ def expand(
 
     Args:
         expression: The expression to expand.
-        sources: A dictionary of name to Queries.
-        dialect: The dialect of the sources dict.
+        sources: A SourceProvider instance, a class that given a name, provides a query on demand OR a dict of name to query.
+        dialect: The dialect of the sources dict or the QueryProvider.
         copy: Whether to copy the expression during transformation. Defaults to True.
 
     Returns:
         The transformed expression.
     """
-    sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
+
+    query_provider = sources if isinstance(sources, QueryProvider) else DictQueryProvider(sources, dialect=dialect)
 
     def _expand(node: Expression):
         if isinstance(node, Table):
             name = normalize_table_name(node, dialect=dialect)
-            source = sources.get(name)
+            source = query_provider.get(name)
             if source:
                 subquery = source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
@@ -8530,7 +8566,6 @@ def expand(
         return node
 
     return expression.transform(_expand, copy=copy)
-
 
 def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwargs) -> Func:
     """

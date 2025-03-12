@@ -446,6 +446,9 @@ class Hive(Dialect):
             return self.expression(exp.Parameter, this=this, expression=expression)
 
         def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
+            if expression.is_star:
+                return expression
+
             if isinstance(expression, exp.Column):
                 key = expression.this
             else:
@@ -577,6 +580,7 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,
             exp.StructExtract: struct_extract_sql,
+            exp.StarMap: rename_func("MAP"),
             exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,

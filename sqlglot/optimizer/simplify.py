@@ -117,7 +117,7 @@ def simplify(
         node = flatten(node)
         node = simplify_connectors(node, root)
         node = remove_complements(node, root)
-        node = simplify_coalesce(node)
+        node = simplify_coalesce(node, dialect)
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_equality(node)
@@ -775,7 +775,7 @@ def _is_constant(expression: exp.Expression) -> bool:
     return isinstance(expression, exp.CONSTANTS) or _is_date_literal(expression)
 
 
-def simplify_coalesce(expression):
+def simplify_coalesce(expression: exp.Expression, dialect: DialectType) -> exp.Expression:
     # COALESCE(x) -> x
     if (
         isinstance(expression, exp.Coalesce)
@@ -807,6 +807,12 @@ def simplify_coalesce(expression):
         if _is_constant(arg):
             break
     else:
+        return expression
+
+    # We can't convert `COALESCE(x, 1) = 2` into `NOT x IS NULL AND x = 2` for redshift,
+    # because they are not always equivalent. For example,  if `x` is `NULL` and it comes
+    # from a table, then the result is `NULL`, despite `FALSE AND NULL` evaluating to `FALSE`
+    if dialect == "redshift":
         return expression
 
     coalesce.set("expressions", coalesce.expressions[:arg_index])

@@ -8494,7 +8494,7 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
 def expand(
     expression: Expression,
-    sources: t.Dict[str, Query],
+    sources: t.Dict[str, Query] | t.Callable[[str], t.Optional[Query]],
     dialect: DialectType = None,
     copy: bool = True,
 ) -> Expression:
@@ -8510,22 +8510,36 @@ def expand(
 
     Args:
         expression: The expression to expand.
-        sources: A dictionary of name to Queries.
-        dialect: The dialect of the sources dict.
+        sources: A dict of name to query or a callable that provides a query on demand.
+        dialect: The dialect of the sources dict or the callable.
         copy: Whether to copy the expression during transformation. Defaults to True.
 
     Returns:
         The transformed expression.
     """
-    sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
+    # Create a query provider based on the sources parameter
+    if callable(sources):
+        get_source = sources
+    else:
+        # Pre-normalize table names in sources dictionary for consistent lookups
+        normalized_sources = {
+            normalize_table_name(k, dialect=dialect): v for k, v in sources.items()
+        }
+
+        def _get_source(name: str) -> t.Optional[Query]:
+            return normalized_sources.get(name)
+
+        get_source = _get_source
 
     def _expand(node: Expression):
         if isinstance(node, Table):
             name = normalize_table_name(node, dialect=dialect)
-            source = sources.get(name)
+            source = get_source(name)
             if source:
+                # Create a subquery with the same alias (or table name if no alias)
                 subquery = source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
+                # Continue expanding within the subquery
                 return subquery.transform(_expand, copy=False)
         return node
 

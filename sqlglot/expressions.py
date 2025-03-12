@@ -17,7 +17,6 @@ import numbers
 import re
 import textwrap
 import typing as t
-from abc import ABC, abstractmethod
 from collections import deque
 from copy import deepcopy
 from decimal import Decimal
@@ -8494,10 +8493,10 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
 
 def expand(
-        expression: Expression,
-        sources: t.Dict[str, Query] | t.Callable[[str], Query],
-        dialect: DialectType = None,
-        copy: bool = True,
+    expression: Expression,
+    sources: t.Dict[str, Query] | t.Callable[[str], t.Optional[Query]],
+    dialect: DialectType = None,
+    copy: bool = True,
 ) -> Expression:
     """Transforms an expression by expanding all referenced sources into subqueries.
 
@@ -8523,8 +8522,14 @@ def expand(
         get_source = sources
     else:
         # Pre-normalize table names in sources dictionary for consistent lookups
-        normalized_sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
-        get_source = lambda name: normalized_sources.get(name)
+        normalized_sources = {
+            normalize_table_name(k, dialect=dialect): v for k, v in sources.items()
+        }
+
+        def _get_source(name: str) -> t.Optional[Query]:
+            return normalized_sources.get(name)
+
+        get_source = _get_source
 
     def _expand(node: Expression):
         if isinstance(node, Table):
@@ -8539,6 +8544,7 @@ def expand(
         return node
 
     return expression.transform(_expand, copy=copy)
+
 
 def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwargs) -> Func:
     """

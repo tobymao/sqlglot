@@ -450,6 +450,7 @@ class Snowflake(Dialect):
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
             "TIMEDIFF": _build_datediff,
             "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
@@ -744,6 +745,33 @@ class Snowflake(Dialect):
                 table = self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
             else:
                 table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+
+            return table
+
+        def _parse_table(
+            self,
+            schema: bool = False,
+            joins: bool = False,
+            alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+            parse_bracket: bool = False,
+            is_db_reference: bool = False,
+            parse_partition: bool = False,
+        ) -> t.Optional[exp.Expression]:
+            table = super()._parse_table(
+                schema=schema,
+                joins=joins,
+                alias_tokens=alias_tokens,
+                parse_bracket=parse_bracket,
+                is_db_reference=is_db_reference,
+                parse_partition=parse_partition,
+            )
+            if isinstance(table, exp.Table) and isinstance(table.this, exp.TableFromRows):
+                table_from_rows = table.this
+                for arg in exp.TableFromRows.arg_types:
+                    if arg != "this":
+                        table_from_rows.set(arg, table.args.get(arg))
+
+                table = table_from_rows
 
             return table
 

@@ -576,3 +576,48 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].name, "t.empid")
         self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+
+    def test_table_udtf_snowflake(self) -> None:
+        lateral_flatten = """
+        SELECT f.value:external_id::string AS external_id
+        FROM database_name.schema_name.table_name AS raw,
+        LATERAL FLATTEN(events) AS f
+        """
+        table_flatten = """
+        SELECT f.value:external_id::string AS external_id
+        FROM database_name.schema_name.table_name AS raw
+        JOIN TABLE(FLATTEN(events)) AS f
+        """
+
+        lateral_node = lineage("external_id", lateral_flatten, dialect="snowflake")
+        table_node = lineage("external_id", table_flatten, dialect="snowflake")
+
+        self.assertEqual(lateral_node.name, "EXTERNAL_ID")
+        self.assertEqual(table_node.name, "EXTERNAL_ID")
+
+        lateral_node = lateral_node.downstream[0]
+        table_node = table_node.downstream[0]
+
+        self.assertEqual(lateral_node.name, "F.VALUE")
+        self.assertEqual(
+            lateral_node.source.sql("snowflake"),
+            "LATERAL FLATTEN(RAW.EVENTS) AS F(SEQ, KEY, PATH, INDEX, VALUE, THIS)",
+        )
+
+        self.assertEqual(table_node.name, "F.VALUE")
+        self.assertEqual(table_node.source.sql("snowflake"), "TABLE(FLATTEN(RAW.EVENTS)) AS F")
+
+        lateral_node = lateral_node.downstream[0]
+        table_node = table_node.downstream[0]
+
+        self.assertEqual(lateral_node.name, "RAW.EVENTS")
+        self.assertEqual(
+            lateral_node.source.sql("snowflake"),
+            "DATABASE_NAME.SCHEMA_NAME.TABLE_NAME AS RAW",
+        )
+
+        self.assertEqual(table_node.name, "RAW.EVENTS")
+        self.assertEqual(
+            table_node.source.sql("snowflake"),
+            "DATABASE_NAME.SCHEMA_NAME.TABLE_NAME AS RAW",
+        )

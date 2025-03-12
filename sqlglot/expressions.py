@@ -2587,6 +2587,18 @@ class Lateral(UDTF):
     }
 
 
+# https://docs.snowflake.com/sql-reference/literals-table
+# https://docs.snowflake.com/en/sql-reference/functions-table#using-a-table-function
+class TableFromRows(UDTF):
+    arg_types = {
+        "this": True,
+        "alias": False,
+        "joins": False,
+        "pivots": False,
+        "sample": False,
+    }
+
+
 class MatchRecognizeMeasure(Expression):
     arg_types = {
         "this": True,

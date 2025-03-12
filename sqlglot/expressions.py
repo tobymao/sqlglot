@@ -11,6 +11,7 @@ SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
+
 import datetime
 import math
 import numbers
@@ -37,6 +38,7 @@ from sqlglot.tokens import Token, TokenError
 
 if t.TYPE_CHECKING:
     from typing_extensions import Self
+
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import DialectType
 
@@ -8494,7 +8496,7 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
 def expand(
     expression: Expression,
-    sources: t.Dict[str, Query] | t.Callable[[str], t.Optional[Query]],
+    sources: t.Dict[str, Query | t.Callable[[], Query]],
     dialect: DialectType = None,
     copy: bool = True,
 ) -> Expression:
@@ -8517,27 +8519,19 @@ def expand(
     Returns:
         The transformed expression.
     """
+    normalized_sources = {
+        normalize_table_name(k, dialect=dialect): v for k, v in sources.items()
+    }
     # Create a query provider based on the sources parameter
-    if callable(sources):
-        get_source = sources
-    else:
-        # Pre-normalize table names in sources dictionary for consistent lookups
-        normalized_sources = {
-            normalize_table_name(k, dialect=dialect): v for k, v in sources.items()
-        }
-
-        def _get_source(name: str) -> t.Optional[Query]:
-            return normalized_sources.get(name)
-
-        get_source = _get_source
 
     def _expand(node: Expression):
         if isinstance(node, Table):
             name = normalize_table_name(node, dialect=dialect)
-            source = get_source(name)
+            source = normalized_sources.get(name)
             if source:
                 # Create a subquery with the same alias (or table name if no alias)
-                subquery = source.subquery(node.alias or name)
+                parsed_source = source() if callable(source) else source
+                subquery = parsed_source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
                 # Continue expanding within the subquery
                 return subquery.transform(_expand, copy=False)

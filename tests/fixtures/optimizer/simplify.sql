@@ -843,6 +843,10 @@ x;
 COALESCE(x, 1) = 2;
 NOT x IS NULL AND x = 2;
 
+# dialect: redshift
+COALESCE(x, 1) = 2;
+COALESCE(x, 1) = 2;
+
 2 = COALESCE(x, 1);
 NOT x IS NULL AND x = 2;
 

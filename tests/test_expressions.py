@@ -5,7 +5,7 @@ import typing as t
 import unittest
 
 from sqlglot import ParseError, alias, exp, parse_one
-from sqlglot.expressions import QueryProvider, Query, normalize_table_name
+from sqlglot.expressions import Query, normalize_table_name
 
 
 class TestExpressions(unittest.TestCase):
@@ -280,7 +280,7 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_expand_with_lazy_source_provider(self):
-        class DynamicSourceProvider(QueryProvider):
+        class DynamicSourceProvider:
             def __init__(self, dialect: str = "spark"):
                 self._sources = {
                     normalize_table_name("`a-b`.`c`",dialect): "select 1"
@@ -292,10 +292,14 @@ class TestExpressions(unittest.TestCase):
                 if query_sql:
                     return parse_one(query_sql)
 
+        dynamic_source_provider = DynamicSourceProvider()
+
+        get_source = lambda name: dynamic_source_provider.get(name)
+
         self.assertEqual(
                 exp.expand(
                     parse_one('select * from "a-b"."C" AS a'),
-                    DynamicSourceProvider(),
+                    get_source,
                     dialect="spark",
                 ).sql(),
                 "SELECT * FROM (SELECT 1) AS a /* source: a-b.c */",

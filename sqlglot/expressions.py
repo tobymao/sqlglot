@@ -8493,48 +8493,14 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
-class QueryProvider(ABC):
-    """
-    Provides SQL queries on demand, allowing for lazy query resolution during AST transformations.
-    """
-
-    @abstractmethod
-    def get(self, name: str) -> t.Optional[Query]:
-        """
-        Retrieve a query by name.
-
-        Args:
-            name: The name of the query.
-
-        Returns:
-            The corresponding query, or None if not found.
-        """
-        pass
-
-class DictQueryProvider(QueryProvider):
-    """
-    A QueryProvider backed by a dictionary.
-
-    This allows retrieving pre-defined query expressions by name.
-    """
-
-    def __init__(self, sources: t.Dict[str, Query], dialect: DialectType = None):
-        sources = {normalize_table_name(name, dialect=dialect): query for name, query in sources.items()}
-        self._sources = sources
-        self._dialect = dialect
-
-    def get(self, name: str) -> t.Optional[Query]:
-        """Retrieve a query by name, normalizing it based on dialect."""
-        return self._sources.get(name)
-
-
 def expand(
         expression: Expression,
-        sources: t.Dict[str, Query] | QueryProvider,
+        sources: t.Dict[str, Query] | t.Callable[[str], Query],
         dialect: DialectType = None,
         copy: bool = True,
 ) -> Expression:
     """Transforms an expression by expanding all referenced sources into subqueries.
+
     Examples:
         >>> from sqlglot import parse_one
         >>> expand(parse_one("select * from x AS z"), {"x": parse_one("select * from y")}).sql()
@@ -8545,23 +8511,30 @@ def expand(
 
     Args:
         expression: The expression to expand.
-        sources: A SourceProvider instance, a class that given a name, provides a query on demand OR a dict of name to query.
-        dialect: The dialect of the sources dict or the QueryProvider.
+        sources: A dict of name to query or a callable that provides a query on demand.
+        dialect: The dialect of the sources dict or the callable.
         copy: Whether to copy the expression during transformation. Defaults to True.
 
     Returns:
         The transformed expression.
     """
-
-    query_provider = sources if isinstance(sources, QueryProvider) else DictQueryProvider(sources, dialect=dialect)
+    # Create a query provider based on the sources parameter
+    if callable(sources):
+        get_source = sources
+    else:
+        # Pre-normalize table names in sources dictionary for consistent lookups
+        normalized_sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
+        get_source = lambda name: normalized_sources.get(name)
 
     def _expand(node: Expression):
         if isinstance(node, Table):
             name = normalize_table_name(node, dialect=dialect)
-            source = query_provider.get(name)
+            source = get_source(name)
             if source:
+                # Create a subquery with the same alias (or table name if no alias)
                 subquery = source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
+                # Continue expanding within the subquery
                 return subquery.transform(_expand, copy=False)
         return node
 

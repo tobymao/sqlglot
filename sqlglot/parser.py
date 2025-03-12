@@ -1387,6 +1387,8 @@ class Parser(metaclass=_Parser):
 
     RECURSIVE_CTE_SEARCH_KIND = {"BREADTH", "DEPTH", "CYCLE"}
 
+    MODIFIABLES = (exp.Query, exp.Table, exp.TableFromRows)
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -3351,7 +3353,7 @@ class Parser(metaclass=_Parser):
     def _parse_query_modifiers(
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
-        if isinstance(this, (exp.Query, exp.Table)):
+        if isinstance(this, self.MODIFIABLES):
             for join in self._parse_joins():
                 this.append("joins", join)
             for lateral in iter(self._parse_lateral, None):

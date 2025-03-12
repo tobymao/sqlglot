@@ -1627,44 +1627,21 @@ class TestSnowflake(Validator):
             "CREATE PROCEDURE a.b.c(x INT, y VARIANT) RETURNS OBJECT EXECUTE AS CALLER AS 'BEGIN SELECT 1; END;'"
         )
 
-    def test_table_literal(self):
-        # All examples from https://docs.snowflake.com/en/sql-reference/literals-table.html
-        self.validate_all(
-            r"""SELECT * FROM TABLE('MYTABLE')""",
-            write={"snowflake": r"""SELECT * FROM TABLE('MYTABLE')"""},
-        )
-
-        self.validate_all(
-            r"""SELECT * FROM TABLE('MYDB."MYSCHEMA"."MYTABLE"')""",
-            write={"snowflake": r"""SELECT * FROM TABLE('MYDB."MYSCHEMA"."MYTABLE"')"""},
-        )
-
-        # Per Snowflake documentation at https://docs.snowflake.com/en/sql-reference/literals-table.html
-        # one can use either a  " ' " or " $$ " to enclose the object identifier.
-        # Capturing the single tokens seems like lot of work. Hence adjusting tests to use these interchangeably,
-        self.validate_all(
-            r"""SELECT * FROM TABLE($$MYDB. "MYSCHEMA"."MYTABLE"$$)""",
-            write={"snowflake": r"""SELECT * FROM TABLE('MYDB. "MYSCHEMA"."MYTABLE"')"""},
-        )
-
-        self.validate_all(
-            r"""SELECT * FROM TABLE($MYVAR)""",
-            write={"snowflake": r"""SELECT * FROM TABLE($MYVAR)"""},
-        )
-
-        self.validate_all(
-            r"""SELECT * FROM TABLE(?)""",
-            write={"snowflake": r"""SELECT * FROM TABLE(?)"""},
-        )
-
-        self.validate_all(
-            r"""SELECT * FROM TABLE(:BINDING)""",
-            write={"snowflake": r"""SELECT * FROM TABLE(:BINDING)"""},
-        )
-
-        self.validate_all(
-            r"""SELECT * FROM TABLE($MYVAR) WHERE COL1 = 10""",
-            write={"snowflake": r"""SELECT * FROM TABLE($MYVAR) WHERE COL1 = 10"""},
+    def test_table_function(self):
+        self.validate_identity("SELECT * FROM TABLE('MYTABLE')")
+        self.validate_identity("SELECT * FROM TABLE($MYVAR)")
+        self.validate_identity("SELECT * FROM TABLE(?)")
+        self.validate_identity("SELECT * FROM TABLE(:BINDING)")
+        self.validate_identity("SELECT * FROM TABLE($MYVAR) WHERE COL1 = 10")
+        self.validate_identity("SELECT * FROM TABLE('t1') AS f")
+        self.validate_identity("SELECT * FROM (TABLE('t1') CROSS JOIN TABLE('t2'))")
+        self.validate_identity("SELECT * FROM TABLE('t1'), LATERAL (SELECT * FROM t2)")
+        self.validate_identity("SELECT * FROM TABLE('t1') UNION ALL SELECT * FROM TABLE('t2')")
+        self.validate_identity("SELECT * FROM TABLE('t1') TABLESAMPLE BERNOULLI (20.3)")
+        self.validate_identity("""SELECT * FROM TABLE('MYDB."MYSCHEMA"."MYTABLE"')""")
+        self.validate_identity(
+            'SELECT * FROM TABLE($$MYDB. "MYSCHEMA"."MYTABLE"$$)',
+            """SELECT * FROM TABLE('MYDB. "MYSCHEMA"."MYTABLE"')""",
         )
 
     def test_flatten(self):

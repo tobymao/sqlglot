@@ -191,8 +191,8 @@ class Generator(metaclass=_Generator):
         exp.StreamingTableProperty: lambda *_: "STREAMING",
         exp.StrictProperty: lambda *_: "STRICT",
         exp.SwapTable: lambda self, e: f"SWAP WITH {self.sql(e, 'this')}",
-        exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.Tags: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
+        exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
         exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
@@ -1998,6 +1998,17 @@ class Generator(metaclass=_Generator):
             table = f"ROWS FROM {self.wrap(rows_from)}"
 
         return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
+
+    def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
+        table = self.func("TABLE", expression.this)
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
+        sample = self.sql(expression, "sample")
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+        joins = self.indent(
+            self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
+        )
+        return f"{table}{alias}{pivots}{sample}{joins}"
 
     def tablesample_sql(
         self,

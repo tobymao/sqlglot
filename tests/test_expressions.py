@@ -277,7 +277,6 @@ class TestExpressions(unittest.TestCase):
             "SELECT * FROM (SELECT 1) AS a /* source: a-b.c */",
         )
 
-
     def test_expand_with_lazy_source_provider(self):
         self.assertEqual(
             exp.expand(
@@ -287,7 +286,6 @@ class TestExpressions(unittest.TestCase):
             ).sql(),
             "SELECT * FROM (SELECT 1) AS a /* source: a-b.c */",
         )
-
 
     def test_replace_placeholders(self):
         self.assertEqual(

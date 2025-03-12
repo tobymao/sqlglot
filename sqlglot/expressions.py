@@ -8519,9 +8519,7 @@ def expand(
     Returns:
         The transformed expression.
     """
-    normalized_sources = {
-        normalize_table_name(k, dialect=dialect): v for k, v in sources.items()
-    }
+    normalized_sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
     # Create a query provider based on the sources parameter
 
     def _expand(node: Expression):

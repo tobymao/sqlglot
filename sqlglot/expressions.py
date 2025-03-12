@@ -8520,19 +8520,21 @@ def expand(
         The transformed expression.
     """
     normalized_sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
-    # Create a query provider based on the sources parameter
 
     def _expand(node: Expression):
         if isinstance(node, Table):
             name = normalize_table_name(node, dialect=dialect)
             source = normalized_sources.get(name)
+
             if source:
                 # Create a subquery with the same alias (or table name if no alias)
                 parsed_source = source() if callable(source) else source
                 subquery = parsed_source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
+
                 # Continue expanding within the subquery
                 return subquery.transform(_expand, copy=False)
+
         return node
 
     return expression.transform(_expand, copy=copy)

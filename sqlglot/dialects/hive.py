@@ -446,7 +446,7 @@ class Hive(Dialect):
             return self.expression(exp.Parameter, this=this, expression=expression)
 
         def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
-            if isinstance(expression, exp.Star):
+            if expression.is_star:
                 return expression
 
             if isinstance(expression, exp.Column):

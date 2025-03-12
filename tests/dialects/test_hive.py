@@ -810,6 +810,21 @@ class TestHive(Validator):
 
         self.validate_identity("SELECT 1_2")
 
+        self.validate_all(
+            "SELECT MAP(*), STRUCT(*) FROM t",
+            read={
+                "hive": "SELECT MAP(*), STRUCT(*) FROM t",
+                "spark2": "SELECT MAP(*), STRUCT(*) FROM t",
+                "spark": "SELECT MAP(*), STRUCT(*) FROM t",
+                "databricks": "SELECT MAP(*), STRUCT(*) FROM t",
+            },
+            write={
+                "spark2": "SELECT MAP(*), STRUCT(*) FROM t",
+                "spark": "SELECT MAP(*), STRUCT(*) FROM t",
+                "databricks": "SELECT MAP(*), STRUCT(*) FROM t",
+            },
+        )
+
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")

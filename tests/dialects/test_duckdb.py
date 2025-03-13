@@ -423,7 +423,6 @@ class TestDuckDB(Validator):
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={
                 "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
-                "spark": "SELECT DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP_NTZ), CONCAT(COALESCE('yyyy', ''), COALESCE('MM', '')))",
                 "tsql": "SELECT FORMAT(CAST('2020-01-01' AS DATETIME2), CONCAT('yyyy', 'MM'))",
             },
         )

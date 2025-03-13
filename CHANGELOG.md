@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.10.1] - 2025-03-13
+### :bug: Bug Fixes
+- [`2b3824f`](https://github.com/tobymao/sqlglot/commit/2b3824f0bac5dae48ea7eecbe2168afe79038d06) - **duckdb**: revert timestamp/datetime -> timestampntz parsing temporarily *(PR [#4878](https://github.com/tobymao/sqlglot/pull/4878) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.10.0] - 2025-03-13
 ### :boom: BREAKING CHANGES
 - due to [`c0bfcc6`](https://github.com/tobymao/sqlglot/commit/c0bfcc66b97ce667a1ead608c4fbbee69db633fa) - postgres case insesitive formats closes [#4860](https://github.com/tobymao/sqlglot/pull/4860) *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -6145,3 +6150,4 @@ Changelog
 [v26.8.0]: https://github.com/tobymao/sqlglot/compare/v26.7.0...v26.8.0
 [v26.9.0]: https://github.com/tobymao/sqlglot/compare/v26.8.0...v26.9.0
 [v26.10.0]: https://github.com/tobymao/sqlglot/compare/v26.9.0...v26.10.0
+[v26.10.1]: https://github.com/tobymao/sqlglot/compare/v26.10.0...v26.10.1

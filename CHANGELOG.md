@@ -1,6 +1,59 @@
 Changelog
 =========
 
+## [v26.10.0] - 2025-03-13
+### :boom: BREAKING CHANGES
+- due to [`c0bfcc6`](https://github.com/tobymao/sqlglot/commit/c0bfcc66b97ce667a1ead608c4fbbee69db633fa) - postgres case insesitive formats closes [#4860](https://github.com/tobymao/sqlglot/pull/4860) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  postgres case insesitive formats closes #4860
+
+- due to [`6914684`](https://github.com/tobymao/sqlglot/commit/69146842d005ae0edecbd7f6f842f648ae0622e7) - duckdb defaults timestampntz closes [#4859](https://github.com/tobymao/sqlglot/pull/4859) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  duckdb defaults timestampntz closes #4859
+
+- due to [`ceb1f02`](https://github.com/tobymao/sqlglot/commit/ceb1f026dd04926a6a210de9d16da4dffef4717c) - support TO_CHAR to duckdb STRFTIME *(PR [#4866](https://github.com/tobymao/sqlglot/pull/4866) by [@geooo109](https://github.com/geooo109))*:
+
+  support TO_CHAR to duckdb STRFTIME (#4866)
+
+- due to [`d748e53`](https://github.com/tobymao/sqlglot/commit/d748e53f6a77196bef6550b6d9fddf41076c01fa) - Introduce pyproject.toml and switch to packaging via build *(PR [#4865](https://github.com/tobymao/sqlglot/pull/4865) by [@erindru](https://github.com/erindru))*:
+
+  Introduce pyproject.toml and switch to packaging via build (#4865)
+
+- due to [`038da09`](https://github.com/tobymao/sqlglot/commit/038da09f620cf057e4576b719c4e2f6712cbb804) - treat TABLE(...) as a UDTF *(PR [#4875](https://github.com/tobymao/sqlglot/pull/4875) by [@georgesittas](https://github.com/georgesittas))*:
+
+  treat TABLE(...) as a UDTF (#4875)
+
+- due to [`92e479e`](https://github.com/tobymao/sqlglot/commit/92e479ea7d70efc4bdccd17cb12b719aec603830) - support STRUCT(*) and MAP(*) *(PR [#4876](https://github.com/tobymao/sqlglot/pull/4876) by [@geooo109](https://github.com/geooo109))*:
+
+  support STRUCT(*) and MAP(*) (#4876)
+
+- due to [`87c94fe`](https://github.com/tobymao/sqlglot/commit/87c94fe91aa2a4bc2c255191d92aed450f3c7998) - turn off multi-arg coalesce simplification *(PR [#4877](https://github.com/tobymao/sqlglot/pull/4877) by [@georgesittas](https://github.com/georgesittas))*:
+
+  turn off multi-arg coalesce simplification (#4877)
+
+
+### :sparkles: New Features
+- [`54be278`](https://github.com/tobymao/sqlglot/commit/54be278361496367fb2f7d380634d3390879e58d) - **snowflake**: add support for HEX_DECODE_BINARY *(PR [#4855](https://github.com/tobymao/sqlglot/pull/4855) by [@sk-](https://github.com/sk-))*
+  - :arrow_lower_right: *addresses issue [#4852](https://github.com/tobymao/sqlglot/issues/4852) opened by [@sk-](https://github.com/sk-)*
+- [`47959a9`](https://github.com/tobymao/sqlglot/commit/47959a94a4693cb904cfb2e50ce8cc8ca5c2e22f) - **duckdb**: add support for prefix aliases *(PR [#4869](https://github.com/tobymao/sqlglot/pull/4869) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`e942391`](https://github.com/tobymao/sqlglot/commit/e942391edcefb40f927887450765b4365b0e980d) - spark zone offset closes [#4858](https://github.com/tobymao/sqlglot/pull/4858) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c0bfcc6`](https://github.com/tobymao/sqlglot/commit/c0bfcc66b97ce667a1ead608c4fbbee69db633fa) - postgres case insesitive formats closes [#4860](https://github.com/tobymao/sqlglot/pull/4860) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6914684`](https://github.com/tobymao/sqlglot/commit/69146842d005ae0edecbd7f6f842f648ae0622e7) - duckdb defaults timestampntz closes [#4859](https://github.com/tobymao/sqlglot/pull/4859) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ceb1f02`](https://github.com/tobymao/sqlglot/commit/ceb1f026dd04926a6a210de9d16da4dffef4717c) - **snowflake**: support TO_CHAR to duckdb STRFTIME *(PR [#4866](https://github.com/tobymao/sqlglot/pull/4866) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4857](https://github.com/tobymao/sqlglot/issues/4857) opened by [@asarama](https://github.com/asarama)*
+- [`80466f1`](https://github.com/tobymao/sqlglot/commit/80466f16aa081860bc9e65f425924a0620840cdf) - expand util - align normalization behaviour with lazy and non-lazy source providers. *(PR [#4874](https://github.com/tobymao/sqlglot/pull/4874) by [@omerhadari](https://github.com/omerhadari))*
+- [`038da09`](https://github.com/tobymao/sqlglot/commit/038da09f620cf057e4576b719c4e2f6712cbb804) - **snowflake**: treat TABLE(...) as a UDTF *(PR [#4875](https://github.com/tobymao/sqlglot/pull/4875) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4861](https://github.com/tobymao/sqlglot/issues/4861) opened by [@mattijsdp](https://github.com/mattijsdp)*
+- [`92e479e`](https://github.com/tobymao/sqlglot/commit/92e479ea7d70efc4bdccd17cb12b719aec603830) - **hive**: support STRUCT(*) and MAP(*) *(PR [#4876](https://github.com/tobymao/sqlglot/pull/4876) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4871](https://github.com/tobymao/sqlglot/issues/4871) opened by [@btyuhas](https://github.com/btyuhas)*
+- [`87c94fe`](https://github.com/tobymao/sqlglot/commit/87c94fe91aa2a4bc2c255191d92aed450f3c7998) - **redshift**: turn off multi-arg coalesce simplification *(PR [#4877](https://github.com/tobymao/sqlglot/pull/4877) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`d748e53`](https://github.com/tobymao/sqlglot/commit/d748e53f6a77196bef6550b6d9fddf41076c01fa) - Introduce pyproject.toml and switch to packaging via build *(PR [#4865](https://github.com/tobymao/sqlglot/pull/4865) by [@erindru](https://github.com/erindru))*
+
+
 ## [v26.9.0] - 2025-03-07
 ### :boom: BREAKING CHANGES
 - due to [`6a3973b`](https://github.com/tobymao/sqlglot/commit/6a3973b7da639a19634bc352ea76f75735114c38) - Refactor exp.GroupConcat generation *(PR [#4823](https://github.com/tobymao/sqlglot/pull/4823) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -6091,3 +6144,4 @@ Changelog
 [v26.7.0]: https://github.com/tobymao/sqlglot/compare/v26.6.0...v26.7.0
 [v26.8.0]: https://github.com/tobymao/sqlglot/compare/v26.7.0...v26.8.0
 [v26.9.0]: https://github.com/tobymao/sqlglot/compare/v26.8.0...v26.9.0
+[v26.10.0]: https://github.com/tobymao/sqlglot/compare/v26.9.0...v26.10.0

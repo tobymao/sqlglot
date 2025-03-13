@@ -497,6 +497,162 @@ class TestOptimizer(unittest.TestCase):
         )
         self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
 
+    def test_qualify_columns_with_pivots(self):
+        # Schema definition for test cases
+        schema = {
+            "employee_sales": {
+                "employee_id": "int",
+                "q1_sales": "int",
+                "q2_sales": "int",
+                "q3_sales": "int",
+                "q4_sales": "int",
+            },
+            "sales": {"employee_id": "int", "quarter": "text", "amount": "int"},
+        }
+
+        # Define test cases as tuples of (sql_query, expected_without_schema, expected_with_schema)
+        test_cases = [
+            # Test case 1: Basic UNPIVOT without alias
+            (
+                """
+            SELECT 
+              employee_id,
+              quarter,
+              sales,
+              CASE 
+                WHEN quarter = 'Q1_SALES' THEN 'First Quarter'
+                WHEN quarter = 'Q2_SALES' THEN 'Second Quarter'
+                WHEN quarter = 'Q3_SALES' THEN 'Third Quarter'
+                WHEN quarter = 'Q4_SALES' THEN 'Fourth Quarter'
+              END AS quarter_name
+            FROM EMPLOYEE_SALES
+            UNPIVOT (
+              sales FOR quarter IN (
+                Q1_SALES,
+                Q2_SALES,
+                Q3_SALES,
+                Q4_SALES
+              )
+            ) 
+            ORDER BY employee_id, 
+              CASE 
+                WHEN quarter = 'Q1_SALES' THEN 1
+                WHEN quarter = 'Q2_SALES' THEN 2
+                WHEN quarter = 'Q3_SALES' THEN 3
+                WHEN quarter = 'Q4_SALES' THEN 4
+              END
+            """,
+                # Expected result without schema
+                """SELECT _Q_0.EMPLOYEE_ID AS EMPLOYEE_ID, _Q_0.QUARTER AS QUARTER, _Q_0.SALES AS SALES, CASE WHEN _Q_0.QUARTER = 'Q1_SALES' THEN 'First Quarter' WHEN _Q_0.QUARTER = 'Q2_SALES' THEN 'Second Quarter' WHEN _Q_0.QUARTER = 'Q3_SALES' THEN 'Third Quarter' WHEN _Q_0.QUARTER = 'Q4_SALES' THEN 'Fourth Quarter' END AS QUARTER_NAME FROM EMPLOYEE_SALES AS EMPLOYEE_SALES UNPIVOT(EMPLOYEE_SALES.SALES FOR EMPLOYEE_SALES.QUARTER IN (EMPLOYEE_SALES.Q1_SALES, EMPLOYEE_SALES.Q2_SALES, EMPLOYEE_SALES.Q3_SALES, EMPLOYEE_SALES.Q4_SALES)) AS _Q_0 ORDER BY EMPLOYEE_ID NULLS LAST, CASE WHEN QUARTER = 'Q1_SALES' THEN 1 WHEN QUARTER = 'Q2_SALES' THEN 2 WHEN QUARTER = 'Q3_SALES' THEN 3 WHEN QUARTER = 'Q4_SALES' THEN 4 END NULLS LAST""",
+                # Expected result with schema
+                """SELECT _Q_0.EMPLOYEE_ID AS EMPLOYEE_ID, _Q_0.QUARTER AS QUARTER, _Q_0.SALES AS SALES, CASE WHEN _Q_0.QUARTER = 'Q1_SALES' THEN 'First Quarter' WHEN _Q_0.QUARTER = 'Q2_SALES' THEN 'Second Quarter' WHEN _Q_0.QUARTER = 'Q3_SALES' THEN 'Third Quarter' WHEN _Q_0.QUARTER = 'Q4_SALES' THEN 'Fourth Quarter' END AS QUARTER_NAME FROM EMPLOYEE_SALES AS EMPLOYEE_SALES UNPIVOT(SALES FOR QUARTER IN (EMPLOYEE_SALES.Q1_SALES, EMPLOYEE_SALES.Q2_SALES, EMPLOYEE_SALES.Q3_SALES, EMPLOYEE_SALES.Q4_SALES)) AS _Q_0 ORDER BY EMPLOYEE_ID NULLS LAST, CASE WHEN QUARTER = 'Q1_SALES' THEN 1 WHEN QUARTER = 'Q2_SALES' THEN 2 WHEN QUARTER = 'Q3_SALES' THEN 3 WHEN QUARTER = 'Q4_SALES' THEN 4 END NULLS LAST""",
+            ),
+            # Test case 2: UNPIVOT with alias
+            (
+                """
+            SELECT 
+              unpvt.employee_id,
+              unpvt.quarter,
+              unpvt.sales,
+              CASE 
+                WHEN unpvt.quarter = 'Q1_SALES' THEN 'First Quarter'
+                WHEN unpvt.quarter = 'Q2_SALES' THEN 'Second Quarter'
+                WHEN unpvt.quarter = 'Q3_SALES' THEN 'Third Quarter'
+                WHEN unpvt.quarter = 'Q4_SALES' THEN 'Fourth Quarter'
+              END AS quarter_name
+            FROM EMPLOYEE_SALES
+            UNPIVOT (
+              sales FOR quarter IN (
+                Q1_SALES,
+                Q2_SALES,
+                Q3_SALES,
+                Q4_SALES
+              )
+            ) unpvt
+            ORDER BY unpvt.employee_id, 
+              CASE 
+                WHEN unpvt.quarter = 'Q1_SALES' THEN 1
+                WHEN unpvt.quarter = 'Q2_SALES' THEN 2
+                WHEN unpvt.quarter = 'Q3_SALES' THEN 3
+                WHEN unpvt.quarter = 'Q4_SALES' THEN 4
+              END
+            """,
+                # Expected result without schema
+                """SELECT UNPVT.EMPLOYEE_ID AS EMPLOYEE_ID, UNPVT.QUARTER AS QUARTER, UNPVT.SALES AS SALES, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 'First Quarter' WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 'Second Quarter' WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 'Third Quarter' WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 'Fourth Quarter' END AS QUARTER_NAME FROM EMPLOYEE_SALES AS EMPLOYEE_SALES UNPIVOT(EMPLOYEE_SALES.SALES FOR EMPLOYEE_SALES.QUARTER IN (EMPLOYEE_SALES.Q1_SALES, EMPLOYEE_SALES.Q2_SALES, EMPLOYEE_SALES.Q3_SALES, EMPLOYEE_SALES.Q4_SALES)) AS UNPVT ORDER BY UNPVT.EMPLOYEE_ID NULLS LAST, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 1 WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 2 WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 3 WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 4 END NULLS LAST""",
+                # Expected result with schema
+                """SELECT UNPVT.EMPLOYEE_ID AS EMPLOYEE_ID, UNPVT.QUARTER AS QUARTER, UNPVT.SALES AS SALES, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 'First Quarter' WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 'Second Quarter' WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 'Third Quarter' WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 'Fourth Quarter' END AS QUARTER_NAME FROM EMPLOYEE_SALES AS EMPLOYEE_SALES UNPIVOT(SALES FOR QUARTER IN (EMPLOYEE_SALES.Q1_SALES, EMPLOYEE_SALES.Q2_SALES, EMPLOYEE_SALES.Q3_SALES, EMPLOYEE_SALES.Q4_SALES)) AS UNPVT ORDER BY UNPVT.EMPLOYEE_ID NULLS LAST, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 1 WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 2 WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 3 WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 4 END NULLS LAST""",
+            ),
+            # Test case 3: UNPIVOT with alias and EXISTS subquery
+            (
+                """
+            SELECT 
+              unpvt.employee_id,
+              unpvt.quarter,
+              unpvt.sales,
+              CASE 
+                WHEN unpvt.quarter = 'Q1_SALES' THEN 'First Quarter'
+                WHEN unpvt.quarter = 'Q2_SALES' THEN 'Second Quarter'
+                WHEN unpvt.quarter = 'Q3_SALES' THEN 'Third Quarter'
+                WHEN unpvt.quarter = 'Q4_SALES' THEN 'Fourth Quarter'
+              END AS quarter_name
+            FROM EMPLOYEE_SALES
+            UNPIVOT (
+              sales FOR quarter IN (
+                Q1_SALES,
+                Q2_SALES,
+                Q3_SALES,
+                Q4_SALES
+              )
+            ) unpvt
+            WHERE EXISTS (
+              SELECT 1
+              FROM SALES S
+              WHERE S.employee_id = unpvt.employee_id
+              AND (
+                (unpvt.quarter = 'Q1_SALES' AND S.quarter = 'Q1') OR
+                (unpvt.quarter = 'Q2_SALES' AND S.quarter = 'Q2') OR
+                (unpvt.quarter = 'Q3_SALES' AND S.quarter = 'Q3') OR
+                (unpvt.quarter = 'Q4_SALES' AND S.quarter = 'Q4')
+              )
+            )
+            ORDER BY unpvt.employee_id, 
+              CASE 
+                WHEN unpvt.quarter = 'Q1_SALES' THEN 1
+                WHEN unpvt.quarter = 'Q2_SALES' THEN 2
+                WHEN unpvt.quarter = 'Q3_SALES' THEN 3
+                WHEN unpvt.quarter = 'Q4_SALES' THEN 4
+              END
+            """,
+                # Expected result without schema
+                """SELECT UNPVT.EMPLOYEE_ID AS EMPLOYEE_ID, UNPVT.QUARTER AS QUARTER, UNPVT.SALES AS SALES, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 'First Quarter' WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 'Second Quarter' WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 'Third Quarter' WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 'Fourth Quarter' END AS QUARTER_NAME FROM EMPLOYEE_SALES AS EMPLOYEE_SALES UNPIVOT(EMPLOYEE_SALES.SALES FOR EMPLOYEE_SALES.QUARTER IN (EMPLOYEE_SALES.Q1_SALES, EMPLOYEE_SALES.Q2_SALES, EMPLOYEE_SALES.Q3_SALES, EMPLOYEE_SALES.Q4_SALES)) AS UNPVT WHERE EXISTS(SELECT 1 AS "1" FROM SALES AS S WHERE S.EMPLOYEE_ID = UNPVT.EMPLOYEE_ID AND ((UNPVT.QUARTER = 'Q1_SALES' AND S.QUARTER = 'Q1') OR (UNPVT.QUARTER = 'Q2_SALES' AND S.QUARTER = 'Q2') OR (UNPVT.QUARTER = 'Q3_SALES' AND S.QUARTER = 'Q3') OR (UNPVT.QUARTER = 'Q4_SALES' AND S.QUARTER = 'Q4'))) ORDER BY UNPVT.EMPLOYEE_ID NULLS LAST, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 1 WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 2 WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 3 WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 4 END NULLS LAST""",
+                # Expected result with schema
+                """SELECT UNPVT.EMPLOYEE_ID AS EMPLOYEE_ID, UNPVT.QUARTER AS QUARTER, UNPVT.SALES AS SALES, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 'First Quarter' WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 'Second Quarter' WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 'Third Quarter' WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 'Fourth Quarter' END AS QUARTER_NAME FROM EMPLOYEE_SALES AS EMPLOYEE_SALES UNPIVOT(SALES FOR QUARTER IN (EMPLOYEE_SALES.Q1_SALES, EMPLOYEE_SALES.Q2_SALES, EMPLOYEE_SALES.Q3_SALES, EMPLOYEE_SALES.Q4_SALES)) AS UNPVT WHERE EXISTS(SELECT 1 AS "1" FROM SALES AS S WHERE S.EMPLOYEE_ID = UNPVT.EMPLOYEE_ID AND ((UNPVT.QUARTER = 'Q1_SALES' AND S.QUARTER = 'Q1') OR (UNPVT.QUARTER = 'Q2_SALES' AND S.QUARTER = 'Q2') OR (UNPVT.QUARTER = 'Q3_SALES' AND S.QUARTER = 'Q3') OR (UNPVT.QUARTER = 'Q4_SALES' AND S.QUARTER = 'Q4'))) ORDER BY UNPVT.EMPLOYEE_ID NULLS LAST, CASE WHEN UNPVT.QUARTER = 'Q1_SALES' THEN 1 WHEN UNPVT.QUARTER = 'Q2_SALES' THEN 2 WHEN UNPVT.QUARTER = 'Q3_SALES' THEN 3 WHEN UNPVT.QUARTER = 'Q4_SALES' THEN 4 END NULLS LAST""",
+            ),
+        ]
+
+        # Iterate through each test case
+        for sql, expected_without_schema, expected_with_schema in test_cases:
+            # Test without schema
+            result_without_schema = optimizer.qualify.qualify(
+                parse_one(sql, dialect="snowflake"),
+                dialect="snowflake",
+                quote_identifiers=False,
+                validate_qualify_columns=False,
+                identify=False,
+            ).sql()
+            self.assertEqual(result_without_schema, expected_without_schema)
+
+            # Test with schema
+            result_with_schema = optimizer.qualify.qualify(
+                parse_one(sql, dialect="snowflake"),
+                dialect="snowflake",
+                schema=schema,  # Add schema parameter here
+                quote_identifiers=False,
+                validate_qualify_columns=False,
+                identify=False,
+            ).sql()
+            self.assertEqual(result_with_schema, expected_with_schema)
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

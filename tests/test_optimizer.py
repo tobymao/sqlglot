@@ -180,13 +180,13 @@ class TestOptimizer(unittest.TestCase):
                     actual,
                 )
 
-            if string_to_bool(execute):
-                with self.subTest(f"(execute) {title}"):
-                    df1 = self.conn.execute(
-                        sqlglot.transpile(sql, read=dialect, write="duckdb")[0]
-                    ).df()
-                    df2 = self.conn.execute(optimized.sql(dialect="duckdb")).df()
-                    assert_frame_equal(df1, df2)
+                if string_to_bool(execute):
+                    with self.subTest(f"(execute) {title}"):
+                        df1 = self.conn.execute(
+                            sqlglot.transpile(sql, read=dialect, write="duckdb")[0]
+                        ).df()
+                        df2 = self.conn.execute(optimized.sql(dialect="duckdb")).df()
+                        assert_frame_equal(df1, df2)
 
     @patch("sqlglot.generator.logger")
     def test_optimize(self, logger):
@@ -657,6 +657,15 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
             ).sql(),
             "WITH data AS (SELECT 1 AS id) SELECT FUNC(data.id) AS id FROM data GROUP BY FUNC(data.id)",
+        )
+
+        sql = "SELECT x.a, max(x.b) as x FROM x AS x GROUP BY 1 HAVING x > 1"
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(sql, dialect="bigquery"),
+                schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
+            ).sql(),
+            "SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY 1 HAVING x > 1",
         )
 
     def test_optimize_joins(self):

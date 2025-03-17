@@ -7897,10 +7897,9 @@ class Parser(metaclass=_Parser):
         opts: t.List[t.Optional[exp.Expression]] = []
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
-                # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL,
-                # so we parse it separately to use _parse_field()
+                # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL
                 prop = self.expression(
-                    exp.Property, this=exp.var("FORMAT_NAME"), value=self._parse_field()
+                    exp.Property, this=exp.var("FORMAT_NAME"), value=self._parse_table_parts()
                 )
                 opts.append(prop)
             else:

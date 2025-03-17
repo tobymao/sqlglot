@@ -1836,7 +1836,7 @@ def groupconcat_sql(
     on_overflow: bool = False,
 ) -> str:
     this = expression.this
-    separator = self.sql(expression, "separator") or exp.Literal.string(sep)
+    separator = self.sql(expression.args.get("separator") or exp.Literal.string(sep))
 
     on_overflow_sql = self.sql(expression, "on_overflow")
     on_overflow_sql = f" ON OVERFLOW {on_overflow_sql}" if (on_overflow and on_overflow_sql) else ""

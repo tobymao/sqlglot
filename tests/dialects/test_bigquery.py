@@ -2346,6 +2346,7 @@ OPTIONS (
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
         self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
+        self.validate_identity("STRING_AGG(foo, b'|' ORDER BY bar)")
 
         self.validate_identity("STRING_AGG(a)", "STRING_AGG(a, ',')")
         self.validate_identity(

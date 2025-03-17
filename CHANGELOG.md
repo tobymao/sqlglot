@@ -1,6 +1,32 @@
 Changelog
 =========
 
+## [v26.11.0] - 2025-03-17
+### :boom: BREAKING CHANGES
+- due to [`ac3d311`](https://github.com/tobymao/sqlglot/commit/ac3d311c4184ca2ced603a100588e3e7435ce352) - do not expand having expressions if they conflict with a projection *(PR [#4881](https://github.com/tobymao/sqlglot/pull/4881) by [@tobymao](https://github.com/tobymao))*:
+
+  do not expand having expressions if they conflict with a projection (#4881)
+
+- due to [`081994e`](https://github.com/tobymao/sqlglot/commit/081994ea85c7aa1cbbbc40a24857dba4fd6c1c61) - Fix parsing multi-part format name *(PR [#4885](https://github.com/tobymao/sqlglot/pull/4885) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Fix parsing multi-part format name (#4885)
+
+- due to [`491c407`](https://github.com/tobymao/sqlglot/commit/491c407d48a24b6d4093e9c9bfdc3d8c27c29e4c) - parse parameter key as Var instead of Identifier *(PR [#4888](https://github.com/tobymao/sqlglot/pull/4888) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse parameter key as Var instead of Identifier (#4888)
+
+
+### :bug: Bug Fixes
+- [`ac3d311`](https://github.com/tobymao/sqlglot/commit/ac3d311c4184ca2ced603a100588e3e7435ce352) - do not expand having expressions if they conflict with a projection *(PR [#4881](https://github.com/tobymao/sqlglot/pull/4881) by [@tobymao](https://github.com/tobymao))*
+- [`44b7b09`](https://github.com/tobymao/sqlglot/commit/44b7b09deca881e274ad03068eee5d4d594c8ca8) - **parser**: Fix separator generation for STRING_AGG *(PR [#4887](https://github.com/tobymao/sqlglot/pull/4887) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`081994e`](https://github.com/tobymao/sqlglot/commit/081994ea85c7aa1cbbbc40a24857dba4fd6c1c61) - **snowflake**: Fix parsing multi-part format name *(PR [#4885](https://github.com/tobymao/sqlglot/pull/4885) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4882](https://github.com/tobymao/sqlglot/issues/4882) opened by [@kharigardner](https://github.com/kharigardner)*
+- [`38111a5`](https://github.com/tobymao/sqlglot/commit/38111a5eaa6bde640e25aa408ff7ea9ea6864c0b) - apply unpivot alias string conversion only for UNPIVOT *(PR [#4886](https://github.com/tobymao/sqlglot/pull/4886) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4003](https://github.com/TobikoData/sqlmesh/issues/4003) opened by [@lucargir](https://github.com/lucargir)*
+- [`491c407`](https://github.com/tobymao/sqlglot/commit/491c407d48a24b6d4093e9c9bfdc3d8c27c29e4c) - **clickhouse**: parse parameter key as Var instead of Identifier *(PR [#4888](https://github.com/tobymao/sqlglot/pull/4888) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4002](https://github.com/TobikoData/sqlmesh/issues/4002) opened by [@petrjanda](https://github.com/petrjanda)*
+
+
 ## [v26.10.1] - 2025-03-13
 ### :bug: Bug Fixes
 - [`2b3824f`](https://github.com/tobymao/sqlglot/commit/2b3824f0bac5dae48ea7eecbe2168afe79038d06) - **duckdb**: revert timestamp/datetime -> timestampntz parsing temporarily *(PR [#4878](https://github.com/tobymao/sqlglot/pull/4878) by [@georgesittas](https://github.com/georgesittas))*
@@ -6151,3 +6177,4 @@ Changelog
 [v26.9.0]: https://github.com/tobymao/sqlglot/compare/v26.8.0...v26.9.0
 [v26.10.0]: https://github.com/tobymao/sqlglot/compare/v26.9.0...v26.10.0
 [v26.10.1]: https://github.com/tobymao/sqlglot/compare/v26.10.0...v26.10.1
+[v26.11.0]: https://github.com/tobymao/sqlglot/compare/v26.10.1...v26.11.0

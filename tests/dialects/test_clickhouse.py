@@ -3,6 +3,7 @@ from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
 from sqlglot.optimizer import traverse_scope
+from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
 
@@ -11,6 +12,9 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        expr = quote_identifiers(self.parse_one("{start_date:String}"), dialect="clickhouse")
+        self.assertEqual(expr.sql("clickhouse"), "{start_date: String}")
+
         for string_type_enum in ClickHouse.Generator.STRING_TYPE_MAPPING:
             self.validate_identity(f"CAST(x AS {string_type_enum.value})", "CAST(x AS String)")
 

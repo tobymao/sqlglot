@@ -609,6 +609,9 @@ class ClickHouse(Dialect):
             elif not self._match(TokenType.R_BRACE):
                 self.raise_error("Expecting }")
 
+            if isinstance(this, exp.Identifier) and not this.quoted:
+                this = exp.var(this.name)
+
             return self.expression(exp.Placeholder, this=this, kind=kind)
 
         def _parse_bracket(

@@ -3067,6 +3067,11 @@ class UnloggedProperty(Property):
     arg_types = {}
 
 
+# https://docs.snowflake.com/en/sql-reference/sql/create-table#create-table-using-template
+class UsingTemplateProperty(Property):
+    arg_types = {"this": True}
+
+
 # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql?view=sql-server-ver16
 class ViewAttributeProperty(Property):
     arg_types = {"this": True}

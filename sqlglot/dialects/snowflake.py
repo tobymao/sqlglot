@@ -518,6 +518,8 @@ class Snowflake(Dialect):
             **parser.Parser.PROPERTY_PARSERS,
             "LOCATION": lambda self: self._parse_location_property(),
             "TAG": lambda self: self._parse_tag(),
+            "USING": lambda self: self._match_text_seq("TEMPLATE")
+            and self.expression(exp.UsingTemplateProperty, this=self._parse_statement()),
         }
 
         TYPE_CONVERTERS = {

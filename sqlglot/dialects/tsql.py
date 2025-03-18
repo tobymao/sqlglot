@@ -633,6 +633,15 @@ class TSQL(Dialect):
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
 
+        def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
+            if self._match(TokenType.MERGE):
+                comments = self._prev_comments
+                merge = self._parse_merge()
+                merge.add_comments(comments, prepend=True)
+                return merge
+
+            return super()._parse_wrapped_select(table=table)
+
         def _parse_dcolon(self) -> t.Optional[exp.Expression]:
             # We want to use _parse_types() if the first token after :: is a known type,
             # otherwise we could parse something like x::varchar(max) into a function

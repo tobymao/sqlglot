@@ -3057,6 +3057,37 @@ class Parser(metaclass=_Parser):
     def _parse_projections(self) -> t.List[exp.Expression]:
         return self._parse_expressions()
 
+    def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
+        if self._match_set((TokenType.PIVOT, TokenType.UNPIVOT)):
+            this: t.Optional[exp.Expression] = self._parse_simplified_pivot(
+                is_unpivot=self._prev.token_type == TokenType.UNPIVOT
+            )
+        elif self._match(TokenType.FROM):
+            from_ = self._parse_from(skip_from_token=True)
+            # Support parentheses for duckdb FROM-first syntax
+            select = self._parse_select()
+            if select:
+                select.set("from", from_)
+                this = select
+            else:
+                this = exp.select("*").from_(t.cast(exp.From, from_))
+        else:
+            this = (
+                self._parse_table()
+                if table
+                else self._parse_select(nested=True, parse_set_operation=False)
+            )
+
+            # Transform exp.Values into a exp.Table to pass through parse_query_modifiers
+            # in case a modifier (e.g. join) is following
+            if table and isinstance(this, exp.Values) and this.alias:
+                alias = this.args["alias"].pop()
+                this = exp.Table(this=this, alias=alias)
+
+            this = self._parse_query_modifiers(self._parse_set_operations(this))
+
+        return this
+
     def _parse_select(
         self,
         nested: bool = False,
@@ -3140,38 +3171,11 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
-            if self._match_set((TokenType.PIVOT, TokenType.UNPIVOT)):
-                this = self._parse_simplified_pivot(
-                    is_unpivot=self._prev.token_type == TokenType.UNPIVOT
-                )
-            elif self._match(TokenType.FROM):
-                from_ = self._parse_from(skip_from_token=True)
-                # Support parentheses for duckdb FROM-first syntax
-                select = self._parse_select()
-                if select:
-                    select.set("from", from_)
-                    this = select
-                else:
-                    this = exp.select("*").from_(t.cast(exp.From, from_))
-            else:
-                this = (
-                    self._parse_table()
-                    if table
-                    else self._parse_select(nested=True, parse_set_operation=False)
-                )
-
-                # Transform exp.Values into a exp.Table to pass through parse_query_modifiers
-                # in case a modifier (e.g. join) is following
-                if table and isinstance(this, exp.Values) and this.alias:
-                    alias = this.args["alias"].pop()
-                    this = exp.Table(this=this, alias=alias)
-
-                this = self._parse_query_modifiers(self._parse_set_operations(this))
-
-            self._match_r_paren()
+            this = self._parse_wrapped_select(table=table)
 
             # We return early here so that the UNION isn't attached to the subquery by the
             # following call to _parse_set_operations, but instead becomes the parent node
+            self._match_r_paren()
             return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES, advance=False):
             this = self._parse_derived_table_values()

@@ -1434,6 +1434,16 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         """
         self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
 
+    def test_udtf_annotation(self):
+        table_udtf = parse_one(
+            "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 100000))",
+            read="snowflake",
+        )
+        self.assertEqual(
+            annotate_types(table_udtf, dialect="snowflake").sql("snowflake"),
+            "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 100000))",
+        )
+
     def test_recursive_cte(self):
         query = parse_one(
             """

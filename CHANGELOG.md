@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v26.11.1] - 2025-03-18
+### :bug: Bug Fixes
+- [`d7b3b3e`](https://github.com/tobymao/sqlglot/commit/d7b3b3e89720d1783d092a2c60a9c2209d9984a2) - **optimizer**: handle TableFromRows properly in annotate_types *(PR [#4889](https://github.com/tobymao/sqlglot/pull/4889) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4004](https://github.com/TobikoData/sqlmesh/issues/4004) opened by [@hmeng-taproot](https://github.com/hmeng-taproot)*
+
+
 ## [v26.11.0] - 2025-03-17
 ### :boom: BREAKING CHANGES
 - due to [`ac3d311`](https://github.com/tobymao/sqlglot/commit/ac3d311c4184ca2ced603a100588e3e7435ce352) - do not expand having expressions if they conflict with a projection *(PR [#4881](https://github.com/tobymao/sqlglot/pull/4881) by [@tobymao](https://github.com/tobymao))*:
@@ -6178,3 +6184,4 @@ Changelog
 [v26.10.0]: https://github.com/tobymao/sqlglot/compare/v26.9.0...v26.10.0
 [v26.10.1]: https://github.com/tobymao/sqlglot/compare/v26.10.0...v26.10.1
 [v26.11.0]: https://github.com/tobymao/sqlglot/compare/v26.10.1...v26.11.0
+[v26.11.1]: https://github.com/tobymao/sqlglot/compare/v26.11.0...v26.11.1

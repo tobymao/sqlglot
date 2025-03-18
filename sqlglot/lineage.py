@@ -237,7 +237,7 @@ def to_node(
     # Find all columns that went into creating this one to list their lineage nodes.
     source_columns = set(find_all_in_scope(select, exp.Column))
 
-    # If the source is a UDTF find columns used in the UTDF to generate the table
+    # If the source is a UDTF find columns used in the UDTF to generate the table
     if isinstance(source, exp.UDTF):
         source_columns |= set(source.find_all(exp.Column))
         derived_tables = [

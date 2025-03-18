@@ -223,7 +223,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         values = [expression.this.this]
                 elif isinstance(expression, exp.Unnest):
                     values = [expression]
-                else:
+                elif not isinstance(expression, exp.TableFromRows):
                     values = expression.expressions[0].expressions
 
                 if not values:

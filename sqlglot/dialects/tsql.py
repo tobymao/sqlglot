@@ -779,6 +779,20 @@ class TSQL(Dialect):
 
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
+        def _parse_into(self) -> t.Optional[exp.Into]:
+            if not self._match(TokenType.INTO):
+                return None
+
+            # NOTE: This is out of order compared to `super`. T-SQL uses a `#`
+            # symbol to denote a TEMP TABLE, rather than the keyword.
+            unlogged = self._match_text_seq("UNLOGGED")
+            temp = self._match(TokenType.HASH)
+            self._match(TokenType.TABLE)
+
+            return self.expression(
+                exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
+            )
+
         def _parse_id_var(
             self,
             any_token: bool = True,
@@ -1159,8 +1173,13 @@ class TSQL(Dialect):
                 if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
                     ctas_expression = ctas_expression.subquery()
 
+                properties = expression.args.get("properties")
+                is_temp = any(
+                    isinstance(prop, exp.TemporaryProperty)
+                    for prop in (properties.expressions if properties else []))
+
                 select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
-                select_into.set("into", exp.Into(this=table))
+                select_into.set("into", exp.Into(this=table, temporary=is_temp))
 
                 if like_property:
                     select_into.limit(0, copy=False)
@@ -1188,6 +1207,16 @@ class TSQL(Dialect):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 
             return self.prepend_ctes(expression, sql)
+
+        @generator.unsupported_args("expressions")
+        def into_sql(self, expression: exp.Into) -> str:
+            temporary = "#" if expression.args.get("temporary") else ""
+            unlogged = "UNLOGGED" if expression.args.get("unlogged") else ""
+
+            # Incremental step here so that `#` is not spaced off the table name
+            temp_or_ul = f"{unlogged} " if unlogged else temporary
+
+            return f"{self.seg('INTO')} {temp_or_ul}{self.sql(expression, 'this')}"
 
         def count_sql(self, expression: exp.Count) -> str:
             func_name = "COUNT_BIG" if expression.args.get("big_int") else "COUNT"

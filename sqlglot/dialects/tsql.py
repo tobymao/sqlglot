@@ -1176,7 +1176,8 @@ class TSQL(Dialect):
                 properties = expression.args.get("properties")
                 is_temp = any(
                     isinstance(prop, exp.TemporaryProperty)
-                    for prop in (properties.expressions if properties else []))
+                    for prop in (properties.expressions if properties else [])
+                )
 
                 select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table, temporary=is_temp))

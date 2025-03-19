@@ -313,7 +313,11 @@ def _build_levenshtein(args: t.List) -> exp.Levenshtein:
 
 def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List], exp.TimeToStr]:
     def _builder(args: t.List) -> exp.TimeToStr:
-        return exp.TimeToStr(this=expr_type(this=seq_get(args, 1)), format=seq_get(args, 0))
+        return exp.TimeToStr(
+            this=expr_type(this=seq_get(args, 1)),
+            format=seq_get(args, 0),
+            zone=seq_get(args, 2),
+        )
 
     return _builder
 
@@ -1174,7 +1178,9 @@ class BigQuery(Dialect):
                 if isinstance(this, (exp.TsOrDsToDatetime, exp.TsOrDsToTimestamp, exp.TsOrDsToDate))
                 else expression
             )
-            return self.func(func_name, self.format_time(expression), time_expr.this)
+            return self.func(
+                func_name, self.format_time(expression), time_expr.this, expression.args.get("zone")
+            )
 
         def eq_sql(self, expression: exp.EQ) -> str:
             # Operands of = cannot be NULL in BigQuery

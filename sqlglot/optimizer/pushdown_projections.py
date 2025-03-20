@@ -4,6 +4,7 @@ from sqlglot import alias, exp
 from sqlglot.optimizer.qualify_columns import Resolver
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
+from sqlglot.errors import OptimizeError
 
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
@@ -49,6 +50,13 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
 
         if isinstance(scope.expression, exp.SetOperation):
             left, right = scope.union_scopes
+            if len(left.expression.selects) != len(right.expression.selects):
+                l = set(c.alias_or_name for c in left.expression.selects)
+                r = set(c.alias_or_name for c in right.expression.selects)
+                raise OptimizeError(
+                    f"Invalid set operation due to columns mismatch {l.difference(r) or r.difference(l)}"
+                )
+
             referenced_columns[left] = parent_selections
 
             if any(select.is_star for select in right.expression.selects):

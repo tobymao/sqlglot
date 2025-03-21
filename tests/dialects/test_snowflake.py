@@ -394,7 +394,7 @@ class TestSnowflake(Validator):
             """SELECT PARSE_JSON('{"fruit":"banana"}'):fruit""",
             write={
                 "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"fruit":"banana"}'), '$.fruit')""",
-                "databricks": """SELECT '{"fruit":"banana"}':fruit""",
+                "databricks": """SELECT PARSE_JSON('{"fruit":"banana"}'):fruit""",
                 "duckdb": """SELECT JSON('{"fruit":"banana"}') -> '$.fruit'""",
                 "mysql": """SELECT JSON_EXTRACT('{"fruit":"banana"}', '$.fruit')""",
                 "presto": """SELECT JSON_EXTRACT(JSON_PARSE('{"fruit":"banana"}'), '$.fruit')""",

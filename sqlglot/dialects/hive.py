@@ -73,16 +73,14 @@ def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
     if isinstance(expression, exp.DateSub):
         multiplier *= -1
 
-    if expression.expression.is_number:
-        modified_increment = exp.Literal.number(expression.expression.to_py() * multiplier)
-    else:
-        modified_increment = expression.expression
-        if multiplier != 1:
-            modified_increment = exp.Mul(  # type: ignore
-                this=modified_increment, expression=exp.Literal.number(multiplier)
-            )
+    increment = expression.expression
+    if isinstance(increment, exp.Literal):
+        value = increment.to_py() if increment.is_number else int(increment.name)
+        increment = exp.Literal.number(value * multiplier)
+    elif multiplier != 1:
+        increment *= exp.Literal.number(multiplier)
 
-    return self.func(func, expression.this, modified_increment)
+    return self.func(func, expression.this, increment)
 
 
 def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:

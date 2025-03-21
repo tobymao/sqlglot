@@ -9,6 +9,19 @@ from sqlglot import ParseError, alias, exp, parse_one
 class TestExpressions(unittest.TestCase):
     maxDiff = None
 
+    def test_to_s(self):
+        self.assertEqual(repr(parse_one("5")), "Literal(this=5, is_string=False)")
+        self.assertEqual(repr(parse_one("5.3")), "Literal(this=5.3, is_string=False)")
+        self.assertEqual(repr(parse_one("True")), "Boolean(this=True)")
+        self.assertEqual(repr(parse_one("'  x'")), "Literal(this='  x', is_string=True)")
+        self.assertEqual(repr(parse_one("' \n  x'")), "Literal(this=' \\n  x', is_string=True)")
+        self.assertEqual(
+            repr(parse_one("   x ")), "Column(\n  this=Identifier(this=x, quoted=False))"
+        )
+        self.assertEqual(
+            repr(parse_one('"   x "')), "Column(\n  this=Identifier(this='   x ', quoted=True))"
+        )
+
     def test_arg_key(self):
         self.assertEqual(parse_one("sum(1)").find(exp.Literal).arg_key, "this")
 

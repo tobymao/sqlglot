@@ -51,11 +51,8 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
         if isinstance(scope.expression, exp.SetOperation):
             left, right = scope.union_scopes
             if len(left.expression.selects) != len(right.expression.selects):
-                l = set(c.alias_or_name for c in left.expression.selects)
-                r = set(c.alias_or_name for c in right.expression.selects)
-                raise OptimizeError(
-                    f"Invalid set operation due to columns mismatch {l.difference(r) or r.difference(l)}"
-                )
+                scope_sql = scope.expression.sql()
+                raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
 
             referenced_columns[left] = parent_selections
 

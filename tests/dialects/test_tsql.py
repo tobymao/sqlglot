@@ -133,13 +133,26 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
-            "WITH t(c) AS (SELECT 1) SELECT * INTO TEMP UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
+            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED #foo FROM (SELECT c AS c FROM t) AS temp",
             write={
                 "duckdb": "CREATE TEMPORARY TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
                 "postgres": "WITH t(c) AS (SELECT 1) SELECT * INTO TEMPORARY foo FROM (SELECT c AS c FROM t) AS temp",
             },
         )
         self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT c INTO #foo FROM t",
+            read={
+                "tsql": "WITH t(c) AS (SELECT 1) SELECT c INTO #foo FROM t",
+                "postgres": "WITH t(c) AS (SELECT 1) SELECT c INTO TEMPORARY foo FROM t",
+            },
+            write={
+                "tsql": "WITH t(c) AS (SELECT 1) SELECT c INTO #foo FROM t",
+                "postgres": "WITH t(c) AS (SELECT 1) SELECT c INTO TEMPORARY foo FROM t",
+                "duckdb": "CREATE TEMPORARY TABLE foo AS WITH t(c) AS (SELECT 1) SELECT c FROM t",
+                "snowflake": "CREATE TEMPORARY TABLE foo AS WITH t(c) AS (SELECT 1) SELECT c FROM t",
+            },
+        )
+        self.validate_all(
             "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
             write={
                 "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
@@ -149,6 +162,13 @@ class TestTSQL(Validator):
             "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
             write={
                 "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
+            },
+        )
+        self.validate_all(
+            "WITH y AS (SELECT 2 AS c) INSERT INTO #t SELECT * FROM y",
+            write={
+                "duckdb": "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",
+                "postgres": "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",
             },
         )
         self.validate_all(

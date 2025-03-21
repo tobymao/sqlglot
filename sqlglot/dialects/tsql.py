@@ -779,6 +779,19 @@ class TSQL(Dialect):
 
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
+        def _parse_into(self) -> t.Optional[exp.Into]:
+            into = super()._parse_into()
+
+            if isinstance(into, exp.Into) and isinstance(into.this, exp.Table):
+                table = into.this
+                if table.this and table.this.args.get("temporary"):
+                    # Promote the temporary property from the Identifier
+                    # expression to the Into expression
+                    into.set("temporary", True)
+                    table.this.set("temporary", None)
+
+            return into
+
         def _parse_id_var(
             self,
             any_token: bool = True,
@@ -1159,8 +1172,14 @@ class TSQL(Dialect):
                 if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
                     ctas_expression = ctas_expression.subquery()
 
+                properties = expression.args.get("properties")
+                is_temp = any(
+                    isinstance(prop, exp.TemporaryProperty)
+                    for prop in (properties.expressions if properties else [])
+                )
+
                 select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
-                select_into.set("into", exp.Into(this=table))
+                select_into.set("into", exp.Into(this=table, temporary=is_temp))
 
                 if like_property:
                     select_into.limit(0, copy=False)
@@ -1188,6 +1207,19 @@ class TSQL(Dialect):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 
             return self.prepend_ctes(expression, sql)
+
+        @generator.unsupported_args("expressions")
+        def into_sql(self, expression: exp.Into) -> str:
+            if expression.args.get("temporary"):
+                # If the Into expression has a temporary property, push this
+                # down to the Identifier
+                into_id = expression.find(exp.Identifier)
+                if into_id:
+                    into_id.set("temporary", True)
+
+            unlogged = " UNLOGGED" if expression.args.get("unlogged") else ""
+
+            return f"{self.seg('INTO')}{unlogged} {self.sql(expression, 'this')}"
 
         def count_sql(self, expression: exp.Count) -> str:
             func_name = "COUNT_BIG" if expression.args.get("big_int") else "COUNT"

@@ -61,6 +61,7 @@ class Databricks(Spark):
         COPY_PARAMS_EQ_REQUIRED = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = False
         QUOTE_JSON_PATH = False
+        PARSE_JSON_NAME = "PARSE_JSON"
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,

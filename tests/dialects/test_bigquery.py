@@ -321,6 +321,13 @@ LANGUAGE js AS
         )
 
         self.validate_all(
+            "SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)",
+            write={
+                "bigquery": "SELECT DATE_SUB(CURRENT_DATE, INTERVAL '2' DAY)",
+                "databricks": "SELECT DATE_ADD(CURRENT_DATE, -2)",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_SUB(DATE '2008-12-25', INTERVAL 5 DAY)",
             write={
                 "bigquery": "SELECT DATE_SUB(CAST('2008-12-25' AS DATE), INTERVAL '5' DAY)",
@@ -1312,8 +1319,8 @@ LANGUAGE js AS
                 "mysql": "DATE_ADD(CURRENT_DATE, INTERVAL '-1' DAY)",
                 "postgres": "CURRENT_DATE + INTERVAL '-1 DAY'",
                 "presto": "DATE_ADD('DAY', CAST('-1' AS BIGINT), CURRENT_DATE)",
-                "hive": "DATE_ADD(CURRENT_DATE, '-1')",
-                "spark": "DATE_ADD(CURRENT_DATE, '-1')",
+                "hive": "DATE_ADD(CURRENT_DATE, -1)",
+                "spark": "DATE_ADD(CURRENT_DATE, -1)",
             },
         )
         self.validate_all(

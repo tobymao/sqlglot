@@ -323,6 +323,13 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
+            write={
+                "presto": "SELECT id_column, name, age FROM test_table CROSS JOIN UNNEST(struc_column) AS explode_view(name, age)",
+                "spark": "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
+            },
+        )
+        self.validate_all(
             "SELECT ARRAY_AGG(x) FILTER (WHERE x = 5) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",
             write={
                 "duckdb": "SELECT ARRAY_AGG(x) FILTER(WHERE x = 5 AND NOT x IS NULL) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",
@@ -843,7 +850,7 @@ TBLPROPERTIES (
             },
         )
 
-    def test_explode_to_unnest(self):
+    def test_explode_projection_to_unnest(self):
         self.validate_all(
             "SELECT EXPLODE(x) FROM tbl",
             write={
@@ -951,3 +958,42 @@ TBLPROPERTIES (
         self.validate_identity(
             "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
         )
+
+    def test_transpile_annotated_exploded_column(self):
+        from sqlglot.optimizer.annotate_types import annotate_types
+        from sqlglot.optimizer.qualify import qualify
+
+        for db_prefix in ("", "explode_view."):
+            with self.subTest(f"Annotated exploded column with prefix: {db_prefix}."):
+                sql = f"""
+                    WITH test_table AS (
+                      SELECT
+                        12345 AS id_column,
+                        ARRAY(
+                          STRUCT('John' AS name, 30 AS age),
+                          STRUCT('Mary' AS name, 20 AS age),
+                          STRUCT('Mike' AS name, 80 AS age),
+                          STRUCT('Dan' AS name, 50 AS age)
+                        ) AS struct_column
+                    )
+
+                    SELECT
+                        id_column,
+                        {db_prefix}new_column.name,
+                        {db_prefix}new_column.age
+                    FROM test_table
+                    LATERAL VIEW EXPLODE(struct_column) explode_view AS new_column
+                """
+
+                expr = self.parse_one(sql)
+                qualified = qualify(expr, dialect="spark")
+                annotated = annotate_types(qualified, dialect="spark")
+
+                self.assertEqual(
+                    annotated.sql("spark"),
+                    "WITH `test_table` AS (SELECT 12345 AS `id_column`, ARRAY(STRUCT('John' AS `name`, 30 AS `age`), STRUCT('Mary' AS `name`, 20 AS `age`), STRUCT('Mike' AS `name`, 80 AS `age`), STRUCT('Dan' AS `name`, 50 AS `age`)) AS `struct_column`) SELECT `test_table`.`id_column` AS `id_column`, `explode_view`.`new_column`.`name` AS `name`, `explode_view`.`new_column`.`age` AS `age` FROM `test_table` AS `test_table` LATERAL VIEW EXPLODE(`test_table`.`struct_column`) explode_view AS `new_column`",
+                )
+                self.assertEqual(
+                    annotated.sql("presto"),
+                    """WITH "test_table" AS (SELECT 12345 AS "id_column", ARRAY[CAST(ROW('John', 30) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Mary', 20) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Mike', 80) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Dan', 50) AS ROW("name" VARCHAR, "age" INTEGER))] AS "struct_column") SELECT "test_table"."id_column" AS "id_column", "explode_view"."name" AS "name", "explode_view"."age" AS "age" FROM "test_table" AS "test_table" CROSS JOIN UNNEST("test_table"."struct_column") AS "explode_view"("name", "age")""",
+                )

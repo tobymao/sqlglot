@@ -410,10 +410,12 @@ def unnest_to_explode(
     return expression
 
 
-def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp.Expression]:
-    """Convert explode/posexplode into unnest."""
+def explode_projection_to_unnest(
+    index_offset: int = 0,
+) -> t.Callable[[exp.Expression], exp.Expression]:
+    """Convert explode/posexplode projections into unnests."""
 
-    def _explode_to_unnest(expression: exp.Expression) -> exp.Expression:
+    def _explode_projection_to_unnest(expression: exp.Expression) -> exp.Expression:
         if isinstance(expression, exp.Select):
             from sqlglot.optimizer.scope import Scope
 
@@ -558,7 +560,7 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
 
         return expression
 
-    return _explode_to_unnest
+    return _explode_projection_to_unnest
 
 
 def add_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:

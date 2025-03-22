@@ -34,6 +34,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
+from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args
@@ -186,6 +187,56 @@ def _date_delta_sql(
         )
 
     return _delta_sql
+
+
+def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
+    explode = expression.this
+    if isinstance(explode, exp.Explode):
+        exploded_type = explode.this.type
+        alias = expression.args.get("alias")
+
+        # This attempts a best-effort transpilation of LATERAL VIEW EXPLODE on a struct array
+        if (
+            isinstance(alias, exp.TableAlias)
+            and isinstance(exploded_type, exp.DataType)
+            and exploded_type.is_type(exp.DataType.Type.ARRAY)
+            and exploded_type.expressions
+            and exploded_type.expressions[0].is_type(exp.DataType.Type.STRUCT)
+        ):
+            # When unnesting a ROW in Presto, it produces N columns, so we need to fix the alias
+            alias.set("columns", [c.this.copy() for c in exploded_type.expressions[0].expressions])
+    elif isinstance(explode, exp.Inline):
+        explode.replace(exp.Explode(this=explode.this.copy()))
+
+    return explode_to_unnest_sql(self, expression)
+
+
+def _amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
+    # We check for expression.type because the columns can be amended only if types were inferred
+    if isinstance(expression, exp.Select) and expression.type:
+        for lateral in expression.args.get("laterals") or []:
+            alias = lateral.args.get("alias")
+            if (
+                not isinstance(lateral.this, exp.Explode)
+                or not isinstance(alias, exp.TableAlias)
+                or len(alias.columns) != 1
+            ):
+                continue
+
+            new_table = alias.this
+            old_table = alias.columns[0].name.lower()
+
+            # When transpiling a LATERAL VIEW EXPLODE Spark query, the exploded fields may be qualified
+            # with the struct column, resulting in invalid Presto references that need to be amended
+            for column in find_all_in_scope(expression, exp.Column):
+                if column.db.lower() == old_table:
+                    column.set("table", column.args["db"].pop())
+                elif column.table.lower() == old_table:
+                    column.set("table", new_table.copy())
+                elif column.name.lower() == old_table and isinstance(column.parent, exp.Dot):
+                    column.parent.replace(exp.column(column.parent.expression, table=new_table))
+
+    return expression
 
 
 class Presto(Dialect):
@@ -403,7 +454,7 @@ class Presto(Dialect):
             exp.Initcap: _initcap_sql,
             exp.Last: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
-            exp.Lateral: explode_to_unnest_sql,
+            exp.Lateral: _explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("LEVENSHTEIN_DISTANCE")
@@ -421,8 +472,9 @@ class Presto(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    transforms.explode_to_unnest(1),
+                    transforms.explode_projection_to_unnest(1),
                     transforms.eliminate_semi_and_anti_joins,
+                    _amend_exploded_column_table,
                 ]
             ),
             exp.SortArray: _no_sort_array,

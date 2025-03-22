@@ -874,7 +874,12 @@ class Snowflake(Dialect):
             ):
                 parts.append(self._advance_any(ignore_reserved=True))
 
-            return exp.var("".join(part.text for part in parts if part))
+            part_texts = (
+                f'"{part.text}"' if part.token_type == TokenType.IDENTIFIER else part.text
+                for part in parts
+                if part
+            )
+            return exp.var("".join(part_texts))
 
         def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
             this = super()._parse_lambda_arg()

@@ -1064,7 +1064,11 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT * FROM '@mystage'")
         self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
+        self.validate_identity('SELECT * FROM @"mystage"')
+        self.validate_identity('SELECT * FROM @"myschema"."mystage"/file.gz')
+        self.validate_identity('SELECT * FROM @"my_DB"."schEMA1".mystage/file.gz')
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
+        self.validate_identity('PUT \'file:///dir/tmp.csv\' @"my_DB"."schEMA1"."MYstage"')
         self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(

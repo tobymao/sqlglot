@@ -941,7 +941,7 @@ class BigQuery(Dialect):
             exp.Rollback: lambda *_: "ROLLBACK TRANSACTION",
             exp.Select: transforms.preprocess(
                 [
-                    transforms.explode_to_unnest(),
+                    transforms.explode_projection_to_unnest(),
                     transforms.unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,

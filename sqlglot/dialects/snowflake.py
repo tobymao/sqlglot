@@ -1030,7 +1030,7 @@ class Snowflake(Dialect):
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
-                    transforms.explode_to_unnest(),
+                    transforms.explode_projection_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
                     _transform_generate_date_array,
                 ]

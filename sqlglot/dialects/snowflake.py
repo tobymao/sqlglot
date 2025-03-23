@@ -863,7 +863,7 @@ class Snowflake(Dialect):
                 else self._parse_table_parts()
             )
 
-        def _parse_location_path(self) -> exp.Var:
+        def _parse_location_path(self) -> exp.Literal:
             parts = [self._advance_any(ignore_reserved=True)]
 
             # We avoid consuming a comma token because external tables like @foo and @bar
@@ -879,7 +879,7 @@ class Snowflake(Dialect):
                 for part in parts
                 if part
             )
-            return exp.var("".join(part_texts))
+            return exp.Literal(this="".join(part_texts), is_string=False)
 
         def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
             this = super()._parse_lambda_arg()

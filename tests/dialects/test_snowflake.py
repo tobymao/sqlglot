@@ -2395,7 +2395,7 @@ SINGLE = TRUE""",
         ast = parse_one("PUT 'file://my file.txt' '@s1/my folder'", read="snowflake")
         self.assertIsInstance(ast, exp.Put)
         self.assertEqual(ast.this, exp.Literal(this="file://my file.txt", is_string=True))
-        self.assertEqual(ast.args["target"], exp.Var(this="@s1/my folder"))
+        self.assertEqual(ast.args["target"], exp.Literal(this="@s1/my folder", is_string=False))
 
         # expression with additional properties
         ast = parse_one(
@@ -2404,7 +2404,7 @@ SINGLE = TRUE""",
         )
         self.assertIsInstance(ast, exp.Put)
         self.assertEqual(ast.this, exp.Literal(this="file:///tmp/my.txt", is_string=True))
-        self.assertEqual(ast.args["target"], exp.Var(this="@stage1/folder"))
+        self.assertEqual(ast.args["target"], exp.Literal(this="@stage1/folder", is_string=False))
         properties = ast.args.get("properties")
         props_dict = {prop.this.this: prop.args["value"].this for prop in properties.expressions}
         self.assertEqual(

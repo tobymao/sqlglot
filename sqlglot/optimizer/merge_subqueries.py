@@ -127,10 +127,16 @@ def _mergeable(
     Return True if `inner_select` can be merged into outer query.
     """
     inner_select = inner_scope.expression.unnest()
+    def find_alias_for_window(window: exp.Window) -> str:
+        """Return the alias name associated with the given window expression."""
+        parent = window.parent
+        if parent is None:
+            return ""
+        return parent.alias_or_name or find_alias_for_window(parent)
 
     def _is_a_window_expression_in_unmergable_operation():
         window_expressions = inner_select.find_all(exp.Window)
-        window_alias_names = {window.parent.alias_or_name for window in window_expressions}
+        window_alias_names = {find_alias_for_window(window) for window in window_expressions}
         inner_select_name = from_or_join.alias_or_name
         unmergable_window_columns = [
             column

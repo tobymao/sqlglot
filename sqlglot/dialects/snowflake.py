@@ -876,6 +876,8 @@ class Snowflake(Dialect):
                 self._advance_any(ignore_reserved=True)
 
             result = self._find_sql(start, self._prev)
+            if len(result) >= 2 and result[0] == result[-1] == "'":
+                result = result[1:-1]
             return exp.Literal(this=result, is_string=True)
 
         def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:

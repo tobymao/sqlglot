@@ -1573,7 +1573,7 @@ class TestSnowflake(Validator):
   location=@s2/logs/
   partition_type = user_specified
   file_format = (type = parquet)""",
-            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL(38, 0) AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL(38, 0)))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
+            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL(38, 0) AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL(38, 0)))) LOCATION '@s2/logs/' PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
         )
 
         self.validate_all(
@@ -2342,12 +2342,17 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(FOO() AS TEXT)")
 
     def test_copy(self):
-        self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")
         self.validate_identity(
-            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('str1', 'str2') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'"""
+            "COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)",
+            write_sql="COPY INTO test (c1) FROM (SELECT $1.c1 FROM '@mystage')",
         )
         self.validate_identity(
-            """COPY INTO load1 FROM @%load1/data1/ CREDENTIALS = (AWS_KEY_ID='id' AWS_SECRET_KEY='key' AWS_TOKEN='token') FILES = ('test1.csv', 'test2.csv') FORCE = TRUE"""
+            """COPY INTO temp FROM @random_stage/path/ FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('str1', 'str2') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'""",
+            write_sql="""COPY INTO temp FROM '@random_stage/path/' FILE_FORMAT = (TYPE=CSV FIELD_DELIMITER='|' NULL_IF=('str1', 'str2') FIELD_OPTIONALLY_ENCLOSED_BY='"' TIMESTAMP_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' DATE_FORMAT='TZHTZM YYYY-MM-DD HH24:MI:SS.FF9' BINARY_FORMAT=BASE64) VALIDATION_MODE = 'RETURN_3_ROWS'""",
+        )
+        self.validate_identity(
+            """COPY INTO load1 FROM @%load1/data1/ CREDENTIALS = (AWS_KEY_ID='id' AWS_SECRET_KEY='key' AWS_TOKEN='token') FILES = ('test1.csv', 'test2.csv') FORCE = TRUE""",
+            write_sql="""COPY INTO load1 FROM '@%load1/data1/' CREDENTIALS = (AWS_KEY_ID='id' AWS_SECRET_KEY='key' AWS_TOKEN='token') FILES = ('test1.csv', 'test2.csv') FORCE = TRUE""",
         )
         self.validate_identity(
             """COPY INTO mytable FROM 'azure://myaccount.blob.core.windows.net/mycontainer/data/files' CREDENTIALS = (AZURE_SAS_TOKEN='token') ENCRYPTION = (TYPE='AZURE_CSE' MASTER_KEY='kPx...') FILE_FORMAT = (FORMAT_NAME=my_csv_format)"""
@@ -2356,10 +2361,12 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             """COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' STORAGE_INTEGRATION = "storage" ENCRYPTION = (TYPE='NONE' MASTER_KEY='key') FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME=my_csv_format NULL_IF=('')) PARSE_HEADER = TRUE"""
         )
         self.validate_identity(
-            """COPY INTO @my_stage/result/data FROM (SELECT * FROM orderstiny) FILE_FORMAT = (TYPE='csv')"""
+            """COPY INTO @my_stage/result/data FROM (SELECT * FROM orderstiny) FILE_FORMAT = (TYPE='csv')""",
+            write_sql="""COPY INTO '@my_stage/result/data' FROM (SELECT * FROM orderstiny) FILE_FORMAT = (TYPE='csv')""",
         )
         self.validate_identity(
-            """COPY INTO MY_DATABASE.MY_SCHEMA.MY_TABLE FROM @MY_DATABASE.MY_SCHEMA.MY_STAGE/my_path FILE_FORMAT = (FORMAT_NAME=MY_DATABASE.MY_SCHEMA.MY_FILE_FORMAT)"""
+            """COPY INTO MY_DATABASE.MY_SCHEMA.MY_TABLE FROM @MY_DATABASE.MY_SCHEMA.MY_STAGE/my_path FILE_FORMAT = (FORMAT_NAME=MY_DATABASE.MY_SCHEMA.MY_FILE_FORMAT)""",
+            write_sql="""COPY INTO MY_DATABASE.MY_SCHEMA.MY_TABLE FROM '@MY_DATABASE.MY_SCHEMA.MY_STAGE/my_path' FILE_FORMAT = (FORMAT_NAME=MY_DATABASE.MY_SCHEMA.MY_FILE_FORMAT)""",
         )
         self.validate_all(
             """COPY INTO 's3://example/data.csv'
@@ -2422,7 +2429,7 @@ SINGLE = TRUE""",
         ast = parse_one("PUT 'file://my file.txt' '@s1/my folder'", read="snowflake")
         self.assertIsInstance(ast, exp.Put)
         self.assertEqual(ast.this, exp.Literal(this="file://my file.txt", is_string=True))
-        self.assertEqual(ast.args["target"], exp.Literal(this="@s1/my folder", is_string=False))
+        self.assertEqual(ast.args["target"], exp.Literal(this="@s1/my folder", is_string=True))
 
         # expression with additional properties
         ast = parse_one(
@@ -2431,7 +2438,7 @@ SINGLE = TRUE""",
         )
         self.assertIsInstance(ast, exp.Put)
         self.assertEqual(ast.this, exp.Literal(this="file:///tmp/my.txt", is_string=True))
-        self.assertEqual(ast.args["target"], exp.Literal(this="@stage1/folder", is_string=False))
+        self.assertEqual(ast.args["target"], exp.Literal(this="@stage1/folder", is_string=True))
         properties = ast.args.get("properties")
         props_dict = {prop.this.this: prop.args["value"].this for prop in properties.expressions}
         self.assertEqual(
@@ -2445,7 +2452,9 @@ SINGLE = TRUE""",
         )
 
         # validate identity for different args and properties
-        self.validate_identity("PUT 'file:///dir/tmp.csv' @s1/test")
+        self.validate_identity(
+            "PUT 'file:///dir/tmp.csv' @s1/test", write_sql="PUT 'file:///dir/tmp.csv' '@s1/test'"
+        )
 
         # the unquoted URI variant is not fully supported yet
         self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)

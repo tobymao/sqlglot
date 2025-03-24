@@ -128,7 +128,7 @@ def _mergeable(
     """
     inner_select = inner_scope.expression.unnest()
 
-    def find_alias_for_window(window: exp.Window) -> str:
+    def find_alias_for_window(window: exp.Expression) -> str:
         """Return the alias name associated with the given window expression."""
         parent = window.parent
         if parent is None:

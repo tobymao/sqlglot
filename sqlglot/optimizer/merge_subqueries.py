@@ -127,6 +127,7 @@ def _mergeable(
     Return True if `inner_select` can be merged into outer query.
     """
     inner_select = inner_scope.expression.unnest()
+
     def find_alias_for_window(window: exp.Window) -> str:
         """Return the alias name associated with the given window expression."""
         parent = window.parent

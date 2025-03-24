@@ -1057,45 +1057,72 @@ class TestSnowflake(Validator):
             staged_file.sql(dialect="snowflake"),
         )
 
-        self.validate_identity("SELECT metadata$filename FROM @s1/")
-        self.validate_identity("SELECT * FROM @~")
-        self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
-        self.validate_identity("SELECT * FROM @mystage")
+        self.validate_identity(
+            "SELECT metadata$filename FROM @s1/", write_sql="SELECT metadata$filename FROM '@s1/'"
+        )
+        self.validate_identity("SELECT * FROM @~", write_sql="SELECT * FROM '@~'")
+        self.validate_identity(
+            "SELECT * FROM @~/some/path/to/file.csv",
+            write_sql="SELECT * FROM '@~/some/path/to/file.csv'",
+        )
+        self.validate_identity("SELECT * FROM @mystage", write_sql="SELECT * FROM '@mystage'")
         self.validate_identity("SELECT * FROM '@mystage'")
-        self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
-        self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
-        self.validate_identity('SELECT * FROM @"mystage"')
-        self.validate_identity('SELECT * FROM @"myschema"."mystage"/file.gz')
-        self.validate_identity('SELECT * FROM @"my_DB"."schEMA1".mystage/file.gz')
-        self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        self.validate_identity('PUT \'file:///dir/tmp.csv\' @"my_DB"."schEMA1"."MYstage"')
+        self.validate_identity(
+            "SELECT * FROM @namespace.mystage/path/to/file.json.gz",
+            write_sql="SELECT * FROM '@namespace.mystage/path/to/file.json.gz'",
+        )
+        self.validate_identity(
+            "SELECT * FROM @namespace.%table_name/path/to/file.json.gz",
+            write_sql="SELECT * FROM '@namespace.%table_name/path/to/file.json.gz'",
+        )
+        self.validate_identity('SELECT * FROM @"mystage"', write_sql="SELECT * FROM '@\"mystage\"'")
+        self.validate_identity(
+            'SELECT * FROM @"myschema"."mystage"/file.gz',
+            write_sql='SELECT * FROM \'@"myschema"."mystage"/file.gz\'',
+        )
+        self.validate_identity(
+            'SELECT * FROM @"my_DB"."schEMA1".mystage/file.gz',
+            write_sql='SELECT * FROM \'@"my_DB"."schEMA1".mystage/file.gz\'',
+        )
+        self.validate_identity(
+            "SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')", write_sql=""
+        )
+        self.validate_identity(
+            'PUT \'file:///dir/tmp.csv\' @"my_DB"."schEMA1"."MYstage"',
+            write_sql='PUT \'file:///dir/tmp.csv\' \'@"my_DB"."schEMA1"."MYstage"\'',
+        )
         self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
-        self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
-            "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
+            "SELECT * FROM (SELECT a FROM @foo)", write_sql="SELECT * FROM (SELECT a FROM '@foo')"
         )
         self.validate_identity(
-            "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla"
+            "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))",
+            write_sql="",
         )
         self.validate_identity(
-            "SELECT t.$1, t.$2 FROM @mystage1 (FILE_FORMAT => 'myformat', PATTERN => '.*data.*[.]csv.gz') AS t"
+            "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
+            write_sql="SELECT * FROM '@foo/bar' (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
+        )
+        self.validate_identity(
+            "SELECT t.$1, t.$2 FROM @mystage1 (FILE_FORMAT => 'myformat', PATTERN => '.*data.*[.]csv.gz') AS t",
+            write_sql="SELECT t.$1, t.$2 FROM '@mystage1' (FILE_FORMAT => 'myformat', PATTERN => '.*data.*[.]csv.gz') AS t",
         )
         self.validate_identity(
             "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
-            "SELECT GET_PATH(PARSE_JSON($1), 'a.b') FROM @mystage2/data1.json.gz",
+            "SELECT GET_PATH(PARSE_JSON($1), 'a.b') FROM '@mystage2/data1.json.gz'",
         )
         self.validate_identity(
             "SELECT * FROM @mystage t (c1)",
-            "SELECT * FROM @mystage AS t(c1)",
+            "SELECT * FROM '@mystage' AS t(c1)",
         )
         self.validate_identity(
             "SELECT * FROM @foo/bar (PATTERN => 'test', FILE_FORMAT => ds_sandbox.test.my_csv_format) AS bla",
-            "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
+            "SELECT * FROM '@foo/bar' (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
         )
 
         self.validate_identity(
             "SELECT * FROM @test.public.thing/location/somefile.csv( FILE_FORMAT => 'fmt' )",
-            "SELECT * FROM @test.public.thing/location/somefile.csv (FILE_FORMAT => 'fmt')",
+            "SELECT * FROM '@test.public.thing/location/somefile.csv' (FILE_FORMAT => 'fmt')",
         )
 
     def test_sample(self):

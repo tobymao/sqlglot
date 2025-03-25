@@ -272,7 +272,7 @@ def _expand_alias_refs(
     """
     expression = scope.expression
 
-    if not isinstance(expression, exp.Select):
+    if not isinstance(expression, exp.Select) or dialect == "oracle":
         return
 
     alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}

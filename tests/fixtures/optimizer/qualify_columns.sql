@@ -770,6 +770,12 @@ WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHE
 SELECT DISTINCT ON (new_col, b + 1, 1) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 SELECT DISTINCT ON (new_col, t1.b + 1, new_col) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 
+# title: Oracle does not support lateral alias expansion
+# dialect: oracle
+# execute: false
+SELECT a AS b, b AS a FROM c;
+SELECT C.A AS B, C.B AS A FROM C C;
+
 --------------------------------------
 -- Wrapped tables / join constructs
 --------------------------------------

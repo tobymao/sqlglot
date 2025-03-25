@@ -864,7 +864,8 @@ class Snowflake(Dialect):
             )
 
         def _parse_location_path(self) -> exp.Var:
-            parts = [self._advance_any(ignore_reserved=True)]
+            start = self._curr
+            self._advance_any(ignore_reserved=True)
 
             # We avoid consuming a comma token because external tables like @foo and @bar
             # can be joined in a query with a comma separator, as well as closing paren
@@ -872,9 +873,9 @@ class Snowflake(Dialect):
             while self._is_connected() and not self._match_set(
                 (TokenType.COMMA, TokenType.L_PAREN, TokenType.R_PAREN), advance=False
             ):
-                parts.append(self._advance_any(ignore_reserved=True))
+                self._advance_any(ignore_reserved=True)
 
-            return exp.var("".join(part.text for part in parts if part))
+            return exp.var(self._find_sql(start, self._prev))
 
         def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
             this = super()._parse_lambda_arg()

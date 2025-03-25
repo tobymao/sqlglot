@@ -1057,6 +1057,9 @@ class TestSnowflake(Validator):
             staged_file.sql(dialect="snowflake"),
         )
 
+        self.validate_identity('SELECT * FROM @"mystage"')
+        self.validate_identity('SELECT * FROM @"myschema"."mystage"/file.gz')
+        self.validate_identity('SELECT * FROM @"my_DB"."schEMA1".mystage/file.gz')
         self.validate_identity("SELECT metadata$filename FROM @s1/")
         self.validate_identity("SELECT * FROM @~")
         self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
@@ -2387,11 +2390,14 @@ SINGLE = TRUE""",
         )
 
     def test_put_to_stage(self):
+        self.validate_identity('PUT \'file:///dir/tmp.csv\' @"my_DB"."schEMA1"."MYstage"')
+
         # PUT with file path and stage ref containing spaces (wrapped in single quotes)
         ast = parse_one("PUT 'file://my file.txt' '@s1/my folder'", read="snowflake")
         self.assertIsInstance(ast, exp.Put)
         self.assertEqual(ast.this, exp.Literal(this="file://my file.txt", is_string=True))
-        self.assertEqual(ast.args["target"], exp.Var(this="@s1/my folder"))
+        self.assertEqual(ast.args["target"], exp.Var(this="'@s1/my folder'"))
+        self.assertEqual(ast.sql("snowflake"), "PUT 'file://my file.txt' '@s1/my folder'")
 
         # expression with additional properties
         ast = parse_one(

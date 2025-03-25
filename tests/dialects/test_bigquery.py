@@ -15,6 +15,7 @@ from sqlglot import (
 from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
+from sqlglot.optimizer.annotate_types import annotate_types
 
 
 class TestBigQuery(Validator):
@@ -2366,3 +2367,18 @@ OPTIONS (
             "STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)",
             "STRING_AGG(DISTINCT a, ',' ORDER BY b DESC, c DESC LIMIT 10)",
         )
+
+    def test_annotate_timestamps(self):
+        sql = """
+        SELECT
+          CURRENT_TIMESTAMP() AS curr_ts,
+          TIMESTAMP_SECONDS(2) AS ts_seconds,
+          PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC') AS parsed_ts,
+          TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE) AS ts_add,
+          TIMESTAMP_SUB(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE) AS ts_sub,
+        """
+
+        annotated = annotate_types(self.parse_one(sql), dialect="bigquery")
+
+        for select in annotated.selects:
+            self.assertEqual(select.type.sql("bigquery"), "TIMESTAMP")

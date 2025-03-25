@@ -8,6 +8,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    annotate_with_type_lambda,
     arg_max_or_min_no_count,
     binary_from_function,
     date_add_interval_sql,
@@ -398,8 +399,20 @@ class BigQuery(Dialect):
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
 
+    # BigQuery maps Type.TIMESTAMP to DATETIME, so we need to amend the inferred types
+    TYPE_TO_EXPRESSIONS = {
+        **Dialect.TYPE_TO_EXPRESSIONS,
+        exp.DataType.Type.TIMESTAMPTZ: Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIMESTAMP],
+    }
+    TYPE_TO_EXPRESSIONS.pop(exp.DataType.Type.TIMESTAMP)
+
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
+        **{
+            expr_type: annotate_with_type_lambda(data_type)
+            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
+            for expr_type in expressions
+        },
         **{
             expr_type: lambda self, e: _annotate_math_functions(self, e)
             for expr_type in (exp.Floor, exp.Ceil, exp.Log, exp.Ln, exp.Sqrt, exp.Exp, exp.Round)

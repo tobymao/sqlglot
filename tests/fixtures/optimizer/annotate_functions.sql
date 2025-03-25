@@ -19,6 +19,15 @@ INT;
 LEAST(1, 2.5, 3);
 DOUBLE;
 
+CURRENT_TIME();
+TIME;
+
+TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR);
+TIME;
+
+TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR);
+TIME;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

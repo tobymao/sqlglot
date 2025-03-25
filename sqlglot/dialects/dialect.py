@@ -51,7 +51,7 @@ UNESCAPED_SEQUENCES = {
 }
 
 
-def _annotate_with_type_lambda(data_type: exp.DataType.Type) -> t.Callable[[TypeAnnotator, E], E]:
+def annotate_with_type_lambda(data_type: exp.DataType.Type) -> t.Callable[[TypeAnnotator, E], E]:
     return lambda self, e: self._annotate_with_type(e, data_type)
 
 
@@ -683,15 +683,15 @@ class Dialect(metaclass=_Dialect):
             exp.ParseJSON,
         },
         exp.DataType.Type.TIME: {
+            exp.CurrentTime,
             exp.Time,
+            exp.TimeAdd,
+            exp.TimeSub,
         },
         exp.DataType.Type.TIMESTAMP: {
-            exp.CurrentTime,
             exp.CurrentTimestamp,
             exp.StrToTime,
-            exp.TimeAdd,
             exp.TimeStrToTime,
-            exp.TimeSub,
             exp.TimestampAdd,
             exp.TimestampSub,
             exp.UnixToTime,
@@ -733,7 +733,7 @@ class Dialect(metaclass=_Dialect):
             for expr_type in subclasses(exp.__name__, exp.Binary)
         },
         **{
-            expr_type: _annotate_with_type_lambda(data_type)
+            expr_type: annotate_with_type_lambda(data_type)
             for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
             for expr_type in expressions
         },

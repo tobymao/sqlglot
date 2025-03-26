@@ -164,9 +164,6 @@ This allows SQLGlot to return the code unmodified even though it cannot parse it
 ### Dialect-specific parsing
 The base parser’s goal is to represent as many common constructs from different SQL dialects as possible. This makes the parser more lenient and less-repetitive/concise.
 
-> [!WARNING]
-> SQLGlot does not aim to be a SQL validator, so it may not detect certain syntax errors.
-
 Dialect-specific parser behavior is implemented in two ways: feature flags and parser overrides.
 
 If two different parsing behaviors are common across dialects, the base parser may implement both and use feature flags to determine which should be used for a specific dialect. In contrast, parser overrides directly replace specific base parser methods.

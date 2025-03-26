@@ -6,7 +6,7 @@ It is a very comprehensive generic SQL parser with a robust [test suite](https:/
 
 You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
-Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, SQLGlot does not aim to be a SQL validator, so it may fail to detect certain syntax errors.
+SQLGlot can detect a variety of [syntax errors](#parser-errors), such as unbalanced parentheses, incorrect usage of reserved keywords, and so on. These errors are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
 Learn more about SQLGlot in the API [documentation](https://sqlglot.com/) and the expression tree [primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md).
 
@@ -79,10 +79,6 @@ I tried to parse SQL that should be valid but it failed, why did that happen?
 I tried to output SQL but it's not in the correct dialect!
 
 * Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")` (alternatively: `transpile(sql, read="spark", write="duckdb")`).
-
-I tried to parse invalid SQL and it worked, even though it should raise an error! Why didn't it validate my SQL?
-
-* SQLGlot does not aim to be a SQL validator - it is designed to be very forgiving. This makes the codebase more comprehensive and also gives more flexibility to its users, e.g. by allowing them to include trailing commas in their projection lists.
 
 What happened to sqlglot.dataframe?
 

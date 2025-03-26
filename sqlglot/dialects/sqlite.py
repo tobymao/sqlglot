@@ -21,20 +21,6 @@ from sqlglot.generator import unsupported_args
 from sqlglot.tokens import TokenType
 
 
-def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
-    modifier = expression.expression
-    modifier = modifier.name if modifier.is_string else self.sql(modifier)
-    unit = expression.args.get("unit")
-    modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
-    return self.func("DATE", expression.this, modifier)
-
-
-def _json_extract_sql(self: SQLite.Generator, expression: exp.JSONExtract) -> str:
-    if expression.expressions:
-        return self.function_fallback_sql(expression)
-    return arrow_json_extract_sql(self, expression)
-
-
 def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 1:
         args.append(exp.CurrentTimestamp())
@@ -182,11 +168,9 @@ class SQLite(Dialect):
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
-            exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.If: rename_func("IIF"),
             exp.ILike: no_ilike_sql,
-            exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDITDIST3")
@@ -223,6 +207,18 @@ class SQLite(Dialect):
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
 
         LIMIT_FETCH = "LIMIT"
+
+        def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
+            if expression.expressions:
+                return self.function_fallback_sql(expression)
+            return arrow_json_extract_sql(self, expression)
+
+        def dateadd_sql(self, expression: exp.DateAdd) -> str:
+            modifier = expression.expression
+            modifier = modifier.name if modifier.is_string else self.sql(modifier)
+            unit = expression.args.get("unit")
+            modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
+            return self.func("DATE", expression.this, modifier)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type("date"):

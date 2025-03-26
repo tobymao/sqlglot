@@ -439,6 +439,7 @@ class DuckDB(Dialect):
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "MAP": lambda self: self._parse_map(),
+            "@": lambda self: exp.Abs(this=self._parse_bitwise()),
         }
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {

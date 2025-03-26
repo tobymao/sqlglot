@@ -3058,7 +3058,7 @@ class Generator(metaclass=_Generator):
         elif field:
             in_sql = self.sql(field)
         else:
-            in_sql = f"({self.expressions(expression, flat=True)})"
+            in_sql = f"({self.expressions(expression, dynamic=True, new_line=True, skip_first=True, skip_last=True)})"
 
         return f"{self.sql(expression, 'this')}{is_global} IN {in_sql}"
 

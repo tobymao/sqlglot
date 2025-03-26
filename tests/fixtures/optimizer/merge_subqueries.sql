@@ -259,7 +259,7 @@ FROM
   t1;
 WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT SUM(t1.row_num) AS total_rows FROM t1 AS t1;
 
-# title: Test prevent merging of window if in group by func
+# title: Test prevent merging of window if in group by
 with t1 as (
   SELECT
     x.a,
@@ -277,7 +277,7 @@ GROUP BY t1.row_num
 ORDER BY t1.row_num;
 WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, SUM(t1.a) AS total FROM t1 AS t1 GROUP BY t1.row_num ORDER BY row_num;
 
-# title: Test prevent merging of window if in order by func
+# title: Test prevent merging of window if in order by
 with t1 as (
   SELECT
     x.a,
@@ -293,6 +293,23 @@ FROM
   t1
 ORDER BY t1.row_num, t1.a;
 WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, t1.a AS a FROM t1 AS t1 ORDER BY t1.row_num, t1.a;
+
+# title: Test preventing merging of window nested under complex projection if in order by
+WITH t1 AS (
+  SELECT
+    x.a,
+    x.b,
+    ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) - 1 AS row_num
+  FROM
+    x
+)
+SELECT
+  t1.row_num AS row_num,
+  t1.a AS a
+FROM
+  t1
+ORDER BY t1.row_num, t1.a;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) - 1 AS row_num FROM x AS x) SELECT t1.row_num AS row_num, t1.a AS a FROM t1 AS t1 ORDER BY t1.row_num, t1.a;
 
 # title: Test allow merging of window function
 with t1 as (

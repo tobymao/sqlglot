@@ -760,7 +760,10 @@ SELECT
   `_q_0`.`first_half_sales` AS `first_half_sales`,
   `_q_0`.`second_half_sales` AS `second_half_sales`
 FROM `produce` AS `produce`
-UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN ((`produce`.`q1`, `produce`.`q2`) AS 'semester_1', (`produce`.`q3`, `produce`.`q4`) AS 'semester_2')) AS `_q_0`;
+UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN (
+  (`produce`.`q1`, `produce`.`q2`) AS 'semester_1',
+  (`produce`.`q3`, `produce`.`q4`) AS 'semester_2'
+)) AS `_q_0`;
 
 # title: quoting is preserved
 # dialect: snowflake
@@ -1382,7 +1385,13 @@ LEFT JOIN `_u_3` AS `_u_3`
   ON `_u_3`.`_u_4` = `cs1`.`cs_order_number`
 JOIN `call_center` AS `call_center`
   ON `call_center`.`cc_call_center_sk` = `cs1`.`cs_call_center_sk`
-  AND `call_center`.`cc_county` IN ('Williamson County', 'Williamson County', 'Williamson County', 'Williamson County', 'Williamson County')
+  AND `call_center`.`cc_county` IN (
+    'Williamson County',
+    'Williamson County',
+    'Williamson County',
+    'Williamson County',
+    'Williamson County'
+  )
 JOIN `customer_address` AS `customer_address`
   ON `cs1`.`cs_ship_addr_sk` = `customer_address`.`ca_address_sk`
   AND `customer_address`.`ca_state` = 'GA'

@@ -1,6 +1,78 @@
 Changelog
 =========
 
+## [v26.12.0] - 2025-03-27
+### :boom: BREAKING CHANGES
+- due to [`8a692b9`](https://github.com/tobymao/sqlglot/commit/8a692b9b5b7982ed54444bddfe974e5f629183ff) - support select...into #temp_table syntax *(PR [#4893](https://github.com/tobymao/sqlglot/pull/4893) by [@hhubbell](https://github.com/hhubbell))*:
+
+  support select...into #temp_table syntax (#4893)
+
+- due to [`bcf311a`](https://github.com/tobymao/sqlglot/commit/bcf311a4af4b1a95e038befc0bc84627c4851e5f) - Preserve PARSE_JSON() *(PR [#4901](https://github.com/tobymao/sqlglot/pull/4901) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Preserve PARSE_JSON() (#4901)
+
+- due to [`937b7bd`](https://github.com/tobymao/sqlglot/commit/937b7bdd5b06daffee379390796c76ffb07c2588) - handle string interval values in DATE ADD/SUB *(PR [#4902](https://github.com/tobymao/sqlglot/pull/4902) by [@georgesittas](https://github.com/georgesittas))*:
+
+  handle string interval values in DATE ADD/SUB (#4902)
+
+- due to [`96749c1`](https://github.com/tobymao/sqlglot/commit/96749c144832b491f01de387cd2f7a9b769af626) - improve LATERAL VIEW EXPLODE transpilation *(PR [#4905](https://github.com/tobymao/sqlglot/pull/4905) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve LATERAL VIEW EXPLODE transpilation (#4905)
+
+- due to [`71c529a`](https://github.com/tobymao/sqlglot/commit/71c529a13db1690412829ac03b82ff72d44ce6c2) - disable lateral alias expansion for Oracle fixes [#4910](https://github.com/tobymao/sqlglot/pull/4910) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  disable lateral alias expansion for Oracle fixes #4910
+
+- due to [`f17004e`](https://github.com/tobymao/sqlglot/commit/f17004e1691c9d834e295452a960a6e3a2830e88) - only use ARRAY[...] syntax for Schema if parent is partitioned by prop *(PR [#4913](https://github.com/tobymao/sqlglot/pull/4913) by [@georgesittas](https://github.com/georgesittas))*:
+
+  only use ARRAY[...] syntax for Schema if parent is partitioned by prop (#4913)
+
+- due to [`2fbbf6a`](https://github.com/tobymao/sqlglot/commit/2fbbf6a8525385f53bcb3e588d665208ac6811c1) - infer timestamp function types as TIMESTAMPTZ for bigquery *(PR [#4914](https://github.com/tobymao/sqlglot/pull/4914) by [@georgesittas](https://github.com/georgesittas))*:
+
+  infer timestamp function types as TIMESTAMPTZ for bigquery (#4914)
+
+- due to [`c0b3448`](https://github.com/tobymao/sqlglot/commit/c0b3448e7a4ec46485dd65b7498855ab57e029ef) - parse at sign as ABS function *(PR [#4915](https://github.com/tobymao/sqlglot/pull/4915) by [@geooo109](https://github.com/geooo109))*:
+
+  parse at sign as ABS function (#4915)
+
+- due to [`aa9734d`](https://github.com/tobymao/sqlglot/commit/aa9734df473d1aed8e5a53a7ef8e4d3208c8296d) - improve pretty-formatting of IN (...) *(PR [#4920](https://github.com/tobymao/sqlglot/pull/4920) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve pretty-formatting of IN (...) (#4920)
+
+
+### :sparkles: New Features
+- [`1d6218e`](https://github.com/tobymao/sqlglot/commit/1d6218e386b3b1a5081272e179b8e48ec57153b4) - **snowflake**: add support for CREATE USING TEMPLATE closes [#4883](https://github.com/tobymao/sqlglot/pull/4883) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`fa9f9bd`](https://github.com/tobymao/sqlglot/commit/fa9f9bde626ddb3b8b5ad3dedc6aa3399b8c1716) - **tsql**: allow MERGE to be used in place of a subquery *(PR [#4890](https://github.com/tobymao/sqlglot/pull/4890) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4884](https://github.com/tobymao/sqlglot/issues/4884) opened by [@AndysonEjvind](https://github.com/AndysonEjvind)*
+- [`0de4503`](https://github.com/tobymao/sqlglot/commit/0de4503655ae9169ae02fdc8c48fb1edcd868cc8) - add a check and error message for set operations in pushdown_projections *(PR [#4897](https://github.com/tobymao/sqlglot/pull/4897) by [@snovik75](https://github.com/snovik75))*
+- [`96749c1`](https://github.com/tobymao/sqlglot/commit/96749c144832b491f01de387cd2f7a9b769af626) - **presto**: improve LATERAL VIEW EXPLODE transpilation *(PR [#4905](https://github.com/tobymao/sqlglot/pull/4905) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4879](https://github.com/tobymao/sqlglot/issues/4879) opened by [@Juanpeterjuanpa](https://github.com/Juanpeterjuanpa)*
+- [`c0b3448`](https://github.com/tobymao/sqlglot/commit/c0b3448e7a4ec46485dd65b7498855ab57e029ef) - **duckdb**: parse at sign as ABS function *(PR [#4915](https://github.com/tobymao/sqlglot/pull/4915) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#4912](https://github.com/tobymao/sqlglot/issues/4912) opened by [@suresh-summation](https://github.com/suresh-summation)*
+- [`aa9734d`](https://github.com/tobymao/sqlglot/commit/aa9734df473d1aed8e5a53a7ef8e4d3208c8296d) - **generator**: improve pretty-formatting of IN (...) *(PR [#4920](https://github.com/tobymao/sqlglot/pull/4920) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4015](https://github.com/TobikoData/sqlmesh/issues/4015) opened by [@petrikoro](https://github.com/petrikoro)*
+
+### :bug: Bug Fixes
+- [`1617509`](https://github.com/tobymao/sqlglot/commit/1617509d44124ffaba7eaf139023df07c3ad1636) - **bigquery**: preserve time zone info in FORMAT_TIMESTAMP roundtrip *(PR [#4895](https://github.com/tobymao/sqlglot/pull/4895) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4894](https://github.com/tobymao/sqlglot/issues/4894) opened by [@lenare1K5](https://github.com/lenare1K5)*
+- [`8a692b9`](https://github.com/tobymao/sqlglot/commit/8a692b9b5b7982ed54444bddfe974e5f629183ff) - **tsql**: support select...into #temp_table syntax *(PR [#4893](https://github.com/tobymao/sqlglot/pull/4893) by [@hhubbell](https://github.com/hhubbell))*
+- [`bcf311a`](https://github.com/tobymao/sqlglot/commit/bcf311a4af4b1a95e038befc0bc84627c4851e5f) - **databricks**: Preserve PARSE_JSON() *(PR [#4901](https://github.com/tobymao/sqlglot/pull/4901) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4898](https://github.com/tobymao/sqlglot/issues/4898) opened by [@h2o1](https://github.com/h2o1)*
+- [`3040a5e`](https://github.com/tobymao/sqlglot/commit/3040a5e4ebc778795251a74cf3de2169337aca55) - preserve whitespace in quoted identifiers and strings *(PR [#4903](https://github.com/tobymao/sqlglot/pull/4903) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4900](https://github.com/tobymao/sqlglot/issues/4900) opened by [@npochhi](https://github.com/npochhi)*
+- [`937b7bd`](https://github.com/tobymao/sqlglot/commit/937b7bdd5b06daffee379390796c76ffb07c2588) - **hive**: handle string interval values in DATE ADD/SUB *(PR [#4902](https://github.com/tobymao/sqlglot/pull/4902) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4899](https://github.com/tobymao/sqlglot/issues/4899) opened by [@ricardo-rolo](https://github.com/ricardo-rolo)*
+- [`71c529a`](https://github.com/tobymao/sqlglot/commit/71c529a13db1690412829ac03b82ff72d44ce6c2) - **optimizer**: disable lateral alias expansion for Oracle fixes [#4910](https://github.com/tobymao/sqlglot/pull/4910) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`3b7c699`](https://github.com/tobymao/sqlglot/commit/3b7c699267bf4f041a033017a894f0c1e2ae4068) - **snowflake**: quote identifiers in stage references *(PR [#4906](https://github.com/tobymao/sqlglot/pull/4906) by [@whummer](https://github.com/whummer))*
+- [`f17004e`](https://github.com/tobymao/sqlglot/commit/f17004e1691c9d834e295452a960a6e3a2830e88) - **presto**: only use ARRAY[...] syntax for Schema if parent is partitioned by prop *(PR [#4913](https://github.com/tobymao/sqlglot/pull/4913) by [@georgesittas](https://github.com/georgesittas))*
+- [`2fbbf6a`](https://github.com/tobymao/sqlglot/commit/2fbbf6a8525385f53bcb3e588d665208ac6811c1) - **optimizer**: infer timestamp function types as TIMESTAMPTZ for bigquery *(PR [#4914](https://github.com/tobymao/sqlglot/pull/4914) by [@georgesittas](https://github.com/georgesittas))*
+- [`ff6be71`](https://github.com/tobymao/sqlglot/commit/ff6be715b7d44700b595bbd5c83f65c28b52e191) - **optimizer**: avoid merging window function nested under a projection *(PR [#4919](https://github.com/tobymao/sqlglot/pull/4919) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4907](https://github.com/tobymao/sqlglot/issues/4907) opened by [@Rejudge-F](https://github.com/Rejudge-F)*
+
+### :recycle: Refactors
+- [`d386f37`](https://github.com/tobymao/sqlglot/commit/d386f374a6108ecce4e48324fe487c0955ab63b3) - **sqlite**: move generator methods within SQLite class *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.11.1] - 2025-03-18
 ### :bug: Bug Fixes
 - [`d7b3b3e`](https://github.com/tobymao/sqlglot/commit/d7b3b3e89720d1783d092a2c60a9c2209d9984a2) - **optimizer**: handle TableFromRows properly in annotate_types *(PR [#4889](https://github.com/tobymao/sqlglot/pull/4889) by [@georgesittas](https://github.com/georgesittas))*
@@ -6185,3 +6257,4 @@ Changelog
 [v26.10.1]: https://github.com/tobymao/sqlglot/compare/v26.10.0...v26.10.1
 [v26.11.0]: https://github.com/tobymao/sqlglot/compare/v26.10.1...v26.11.0
 [v26.11.1]: https://github.com/tobymao/sqlglot/compare/v26.11.0...v26.11.1
+[v26.12.0]: https://github.com/tobymao/sqlglot/compare/v26.11.1...v26.12.0

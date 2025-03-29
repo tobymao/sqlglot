@@ -19,16 +19,16 @@ install-pre-commit:
 	pre-commit install
 
 test:
-	SQLGLOTRS_TOKENIZER=0 python -m unittest
+	SQLGLOTRS_TOKENIZER=0 python -m unittest -vvv
 
 test-rs:
-	RUST_BACKTRACE=1 python -m unittest
+	RUST_BACKTRACE=1 python -m unittest -vvv
 
 unit:
-	SKIP_INTEGRATION=1 SQLGLOTRS_TOKENIZER=0 python -m unittest
+	SKIP_INTEGRATION=1 SQLGLOTRS_TOKENIZER=0 python -m unittest -vvv
 
 unit-rs:
-	SKIP_INTEGRATION=1 RUST_BACKTRACE=1 python -m unittest
+	SKIP_INTEGRATION=1 RUST_BACKTRACE=1 python -m unittest -vvv
 
 style:
 	pre-commit run --all-files

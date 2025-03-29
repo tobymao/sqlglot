@@ -53,6 +53,7 @@ class Dialects(str, Enum):
     ATHENA = "athena"
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
+    CRATEDB = "cratedb"
     DATABRICKS = "databricks"
     DORIS = "doris"
     DRILL = "drill"

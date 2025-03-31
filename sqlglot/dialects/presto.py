@@ -62,6 +62,9 @@ def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
 
     if expression.parent:
         for schema in expression.parent.find_all(exp.Schema):
+            if schema is expression:
+                continue
+
             column_defs = schema.find_all(exp.ColumnDef)
             if column_defs and isinstance(schema.parent, exp.Property):
                 expression.expressions.extend(column_defs)

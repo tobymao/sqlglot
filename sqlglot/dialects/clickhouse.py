@@ -919,8 +919,8 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
-        VALUES_AS_TABLE = False
         ARRAY_SIZE_NAME = "LENGTH"
+        WRAP_DERIVED_VALUES = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.BLOB: "String",
@@ -1315,3 +1315,11 @@ class ClickHouse(Dialect):
                 return self.sql(expression, "this")
 
             return super().not_sql(expression)
+
+        def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
+            # Clickhouse does not support VALUES with alias e.g:
+            # SELECT * FROM (VALUES (1, 2, 3)) AS subq(a, b, c)
+            # This gets generated into a subquery with the aliases properly placed
+            values_as_table = not expression.args.get("alias")
+
+            return super().values_sql(expression, values_as_table=values_as_table)

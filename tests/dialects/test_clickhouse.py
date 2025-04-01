@@ -599,6 +599,11 @@ class TestClickhouse(Validator):
             "SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq",
         )
 
+        self.validate_identity("SELECT * FROM VALUES ((1, 1), (2, 1), (3, 1), (4, 1))")
+        self.validate_identity(
+            "SELECT type, id FROM VALUES ('id Int, type Int', (1, 1), (2, 1), (3, 1), (4, 1))"
+        )
+
         self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
         self.validate_identity(
             "INSERT INTO t (col1, col2) FORMAT Values('abcd', 1234)",

@@ -481,3 +481,21 @@ FROM (
   LEFT OUTER JOIN tbl AS ITBL ON OTBL.id = ITBL.id
 ) AS ITBL;
 WITH tbl AS (SELECT 1 AS id) SELECT OTBL.id AS id FROM tbl AS OTBL LEFT OUTER JOIN tbl AS ITBL_2 ON OTBL.id = ITBL_2.id LEFT OUTER JOIN tbl AS ITBL_3 ON OTBL.id = ITBL_3.id LEFT OUTER JOIN tbl AS ITBL ON OTBL.id = ITBL.id;
+
+# title: Inner query contains subquery with an alias that conflicts with outer query
+WITH i AS (
+  SELECT
+    a
+  FROM (
+    SELECT 1 a
+  ) AS conflict
+), j AS (
+  SELECT 1 AS a
+)
+SELECT
+  i.a,
+  conflict.a
+FROM i
+LEFT JOIN j AS conflict
+  ON i.a = conflict.a;
+WITH j AS (SELECT 1 AS a) SELECT conflict_2.a AS a, conflict.a AS a FROM (SELECT 1 AS a) AS conflict_2 LEFT JOIN j AS conflict ON conflict_2.a = conflict.a;

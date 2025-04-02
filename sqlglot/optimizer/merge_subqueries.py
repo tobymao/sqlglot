@@ -237,12 +237,12 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
         source, _ = inner_scope.selected_sources[conflict]
         new_alias = exp.to_identifier(new_name)
 
-        if isinstance(source, exp.Subquery):
-            source.set("alias", exp.TableAlias(this=new_alias))
-        elif isinstance(source, exp.Table) and source.alias:
+        if isinstance(source, exp.Table) and source.alias:
             source.set("alias", new_alias)
         elif isinstance(source, exp.Table):
             source.replace(exp.alias_(source, new_alias))
+        elif isinstance(source.parent, exp.Subquery):
+            source.parent.set("alias", exp.TableAlias(this=new_alias))
 
         for column in inner_scope.source_columns(conflict):
             column.set("table", exp.to_identifier(new_name))

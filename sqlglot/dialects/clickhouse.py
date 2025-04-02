@@ -1317,10 +1317,14 @@ class ClickHouse(Dialect):
             return super().not_sql(expression)
 
         def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
-            # Clickhouse doesn't properly handle VALUES with alias e.g:
-            # SELECT * FROM VALUES (1, 2, 3) AS subq(col) -> Produces column "c1"
-            # We generate this into a subquery with the aliases properly placed:
-            # SELECT * FROM (SELECT 1 AS col) AS subq
-            values_as_table = not expression.args.get("alias")
+            # If the VALUES clause contains tuples of expressions, we need to treat it
+            # as a table since Clickhouse will automatically alias it as such.
+            alias = expression.args.get("alias")
+            column_aliases = (alias and alias.args.get("columns")) or None
+            if not column_aliases:
+                values_as_table = True
+            else:
+                values = expression.expressions[0].expressions
+                values_as_table = any(isinstance(value, exp.Tuple) for value in values)
 
             return super().values_sql(expression, values_as_table=values_as_table)

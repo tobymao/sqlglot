@@ -109,7 +109,7 @@ def _build_formatted_time(
     exp_class: t.Type[E], full_format_mapping: t.Optional[bool] = None
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
-        assert len(args) == 2
+        assert len(args) == 2, f"{len(args)=} but should equal 2."
 
         return exp_class(
             this=exp.cast(args[1], exp.DataType.Type.DATETIME2),

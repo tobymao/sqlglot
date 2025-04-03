@@ -109,21 +109,24 @@ def _build_formatted_time(
     exp_class: t.Type[E], full_format_mapping: t.Optional[bool] = None
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
-        assert len(args) == 2
-
-        return exp_class(
-            this=exp.cast(args[1], exp.DataType.Type.DATETIME2),
-            format=exp.Literal.string(
+        fmt = seq_get(args, 0)
+        if isinstance(fmt, exp.Expression):
+            fmt = exp.Literal.string(
                 format_time(
-                    args[0].name.lower(),
+                    fmt.name.lower(),
                     (
                         {**TSQL.TIME_MAPPING, **FULL_FORMAT_TIME_MAPPING}
                         if full_format_mapping
                         else TSQL.TIME_MAPPING
                     ),
                 )
-            ),
-        )
+            )
+
+        this = seq_get(args, 1)
+        if isinstance(this, exp.Expression):
+            this = exp.cast(this, exp.DataType.Type.DATETIME2)
+
+        return exp_class(this=this, format=fmt)
 
     return _builder
 

@@ -919,8 +919,8 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
-        VALUES_AS_TABLE = False
         ARRAY_SIZE_NAME = "LENGTH"
+        WRAP_DERIVED_VALUES = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.BLOB: "String",
@@ -1315,3 +1315,16 @@ class ClickHouse(Dialect):
                 return self.sql(expression, "this")
 
             return super().not_sql(expression)
+
+        def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
+            # If the VALUES clause contains tuples of expressions, we need to treat it
+            # as a table since Clickhouse will automatically alias it as such.
+            alias = expression.args.get("alias")
+            column_aliases = (alias and alias.args.get("columns")) or None
+            if not column_aliases:
+                values_as_table = True
+            else:
+                values = expression.expressions[0].expressions
+                values_as_table = any(isinstance(value, exp.Tuple) for value in values)
+
+            return super().values_sql(expression, values_as_table=values_as_table)

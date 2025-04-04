@@ -127,8 +127,42 @@ def qualify_tables(
                 if not table_alias.name:
                     table_alias.set("this", exp.to_identifier(next_alias_name()))
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
-                    for i, e in enumerate(udtf.expressions[0].expressions):
-                        table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
+                    values = udtf.expressions[0].expressions
+                    if dialect == "clickhouse":
+                        # Clickhouse allows VALUES to have an embedded structure e.g:
+                        # VALUES('person String, place String', ('Noah', 'Paris'), ...)
+                        # In this case, we don't want to qualify the columns
+                        structure = (
+                            values[0]
+                            if (
+                                len(values) > 1
+                                and values[0].is_string
+                                and isinstance(values[1], exp.Tuple)
+                            )
+                            else None
+                        )
+                        if structure:
+                            # Split each column definition into the column name e.g:
+                            # 'person String, place String' -> ['person', 'place']
+                            structure_coldefs = [
+                                coldef.strip() for coldef in structure.name.split(",")
+                            ]
+                            column_aliases = [coldef.split(" ")[0] for coldef in structure_coldefs]
+                        else:
+                            num_cols = (
+                                len(values[0].expressions)
+                                if isinstance(values[0], exp.Tuple)
+                                else 0
+                            )
+                            # Default column aliases in CH are "c1", "c2", etc.
+                            column_aliases = [f"c{i + 1}" for i in range(num_cols)]
+
+                    else:
+                        column_aliases = [f"_col_{i}" for i, _ in enumerate(values)]
+
+                    table_alias.set(
+                        "columns", [exp.to_identifier(alias) for alias in column_aliases]
+                    )
             else:
                 for node in scope.walk():
                     if (

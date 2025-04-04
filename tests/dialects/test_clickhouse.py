@@ -591,12 +591,53 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT arrayConcat([1, 2], [3, 4])")
 
     def test_clickhouse_values(self):
+        # Ensure that qualify produces the correct aliases, either using the
+        # structure provided or the default ones
+        def qualify_values(sql):
+            from sqlglot.optimizer.qualify import qualify
+
+            return qualify(parse_one(sql, read="clickhouse"), dialect="clickhouse").sql(
+                "clickhouse"
+            )
+
+        self.assertEqual(
+            qualify_values("SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq"),
+            'SELECT "subq"."a" AS "a", "subq"."b" AS "b", "subq"."c" AS "c" FROM (SELECT 1 AS "a", 2 AS "b", 3 AS "c") AS "subq"',
+        )
+
+        self.assertEqual(
+            qualify_values(
+                "SELECT * FROM VALUES ('person String, place String', ('Noah', 'Paris'))"
+            ),
+            """SELECT "_q_0"."person" AS "person", "_q_0"."place" AS "place" FROM VALUES ('person String, place String', ('Noah', 'Paris')) AS "_q_0"("person", "place")""",
+        )
+
+        self.assertEqual(
+            qualify_values("SELECT * FROM VALUES ((1, 1), (2, 2))"),
+            'SELECT "_q_0"."c1" AS "c1", "_q_0"."c2" AS "c2" FROM VALUES ((1, 1), (2, 2)) AS "_q_0"("c1", "c2")',
+        )
+
+        self.assertEqual(
+            qualify_values("SELECT * FROM VALUES (1, 2, 3)"),
+            'SELECT * FROM VALUES (1, 2, 3) AS "_q_0"',
+        )
+
+        self.assertEqual(
+            qualify_values("SELECT * FROM (VALUES (1, 2, 3)) AS subq(a, b, c)"),
+            'SELECT "subq"."a" AS "a", "subq"."b" AS "b", "subq"."c" AS "c" FROM (SELECT 1 AS "a", 2 AS "b", 3 AS "c") AS "subq"',
+        )
+
         values = exp.select("*").from_(
             exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])
         )
         self.assertEqual(
             values.sql("clickhouse"),
             "SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq",
+        )
+
+        self.validate_identity("SELECT * FROM VALUES ((1, 1), (2, 1), (3, 1), (4, 1))")
+        self.validate_identity(
+            "SELECT type, id FROM VALUES ('id Int, type Int', (1, 1), (2, 1), (3, 1), (4, 1))"
         )
 
         self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")

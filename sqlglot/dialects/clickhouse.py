@@ -1155,6 +1155,12 @@ class ClickHouse(Dialect):
 
             return prefix + self.func("has", arr.this.unnest(), this)
 
+        def dpipe_sql(self, expression: exp.DPipe) -> str:
+            for e in expression.flatten():
+                if not isinstance(e, exp.Literal):
+                    e.replace(exp.func("coalesce", e, exp.Literal.string("")))
+            return super().dpipe_sql(expression)
+
         def eq_sql(self, expression: exp.EQ) -> str:
             return self._any_to_has(expression, super().eq_sql)
 

@@ -44,9 +44,7 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
                 primary_key = e
 
         if primary_key and len(primary_key.expressions) == 1:
-            expr = primary_key.expressions[0]
-            name = expr.this.name if isinstance(expr, exp.Ordered) else expr.name
-            column = defs[name]
+            column = defs[primary_key.expressions[0].name]
             column.append(
                 "constraints", exp.ColumnConstraint(kind=exp.PrimaryKeyColumnConstraint())
             )

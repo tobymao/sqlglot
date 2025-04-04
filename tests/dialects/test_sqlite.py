@@ -110,7 +110,8 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT JSON_OBJECT('col1', 1, 'col2', '1')")
         self.validate_identity(
-            'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL PRIMARY KEY ("foo t id"))'
+            'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL, PRIMARY KEY ("foo t id"))',
+            'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL PRIMARY KEY)',
         )
 
     def test_strftime(self):

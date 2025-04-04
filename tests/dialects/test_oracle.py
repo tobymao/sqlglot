@@ -5,6 +5,18 @@ from tests.dialects.test_dialect import Validator
 class TestOracle(Validator):
     dialect = "oracle"
 
+    def test_string_concat(self):
+        self.validate_identity("SELECT CONCAT('abcde', 2, NULL, 22)")
+
+        self.validate_all(
+            "a || b",
+            write={
+                "": "a || b",
+                "clickhouse": "COALESCE(a, '') || COALESCE(b, '')",
+                "oracle": "a || b",
+            },
+        )
+
     def test_oracle(self):
         self.validate_identity("1 /* /* */")
         self.validate_all(

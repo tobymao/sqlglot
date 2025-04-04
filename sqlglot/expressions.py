@@ -2660,6 +2660,10 @@ class Sort(Order):
 class Ordered(Expression):
     arg_types = {"this": True, "desc": False, "nulls_first": True, "with_fill": False}
 
+    @property
+    def name(self) -> str:
+        return self.this.name
+
 
 class Property(Expression):
     arg_types = {"this": True, "value": True}

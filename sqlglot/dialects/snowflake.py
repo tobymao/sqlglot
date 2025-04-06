@@ -912,6 +912,7 @@ class Snowflake(Dialect):
             "CHAR VARYING": TokenType.VARCHAR,
             "CHARACTER VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,
+            "FILE FORMAT": TokenType.FILE_FORMAT,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,

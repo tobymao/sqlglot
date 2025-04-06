@@ -2092,6 +2092,15 @@ MATCH_RECOGNIZE (
         self.assertEqual(ast.this, "DATABASES")
         self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
 
+    def test_show_file_formats(self):
+        self.validate_identity("SHOW FILE FORMATS")
+        self.validate_identity("SHOW FILE FORMATS LIKE 'foo' IN DATABASE db1")
+        self.validate_identity("SHOW FILE FORMATS LIKE 'foo' IN SCHEMA db1.schema1")
+
+        ast = parse_one("SHOW FILE FORMATS IN ACCOUNT", read="snowflake")
+        self.assertEqual(ast.this, "FILE FORMATS")
+        self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
+
     def test_show_functions(self):
         self.validate_identity("SHOW FUNCTIONS")
         self.validate_identity("SHOW FUNCTIONS LIKE 'foo' IN CLASS bla")

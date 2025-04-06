@@ -2112,7 +2112,7 @@ MATCH_RECOGNIZE (
     def test_show_stages(self):
         self.validate_identity("SHOW STAGES")
         self.validate_identity("SHOW STAGES LIKE 'foo' IN DATABASE db1")
-        self.validate_identity("SHOW STAGES LIKE 'foo' IN SCHEMA schema1")
+        self.validate_identity("SHOW STAGES LIKE 'foo' IN SCHEMA db1.schema1")
 
         ast = parse_one("SHOW STAGES IN ACCOUNT", read="snowflake")
         self.assertEqual(ast.this, "STAGES")

@@ -905,6 +905,24 @@ class ClickHouse(Dialect):
                 this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
             return this
 
+        def _parse_value(self) -> t.Optional[exp.Tuple]:
+            value = super()._parse_value()
+            if not value:
+                return None
+
+            # In Clickhouse "SELECT * FROM VALUES (1, 2, 3)" generates a table with a single column, in contrast
+            # to other dialects. For this case, we canonicalize the values into a tuple-of-tuples AST if it's not already one.
+            # In INSERT INTO statements the same clause actually references multiple columns (opposite semantics),
+            # but the final result is not altered by the extra parentheses.
+            expressions = value.expressions
+            if not isinstance(expressions[-1], exp.Tuple):
+                value.set(
+                    "expressions",
+                    [self.expression(exp.Tuple, expressions=[expr]) for expr in expressions],
+                )
+
+            return value
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")

@@ -550,6 +550,7 @@ class Snowflake(Dialect):
             "COLUMNS": _show_parser("COLUMNS"),
             "USERS": _show_parser("USERS"),
             "TERSE USERS": _show_parser("USERS"),
+            "FILE FORMATS": _show_parser("FILE FORMATS"),
             "FUNCTIONS": _show_parser("FUNCTIONS"),
             "PROCEDURES": _show_parser("PROCEDURES"),
             "WAREHOUSES": _show_parser("WAREHOUSES"),

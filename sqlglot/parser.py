@@ -444,6 +444,7 @@ class Parser(metaclass=_Parser):
         TokenType.SEQUENCE,
         TokenType.SINK,
         TokenType.SOURCE,
+        TokenType.STAGE,
         TokenType.STORAGE_INTEGRATION,
         TokenType.STREAMLIT,
         TokenType.TABLE,

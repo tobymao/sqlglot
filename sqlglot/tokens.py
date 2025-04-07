@@ -97,6 +97,7 @@ class TokenType(AutoName):
     SCHEMA = auto()
     TABLE = auto()
     WAREHOUSE = auto()
+    STAGE = auto()
     STREAMLIT = auto()
     VAR = auto()
     BIT_STRING = auto()

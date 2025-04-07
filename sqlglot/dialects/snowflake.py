@@ -929,6 +929,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
             "WAREHOUSE": TokenType.WAREHOUSE,
+            "STAGE": TokenType.STAGE,
             "STREAMLIT": TokenType.STREAMLIT,
         }
         KEYWORDS.pop("/*+")

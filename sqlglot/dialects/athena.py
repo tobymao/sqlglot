@@ -15,7 +15,7 @@ def _generate_as_hive(expression: exp.Expression) -> bool:
             if properties and properties.find(exp.ExternalProperty):
                 return True  # CREATE EXTERNAL TABLE is Hive
 
-            if not isinstance(expression.expression, exp.Select):
+            if not isinstance(expression.expression, exp.Query):
                 return True  # any CREATE TABLE other than CREATE TABLE AS SELECT is Hive
         else:
             return expression.kind != "VIEW"  # CREATE VIEW is never Hive but CREATE SCHEMA etc is

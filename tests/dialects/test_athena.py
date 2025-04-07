@@ -154,6 +154,12 @@ class TestAthena(Validator):
             write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
         )
 
+        # CTAS with Union should still hit the Trino engine and not Hive
+        self.validate_identity(
+            'CREATE TABLE `foo` AS WITH `foo` AS (SELECT "a", `b` FROM "bar") SELECT * FROM "foo" UNION SELECT * FROM "foo"',
+            write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo" UNION SELECT * FROM "foo"',
+        )
+
         self.validate_identity("DESCRIBE foo.bar", write_sql="DESCRIBE `foo`.`bar`", identify=True)
 
     def test_dml_quoting(self):

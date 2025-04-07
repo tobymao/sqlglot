@@ -2785,7 +2785,7 @@ class FallbackProperty(Property):
 
 
 class FileFormatProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {"this": False, "expressions": False}
 
 
 class FreespaceProperty(Property):

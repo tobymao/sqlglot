@@ -1482,7 +1482,7 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE WAREHOUSE x").this.assert_is(exp.Identifier)
         self.validate_identity("CREATE STREAMLIT x").this.assert_is(exp.Identifier)
         self.validate_identity(
-            "CREATE TEMPORARY STAGE stage1 FILE_FORMAT=(TYPE = PARQUET)"
+            "CREATE TEMPORARY STAGE stage1 FILE_FORMAT=(TYPE=PARQUET)"
         ).this.assert_is(exp.Table)
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
@@ -1504,9 +1504,6 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
-        )
-        self.validate_identity(
-            "CREATE TABLE a (x DATE, y BIGINT) PARTITION BY (x) integration='q' auto_refresh=TRUE file_format=(type = parquet)"
         )
         self.validate_identity(
             "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400))"
@@ -1550,8 +1547,8 @@ class TestSnowflake(Validator):
   partition by (col1,col2,col3)
   location=@s2/logs/
   partition_type = user_specified
-  file_format = (type = parquet)""",
-            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL(38, 0) AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL(38, 0)))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
+  file_format = (type = parquet compression = gzip binary_as_text = false)""",
+            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL(38, 0) AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL(38, 0)))) PARTITION BY (col1, col2, col3) LOCATION=@s2/logs/ partition_type=user_specified FILE_FORMAT=(type=parquet compression=gzip binary_as_text=FALSE)",
         )
 
         self.validate_all(

@@ -4182,7 +4182,7 @@ class Parser(metaclass=_Parser):
             into=into,
         )
 
-    def _parse_pivot_in(self) -> exp.In | exp.PivotAny:
+    def _parse_pivot_in(self) -> exp.In:
         def _parse_aliased_expression() -> t.Optional[exp.Expression]:
             this = self._parse_select_or_expression()
 
@@ -4247,6 +4247,8 @@ class Parser(metaclass=_Parser):
             self._parse_bitwise
         )
 
+        group = self._parse_group()
+
         self._match_r_paren()
 
         pivot = self.expression(
@@ -4256,6 +4258,7 @@ class Parser(metaclass=_Parser):
             unpivot=unpivot,
             include_nulls=include_nulls,
             default_on_null=default_on_null,
+            group=group,
         )
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):

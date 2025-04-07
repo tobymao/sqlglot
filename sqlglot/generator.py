@@ -2045,6 +2045,8 @@ class Generator(metaclass=_Generator):
         expressions = self.expressions(expression, flat=True)
         direction = "UNPIVOT" if expression.unpivot else "PIVOT"
 
+        group = self.sql(expression, "group")
+
         if expression.this:
             this = self.sql(expression, "this")
             if not expressions:
@@ -2055,7 +2057,6 @@ class Generator(metaclass=_Generator):
             into = f"{self.seg('INTO')} {into}" if into else ""
             using = self.expressions(expression, key="using", flat=True)
             using = f"{self.seg('USING')} {using}" if using else ""
-            group = self.sql(expression, "group")
             return f"{direction} {this}{on}{into}{using}{group}"
 
         alias = self.sql(expression, "alias")
@@ -2071,7 +2072,7 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{self.seg(direction)}{nulls}({expressions} FOR {field}{default_on_null}){alias}"
+        return f"{self.seg(direction)}{nulls}({expressions} FOR {field}{default_on_null}{group}){alias}"
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"

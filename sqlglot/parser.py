@@ -438,6 +438,7 @@ class Parser(metaclass=_Parser):
     DB_CREATABLES = {
         TokenType.DATABASE,
         TokenType.DICTIONARY,
+        TokenType.FILE_FORMAT,
         TokenType.MODEL,
         TokenType.NAMESPACE,
         TokenType.SCHEMA,

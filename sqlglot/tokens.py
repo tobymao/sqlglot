@@ -278,6 +278,7 @@ class TokenType(AutoName):
     EXISTS = auto()
     FALSE = auto()
     FETCH = auto()
+    FILE_FORMAT = auto()
     FILTER = auto()
     FINAL = auto()
     FIRST = auto()

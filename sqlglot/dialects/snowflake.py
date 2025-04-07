@@ -546,6 +546,7 @@ class Snowflake(Dialect):
             "TERSE UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
             "SEQUENCES": _show_parser("SEQUENCES"),
             "TERSE SEQUENCES": _show_parser("SEQUENCES"),
+            "STAGES": _show_parser("STAGES"),
             "COLUMNS": _show_parser("COLUMNS"),
             "USERS": _show_parser("USERS"),
             "TERSE USERS": _show_parser("USERS"),

@@ -2115,6 +2115,15 @@ MATCH_RECOGNIZE (
         self.assertEqual(ast.this, "PROCEDURES")
         self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
 
+    def test_show_stages(self):
+        self.validate_identity("SHOW STAGES")
+        self.validate_identity("SHOW STAGES LIKE 'foo' IN DATABASE db1")
+        self.validate_identity("SHOW STAGES LIKE 'foo' IN SCHEMA db1.schema1")
+
+        ast = parse_one("SHOW STAGES IN ACCOUNT", read="snowflake")
+        self.assertEqual(ast.this, "STAGES")
+        self.assertEqual(ast.args.get("scope_kind"), "ACCOUNT")
+
     def test_show_warehouses(self):
         self.validate_identity("SHOW WAREHOUSES")
         self.validate_identity("SHOW WAREHOUSES LIKE 'foo' WITH PRIVILEGES USAGE, MODIFY")

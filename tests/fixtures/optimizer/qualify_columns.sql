@@ -435,6 +435,31 @@ WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM
 SELECT * FROM READ_CSV('file.csv');
 SELECT * FROM READ_CSV('file.csv') AS _q_0;
 
+# dialect: clickhouse
+# Title: Expand columns in VALUES as selections
+# execute: false
+SELECT * FROM VALUES(1, 2, 3) AS subq (a, b, c);
+SELECT subq.a AS a, subq.b AS b, subq.c AS c FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq;
+
+# dialect: clickhouse
+# Title: Expand tuples in VALUES using the structure provided
+# execute: false
+SELECT * FROM VALUES ('person String, place String', ('Noah', 'Paris'));
+SELECT _q_0.person AS person, _q_0.place AS place FROM VALUES ('person String, place String', ('Noah', 'Paris')) AS _q_0(person, place);
+
+# dialect: clickhouse
+# Title: Expand tuples in VALUES using the default naming scheme in CH
+# execute: false
+SELECT * FROM VALUES ((1, 1), (2, 2));
+SELECT _q_0.c1 AS c1, _q_0.c2 AS c2 FROM VALUES ((1, 1), (2, 2)) AS _q_0(c1, c2);
+
+# dialect: clickhouse
+# Title: Do not expand columns in VALUES if not aliased properly
+# execute: false
+SELECT * FROM VALUES (1, 2, 3);
+SELECT * FROM VALUES (1, 2, 3) AS _q_0;
+
+
 --------------------------------------
 -- CTEs
 --------------------------------------

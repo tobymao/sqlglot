@@ -1482,6 +1482,9 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE WAREHOUSE x").this.assert_is(exp.Identifier)
         self.validate_identity("CREATE STREAMLIT x").this.assert_is(exp.Identifier)
         self.validate_identity(
+            "CREATE TEMPORARY STAGE stage1 FILE_FORMAT=(TYPE = PARQUET)"
+        ).this.assert_is(exp.Table)
+        self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)
         self.validate_identity(

@@ -1025,6 +1025,12 @@ class Dialect(metaclass=_Dialect):
     def version(self) -> Version:
         return Version(self.settings.get("version", None))
 
+    def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
+        return [
+            exp.to_identifier(f"_col_{i}")
+            for i, _ in enumerate(expression.expressions[0].expressions)
+        ]
+
 
 DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
 

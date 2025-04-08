@@ -50,6 +50,7 @@ def qualify_tables(
     next_alias_name = name_sequence("_q_")
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
+    dialect = Dialect.get_or_raise(dialect)
 
     def _qualify(table: exp.Table) -> None:
         if isinstance(table.this, exp.Identifier):
@@ -128,7 +129,7 @@ def qualify_tables(
                 if not table_alias.name:
                     table_alias.set("this", exp.to_identifier(next_alias_name()))
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
-                    column_aliases = Dialect.get_or_raise(dialect).generate_values_aliases(udtf)
+                    column_aliases = dialect.generate_values_aliases(udtf)
                     table_alias.set("columns", column_aliases)
             else:
                 for node in scope.walk():

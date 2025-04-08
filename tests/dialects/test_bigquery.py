@@ -2393,9 +2393,10 @@ OPTIONS (
                     " BY NAME",
                     " BY NAME ON (foo, bar)",
                 ):
-                    self.validate_identity(
-                        f"SELECT 1 AS foo{side}{kind} UNION ALL{name} SELECT 3 AS foo, 4 AS bar",
-                    )
+                    with self.subTest(f"Testing {side} {kind} {name} in test_set_operations"):
+                        self.validate_identity(
+                            f"SELECT 1 AS foo{side}{kind} UNION ALL{name} SELECT 3 AS foo, 4 AS bar",
+                        )
 
         self.validate_identity(
             "SELECT 1 AS x UNION ALL CORRESPONDING SELECT 2 AS x",

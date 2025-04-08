@@ -50,8 +50,8 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
 
         if isinstance(scope.expression, exp.SetOperation):
             set_op = scope.expression
-            if not set_op.kind or set_op.side:
-                # Do not optize this set operation if it's using the BigQuery specific
+            if not (set_op.kind or set_op.side):
+                # Do not optimize this set operation if it's using the BigQuery specific
                 # kind / side syntax (e.g INNER UNION ALL BY NAME) which changes the semantics of the operation
                 left, right = scope.union_scopes
                 if len(left.expression.selects) != len(right.expression.selects):

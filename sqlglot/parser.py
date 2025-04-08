@@ -4641,7 +4641,7 @@ class Parser(metaclass=_Parser):
 
         expression = self._parse_select(nested=True, parse_set_operation=False)
 
-        this = self.expression(
+        return self.expression(
             operation,
             comments=comments,
             this=this,
@@ -4652,8 +4652,6 @@ class Parser(metaclass=_Parser):
             kind=kind,
             on=on_column_list,
         )
-
-        return this
 
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         while True:

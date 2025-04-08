@@ -4596,39 +4596,69 @@ class Parser(metaclass=_Parser):
 
         return locks
 
+    def parse_set_operation(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        start = self._index
+        _, side_token, kind_token = self._parse_join_parts()
+
+        side = side_token.text if side_token else None
+        kind = kind_token.text if kind_token else None
+
+        if not self._match_set(self.SET_OPERATIONS):
+            self._retreat(start)
+            return None
+
+        token_type = self._prev.token_type
+
+        if token_type == TokenType.UNION:
+            operation: t.Type[exp.SetOperation] = exp.Union
+        elif token_type == TokenType.EXCEPT:
+            operation = exp.Except
+        else:
+            operation = exp.Intersect
+
+        comments = self._prev.comments
+
+        if self._match(TokenType.DISTINCT):
+            distinct: t.Optional[bool] = True
+        elif self._match(TokenType.ALL):
+            distinct = False
+        else:
+            distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[operation]
+            if distinct is None:
+                self.raise_error(f"Expected DISTINCT or ALL for {operation.__name__}")
+
+        by_name = self._match_text_seq("BY", "NAME") or self._match_text_seq(
+            "STRICT", "CORRESPONDING"
+        )
+        if self._match_text_seq("CORRESPONDING"):
+            by_name = True
+            if not side and not kind:
+                kind = "INNER"
+
+        on_column_list = None
+        if by_name and self._match_texts(("ON", "BY")):
+            on_column_list = self._parse_wrapped_csv(self._parse_column)
+
+        expression = self._parse_select(nested=True, parse_set_operation=False)
+
+        return self.expression(
+            operation,
+            comments=comments,
+            this=this,
+            distinct=distinct,
+            by_name=by_name,
+            expression=expression,
+            side=side,
+            kind=kind,
+            on=on_column_list,
+        )
+
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        while this and self._match_set(self.SET_OPERATIONS):
-            token_type = self._prev.token_type
-
-            if token_type == TokenType.UNION:
-                operation: t.Type[exp.SetOperation] = exp.Union
-            elif token_type == TokenType.EXCEPT:
-                operation = exp.Except
-            else:
-                operation = exp.Intersect
-
-            comments = self._prev.comments
-
-            if self._match(TokenType.DISTINCT):
-                distinct: t.Optional[bool] = True
-            elif self._match(TokenType.ALL):
-                distinct = False
-            else:
-                distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[operation]
-                if distinct is None:
-                    self.raise_error(f"Expected DISTINCT or ALL for {operation.__name__}")
-
-            by_name = self._match_text_seq("BY", "NAME")
-            expression = self._parse_select(nested=True, parse_set_operation=False)
-
-            this = self.expression(
-                operation,
-                comments=comments,
-                this=this,
-                distinct=distinct,
-                by_name=by_name,
-                expression=expression,
-            )
+        while True:
+            setop = self.parse_set_operation(this)
+            if not setop:
+                break
+            this = setop
 
         if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
             expression = this.expression

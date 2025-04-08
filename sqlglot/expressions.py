@@ -3370,6 +3370,9 @@ class SetOperation(Query):
         "expression": True,
         "distinct": False,
         "by_name": False,
+        "side": False,
+        "kind": False,
+        "on": False,
         **QUERY_MODIFIERS,
     }
 
@@ -3407,6 +3410,14 @@ class SetOperation(Query):
     @property
     def right(self) -> Query:
         return self.expression
+
+    @property
+    def kind(self) -> str:
+        return self.text("kind").upper()
+
+    @property
+    def side(self) -> str:
+        return self.text("side").upper()
 
 
 class Union(SetOperation):

@@ -516,6 +516,7 @@ class Snowflake(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
+            "FILE_FORMAT": lambda self: self._parse_file_format_property(),
             "LOCATION": lambda self: self._parse_location_property(),
             "TAG": lambda self: self._parse_tag(),
             "USING": lambda self: self._match_text_seq("TEMPLATE")
@@ -546,9 +547,11 @@ class Snowflake(Dialect):
             "TERSE UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
             "SEQUENCES": _show_parser("SEQUENCES"),
             "TERSE SEQUENCES": _show_parser("SEQUENCES"),
+            "STAGES": _show_parser("STAGES"),
             "COLUMNS": _show_parser("COLUMNS"),
             "USERS": _show_parser("USERS"),
             "TERSE USERS": _show_parser("USERS"),
+            "FILE FORMATS": _show_parser("FILE FORMATS"),
             "FUNCTIONS": _show_parser("FUNCTIONS"),
             "PROCEDURES": _show_parser("PROCEDURES"),
             "WAREHOUSES": _show_parser("WAREHOUSES"),
@@ -898,6 +901,12 @@ class Snowflake(Dialect):
             # outoflineFK, explicitly names the columns
             return super()._parse_foreign_key()
 
+        def _parse_file_format_property(self) -> exp.FileFormatProperty:
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.FileFormatProperty, expressions=self._parse_wrapped_options()
+            )
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
@@ -912,6 +921,7 @@ class Snowflake(Dialect):
             "CHAR VARYING": TokenType.VARCHAR,
             "CHARACTER VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,
+            "FILE FORMAT": TokenType.FILE_FORMAT,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
@@ -929,6 +939,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
             "WAREHOUSE": TokenType.WAREHOUSE,
+            "STAGE": TokenType.STAGE,
             "STREAMLIT": TokenType.STREAMLIT,
         }
         KEYWORDS.pop("/*+")
@@ -992,6 +1003,8 @@ class Snowflake(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: rename_func("DATE_PART"),
+            exp.FileFormatProperty: lambda self,
+            e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
             exp.FromTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), "'UTC'", e.this
             ),
@@ -1007,6 +1020,10 @@ class Snowflake(Dialect):
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONValueArray: _json_extract_value_array_sql,
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost")(
+                rename_func("EDITDISTANCE")
+            ),
+            exp.LocationProperty: lambda self, e: f"LOCATION={self.sql(e, 'this')}",
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -1070,9 +1087,6 @@ class Snowflake(Dialect):
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: rename_func("BOOLXOR"),
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost")(
-                rename_func("EDITDISTANCE")
-            ),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -1093,6 +1107,8 @@ class Snowflake(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.LocationProperty: exp.Properties.Location.POST_WITH,
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

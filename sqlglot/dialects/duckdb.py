@@ -1032,10 +1032,10 @@ class DuckDB(Dialect):
 
             case = (
                 exp.case(self.func("TYPEOF", arg))
-                .when(
-                    "'VARCHAR'", exp.Anonymous(this="LENGTH", expressions=[varchar])
-                )  # anonymous to break length_sql recursion
                 .when("'BLOB'", self.func("OCTET_LENGTH", blob))
+                .else_(
+                    exp.Anonymous(this="LENGTH", expressions=[varchar])
+                )  # anonymous to break length_sql recursion
             )
 
             return self.sql(case)

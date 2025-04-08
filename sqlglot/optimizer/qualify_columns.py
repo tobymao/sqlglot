@@ -916,6 +916,32 @@ class Resolver:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)
+            elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                set_op = source.expression
+
+                # BigQuery specific set operations modifiers, e.g INNER UNION ALL BY NAME
+                on_column_list = set_op.args.get("on")
+
+                if on_column_list:
+                    # The resulting columns are the columns in the ON clause:
+                    # {INNER | LEFT | FULL} UNION ALL BY NAME ON (col1, col2, ...)
+                    columns = [col.name for col in on_column_list]
+                elif set_op.side or set_op.kind:
+                    side = set_op.side
+                    kind = set_op.kind
+
+                    left = set_op.left.named_selects
+                    right = set_op.right.named_selects
+
+                    # We use dict.fromkeys to deduplicate keys and maintain insertion order
+                    if side == "LEFT":
+                        columns = left
+                    elif side == "FULL":
+                        columns = list(dict.fromkeys(left + right))
+                    elif kind == "INNER":
+                        columns = list(dict.fromkeys(left).keys() & dict.fromkeys(right).keys())
+                else:
+                    columns = set_op.named_selects
             else:
                 columns = source.expression.named_selects
 

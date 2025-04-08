@@ -2382,3 +2382,42 @@ OPTIONS (
 
         for select in annotated.selects:
             self.assertEqual(select.type.sql("bigquery"), "TIMESTAMP")
+
+    def test_set_operations(self):
+        self.validate_identity("SELECT 1 AS foo INNER UNION ALL SELECT 3 AS foo, 4 AS bar")
+
+        for side in ("", " LEFT", " FULL"):
+            for kind in ("", " OUTER"):
+                for name in (
+                    "",
+                    " BY NAME",
+                    " BY NAME ON (foo, bar)",
+                ):
+                    self.validate_identity(
+                        f"SELECT 1 AS foo{side}{kind} UNION ALL{name} SELECT 3 AS foo, 4 AS bar",
+                    )
+
+        self.validate_identity(
+            "SELECT 1 AS x UNION ALL CORRESPONDING SELECT 2 AS x",
+            "SELECT 1 AS x INNER UNION ALL BY NAME SELECT 2 AS x",
+        )
+
+        self.validate_identity(
+            "SELECT 1 AS x UNION ALL CORRESPONDING BY (foo, bar) SELECT 2 AS x",
+            "SELECT 1 AS x INNER UNION ALL BY NAME ON (foo, bar) SELECT 2 AS x",
+        )
+
+        self.validate_identity(
+            "SELECT 1 AS x LEFT UNION ALL CORRESPONDING SELECT 2 AS x",
+            "SELECT 1 AS x LEFT UNION ALL BY NAME SELECT 2 AS x",
+        )
+
+        self.validate_identity(
+            "SELECT 1 AS x UNION ALL STRICT CORRESPONDING SELECT 2 AS x",
+            "SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x",
+        )
+
+        self.validate_identity(
+            "SELECT 1 AS x UNION ALL STRICT CORRESPONDING BY (foo, bar) SELECT 2 AS x",
+            "SELECT 1 AS x UNION ALL BY NAME ON (foo, bar) SELECT 2 AS x",
+        )

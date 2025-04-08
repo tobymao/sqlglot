@@ -1445,12 +1445,18 @@ class Generator(metaclass=_Generator):
                 self.unsupported(f"{op_name} requires DISTINCT or ALL to be specified")
 
         if distinct is default_distinct:
-            kind = ""
+            distinct_or_all = ""
         else:
-            kind = " DISTINCT" if distinct else " ALL"
+            distinct_or_all = " DISTINCT" if distinct else " ALL"
+
+        side_kind = " ".join(filter(None, [expression.side, expression.kind]))
+        side_kind = f"{side_kind} " if side_kind else ""
 
         by_name = " BY NAME" if expression.args.get("by_name") else ""
-        return f"{op_name}{kind}{by_name}"
+        on = self.expressions(expression, key="on", flat=True)
+        on = f" ON ({on})" if on else ""
+
+        return f"{side_kind}{op_name}{distinct_or_all}{by_name}{on}"
 
     def set_operations(self, expression: exp.SetOperation) -> str:
         if not self.SET_OP_MODIFIERS:

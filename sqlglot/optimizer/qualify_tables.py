@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import csv_reader, name_sequence
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema
+from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -49,6 +50,7 @@ def qualify_tables(
     next_alias_name = name_sequence("_q_")
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
+    dialect = Dialect.get_or_raise(dialect)
 
     def _qualify(table: exp.Table) -> None:
         if isinstance(table.this, exp.Identifier):
@@ -127,8 +129,8 @@ def qualify_tables(
                 if not table_alias.name:
                     table_alias.set("this", exp.to_identifier(next_alias_name()))
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
-                    for i, e in enumerate(udtf.expressions[0].expressions):
-                        table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
+                    column_aliases = dialect.generate_values_aliases(udtf)
+                    table_alias.set("columns", column_aliases)
             else:
                 for node in scope.walk():
                     if (

@@ -184,7 +184,7 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             "INSERT INTO tab VALUES ({'key1': 1, 'key2': 10}), ({'key1': 2, 'key2': 20}), ({'key1': 3, 'key2': 30})",
-            "INSERT INTO tab VALUES (map('key1', 1, 'key2', 10)), (map('key1', 2, 'key2', 20)), (map('key1', 3, 'key2', 30))",
+            "INSERT INTO tab VALUES ((map('key1', 1, 'key2', 10))), ((map('key1', 2, 'key2', 20))), ((map('key1', 3, 'key2', 30)))",
         )
         self.validate_identity(
             "SELECT (toUInt8('1') + toUInt8('2')) IS NOT NULL",
@@ -507,11 +507,12 @@ class TestClickhouse(Validator):
             "INSERT INTO FUNCTION s3('url', 'CSV', 'name String, value UInt32', 'gzip') SELECT name, value FROM existing_table"
         )
         self.validate_identity(
-            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES (100, 'inserted via remote()')"
+            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES (100, 'inserted via remote()')",
+            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES ((100), ('inserted via remote()'))",
         )
         self.validate_identity(
             """INSERT INTO TABLE FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
-            """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
+            """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES (('test'), (1), (2))""",
         )
 
         self.validate_identity("SELECT 1 FORMAT TabSeparated")
@@ -552,16 +553,15 @@ class TestClickhouse(Validator):
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )
 
-        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_identity(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
+        )
         self.validate_all(
             "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
-            read={
-                # looks like values table function, but should be parsed as VALUES block
-                "clickhouse": "INSERT INTO t (col1, col2) values('abcd', 1234)"
-            },
             write={
-                "clickhouse": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
-                "postgres": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+                "clickhouse": "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
+                "postgres": "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
             },
         )
         self.validate_identity("SELECT TRIM(TRAILING ')' FROM '(   Hello, world!   )')")
@@ -591,6 +591,9 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT arrayConcat([1, 2], [3, 4])")
 
     def test_clickhouse_values(self):
+        ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
+        self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)
+
         values = exp.select("*").from_(
             exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])
         )
@@ -599,10 +602,18 @@ class TestClickhouse(Validator):
             "SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq",
         )
 
-        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_identity("SELECT * FROM VALUES ((1, 1), (2, 1), (3, 1), (4, 1))")
+        self.validate_identity(
+            "SELECT type, id FROM VALUES ('id Int, type Int', (1, 1), (2, 1), (3, 1), (4, 1))"
+        )
+
+        self.validate_identity(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
+        )
         self.validate_identity(
             "INSERT INTO t (col1, col2) FORMAT Values('abcd', 1234)",
-            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
         )
 
         self.validate_all(

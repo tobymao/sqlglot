@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import csv_reader, name_sequence
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema
-from sqlglot.dialects.clickhouse import generate_values_aliases as ch_generate_values_aliases
+from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -128,16 +128,8 @@ def qualify_tables(
                 if not table_alias.name:
                     table_alias.set("this", exp.to_identifier(next_alias_name()))
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
-                    if dialect == "clickhouse":
-                        column_aliases = ch_generate_values_aliases(udtf)
-                    else:
-                        column_aliases = [
-                            f"_col_{i}" for i, _ in enumerate(udtf.expressions[0].expressions)
-                        ]
-
-                    table_alias.set(
-                        "columns", [exp.to_identifier(alias) for alias in column_aliases]
-                    )
+                    column_aliases = Dialect.get_or_raise(dialect).generate_values_aliases(udtf)
+                    table_alias.set("columns", column_aliases)
             else:
                 for node in scope.walk():
                     if (

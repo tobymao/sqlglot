@@ -180,30 +180,6 @@ def _map_sql(self: ClickHouse.Generator, expression: exp.Map | exp.VarMap) -> st
     return f"{{{csv_args}}}"
 
 
-def generate_values_aliases(expression: exp.Values) -> t.List[str]:
-    # Clickhouse allows VALUES to have an embedded structure e.g:
-    # VALUES('person String, place String', ('Noah', 'Paris'), ...)
-    # In this case, we don't want to qualify the columns
-    values = expression.expressions[0].expressions
-
-    structure = (
-        values[0]
-        if (len(values) > 1 and values[0].is_string and isinstance(values[1], exp.Tuple))
-        else None
-    )
-    if structure:
-        # Split each column definition into the column name e.g:
-        # 'person String, place String' -> ['person', 'place']
-        structure_coldefs = [coldef.strip() for coldef in structure.name.split(",")]
-        column_aliases = [coldef.split(" ")[0] for coldef in structure_coldefs]
-    else:
-        num_cols = len(values[0].expressions) if isinstance(values[0], exp.Tuple) else 0
-        # Default column aliases in CH are "c1", "c2", etc.
-        column_aliases = [f"c{i + 1}" for i in range(num_cols)]
-
-    return column_aliases
-
-
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
@@ -230,6 +206,32 @@ class ClickHouse(Dialect):
         exp.Intersect: False,
         exp.Union: None,
     }
+
+    def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
+        # Clickhouse allows VALUES to have an embedded structure e.g:
+        # VALUES('person String, place String', ('Noah', 'Paris'), ...)
+        # In this case, we don't want to qualify the columns
+        values = expression.expressions[0].expressions
+
+        structure = (
+            values[0]
+            if (len(values) > 1 and values[0].is_string and isinstance(values[1], exp.Tuple))
+            else None
+        )
+        if structure:
+            # Split each column definition into the column name e.g:
+            # 'person String, place String' -> ['person', 'place']
+            structure_coldefs = [coldef.strip() for coldef in structure.name.split(",")]
+            column_aliases = [
+                exp.to_identifier(coldef.split(" ")[0]) for coldef in structure_coldefs
+            ]
+        else:
+            # Default column aliases in CH are "c1", "c2", etc.
+            column_aliases = [
+                exp.to_identifier(f"c{i + 1}") for i in range(len(values[0].expressions))
+            ]
+
+        return column_aliases
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
@@ -938,6 +940,7 @@ class ClickHouse(Dialect):
             # to other dialects. For this case, we canonicalize the values into a tuple-of-tuples AST if it's not already one.
             # In INSERT INTO statements the same clause actually references multiple columns (opposite semantics),
             # but the final result is not altered by the extra parentheses.
+            # Note: Clickhouse allows VALUES([structure], value, ...) so the branch checks for the last expression
             expressions = value.expressions
             if not isinstance(expressions[-1], exp.Tuple):
                 value.set(
@@ -1362,11 +1365,11 @@ class ClickHouse(Dialect):
             # If the VALUES clause contains tuples of expressions, we need to treat it
             # as a table since Clickhouse will automatically alias it as such.
             alias = expression.args.get("alias")
-            column_aliases = (alias and alias.args.get("columns")) or None
-            if not column_aliases:
-                values_as_table = True
-            else:
+
+            if alias and alias.args.get("columns") and expression.expressions:
                 values = expression.expressions[0].expressions
                 values_as_table = any(isinstance(value, exp.Tuple) for value in values)
+            else:
+                values_as_table = True
 
             return super().values_sql(expression, values_as_table=values_as_table)

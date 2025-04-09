@@ -1598,3 +1598,7 @@ class TestDuckDB(Validator):
             "SELECT (@-1) + 1",
             "SELECT (ABS(-1)) + 1",
         )
+
+    def test_show_tables(self):
+        self.validate_identity("SHOW TABLES").assert_is(exp.Show)
+        self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)

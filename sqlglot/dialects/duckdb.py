@@ -597,10 +597,7 @@ class DuckDB(Dialect):
             )
 
         def _parse_show_duckdb(self, this: str) -> exp.Show:
-            return self.expression(
-                exp.Show,
-                this=this,
-            )
+            return self.expression(exp.Show, this=this)
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"

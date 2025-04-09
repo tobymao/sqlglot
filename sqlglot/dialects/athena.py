@@ -58,6 +58,40 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
+def _reorder_iceberg_partition_transforms(
+    prop: exp.PartitionedByProperty, mode: t.Literal["hive", "trino"]
+) -> exp.PartitionedByProperty:
+    # Check for Iceberg partition transforms (bucket / truncate) and ensure their arguments are in the right order
+    # For Hive, it's `bucket(<num buckets>, <col name>)` or `truncate(<num_chars>, <col_name>)`
+    # For Trino, it's reversed - `bucket(<col name>, <num buckets>)` or `truncate(<col_name>, <num_chars>)`
+    #
+    # Hive ref: https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-creating-tables.html#querying-iceberg-partitioning
+    # Trino ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
+
+    def _reorder(e: exp.Expression) -> exp.Expression:
+        if (
+            isinstance(e, exp.Func)
+            and e.text("this").lower() in {"bucket", "truncate"}
+            and len(e.expressions) == 2
+        ):
+            first_expression_is_integer_literal = (
+                isinstance(e.expressions[0], exp.Literal) and e.expressions[0].is_number
+            )
+
+            if (mode == "hive" and not first_expression_is_integer_literal) or (
+                mode == "trino" and first_expression_is_integer_literal
+            ):
+                # swap argument order
+                e.expressions[0], e.expressions[1] = e.expressions[1], e.expressions[0]
+
+        return e
+
+    if isinstance(prop.this, exp.Schema):
+        prop.this.transform(_reorder, copy=False)
+
+    return prop
+
+
 def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByProperty) -> str:
     # If table_type='iceberg' then the table property for partitioning is called 'partitioning'
     # If table_type='hive' it's called 'partitioned_by'
@@ -67,6 +101,8 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     if isinstance(e.parent, exp.Properties):
         if _is_iceberg_table(e.parent):
             prop_name = "partitioning"
+
+    _reorder_iceberg_partition_transforms(e, mode="trino")
 
     return f"{prop_name}={self.sql(e, 'this')}"
 
@@ -135,6 +171,10 @@ class Athena(Trino):
                     expression.set("actions", [new_actions])
 
             return super().alter_sql(expression)
+
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            _reorder_iceberg_partition_transforms(expression, mode="hive")
+            return super().partitionedbyproperty_sql(expression)
 
     class Generator(Trino.Generator):
         """

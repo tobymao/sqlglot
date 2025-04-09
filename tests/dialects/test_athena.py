@@ -202,6 +202,66 @@ class TestAthena(Validator):
             identify=True,
         )
 
+    def test_create_table(self):
+        # There are two CREATE TABLE syntaxes
+        # Both hit Athena's Hive engine but creating an Iceberg table is different from creating a normal Hive table
+
+        table_schema = exp.Schema(
+            this=exp.to_table("foo.bar"),
+            expressions=[
+                exp.ColumnDef(this=exp.to_identifier("a"), kind=exp.DataType.build("int")),
+                exp.ColumnDef(this=exp.to_identifier("b"), kind=exp.DataType.build("varchar")),
+            ],
+        )
+
+        # Hive tables - CREATE EXTERNAL TABLE
+        ct_hive = exp.Create(
+            this=table_schema,
+            kind="TABLE",
+            properties=exp.Properties(
+                expressions=[
+                    exp.ExternalProperty(),
+                    exp.FileFormatProperty(this=exp.Literal.string("parquet")),
+                    exp.LocationProperty(this=exp.Literal.string("s3://foo")),
+                    exp.PartitionedByProperty(
+                        this=exp.Schema(expressions=[exp.to_column("partition_col")])
+                    ),
+                ]
+            ),
+        )
+        self.assertEqual(
+            ct_hive.sql(dialect=self.dialect, identify=True),
+            "CREATE EXTERNAL TABLE `foo`.`bar` (`a` INT, `b` STRING) STORED AS PARQUET LOCATION 's3://foo' PARTITIONED BY (`partition_col`)",
+        )
+
+        # Iceberg tables - CREATE TABLE... TBLPROPERTIES ('table_type'='iceberg')
+        # no EXTERNAL keyword and the 'table_type=iceberg' property must be set
+        # ref: https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-creating-tables.html#querying-iceberg-partitioning
+        ct_iceberg = exp.Create(
+            this=table_schema,
+            kind="TABLE",
+            properties=exp.Properties(
+                expressions=[
+                    exp.FileFormatProperty(this=exp.Literal.string("parquet")),
+                    exp.LocationProperty(this=exp.Literal.string("s3://foo")),
+                    exp.PartitionedByProperty(
+                        this=exp.Schema(
+                            expressions=[
+                                exp.to_column("partition_col"),
+                                # deliberately specified as (a, 4) to test it gets rewritten to (4, a)
+                                exp.func("bucket", exp.column("a"), 4),
+                            ]
+                        )
+                    ),
+                    exp.Property(this=exp.var("table_type"), value=exp.Literal.string("iceberg")),
+                ]
+            ),
+        )
+        self.assertEqual(
+            ct_iceberg.sql(dialect=self.dialect, identify=True),
+            "CREATE TABLE `foo`.`bar` (`a` INT, `b` STRING) STORED AS PARQUET LOCATION 's3://foo' PARTITIONED BY (`partition_col`, BUCKET(4, `a`)) TBLPROPERTIES ('table_type'='iceberg')",
+        )
+
     def test_ctas(self):
         # Hive tables use 'external_location' to specify the table location, Iceberg tables use 'location' to specify the table location
         # In addition, Hive tables used 'partitioned_by' to specify the partition fields and Iceberg tables use 'partitioning' to specify the partition fields
@@ -223,7 +283,11 @@ class TestAthena(Validator):
         )
         self.assertEqual(
             ctas_hive.sql(dialect=self.dialect, identify=True),
-            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo', partitioned_by=ARRAY['partition_col']) AS SELECT 1",
+            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo', partitioned_by=ARRAY['\"partition_col\"']) AS SELECT 1",
+        )
+        self.assertEqual(
+            ctas_hive.sql(dialect=self.dialect, identify=False),
+            "CREATE TABLE foo.bar WITH (format='parquet', external_location='s3://foo', partitioned_by=ARRAY['partition_col']) AS SELECT 1",
         )
 
         ctas_iceberg = exp.Create(
@@ -234,7 +298,13 @@ class TestAthena(Validator):
                     exp.Property(this=exp.var("table_type"), value=exp.Literal.string("iceberg")),
                     exp.LocationProperty(this=exp.Literal.string("s3://foo")),
                     exp.PartitionedByProperty(
-                        this=exp.Schema(expressions=[exp.to_column("partition_col")])
+                        this=exp.Schema(
+                            expressions=[
+                                exp.to_column("partition_col"),
+                                # deliberately specified as (4, a) to test it gets rewritten to (a, 4)
+                                exp.func("bucket", 4, exp.column("a")),
+                            ]
+                        )
                     ),
                 ]
             ),
@@ -242,5 +312,9 @@ class TestAthena(Validator):
         )
         self.assertEqual(
             ctas_iceberg.sql(dialect=self.dialect, identify=True),
-            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col']) AS SELECT 1",
+            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['\"partition_col\"', 'BUCKET(\"a\", 4)']) AS SELECT 1",
+        )
+        self.assertEqual(
+            ctas_iceberg.sql(dialect=self.dialect, identify=False),
+            "CREATE TABLE foo.bar WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col', 'BUCKET(a, 4)']) AS SELECT 1",
         )

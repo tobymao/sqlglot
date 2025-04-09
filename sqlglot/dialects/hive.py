@@ -599,7 +599,6 @@ class Hive(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.Unnest: rename_func("EXPLODE"),
-            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
             exp.ClusteredColumnConstraint: lambda self,
@@ -741,3 +740,6 @@ class Hive(Dialect):
                 this = this.this
 
             return self.func("DATE_FORMAT", this, self.format_time(expression))
+
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            return f"PARTITIONED BY {self.sql(expression, 'this')}"

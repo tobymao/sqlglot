@@ -6164,7 +6164,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_if(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):
-            args = self._parse_csv(self._parse_assignment)
+            args = self._parse_csv(
+                lambda: self._parse_alias(self._parse_assignment(), explicit=True)
+            )
             this = self.validate_expression(exp.If.from_arg_list(args), args)
             self._match_r_paren()
         else:

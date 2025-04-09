@@ -1600,6 +1600,6 @@ class TestDuckDB(Validator):
         )
 
     def test_show_tables(self):
-        parse_one("SHOW TABLES", read="duckdb").assert_is(exp.Show)
-        parse_one("SHOW ALL TABLES", read="duckdb").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES").assert_is(exp.Show)
+        self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)
         

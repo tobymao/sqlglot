@@ -156,9 +156,7 @@ def _build_make_timestamp(args: t.List) -> exp.Expression:
     )
 
 
-def _show_parser(
-    *args: t.Any, **kwargs: t.Any
-) -> t.Callable[[DuckDB.Parser], exp.Show]:
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], exp.Show]:
     def _parse(self: DuckDB.Parser) -> exp.Show:
         return self._parse_show_duckdb(*args, **kwargs)
 

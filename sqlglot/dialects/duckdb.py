@@ -380,7 +380,7 @@ class DuckDB(Dialect):
 
         SHOW_PARSERS = {
             "TABLES": _show_parser("TABLES"),
-            "ALL TABLES": _show_parser("TABLES"),
+            "ALL TABLES": _show_parser("ALL TABLES"),
         }
 
         FUNCTIONS = {

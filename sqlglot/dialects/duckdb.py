@@ -355,7 +355,7 @@ class DuckDB(Dialect):
             "$": TokenType.PARAMETER,
         }
 
-        COMMANDS = {*tokens.Tokenizer.COMMANDS} - {TokenType.SHOW}
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
         BITWISE = {

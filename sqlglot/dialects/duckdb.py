@@ -156,6 +156,13 @@ def _build_make_timestamp(args: t.List) -> exp.Expression:
     )
 
 
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], exp.Show]:
+    def _parse(self: DuckDB.Parser) -> exp.Show:
+        return self._parse_show_duckdb(*args, **kwargs)
+
+    return _parse
+
+
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args: t.List[str] = []
 
@@ -348,6 +355,8 @@ class DuckDB(Dialect):
             "$": TokenType.PARAMETER,
         }
 
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
+
     class Parser(parser.Parser):
         BITWISE = {
             **parser.Parser.BITWISE,
@@ -368,6 +377,11 @@ class DuckDB(Dialect):
         }
 
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "STRUCT_PACK"}
+
+        SHOW_PARSERS = {
+            "TABLES": _show_parser("TABLES"),
+            "ALL TABLES": _show_parser("ALL TABLES"),
+        }
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -467,6 +481,7 @@ class DuckDB(Dialect):
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.ATTACH: lambda self: self._parse_attach_detach(),
             TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+            TokenType.SHOW: lambda self: self._parse_show(),
         }
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
@@ -580,6 +595,9 @@ class DuckDB(Dialect):
                 if is_attach
                 else self.expression(exp.Detach, this=this, exists=exists)
             )
+
+        def _parse_show_duckdb(self, this: str) -> exp.Show:
+            return self.expression(exp.Show, this=this)
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
@@ -860,6 +878,9 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
+
+        def show_sql(self, expression: exp.Show) -> str:
+            return f"SHOW {expression.name}"
 
         def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
             return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))

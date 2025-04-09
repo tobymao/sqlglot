@@ -1602,4 +1602,3 @@ class TestDuckDB(Validator):
     def test_show_tables(self):
         self.validate_identity("SHOW TABLES").assert_is(exp.Show)
         self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)
-        

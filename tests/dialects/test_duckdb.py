@@ -1598,3 +1598,8 @@ class TestDuckDB(Validator):
             "SELECT (@-1) + 1",
             "SELECT (ABS(-1)) + 1",
         )
+
+    def test_show_tables(self):
+        parse_one("SHOW TABLES", read="duckdb").assert_is(exp.Show)
+        parse_one("SHOW ALL TABLES", read="duckdb").assert_is(exp.Show)
+        

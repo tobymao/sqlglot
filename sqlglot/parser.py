@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+import itertools
 from collections import defaultdict
 
 from sqlglot import exp
@@ -4242,7 +4243,13 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
 
-        field = self._parse_pivot_in()
+        fields = []
+        while True:
+            field = self._try_parse(self._parse_pivot_in)
+            if not field:
+                break
+            fields.append(field)
+
         default_on_null = self._match_text_seq("DEFAULT", "ON", "NULL") and self._parse_wrapped(
             self._parse_bitwise
         )
@@ -4254,7 +4261,7 @@ class Parser(metaclass=_Parser):
         pivot = self.expression(
             exp.Pivot,
             expressions=expressions,
-            field=field,
+            fields=fields,
             unpivot=unpivot,
             include_nulls=include_nulls,
             default_on_null=default_on_null,
@@ -4268,26 +4275,41 @@ class Parser(metaclass=_Parser):
             names = self._pivot_column_names(t.cast(t.List[exp.Expression], expressions))
 
             columns: t.List[exp.Expression] = []
-            pivot_field_expressions = pivot.args["field"].expressions
+            all_fields = []
+            for pivot_field in pivot.fields:
+                pivot_field_expressions = pivot_field.expressions
 
-            # The `PivotAny` expression corresponds to `ANY ORDER BY <column>`; we can't infer in this case.
-            if not isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
-                for fld in pivot_field_expressions:
-                    field_name = fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
-                    for name in names:
-                        if self.PREFIXED_PIVOT_COLUMNS:
-                            name = f"{name}_{field_name}" if name else field_name
-                        else:
-                            name = f"{field_name}_{name}" if name else field_name
+                # The `PivotAny` expression corresponds to `ANY ORDER BY <column>`; we can't infer in this case.
+                if not isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
+                    all_fields.append(
+                        [
+                            fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
+                            for fld in pivot_field_expressions
+                        ]
+                    )
 
-                        columns.append(exp.to_identifier(name))
+            if all_fields:
+                if names:
+                    all_fields.append(names)
+
+                # Generate all possible combinations of the pivot columns
+                # e.g PIVOT(sum(...) as total FOR year IN (2000, 2010) FOR country IN ('NL', 'US'))
+                # generates the product between [[2000, 2010], ['NL', 'US'], ['total']]
+                for fld_parts_tuple in itertools.product(*all_fields):
+                    fld_parts = list(fld_parts_tuple)
+
+                    if names and self.PREFIXED_PIVOT_COLUMNS:
+                        # Move the "name" to the front of the list
+                        fld_parts.insert(0, fld_parts.pop(-1))
+
+                    columns.append(exp.to_identifier("_".join(fld_parts)))
 
             pivot.set("columns", columns)
 
         return pivot
 
     def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
-        return [agg.alias for agg in aggregations]
+        return list(filter(None, [agg.alias for agg in aggregations]))
 
     def _parse_prewhere(self, skip_where_token: bool = False) -> t.Optional[exp.PreWhere]:
         if not skip_where_token and not self._match(TokenType.PREWHERE):

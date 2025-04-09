@@ -141,9 +141,9 @@ def validate_qualify_columns(expression: E) -> E:
 
 def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
     name_column = []
-    field = unpivot.args.get("field")
-    if isinstance(field, exp.In) and isinstance(field.this, exp.Column):
-        name_column.append(field.this)
+    for field in unpivot.fields:
+        if isinstance(field, exp.In) and isinstance(field.this, exp.Column):
+            name_column.append(field.this)
 
     value_columns = (c for e in unpivot.expressions for c in e.find_all(exp.Column))
     return itertools.chain(name_column, value_columns)
@@ -615,11 +615,13 @@ def _expand_stars(
         if pivot.unpivot:
             pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
 
-            field = pivot.args.get("field")
-            if isinstance(field, exp.In):
-                pivot_exclude_columns = {
-                    c.output_name for e in field.expressions for c in e.find_all(exp.Column)
-                }
+            fields = pivot.args.get("fields")
+            if fields:
+                for field in fields:
+                    if isinstance(field, exp.In):
+                        pivot_exclude_columns = {
+                            c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+                        }
         else:
             pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
 

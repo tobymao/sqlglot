@@ -245,6 +245,7 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("IF(cond, foo AS bar, bla AS baz)")
         self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
         self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
         self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")

@@ -2068,7 +2068,15 @@ class Generator(metaclass=_Generator):
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
 
-        fields = self.expressions(expression, "fields", sep=" ", flat=True)
+        fields = self.expressions(
+            expression,
+            "fields",
+            sep=" ",
+            dynamic=True,
+            new_line=True,
+            skip_first=True,
+            skip_last=True,
+        )
 
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:

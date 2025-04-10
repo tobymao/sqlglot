@@ -4280,13 +4280,15 @@ class Parser(metaclass=_Parser):
                 pivot_field_expressions = pivot_field.expressions
 
                 # The `PivotAny` expression corresponds to `ANY ORDER BY <column>`; we can't infer in this case.
-                if not isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
-                    all_fields.append(
-                        [
-                            fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
-                            for fld in pivot_field_expressions
-                        ]
-                    )
+                if isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
+                    continue
+
+                all_fields.append(
+                    [
+                        fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
+                        for fld in pivot_field_expressions
+                    ]
+                )
 
             if all_fields:
                 if names:
@@ -4309,7 +4311,7 @@ class Parser(metaclass=_Parser):
         return pivot
 
     def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
-        return list(filter(None, [agg.alias for agg in aggregations]))
+        return [agg.alias for agg in aggregations if agg.alias]
 
     def _parse_prewhere(self, skip_where_token: bool = False) -> t.Optional[exp.PreWhere]:
         if not skip_where_token and not self._match(TokenType.PREWHERE):

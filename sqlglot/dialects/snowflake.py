@@ -193,12 +193,12 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
         if expression.unpivot:
             expression = transforms.unqualify_columns(expression)
         else:
-            field = expression.args.get("field")
-            field_expr = seq_get(field.expressions if field else [], 0)
+            for field in expression.fields:
+                field_expr = seq_get(field.expressions if field else [], 0)
 
-            if isinstance(field_expr, exp.PivotAny):
-                unqualified_field_expr = transforms.unqualify_columns(field_expr)
-                t.cast(exp.Expression, field).set("expressions", unqualified_field_expr, 0)
+                if isinstance(field_expr, exp.PivotAny):
+                    unqualified_field_expr = transforms.unqualify_columns(field_expr)
+                    t.cast(exp.Expression, field).set("expressions", unqualified_field_expr, 0)
 
     return expression
 

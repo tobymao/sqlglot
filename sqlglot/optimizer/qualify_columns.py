@@ -140,13 +140,14 @@ def validate_qualify_columns(expression: E) -> E:
 
 
 def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
-    name_column = []
-    field = unpivot.args.get("field")
-    if isinstance(field, exp.In) and isinstance(field.this, exp.Column):
-        name_column.append(field.this)
-
+    name_columns = [
+        field.this
+        for field in unpivot.fields
+        if isinstance(field, exp.In) and isinstance(field.this, exp.Column)
+    ]
     value_columns = (c for e in unpivot.expressions for c in e.find_all(exp.Column))
-    return itertools.chain(name_column, value_columns)
+
+    return itertools.chain(name_columns, value_columns)
 
 
 def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) -> None:
@@ -608,18 +609,19 @@ def _expand_stars(
     dialect = resolver.schema.dialect
 
     pivot_output_columns = None
-    pivot_exclude_columns = None
+    pivot_exclude_columns: t.Set[str] = set()
 
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
     if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
         if pivot.unpivot:
             pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
 
-            field = pivot.args.get("field")
-            if isinstance(field, exp.In):
-                pivot_exclude_columns = {
-                    c.output_name for e in field.expressions for c in e.find_all(exp.Column)
-                }
+            for field in pivot.fields:
+                if isinstance(field, exp.In):
+                    pivot_exclude_columns.update(
+                        c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+                    )
+
         else:
             pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
 

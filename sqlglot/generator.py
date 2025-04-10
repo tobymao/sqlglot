@@ -2068,7 +2068,15 @@ class Generator(metaclass=_Generator):
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
 
-        field = self.sql(expression, "field")
+        fields = self.expressions(
+            expression,
+            "fields",
+            sep=" ",
+            dynamic=True,
+            new_line=True,
+            skip_first=True,
+            skip_last=True,
+        )
 
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:
@@ -2078,7 +2086,7 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{self.seg(direction)}{nulls}({expressions} FOR {field}{default_on_null}{group}){alias}"
+        return f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"

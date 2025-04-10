@@ -4322,7 +4322,7 @@ class Pivot(Expression):
         "this": False,
         "alias": False,
         "expressions": False,
-        "field": False,
+        "fields": False,
         "unpivot": False,
         "using": False,
         "group": False,
@@ -4335,6 +4335,10 @@ class Pivot(Expression):
     @property
     def unpivot(self) -> bool:
         return bool(self.args.get("unpivot"))
+
+    @property
+    def fields(self) -> t.List[Expression]:
+        return self.args.get("fields", [])
 
 
 # https://duckdb.org/docs/sql/statements/unpivot#simplified-unpivot-syntax

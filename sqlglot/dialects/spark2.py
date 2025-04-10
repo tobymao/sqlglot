@@ -104,7 +104,9 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
         SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q1'))
     """
     if isinstance(expression, exp.Pivot):
-        expression.set("field", transforms.unqualify_columns(expression.args["field"]))
+        expression.set(
+            "fields", [transforms.unqualify_columns(field) for field in expression.fields]
+        )
 
     return expression
 
@@ -237,7 +239,7 @@ class Spark2(Hive):
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
             if len(aggregations) == 1:
-                return [""]
+                return []
             return pivot_column_names(aggregations, dialect="spark")
 
     class Generator(Hive.Generator):

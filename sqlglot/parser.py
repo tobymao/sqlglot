@@ -3575,6 +3575,8 @@ class Parser(metaclass=_Parser):
                     expression=self._parse_function() or self._parse_id_var(any_token=False),
                 )
 
+        ordinality: t.Optional[bool] = None
+
         if view:
             table = self._parse_id_var(any_token=False)
             columns = self._parse_csv(self._parse_id_var) if self._match(TokenType.ALIAS) else []
@@ -3585,6 +3587,7 @@ class Parser(metaclass=_Parser):
             # We move the alias from the lateral's child node to the lateral itself
             table_alias = this.args["alias"].pop()
         else:
+            ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
             table_alias = self._parse_table_alias()
 
         return self.expression(
@@ -3594,6 +3597,7 @@ class Parser(metaclass=_Parser):
             outer=outer,
             alias=table_alias,
             cross_apply=cross_apply,
+            ordinality=ordinality,
         )
 
     def _parse_join_parts(

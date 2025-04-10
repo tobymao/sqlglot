@@ -2584,6 +2584,7 @@ class Lateral(UDTF):
         "outer": False,
         "alias": False,
         "cross_apply": False,  # True -> CROSS APPLY, False -> OUTER APPLY
+        "ordinality": False,
     }
 
 

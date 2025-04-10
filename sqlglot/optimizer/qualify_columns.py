@@ -609,7 +609,7 @@ def _expand_stars(
     dialect = resolver.schema.dialect
 
     pivot_output_columns = None
-    pivot_exclude_columns = None
+    pivot_exclude_columns: t.Set[str] = set()
 
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
     if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
@@ -618,9 +618,10 @@ def _expand_stars(
 
             for field in pivot.fields:
                 if isinstance(field, exp.In):
-                    pivot_exclude_columns = {
+                    pivot_exclude_columns.update(
                         c.output_name for e in field.expressions for c in e.find_all(exp.Column)
-                    }
+                    )
+
         else:
             pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
 

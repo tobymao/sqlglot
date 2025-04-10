@@ -760,10 +760,12 @@ SELECT
   `_q_0`.`first_half_sales` AS `first_half_sales`,
   `_q_0`.`second_half_sales` AS `second_half_sales`
 FROM `produce` AS `produce`
-UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN (
-  (`produce`.`q1`, `produce`.`q2`) AS 'semester_1',
-  (`produce`.`q3`, `produce`.`q4`) AS 'semester_2'
-)) AS `_q_0`;
+UNPIVOT((`first_half_sales`, `second_half_sales`) FOR 
+  `semesters` IN (
+    (`produce`.`q1`, `produce`.`q2`) AS 'semester_1',
+    (`produce`.`q3`, `produce`.`q4`) AS 'semester_2'
+  )
+) AS `_q_0`;
 
 # title: quoting is preserved
 # dialect: snowflake

@@ -512,6 +512,10 @@ SELECT _q_0.c1 AS c1, _q_0.c2 AS c2 FROM VALUES ((1, 1), (2, 2)) AS _q_0(c1, c2)
 SELECT * FROM VALUES (1, 2, 3);
 SELECT _q_0.c1 AS c1 FROM VALUES ((1), (2), (3)) AS _q_0(c1);
 
+# title: Expand PIVOT column combinations
+# dialect: duckdb
+WITH cities AS (SELECT * FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT * FROM cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle'));
+WITH cities AS (SELECT t.country AS country, t.name AS name, t.year AS year, t.population AS population FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT _q_0.nl_2000_amsterdam_total AS nl_2000_amsterdam_total, _q_0.nl_2000_amsterdam_count AS nl_2000_amsterdam_count, _q_0.nl_2000_seattle_total AS nl_2000_seattle_total, _q_0.nl_2000_seattle_count AS nl_2000_seattle_count, _q_0.nl_2010_amsterdam_total AS nl_2010_amsterdam_total, _q_0.nl_2010_amsterdam_count AS nl_2010_amsterdam_count, _q_0.nl_2010_seattle_total AS nl_2010_seattle_total, _q_0.nl_2010_seattle_count AS nl_2010_seattle_count, _q_0.us_2000_amsterdam_total AS us_2000_amsterdam_total, _q_0.us_2000_amsterdam_count AS us_2000_amsterdam_count, _q_0.us_2000_seattle_total AS us_2000_seattle_total, _q_0.us_2000_seattle_count AS us_2000_seattle_count, _q_0.us_2010_amsterdam_total AS us_2010_amsterdam_total, _q_0.us_2010_amsterdam_count AS us_2010_amsterdam_count, _q_0.us_2010_seattle_total AS us_2010_seattle_total, _q_0.us_2010_seattle_count AS us_2010_seattle_count FROM cities AS cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle')) AS _q_0;
 
 --------------------------------------
 -- CTEs

@@ -646,6 +646,27 @@ class TestParser(unittest.TestCase):
             ) PIVOT (AVG("PrIcE"), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
+        two_in_clauses_duckdb = """
+            SELECT * FROM cities PIVOT (
+                sum(population) AS total,
+                count(population) AS count
+                FOR
+                    year IN (2000, 2010)
+                    country IN ('NL', 'US')
+            )
+        """
+
+        three_in_clauses_duckdb = """
+            SELECT * FROM cities PIVOT (
+                sum(population) AS total,
+                count(population) AS count
+                FOR
+                    year IN (2000, 2010)
+                    country IN ('NL', 'US')
+                    name IN ('Amsterdam', 'Seattle')
+            )
+        """
+
         query_to_column_names = {
             nothing_aliased: {
                 "bigquery": ["prop", "rudder"],
@@ -707,13 +728,48 @@ class TestParser(unittest.TestCase):
                     '"rudder_max(quality)"',
                 ],
             },
+            two_in_clauses_duckdb: {
+                "duckdb": [
+                    '"2000_NL_total"',
+                    '"2000_NL_count"',
+                    '"2000_US_total"',
+                    '"2000_US_count"',
+                    '"2010_NL_total"',
+                    '"2010_NL_count"',
+                    '"2010_US_total"',
+                    '"2010_US_count"',
+                ],
+            },
+            three_in_clauses_duckdb: {
+                "duckdb": [
+                    '"2000_NL_Amsterdam_total"',
+                    '"2000_NL_Amsterdam_count"',
+                    '"2000_NL_Seattle_total"',
+                    '"2000_NL_Seattle_count"',
+                    '"2000_US_Amsterdam_total"',
+                    '"2000_US_Amsterdam_count"',
+                    '"2000_US_Seattle_total"',
+                    '"2000_US_Seattle_count"',
+                    '"2010_NL_Amsterdam_total"',
+                    '"2010_NL_Amsterdam_count"',
+                    '"2010_NL_Seattle_total"',
+                    '"2010_NL_Seattle_count"',
+                    '"2010_US_Amsterdam_total"',
+                    '"2010_US_Amsterdam_count"',
+                    '"2010_US_Seattle_total"',
+                    '"2010_US_Seattle_count"',
+                ],
+            },
         }
 
         for query, dialect_columns in query_to_column_names.items():
             for dialect, expected_columns in dialect_columns.items():
-                expr = parse_one(query, read=dialect)
-                columns = expr.args["from"].this.args["pivots"][0].args["columns"]
-                self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])
+                with self.subTest(f"Testing query '{query}' for dialect {dialect}"):
+                    expr = parse_one(query, read=dialect)
+                    columns = expr.args["from"].this.args["pivots"][0].args["columns"]
+                    self.assertEqual(
+                        expected_columns, [col.sql(dialect=dialect) for col in columns]
+                    )
 
     def test_parse_nested(self):
         def warn_over_threshold(query: str, max_threshold: float = 0.2):

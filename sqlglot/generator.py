@@ -2307,7 +2307,13 @@ class Generator(metaclass=_Generator):
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        return f"{self.lateral_op(expression)} {this}{alias}"
+
+        ordinality = expression.args.get("ordinality") or ""
+        if ordinality:
+            ordinality = f" WITH ORDINALITY{alias}"
+            alias = ""
+
+        return f"{self.lateral_op(expression)} {this}{alias}{ordinality}"
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")

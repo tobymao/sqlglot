@@ -1,6 +1,72 @@
 Changelog
 =========
 
+## [v26.13.0] - 2025-04-11
+### :boom: BREAKING CHANGES
+- due to [`1df7f61`](https://github.com/tobymao/sqlglot/commit/1df7f611bc96616cb07950a80f6669d0bc331b0e) - refactor length_sql so it handles any type, not just varchar/blob *(PR [#4935](https://github.com/tobymao/sqlglot/pull/4935) by [@tekumara](https://github.com/tekumara))*:
+
+  refactor length_sql so it handles any type, not just varchar/blob (#4935)
+
+- due to [`52719f3`](https://github.com/tobymao/sqlglot/commit/52719f37f6541e8ec9f66642ac23ed9015048092) - parse CREATE STAGE *(PR [#4947](https://github.com/tobymao/sqlglot/pull/4947) by [@tekumara](https://github.com/tekumara))*:
+
+  parse CREATE STAGE (#4947)
+
+- due to [`fd39b30`](https://github.com/tobymao/sqlglot/commit/fd39b30209d068b787619b8137a105aca9c3e607) - parse CREATE FILE FORMAT *(PR [#4948](https://github.com/tobymao/sqlglot/pull/4948) by [@tekumara](https://github.com/tekumara))*:
+
+  parse CREATE FILE FORMAT (#4948)
+
+- due to [`f835756`](https://github.com/tobymao/sqlglot/commit/f835756257f735643584b89e93693e8577744731) - Fix CREATE EXTERNAL TABLE properties *(PR [#4951](https://github.com/tobymao/sqlglot/pull/4951) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Fix CREATE EXTERNAL TABLE properties (#4951)
+
+- due to [`44b955b`](https://github.com/tobymao/sqlglot/commit/44b955bd537bfb8f5b6e84ecbcd5f6e3da852260) - Fix generation of exp.Values *(PR [#4930](https://github.com/tobymao/sqlglot/pull/4930) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Fix generation of exp.Values (#4930)
+
+- due to [`1f506b1`](https://github.com/tobymao/sqlglot/commit/1f506b186f1b954829195eefda318e231d474208) - support SHOW (ALL) TABLES *(PR [#4961](https://github.com/tobymao/sqlglot/pull/4961) by [@mscolnick](https://github.com/mscolnick))*:
+
+  support SHOW (ALL) TABLES (#4961)
+
+- due to [`72cf4a4`](https://github.com/tobymao/sqlglot/commit/72cf4a4501a8d122041a28b71be5a41ffb53602a) - Add support for PIVOT multiple IN clauses *(PR [#4964](https://github.com/tobymao/sqlglot/pull/4964) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Add support for PIVOT multiple IN clauses (#4964)
+
+- due to [`400ea54`](https://github.com/tobymao/sqlglot/commit/400ea54d3a9cab256bfa5e496439bb9be6072d0b) - ensure JSON_FORMAT type is JSON when targeting Presto *(PR [#4968](https://github.com/tobymao/sqlglot/pull/4968) by [@georgesittas](https://github.com/georgesittas))*:
+
+  ensure JSON_FORMAT type is JSON when targeting Presto (#4968)
+
+
+### :sparkles: New Features
+- [`52719f3`](https://github.com/tobymao/sqlglot/commit/52719f37f6541e8ec9f66642ac23ed9015048092) - **snowflake**: parse CREATE STAGE *(PR [#4947](https://github.com/tobymao/sqlglot/pull/4947) by [@tekumara](https://github.com/tekumara))*
+- [`fd39b30`](https://github.com/tobymao/sqlglot/commit/fd39b30209d068b787619b8137a105aca9c3e607) - **snowflake**: parse CREATE FILE FORMAT *(PR [#4948](https://github.com/tobymao/sqlglot/pull/4948) by [@tekumara](https://github.com/tekumara))*
+- [`da9a6a1`](https://github.com/tobymao/sqlglot/commit/da9a6a1d56323319b87e9b193d12ad1c644b9239) - **snowflake**: parse SHOW STAGES *(PR [#4949](https://github.com/tobymao/sqlglot/pull/4949) by [@tekumara](https://github.com/tekumara))*
+- [`bfdcdf0`](https://github.com/tobymao/sqlglot/commit/bfdcdf0afc0f4af3dacdfc3e8dca243793552b74) - **snowflake**: parse SHOW FILE FORMATS *(PR [#4950](https://github.com/tobymao/sqlglot/pull/4950) by [@tekumara](https://github.com/tekumara))*
+- [`c591443`](https://github.com/tobymao/sqlglot/commit/c591443b6b2328780e08179144557e181db0cbb6) - **duckdb**: add support for GROUP clause in standard PIVOT syntax *(PR [#4953](https://github.com/tobymao/sqlglot/pull/4953) by [@georgesittas](https://github.com/georgesittas))*
+- [`b011ee2`](https://github.com/tobymao/sqlglot/commit/b011ee2df0beaac75b982261a25d3e787dead54a) - **bigquery**: Add support for side & kind on set operators *(PR [#4959](https://github.com/tobymao/sqlglot/pull/4959) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4942](https://github.com/tobymao/sqlglot/issues/4942) opened by [@z3z1ma](https://github.com/z3z1ma)*
+- [`1f506b1`](https://github.com/tobymao/sqlglot/commit/1f506b186f1b954829195eefda318e231d474208) - **duckdb**: support SHOW (ALL) TABLES *(PR [#4961](https://github.com/tobymao/sqlglot/pull/4961) by [@mscolnick](https://github.com/mscolnick))*
+  - :arrow_lower_right: *addresses issue [#4956](https://github.com/tobymao/sqlglot/issues/4956) opened by [@mscolnick](https://github.com/mscolnick)*
+- [`ad5b595`](https://github.com/tobymao/sqlglot/commit/ad5b595049a16a27a7f249afea43dbcfcf43b5f4) - allow explicit aliasing in if(...) expressions *(PR [#4963](https://github.com/tobymao/sqlglot/pull/4963) by [@georgesittas](https://github.com/georgesittas))*
+- [`72cf4a4`](https://github.com/tobymao/sqlglot/commit/72cf4a4501a8d122041a28b71be5a41ffb53602a) - **duckdb**: Add support for PIVOT multiple IN clauses *(PR [#4964](https://github.com/tobymao/sqlglot/pull/4964) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4944](https://github.com/tobymao/sqlglot/issues/4944) opened by [@nph](https://github.com/nph)*
+- [`7bc5a21`](https://github.com/tobymao/sqlglot/commit/7bc5a217c3cc68d0cb1eaedc0c18f5188de80bf1) - **postgres**: support laterals with ordinality fixes [#4965](https://github.com/tobymao/sqlglot/pull/4965) *(PR [#4966](https://github.com/tobymao/sqlglot/pull/4966) by [@georgesittas](https://github.com/georgesittas))*
+- [`400ea54`](https://github.com/tobymao/sqlglot/commit/400ea54d3a9cab256bfa5e496439bb9be6072d0b) - ensure JSON_FORMAT type is JSON when targeting Presto *(PR [#4968](https://github.com/tobymao/sqlglot/pull/4968) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4967](https://github.com/tobymao/sqlglot/issues/4967) opened by [@jmsmdy](https://github.com/jmsmdy)*
+
+### :bug: Bug Fixes
+- [`7042603`](https://github.com/tobymao/sqlglot/commit/7042603ecb5693795b15219ec9cebf2f76032c03) - **optimizer**: Merge subqueries when inner query has name conflict with outer query *(PR [#4931](https://github.com/tobymao/sqlglot/pull/4931) by [@barakalon](https://github.com/barakalon))*
+- [`1df7f61`](https://github.com/tobymao/sqlglot/commit/1df7f611bc96616cb07950a80f6669d0bc331b0e) - **duckdb**: refactor length_sql so it handles any type, not just varchar/blob *(PR [#4935](https://github.com/tobymao/sqlglot/pull/4935) by [@tekumara](https://github.com/tekumara))*
+  - :arrow_lower_right: *fixes issue [#4934](https://github.com/tobymao/sqlglot/issues/4934) opened by [@tekumara](https://github.com/tekumara)*
+- [`09882e3`](https://github.com/tobymao/sqlglot/commit/09882e32f057670a9cbd97c1e5cf1a00c774b5d2) - **tsql**: remove assert call from _build_formatted_time *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`bf39a95`](https://github.com/tobymao/sqlglot/commit/bf39a95426ed6637e424da1be070cc9a8affc358) - **sqlite**: transpile double quoted PRIMARY KEY *(PR [#4941](https://github.com/tobymao/sqlglot/pull/4941) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#4938](https://github.com/tobymao/sqlglot/issues/4938) opened by [@rgeronimi](https://github.com/rgeronimi)*
+- [`f835756`](https://github.com/tobymao/sqlglot/commit/f835756257f735643584b89e93693e8577744731) - **snowflake**: Fix CREATE EXTERNAL TABLE properties *(PR [#4951](https://github.com/tobymao/sqlglot/pull/4951) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4945](https://github.com/tobymao/sqlglot/issues/4945) opened by [@tekumara](https://github.com/tekumara)*
+- [`61ed971`](https://github.com/tobymao/sqlglot/commit/61ed971213c979c3777e57853bd6989bc169adb1) - **athena**: Correctly handle CTAS queries that contain Union's *(PR [#4955](https://github.com/tobymao/sqlglot/pull/4955) by [@erindru](https://github.com/erindru))*
+- [`44b955b`](https://github.com/tobymao/sqlglot/commit/44b955bd537bfb8f5b6e84ecbcd5f6e3da852260) - **clickhouse**: Fix generation of exp.Values *(PR [#4930](https://github.com/tobymao/sqlglot/pull/4930) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4056](https://github.com/TobikoData/sqlmesh/issues/4056) opened by [@dnbnero](https://github.com/dnbnero)*
+
+
 ## [v26.12.0] - 2025-03-27
 ### :boom: BREAKING CHANGES
 - due to [`8a692b9`](https://github.com/tobymao/sqlglot/commit/8a692b9b5b7982ed54444bddfe974e5f629183ff) - support select...into #temp_table syntax *(PR [#4893](https://github.com/tobymao/sqlglot/pull/4893) by [@hhubbell](https://github.com/hhubbell))*:
@@ -6258,3 +6324,4 @@ Changelog
 [v26.11.0]: https://github.com/tobymao/sqlglot/compare/v26.10.1...v26.11.0
 [v26.11.1]: https://github.com/tobymao/sqlglot/compare/v26.11.0...v26.11.1
 [v26.12.0]: https://github.com/tobymao/sqlglot/compare/v26.11.1...v26.12.0
+[v26.13.0]: https://github.com/tobymao/sqlglot/compare/v26.12.1...v26.13.0

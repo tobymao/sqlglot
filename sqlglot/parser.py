@@ -6153,7 +6153,9 @@ class Parser(metaclass=_Parser):
                     dialect=self.dialect,
                 )
 
-            expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
+            expressions = apply_index_offset(
+                this, expressions, -self.dialect.INDEX_OFFSET, dialect=self.dialect
+            )
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
         self._add_comments(this)

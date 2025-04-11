@@ -55,13 +55,10 @@ def simplify(expression, **kwargs):
 
 
 def annotate_functions(expression, **kwargs):
-    from sqlglot.dialects import Dialect
-
     dialect = kwargs.get("dialect")
     schema = kwargs.get("schema")
 
-    annotators = Dialect.get_or_raise(dialect).ANNOTATORS
-    annotated = annotate_types(expression, annotators=annotators, schema=schema)
+    annotated = annotate_types(expression, dialect=dialect, schema=schema)
 
     return annotated.expressions[0]
 

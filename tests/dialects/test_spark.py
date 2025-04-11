@@ -308,6 +308,15 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3')",
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
+
+        self.validate_all(
+            "SELECT TO_JSON(STRUCT('blah' AS x)) AS y",
+            write={
+                "presto": "SELECT JSON_FORMAT(CAST(CAST(ROW('blah') AS ROW(x VARCHAR)) AS JSON)) AS y",
+                "spark": "SELECT TO_JSON(STRUCT('blah' AS x)) AS y",
+                "trino": "SELECT JSON_FORMAT(CAST(CAST(ROW('blah') AS ROW(x VARCHAR)) AS JSON)) AS y",
+            },
+        )
         self.validate_all(
             "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
             read={

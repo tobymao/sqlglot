@@ -800,7 +800,7 @@ class BigQuery(Dialect):
             if unnest_expr:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                unnest_expr = annotate_types(unnest_expr)
+                unnest_expr = annotate_types(unnest_expr, dialect=self.dialect)
 
                 # Unnesting a nested array (i.e array of structs) explodes the top-level struct fields,
                 # in contrast to other dialects such as DuckDB which flattens only the array by default
@@ -1227,7 +1227,7 @@ class BigQuery(Dialect):
                 if arg.type is None:
                     from sqlglot.optimizer.annotate_types import annotate_types
 
-                    arg = annotate_types(arg)
+                    arg = annotate_types(arg, dialect=self.dialect)
 
                 if arg.type and arg.type.this in exp.DataType.TEXT_TYPES:
                     # BQ doesn't support bracket syntax with string values for structs

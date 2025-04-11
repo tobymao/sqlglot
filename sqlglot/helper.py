@@ -15,6 +15,7 @@ from itertools import count
 if t.TYPE_CHECKING:
     from sqlglot import exp
     from sqlglot._typing import A, E, T
+    from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions import Expression
 
 
@@ -150,6 +151,7 @@ def apply_index_offset(
     this: exp.Expression,
     expressions: t.List[E],
     offset: int,
+    dialect: DialectType = None,
 ) -> t.List[E]:
     """
     Applies an offset to a given integer literal expression.
@@ -158,6 +160,7 @@ def apply_index_offset(
         this: The target of the index.
         expressions: The expression the offset will be applied to, wrapped in a list.
         offset: The offset that will be applied.
+        dialect: the dialect of interest.
 
     Returns:
         The original expression with the offset applied to it, wrapped in a list. If the provided
@@ -173,7 +176,7 @@ def apply_index_offset(
     from sqlglot.optimizer.simplify import simplify
 
     if not this.type:
-        annotate_types(this)
+        annotate_types(this, dialect=dialect)
 
     if t.cast(exp.DataType, this.type).this not in (
         exp.DataType.Type.UNKNOWN,
@@ -182,7 +185,7 @@ def apply_index_offset(
         return expressions
 
     if not expression.type:
-        annotate_types(expression)
+        annotate_types(expression, dialect=dialect)
 
     if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
         logger.info("Applying array index offset (%s)", offset)

@@ -1008,7 +1008,7 @@ class DuckDB(Dialect):
                 if not this.type:
                     from sqlglot.optimizer.annotate_types import annotate_types
 
-                    this = annotate_types(this)
+                    this = annotate_types(this, dialect=self.dialect)
 
                 if this.is_type(exp.DataType.Type.MAP):
                     bracket = f"({bracket})[1]"
@@ -1042,7 +1042,7 @@ class DuckDB(Dialect):
             if not arg.type:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                arg = annotate_types(arg)
+                arg = annotate_types(arg, dialect=self.dialect)
 
             if arg.is_type(*exp.DataType.TEXT_TYPES):
                 return self.func("LENGTH", arg)

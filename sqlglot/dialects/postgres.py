@@ -41,6 +41,9 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
 
 DATE_DIFF_FACTOR = {
     "MICROSECOND": " * 1000000",
@@ -191,7 +194,7 @@ def _json_extract_sql(
     return _generate
 
 
-def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
+def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.RegexpReplace:
     # The signature of REGEXP_REPLACE is:
     # regexp_replace(source, pattern, replacement [, start [, N ]] [, flags ])
     #
@@ -204,7 +207,7 @@ def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
             if not last.type or last.is_type(exp.DataType.Type.UNKNOWN, exp.DataType.Type.NULL):
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                last = annotate_types(last)
+                last = annotate_types(last, dialect=dialect)
 
             if last.is_type(*exp.DataType.TEXT_TYPES):
                 regexp_replace = exp.RegexpReplace.from_arg_list(args[:-1])
@@ -657,7 +660,7 @@ class Postgres(Dialect):
 
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                this = annotate_types(arg)
+                this = annotate_types(arg, dialect=self.dialect)
                 if this.is_type("array<json>"):
                     while isinstance(this, exp.Cast):
                         this = this.this

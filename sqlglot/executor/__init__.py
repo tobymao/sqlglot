@@ -65,7 +65,9 @@ def execute(
 
             for column in table.columns:
                 value = table[0][column]
-                column_type = annotate_types(exp.convert(value)).type or type(value).__name__
+                column_type = (
+                    annotate_types(exp.convert(value), dialect=read).type or type(value).__name__
+                )
                 nested_set(schema, [*keys, column], column_type)
 
     schema = ensure_schema(schema, dialect=read)

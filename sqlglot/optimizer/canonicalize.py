@@ -23,7 +23,7 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
 
     def _canonicalize(expression: exp.Expression) -> exp.Expression:
         expression = add_text_to_concat(expression)
-        expression = replace_date_funcs(expression)
+        expression = replace_date_funcs(expression, dialect=dialect)
         expression = coerce_type(expression, dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE)
         expression = remove_redundant_casts(expression)
         expression = ensure_bools(expression, _replace_int_predicate)
@@ -39,7 +39,7 @@ def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     return node
 
 
-def replace_date_funcs(node: exp.Expression) -> exp.Expression:
+def replace_date_funcs(node: exp.Expression, dialect: DialectType) -> exp.Expression:
     if (
         isinstance(node, (exp.Date, exp.TsOrDsToDate))
         and not node.expressions
@@ -52,7 +52,7 @@ def replace_date_funcs(node: exp.Expression) -> exp.Expression:
         if not node.type:
             from sqlglot.optimizer.annotate_types import annotate_types
 
-            node = annotate_types(node)
+            node = annotate_types(node, dialect=dialect)
         return exp.cast(node.this, to=node.type or exp.DataType.Type.TIMESTAMP)
 
     return node

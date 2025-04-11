@@ -1303,7 +1303,9 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
     if not zone:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
+        target_type = (
+            annotate_types(expression, dialect=self.dialect).type or exp.DataType.Type.TIMESTAMP
+        )
         return self.sql(exp.cast(expression.this, target_type))
     if zone.name.lower() in TIMEZONES:
         return self.sql(
@@ -1870,7 +1872,7 @@ def build_timetostr_or_tochar(args: t.List, dialect: Dialect) -> exp.TimeToStr |
     if this and not this.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        annotate_types(this)
+        annotate_types(this, dialect=dialect)
         if this.is_type(*exp.DataType.TEMPORAL_TYPES):
             dialect_name = dialect.__class__.__name__.lower()
             return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)

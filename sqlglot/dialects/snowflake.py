@@ -1172,7 +1172,7 @@ class Snowflake(Dialect):
             if value.type is None:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                value = annotate_types(value)
+                value = annotate_types(value, dialect=self.dialect)
 
             if value.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
                 return super().trycast_sql(expression)

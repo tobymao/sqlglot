@@ -1404,11 +1404,13 @@ LANGUAGE js AS
         )
         self.validate_all(
             "TO_JSON_STRING(x)",
-            read={"bigquery": "TO_JSON_STRING(x)"},
+            read={
+                "bigquery": "TO_JSON_STRING(x)",
+            },
             write={
                 "bigquery": "TO_JSON_STRING(x)",
                 "duckdb": "CAST(TO_JSON(x) AS TEXT)",
-                "presto": "JSON_FORMAT(x)",
+                "presto": "JSON_FORMAT(CAST(x AS JSON))",
                 "spark": "TO_JSON(x)",
             },
         )

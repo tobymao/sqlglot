@@ -2807,6 +2807,7 @@ class Generator(metaclass=_Generator):
             expression.this,
             expression.expressions,
             (index_offset or self.dialect.INDEX_OFFSET) - expression.args.get("offset", 0),
+            dialect=self.dialect,
         )
 
     def bracket_sql(self, expression: exp.Bracket) -> str:
@@ -4018,7 +4019,7 @@ class Generator(metaclass=_Generator):
         if not arg.type:
             from sqlglot.optimizer.annotate_types import annotate_types
 
-            arg = annotate_types(arg)
+            arg = annotate_types(arg, dialect=self.dialect)
 
         if arg.is_type(exp.DataType.Type.ARRAY):
             return self.sql(arg)

@@ -7974,7 +7974,10 @@ class Parser(metaclass=_Parser):
                 )
                 opts.append(prop)
             else:
-                opts.append(self._parse_property())
+                prop = self._parse_property()
+                if prop is None:
+                    self.raise_error("Unable to parse option")
+                opts.append(prop)
 
             self._match(TokenType.COMMA)
 

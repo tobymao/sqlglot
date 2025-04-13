@@ -903,8 +903,17 @@ class Snowflake(Dialect):
 
         def _parse_file_format_property(self) -> exp.FileFormatProperty:
             self._match(TokenType.EQ)
+            if self._match(TokenType.L_PAREN, advance=False):
+                return self.expression(
+                    exp.FileFormatProperty, expressions=self._parse_wrapped_options()
+                )
+            # note: although not specified in the docs, Snowflake does accept a string/identifier for FILE_FORMAT
+            format_name = self._parse_string() or self._parse_table_parts()
+            if not isinstance(format_name, exp.Literal):
+                format_name = exp.Literal(this=str(format_name), is_string=True)
             return self.expression(
-                exp.FileFormatProperty, expressions=self._parse_wrapped_options()
+                exp.FileFormatProperty,
+                expressions=[exp.Property(this=exp.Var(this="FORMAT_NAME"), value=format_name)],
             )
 
     class Tokenizer(tokens.Tokenizer):

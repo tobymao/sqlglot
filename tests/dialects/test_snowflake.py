@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot import UnsupportedError, exp, parse_one, ParseError
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
@@ -1484,6 +1484,16 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "CREATE TEMPORARY STAGE stage1 FILE_FORMAT=(TYPE=PARQUET)"
         ).this.assert_is(exp.Table)
+        self.validate_identity(
+            "CREATE STAGE stage1 FILE_FORMAT='format1'",
+            write_sql="CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='format1')",
+        ).this.assert_is(exp.Table)
+        self.validate_identity(
+            "CREATE STAGE stage1 FILE_FORMAT=schema1.format1",
+            write_sql="CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='schema1.format1')",
+        ).this.assert_is(exp.Table)
+        with self.assertRaises(ParseError):
+            self.parse_one("CREATE STAGE stage1 FILE_FORMAT=123", dialect="snowflake")
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)

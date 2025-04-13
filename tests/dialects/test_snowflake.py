@@ -1495,6 +1495,10 @@ class TestSnowflake(Validator):
         with self.assertRaises(ParseError):
             self.parse_one("CREATE STAGE stage1 FILE_FORMAT=123", dialect="snowflake")
         self.validate_identity(
+            "CREATE STAGE s1 URL='s3://test-bucket-140f1e26' FILE_FORMAT=(TYPE='JSON') "
+            "CREDENTIALS=(aws_key_id='test' aws_secret_key='test')"
+        )
+        self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
         ).this.assert_is(exp.Identifier)
         self.validate_identity(

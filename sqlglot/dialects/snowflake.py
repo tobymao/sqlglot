@@ -516,6 +516,7 @@ class Snowflake(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
+            "CREDENTIALS": lambda self: self._parse_credentials_property(),
             "FILE_FORMAT": lambda self: self._parse_file_format_property(),
             "LOCATION": lambda self: self._parse_location_property(),
             "TAG": lambda self: self._parse_tag(),
@@ -916,6 +917,11 @@ class Snowflake(Dialect):
                 expressions=[exp.Property(this=exp.Var(this="FORMAT_NAME"), value=format_name)],
             )
 
+        def _parse_credentials_property(self) -> exp.CredentialsProperty:
+            options = self._parse_wrapped_options()
+            result = self.expression(exp.CredentialsProperty, expressions=options)
+            return result
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
@@ -1116,8 +1122,9 @@ class Snowflake(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
-            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
             exp.LocationProperty: exp.Properties.Location.POST_WITH,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
@@ -1351,3 +1358,8 @@ class Snowflake(Dialect):
             if offset and not limit:
                 expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)
+
+        def credentialsproperty_sql(self, expression: exp.CredentialsProperty) -> str:
+            options = expression.expressions or []
+            credentials = " ".join(f"{opt.name}={self.sql(opt, 'value')}" for opt in options)
+            return f"CREDENTIALS=({credentials})"

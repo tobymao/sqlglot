@@ -1537,3 +1537,39 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
         self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
+
+    def test_unnest_subqueries_without_agg_fix(self):
+        # This test verifies that in a correlated subquery using an IN predicate,
+        # when the projection is not aggregated, a GROUP BY is added.
+        sql = "SELECT s.t FROM s WHERE 1 IN (SELECT t.a FROM t WHERE t.b > 1)"
+        expression = parse_one(sql)
+        transformed = optimizer.unnest_subqueries.unnest_subqueries(expression)
+
+        # Retrieve the join that was added by the unnesting transformation.
+        joins = transformed.args.get("joins")
+        self.assertIsNotNone(joins, "Expected a join to be added after unnesting")
+
+        # Get the subquery from the join's "this" attribute.
+        subquery = joins[0].this
+        self.assertIsNotNone(
+            subquery.this.args.get("group"),
+            "Expected a GROUP BY clause to be added to the subquery when no aggregate is present",
+        )
+
+    def test_unnest_subqueries_with_agg_fix(self):
+        # This test verifies that when the subquery's projection is already an aggregate,
+        # the transformation does not add an extra GROUP BY.
+        sql = "SELECT s.t FROM s WHERE 1 IN (SELECT MAX(t.a) as t1 FROM t)"
+        expression = parse_one(sql)
+        transformed = optimizer.unnest_subqueries.unnest_subqueries(expression)
+
+        # Retrieve the join that was added by the unnesting transformation.
+        joins = transformed.args.get("joins")
+        self.assertIsNotNone(joins, "Expected a join to be added after unnesting")
+
+        # Get the subquery from the join's "this" attribute.
+        subquery = joins[0].this
+        self.assertIsNone(
+            subquery.this.args.get("group"),
+            "Expected no GROUP BY clause to be added when the projection is already aggregated",
+        )

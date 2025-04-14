@@ -559,6 +559,14 @@ class TestTSQL(Validator):
             with self.assertRaises(ParseError, msg=f"When running '{query}'"):
                 self.parse_one(query)
 
+        self.validate_all(
+            "SELECT col FROM t OPTION(LABEL = 'foo')",
+            write={
+                "tsql": "SELECT col FROM t OPTION(LABEL = 'foo')",
+                "databricks": UnsupportedError,
+            },
+        )
+
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")

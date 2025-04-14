@@ -7969,8 +7969,7 @@ class Parser(metaclass=_Parser):
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
                 # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL
-                format_name = self._parse_string() or self._parse_table_parts()
-                prop = self.expression(exp.Property, this=exp.var("FORMAT_NAME"), value=format_name)
+                prop = self._parse_format_name()
                 opts.append(prop)
             else:
                 parsed_prop = self._parse_property()
@@ -8169,4 +8168,13 @@ class Parser(metaclass=_Parser):
                 "from": self._match_text_seq("FROM") and self._parse_bitwise(),
                 "for": self._match_text_seq("FOR") and self._parse_bitwise(),
             },
+        )
+
+    def _parse_format_name(self) -> exp.Property:
+        # Note: Although not specified in the docs, Snowflake does accept a string/identifier
+        # for FILE_FORMAT = <format_name>
+        return self.expression(
+            exp.Property,
+            this=exp.var("FORMAT_NAME"),
+            value=self._parse_string() or self._parse_table_parts(),
         )

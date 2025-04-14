@@ -1488,14 +1488,8 @@ class TestSnowflake(Validator):
             "CREATE STAGE stage1 FILE_FORMAT='format1'",
             "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='format1')",
         )
-        self.validate_identity(
-            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=stage1.format1)",
-            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=stage1.format1)",
-        )
-        self.validate_identity(
-            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='stage1.format1')",
-            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='stage1.format1')",
-        )
+        self.validate_identity("CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=stage1.format1)")
+        self.validate_identity("CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='stage1.format1')")
         self.validate_identity(
             "CREATE STAGE stage1 FILE_FORMAT=schema1.format1",
             "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=schema1.format1)",

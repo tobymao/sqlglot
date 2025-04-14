@@ -105,8 +105,10 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER '{cluster}'")
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER '{cluster}'")
         self.validate_identity(
             "SELECT DATE_BIN(toDateTime('2023-01-01 14:45:00'), INTERVAL '1' MINUTE, toDateTime('2023-01-01 14:35:30'), 'UTC')",
         )
@@ -156,10 +158,19 @@ class TestClickhouse(Validator):
             "CREATE TABLE test ON CLUSTER default (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
         )
         self.validate_identity(
+            "CREATE TABLE test ON CLUSTER '{cluster}' (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
+        )
+        self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple() AS SELECT * FROM test_data"
         )
         self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_view ON CLUSTER '{cluster}' (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple() AS SELECT * FROM test_data"
+        )
+        self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 TO table1 AS SELECT * FROM test_data"
+        )
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_view ON CLUSTER '{cluster}' TO table1 AS SELECT * FROM test_data"
         )
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view TO db.table1 (id UInt8) AS SELECT * FROM test_data"
@@ -547,7 +558,9 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
         self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
+        self.validate_identity("ALTER TABLE visits ON CLUSTER '{cluster}' DROP COLUMN col1")
         self.validate_identity("DELETE FROM tbl ON CLUSTER test_cluster WHERE date = '2019-01-01'")
+        self.validate_identity("DELETE FROM tbl ON CLUSTER '{cluster}' WHERE date = '2019-01-01'")
 
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
@@ -1182,6 +1195,7 @@ LIFETIME(MIN 0 MAX 0)""",
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
                 self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")
+                self.validate_identity(f"DROP {creatable} test ON CLUSTER '{{cluster}}'")
 
     def test_datetime_funcs(self):
         # Each datetime func has an alias that is roundtripped to the original name e.g. (DATE_SUB, DATESUB) -> DATE_SUB

@@ -33,6 +33,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity('SELECT DISTINCT ON ("id") * FROM t')
         self.validate_identity("SELECT 1 OR (1 = 2)")
         self.validate_identity("SELECT 1 AND (1 = 2)")
         self.validate_identity("SELECT json.a.:Int64")

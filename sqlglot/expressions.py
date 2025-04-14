@@ -2789,6 +2789,10 @@ class FileFormatProperty(Property):
     arg_types = {"this": False, "expressions": False}
 
 
+class CredentialsProperty(Property):
+    arg_types = {"expressions": True}
+
+
 class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
@@ -3134,6 +3138,7 @@ class Properties(Expression):
         "CLUSTERED_BY": ClusteredByProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
+        "CREDENTIALS": CredentialsProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
         "DISTRIBUTED_BY": DistributedByProperty,

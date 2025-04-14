@@ -132,6 +132,8 @@ class Generator(metaclass=_Generator):
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.ConnectByRoot: lambda self, e: f"CONNECT_BY_ROOT {self.sql(e, 'this')}",
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
+        exp.CredentialsProperty: lambda self,
+        e: f"CREDENTIALS=({self.expressions(e, 'expressions', sep=' ')})",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.DynamicProperty: lambda *_: "DYNAMIC",

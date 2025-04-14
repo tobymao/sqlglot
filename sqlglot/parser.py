@@ -805,7 +805,7 @@ class Parser(metaclass=_Parser):
         exp.Sort: lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY),
         exp.Table: lambda self: self._parse_table_parts(),
         exp.TableAlias: lambda self: self._parse_table_alias(),
-        exp.Tuple: lambda self: self._parse_value(),
+        exp.Tuple: lambda self: self._parse_value(values=False),
         exp.Whens: lambda self: self._parse_when_matched(),
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
@@ -3040,7 +3040,7 @@ class Parser(metaclass=_Parser):
             expressions=self._parse_wrapped_csv(self._parse_assignment),
         )
 
-    def _parse_value(self) -> t.Optional[exp.Tuple]:
+    def _parse_value(self, values: bool = True) -> t.Optional[exp.Tuple]:
         def _parse_value_expression() -> t.Optional[exp.Expression]:
             if self.dialect.SUPPORTS_VALUES_DEFAULT and self._match(TokenType.DEFAULT):
                 return exp.var(self._prev.text.upper())
@@ -3138,7 +3138,7 @@ class Parser(metaclass=_Parser):
             if distinct:
                 distinct = self.expression(
                     exp.Distinct,
-                    on=self._parse_value() if self._match(TokenType.ON) else None,
+                    on=self._parse_value(values=False) if self._match(TokenType.ON) else None,
                 )
 
             if all_ and distinct:
@@ -7557,7 +7557,9 @@ class Parser(metaclass=_Parser):
                 else:
                     then = self.expression(
                         exp.Insert,
-                        this=exp.var("ROW") if self._match_text_seq("ROW") else self._parse_value(),
+                        this=exp.var("ROW")
+                        if self._match_text_seq("ROW")
+                        else self._parse_value(values=False),
                         expression=self._match_text_seq("VALUES") and self._parse_value(),
                     )
             elif self._match(TokenType.UPDATE):

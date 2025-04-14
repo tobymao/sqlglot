@@ -931,8 +931,8 @@ class ClickHouse(Dialect):
                 this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
             return this
 
-        def _parse_value(self) -> t.Optional[exp.Tuple]:
-            value = super()._parse_value()
+        def _parse_value(self, values: bool = True) -> t.Optional[exp.Tuple]:
+            value = super()._parse_value(values=values)
             if not value:
                 return None
 
@@ -942,7 +942,7 @@ class ClickHouse(Dialect):
             # but the final result is not altered by the extra parentheses.
             # Note: Clickhouse allows VALUES([structure], value, ...) so the branch checks for the last expression
             expressions = value.expressions
-            if not isinstance(expressions[-1], exp.Tuple):
+            if values and not isinstance(expressions[-1], exp.Tuple):
                 value.set(
                     "expressions",
                     [self.expression(exp.Tuple, expressions=[expr]) for expr in expressions],

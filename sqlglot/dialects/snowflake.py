@@ -1357,7 +1357,3 @@ class Snowflake(Dialect):
             if offset and not limit:
                 expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)
-
-        def credentialsproperty_sql(self, expression: exp.CredentialsProperty) -> str:
-            credentials = self.expressions(expression, "expressions", sep=" ")
-            return f"CREDENTIALS=({credentials})"

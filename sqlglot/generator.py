@@ -4896,3 +4896,7 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         target = self.sql(expression, "target")
         return f"PUT {this} {target}{props_sql}"
+
+    def credentialsproperty_sql(self, expression: exp.CredentialsProperty) -> str:
+        credentials = self.expressions(expression, "expressions", sep=" ")
+        return f"CREDENTIALS=({credentials})"

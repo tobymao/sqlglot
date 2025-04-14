@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v26.13.1] - 2025-04-14
+### :sparkles: New Features
+- [`a762993`](https://github.com/tobymao/sqlglot/commit/a762993c53d7ae91a831a8be448010e17e60f497) - **generator**: unsupported warning for T-SQL query option *(PR [#4972](https://github.com/tobymao/sqlglot/pull/4972) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`61bc01c`](https://github.com/tobymao/sqlglot/commit/61bc01ceec2f801490f3f1a571aee655c5109962) - **clickhouse**: allow string literal for clickhouse ON CLUSTER clause *(PR [#4971](https://github.com/tobymao/sqlglot/pull/4971) by [@lepfhty](https://github.com/lepfhty))*
+- [`1353b79`](https://github.com/tobymao/sqlglot/commit/1353b79bd9810788a02163928b044fe038267078) - **Snowflake**: Enhance parity for FILE_FORMAT & CREDENTIALS in CREATE STAGE *(PR [#4969](https://github.com/tobymao/sqlglot/pull/4969) by [@whummer](https://github.com/whummer))*
+
+
 ## [v26.13.0] - 2025-04-11
 ### :boom: BREAKING CHANGES
 - due to [`1df7f61`](https://github.com/tobymao/sqlglot/commit/1df7f611bc96616cb07950a80f6669d0bc331b0e) - refactor length_sql so it handles any type, not just varchar/blob *(PR [#4935](https://github.com/tobymao/sqlglot/pull/4935) by [@tekumara](https://github.com/tekumara))*:
@@ -6325,3 +6334,4 @@ Changelog
 [v26.11.1]: https://github.com/tobymao/sqlglot/compare/v26.11.0...v26.11.1
 [v26.12.0]: https://github.com/tobymao/sqlglot/compare/v26.11.1...v26.12.0
 [v26.13.0]: https://github.com/tobymao/sqlglot/compare/v26.12.1...v26.13.0
+[v26.13.1]: https://github.com/tobymao/sqlglot/compare/v26.13.0...v26.13.1

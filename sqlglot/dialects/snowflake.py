@@ -516,6 +516,7 @@ class Snowflake(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
+            "CREDENTIALS": lambda self: self._parse_credentials_property(),
             "FILE_FORMAT": lambda self: self._parse_file_format_property(),
             "LOCATION": lambda self: self._parse_location_property(),
             "TAG": lambda self: self._parse_tag(),
@@ -903,8 +904,20 @@ class Snowflake(Dialect):
 
         def _parse_file_format_property(self) -> exp.FileFormatProperty:
             self._match(TokenType.EQ)
+            if self._match(TokenType.L_PAREN, advance=False):
+                expressions = self._parse_wrapped_options()
+            else:
+                expressions = [self._parse_format_name()]
+
             return self.expression(
-                exp.FileFormatProperty, expressions=self._parse_wrapped_options()
+                exp.FileFormatProperty,
+                expressions=expressions,
+            )
+
+        def _parse_credentials_property(self) -> exp.CredentialsProperty:
+            return self.expression(
+                exp.CredentialsProperty,
+                expressions=self._parse_wrapped_options(),
             )
 
     class Tokenizer(tokens.Tokenizer):
@@ -1107,8 +1120,9 @@ class Snowflake(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
-            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
             exp.LocationProperty: exp.Properties.Location.POST_WITH,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

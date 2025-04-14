@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.13.2] - 2025-04-14
+### :bug: Bug Fixes
+- [`9693dbd`](https://github.com/tobymao/sqlglot/commit/9693dbd18b98b2699cade738a254f71f2ee8ce74) - **clickhouse**: avoid superfluous parentheses in DISTINCT ON (...) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.13.1] - 2025-04-14
 ### :sparkles: New Features
 - [`a762993`](https://github.com/tobymao/sqlglot/commit/a762993c53d7ae91a831a8be448010e17e60f497) - **generator**: unsupported warning for T-SQL query option *(PR [#4972](https://github.com/tobymao/sqlglot/pull/4972) by [@geooo109](https://github.com/geooo109))*
@@ -6335,3 +6340,4 @@ Changelog
 [v26.12.0]: https://github.com/tobymao/sqlglot/compare/v26.11.1...v26.12.0
 [v26.13.0]: https://github.com/tobymao/sqlglot/compare/v26.12.1...v26.13.0
 [v26.13.1]: https://github.com/tobymao/sqlglot/compare/v26.13.0...v26.13.1
+[v26.13.2]: https://github.com/tobymao/sqlglot/compare/v26.13.1...v26.13.2

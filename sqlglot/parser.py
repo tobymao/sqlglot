@@ -7966,19 +7966,19 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.L_PAREN)
 
         opts: t.List[t.Optional[exp.Expression]] = []
+        option: exp.Expression | None
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
                 # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL
-                prop = self._parse_format_name()
-                opts.append(prop)
+                option = self._parse_format_name()
             else:
-                parsed_prop = self._parse_property()
-                if parsed_prop is None:
-                    self.raise_error("Unable to parse option")
-                    break
-                opts.append(parsed_prop)
+                option = self._parse_property()
 
-            self._match(TokenType.COMMA)
+            if option is None:
+                self.raise_error("Unable to parse option")
+                break
+
+            opts.append(option)
 
         return opts
 

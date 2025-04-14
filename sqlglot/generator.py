@@ -2581,6 +2581,7 @@ class Generator(metaclass=_Generator):
         return f" {options}" if options else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
+        self.unsupported("Unsupported query option.")
         return ""
 
     def offset_limit_modifiers(

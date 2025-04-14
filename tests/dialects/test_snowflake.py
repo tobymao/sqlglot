@@ -1486,17 +1486,24 @@ class TestSnowflake(Validator):
         ).this.assert_is(exp.Table)
         self.validate_identity(
             "CREATE STAGE stage1 FILE_FORMAT='format1'",
-            write_sql="CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='format1')",
-        ).this.assert_is(exp.Table)
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='format1')",
+        )
+        self.validate_identity(
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=stage1.format1)",
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=stage1.format1)",
+        )
+        self.validate_identity(
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='stage1.format1')",
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='stage1.format1')",
+        )
         self.validate_identity(
             "CREATE STAGE stage1 FILE_FORMAT=schema1.format1",
-            write_sql="CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='schema1.format1')",
-        ).this.assert_is(exp.Table)
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=schema1.format1)",
+        )
         with self.assertRaises(ParseError):
             self.parse_one("CREATE STAGE stage1 FILE_FORMAT=123", dialect="snowflake")
         self.validate_identity(
-            "CREATE STAGE s1 URL='s3://test-bucket-140f1e26' FILE_FORMAT=(TYPE='JSON') "
-            "CREDENTIALS=(aws_key_id='test' aws_secret_key='test')"
+            "CREATE STAGE s1 URL='s3://bucket-123' FILE_FORMAT=(TYPE='JSON') CREDENTIALS=(aws_key_id='test' aws_secret_key='test')"
         )
         self.validate_identity(
             "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"

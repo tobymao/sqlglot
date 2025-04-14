@@ -910,17 +910,16 @@ class Snowflake(Dialect):
                 )
             # note: although not specified in the docs, Snowflake does accept a string/identifier for FILE_FORMAT
             format_name = self._parse_string() or self._parse_table_parts()
-            if not isinstance(format_name, exp.Literal):
-                format_name = exp.Literal(this=str(format_name), is_string=True)
             return self.expression(
                 exp.FileFormatProperty,
                 expressions=[exp.Property(this=exp.Var(this="FORMAT_NAME"), value=format_name)],
             )
 
         def _parse_credentials_property(self) -> exp.CredentialsProperty:
-            options = self._parse_wrapped_options()
-            result = self.expression(exp.CredentialsProperty, expressions=options)
-            return result
+            return self.expression(
+                exp.CredentialsProperty,
+                expressions=self._parse_wrapped_options(),
+            )
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
@@ -1360,6 +1359,5 @@ class Snowflake(Dialect):
             return super().select_sql(expression)
 
         def credentialsproperty_sql(self, expression: exp.CredentialsProperty) -> str:
-            options = expression.expressions or []
-            credentials = " ".join(f"{opt.name}={self.sql(opt, 'value')}" for opt in options)
+            credentials = self.expressions(expression, "expressions", sep=" ")
             return f"CREDENTIALS=({credentials})"

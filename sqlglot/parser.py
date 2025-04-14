@@ -7969,14 +7969,14 @@ class Parser(metaclass=_Parser):
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
                 # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL
-                prop = self.expression(
-                    exp.Property, this=exp.var("FORMAT_NAME"), value=self._parse_table_parts()
-                )
+                format_name = self._parse_string() or self._parse_table_parts()
+                prop = self.expression(exp.Property, this=exp.var("FORMAT_NAME"), value=format_name)
                 opts.append(prop)
             else:
                 parsed_prop = self._parse_property()
                 if parsed_prop is None:
                     self.raise_error("Unable to parse option")
+                    break
                 opts.append(parsed_prop)
 
             self._match(TokenType.COMMA)

@@ -511,6 +511,7 @@ class TSQL(Dialect):
             "DECLARE": TokenType.DECLARE,
             "EXEC": TokenType.COMMAND,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
+            "GO": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NONCLUSTERED INDEX": TokenType.INDEX,

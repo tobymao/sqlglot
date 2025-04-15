@@ -332,6 +332,9 @@ class Presto(Dialect):
             "FROM_UTF8": lambda args: exp.Decode(
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
+            "JSON_FORMAT": lambda args: exp.JSONFormat(
+                this=seq_get(args, 0), options=seq_get(args, 1), is_json=True
+            ),
             "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
@@ -582,13 +585,27 @@ class Presto(Dialect):
             "with",
         }
 
+        def jsonformat_sql(self, expression: exp.JSONFormat) -> str:
+            this = expression.this
+            is_json = expression.args.get("is_json")
+
+            if this and not (is_json or this.type):
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                this = annotate_types(this, dialect=self.dialect)
+
+            if not (is_json or this.is_type(exp.DataType.Type.JSON)):
+                this.replace(exp.cast(this, exp.DataType.Type.JSON))
+
+            return self.function_fallback_sql(expression)
+
         def md5_sql(self, expression: exp.MD5) -> str:
             this = expression.this
 
             if not this.type:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                this = annotate_types(this)
+                this = annotate_types(this, dialect=self.dialect)
 
             if this.is_type(*exp.DataType.TEXT_TYPES):
                 this = exp.Encode(this=this, charset=exp.Literal.string("utf-8"))
@@ -630,6 +647,7 @@ class Presto(Dialect):
                             expression.this,
                             expression.expressions,
                             1 - expression.args.get("offset", 0),
+                            dialect=self.dialect,
                         ),
                         0,
                     ),
@@ -639,7 +657,7 @@ class Presto(Dialect):
         def struct_sql(self, expression: exp.Struct) -> str:
             from sqlglot.optimizer.annotate_types import annotate_types
 
-            expression = annotate_types(expression)
+            expression = annotate_types(expression, dialect=self.dialect)
             values: t.List[str] = []
             schema: t.List[str] = []
             unknown_type = False

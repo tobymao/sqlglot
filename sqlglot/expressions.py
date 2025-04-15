@@ -2584,6 +2584,7 @@ class Lateral(UDTF):
         "outer": False,
         "alias": False,
         "cross_apply": False,  # True -> CROSS APPLY, False -> OUTER APPLY
+        "ordinality": False,
     }
 
 
@@ -2786,6 +2787,10 @@ class FallbackProperty(Property):
 
 class FileFormatProperty(Property):
     arg_types = {"this": False, "expressions": False}
+
+
+class CredentialsProperty(Property):
+    arg_types = {"expressions": True}
 
 
 class FreespaceProperty(Property):
@@ -3133,6 +3138,7 @@ class Properties(Expression):
         "CLUSTERED_BY": ClusteredByProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
+        "CREDENTIALS": CredentialsProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
         "DISTRIBUTED_BY": DistributedByProperty,
@@ -3370,6 +3376,9 @@ class SetOperation(Query):
         "expression": True,
         "distinct": False,
         "by_name": False,
+        "side": False,
+        "kind": False,
+        "on": False,
         **QUERY_MODIFIERS,
     }
 
@@ -3407,6 +3416,14 @@ class SetOperation(Query):
     @property
     def right(self) -> Query:
         return self.expression
+
+    @property
+    def kind(self) -> str:
+        return self.text("kind").upper()
+
+    @property
+    def side(self) -> str:
+        return self.text("side").upper()
 
 
 class Union(SetOperation):
@@ -4311,7 +4328,7 @@ class Pivot(Expression):
         "this": False,
         "alias": False,
         "expressions": False,
-        "field": False,
+        "fields": False,
         "unpivot": False,
         "using": False,
         "group": False,
@@ -4324,6 +4341,10 @@ class Pivot(Expression):
     @property
     def unpivot(self) -> bool:
         return bool(self.args.get("unpivot"))
+
+    @property
+    def fields(self) -> t.List[Expression]:
+        return self.args.get("fields", [])
 
 
 # https://duckdb.org/docs/sql/statements/unpivot#simplified-unpivot-syntax
@@ -6290,7 +6311,7 @@ class JSONBExtractScalar(Binary, Func):
 
 
 class JSONFormat(Func):
-    arg_types = {"this": False, "options": False}
+    arg_types = {"this": False, "options": False, "is_json": False}
     _sql_names = ["JSON_FORMAT"]
 
 

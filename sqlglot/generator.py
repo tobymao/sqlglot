@@ -132,6 +132,8 @@ class Generator(metaclass=_Generator):
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.ConnectByRoot: lambda self, e: f"CONNECT_BY_ROOT {self.sql(e, 'this')}",
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
+        exp.CredentialsProperty: lambda self,
+        e: f"CREDENTIALS=({self.expressions(e, 'expressions', sep=' ')})",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.DynamicProperty: lambda *_: "DYNAMIC",
@@ -1445,12 +1447,18 @@ class Generator(metaclass=_Generator):
                 self.unsupported(f"{op_name} requires DISTINCT or ALL to be specified")
 
         if distinct is default_distinct:
-            kind = ""
+            distinct_or_all = ""
         else:
-            kind = " DISTINCT" if distinct else " ALL"
+            distinct_or_all = " DISTINCT" if distinct else " ALL"
+
+        side_kind = " ".join(filter(None, [expression.side, expression.kind]))
+        side_kind = f"{side_kind} " if side_kind else ""
 
         by_name = " BY NAME" if expression.args.get("by_name") else ""
-        return f"{op_name}{kind}{by_name}"
+        on = self.expressions(expression, key="on", flat=True)
+        on = f" ON ({on})" if on else ""
+
+        return f"{side_kind}{op_name}{distinct_or_all}{by_name}{on}"
 
     def set_operations(self, expression: exp.SetOperation) -> str:
         if not self.SET_OP_MODIFIERS:
@@ -2062,7 +2070,15 @@ class Generator(metaclass=_Generator):
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
 
-        field = self.sql(expression, "field")
+        fields = self.expressions(
+            expression,
+            "fields",
+            sep=" ",
+            dynamic=True,
+            new_line=True,
+            skip_first=True,
+            skip_last=True,
+        )
 
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:
@@ -2072,7 +2088,7 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{self.seg(direction)}{nulls}({expressions} FOR {field}{default_on_null}{group}){alias}"
+        return f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"
@@ -2293,7 +2309,13 @@ class Generator(metaclass=_Generator):
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        return f"{self.lateral_op(expression)} {this}{alias}"
+
+        ordinality = expression.args.get("ordinality") or ""
+        if ordinality:
+            ordinality = f" WITH ORDINALITY{alias}"
+            alias = ""
+
+        return f"{self.lateral_op(expression)} {this}{alias}{ordinality}"
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
@@ -2559,6 +2581,7 @@ class Generator(metaclass=_Generator):
         return f" {options}" if options else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
+        self.unsupported("Unsupported query option.")
         return ""
 
     def offset_limit_modifiers(
@@ -2787,6 +2810,7 @@ class Generator(metaclass=_Generator):
             expression.this,
             expression.expressions,
             (index_offset or self.dialect.INDEX_OFFSET) - expression.args.get("offset", 0),
+            dialect=self.dialect,
         )
 
     def bracket_sql(self, expression: exp.Bracket) -> str:
@@ -3998,7 +4022,7 @@ class Generator(metaclass=_Generator):
         if not arg.type:
             from sqlglot.optimizer.annotate_types import annotate_types
 
-            arg = annotate_types(arg)
+            arg = annotate_types(arg, dialect=self.dialect)
 
         if arg.is_type(exp.DataType.Type.ARRAY):
             return self.sql(arg)

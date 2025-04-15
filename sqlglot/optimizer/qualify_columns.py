@@ -140,13 +140,14 @@ def validate_qualify_columns(expression: E) -> E:
 
 
 def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
-    name_column = []
-    field = unpivot.args.get("field")
-    if isinstance(field, exp.In) and isinstance(field.this, exp.Column):
-        name_column.append(field.this)
-
+    name_columns = [
+        field.this
+        for field in unpivot.fields
+        if isinstance(field, exp.In) and isinstance(field.this, exp.Column)
+    ]
     value_columns = (c for e in unpivot.expressions for c in e.find_all(exp.Column))
-    return itertools.chain(name_column, value_columns)
+
+    return itertools.chain(name_columns, value_columns)
 
 
 def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) -> None:
@@ -608,18 +609,19 @@ def _expand_stars(
     dialect = resolver.schema.dialect
 
     pivot_output_columns = None
-    pivot_exclude_columns = None
+    pivot_exclude_columns: t.Set[str] = set()
 
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
     if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
         if pivot.unpivot:
             pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
 
-            field = pivot.args.get("field")
-            if isinstance(field, exp.In):
-                pivot_exclude_columns = {
-                    c.output_name for e in field.expressions for c in e.find_all(exp.Column)
-                }
+            for field in pivot.fields:
+                if isinstance(field, exp.In):
+                    pivot_exclude_columns.update(
+                        c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+                    )
+
         else:
             pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
 
@@ -916,6 +918,32 @@ class Resolver:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)
+            elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                set_op = source.expression
+
+                # BigQuery specific set operations modifiers, e.g INNER UNION ALL BY NAME
+                on_column_list = set_op.args.get("on")
+
+                if on_column_list:
+                    # The resulting columns are the columns in the ON clause:
+                    # {INNER | LEFT | FULL} UNION ALL BY NAME ON (col1, col2, ...)
+                    columns = [col.name for col in on_column_list]
+                elif set_op.side or set_op.kind:
+                    side = set_op.side
+                    kind = set_op.kind
+
+                    left = set_op.left.named_selects
+                    right = set_op.right.named_selects
+
+                    # We use dict.fromkeys to deduplicate keys and maintain insertion order
+                    if side == "LEFT":
+                        columns = left
+                    elif side == "FULL":
+                        columns = list(dict.fromkeys(left + right))
+                    elif kind == "INNER":
+                        columns = list(dict.fromkeys(left).keys() & dict.fromkeys(right).keys())
+                else:
+                    columns = set_op.named_selects
             else:
                 columns = source.expression.named_selects
 

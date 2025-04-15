@@ -325,6 +325,65 @@ SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM 
 ((select a from x where a < 1)) UNION ((select a from x where a > 2));
 ((SELECT x.a AS a FROM x AS x WHERE x.a < 1)) UNION ((SELECT x.a AS a FROM x AS x WHERE x.a > 2));
 
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar INNER UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar INNER UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar UNION ALL CORRESPONDING SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar INNER UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.foo AS foo, _q_0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.foo AS foo, _q_0.bar AS bar, _q_0.baz AS baz FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar LEFT UNION ALL CORRESPONDING SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.foo AS foo, _q_0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL CORRESPONDING SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.foo AS foo, _q_0.bar AS bar, _q_0.baz AS baz FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL CORRESPONDING BY (foo, bar) SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.foo AS foo, _q_0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME ON (foo, bar) SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME ON (foo, bar) SELECT 3 AS bar, 4 AS baz);
+SELECT _q_0.foo AS foo, _q_0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME ON (foo, bar) SELECT 3 AS bar, 4 AS baz) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM ((SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) LEFT UNION ALL BY NAME ON (bar) SELECT 3 AS foo, 4 AS bar);
+SELECT _q_0.bar AS bar FROM ((SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) LEFT UNION ALL BY NAME ON (bar) SELECT 3 AS foo, 4 AS bar) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM ((SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) FULL UNION ALL BY NAME ON (foo, qux) SELECT 3 AS qux, 4 AS bar);
+SELECT _q_0.foo AS foo, _q_0.qux AS qux FROM ((SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) FULL UNION ALL BY NAME ON (foo, qux) SELECT 3 AS qux, 4 AS bar) AS _q_0;
+
+# dialect: bigquery
+# execute: false
+SELECT * FROM (((SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) FULL UNION ALL BY NAME ON (foo, qux) SELECT 3 AS qux, 4 AS bar) INNER UNION ALL BY NAME ON (foo) SELECT 6 AS foo);
+SELECT _q_0.foo AS foo FROM (((SELECT 1 AS foo, 2 AS bar LEFT UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) FULL UNION ALL BY NAME ON (foo, qux) SELECT 3 AS qux, 4 AS bar) INNER UNION ALL BY NAME ON (foo) SELECT 6 AS foo) AS _q_0;
+
 --------------------------------------
 -- Subqueries
 --------------------------------------
@@ -434,6 +493,29 @@ WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM
 # execute: false
 SELECT * FROM READ_CSV('file.csv');
 SELECT * FROM READ_CSV('file.csv') AS _q_0;
+
+# dialect: clickhouse
+# Title: Expand tuples in VALUES using the structure provided
+# execute: false
+SELECT * FROM VALUES ('person String, place String', ('Noah', 'Paris'));
+SELECT _q_0.person AS person, _q_0.place AS place FROM VALUES ('person String, place String', ('Noah', 'Paris')) AS _q_0(person, place);
+
+# dialect: clickhouse
+# Title: Expand tuples in VALUES using the default naming scheme in CH
+# execute: false
+SELECT * FROM VALUES ((1, 1), (2, 2));
+SELECT _q_0.c1 AS c1, _q_0.c2 AS c2 FROM VALUES ((1, 1), (2, 2)) AS _q_0(c1, c2);
+
+# dialect: clickhouse
+# Title: Expand fields in VALUES using the default naming scheme in CH
+# execute: false
+SELECT * FROM VALUES (1, 2, 3);
+SELECT _q_0.c1 AS c1 FROM VALUES ((1), (2), (3)) AS _q_0(c1);
+
+# title: Expand PIVOT column combinations
+# dialect: duckdb
+WITH cities AS (SELECT * FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT * FROM cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle'));
+WITH cities AS (SELECT t.country AS country, t.name AS name, t.year AS year, t.population AS population FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT _q_0.nl_2000_amsterdam_total AS nl_2000_amsterdam_total, _q_0.nl_2000_amsterdam_count AS nl_2000_amsterdam_count, _q_0.nl_2000_seattle_total AS nl_2000_seattle_total, _q_0.nl_2000_seattle_count AS nl_2000_seattle_count, _q_0.nl_2010_amsterdam_total AS nl_2010_amsterdam_total, _q_0.nl_2010_amsterdam_count AS nl_2010_amsterdam_count, _q_0.nl_2010_seattle_total AS nl_2010_seattle_total, _q_0.nl_2010_seattle_count AS nl_2010_seattle_count, _q_0.us_2000_amsterdam_total AS us_2000_amsterdam_total, _q_0.us_2000_amsterdam_count AS us_2000_amsterdam_count, _q_0.us_2000_seattle_total AS us_2000_seattle_total, _q_0.us_2000_seattle_count AS us_2000_seattle_count, _q_0.us_2010_amsterdam_total AS us_2010_amsterdam_total, _q_0.us_2010_amsterdam_count AS us_2010_amsterdam_count, _q_0.us_2010_seattle_total AS us_2010_seattle_total, _q_0.us_2010_seattle_count AS us_2010_seattle_count FROM cities AS cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle')) AS _q_0;
 
 --------------------------------------
 -- CTEs

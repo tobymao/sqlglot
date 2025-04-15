@@ -33,6 +33,7 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity('SELECT DISTINCT ON ("id") * FROM t')
         self.validate_identity("SELECT 1 OR (1 = 2)")
         self.validate_identity("SELECT 1 AND (1 = 2)")
         self.validate_identity("SELECT json.a.:Int64")
@@ -105,8 +106,10 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER '{cluster}'")
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER '{cluster}'")
         self.validate_identity(
             "SELECT DATE_BIN(toDateTime('2023-01-01 14:45:00'), INTERVAL '1' MINUTE, toDateTime('2023-01-01 14:35:30'), 'UTC')",
         )
@@ -156,10 +159,19 @@ class TestClickhouse(Validator):
             "CREATE TABLE test ON CLUSTER default (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
         )
         self.validate_identity(
+            "CREATE TABLE test ON CLUSTER '{cluster}' (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
+        )
+        self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple() AS SELECT * FROM test_data"
         )
         self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_view ON CLUSTER '{cluster}' (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple() AS SELECT * FROM test_data"
+        )
+        self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 TO table1 AS SELECT * FROM test_data"
+        )
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_view ON CLUSTER '{cluster}' TO table1 AS SELECT * FROM test_data"
         )
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view TO db.table1 (id UInt8) AS SELECT * FROM test_data"
@@ -184,7 +196,7 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             "INSERT INTO tab VALUES ({'key1': 1, 'key2': 10}), ({'key1': 2, 'key2': 20}), ({'key1': 3, 'key2': 30})",
-            "INSERT INTO tab VALUES (map('key1', 1, 'key2', 10)), (map('key1', 2, 'key2', 20)), (map('key1', 3, 'key2', 30))",
+            "INSERT INTO tab VALUES ((map('key1', 1, 'key2', 10))), ((map('key1', 2, 'key2', 20))), ((map('key1', 3, 'key2', 30)))",
         )
         self.validate_identity(
             "SELECT (toUInt8('1') + toUInt8('2')) IS NOT NULL",
@@ -507,11 +519,12 @@ class TestClickhouse(Validator):
             "INSERT INTO FUNCTION s3('url', 'CSV', 'name String, value UInt32', 'gzip') SELECT name, value FROM existing_table"
         )
         self.validate_identity(
-            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES (100, 'inserted via remote()')"
+            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES (100, 'inserted via remote()')",
+            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES ((100), ('inserted via remote()'))",
         )
         self.validate_identity(
             """INSERT INTO TABLE FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
-            """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
+            """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES (('test'), (1), (2))""",
         )
 
         self.validate_identity("SELECT 1 FORMAT TabSeparated")
@@ -546,22 +559,23 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
         self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
+        self.validate_identity("ALTER TABLE visits ON CLUSTER '{cluster}' DROP COLUMN col1")
         self.validate_identity("DELETE FROM tbl ON CLUSTER test_cluster WHERE date = '2019-01-01'")
+        self.validate_identity("DELETE FROM tbl ON CLUSTER '{cluster}' WHERE date = '2019-01-01'")
 
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )
 
-        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_identity(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
+        )
         self.validate_all(
             "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
-            read={
-                # looks like values table function, but should be parsed as VALUES block
-                "clickhouse": "INSERT INTO t (col1, col2) values('abcd', 1234)"
-            },
             write={
-                "clickhouse": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
-                "postgres": "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+                "clickhouse": "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
+                "postgres": "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
             },
         )
         self.validate_identity("SELECT TRIM(TRAILING ')' FROM '(   Hello, world!   )')")
@@ -591,6 +605,9 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT arrayConcat([1, 2], [3, 4])")
 
     def test_clickhouse_values(self):
+        ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
+        self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)
+
         values = exp.select("*").from_(
             exp.values([exp.tuple_(1, 2, 3)], alias="subq", columns=["a", "b", "c"])
         )
@@ -599,10 +616,18 @@ class TestClickhouse(Validator):
             "SELECT * FROM (SELECT 1 AS a, 2 AS b, 3 AS c) AS subq",
         )
 
-        self.validate_identity("INSERT INTO t (col1, col2) VALUES ('abcd', 1234)")
+        self.validate_identity("SELECT * FROM VALUES ((1, 1), (2, 1), (3, 1), (4, 1))")
+        self.validate_identity(
+            "SELECT type, id FROM VALUES ('id Int, type Int', (1, 1), (2, 1), (3, 1), (4, 1))"
+        )
+
+        self.validate_identity(
+            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
+        )
         self.validate_identity(
             "INSERT INTO t (col1, col2) FORMAT Values('abcd', 1234)",
-            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
+            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
         )
 
         self.validate_all(
@@ -1171,6 +1196,7 @@ LIFETIME(MIN 0 MAX 0)""",
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
                 self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")
+                self.validate_identity(f"DROP {creatable} test ON CLUSTER '{{cluster}}'")
 
     def test_datetime_funcs(self):
         # Each datetime func has an alias that is roundtripped to the original name e.g. (DATE_SUB, DATESUB) -> DATE_SUB

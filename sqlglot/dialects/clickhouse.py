@@ -207,6 +207,32 @@ class ClickHouse(Dialect):
         exp.Union: None,
     }
 
+    def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
+        # Clickhouse allows VALUES to have an embedded structure e.g:
+        # VALUES('person String, place String', ('Noah', 'Paris'), ...)
+        # In this case, we don't want to qualify the columns
+        values = expression.expressions[0].expressions
+
+        structure = (
+            values[0]
+            if (len(values) > 1 and values[0].is_string and isinstance(values[1], exp.Tuple))
+            else None
+        )
+        if structure:
+            # Split each column definition into the column name e.g:
+            # 'person String, place String' -> ['person', 'place']
+            structure_coldefs = [coldef.strip() for coldef in structure.name.split(",")]
+            column_aliases = [
+                exp.to_identifier(coldef.split(" ")[0]) for coldef in structure_coldefs
+            ]
+        else:
+            # Default column aliases in CH are "c1", "c2", etc.
+            column_aliases = [
+                exp.to_identifier(f"c{i + 1}") for i in range(len(values[0].expressions))
+            ]
+
+        return column_aliases
+
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]
@@ -811,7 +837,7 @@ class ClickHouse(Dialect):
         def _parse_on_property(self) -> t.Optional[exp.Expression]:
             index = self._index
             if self._match_text_seq("CLUSTER"):
-                this = self._parse_id_var()
+                this = self._parse_string() or self._parse_id_var()
                 if this:
                     return self.expression(exp.OnCluster, this=this)
                 else:
@@ -905,6 +931,25 @@ class ClickHouse(Dialect):
                 this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
             return this
 
+        def _parse_value(self, values: bool = True) -> t.Optional[exp.Tuple]:
+            value = super()._parse_value(values=values)
+            if not value:
+                return None
+
+            # In Clickhouse "SELECT * FROM VALUES (1, 2, 3)" generates a table with a single column, in contrast
+            # to other dialects. For this case, we canonicalize the values into a tuple-of-tuples AST if it's not already one.
+            # In INSERT INTO statements the same clause actually references multiple columns (opposite semantics),
+            # but the final result is not altered by the extra parentheses.
+            # Note: Clickhouse allows VALUES([structure], value, ...) so the branch checks for the last expression
+            expressions = value.expressions
+            if values and not isinstance(expressions[-1], exp.Tuple):
+                value.set(
+                    "expressions",
+                    [self.expression(exp.Tuple, expressions=[expr]) for expr in expressions],
+                )
+
+            return value
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
@@ -919,8 +964,8 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         GROUPINGS_SEP = ""
         SET_OP_MODIFIERS = False
-        VALUES_AS_TABLE = False
         ARRAY_SIZE_NAME = "LENGTH"
+        WRAP_DERIVED_VALUES = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.BLOB: "String",
@@ -1315,3 +1360,16 @@ class ClickHouse(Dialect):
                 return self.sql(expression, "this")
 
             return super().not_sql(expression)
+
+        def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
+            # If the VALUES clause contains tuples of expressions, we need to treat it
+            # as a table since Clickhouse will automatically alias it as such.
+            alias = expression.args.get("alias")
+
+            if alias and alias.args.get("columns") and expression.expressions:
+                values = expression.expressions[0].expressions
+                values_as_table = any(isinstance(value, exp.Tuple) for value in values)
+            else:
+                values_as_table = True
+
+            return super().values_sql(expression, values_as_table=values_as_table)

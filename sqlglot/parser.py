@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+import itertools
 from collections import defaultdict
 
 from sqlglot import exp
@@ -804,7 +805,7 @@ class Parser(metaclass=_Parser):
         exp.Sort: lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY),
         exp.Table: lambda self: self._parse_table_parts(),
         exp.TableAlias: lambda self: self._parse_table_alias(),
-        exp.Tuple: lambda self: self._parse_value(),
+        exp.Tuple: lambda self: self._parse_value(values=False),
         exp.Whens: lambda self: self._parse_when_matched(),
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
@@ -3039,7 +3040,7 @@ class Parser(metaclass=_Parser):
             expressions=self._parse_wrapped_csv(self._parse_assignment),
         )
 
-    def _parse_value(self) -> t.Optional[exp.Tuple]:
+    def _parse_value(self, values: bool = True) -> t.Optional[exp.Tuple]:
         def _parse_value_expression() -> t.Optional[exp.Expression]:
             if self.dialect.SUPPORTS_VALUES_DEFAULT and self._match(TokenType.DEFAULT):
                 return exp.var(self._prev.text.upper())
@@ -3137,7 +3138,7 @@ class Parser(metaclass=_Parser):
             if distinct:
                 distinct = self.expression(
                     exp.Distinct,
-                    on=self._parse_value() if self._match(TokenType.ON) else None,
+                    on=self._parse_value(values=False) if self._match(TokenType.ON) else None,
                 )
 
             if all_ and distinct:
@@ -3575,6 +3576,8 @@ class Parser(metaclass=_Parser):
                     expression=self._parse_function() or self._parse_id_var(any_token=False),
                 )
 
+        ordinality: t.Optional[bool] = None
+
         if view:
             table = self._parse_id_var(any_token=False)
             columns = self._parse_csv(self._parse_id_var) if self._match(TokenType.ALIAS) else []
@@ -3585,6 +3588,7 @@ class Parser(metaclass=_Parser):
             # We move the alias from the lateral's child node to the lateral itself
             table_alias = this.args["alias"].pop()
         else:
+            ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
             table_alias = self._parse_table_alias()
 
         return self.expression(
@@ -3594,6 +3598,7 @@ class Parser(metaclass=_Parser):
             outer=outer,
             alias=table_alias,
             cross_apply=cross_apply,
+            ordinality=ordinality,
         )
 
     def _parse_join_parts(
@@ -4242,7 +4247,13 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
 
-        field = self._parse_pivot_in()
+        fields = []
+        while True:
+            field = self._try_parse(self._parse_pivot_in)
+            if not field:
+                break
+            fields.append(field)
+
         default_on_null = self._match_text_seq("DEFAULT", "ON", "NULL") and self._parse_wrapped(
             self._parse_bitwise
         )
@@ -4254,7 +4265,7 @@ class Parser(metaclass=_Parser):
         pivot = self.expression(
             exp.Pivot,
             expressions=expressions,
-            field=field,
+            fields=fields,
             unpivot=unpivot,
             include_nulls=include_nulls,
             default_on_null=default_on_null,
@@ -4268,26 +4279,43 @@ class Parser(metaclass=_Parser):
             names = self._pivot_column_names(t.cast(t.List[exp.Expression], expressions))
 
             columns: t.List[exp.Expression] = []
-            pivot_field_expressions = pivot.args["field"].expressions
+            all_fields = []
+            for pivot_field in pivot.fields:
+                pivot_field_expressions = pivot_field.expressions
 
-            # The `PivotAny` expression corresponds to `ANY ORDER BY <column>`; we can't infer in this case.
-            if not isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
-                for fld in pivot_field_expressions:
-                    field_name = fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
-                    for name in names:
-                        if self.PREFIXED_PIVOT_COLUMNS:
-                            name = f"{name}_{field_name}" if name else field_name
-                        else:
-                            name = f"{field_name}_{name}" if name else field_name
+                # The `PivotAny` expression corresponds to `ANY ORDER BY <column>`; we can't infer in this case.
+                if isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
+                    continue
 
-                        columns.append(exp.to_identifier(name))
+                all_fields.append(
+                    [
+                        fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
+                        for fld in pivot_field_expressions
+                    ]
+                )
+
+            if all_fields:
+                if names:
+                    all_fields.append(names)
+
+                # Generate all possible combinations of the pivot columns
+                # e.g PIVOT(sum(...) as total FOR year IN (2000, 2010) FOR country IN ('NL', 'US'))
+                # generates the product between [[2000, 2010], ['NL', 'US'], ['total']]
+                for fld_parts_tuple in itertools.product(*all_fields):
+                    fld_parts = list(fld_parts_tuple)
+
+                    if names and self.PREFIXED_PIVOT_COLUMNS:
+                        # Move the "name" to the front of the list
+                        fld_parts.insert(0, fld_parts.pop(-1))
+
+                    columns.append(exp.to_identifier("_".join(fld_parts)))
 
             pivot.set("columns", columns)
 
         return pivot
 
     def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
-        return [agg.alias for agg in aggregations]
+        return [agg.alias for agg in aggregations if agg.alias]
 
     def _parse_prewhere(self, skip_where_token: bool = False) -> t.Optional[exp.PreWhere]:
         if not skip_where_token and not self._match(TokenType.PREWHERE):
@@ -4596,39 +4624,69 @@ class Parser(metaclass=_Parser):
 
         return locks
 
+    def parse_set_operation(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        start = self._index
+        _, side_token, kind_token = self._parse_join_parts()
+
+        side = side_token.text if side_token else None
+        kind = kind_token.text if kind_token else None
+
+        if not self._match_set(self.SET_OPERATIONS):
+            self._retreat(start)
+            return None
+
+        token_type = self._prev.token_type
+
+        if token_type == TokenType.UNION:
+            operation: t.Type[exp.SetOperation] = exp.Union
+        elif token_type == TokenType.EXCEPT:
+            operation = exp.Except
+        else:
+            operation = exp.Intersect
+
+        comments = self._prev.comments
+
+        if self._match(TokenType.DISTINCT):
+            distinct: t.Optional[bool] = True
+        elif self._match(TokenType.ALL):
+            distinct = False
+        else:
+            distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[operation]
+            if distinct is None:
+                self.raise_error(f"Expected DISTINCT or ALL for {operation.__name__}")
+
+        by_name = self._match_text_seq("BY", "NAME") or self._match_text_seq(
+            "STRICT", "CORRESPONDING"
+        )
+        if self._match_text_seq("CORRESPONDING"):
+            by_name = True
+            if not side and not kind:
+                kind = "INNER"
+
+        on_column_list = None
+        if by_name and self._match_texts(("ON", "BY")):
+            on_column_list = self._parse_wrapped_csv(self._parse_column)
+
+        expression = self._parse_select(nested=True, parse_set_operation=False)
+
+        return self.expression(
+            operation,
+            comments=comments,
+            this=this,
+            distinct=distinct,
+            by_name=by_name,
+            expression=expression,
+            side=side,
+            kind=kind,
+            on=on_column_list,
+        )
+
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        while this and self._match_set(self.SET_OPERATIONS):
-            token_type = self._prev.token_type
-
-            if token_type == TokenType.UNION:
-                operation: t.Type[exp.SetOperation] = exp.Union
-            elif token_type == TokenType.EXCEPT:
-                operation = exp.Except
-            else:
-                operation = exp.Intersect
-
-            comments = self._prev.comments
-
-            if self._match(TokenType.DISTINCT):
-                distinct: t.Optional[bool] = True
-            elif self._match(TokenType.ALL):
-                distinct = False
-            else:
-                distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[operation]
-                if distinct is None:
-                    self.raise_error(f"Expected DISTINCT or ALL for {operation.__name__}")
-
-            by_name = self._match_text_seq("BY", "NAME")
-            expression = self._parse_select(nested=True, parse_set_operation=False)
-
-            this = self.expression(
-                operation,
-                comments=comments,
-                this=this,
-                distinct=distinct,
-                by_name=by_name,
-                expression=expression,
-            )
+        while True:
+            setop = self.parse_set_operation(this)
+            if not setop:
+                break
+            this = setop
 
         if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
             expression = this.expression
@@ -6095,7 +6153,9 @@ class Parser(metaclass=_Parser):
                     dialect=self.dialect,
                 )
 
-            expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
+            expressions = apply_index_offset(
+                this, expressions, -self.dialect.INDEX_OFFSET, dialect=self.dialect
+            )
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
         self._add_comments(this)
@@ -6134,7 +6194,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_if(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):
-            args = self._parse_csv(self._parse_assignment)
+            args = self._parse_csv(
+                lambda: self._parse_alias(self._parse_assignment(), explicit=True)
+            )
             this = self.validate_expression(exp.If.from_arg_list(args), args)
             self._match_r_paren()
         else:
@@ -7495,7 +7557,9 @@ class Parser(metaclass=_Parser):
                 else:
                     then = self.expression(
                         exp.Insert,
-                        this=exp.var("ROW") if self._match_text_seq("ROW") else self._parse_value(),
+                        this=exp.var("ROW")
+                        if self._match_text_seq("ROW")
+                        else self._parse_value(values=False),
                         expression=self._match_text_seq("VALUES") and self._parse_value(),
                     )
             elif self._match(TokenType.UPDATE):
@@ -7904,17 +7968,19 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.L_PAREN)
 
         opts: t.List[t.Optional[exp.Expression]] = []
+        option: exp.Expression | None
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
                 # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL
-                prop = self.expression(
-                    exp.Property, this=exp.var("FORMAT_NAME"), value=self._parse_table_parts()
-                )
-                opts.append(prop)
+                option = self._parse_format_name()
             else:
-                opts.append(self._parse_property())
+                option = self._parse_property()
 
-            self._match(TokenType.COMMA)
+            if option is None:
+                self.raise_error("Unable to parse option")
+                break
+
+            opts.append(option)
 
         return opts
 
@@ -8104,4 +8170,13 @@ class Parser(metaclass=_Parser):
                 "from": self._match_text_seq("FROM") and self._parse_bitwise(),
                 "for": self._match_text_seq("FOR") and self._parse_bitwise(),
             },
+        )
+
+    def _parse_format_name(self) -> exp.Property:
+        # Note: Although not specified in the docs, Snowflake does accept a string/identifier
+        # for FILE_FORMAT = <format_name>
+        return self.expression(
+            exp.Property,
+            this=exp.var("FORMAT_NAME"),
+            value=self._parse_string() or self._parse_table_parts(),
         )

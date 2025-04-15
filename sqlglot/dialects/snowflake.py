@@ -193,12 +193,12 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
         if expression.unpivot:
             expression = transforms.unqualify_columns(expression)
         else:
-            field = expression.args.get("field")
-            field_expr = seq_get(field.expressions if field else [], 0)
+            for field in expression.fields:
+                field_expr = seq_get(field.expressions if field else [], 0)
 
-            if isinstance(field_expr, exp.PivotAny):
-                unqualified_field_expr = transforms.unqualify_columns(field_expr)
-                t.cast(exp.Expression, field).set("expressions", unqualified_field_expr, 0)
+                if isinstance(field_expr, exp.PivotAny):
+                    unqualified_field_expr = transforms.unqualify_columns(field_expr)
+                    t.cast(exp.Expression, field).set("expressions", unqualified_field_expr, 0)
 
     return expression
 
@@ -516,6 +516,7 @@ class Snowflake(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
+            "CREDENTIALS": lambda self: self._parse_credentials_property(),
             "FILE_FORMAT": lambda self: self._parse_file_format_property(),
             "LOCATION": lambda self: self._parse_location_property(),
             "TAG": lambda self: self._parse_tag(),
@@ -903,8 +904,20 @@ class Snowflake(Dialect):
 
         def _parse_file_format_property(self) -> exp.FileFormatProperty:
             self._match(TokenType.EQ)
+            if self._match(TokenType.L_PAREN, advance=False):
+                expressions = self._parse_wrapped_options()
+            else:
+                expressions = [self._parse_format_name()]
+
             return self.expression(
-                exp.FileFormatProperty, expressions=self._parse_wrapped_options()
+                exp.FileFormatProperty,
+                expressions=expressions,
+            )
+
+        def _parse_credentials_property(self) -> exp.CredentialsProperty:
+            return self.expression(
+                exp.CredentialsProperty,
+                expressions=self._parse_wrapped_options(),
             )
 
     class Tokenizer(tokens.Tokenizer):
@@ -1107,8 +1120,9 @@ class Snowflake(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
-            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
             exp.LocationProperty: exp.Properties.Location.POST_WITH,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
@@ -1172,7 +1186,7 @@ class Snowflake(Dialect):
             if value.type is None:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                value = annotate_types(value)
+                value = annotate_types(value, dialect=self.dialect)
 
             if value.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
                 return super().trycast_sql(expression)

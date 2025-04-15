@@ -69,6 +69,24 @@ class TestDatabricks(Validator):
         )
 
         self.validate_all(
+            "SELECT c1:item[1].price",
+            read={
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            },
+            write={
+                "databricks": "SELECT c1:item[1].price",
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            write={
+                "databricks": "SELECT c1:item[1].price",
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
             write={
                 "databricks": "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(TO_DATE(y))))",

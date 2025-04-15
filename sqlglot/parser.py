@@ -1110,9 +1110,8 @@ class Parser(metaclass=_Parser):
             else exp.PartitionByTruncate
         )
 
-        this, expression = self._parse_wrapped_csv(
-            lambda: self._parse_primary() or self._parse_column()
-        )
+        args = self._parse_wrapped_csv(lambda: self._parse_primary() or self._parse_column())
+        this, expression = seq_get(args, 0), seq_get(args, 1)
 
         if isinstance(this, exp.Literal):
             # Check for Iceberg partition transforms (bucket / truncate) and ensure their arguments are in the right order

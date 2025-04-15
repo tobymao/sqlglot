@@ -1099,22 +1099,20 @@ class Parser(metaclass=_Parser):
         "WITH": lambda self: self.expression(
             exp.Properties, expressions=self._parse_wrapped_properties()
         ),
-        "BUCKET": lambda self: self._parse_partitioned_by_bucket_or_truncate(
-            exp.PartitionedByBucket
-        ),
-        "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(
-            exp.PartitionByTruncate
-        ),
+        "BUCKET": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
+        "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
 
-    def _parse_partitioned_by_bucket_or_truncate(
-        self, exp_class: t.Type[exp.PartitionedByBucket | exp.PartitionByTruncate]
-    ) -> exp.Expression:
-        self._match(TokenType.L_PAREN)
-        this = self._parse_primary() or self._parse_column()
-        self._match(TokenType.COMMA)
-        expression = self._parse_primary() or self._parse_column()
-        self._match(TokenType.R_PAREN)
+    def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
+        klass = (
+            exp.PartitionedByBucket
+            if self._prev.text.upper() == "BUCKET"
+            else exp.PartitionByTruncate
+        )
+
+        this, expression = self._parse_wrapped_csv(
+            lambda: self._parse_primary() or self._parse_column()
+        )
 
         if isinstance(this, exp.Literal):
             # Check for Iceberg partition transforms (bucket / truncate) and ensure their arguments are in the right order
@@ -1126,7 +1124,7 @@ class Parser(metaclass=_Parser):
             # Trino ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
             this, expression = expression, this
 
-        return self.expression(exp_class, this=this, expression=expression)
+        return self.expression(klass, this=this, expression=expression)
 
     ALTER_PARSERS = {
         "ADD": lambda self: self._parse_alter_table_add(),

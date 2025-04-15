@@ -608,6 +608,8 @@ class Hive(Dialect):
             e: f"({self.expressions(e, 'this', indent=False)})",
             exp.NotForReplicationColumnConstraint: lambda *_: "",
             exp.OnProperty: lambda *_: "",
+            exp.PartitionedByBucket: lambda self, e: self.func("BUCKET", e.expression, e.this),
+            exp.PartitionByTruncate: lambda self, e: self.func("TRUNCATE", e.expression, e.this),
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),

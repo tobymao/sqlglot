@@ -1099,7 +1099,34 @@ class Parser(metaclass=_Parser):
         "WITH": lambda self: self.expression(
             exp.Properties, expressions=self._parse_wrapped_properties()
         ),
+        "BUCKET": lambda self: self._parse_partitioned_by_bucket_or_truncate(
+            exp.PartitionedByBucket
+        ),
+        "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(
+            exp.PartitionByTruncate
+        ),
     }
+
+    def _parse_partitioned_by_bucket_or_truncate(
+        self, exp_class: t.Type[exp.PartitionedByBucket | exp.PartitionByTruncate]
+    ) -> exp.Expression:
+        self._match(TokenType.L_PAREN)
+        this = self._parse_primary() or self._parse_column()
+        self._match(TokenType.COMMA)
+        expression = self._parse_primary() or self._parse_column()
+        self._match(TokenType.R_PAREN)
+
+        if isinstance(this, exp.Literal):
+            # Check for Iceberg partition transforms (bucket / truncate) and ensure their arguments are in the right order
+            #  - For Hive, it's `bucket(<num buckets>, <col name>)` or `truncate(<num_chars>, <col_name>)`
+            #  - For Trino, it's reversed - `bucket(<col name>, <num buckets>)` or `truncate(<col_name>, <num_chars>)`
+            # Both variants are canonicalized in the latter i.e `bucket(<col name>, <num buckets>)`
+            #
+            # Hive ref: https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-creating-tables.html#querying-iceberg-partitioning
+            # Trino ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
+            this, expression = expression, this
+
+        return self.expression(exp_class, this=this, expression=expression)
 
     ALTER_PARSERS = {
         "ADD": lambda self: self._parse_alter_table_add(),
@@ -1131,6 +1158,8 @@ class Parser(metaclass=_Parser):
         "PRIMARY KEY",
         "UNIQUE",
         "WATERMARK",
+        "BUCKET",
+        "TRUNCATE",
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
@@ -11,13 +10,6 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
-
-
-def _build_json_extract(args: t.List) -> exp.JSONExtract:
-    # Transform GET_JSON_OBJECT(expr, '$.<path>') -> expr:<path>
-    this = args[0]
-    path = args[1].name.lstrip("$.")
-    return exp.JSONExtract(this=this, expression=path)
 
 
 def _jsonextract_sql(
@@ -46,7 +38,6 @@ class Databricks(Spark):
             "DATE_ADD": build_date_delta(exp.DateAdd),
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
-            "GET_JSON_OBJECT": _build_json_extract,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
         }
 

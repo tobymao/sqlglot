@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v26.14.0] - 2025-04-15
+### :boom: BREAKING CHANGES
+- due to [`cb20038`](https://github.com/tobymao/sqlglot/commit/cb2003875fc6e149bd4a631e99c312a04435a46b) - treat GO as command *(PR [#4978](https://github.com/tobymao/sqlglot/pull/4978) by [@georgesittas](https://github.com/georgesittas))*:
+
+  treat GO as command (#4978)
+
+- due to [`60e26b8`](https://github.com/tobymao/sqlglot/commit/60e26b868242a05a7fdc2725bd21a127910a6fb7) - improve transpilability of GET_JSON_OBJECT by parsing json path *(PR [#4980](https://github.com/tobymao/sqlglot/pull/4980) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve transpilability of GET_JSON_OBJECT by parsing json path (#4980)
+
+
+### :bug: Bug Fixes
+- [`cb20038`](https://github.com/tobymao/sqlglot/commit/cb2003875fc6e149bd4a631e99c312a04435a46b) - **tsql**: treat GO as command *(PR [#4978](https://github.com/tobymao/sqlglot/pull/4978) by [@georgesittas](https://github.com/georgesittas))*
+- [`60e26b8`](https://github.com/tobymao/sqlglot/commit/60e26b868242a05a7fdc2725bd21a127910a6fb7) - **hive**: improve transpilability of GET_JSON_OBJECT by parsing json path *(PR [#4980](https://github.com/tobymao/sqlglot/pull/4980) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.13.2] - 2025-04-14
 ### :bug: Bug Fixes
 - [`9693dbd`](https://github.com/tobymao/sqlglot/commit/9693dbd18b98b2699cade738a254f71f2ee8ce74) - **clickhouse**: avoid superfluous parentheses in DISTINCT ON (...) *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -6341,3 +6357,4 @@ Changelog
 [v26.13.0]: https://github.com/tobymao/sqlglot/compare/v26.12.1...v26.13.0
 [v26.13.1]: https://github.com/tobymao/sqlglot/compare/v26.13.0...v26.13.1
 [v26.13.2]: https://github.com/tobymao/sqlglot/compare/v26.13.1...v26.13.2
+[v26.14.0]: https://github.com/tobymao/sqlglot/compare/v26.13.2...v26.14.0

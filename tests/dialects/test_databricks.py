@@ -169,6 +169,25 @@ class TestDatabricks(Validator):
             },
         )
 
+        self.validate_all(
+            sql="SELECT c1:item[1].price",
+            read={
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            },
+            write={
+                "databricks": "SELECT c1:item[1].price",
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            }
+        )
+
+        self.validate_all(
+            sql="SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            write={
+                "databricks": "SELECT c1:item[1].price",
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            }
+        )
+
     def test_datediff(self):
         self.validate_all(
             "SELECT DATEDIFF(year, 'start', 'end')",

@@ -93,15 +93,18 @@ def remove_redundant_casts(expression: exp.Expression) -> exp.Expression:
     if (
         isinstance(expression, exp.Cast)
         and expression.this.type
-        and expression.to.this == expression.this.type.this
+        and expression.to == expression.this.type
     ):
         return expression.this
+
     if (
         isinstance(expression, (exp.Date, exp.TsOrDsToDate))
         and expression.this.type
         and expression.this.type.this == exp.DataType.Type.DATE
+        and not expression.this.type.expressions
     ):
         return expression.this
+
     return expression
 
 

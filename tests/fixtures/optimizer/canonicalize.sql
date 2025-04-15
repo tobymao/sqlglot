@@ -124,6 +124,12 @@ SELECT CAST(CAST(`t`.`some_col` AS DATE) AS DATETIME) < CAST(CAST(`t`.`other_col
 --------------------------------------
 -- Remove redundant casts
 --------------------------------------
+CAST(CAST("foo" AS DECIMAL(4, 2)) AS DECIMAL(8, 4)) AS "x";
+CAST(CAST("foo" AS DECIMAL(4, 2)) AS DECIMAL(8, 4)) AS "x";
+
+CAST(CAST("foo" AS DECIMAL(4, 2)) AS DECIMAL(4, 2)) AS "x";
+CAST("foo" AS DECIMAL(4, 2)) AS "x";
+
 CAST(CAST('2023-01-01' AS DATE) AS DATE);
 CAST('2023-01-01' AS DATE);
 

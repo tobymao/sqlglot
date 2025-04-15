@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
@@ -12,8 +11,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.spark import Spark
 from sqlglot.parser import build_extract_json_with_path
 from sqlglot.tokens import TokenType
-
-
 
 
 def _jsonextract_sql(

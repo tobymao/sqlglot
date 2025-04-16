@@ -609,7 +609,7 @@ class TestSnowflake(Validator):
                 "hive": "POWER(x, 2)",
                 "mysql": "POWER(x, 2)",
                 "oracle": "POWER(x, 2)",
-                "postgres": "x ^ 2",
+                "postgres": "POWER(x, 2)",
                 "presto": "POWER(x, 2)",
                 "redshift": "POWER(x, 2)",
                 "snowflake": "POWER(x, 2)",

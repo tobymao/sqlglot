@@ -309,10 +309,6 @@ LANGUAGE js AS
             """SELECT PARSE_JSON('"foo"') AS json_data""",
         )
         self.validate_identity(
-            "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
-            "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
-        )
-        self.validate_identity(
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
         )
@@ -2424,3 +2420,16 @@ OPTIONS (
             "SELECT 1 AS x UNION ALL STRICT CORRESPONDING BY (foo, bar) SELECT 2 AS x",
             "SELECT 1 AS x UNION ALL BY NAME ON (foo, bar) SELECT 2 AS x",
         )
+
+    def test_with_offset(self):
+        self.validate_identity(
+            "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
+            "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
+        )
+
+        for join_ops in ("LEFT", "RIGHT", "FULL", "NATURAL", "SEMI", "ANTI"):
+            with self.subTest(f"Testing {join_ops} in test_with_offset"):
+                self.validate_identity(
+                    f"SELECT * FROM t1, UNNEST([1, 2]) AS hit WITH OFFSET {join_ops} JOIN foo",
+                    f"SELECT * FROM t1, UNNEST([1, 2]) AS hit WITH OFFSET AS offset {join_ops} JOIN foo",
+                )

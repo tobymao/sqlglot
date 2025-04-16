@@ -568,7 +568,7 @@ FROM json_data, field_ids""",
             "x ^ y",
             write={
                 "": "POWER(x, y)",
-                "postgres": "x ^ y",
+                "postgres": "POWER(x, y)",
             },
         )
         self.validate_all(
@@ -765,7 +765,7 @@ FROM json_data, field_ids""",
             "x / y ^ z",
             write={
                 "": "x / POWER(y, z)",
-                "postgres": "x / y ^ z",
+                "postgres": "x / POWER(y, z)",
             },
         )
         self.validate_all(

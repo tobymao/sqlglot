@@ -221,9 +221,6 @@ class Redshift(Postgres):
         # Postgres doesn't support JSON_PARSE, but Redshift does
         TRANSFORMS.pop(exp.ParseJSON)
 
-        # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
-        TRANSFORMS.pop(exp.Pow)
-
         # Redshift supports these functions
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.LastDay)

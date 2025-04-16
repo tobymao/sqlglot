@@ -586,7 +586,6 @@ class Postgres(Dialect):
                 [transforms.add_within_group_for_percentiles]
             ),
             exp.Pivot: no_pivot_sql,
-            exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),

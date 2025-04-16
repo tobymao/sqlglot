@@ -57,8 +57,12 @@ def _no_sort_array(self: Presto.Generator, expression: exp.SortArray) -> str:
 
 def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
     if isinstance(expression.parent, exp.PartitionedByProperty):
-        columns = ", ".join(f"'{c.name}'" for c in expression.expressions)
-        return f"ARRAY[{columns}]"
+        partition_exprs = [
+            self.sql(c) if isinstance(c, (exp.Func, exp.Property)) else self.sql(c, "this")
+            for c in expression.expressions
+        ]
+
+        return self.sql(exp.Array(expressions=[exp.Literal.string(c) for c in partition_exprs]))
 
     if expression.parent:
         for schema in expression.parent.find_all(exp.Schema):

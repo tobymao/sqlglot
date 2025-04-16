@@ -170,6 +170,8 @@ class Generator(metaclass=_Generator):
         exp.Operator: lambda self, e: self.binary(e, ""),  # The operator is produced in `binary`
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
+        exp.PartitionedByBucket: lambda self, e: self.func("BUCKET", e.this, e.expression),
+        exp.PartitionByTruncate: lambda self, e: self.func("TRUNCATE", e.this, e.expression),
         exp.PivotAny: lambda self, e: f"ANY{self.sql(e, 'this')}",
         exp.ProjectionPolicyColumnConstraint: lambda self,
         e: f"PROJECTION POLICY {self.sql(e, 'this')}",

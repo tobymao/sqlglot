@@ -67,3 +67,14 @@ SELECT x.a > _u_0.b FROM x CROSS JOIN (SELECT SUM(y.a) AS b FROM y) AS _u_0;
 
 SELECT (SELECT MAX(t2.c1) AS c1 FROM t2 WHERE t2.c2 = t1.c2 AND t2.c3 <= TRUNC(t1.c3)) AS c FROM t1;
 SELECT _u_0.c1 AS c FROM t1 LEFT JOIN (SELECT MAX(t2.c1) AS c1, t2.c2 AS _u_1, MAX(t2.c3) AS _u_2 FROM t2 WHERE TRUE AND TRUE GROUP BY t2.c2) AS _u_0 ON _u_0._u_1 = t1.c2 WHERE _u_0._u_2 <= TRUNC(t1.c3);
+
+SELECT s.t AS t FROM s WHERE 1 IN (SELECT t.a AS a FROM t WHERE t.b > 1);
+SELECT s.t AS t FROM s LEFT JOIN (SELECT t.a AS a FROM t WHERE t.b > 1 GROUP BY t.a) AS _u_0 ON 1 = _u_0.a WHERE NOT _u_0.a IS NULL;
+
+# title: can't create GROUP BY clause with an aggregate
+SELECT s.t FROM s WHERE 1 IN (SELECT MAX(t.a) AS t1 FROM t);
+SELECT s.t FROM s LEFT JOIN (SELECT MAX(t.a) AS t1 FROM t) AS _u_0 ON 1 = _u_0.t1 WHERE NOT _u_0.t1 IS NULL;
+
+# title: can't create GROUP BY clause with an aggregate (nested)
+SELECT s.t FROM s WHERE 1 IN (SELECT MAX(t.a) + 1 AS t1 FROM t);
+SELECT s.t FROM s LEFT JOIN (SELECT MAX(t.a) + 1 AS t1 FROM t) AS _u_0 ON 1 = _u_0.t1 WHERE NOT _u_0.t1 IS NULL

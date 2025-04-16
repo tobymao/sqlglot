@@ -105,7 +105,7 @@ def unnest(select, parent_select, next_alias_name):
                 .from_(select.subquery("_q", copy=False), copy=False)
                 .group_by(exp.column(value.alias, "_q"), copy=False)
             )
-    else:
+    elif not find_in_scope(value.this, exp.AggFunc):
         select = select.group_by(value.this, copy=False)
 
     parent_select.join(

@@ -2917,6 +2917,14 @@ class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
+class PartitionedByBucket(Property):
+    arg_types = {"this": True, "expression": True}
+
+
+class PartitionByTruncate(Property):
+    arg_types = {"this": True, "expression": True}
+
+
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
 class PartitionByRangeProperty(Property):
     arg_types = {"partition_expressions": True, "create_expressions": True}

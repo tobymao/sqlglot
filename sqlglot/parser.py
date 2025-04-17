@@ -1999,7 +1999,7 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA and POST_WITH
             extend_props(self._parse_properties())
 
-            self._match(TokenType.ALIAS)
+            has_alias = self._match(TokenType.ALIAS)
             if not self._match_set(self.DDL_SELECT_TOKENS, advance=False):
                 # exp.Properties.Location.POST_ALIAS
                 extend_props(self._parse_properties())
@@ -2009,6 +2009,11 @@ class Parser(metaclass=_Parser):
                 extend_props(self._parse_properties())
             else:
                 expression = self._parse_ddl_select()
+                # Some dialects also support using a table as an alias instead of a SELECT.
+                # Here we fallback to this as an alternative.
+                if not expression and has_alias:
+                    if self._match_set({TokenType.VAR}, advance=False):
+                        expression = self._parse_table_parts()
 
             if create_token.token_type == TokenType.TABLE:
                 # exp.Properties.Location.POST_EXPRESSION

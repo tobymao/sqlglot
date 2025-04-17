@@ -766,6 +766,19 @@ ORDER BY (
             pretty=True,
         )
 
+    def test_create_table_as_alias(self):
+        ctas_alias = "CREATE TABLE my_db.my_table AS another_db.another_table"
+
+        expected = exp.Create(
+            this=exp.Table(this=exp.Identifier(this="my_table"), db=exp.Identifier(this="my_db")),
+            kind="TABLE",
+            expression=exp.Table(
+                this=exp.Identifier(this="another_table"), db=exp.Identifier(this="another_db")
+            ),
+        )
+        self.assertEqual(self.parse_one(ctas_alias), expected)
+        self.validate_identity(ctas_alias)
+
     def test_ddl(self):
         db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
         create_with_cluster = exp.Create(

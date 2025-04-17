@@ -1326,7 +1326,7 @@ class Parser(metaclass=_Parser):
             "BTREE",
             "HASH",
         ),
-        **dict.fromkeys(("DEFERRABLE", "NORELY"), tuple()),
+        **dict.fromkeys(("DEFERRABLE", "NORELY", "RELY"), tuple()),
     }
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
@@ -6015,6 +6015,7 @@ class Parser(metaclass=_Parser):
             this=self._parse_schema(self._parse_unique_key()),
             index_type=self._match(TokenType.USING) and self._advance_any() and self._prev.text,
             on_conflict=self._parse_on_conflict(),
+            options=self._parse_key_constraint_options(),
         )
 
     def _parse_key_constraint_options(self) -> t.List[str]:
@@ -6063,7 +6064,7 @@ class Parser(metaclass=_Parser):
     def _parse_foreign_key(self) -> exp.ForeignKey:
         expressions = self._parse_wrapped_id_vars()
         reference = self._parse_references()
-        options = {}
+        on_options = {}
 
         while self._match(TokenType.ON):
             if not self._match_set((TokenType.DELETE, TokenType.UPDATE)):
@@ -6080,13 +6081,14 @@ class Parser(metaclass=_Parser):
                 self._advance()
                 action = self._prev.text.upper()
 
-            options[kind] = action
+            on_options[kind] = action
 
         return self.expression(
             exp.ForeignKey,
             expressions=expressions,
             reference=reference,
-            **options,  # type: ignore
+            options=self._parse_key_constraint_options(),
+            **on_options,  # type: ignore
         )
 
     def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
@@ -6113,7 +6115,11 @@ class Parser(metaclass=_Parser):
         )
 
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
-            return self.expression(exp.PrimaryKeyColumnConstraint, desc=desc)
+            return self.expression(
+                exp.PrimaryKeyColumnConstraint,
+                desc=desc,
+                options=self._parse_key_constraint_options(),
+            )
 
         expressions = self._parse_wrapped_csv(
             self._parse_primary_key_part, optional=wrapped_optional

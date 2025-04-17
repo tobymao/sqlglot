@@ -1,6 +1,39 @@
 Changelog
 =========
 
+## [v26.15.0] - 2025-04-17
+### :boom: BREAKING CHANGES
+- due to [`2b7845a`](https://github.com/tobymao/sqlglot/commit/2b7845a3a821d366ae90ba9ef5e7d61194a34874) - Add support for Athena's Iceberg partitioning transforms *(PR [#4976](https://github.com/tobymao/sqlglot/pull/4976) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Add support for Athena's Iceberg partitioning transforms (#4976)
+
+- due to [`ee794e9`](https://github.com/tobymao/sqlglot/commit/ee794e9c6a3b2fdb142114327d904b6c94a16cd0) - use the standard POWER function instead of ^ fixes [#4982](https://github.com/tobymao/sqlglot/pull/4982) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  use the standard POWER function instead of ^ fixes #4982
+
+- due to [`2369195`](https://github.com/tobymao/sqlglot/commit/2369195635e25dabd5ce26c13e402076508bba04) - consistently parse INTERVAL value as a string *(PR [#4986](https://github.com/tobymao/sqlglot/pull/4986) by [@georgesittas](https://github.com/georgesittas))*:
+
+  consistently parse INTERVAL value as a string (#4986)
+
+- due to [`e866cff`](https://github.com/tobymao/sqlglot/commit/e866cffbaac3b62255d0d5c8be043ab2394af619) - support RELY option for PRIMARY KEY, FOREIGN KEY, and UNIQUE constraints *(PR [#4987](https://github.com/tobymao/sqlglot/pull/4987) by [@geooo109](https://github.com/geooo109))*:
+
+  support RELY option for PRIMARY KEY, FOREIGN KEY, and UNIQUE constraints (#4987)
+
+
+### :sparkles: New Features
+- [`e866cff`](https://github.com/tobymao/sqlglot/commit/e866cffbaac3b62255d0d5c8be043ab2394af619) - **parser**: support RELY option for PRIMARY KEY, FOREIGN KEY, and UNIQUE constraints *(PR [#4987](https://github.com/tobymao/sqlglot/pull/4987) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#4983](https://github.com/tobymao/sqlglot/issues/4983) opened by [@ggadon](https://github.com/ggadon)*
+
+### :bug: Bug Fixes
+- [`2b7845a`](https://github.com/tobymao/sqlglot/commit/2b7845a3a821d366ae90ba9ef5e7d61194a34874) - Add support for Athena's Iceberg partitioning transforms *(PR [#4976](https://github.com/tobymao/sqlglot/pull/4976) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`fa6af23`](https://github.com/tobymao/sqlglot/commit/fa6af2302f8482c5d89ead481afe4195aaa41a9c) - **optimizer**: compare the whole type to determine if a cast can be removed *(PR [#4981](https://github.com/tobymao/sqlglot/pull/4981) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4977](https://github.com/tobymao/sqlglot/issues/4977) opened by [@MeinAccount](https://github.com/MeinAccount)*
+- [`830c9b8`](https://github.com/tobymao/sqlglot/commit/830c9b8bbf906cf5d4fa8028b67dadda73fc58a9) - **unnest_subqueries**: avoid adding GROUP BY on aggregate projections in lateral subqueries *(PR [#4970](https://github.com/tobymao/sqlglot/pull/4970) by [@skadel](https://github.com/skadel))*
+- [`ee794e9`](https://github.com/tobymao/sqlglot/commit/ee794e9c6a3b2fdb142114327d904b6c94a16cd0) - **postgres**: use the standard POWER function instead of ^ fixes [#4982](https://github.com/tobymao/sqlglot/pull/4982) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`85e62b8`](https://github.com/tobymao/sqlglot/commit/85e62b88df2822797f527dce4eaa230c778cbe9e) - **bigquery**: Do not consume JOIN keywords after WITH OFFSET *(PR [#4984](https://github.com/tobymao/sqlglot/pull/4984) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`2369195`](https://github.com/tobymao/sqlglot/commit/2369195635e25dabd5ce26c13e402076508bba04) - consistently parse INTERVAL value as a string *(PR [#4986](https://github.com/tobymao/sqlglot/pull/4986) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.14.0] - 2025-04-15
 ### :boom: BREAKING CHANGES
 - due to [`cb20038`](https://github.com/tobymao/sqlglot/commit/cb2003875fc6e149bd4a631e99c312a04435a46b) - treat GO as command *(PR [#4978](https://github.com/tobymao/sqlglot/pull/4978) by [@georgesittas](https://github.com/georgesittas))*:
@@ -6358,3 +6391,4 @@ Changelog
 [v26.13.1]: https://github.com/tobymao/sqlglot/compare/v26.13.0...v26.13.1
 [v26.13.2]: https://github.com/tobymao/sqlglot/compare/v26.13.1...v26.13.2
 [v26.14.0]: https://github.com/tobymao/sqlglot/compare/v26.13.2...v26.14.0
+[v26.15.0]: https://github.com/tobymao/sqlglot/compare/v26.14.0...v26.15.0

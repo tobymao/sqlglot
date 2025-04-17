@@ -2566,7 +2566,7 @@ SINGLE = TRUE""",
 
     def test_rely(self):
         self.validate_identity(
-            "CREATE TABLE t (col1 INT PRIMARY KEY RELY, col2 INT UNIQUE RELY, col3 INT NOT NULL FOREIGN KEY REFERENCES other_t (id))"
+            "CREATE TABLE t (col1 INT PRIMARY KEY RELY, col2 INT UNIQUE RELY, col3 INT NOT NULL FOREIGN KEY REFERENCES other_t (id) RELY)"
         )
         self.validate_identity(
             "CREATE TABLE t (col1 INT, col2 DATE, col3 VARCHAR, UNIQUE (col1, col2) RELY)"

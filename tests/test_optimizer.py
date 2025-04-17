@@ -533,6 +533,11 @@ class TestOptimizer(unittest.TestCase):
     def test_simplify(self):
         self.check_file("simplify", simplify)
 
+        # Ensure simplify mutates the AST properly
+        expression = parse_one("SELECT 1 + 2")
+        simplify(expression.selects[0])
+        self.assertEqual(expression.sql(), "SELECT 3")
+
         expression = parse_one("SELECT a, c, b FROM table1 WHERE 1 = 1")
         self.assertEqual(simplify(simplify(expression.find(exp.Where))).sql(), "WHERE TRUE")
 

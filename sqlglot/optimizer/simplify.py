@@ -61,74 +61,80 @@ def simplify(
 
     dialect = Dialect.get_or_raise(dialect)
 
-    def _simplify(expression, root=True):
-        if (
-            max_depth
-            and isinstance(expression, exp.Connector)
-            and not isinstance(expression.parent, exp.Connector)
-        ):
-            depth = connector_depth(expression)
-            if depth > max_depth:
-                logger.info(
-                    f"Skipping simplification because connector depth {depth} exceeds max {max_depth}"
-                )
-                return expression
+    def _simplify(expression):
+        stack = []
 
-        if expression.meta.get(FINAL):
-            return expression
+        for node in expression.dfs(prune=lambda n: n.meta.get(FINAL)):
+            if node.meta.get(FINAL):
+                continue
 
-        # group by expressions cannot be simplified, for example
-        # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
-        # the projection must exactly match the group by key
-        group = expression.args.get("group")
+            # group by expressions cannot be simplified, for example
+            # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
+            # the projection must exactly match the group by key
+            group = node.args.get("group")
 
-        if group and hasattr(expression, "selects"):
-            groups = set(group.expressions)
-            group.meta[FINAL] = True
+            if group and hasattr(node, "selects"):
+                groups = set(group.expressions)
+                group.meta[FINAL] = True
 
-            for e in expression.selects:
-                for node in e.walk():
-                    if node in groups:
-                        e.meta[FINAL] = True
-                        break
+                for s in node.selects:
+                    for n in s.walk():
+                        if n in groups:
+                            s.meta[FINAL] = True
+                            break
 
-            having = expression.args.get("having")
-            if having:
-                for node in having.walk():
-                    if node in groups:
-                        having.meta[FINAL] = True
-                        break
+                having = node.args.get("having")
+                if having:
+                    for n in having.walk():
+                        if n in groups:
+                            having.meta[FINAL] = True
+                            break
 
-        # Pre-order transformations
-        node = expression
-        node = rewrite_between(node)
-        node = uniq_sort(node, root)
-        node = absorb_and_eliminate(node, root)
-        node = simplify_concat(node)
-        node = simplify_conditionals(node)
+            parent = node.parent
+            root = node is expression
 
-        if constant_propagation:
-            node = propagate_constants(node, root)
+            new_node = rewrite_between(node)
+            new_node = uniq_sort(new_node, root)
+            new_node = absorb_and_eliminate(new_node, root)
+            new_node = simplify_concat(new_node)
+            new_node = simplify_conditionals(new_node)
 
-        exp.replace_children(node, lambda e: _simplify(e, False))
+            if constant_propagation:
+                new_node = propagate_constants(new_node, root)
 
-        # Post-order transformations
-        node = simplify_not(node)
-        node = flatten(node)
-        node = simplify_connectors(node, root)
-        node = remove_complements(node, root)
-        node = simplify_coalesce(node, dialect)
-        node.parent = expression.parent
-        node = simplify_literals(node, root)
-        node = simplify_equality(node)
-        node = simplify_parens(node)
-        node = simplify_datetrunc(node, dialect)
-        node = sort_comparison(node)
-        node = simplify_startswith(node)
+            if new_node is not node:
+                node.replace(new_node)
 
-        if root:
-            expression.replace(node)
-        return node
+            stack.append((new_node, parent))
+
+        while stack:
+            node, parent = stack.pop()
+            root = node is expression
+
+            # Resets parent, arg_key, index pointers
+            for k, v in tuple(node.args.items()):
+                node.set(k, v)
+
+            # Post-order transformations
+            new_node = simplify_not(node)
+            new_node = flatten(new_node)
+            new_node = simplify_connectors(new_node, root)
+            new_node = remove_complements(new_node, root)
+            new_node = simplify_coalesce(new_node, dialect)
+
+            new_node.parent = parent
+
+            new_node = simplify_literals(new_node, root)
+            new_node = simplify_equality(new_node)
+            new_node = simplify_parens(new_node)
+            new_node = simplify_datetrunc(new_node, dialect)
+            new_node = sort_comparison(new_node)
+            new_node = simplify_startswith(new_node)
+
+            if new_node is not node:
+                node.replace(new_node)
+
+        return new_node
 
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)

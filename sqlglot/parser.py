@@ -151,7 +151,7 @@ def build_trim(args: t.List, is_left: bool = True):
 
 
 def build_coalesce(args: t.List, is_nvl: t.Optional[bool] = None) -> exp.Coalesce:
-    return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl)
+    return exp.Coalesce(expressions=args, is_nvl=is_nvl)
 
 
 def build_locate_strposition(args: t.List):
@@ -4935,9 +4935,7 @@ class Parser(metaclass=_Parser):
                     safe=not self.dialect.STRICT_STRING_CONCAT,
                 )
             elif self._match(TokenType.DQMARK):
-                this = self.expression(
-                    exp.Coalesce, this=this, expressions=ensure_list(self._parse_term())
-                )
+                this = self.expression(exp.Coalesce, expressions=[this, self._parse_term()])
             elif self._match_pair(TokenType.LT, TokenType.LT):
                 this = self.expression(
                     exp.BitwiseLeftShift, this=this, expression=self._parse_term()

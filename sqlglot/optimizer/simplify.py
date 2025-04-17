@@ -779,11 +779,11 @@ def simplify_coalesce(expression: exp.Expression, dialect: DialectType) -> exp.E
     # COALESCE(x) -> x
     if (
         isinstance(expression, exp.Coalesce)
-        and (not expression.expressions or _is_nonnull_constant(expression.this))
+        and (len(expression.expressions) == 1 or _is_nonnull_constant(expression.expressions[0]))
         # COALESCE is also used as a Spark partitioning hint
         and not isinstance(expression.parent, exp.Hint)
     ):
-        return expression.this
+        return expression.expressions[0]
 
     # We can't convert `COALESCE(x, 1) = 2` into `NOT x IS NULL AND x = 2` for redshift,
     # because they are not always equivalent. For example,  if `x` is `NULL` and it comes
@@ -819,7 +819,7 @@ def simplify_coalesce(expression: exp.Expression, dialect: DialectType) -> exp.E
 
     # Remove the COALESCE function. This is an optimization, skipping a simplify iteration,
     # since we already remove COALESCE at the top of this function.
-    coalesce = coalesce if coalesce.expressions else coalesce.this
+    coalesce = coalesce if len(coalesce.expressions) > 1 else coalesce.expressions[0]
 
     # This expression is more complex than when we started, but it will get simplified further
     return exp.paren(

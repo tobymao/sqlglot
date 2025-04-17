@@ -244,7 +244,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                     return exp.null()
                 return node
 
-            alias = exp.Coalesce(this=alias, expressions=[value.this.transform(remove_aggs)])
+            alias = exp.Coalesce(expressions=[alias, value.this.transform(remove_aggs)])
 
         select.parent.replace(alias)
 

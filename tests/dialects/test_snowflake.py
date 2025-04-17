@@ -2563,3 +2563,12 @@ SINGLE = TRUE""",
                     "duckdb": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|' ORDER BY col2) FROM t",
                 },
             )
+
+    def test_rely_options(self):
+        for option in ("NORELY", "RELY"):
+            self.validate_identity(
+                f"CREATE TABLE t (col1 INT PRIMARY KEY {option}, col2 INT UNIQUE {option}, col3 INT NOT NULL FOREIGN KEY REFERENCES other_t (id) {option})"
+            )
+            self.validate_identity(
+                f"CREATE TABLE t (col1 INT, col2 INT, col3 INT, PRIMARY KEY (col1) {option}, UNIQUE (col1, col2) {option}, FOREIGN KEY (col3) REFERENCES other_t (id) {option})"
+            )

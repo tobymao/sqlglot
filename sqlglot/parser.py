@@ -7059,6 +7059,7 @@ class Parser(metaclass=_Parser):
             parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
+
         return items
 
     def _parse_tokens(

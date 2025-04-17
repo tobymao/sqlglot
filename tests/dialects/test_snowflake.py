@@ -2564,10 +2564,11 @@ SINGLE = TRUE""",
                 },
             )
 
-    def test_rely(self):
-        self.validate_identity(
-            "CREATE TABLE t (col1 INT PRIMARY KEY RELY, col2 INT UNIQUE RELY, col3 INT NOT NULL FOREIGN KEY REFERENCES other_t (id) RELY)"
-        )
-        self.validate_identity(
-            "CREATE TABLE t (col1 INT, col2 INT, col3 INT, PRIMARY KEY (col1) RELY, UNIQUE (col1, col2) RELY, FOREIGN KEY (col3) REFERENCES other_t (id) RELY)"
-        )
+    def test_rely_options(self):
+        for option in ("NORELY", "RELY"):
+            self.validate_identity(
+                f"CREATE TABLE t (col1 INT PRIMARY KEY {option}, col2 INT UNIQUE {option}, col3 INT NOT NULL FOREIGN KEY REFERENCES other_t (id) {option})"
+            )
+            self.validate_identity(
+                f"CREATE TABLE t (col1 INT, col2 INT, col3 INT, PRIMARY KEY (col1) {option}, UNIQUE (col1, col2) {option}, FOREIGN KEY (col3) REFERENCES other_t (id) {option})"
+            )

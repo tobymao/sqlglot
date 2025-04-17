@@ -1515,8 +1515,8 @@ WHERE
         self.validate_all(
             "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08')",
             write={
-                "duckdb": "SELECT CAST(GENERATE_SERIES(CAST('2016-10-05' AS DATE), CAST('2016-10-08' AS DATE), INTERVAL 1 DAY) AS DATE[])",
-                "bigquery": "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08', INTERVAL 1 DAY)",
+                "duckdb": "SELECT CAST(GENERATE_SERIES(CAST('2016-10-05' AS DATE), CAST('2016-10-08' AS DATE), INTERVAL '1' DAY) AS DATE[])",
+                "bigquery": "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08', INTERVAL '1' DAY)",
             },
         )
         self.validate_all(

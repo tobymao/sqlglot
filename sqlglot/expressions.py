@@ -1933,7 +1933,7 @@ class TransformColumnConstraint(ColumnConstraintKind):
 
 
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):
-    arg_types = {"desc": False}
+    arg_types = {"desc": False, "options": False}
 
 
 class TitleColumnConstraint(ColumnConstraintKind):
@@ -1941,7 +1941,13 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False, "index_type": False, "on_conflict": False, "nulls": False}
+    arg_types = {
+        "this": False,
+        "index_type": False,
+        "on_conflict": False,
+        "nulls": False,
+        "options": False,
+    }
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
@@ -2140,6 +2146,7 @@ class ForeignKey(Expression):
         "reference": False,
         "delete": False,
         "update": False,
+        "options": False,
     }
 
 

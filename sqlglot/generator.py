@@ -1066,7 +1066,9 @@ class Generator(metaclass=_Generator):
         desc = expression.args.get("desc")
         if desc is not None:
             return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
-        return "PRIMARY KEY"
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+        return f"PRIMARY KEY{options}"
 
     def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
         this = self.sql(expression, "this")
@@ -1076,7 +1078,9 @@ class Generator(metaclass=_Generator):
         on_conflict = self.sql(expression, "on_conflict")
         on_conflict = f" {on_conflict}" if on_conflict else ""
         nulls_sql = " NULLS NOT DISTINCT" if expression.args.get("nulls") else ""
-        return f"UNIQUE{nulls_sql}{this}{index_type}{on_conflict}"
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+        return f"UNIQUE{nulls_sql}{this}{index_type}{on_conflict}{options}"
 
     def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")
@@ -2921,7 +2925,9 @@ class Generator(metaclass=_Generator):
         delete = f" ON DELETE {delete}" if delete else ""
         update = self.sql(expression, "update")
         update = f" ON UPDATE {update}" if update else ""
-        return f"FOREIGN KEY{expressions}{reference}{delete}{update}"
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+        return f"FOREIGN KEY{expressions}{reference}{delete}{update}{options}"
 
     def primarykey_sql(self, expression: exp.ForeignKey) -> str:
         expressions = self.expressions(expression, flat=True)

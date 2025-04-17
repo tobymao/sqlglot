@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     unit_to_var,
     trim_sql,
 )
+from sqlglot.expressions import DateDiff
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
@@ -93,16 +94,34 @@ def _build_str_to_date(args: t.List) -> exp.Cast | exp.Anonymous:
     return exp.cast(strtodate, exp.DataType.build(exp.DataType.Type.DATETIME))
 
 
+def _build_clickhouse_date_diff(args: t.List) -> exp.DateDiff:
+    # The date_diff function in ClickHouse includes an optional fourth positional argument for
+    # timezone which is not present in most other dialects.
+    unit_based = len(args) >= 3
+    has_timezone = len(args) == 4
+
+    this = args[2] if unit_based else seq_get(args, 0)
+
+    unit = None
+    if unit_based:
+        unit = args[0]
+    timezone = None
+    if has_timezone:
+        timezone = args[-1]
+    return DateDiff(this=this, expression=seq_get(args, 1), unit=unit, timezone=timezone)
+
+
 def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA], str]:
     def _delta_sql(self: Generator, expression: DATEΤΙΜΕ_DELTA) -> str:
         if not expression.unit:
             return rename_func(name)(self, expression)
 
+        extra_args = []
+        if isinstance(expression, exp.DateDiff):
+            extra_args = [expression.timezone]
+
         return self.func(
-            name,
-            unit_to_var(expression),
-            expression.expression,
-            expression.this,
+            name, unit_to_var(expression), expression.expression, expression.this, *extra_args
         )
 
     return _delta_sql
@@ -301,8 +320,8 @@ class ClickHouse(Dialect):
             "COUNTIF": _build_count_if,
             "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
-            "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None),
-            "DATEDIFF": build_date_delta(exp.DateDiff, default_unit=None),
+            "DATE_DIFF": _build_clickhouse_date_diff,
+            "DATEDIFF": _build_clickhouse_date_diff,
             "DATE_FORMAT": _build_date_format,
             "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),

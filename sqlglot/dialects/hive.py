@@ -62,6 +62,13 @@ TIME_DIFF_FACTOR = {
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
+TS_OR_DS_EXPRESSIONS = (
+    exp.DateDiff,
+    exp.Day,
+    exp.Month,
+    exp.Year,
+)
+
 
 def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
     if isinstance(expression, exp.TsOrDsAdd) and not expression.unit:
@@ -167,7 +174,7 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     if time_format and time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         return self.func("TO_DATE", expression.this, time_format)
 
-    if isinstance(expression.this, exp.TsOrDsToDate):
+    if isinstance(expression.parent, TS_OR_DS_EXPRESSIONS):
         return self.sql(expression, "this")
 
     return self.func("TO_DATE", expression.this)

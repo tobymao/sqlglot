@@ -111,7 +111,8 @@ def simplify(
             node, parent = stack.pop()
             root = node is expression
 
-            # Resets parent, arg_key, index pointers
+            # Resets parent, arg_key, index pointers– this is needed because some of the
+            # previous transformations mutate the AST, leading to an inconsistent state
             for k, v in tuple(node.args.items()):
                 node.set(k, v)
 

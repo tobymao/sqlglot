@@ -937,21 +937,11 @@ class Snowflake(Dialect):
                 self._match(TokenType.END)
             return self.expression(exp.BeginEndBlock, expressions=statements)
 
-        def _parse_case(self) -> t.Optional[exp.Expression]:
-            expr = super()._parse_case()
-            if not expr:
-                return None
-
-            # determine whether this is a conditional CASE expression, or a CASE scripting block
-            # TODO the list of types below may need to be extended over time
-            statement_types = (exp.Select, exp.Return, exp.DML)
-            expressions = [e.args["true"] for e in expr.args["ifs"]] + [expr.args.get("default")]
-            is_case_block = any(isinstance(e, statement_types) for e in expressions)
-
-            if not is_case_block:
-                return expr
-
-            return self.expression(exp.CaseScriptingBlock, **expr.args)
+        def _parse_case(self) -> exp.Expression:
+            expr, delimiter = self._parse_case_with_delimiter()
+            if delimiter == TokenType.SEMICOLON:
+                return self.expression(exp.CaseScriptingBlock, **expr.args)
+            return expr
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]

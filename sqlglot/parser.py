@@ -1618,6 +1618,7 @@ class Parser(metaclass=_Parser):
         return expressions
 
     def _is_nested_block_start(self, token: Token, index: int, raw_tokens: t.List[Token]) -> bool:
+        # defaults to False - can be overwritten by subclasses
         return False
 
     def check_errors(self) -> None:
@@ -6207,23 +6208,29 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Slice, this=this, expression=self._parse_assignment())
         return this
 
-    def _parse_case(self) -> t.Optional[exp.Expression]:
+    def _parse_case(self) -> exp.Expression:
+        return self._parse_case_with_delimiter()[0]
+
+    def _parse_case_with_delimiter(self) -> t.Tuple[exp.Expression, t.Optional[TokenType]]:
         ifs = []
         default = None
 
         comments = self._prev_comments
         expression = self._parse_assignment()
+        delimiter = None
 
         while self._match(TokenType.WHEN):
             this = self._parse_assignment()
             self._match(TokenType.THEN)
             then = self._parse_assignment() or self._parse_statement()
             ifs.append(self.expression(exp.If, this=this, true=then))
-            self._match(TokenType.SEMICOLON)
+            if self._match(TokenType.SEMICOLON):
+                delimiter = TokenType.SEMICOLON
 
         if self._match(TokenType.ELSE):
             default = self._parse_assignment() or self._parse_statement()
-            self._match(TokenType.SEMICOLON)
+            if self._match(TokenType.SEMICOLON):
+                delimiter = TokenType.SEMICOLON
 
         if not self._match(TokenType.END):
             if isinstance(default, exp.Interval) and default.this.sql().upper() == "END":
@@ -6233,9 +6240,10 @@ class Parser(metaclass=_Parser):
         # note: some dialects allow either "END" or "END CASE" (e.g., Snowflake)
         self._match(TokenType.CASE)
 
-        return self.expression(
+        result = self.expression(
             exp.Case, comments=comments, this=expression, ifs=ifs, default=default
         )
+        return result, delimiter
 
     def _parse_if(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):

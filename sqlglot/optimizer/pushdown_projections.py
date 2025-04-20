@@ -5,6 +5,7 @@ from sqlglot.optimizer.qualify_columns import Resolver
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
+from sqlglot.helper import seq_get
 
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
@@ -92,7 +93,13 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():
                 if isinstance(source, Scope):
-                    columns = {SELECT_ALL} if scope.pivots else selects.get(name) or set()
+                    select = seq_get(source.expression.selects, 0)
+
+                    if scope.pivots or isinstance(select, exp.QueryTransform):
+                        columns = {SELECT_ALL}
+                    else:
+                        columns = selects.get(name) or set()
+
                     referenced_columns[source].update(columns)
 
                 column_aliases = node.alias_column_names

@@ -5,7 +5,7 @@ import typing as t
 from collections import defaultdict
 
 from sqlglot import expressions as exp
-from sqlglot.helper import find_new_name
+from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -217,6 +217,7 @@ def _mergeable(
         and not _is_a_window_expression_in_unmergable_operation()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)
+        and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
     )
 
 

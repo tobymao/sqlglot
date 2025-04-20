@@ -5607,6 +5607,11 @@ class Case(Func):
         return instance
 
 
+# https://docs.snowflake.com/en/sql-reference/snowflake-scripting/case
+class CaseScriptingBlock(Case):
+    pass
+
+
 class Cast(Func):
     arg_types = {
         "this": True,

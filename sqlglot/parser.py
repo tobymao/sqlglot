@@ -4735,8 +4735,7 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:
-        ass = self._parse_assignment()
-        return self._parse_alias(ass)
+        return self._parse_alias(self._parse_assignment())
 
     def _parse_assignment(self) -> t.Optional[exp.Expression]:
         this = self._parse_disjunction()
@@ -6231,6 +6230,8 @@ class Parser(metaclass=_Parser):
                 default = exp.column("interval")
             else:
                 self.raise_error("Expected END after CASE", self._prev)
+        # note: some dialects allow either "END" or "END CASE" (e.g., Snowflake)
+        self._match(TokenType.CASE)
 
         return self.expression(
             exp.Case, comments=comments, this=expression, ifs=ifs, default=default
@@ -7855,7 +7856,7 @@ class Parser(metaclass=_Parser):
         return None
 
     def _match_set(self, types, advance=True):
-        if not self._curr or self._curr.token_type == TokenType.SEMICOLON:
+        if not self._curr:
             return None
 
         if self._curr.token_type in types:

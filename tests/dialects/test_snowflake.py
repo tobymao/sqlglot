@@ -2575,5 +2575,10 @@ SINGLE = TRUE""",
 
     def test_case_within_begin_block(self):
         self.validate_identity(
-            "BEGIN CASE ($myvar) WHEN 'foo' THEN select MYFUNC(1); WHEN 'bar' THEN RETURN 2; ELSE RETURN 3; END CASE; END;"
+            "BEGIN CASE ($myvar) WHEN 'foo' THEN SELECT MYFUNC(1); WHEN 'bar' THEN RETURN 2; ELSE RETURN 3; END CASE; END"
+        )
+        # same expression, but closing the block with `END` instead of `END CASE`
+        self.validate_identity(
+            "BEGIN CASE ($myvar) WHEN 'foo' THEN SELECT MYFUNC(1); WHEN 'bar' THEN RETURN 2; ELSE RETURN 3; END; END",
+            "BEGIN CASE ($myvar) WHEN 'foo' THEN SELECT MYFUNC(1); WHEN 'bar' THEN RETURN 2; ELSE RETURN 3; END CASE; END",
         )

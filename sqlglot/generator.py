@@ -2839,19 +2839,22 @@ class Generator(metaclass=_Generator):
         return f"EXISTS{self.wrap(expression)}"
 
     def case_sql(self, expression: exp.Case) -> str:
+        return self._case_sql(expression, delimiter="", end="END")
+
+    def _case_sql(self, expression: exp.Case, delimiter: str, end: str) -> str:
         this = self.sql(expression, "this")
         statements = [f"CASE {this}" if this else "CASE"]
 
         for e in expression.args["ifs"]:
             statements.append(f"WHEN {self.sql(e, 'this')}")
-            statements.append(f"THEN {self.sql(e, 'true')}")
+            statements.append(f"THEN {self.sql(e, 'true')}{delimiter}")
 
         default = self.sql(expression, "default")
 
         if default:
-            statements.append(f"ELSE {default}")
+            statements.append(f"ELSE {default}{delimiter}")
 
-        statements.append("END")
+        statements.append(end)
 
         if self.pretty and self.too_wide(statements):
             return self.indent("\n".join(statements), skip_first=True, skip_last=True)

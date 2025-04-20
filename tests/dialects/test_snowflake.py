@@ -2572,3 +2572,8 @@ SINGLE = TRUE""",
             self.validate_identity(
                 f"CREATE TABLE t (col1 INT, col2 INT, col3 INT, PRIMARY KEY (col1) {option}, UNIQUE (col1, col2) {option}, FOREIGN KEY (col3) REFERENCES other_t (id) {option})"
             )
+
+    def test_case_within_begin_block(self):
+        self.validate_identity(
+            "BEGIN CASE ($myvar) WHEN 'foo' THEN select MYFUNC(1); WHEN 'bar' THEN RETURN 2; ELSE RETURN 3; END CASE; END;"
+        )

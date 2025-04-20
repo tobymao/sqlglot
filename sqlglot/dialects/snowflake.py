@@ -31,7 +31,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import flatten, is_float, is_int, seq_get
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import TokenType, Token
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, B
@@ -510,6 +510,7 @@ class Snowflake(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.BEGIN_BLOCK: lambda self: self._parse_begin_block(),
             TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
@@ -589,6 +590,11 @@ class Snowflake(Dialect):
                 expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
             ),
         }
+
+        def _is_nested_block_start(
+            self, token: Token, index: int, raw_tokens: t.List[Token]
+        ) -> bool:
+            return token.token_type in (TokenType.BEGIN_BLOCK, TokenType.CASE)
 
         def _parse_use(self) -> exp.Use:
             if self._match_text_seq("SECONDARY", "ROLES"):
@@ -920,6 +926,17 @@ class Snowflake(Dialect):
                 expressions=self._parse_wrapped_options(),
             )
 
+        def _parse_begin_block(self) -> exp.BeginEndBlock:
+            statements = []
+            while True:
+                stmt = self._parse_statement()
+                if not stmt:
+                    break
+                statements.append(stmt)
+                self._match(TokenType.SEMICOLON)
+            self._match(TokenType.END)
+            return self.expression(exp.BeginEndBlock, expressions=statements)
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
@@ -929,6 +946,9 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "BEGIN": TokenType.BEGIN_BLOCK,
+            "BEGIN TRANSACTION": TokenType.BEGIN,
+            "BEGIN WORK": TokenType.BEGIN,
             "FILE://": TokenType.URI_START,
             "BYTEINT": TokenType.INT,
             "CHAR VARYING": TokenType.VARCHAR,
@@ -1356,3 +1376,7 @@ class Snowflake(Dialect):
             if offset and not limit:
                 expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)
+
+        def beginendblock_sql(self, expression: exp.BeginEndBlock) -> str:
+            expressions = self.expressions(expression, "expressions", sep="; ")
+            return f"BEGIN {expressions}; END"

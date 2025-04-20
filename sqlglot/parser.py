@@ -834,6 +834,7 @@ class Parser(metaclass=_Parser):
         TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
         TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
         TokenType.REFRESH: lambda self: self._parse_refresh(),
+        TokenType.RETURN: lambda self: self._parse_return(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.SET: lambda self: self._parse_set(),
         TokenType.TRUNCATE: lambda self: self._parse_truncate_table(),
@@ -1585,8 +1586,13 @@ class Parser(metaclass=_Parser):
         total = len(raw_tokens)
         chunks: t.List[t.List[Token]] = [[]]
 
+        block_nesting_level = 0
         for i, token in enumerate(raw_tokens):
-            if token.token_type == TokenType.SEMICOLON:
+            if self._is_nested_block_start(token, i, raw_tokens):
+                block_nesting_level += 1
+            if token.token_type == TokenType.END:
+                block_nesting_level -= 1
+            if token.token_type == TokenType.SEMICOLON and block_nesting_level <= 0:
                 if token.comments:
                     chunks.append([token])
 
@@ -1610,6 +1616,9 @@ class Parser(metaclass=_Parser):
             self.check_errors()
 
         return expressions
+
+    def _is_nested_block_start(self, token: Token, index: int, raw_tokens: t.List[Token]) -> bool:
+        return False
 
     def check_errors(self) -> None:
         """Logs or raises any found errors, depending on the chosen error level setting."""
@@ -4726,7 +4735,8 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:
-        return self._parse_alias(self._parse_assignment())
+        ass = self._parse_assignment()
+        return self._parse_alias(ass)
 
     def _parse_assignment(self) -> t.Optional[exp.Expression]:
         this = self._parse_disjunction()
@@ -6208,11 +6218,13 @@ class Parser(metaclass=_Parser):
         while self._match(TokenType.WHEN):
             this = self._parse_assignment()
             self._match(TokenType.THEN)
-            then = self._parse_assignment()
+            then = self._parse_assignment() or self._parse_statement()
             ifs.append(self.expression(exp.If, this=this, true=then))
+            self._match(TokenType.SEMICOLON)
 
         if self._match(TokenType.ELSE):
-            default = self._parse_assignment()
+            default = self._parse_assignment() or self._parse_statement()
+            self._match(TokenType.SEMICOLON)
 
         if not self._match(TokenType.END):
             if isinstance(default, exp.Interval) and default.this.sql().upper() == "END":
@@ -7843,7 +7855,7 @@ class Parser(metaclass=_Parser):
         return None
 
     def _match_set(self, types, advance=True):
-        if not self._curr:
+        if not self._curr or self._curr.token_type == TokenType.SEMICOLON:
             return None
 
         if self._curr.token_type in types:
@@ -8212,3 +8224,6 @@ class Parser(metaclass=_Parser):
             this=exp.var("FORMAT_NAME"),
             value=self._parse_string() or self._parse_table_parts(),
         )
+
+    def _parse_return(self) -> exp.Return:
+        return self.expression(exp.Return, this=self._parse_statement())

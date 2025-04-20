@@ -237,6 +237,7 @@ class TokenType(AutoName):
     ATTACH = auto()
     AUTO_INCREMENT = auto()
     BEGIN = auto()
+    BEGIN_BLOCK = auto()
     BETWEEN = auto()
     BULK_COLLECT_INTO = auto()
     CACHE = auto()
@@ -368,6 +369,7 @@ class TokenType(AutoName):
     REFRESH = auto()
     RENAME = auto()
     REPLACE = auto()
+    RETURN = auto()
     RETURNING = auto()
     REFERENCES = auto()
     RIGHT = auto()
@@ -811,6 +813,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "REGEXP": TokenType.RLIKE,
         "RENAME": TokenType.RENAME,
         "REPLACE": TokenType.REPLACE,
+        "RETURN": TokenType.RETURN,
         "RETURNING": TokenType.RETURNING,
         "REFERENCES": TokenType.REFERENCES,
         "RIGHT": TokenType.RIGHT,

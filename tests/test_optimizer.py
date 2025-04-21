@@ -176,6 +176,11 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                     actual,
                 )
+                for expression in optimized.walk():
+                    for arg_key, arg in expression.args.items():
+                        if isinstance(arg, exp.Expression):
+                            self.assertEqual(arg_key, arg.arg_key)
+                            self.assertIs(arg.parent, expression)
 
                 if string_to_bool(execute):
                     with self.subTest(f"(execute) {title}"):

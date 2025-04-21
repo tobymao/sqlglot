@@ -215,12 +215,21 @@ def while_changing(expression: Expression, func: t.Callable[[Expression], E]) ->
         for n in reversed(tuple(expression.walk())):
             n._hash = hash(n)
 
-        start = hash(expression)
+        start_hash = hash(expression)
         expression = func(expression)
 
+        # Uncache previous caches so we can recompute them
+        for n in reversed(tuple(expression.walk())):
+            n._hash = None
+            n._hash = hash(n)
+
+        end_hash = hash(expression)
+
+        # ... and reset the hash so we don't risk it becoming out of date if a mutation happens
         for n in expression.walk():
             n._hash = None
-        if start == hash(expression):
+
+        if start_hash == end_hash:
             break
 
     return expression

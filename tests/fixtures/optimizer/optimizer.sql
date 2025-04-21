@@ -531,7 +531,10 @@ FROM "unioned" AS "unioned"
 WHERE
   "unioned"."source_system" = 'bamboohr' OR "unioned"."source_system" = 'workday'
 QUALIFY
-  ROW_NUMBER() OVER (PARTITION BY "unioned"."unique_filter_key" ORDER BY "unioned"."sort_order" DESC, 1) = 1;
+  ROW_NUMBER() OVER (
+    PARTITION BY "unioned"."unique_filter_key"
+    ORDER BY "unioned"."sort_order" DESC, 1
+  ) = 1;
 
 # title: pivoted source with explicit selections
 # execute: false

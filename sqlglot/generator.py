@@ -2782,7 +2782,9 @@ class Generator(metaclass=_Generator):
         if not partition and not order and not spec and alias:
             return f"{this} {alias}"
 
-        args = " ".join(arg for arg in (alias, first, partition, order, spec) if arg)
+        args = self.format_args(
+            *[arg for arg in (alias, first, partition, order, spec) if arg], sep=" "
+        )
         return f"{this} ({args})"
 
     def partition_by_sql(self, expression: exp.Window | exp.MatchRecognize) -> str:

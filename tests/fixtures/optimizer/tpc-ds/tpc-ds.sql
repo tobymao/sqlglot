@@ -4875,7 +4875,10 @@ SELECT
   "item"."i_category" AS "i_category",
   "item"."i_class" AS "i_class",
   GROUPING("item"."i_category") + GROUPING("item"."i_class") AS "lochierarchy",
-  RANK() OVER (PARTITION BY GROUPING("item"."i_category") + GROUPING("item"."i_class"), CASE WHEN GROUPING("item"."i_class") = 0 THEN "item"."i_category" END ORDER BY SUM("store_sales"."ss_net_profit") / SUM("store_sales"."ss_ext_sales_price")) AS "rank_within_parent"
+  RANK() OVER (
+    PARTITION BY GROUPING("item"."i_category") + GROUPING("item"."i_class"), CASE WHEN GROUPING("item"."i_class") = 0 THEN "item"."i_category" END
+    ORDER BY SUM("store_sales"."ss_net_profit") / SUM("store_sales"."ss_ext_sales_price")
+  ) AS "rank_within_parent"
 FROM "store_sales" AS "store_sales"
 JOIN "date_dim" AS "d1"
   ON "d1"."d_date_sk" = "store_sales"."ss_sold_date_sk" AND "d1"."d_year" = 2000
@@ -5952,8 +5955,13 @@ WITH "v1" AS (
     "date_dim"."d_year" AS "d_year",
     "date_dim"."d_moy" AS "d_moy",
     SUM("store_sales"."ss_sales_price") AS "sum_sales",
-    AVG(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "item"."i_category", "item"."i_brand", "store"."s_store_name", "store"."s_company_name", "date_dim"."d_year") AS "avg_monthly_sales",
-    RANK() OVER (PARTITION BY "item"."i_category", "item"."i_brand", "store"."s_store_name", "store"."s_company_name" ORDER BY "date_dim"."d_year", "date_dim"."d_moy") AS "rn"
+    AVG(SUM("store_sales"."ss_sales_price")) OVER (
+      PARTITION BY "item"."i_category", "item"."i_brand", "store"."s_store_name", "store"."s_company_name", "date_dim"."d_year"
+    ) AS "avg_monthly_sales",
+    RANK() OVER (
+      PARTITION BY "item"."i_category", "item"."i_brand", "store"."s_store_name", "store"."s_company_name"
+      ORDER BY "date_dim"."d_year", "date_dim"."d_moy"
+    ) AS "rn"
   FROM "item" AS "item"
   JOIN "store_sales" AS "store_sales"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
@@ -6591,7 +6599,11 @@ WITH "date_dim_2" AS (
   SELECT
     "web_sales"."ws_item_sk" AS "item_sk",
     "date_dim"."d_date" AS "d_date",
-    SUM(SUM("web_sales"."ws_sales_price")) OVER (PARTITION BY "web_sales"."ws_item_sk" ORDER BY "date_dim"."d_date" rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "cume_sales"
+    SUM(SUM("web_sales"."ws_sales_price")) OVER (
+      PARTITION BY "web_sales"."ws_item_sk"
+      ORDER BY "date_dim"."d_date"
+      rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS "cume_sales"
   FROM "web_sales" AS "web_sales"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
@@ -6604,7 +6616,11 @@ WITH "date_dim_2" AS (
   SELECT
     "store_sales"."ss_item_sk" AS "item_sk",
     "date_dim"."d_date" AS "d_date",
-    SUM(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "store_sales"."ss_item_sk" ORDER BY "date_dim"."d_date" rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "cume_sales"
+    SUM(SUM("store_sales"."ss_sales_price")) OVER (
+      PARTITION BY "store_sales"."ss_item_sk"
+      ORDER BY "date_dim"."d_date"
+      rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS "cume_sales"
   FROM "store_sales" AS "store_sales"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
@@ -6623,16 +6639,24 @@ WITH "date_dim_2" AS (
     CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END AS "d_date",
     "web"."cume_sales" AS "web_sales",
     "store"."cume_sales" AS "store_sales",
-    MAX("web"."cume_sales") OVER (PARTITION BY CASE
-      WHEN NOT "web"."item_sk" IS NULL
-      THEN "web"."item_sk"
-      ELSE "store"."item_sk"
-    END ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "web_cumulative",
-    MAX("store"."cume_sales") OVER (PARTITION BY CASE
-      WHEN NOT "web"."item_sk" IS NULL
-      THEN "web"."item_sk"
-      ELSE "store"."item_sk"
-    END ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "store_cumulative"
+    MAX("web"."cume_sales") OVER (
+      PARTITION BY CASE
+        WHEN NOT "web"."item_sk" IS NULL
+        THEN "web"."item_sk"
+        ELSE "store"."item_sk"
+      END
+      ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END
+      rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS "web_cumulative",
+    MAX("store"."cume_sales") OVER (
+      PARTITION BY CASE
+        WHEN NOT "web"."item_sk" IS NULL
+        THEN "web"."item_sk"
+        ELSE "store"."item_sk"
+      END
+      ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END
+      rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS "store_cumulative"
   FROM "web_v1" AS "web"
   FULL JOIN "store_v1" AS "store"
     ON "store"."d_date" = "web"."d_date" AND "store"."item_sk" = "web"."item_sk"
@@ -7258,8 +7282,13 @@ WITH "v1" AS (
     "call_center"."cc_name" AS "cc_name",
     "date_dim"."d_year" AS "d_year",
     SUM("catalog_sales"."cs_sales_price") AS "sum_sales",
-    AVG(SUM("catalog_sales"."cs_sales_price")) OVER (PARTITION BY "item"."i_category", "item"."i_brand", "call_center"."cc_name", "date_dim"."d_year") AS "avg_monthly_sales",
-    RANK() OVER (PARTITION BY "item"."i_category", "item"."i_brand", "call_center"."cc_name" ORDER BY "date_dim"."d_year", "date_dim"."d_moy") AS "rn"
+    AVG(SUM("catalog_sales"."cs_sales_price")) OVER (
+      PARTITION BY "item"."i_category", "item"."i_brand", "call_center"."cc_name", "date_dim"."d_year"
+    ) AS "avg_monthly_sales",
+    RANK() OVER (
+      PARTITION BY "item"."i_category", "item"."i_brand", "call_center"."cc_name"
+      ORDER BY "date_dim"."d_year", "date_dim"."d_moy"
+    ) AS "rn"
   FROM "item" AS "item"
   JOIN "catalog_sales" AS "catalog_sales"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
@@ -9835,7 +9864,10 @@ SELECT
   "store"."s_state" AS "s_state",
   "store"."s_county" AS "s_county",
   GROUPING("store"."s_state") + GROUPING("store"."s_county") AS "lochierarchy",
-  RANK() OVER (PARTITION BY GROUPING("store"."s_state") + GROUPING("store"."s_county"), CASE WHEN GROUPING("store"."s_county") = 0 THEN "store"."s_state" END ORDER BY SUM("store_sales"."ss_net_profit") DESC) AS "rank_within_parent"
+  RANK() OVER (
+    PARTITION BY GROUPING("store"."s_state") + GROUPING("store"."s_county"), CASE WHEN GROUPING("store"."s_county") = 0 THEN "store"."s_state" END
+    ORDER BY SUM("store_sales"."ss_net_profit") DESC
+  ) AS "rank_within_parent"
 FROM "store_sales_2" AS "store_sales"
 JOIN "date_dim" AS "d1"
   ON "d1"."d_date_sk" = "store_sales"."ss_sold_date_sk"
@@ -11987,7 +12019,10 @@ SELECT
   "item"."i_category" AS "i_category",
   "item"."i_class" AS "i_class",
   GROUPING("item"."i_category") + GROUPING("item"."i_class") AS "lochierarchy",
-  RANK() OVER (PARTITION BY GROUPING("item"."i_category") + GROUPING("item"."i_class"), CASE WHEN GROUPING("item"."i_class") = 0 THEN "item"."i_category" END ORDER BY SUM("web_sales"."ws_net_paid") DESC) AS "rank_within_parent"
+  RANK() OVER (
+    PARTITION BY GROUPING("item"."i_category") + GROUPING("item"."i_class"), CASE WHEN GROUPING("item"."i_class") = 0 THEN "item"."i_category" END
+    ORDER BY SUM("web_sales"."ws_net_paid") DESC
+  ) AS "rank_within_parent"
 FROM "web_sales" AS "web_sales"
 JOIN "date_dim" AS "d1"
   ON "d1"."d_date_sk" = "web_sales"."ws_sold_date_sk"
@@ -12379,7 +12414,9 @@ WITH "tmp1" AS (
     "store"."s_company_name" AS "s_company_name",
     "date_dim"."d_moy" AS "d_moy",
     SUM("store_sales"."ss_sales_price") AS "sum_sales",
-    AVG(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "item"."i_category", "item"."i_brand", "store"."s_store_name", "store"."s_company_name") AS "avg_monthly_sales"
+    AVG(SUM("store_sales"."ss_sales_price")) OVER (
+      PARTITION BY "item"."i_category", "item"."i_brand", "store"."s_store_name", "store"."s_company_name"
+    ) AS "avg_monthly_sales"
   FROM "item" AS "item"
   JOIN "store_sales" AS "store_sales"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"

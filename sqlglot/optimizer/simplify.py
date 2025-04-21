@@ -40,7 +40,6 @@ def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
     dialect: DialectType = None,
-    max_depth: t.Optional[int] = None,
 ):
     """
     Rewrite sqlglot AST to simplify expressions.
@@ -54,7 +53,6 @@ def simplify(
     Args:
         expression: expression to simplify
         constant_propagation: whether the constant propagation rule should be used
-        max_depth: Chains of Connectors (AND, OR, etc) exceeding `max_depth` will be skipped
     Returns:
         sqlglot.Expression: simplified expression
     """

@@ -62,9 +62,12 @@ def simplify(
     dialect = Dialect.get_or_raise(dialect)
 
     def _simplify(expression):
-        stack = []
+        pre_transformation_stack = [expression]
+        post_transformation_stack = []
 
-        for node in expression.dfs(prune=lambda n: n.meta.get(FINAL)):
+        while pre_transformation_stack:
+            node = pre_transformation_stack.pop()
+
             if node.meta.get(FINAL):
                 continue
 
@@ -105,10 +108,13 @@ def simplify(
             if new_node is not node:
                 node.replace(new_node)
 
-            stack.append((new_node, parent))
+            pre_transformation_stack.extend(
+                n for n in new_node.iter_expressions(reverse=True) if not n.meta.get(FINAL)
+            )
+            post_transformation_stack.append((new_node, parent))
 
-        while stack:
-            node, parent = stack.pop()
+        while post_transformation_stack:
+            node, parent = post_transformation_stack.pop()
             root = node is expression
 
             # Resets parent, arg_key, index pointers– this is needed because some of the

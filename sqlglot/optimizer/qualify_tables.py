@@ -54,10 +54,10 @@ def qualify_tables(
 
     def _qualify(table: exp.Table) -> None:
         if isinstance(table.this, exp.Identifier):
-            if not table.args.get("db"):
-                table.set("db", db)
-            if not table.args.get("catalog") and table.args.get("db"):
-                table.set("catalog", catalog)
+            if db and not table.args.get("db"):
+                table.set("db", db.copy())
+            if catalog and not table.args.get("catalog") and table.args.get("db"):
+                table.set("catalog", catalog.copy())
 
     if (db or catalog) and not isinstance(expression, exp.Query):
         for node in expression.walk(prune=lambda n: isinstance(n, exp.Query)):
@@ -148,6 +148,7 @@ def qualify_tables(
                 if table_alias:
                     for p in exp.COLUMN_PARTS[1:]:
                         column.set(p, None)
-                    column.set("table", table_alias)
+
+                    column.set("table", table_alias.copy())
 
     return expression

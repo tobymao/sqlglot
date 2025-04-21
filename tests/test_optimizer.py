@@ -538,6 +538,11 @@ class TestOptimizer(unittest.TestCase):
     def test_simplify(self):
         self.check_file("simplify", simplify)
 
+        # Stress test with huge unios
+        union_sql = "SELECT 1 UNION ALL " * 1000 + "SELECT 1"
+        expression = parse_one(union_sql)
+        self.assertEqual(simplify(expression).sql(), union_sql)
+
         # Ensure simplify mutates the AST properly
         expression = parse_one("SELECT 1 + 2")
         simplify(expression.selects[0])

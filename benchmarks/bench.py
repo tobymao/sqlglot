@@ -1,6 +1,6 @@
 import collections.abc
 
-from helpers import ascii_table
+from benchmarks.helpers import ascii_table
 
 # moz_sql_parser 3.10 compatibility
 collections.Iterable = collections.abc.Iterable

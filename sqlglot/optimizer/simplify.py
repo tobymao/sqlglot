@@ -148,33 +148,6 @@ def simplify(
     return expression
 
 
-def connector_depth(expression: exp.Expression) -> int:
-    """
-    Determine the maximum depth of a tree of Connectors.
-
-    For example:
-        >>> from sqlglot import parse_one
-        >>> connector_depth(parse_one("a AND b AND c AND d"))
-        3
-    """
-    stack = deque([(expression, 0)])
-    max_depth = 0
-
-    while stack:
-        expression, depth = stack.pop()
-
-        if not isinstance(expression, exp.Connector):
-            continue
-
-        depth += 1
-        max_depth = max(depth, max_depth)
-
-        stack.append((expression.left, depth))
-        stack.append((expression.right, depth))
-
-    return max_depth
-
-
 def catch(*exceptions):
     """Decorator that ignores a simplification function if any of `exceptions` are raised"""
 

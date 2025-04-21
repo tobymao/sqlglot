@@ -57,10 +57,28 @@ def _no_sort_array(self: Presto.Generator, expression: exp.SortArray) -> str:
 
 def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
     if isinstance(expression.parent, exp.PartitionedByProperty):
-        partition_exprs = [
-            self.sql(c) if isinstance(c, (exp.Func, exp.Property)) else self.sql(c, "this")
-            for c in expression.expressions
-        ]
+
+        def _force_unquoted(node: exp.Expression):
+            if isinstance(node, exp.Identifier) and node.quoted:
+                node.set("quoted", False)
+            return node
+
+        # Any columns in the ARRAY[] string literals should not be quoted
+        # When identify=False on the generator, identifiers are not force-quoted, but any exp.Identifier nodes with `quoted=True` are still quoted
+        # so to ensure exp.Identifier nodes are never quoted under any circumstances, we need to:
+        # - set `identify=False` on the generator
+        # - set `quoted=False` on any exp.Identifier objects
+        orig_identify = self.identify
+        self.identify = False
+        expressions = expression.transform(_force_unquoted)
+
+        try:
+            partition_exprs = [
+                self.sql(c) if isinstance(c, (exp.Func, exp.Property)) else self.sql(c, "this")
+                for c in expressions
+            ]
+        finally:
+            self.identify = orig_identify
 
         return self.sql(exp.Array(expressions=[exp.Literal.string(c) for c in partition_exprs]))
 

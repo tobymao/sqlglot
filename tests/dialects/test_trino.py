@@ -97,10 +97,18 @@ class TestTrino(Validator):
         self.validate_identity(
             "CREATE TABLE foo (a VARCHAR, b INTEGER, c DATE) WITH (PARTITIONED_BY=ARRAY['a', 'b'])"
         )
+        self.validate_identity(
+            'CREATE TABLE "foo" ("a" VARCHAR, "b" INTEGER, "c" DATE) WITH (PARTITIONED_BY=ARRAY[\'a\', \'b\'])',
+            identify=True,
+        )
 
         # Iceberg connector syntax (partitioning, can contain Iceberg transform expressions)
         self.validate_identity(
             "CREATE TABLE foo (a VARCHAR, b INTEGER, c DATE) WITH (PARTITIONING=ARRAY['a', 'bucket(4, b)', 'month(c)'])",
+        )
+        self.validate_identity(
+            'CREATE TABLE "foo" ("a" VARCHAR, "b" INTEGER, "c" DATE) WITH (PARTITIONING=ARRAY[\'a\', \'bucket(4, b)\', \'month(c)\'])',
+            identify=True,
         )
 
     def test_analyze(self):

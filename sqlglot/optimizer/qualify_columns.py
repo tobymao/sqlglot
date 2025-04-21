@@ -770,7 +770,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.expression.selects, scope.outer_columns)
     ):
-        if selection is None:
+        if selection is None or isinstance(selection, exp.QueryTransform):
             break
 
         if isinstance(selection, exp.Subquery):
@@ -787,7 +787,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
 
         new_selections.append(selection)
 
-    if isinstance(scope.expression, exp.Select):
+    if new_selections and isinstance(scope.expression, exp.Select):
         scope.expression.set("expressions", new_selections)
 
 
@@ -945,7 +945,14 @@ class Resolver:
                 else:
                     columns = set_op.named_selects
             else:
-                columns = source.expression.named_selects
+                select = seq_get(source.expression.selects, 0)
+
+                if isinstance(select, exp.QueryTransform):
+                    # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-qry-select-transform.html
+                    schema = select.args.get("schema")
+                    columns = [c.name for c in schema.expressions] if schema else ["key", "value"]
+                else:
+                    columns = source.expression.named_selects
 
             node, _ = self.scope.selected_sources.get(name) or (None, None)
             if isinstance(node, Scope):

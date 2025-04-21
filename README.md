@@ -533,6 +533,10 @@ make check  # Full test suite & linter checks
 |            long |   0.00889 (1.0) | 0.00572 (0.643) | 0.36982 (41.56) | 0.00614 (0.690) | 0.02530 (2.844) | 0.02931 (3.294) | 0.00059 (0.066) |
 |           crazy |   0.02918 (1.0) | 0.01991 (0.682) | 1.88695 (64.66) | 0.02003 (0.686) | 7.46894 (255.9) | 0.64994 (22.27) | 0.00327 (0.112) |
 
+```
+make bench            # Run parsing benchmark
+make bench-optimize   # Run optimization benchmark
+```
 
 ## Optional Dependencies
 

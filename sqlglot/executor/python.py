@@ -9,7 +9,7 @@ from sqlglot.errors import ExecuteError
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import RowReader, Table
-from sqlglot.helper import csv_reader, ensure_list, subclasses
+from sqlglot.helper import csv_reader, subclasses
 
 
 class PythonExecutor:
@@ -370,8 +370,8 @@ def _rename(self, e):
             return self.func(e.key, *values)
 
         if isinstance(e, exp.Func) and e.is_var_len_args:
-            *head, tail = values
-            return self.func(e.key, *head, *ensure_list(tail))
+            args = itertools.chain.from_iterable(x if isinstance(x, list) else [x] for x in values)
+            return self.func(e.key, *args)
 
         return self.func(e.key, *values)
     except Exception as ex:

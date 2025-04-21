@@ -211,16 +211,31 @@ def while_changing(expression: Expression, func: t.Callable[[Expression], E]) ->
     Returns:
         The transformed expression.
     """
-    while True:
-        for n in reversed(tuple(expression.walk())):
-            n._hash = hash(n)
+    end_hash: t.Optional[int] = None
 
-        start = hash(expression)
+    while True:
+        # No need to walk the AST– we've already cached the hashes in the previous iteration
+        if end_hash is None:
+            for n in reversed(tuple(expression.walk())):
+                n._hash = hash(n)
+
+        start_hash = hash(expression)
         expression = func(expression)
 
-        for n in expression.walk():
+        expression_nodes = tuple(expression.walk())
+
+        # Uncache previous caches so we can recompute them
+        for n in reversed(expression_nodes):
             n._hash = None
-        if start == hash(expression):
+            n._hash = hash(n)
+
+        end_hash = hash(expression)
+
+        if start_hash == end_hash:
+            # ... and reset the hash so we don't risk it becoming out of date if a mutation happens
+            for n in expression_nodes:
+                n._hash = None
+
             break
 
     return expression

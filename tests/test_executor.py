@@ -728,6 +728,12 @@ class TestExecutor(unittest.TestCase):
                 result = execute(f"SELECT {sql}")
                 self.assertEqual(result.rows, [(expected,)])
 
+        result = execute(
+            "WITH t AS (SELECT 'a' AS c1, 'b' AS c2) SELECT NVL(c1, c2) FROM t",
+            dialect="oracle",
+        )
+        self.assertEqual(result.rows, [("a",)])
+
     def test_case_sensitivity(self):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})
         self.assertEqual(result.columns, ("a",))

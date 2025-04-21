@@ -1455,3 +1455,38 @@ LEFT JOIN "_u_1" AS "_u_1"
   ON "_u_1"."tagname" = "event"."tagname"
 WHERE
   "event"."priority" = 'High' AND NOT "_u_1"."tagname" IS NULL;
+
+# title: SELECT TRANSFORM ... Spark clause when schema is provided
+# execute: false
+# dialect: spark
+WITH a AS (SELECT 'v' AS x) SELECT * FROM (SELECT TRANSFORM(x) USING 'cat' AS (y STRING) FROM a);
+WITH `a` AS (
+  SELECT
+    'v' AS `x`
+), `_q_0` AS (
+  SELECT
+    TRANSFORM(`a`.`x`) USING 'cat' AS (
+      `y` STRING
+    )
+  FROM `a` AS `a`
+)
+SELECT
+  `_q_0`.`y` AS `y`
+FROM `_q_0` AS `_q_0`;
+
+# title: SELECT TRANSFORM ... Spark clause when schema is not provided
+# execute: false
+# dialect: spark
+WITH a AS (SELECT 'v' AS x) SELECT * FROM (SELECT TRANSFORM(x) USING 'cat'  FROM a);
+WITH `a` AS (
+  SELECT
+    'v' AS `x`
+), `_q_0` AS (
+  SELECT
+    TRANSFORM(`a`.`x`) USING 'cat'
+  FROM `a` AS `a`
+)
+SELECT
+  `_q_0`.`key` AS `key`,
+  `_q_0`.`value` AS `value`
+FROM `_q_0` AS `_q_0`;

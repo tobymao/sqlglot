@@ -1250,7 +1250,7 @@ def build_date_delta(
             unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
         expression = exp_class(this=this, expression=seq_get(args, 1), unit=unit)
         if supports_timezone and has_timezone:
-            expression.args["zone"] = args[-1]
+            expression.set("zone", args[-1])
         return expression
 
     return _builder

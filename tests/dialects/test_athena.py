@@ -276,15 +276,17 @@ class TestAthena(Validator):
                     exp.FileFormatProperty(this=exp.Literal.string("parquet")),
                     exp.LocationProperty(this=exp.Literal.string("s3://foo")),
                     exp.PartitionedByProperty(
-                        this=exp.Schema(expressions=[exp.to_column("partition_col")])
+                        this=exp.Schema(expressions=[exp.to_column("partition_col", quoted=True)])
                     ),
                 ]
             ),
             expression=exp.select("1"),
         )
+
+        # Even if identify=True, the column names should not be quoted within the string literals in the partitioned_by ARRAY[]
         self.assertEqual(
             ctas_hive.sql(dialect=self.dialect, identify=True),
-            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo', partitioned_by=ARRAY['\"partition_col\"']) AS SELECT 1",
+            "CREATE TABLE \"foo\".\"bar\" WITH (format='parquet', external_location='s3://foo', partitioned_by=ARRAY['partition_col']) AS SELECT 1",
         )
         self.assertEqual(
             ctas_hive.sql(dialect=self.dialect, identify=False),
@@ -303,7 +305,8 @@ class TestAthena(Validator):
                             expressions=[
                                 exp.to_column("partition_col"),
                                 exp.PartitionedByBucket(
-                                    this=exp.to_column("a"), expression=exp.Literal.number(4)
+                                    this=exp.to_column("a", quoted=True),
+                                    expression=exp.Literal.number(4),
                                 ),
                             ]
                         )
@@ -312,9 +315,12 @@ class TestAthena(Validator):
             ),
             expression=exp.select("1"),
         )
+        # Even if identify=True, the column names should not be quoted within the string literals in the partitioning ARRAY[]
+        # Technically Trino's Iceberg connector does support quoted column names in the string literals but its undocumented
+        # so we dont do it to keep consistency with the Hive connector
         self.assertEqual(
             ctas_iceberg.sql(dialect=self.dialect, identify=True),
-            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['\"partition_col\"', 'BUCKET(\"a\", 4)']) AS SELECT 1",
+            "CREATE TABLE \"foo\".\"bar\" WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col', 'BUCKET(a, 4)']) AS SELECT 1",
         )
         self.assertEqual(
             ctas_iceberg.sql(dialect=self.dialect, identify=False),

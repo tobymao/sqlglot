@@ -448,14 +448,13 @@ LANGUAGE js AS
             "SELECT SUM(x RESPECT NULLS) AS x",
             read={
                 "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
-                "duckdb": "SELECT SUM(x RESPECT NULLS) AS x",
                 "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
                 "spark": "SELECT SUM(x) RESPECT NULLS AS x",
                 "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
             },
             write={
                 "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
-                "duckdb": "SELECT SUM(x RESPECT NULLS) AS x",
+                "duckdb": "SELECT SUM(x) AS x",
                 "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
                 "spark": "SELECT SUM(x) RESPECT NULLS AS x",
                 "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
@@ -465,7 +464,7 @@ LANGUAGE js AS
             "SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
             write={
                 "bigquery": "SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
-                "duckdb": "SELECT QUANTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
+                "duckdb": "SELECT QUANTILE_CONT(x, 0.5) OVER ()",
                 "spark": "SELECT PERCENTILE_CONT(x, 0.5) RESPECT NULLS OVER ()",
             },
         )

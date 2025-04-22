@@ -103,6 +103,7 @@ def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA]
             unit_to_var(expression),
             expression.expression,
             expression.this,
+            expression.args.get("zone"),
         )
 
     return _delta_sql
@@ -302,8 +303,8 @@ class ClickHouse(Dialect):
             "COUNTIF": _build_count_if,
             "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
-            "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None),
-            "DATEDIFF": build_date_delta(exp.DateDiff, default_unit=None),
+            "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None, supports_timezone=True),
+            "DATEDIFF": build_date_delta(exp.DateDiff, default_unit=None, supports_timezone=True),
             "DATE_FORMAT": _build_date_format,
             "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),

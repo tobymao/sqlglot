@@ -1237,6 +1237,15 @@ LIFETIME(MIN 0 MAX 0)""",
                         f"SELECT {func_alias}(SECOND, 1, bar)",
                         f"SELECT {func_name}(SECOND, 1, bar)",
                     )
+        # 4-arg functions of type <func>(unit, value, date, timezone)
+        for func in (("DATE_DIFF", "DATEDIFF"),):
+            func_name = func[0]
+            for func_alias in func:
+                with self.subTest(f"Test 4-arg date-time function {func_alias}"):
+                    self.validate_identity(
+                        f"SELECT {func_alias}(SECOND, 1, bar, 'UTC')",
+                        f"SELECT {func_name}(SECOND, 1, bar, 'UTC')",
+                    )
 
     def test_convert(self):
         self.assertEqual(

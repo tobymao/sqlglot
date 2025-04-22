@@ -1,6 +1,51 @@
 Changelog
 =========
 
+## [v26.16.0] - 2025-04-22
+### :boom: BREAKING CHANGES
+- due to [`510984f`](https://github.com/tobymao/sqlglot/commit/510984f2ddc6ff13b8a8030f698aed9ad0e6f46b) - stop generating redundant TO_DATE calls *(PR [#4990](https://github.com/tobymao/sqlglot/pull/4990) by [@georgesittas](https://github.com/georgesittas))*:
+
+  stop generating redundant TO_DATE calls (#4990)
+
+- due to [`da9ec61`](https://github.com/tobymao/sqlglot/commit/da9ec61e8edd5049e246390e1b638cf14d50fa2d) - Fix pretty generation of exp.Window *(PR [#4994](https://github.com/tobymao/sqlglot/pull/4994) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Fix pretty generation of exp.Window (#4994)
+
+- due to [`fb83fac`](https://github.com/tobymao/sqlglot/commit/fb83fac2d097d8d3e8e2556c072792857609bd94) - remove recursion from `simplify` *(PR [#4988](https://github.com/tobymao/sqlglot/pull/4988) by [@georgesittas](https://github.com/georgesittas))*:
+
+  remove recursion from `simplify` (#4988)
+
+- due to [`890b24a`](https://github.com/tobymao/sqlglot/commit/890b24a5cec269f5595743d0a86024a23217a3f1) - remove `connector_depth` as it is now dead code *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  remove `connector_depth` as it is now dead code
+
+- due to [`1dc501b`](https://github.com/tobymao/sqlglot/commit/1dc501b8ed68638375d869e11f3bf188948a4990) - remove `max_depth` argument in simplify as it is now dead code *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  remove `max_depth` argument in simplify as it is now dead code
+
+
+### :sparkles: New Features
+- [`76535ce`](https://github.com/tobymao/sqlglot/commit/76535ce9487186d2eb7071fac2f224238de7a9ba) - **optimizer**: add support for Spark's TRANSFORM clause *(PR [#4993](https://github.com/tobymao/sqlglot/pull/4993) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#4991](https://github.com/tobymao/sqlglot/issues/4991) opened by [@karta0807913](https://github.com/karta0807913)*
+
+### :bug: Bug Fixes
+- [`510984f`](https://github.com/tobymao/sqlglot/commit/510984f2ddc6ff13b8a8030f698aed9ad0e6f46b) - **hive**: stop generating redundant TO_DATE calls *(PR [#4990](https://github.com/tobymao/sqlglot/pull/4990) by [@georgesittas](https://github.com/georgesittas))*
+- [`da9ec61`](https://github.com/tobymao/sqlglot/commit/da9ec61e8edd5049e246390e1b638cf14d50fa2d) - **generator**: Fix pretty generation of exp.Window *(PR [#4994](https://github.com/tobymao/sqlglot/pull/4994) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4098](https://github.com/TobikoData/sqlmesh/issues/4098) opened by [@tanghyd](https://github.com/tanghyd)*
+- [`aae9aa8`](https://github.com/tobymao/sqlglot/commit/aae9aa8f96ccaa7686cda3cdabec208ae4c3d60a) - **optimizer**: ensure there are no shared refs after qualify_tables *(PR [#4995](https://github.com/tobymao/sqlglot/pull/4995) by [@georgesittas](https://github.com/georgesittas))*
+- [`adaef42`](https://github.com/tobymao/sqlglot/commit/adaef42234d8f1c9c331f53bee2c42686f29bdec) - **trino**: Dont quote identifiers in string literals for the partitioned_by property *(PR [#4998](https://github.com/tobymao/sqlglot/pull/4998) by [@erindru](https://github.com/erindru))*
+- [`a547f8d`](https://github.com/tobymao/sqlglot/commit/a547f8d4292f3b3a4c85f9d6466ead2ad976dfd2) - **postgres**: Capture optional minus sign in interval regex *(PR [#5000](https://github.com/tobymao/sqlglot/pull/5000) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#4999](https://github.com/tobymao/sqlglot/issues/4999) opened by [@cpimhoff](https://github.com/cpimhoff)*
+
+### :recycle: Refactors
+- [`fb83fac`](https://github.com/tobymao/sqlglot/commit/fb83fac2d097d8d3e8e2556c072792857609bd94) - **optimizer**: remove recursion from `simplify` *(PR [#4988](https://github.com/tobymao/sqlglot/pull/4988) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`890b24a`](https://github.com/tobymao/sqlglot/commit/890b24a5cec269f5595743d0a86024a23217a3f1) - remove `connector_depth` as it is now dead code *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`1dc501b`](https://github.com/tobymao/sqlglot/commit/1dc501b8ed68638375d869e11f3bf188948a4990) - remove `max_depth` argument in simplify as it is now dead code *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6572517`](https://github.com/tobymao/sqlglot/commit/6572517c1ec76f14cbd661aacc15c84bef065284) - improve tooling around benchmarks *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.15.0] - 2025-04-17
 ### :boom: BREAKING CHANGES
 - due to [`2b7845a`](https://github.com/tobymao/sqlglot/commit/2b7845a3a821d366ae90ba9ef5e7d61194a34874) - Add support for Athena's Iceberg partitioning transforms *(PR [#4976](https://github.com/tobymao/sqlglot/pull/4976) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -6392,3 +6437,4 @@ Changelog
 [v26.13.2]: https://github.com/tobymao/sqlglot/compare/v26.13.1...v26.13.2
 [v26.14.0]: https://github.com/tobymao/sqlglot/compare/v26.13.2...v26.14.0
 [v26.15.0]: https://github.com/tobymao/sqlglot/compare/v26.14.0...v26.15.0
+[v26.16.0]: https://github.com/tobymao/sqlglot/compare/v26.15.0...v26.16.0

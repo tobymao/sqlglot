@@ -2009,11 +2009,11 @@ class Parser(metaclass=_Parser):
                 extend_props(self._parse_properties())
             else:
                 expression = self._parse_ddl_select()
+
                 # Some dialects also support using a table as an alias instead of a SELECT.
                 # Here we fallback to this as an alternative.
                 if not expression and has_alias:
-                    if self._match(TokenType.VAR, advance=False):
-                        expression = self._parse_table_parts()
+                    expression = self._try_parse(self._parse_table_parts)
 
             if create_token.token_type == TokenType.TABLE:
                 # exp.Properties.Location.POST_EXPRESSION

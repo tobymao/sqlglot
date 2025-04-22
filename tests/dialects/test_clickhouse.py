@@ -739,6 +739,12 @@ class TestClickhouse(Validator):
             with self.subTest(f"Casting to ClickHouse {data_type}"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
 
+    def test_nothing_type(self):
+        data_types = ["Nothing", "Nullable(Nothing)"]
+        for data_type in data_types:
+            with self.subTest(f"Casting to ClickHouse {data_type}"):
+                self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
     def test_aggregate_function_column_with_any_keyword(self):
         # Regression test for https://github.com/tobymao/sqlglot/issues/4723
         self.validate_all(

@@ -4533,6 +4533,7 @@ class DataType(Expression):
         NAME = auto()
         NCHAR = auto()
         NESTED = auto()
+        NOTHING = auto()
         NULL = auto()
         NUMMULTIRANGE = auto()
         NUMRANGE = auto()

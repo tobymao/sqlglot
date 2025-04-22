@@ -405,6 +405,7 @@ class Parser(metaclass=_Parser):
         TokenType.IPV4,
         TokenType.IPV6,
         TokenType.UNKNOWN,
+        TokenType.NOTHING,
         TokenType.NULL,
         TokenType.NAME,
         TokenType.TDIGEST,

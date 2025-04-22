@@ -333,6 +333,7 @@ class TokenType(AutoName):
     MODEL = auto()
     NATURAL = auto()
     NEXT = auto()
+    NOTHING = auto()
     NOTNULL = auto()
     NULL = auto()
     OBJECT_IDENTIFIER = auto()

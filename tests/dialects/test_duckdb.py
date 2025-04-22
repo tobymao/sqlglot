@@ -1,4 +1,5 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -1416,20 +1417,26 @@ class TestDuckDB(Validator):
 
     def test_ignore_nulls(self):
         # Note that DuckDB differentiates window functions (e.g. LEAD, LAG) from aggregate functions (e.g. SUM)
-        from sqlglot.dialects.duckdb import WINDOW_FUNCS_WITH_IGNORE_NULLS
+        from sqlglot.dialects.duckdb import DuckDB
 
         agg_funcs = (exp.Sum, exp.Max, exp.Min)
 
-        for func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS + agg_funcs:
+        for func_type in DuckDB.Generator.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS + agg_funcs:
             func = func_type(this=exp.to_identifier("col"))
             ignore_null = exp.IgnoreNulls(this=func)
             windowed_ignore_null = exp.Window(this=ignore_null)
 
-            if func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS:
+            if func_type in DuckDB.Generator.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS:
                 self.assertIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
             else:
-                self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
-                self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+                with self.assertLogs(generator_logger) as cm:
+                    self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
+                    self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+
+                self.assertEqual(
+                    str(cm.output[0]),
+                    "WARNING:sqlglot:IGNORE NULLS is not supported for non-window functions.",
+                )
 
     def test_attach_detach(self):
         # ATTACH

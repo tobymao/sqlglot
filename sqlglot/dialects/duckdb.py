@@ -47,14 +47,6 @@ DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
 ]
 
-WINDOW_FUNCS_WITH_IGNORE_NULLS = (
-    exp.FirstValue,
-    exp.LastValue,
-    exp.Lag,
-    exp.Lead,
-    exp.NthValue,
-)
-
 
 def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
     this = expression.this
@@ -879,6 +871,14 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
 
+        IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
+            exp.FirstValue,
+            exp.Lag,
+            exp.LastValue,
+            exp.Lead,
+            exp.NthValue,
+        )
+
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"
 
@@ -1098,11 +1098,21 @@ class DuckDB(Dialect):
             return super().unnest_sql(expression)
 
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
-            if isinstance(expression.this, WINDOW_FUNCS_WITH_IGNORE_NULLS):
+            if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):
                 # DuckDB should render IGNORE NULLS only for the general-purpose
                 # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
                 return super().ignorenulls_sql(expression)
 
+            self.unsupported("IGNORE NULLS is not supported for non-window functions.")
+            return self.sql(expression, "this")
+
+        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+            if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):
+                # DuckDB should render RESPECT NULLS only for the general-purpose
+                # window functions that accept it e.g. FIRST_VALUE(... RESPECT NULLS) OVER (...)
+                return super().respectnulls_sql(expression)
+
+            self.unsupported("RESPECT NULLS is not supported for non-window functions.")
             return self.sql(expression, "this")
 
         def arraytostring_sql(self, expression: exp.ArrayToString) -> str:

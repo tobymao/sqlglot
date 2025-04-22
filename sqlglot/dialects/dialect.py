@@ -1238,15 +1238,20 @@ def build_date_delta(
     exp_class: t.Type[E],
     unit_mapping: t.Optional[t.Dict[str, str]] = None,
     default_unit: t.Optional[str] = "DAY",
+    supports_timezone: bool = False,
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
-        unit_based = len(args) == 3
+        unit_based = len(args) >= 3
+        has_timezone = len(args) == 4
         this = args[2] if unit_based else seq_get(args, 0)
         unit = None
         if unit_based or default_unit:
             unit = args[0] if unit_based else exp.Literal.string(default_unit)
             unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
-        return exp_class(this=this, expression=seq_get(args, 1), unit=unit)
+        expression = exp_class(this=this, expression=seq_get(args, 1), unit=unit)
+        if supports_timezone and has_timezone:
+            expression.args["zone"] = args[-1]
+        return expression
 
     return _builder
 

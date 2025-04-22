@@ -5752,11 +5752,7 @@ class DateSub(Func, IntervalOp):
 
 class DateDiff(Func, TimeUnit):
     _sql_names = ["DATEDIFF", "DATE_DIFF"]
-    arg_types = {"this": True, "expression": True, "unit": False, "timezone": False}
-
-    @property
-    def timezone(self) -> t.Optional[Literal]:
-        return self.args.get("timezone")
+    arg_types = {"this": True, "expression": True, "unit": False, "zone": False}
 
 
 class DateTrunc(Func):

@@ -770,11 +770,9 @@ ORDER BY (
         ctas_alias = "CREATE TABLE my_db.my_table AS another_db.another_table"
 
         expected = exp.Create(
-            this=exp.Table(this=exp.Identifier(this="my_table"), db=exp.Identifier(this="my_db")),
+            this=exp.to_table("my_db.my_table"),
             kind="TABLE",
-            expression=exp.Table(
-                this=exp.Identifier(this="another_table"), db=exp.Identifier(this="another_db")
-            ),
+            expression=exp.to_table("another_db.another_table"),
         )
         self.assertEqual(self.parse_one(ctas_alias), expected)
         self.validate_identity(ctas_alias)

@@ -29,7 +29,15 @@ from sqlglot.generator import unsupported_args
 
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
-
+class ExasolTokenType:
+    WITH_LOCAL_TIME_ZONE = "WITH_LOCAL_TIME_ZONE"
+    HASHTYPE = "HASHTYPE"
+    BYTE = "BYTE"
+    MONTH = "MONTH"
+    DAY = "DAY"
+    SECOND = "SECOND"
+    TO = "TO"
+        
 def _build_date_format(args: t.List) -> exp.TimeToStr:
     expr = build_formatted_time(exp.TimeToStr, "exasol")(args)
 
@@ -179,7 +187,23 @@ def _map_sql(self: Exasol.Generator, expression: exp.Map | exp.VarMap) -> str:
 
     return f"{{{csv_args}}}"
 
+class Tokenizer(tokens.Tokenizer):
 
+        IDENTIFIER_ESCAPES = ['"']
+        STRING_ESCAPES = ["'"]
+
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "YEAR": TokenType.YEAR,
+            "WITH LOCAL TIME ZONE": ExasolTokenType.WITH_LOCAL_TIME_ZONE,
+            "MONTH": ExasolTokenType.MONTH,
+            "DAY": ExasolTokenType.DAY,
+            "SECOND": ExasolTokenType.SECOND,
+            "TO": ExasolTokenType.TO,
+            "HASHTYPE": ExasolTokenType.HASHTYPE,
+            "BYTE": ExasolTokenType.BYTE,
+        }
+        
 class Exasol(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
@@ -206,59 +230,9 @@ class Exasol(Dialect):
         exp.Intersect: False,
         exp.Union: None,
     }
+   
 
-    class Tokenizer(tokens.Tokenizer):
-        COMMENTS = ["--", "#", "#!", ("/*", "*/")]
-        IDENTIFIERS = ['"', "`"]
-        IDENTIFIER_ESCAPES = ["\\"]
-        STRING_ESCAPES = ["'", "\\"]
-        BIT_STRINGS = [("0b", "")]
-        HEX_STRINGS = [("0x", ""), ("0X", "")]
-        HEREDOC_STRINGS = ["$"]
 
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            ".:": TokenType.DOTCOLON,
-            "ATTACH": TokenType.COMMAND,
-            "DATE32": TokenType.DATE32,
-            "DATETIME64": TokenType.DATETIME64,
-            "DICTIONARY": TokenType.DICTIONARY,
-            "DYNAMIC": TokenType.DYNAMIC,
-            "ENUM8": TokenType.ENUM8,
-            "ENUM16": TokenType.ENUM16,
-            "FINAL": TokenType.FINAL,
-            "FIXEDSTRING": TokenType.FIXEDSTRING,
-            "FLOAT32": TokenType.FLOAT,
-            "FLOAT64": TokenType.DOUBLE,
-            "GLOBAL": TokenType.GLOBAL,
-            "LOWCARDINALITY": TokenType.LOWCARDINALITY,
-            "MAP": TokenType.MAP,
-            "NESTED": TokenType.NESTED,
-            "SAMPLE": TokenType.TABLE_SAMPLE,
-            "TUPLE": TokenType.STRUCT,
-            "UINT16": TokenType.USMALLINT,
-            "UINT32": TokenType.UINT,
-            "UINT64": TokenType.UBIGINT,
-            "UINT8": TokenType.UTINYINT,
-            "IPV4": TokenType.IPV4,
-            "IPV6": TokenType.IPV6,
-            "POINT": TokenType.POINT,
-            "RING": TokenType.RING,
-            "LINESTRING": TokenType.LINESTRING,
-            "MULTILINESTRING": TokenType.MULTILINESTRING,
-            "POLYGON": TokenType.POLYGON,
-            "MULTIPOLYGON": TokenType.MULTIPOLYGON,
-            "AGGREGATEFUNCTION": TokenType.AGGREGATEFUNCTION,
-            "SIMPLEAGGREGATEFUNCTION": TokenType.SIMPLEAGGREGATEFUNCTION,
-            "SYSTEM": TokenType.COMMAND,
-            "PREWHERE": TokenType.PREWHERE,
-        }
-        KEYWORDS.pop("/*+")
-
-        SINGLE_TOKENS = {
-            **tokens.Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.HEREDOC_STRING,
-        }
 
     class Parser(parser.Parser):
         # Tested in ClickHouse's playground, it seems that the following two queries do the same thing

@@ -2572,3 +2572,9 @@ SINGLE = TRUE""",
             self.validate_identity(
                 f"CREATE TABLE t (col1 INT, col2 INT, col3 INT, PRIMARY KEY (col1) {option}, UNIQUE (col1, col2) {option}, FOREIGN KEY (col3) REFERENCES other_t (id) {option})"
             )
+
+    def test_parameter(self):
+        expr = self.validate_identity("SELECT :1")
+        self.assertEqual(expr.find(exp.Placeholder), exp.Placeholder(this="1"))
+        self.validate_identity("SELECT :1, :2")
+        self.validate_identity("SELECT :1 + :2")

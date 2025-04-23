@@ -514,6 +514,15 @@ class Snowflake(Dialect):
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
+        PLACEHOLDER_PARSERS = {
+            **parser.Parser.PLACEHOLDER_PARSERS,
+            TokenType.COLON: lambda self: (
+                self.expression(exp.Placeholder, this=self._prev.text)
+                if self._match_set(self.ID_VAR_TOKENS) or self._match(TokenType.NUMBER)
+                else None
+            ),
+        }
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "CREDENTIALS": lambda self: self._parse_credentials_property(),

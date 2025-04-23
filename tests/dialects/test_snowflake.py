@@ -2575,7 +2575,7 @@ SINGLE = TRUE""",
 
     def test_parameter(self):
         expr_placeholder = parse_one("SELECT :1", dialect="snowflake").find(exp.Placeholder)
-        self.assertEqual(expr_placeholder, exp.Placeholder(this=1))
+        self.assertEqual(expr_placeholder, exp.Placeholder(this="1"))
         self.validate_identity("SELECT :1")
         self.validate_identity("SELECT :1, :2")
         self.validate_identity("SELECT :1 + :2")

@@ -517,7 +517,7 @@ class Snowflake(Dialect):
         PLACEHOLDER_PARSERS = {
             **parser.Parser.PLACEHOLDER_PARSERS,
             TokenType.COLON: lambda self: (
-                self.expression(exp.Placeholder, this=int(self._prev.text))
+                self.expression(exp.Placeholder, this=self._prev.text)
                 if self._match_set(self.ID_VAR_TOKENS) or self._match(TokenType.NUMBER)
                 else None
             ),

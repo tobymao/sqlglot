@@ -7423,7 +7423,7 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("WITH", "SYNC", "MODE") or self._match_text_seq(
             "WITH", "ASYNC", "MODE"
         ):
-            mode = f"WITH {self._tokens[self._index-2].text.upper()} MODE"
+            mode = f"WITH {self._tokens[self._index - 2].text.upper()} MODE"
         else:
             mode = None
 

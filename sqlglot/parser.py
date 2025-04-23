@@ -800,6 +800,7 @@ class Parser(metaclass=_Parser):
         exp.Order: lambda self: self._parse_order(),
         exp.Ordered: lambda self: self._parse_ordered(),
         exp.Properties: lambda self: self._parse_properties(),
+        exp.PartitionedByProperty: lambda self: self._parse_partitioned_by(),
         exp.Qualify: lambda self: self._parse_qualify(),
         exp.Returning: lambda self: self._parse_returning(),
         exp.Select: lambda self: self._parse_select(),

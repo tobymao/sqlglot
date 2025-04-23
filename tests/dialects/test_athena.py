@@ -326,3 +326,14 @@ class TestAthena(Validator):
             ctas_iceberg.sql(dialect=self.dialect, identify=False),
             "CREATE TABLE foo.bar WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col', 'BUCKET(a, 4)']) AS SELECT 1",
         )
+
+    def test_parse_partitioned_by_returns_iceberg_transforms(self):
+        # check that parse_into works for PartitionedByProperty and also that correct AST nodes are emitted for Iceberg transforms
+        parsed = self.parse_one(
+            "(a, bucket(4, b), truncate(3, c), month(d))", into=exp.PartitionedByProperty
+        )
+
+        assert isinstance(parsed, exp.PartitionedByProperty)
+        assert isinstance(parsed.this, exp.Schema)
+        assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionedByBucket))
+        assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionByTruncate))

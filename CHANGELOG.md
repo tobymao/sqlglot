@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v26.16.1] - 2025-04-24
+### :sparkles: New Features
+- [`27a9fb2`](https://github.com/tobymao/sqlglot/commit/27a9fb26a1936512a09b8b09ed2656e22918f2c6) - **clickhouse**: Support parsing CTAS with alias *(PR [#5003](https://github.com/tobymao/sqlglot/pull/5003) by [@dorranh](https://github.com/dorranh))*
+- [`45cd165`](https://github.com/tobymao/sqlglot/commit/45cd165eaca96b33f1de753a147bdc352b9d56d0) - **clickhouse**: Support ClickHouse Nothing type *(PR [#5004](https://github.com/tobymao/sqlglot/pull/5004) by [@dorranh](https://github.com/dorranh))*
+- [`ca61a61`](https://github.com/tobymao/sqlglot/commit/ca61a617fa67082bc0fc94853dee4d70b8ca5c59) - Support exp.PartitionByProperty for parse_into() *(PR [#5006](https://github.com/tobymao/sqlglot/pull/5006) by [@erindru](https://github.com/erindru))*
+- [`a6d4c3c`](https://github.com/tobymao/sqlglot/commit/a6d4c3c901f828cdd96a16a0e55eac1b244f63be) - **snowflake**: Add numeric parameter support *(PR [#5008](https://github.com/tobymao/sqlglot/pull/5008) by [@hovaesco](https://github.com/hovaesco))*
+
+### :bug: Bug Fixes
+- [`8e9dbd4`](https://github.com/tobymao/sqlglot/commit/8e9dbd491b9516c614554e05f05cc1cb976838e3) - **duckdb**: warn on unsupported IGNORE/RESPECT NULLS *(PR [#5002](https://github.com/tobymao/sqlglot/pull/5002) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5001](https://github.com/tobymao/sqlglot/issues/5001) opened by [@MarcoGorelli](https://github.com/MarcoGorelli)*
+- [`10b02bc`](https://github.com/tobymao/sqlglot/commit/10b02bce304042fea09e9cb2369db3c873452245) - **clickhouse**: Support optional timezone argument in date_diff() *(PR [#5005](https://github.com/tobymao/sqlglot/pull/5005) by [@dorranh](https://github.com/dorranh))*
+
+### :wrench: Chores
+- [`1d4d906`](https://github.com/tobymao/sqlglot/commit/1d4d906abc60d29b6606bc8eee50c92cef21d3fd) - use _try_parse for parsing ClickHouse's CREATE TABLE .. AS <table> *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`fc58c27`](https://github.com/tobymao/sqlglot/commit/fc58c273690734263b971b138ec8f0186f524672) - Refactor placeholder parsing for TokenType.COLON *(PR [#5009](https://github.com/tobymao/sqlglot/pull/5009) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v26.16.0] - 2025-04-22
 ### :boom: BREAKING CHANGES
 - due to [`510984f`](https://github.com/tobymao/sqlglot/commit/510984f2ddc6ff13b8a8030f698aed9ad0e6f46b) - stop generating redundant TO_DATE calls *(PR [#4990](https://github.com/tobymao/sqlglot/pull/4990) by [@georgesittas](https://github.com/georgesittas))*:
@@ -6438,3 +6455,4 @@ Changelog
 [v26.14.0]: https://github.com/tobymao/sqlglot/compare/v26.13.2...v26.14.0
 [v26.15.0]: https://github.com/tobymao/sqlglot/compare/v26.14.0...v26.15.0
 [v26.16.0]: https://github.com/tobymao/sqlglot/compare/v26.15.0...v26.16.0
+[v26.16.1]: https://github.com/tobymao/sqlglot/compare/v26.16.0...v26.16.1

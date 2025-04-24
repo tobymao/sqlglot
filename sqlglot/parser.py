@@ -580,6 +580,8 @@ class Parser(metaclass=_Parser):
 
     ALIAS_TOKENS = ID_VAR_TOKENS
 
+    COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS
+
     ARRAY_CONSTRUCTORS = {
         "ARRAY": exp.Array,
         "LIST": exp.List,
@@ -902,7 +904,7 @@ class Parser(metaclass=_Parser):
         TokenType.PARAMETER: lambda self: self._parse_parameter(),
         TokenType.COLON: lambda self: (
             self.expression(exp.Placeholder, this=self._prev.text)
-            if self._match_set(self.ID_VAR_TOKENS)
+            if self._match_set(self.COLON_PLACEHOLDER_TOKENS)
             else None
         ),
     }

@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v26.16.2] - 2025-04-24
+### :sparkles: New Features
+- [`5feae00`](https://github.com/tobymao/sqlglot/commit/5feae00ec7a4826285e7fd0be85d377cc0de09b5) - **databricks**: add support for the VOID type *(PR [#5012](https://github.com/tobymao/sqlglot/pull/5012) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`da90228`](https://github.com/tobymao/sqlglot/commit/da90228f1550715646106dd6f9a170d0973f138f) - put a lock around the lazy dialect module loading call *(PR [#5011](https://github.com/tobymao/sqlglot/pull/5011) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#5010](https://github.com/tobymao/sqlglot/issues/5010) opened by [@NickCrews](https://github.com/NickCrews)*
+
+
 ## [v26.16.1] - 2025-04-24
 ### :sparkles: New Features
 - [`27a9fb2`](https://github.com/tobymao/sqlglot/commit/27a9fb26a1936512a09b8b09ed2656e22918f2c6) - **clickhouse**: Support parsing CTAS with alias *(PR [#5003](https://github.com/tobymao/sqlglot/pull/5003) by [@dorranh](https://github.com/dorranh))*
@@ -6456,3 +6465,4 @@ Changelog
 [v26.15.0]: https://github.com/tobymao/sqlglot/compare/v26.14.0...v26.15.0
 [v26.16.0]: https://github.com/tobymao/sqlglot/compare/v26.15.0...v26.16.0
 [v26.16.1]: https://github.com/tobymao/sqlglot/compare/v26.16.0...v26.16.1
+[v26.16.2]: https://github.com/tobymao/sqlglot/compare/v26.16.1...v26.16.2

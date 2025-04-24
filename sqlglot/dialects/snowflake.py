@@ -401,6 +401,8 @@ class Snowflake(Dialect):
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
         TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
 
+        COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
@@ -512,15 +514,6 @@ class Snowflake(Dialect):
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
-        }
-
-        PLACEHOLDER_PARSERS = {
-            **parser.Parser.PLACEHOLDER_PARSERS,
-            TokenType.COLON: lambda self: (
-                self.expression(exp.Placeholder, this=self._prev.text)
-                if self._match_set(self.ID_VAR_TOKENS) or self._match(TokenType.NUMBER)
-                else None
-            ),
         }
 
         PROPERTY_PARSERS = {

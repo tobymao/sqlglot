@@ -397,6 +397,7 @@ class Parser(metaclass=_Parser):
         TokenType.IMAGE,
         TokenType.VARIANT,
         TokenType.VECTOR,
+        TokenType.VOID,
         TokenType.OBJECT,
         TokenType.OBJECT_IDENTIFIER,
         TokenType.INET,
@@ -5238,6 +5239,8 @@ class Parser(metaclass=_Parser):
                 this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
             else:
                 this = self.expression(exp.DataType, this=exp.DataType.Type.INTERVAL)
+        elif type_token == TokenType.VOID:
+            this = exp.DataType(this=exp.DataType.Type.NULL)
 
         if maybe_func and check_func:
             index2 = self._index

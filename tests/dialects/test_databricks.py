@@ -7,6 +7,12 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        null_type = exp.DataType.build("VOID", dialect="databricks")
+        self.assertEqual(null_type.sql(), "NULL")
+        self.assertEqual(null_type.sql("databricks"), "VOID")
+
+        self.validate_identity("SELECT CAST(NULL AS VOID)")
+        self.validate_identity("SELECT void FROM t")
         self.validate_identity("SELECT * FROM stream")
         self.validate_identity("SELECT t.current_time FROM t")
         self.validate_identity("ALTER TABLE labels ADD COLUMN label_score FLOAT")

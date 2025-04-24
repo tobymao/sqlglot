@@ -27,6 +27,12 @@ class Databricks(Spark):
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']
 
+    class Tokenizer(Spark.Tokenizer):
+        KEYWORDS = {
+            **Spark.Tokenizer.KEYWORDS,
+            "VOID": TokenType.VOID,
+        }
+
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = True
@@ -82,6 +88,11 @@ class Databricks(Spark):
         }
 
         TRANSFORMS.pop(exp.TryCast)
+
+        TYPE_MAPPING = {
+            **Spark.Generator.TYPE_MAPPING,
+            exp.DataType.Type.NULL: "VOID",
+        }
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             constraint = expression.find(exp.GeneratedAsIdentityColumnConstraint)

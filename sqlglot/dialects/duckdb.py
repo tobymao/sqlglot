@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot.expressions import DATA_TYPE
+from sqlglot.expressions import DATA_TYPE, Array, Literal
 from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
@@ -962,8 +962,15 @@ class DuckDB(Dialect):
                 in_sql = self.sql(field)
             else:
                 in_sql = f"{self.expressions(expression, flat=True)}"
+                should_add_parens = True
+
                 exprs = expression.args.get("expressions")
-                if not exprs or len(exprs) > 1:
+                if exprs and len(exprs) == 1:
+                    expr = exprs[0]
+                    if isinstance(expr, Array):
+                        should_add_parens = False
+
+                if should_add_parens:
                     in_sql = f"({in_sql})"
 
             return f"{self.sql(expression, 'this')}{is_global} IN {in_sql}"

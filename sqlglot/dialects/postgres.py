@@ -742,3 +742,12 @@ class Postgres(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "CURRENT_SCHEMA"
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            unit = expression.text("unit").lower()
+
+            if unit.startswith("quarter") and isinstance(expression.this, exp.Literal):
+                expression.this.replace(exp.Literal.number(int(expression.this.to_py()) * 3))
+                expression.args["unit"].replace(exp.var("MONTH"))
+
+            return super().interval_sql(expression)

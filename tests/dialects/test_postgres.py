@@ -373,6 +373,14 @@ FROM json_data, field_ids""",
         )
 
         self.validate_all(
+            "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
+            read={
+                "mysql": "SELECT DATE_ADD(CURRENT_TIMESTAMP, INTERVAL -1 QUARTER)",
+                "postgres": "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
+                "tsql": "SELECT DATEADD(QUARTER, -1, GETDATE())",
+            },
+        )
+        self.validate_all(
             "SELECT ARRAY[]::INT[] AS foo",
             write={
                 "postgres": "SELECT CAST(ARRAY[] AS INT[]) AS foo",

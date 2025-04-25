@@ -962,6 +962,9 @@ class DuckDB(Dialect):
                 in_sql = self.sql(field)
             else:
                 in_sql = f"{self.expressions(expression, flat=True)}"
+                exprs = expression.args.get("expressions")
+                if not exprs or len(exprs) > 1:
+                    in_sql = f"({in_sql})"
 
             return f"{self.sql(expression, 'this')}{is_global} IN {in_sql}"
 

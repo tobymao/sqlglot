@@ -948,6 +948,23 @@ class DuckDB(Dialect):
 
             return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
 
+        def in_sql(self, expression: exp.In) -> str:
+            query = expression.args.get("query")
+            unnest = expression.args.get("unnest")
+            field = expression.args.get("field")
+            is_global = " GLOBAL" if expression.args.get("is_global") else ""
+
+            if query:
+                in_sql = self.sql(query)
+            elif unnest:
+                in_sql = self.in_unnest_op(unnest)
+            elif field:
+                in_sql = self.sql(field)
+            else:
+                in_sql = f"{self.expressions(expression, flat=True)}"
+
+            return f"{self.sql(expression, 'this')}{is_global} IN {in_sql}"
+
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None
             unit = expression.text("unit").lower()

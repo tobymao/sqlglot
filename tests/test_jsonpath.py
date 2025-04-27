@@ -17,6 +17,7 @@ class TestJsonpath(unittest.TestCase):
             exp.JSONPathKey(this=exp.JSONPathWildcard()),
             exp.JSONPathKey(this="a"),
             exp.JSONPathSubscript(this=0),
+            exp.JSONPathSubscript(this=1),
             exp.JSONPathKey(this="x"),
             exp.JSONPathUnion(expressions=[exp.JSONPathWildcard(), "y", 1]),
             exp.JSONPathKey(this="z"),
@@ -26,7 +27,7 @@ class TestJsonpath(unittest.TestCase):
             exp.JSONPathSelector(this=exp.JSONPathScript(this="@.x)")),
         ]
         self.assertEqual(
-            parse("$.*.a[0]['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"),
+            parse("$.*.a[0].1['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"),
             exp.JSONPath(expressions=expected_expressions),
         )
 

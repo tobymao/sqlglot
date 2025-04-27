@@ -66,7 +66,9 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         pass
 
     @t.overload
-    def _match(token_type: TokenType, raise_unmatched: Lit[False] = False) -> t.Optional[Token]:
+    def _match(
+        token_type: TokenType, raise_unmatched: Lit[False] = False
+    ) -> t.Optional[Token]:
         pass
 
     def _match(token_type, raise_unmatched=False):
@@ -178,9 +180,11 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
             recursive = _prev().text == ".."
 
             if _match(TokenType.VAR):
-                value: t.Optional[str | exp.JSONPathWildcard] = _parse_var_text()
+                value: t.Optional[int | str | exp.JSONPathWildcard] = _parse_var_text()
             elif _match(TokenType.IDENTIFIER):
                 value = _prev().text
+            elif _match(TokenType.NUMBER):
+                value = int(_prev().text)
             elif _match(TokenType.STAR):
                 value = exp.JSONPathWildcard()
             else:
@@ -188,10 +192,14 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
 
             if recursive:
                 expressions.append(exp.JSONPathRecursive(this=value))
+            elif isinstance(value, int):
+                expressions.append(exp.JSONPathSubscript(this=value))
             elif value:
                 expressions.append(exp.JSONPathKey(this=value))
             else:
-                raise ParseError(_error("Expected key name or * after DOT"))
+                raise ParseError(
+                    _error("Expected key name, numeric index or * after DOT")
+                )
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())
         elif _match(TokenType.VAR):

@@ -2465,6 +2465,33 @@ SINGLE = TRUE""",
             check_command_warning=True,
         )
 
+    def test_get_from_stage(self):
+        self.validate_identity('GET @"my_DB"."schEMA1"."MYstage" \'file:///dir/tmp.csv\'')
+        self.validate_identity("GET @s1/test 'file:///dir/tmp.csv'")
+
+        # GET with file path and stage ref containing spaces (wrapped in single quotes)
+        ast = parse_one("GET '@s1/my folder' 'file://my file.txt'", read="snowflake")
+        self.assertIsInstance(ast, exp.Get)
+        self.assertEqual(ast.args["source"], exp.Var(this="'@s1/my folder'"))
+        self.assertEqual(ast.this, exp.Literal(this="file://my file.txt", is_string=True))
+        self.assertEqual(ast.sql("snowflake"), "GET '@s1/my folder' 'file://my file.txt'")
+
+        # expression with additional properties
+        ast = parse_one("GET @stage1/folder 'file:///tmp/my.txt' PARALLEL = 1", read="snowflake")
+        self.assertIsInstance(ast, exp.Get)
+        self.assertEqual(ast.args["source"], exp.Var(this="@stage1/folder"))
+        self.assertEqual(ast.this, exp.Literal(this="file:///tmp/my.txt", is_string=True))
+        properties = ast.args.get("properties")
+        props_dict = {prop.this.this: prop.args["value"].this for prop in properties.expressions}
+        self.assertEqual(props_dict, {"PARALLEL": "1"})
+
+        # # the unquoted URI variant is not fully supported yet
+        self.validate_identity("GET @%table file:///dir/tmp.csv", check_command_warning=True)
+        self.validate_identity(
+            "GET @s1/test file:///dir/tmp.csv PARALLEL=1",
+            check_command_warning=True,
+        )
+
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")
         self.validate_identity("SELECT $1.elem")

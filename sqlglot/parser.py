@@ -512,6 +512,7 @@ class Parser(metaclass=_Parser):
         TokenType.FINAL,
         TokenType.FORMAT,
         TokenType.FULL,
+        TokenType.GET,
         TokenType.IDENTIFIER,
         TokenType.IS,
         TokenType.ISNULL,

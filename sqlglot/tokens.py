@@ -290,6 +290,7 @@ class TokenType(AutoName):
     FROM = auto()
     FULL = auto()
     FUNCTION = auto()
+    GET = auto()
     GLOB = auto()
     GLOBAL = auto()
     GRANT = auto()

@@ -1,4 +1,4 @@
-from sqlglot import Dialect, tokens, parser, generator, jsonpath
+from sqlglot import Dialect, tokens, parser, generator, jsonpath, Tokenizer, TokenType
 from sqlglot.dialects.dialect import NormalizationStrategy
 import typing as t
 
@@ -50,8 +50,26 @@ class SingleStore(Dialect):
         "DATABASE": "SCHEMA"
     }
 
-    # TODO: implement
-    # class Tokenizer(tokens.Tokenizer):
+    class Tokenizer(tokens.Tokenizer):
+        BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
+        HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
+        IDENTIFIERS = ['"', '`']
+        QUOTES = ["'", '"']
+        STRING_ESCAPES = ["'", '"', "\\"]
+        COMMENTS = ["--", "#", ("/*", "*/")]
+
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            "@@": TokenType.SESSION_PARAMETER,
+            "YEAR": TokenType.YEAR,
+            "BSON": TokenType.JSONB,
+            "GEOGRAPHYPOINT": TokenType.GEOGRAPHY,
+            "IGNORE": TokenType.IGNORE,
+            "KEY": TokenType.KEY,
+            "START": TokenType.BEGIN
+        }
+
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {TokenType.SHOW}
 
     # TODO: implement
     # class Parser(parser.Parser):

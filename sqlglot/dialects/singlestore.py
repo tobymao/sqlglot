@@ -1,6 +1,7 @@
-from sqlglot import Dialect, tokens, parser, generator, jsonpath, Tokenizer, TokenType
+from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
 from sqlglot.dialects.dialect import NormalizationStrategy
 import typing as t
+from sqlglot import exp
 
 
 class SingleStore(Dialect):
@@ -74,5 +75,25 @@ class SingleStore(Dialect):
     # TODO: implement
     # class Parser(parser.Parser):
 
-    # TODO: implement
-    # class Generator(generator.Generator):
+    class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        MATCHED_BY_SOURCE = False
+        INTERVAL_ALLOWS_PLURAL_FORM = False
+        LIMIT_FETCH = "LIMIT"
+        LIMIT_ONLY_LITERALS = True
+        JOIN_HINTS = False
+        DUPLICATE_KEY_UPDATE_WITH_SET = False
+        NVL2_SUPPORTED = False
+        VALUES_AS_TABLE = False
+        LAST_DAY_SUPPORTS_DATE_PART = False
+        PAD_FILL_PATTERN_IS_REQUIRED = True
+        SUPPORTS_TABLE_ALIAS_COLUMNS = False
+        SUPPORTED_JSON_PATH_PARTS = set(exp.JSONPathKey)
+        SET_OP_MODIFIERS = False
+        TRY_SUPPORTED = False
+        SUPPORTS_UESCAPE = False
+        WITH_PROPERTIES_PREFIX = " "
+        SUPPORTS_CONVERT_TIMEZONE = True
+        SUPPORTS_UNIX_SECONDS = True
+        PARSE_JSON_NAME: t.Optional[str] = "TO_JSON"

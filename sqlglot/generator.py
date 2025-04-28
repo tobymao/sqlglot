@@ -4915,5 +4915,5 @@ class Generator(metaclass=_Generator):
         source = self.sql(expression, "source")
         return f"GET {source} {this}{props_sql}"
 
-    def _format_props(self, props) -> str:
+    def _format_props(self, props: exp.Properties | None) -> str:
         return self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""

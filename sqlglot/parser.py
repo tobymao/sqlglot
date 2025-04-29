@@ -1212,6 +1212,9 @@ class Parser(metaclass=_Parser):
             expressions=self._match(TokenType.COMMA) and self._parse_csv(self._parse_expression),
         ),
         "XMLTABLE": lambda self: self._parse_xml_table(),
+        **dict.fromkeys(
+            (*exp.ArgMax._sql_names, *exp.ArgMin._sql_names), lambda self: self._parse_max_min_by()
+        ),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -8223,4 +8226,20 @@ class Parser(metaclass=_Parser):
             exp.Property,
             this=exp.var("FORMAT_NAME"),
             value=self._parse_string() or self._parse_table_parts(),
+        )
+
+    def _parse_max_min_by(self) -> exp.AggFunc:
+        func_name = self._tokens[self._index - 2].text.upper()
+        expr_type = exp.ArgMax if "MAX" in func_name else exp.ArgMin
+
+        args: t.List[exp.Expression] = []
+
+        if self._match(TokenType.DISTINCT):
+            args.append(self.expression(exp.Distinct, expressions=[self._parse_assignment()]))
+            self._match(TokenType.COMMA)
+
+        args.extend(self._parse_csv(self._parse_assignment))
+
+        return self.expression(
+            expr_type, this=seq_get(args, 0), expression=seq_get(args, 1), count=seq_get(args, 2)
         )

@@ -2,7 +2,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from sqlglot import Parser, exp, parse, parse_one
+from sqlglot import Parser, Token, exp, parse, parse_one
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.parser import logger as parser_logger
 from tests.helpers import assert_logger_contains
@@ -956,3 +956,22 @@ class TestParser(unittest.TestCase):
         # Incomplete or incorrect anonymous meta comments are not registered
         ast = parse_one("YEAR(a) /* sqlglot.anon */")
         self.assertIsInstance(ast, exp.Year)
+
+    def test_identifier_meta(self):
+        ast = parse_one(
+            "SELECT a, b FROM test_schema.test_table_a UNION ALL SELECT c, d FROM test_catalog.test_schema.test_table_b"
+        )
+        for identifier in ast.find_all(exp.Identifier):
+            self.assertIsInstance(identifier.meta.get("token"), Token)
+
+        self.assertEqual(ast.this.args["from"].this.args["this"].meta["token"].text, "test_table_a")
+        self.assertEqual(ast.this.args["from"].this.args["db"].meta["token"].text, "test_schema")
+        self.assertEqual(
+            ast.expression.args["from"].this.args["this"].meta["token"].text, "test_table_b"
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["db"].meta["token"].text, "test_schema"
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["catalog"].meta["token"].text, "test_catalog"
+        )

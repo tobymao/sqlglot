@@ -33,7 +33,10 @@ def dump(node: Node) -> JSON:
         if node.comments:
             obj["comments"] = node.comments
         if node._meta is not None:
-            obj["meta"] = node._meta
+            meta = node._meta.copy()
+            # Token is not JSON serializable
+            meta.pop("token", None)
+            obj["meta"] = meta
 
         return obj
     return node

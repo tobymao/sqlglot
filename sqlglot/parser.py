@@ -5616,6 +5616,7 @@ class Parser(metaclass=_Parser):
             return None
 
         comments = self._curr.comments
+        token = self._curr
         token_type = self._curr.token_type
         this = self._curr.text
         upper = this.upper()
@@ -5690,7 +5691,7 @@ class Parser(metaclass=_Parser):
                 this = func
             else:
                 if token_type == TokenType.IDENTIFIER:
-                    this = exp.Identifier(this=this, quoted=True).update_positions(self._curr)
+                    this = exp.Identifier(this=this, quoted=True).update_positions(token)
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
         if isinstance(this, exp.Expression):

@@ -984,3 +984,13 @@ class TestParser(unittest.TestCase):
             ast.expression.args["from"].this.args["catalog"].meta,
             {"line": 1, "col": 81, "start": 69, "end": 80},
         )
+
+    def test_quoted_identifier_meta(self):
+        sql = 'SELECT "a" FROM "test_schema"."test_table_a"'
+        ast = parse_one(sql)
+
+        db_meta = ast.args["from"].this.args["db"].meta
+        self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], '"test_schema"')
+
+        table_meta = ast.args["from"].this.this.meta
+        self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], '"test_table_a"')

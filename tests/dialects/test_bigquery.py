@@ -2463,12 +2463,25 @@ OPTIONS (
         )
 
         information_schema_sql = "SELECT a, b FROM region.INFORMATION_SCHEMA.COLUMNS"
-        ast = parse_one(
-            information_schema_sql,
-            dialect="bigquery",
-        )
+        ast = parse_one(information_schema_sql, dialect="bigquery")
         meta = ast.args["from"].this.this.meta
         self.assertEqual(meta, {"line": 1, "col": 50, "start": 24, "end": 49})
         assert (
             information_schema_sql[meta["start"] : meta["end"] + 1] == "INFORMATION_SCHEMA.COLUMNS"
+        )
+
+    def test_quoted_identifier_meta(self):
+        sql = "SELECT `a` FROM `test_schema`.`test_table_a`"
+        ast = parse_one(sql, dialect="bigquery")
+        db_meta = ast.args["from"].this.args["db"].meta
+        self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], "`test_schema`")
+        table_meta = ast.args["from"].this.this.meta
+        self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], "`test_table_a`")
+
+        information_schema_sql = "SELECT a, b FROM `region.INFORMATION_SCHEMA.COLUMNS`"
+        ast = parse_one(information_schema_sql, dialect="bigquery")
+        table_meta = ast.args["from"].this.this.meta
+        assert (
+            information_schema_sql[table_meta["start"] : table_meta["end"] + 1]
+            == "`region.INFORMATION_SCHEMA.COLUMNS`"
         )

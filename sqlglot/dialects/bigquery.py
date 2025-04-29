@@ -645,18 +645,16 @@ class BigQuery(Dialect):
 
                     table_name += self._find_sql(start, self._prev)
 
-                previous: exp.Expression = this
-                this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
-                this.update_positions(previous)
+                this = exp.Identifier(
+                    this=table_name, quoted=this.args.get("quoted")
+                ).update_positions(this)
             elif isinstance(this, exp.Literal):
                 table_name = this.name
 
                 if self._is_connected() and self._parse_var(any_token=True):
                     table_name += self._prev.text
 
-                previous = this
-                this = exp.Identifier(this=table_name, quoted=True)
-                this.update_positions(previous)
+                this = exp.Identifier(this=table_name, quoted=True).update_positions(this)
 
             return this
 
@@ -673,18 +671,20 @@ class BigQuery(Dialect):
                     previous_db = table.args["db"]
                     parts = table.db.split(".")
                     if len(parts) == 2 and not table.args["db"].quoted:
-                        catalog_expr = exp.Identifier(this=parts[0]).update_positions(previous_db)
-                        db_expr = exp.Identifier(this=parts[1]).update_positions(previous_db)
-                        table.set("catalog", catalog_expr)
-                        table.set("db", db_expr)
+                        table.set(
+                            "catalog", exp.Identifier(this=parts[0]).update_positions(previous_db)
+                        )
+                        table.set("db", exp.Identifier(this=parts[1]).update_positions(previous_db))
                 else:
                     previous_this = table.this
                     parts = table.name.split(".")
                     if len(parts) == 2 and not table.this.quoted:
-                        db_expr = exp.Identifier(this=parts[0]).update_positions(previous_this)
-                        this_expr = exp.Identifier(this=parts[1]).update_positions(previous_this)
-                        table.set("db", db_expr)
-                        table.set("this", this_expr)
+                        table.set(
+                            "db", exp.Identifier(this=parts[0]).update_positions(previous_this)
+                        )
+                        table.set(
+                            "this", exp.Identifier(this=parts[1]).update_positions(previous_this)
+                        )
 
             if isinstance(table.this, exp.Identifier) and any("." in p.name for p in table.parts):
                 alias = table.this
@@ -731,14 +731,11 @@ class BigQuery(Dialect):
                 )
 
                 info_schema_view = f"{table_parts[-2].name}.{table_parts[-1].name}"
-                new_this = exp.Identifier(this=info_schema_view, quoted=True)
-                new_this.update_positions(
-                    {
-                        "line": table_parts[-2].meta.get("line"),
-                        "col": table_parts[-1].meta.get("col"),
-                        "start": table_parts[-2].meta.get("start"),
-                        "end": table_parts[-1].meta.get("end"),
-                    }
+                new_this = exp.Identifier(this=info_schema_view, quoted=True).update_positions(
+                    line=table_parts[-2].meta.get("line"),
+                    col=table_parts[-1].meta.get("col"),
+                    start=table_parts[-2].meta.get("start"),
+                    end=table_parts[-1].meta.get("end"),
                 )
                 table.set("this", new_this)
                 table.set("db", seq_get(table_parts, -3))

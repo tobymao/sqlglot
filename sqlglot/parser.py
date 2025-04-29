@@ -5041,6 +5041,8 @@ class Parser(metaclass=_Parser):
             this = self._parse_primary()
 
             if isinstance(this, exp.Literal):
+                this = self._parse_column_ops(this)
+
                 parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
                 if parser:
                     return parser(self, this, data_type)

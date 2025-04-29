@@ -1184,6 +1184,12 @@ class Parser(metaclass=_Parser):
     KEY_VALUE_DEFINITIONS = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
 
     FUNCTION_PARSERS = {
+        **{
+            name: lambda self: self._parse_max_min_by(exp.ArgMax) for name in exp.ArgMax.sql_names()
+        },
+        **{
+            name: lambda self: self._parse_max_min_by(exp.ArgMin) for name in exp.ArgMin.sql_names()
+        },
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
@@ -1212,9 +1218,6 @@ class Parser(metaclass=_Parser):
             expressions=self._match(TokenType.COMMA) and self._parse_csv(self._parse_expression),
         ),
         "XMLTABLE": lambda self: self._parse_xml_table(),
-        **dict.fromkeys(
-            (*exp.ArgMax._sql_names, *exp.ArgMin._sql_names), lambda self: self._parse_max_min_by()
-        ),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -8228,10 +8231,7 @@ class Parser(metaclass=_Parser):
             value=self._parse_string() or self._parse_table_parts(),
         )
 
-    def _parse_max_min_by(self) -> exp.AggFunc:
-        func_name = self._tokens[self._index - 2].text.upper()
-        expr_type = exp.ArgMax if "MAX" in func_name else exp.ArgMin
-
+    def _parse_max_min_by(self, expr_type: t.Type[exp.AggFunc]) -> exp.AggFunc:
         args: t.List[exp.Expression] = []
 
         if self._match(TokenType.DISTINCT):

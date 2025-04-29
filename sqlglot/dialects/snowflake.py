@@ -512,6 +512,7 @@ class Snowflake(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.GET: lambda self: self._parse_get(),
             TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
@@ -857,6 +858,21 @@ class Snowflake(Dialect):
                 properties=self._parse_properties(),
             )
 
+        def _parse_get(self) -> exp.Get | exp.Command:
+            start = self._prev
+            target = self._parse_location_path()
+
+            # Parse as command if unquoted file path
+            if self._curr.token_type == TokenType.URI_START:
+                return self._parse_as_command(start)
+
+            return self.expression(
+                exp.Get,
+                this=self._parse_string(),
+                target=target,
+                properties=self._parse_properties(),
+            )
+
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
@@ -937,6 +953,7 @@ class Snowflake(Dialect):
             "CHARACTER VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,
             "FILE FORMAT": TokenType.FILE_FORMAT,
+            "GET": TokenType.GET,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,

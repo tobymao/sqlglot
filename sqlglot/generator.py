@@ -146,6 +146,7 @@ class Generator(metaclass=_Generator):
         exp.Except: lambda self, e: self.set_operations(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
         exp.Floor: lambda self, e: self.ceil_floor(e),
+        exp.Get: lambda self, e: self.get_put_sql(e),
         exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
         exp.IcebergProperty: lambda *_: "ICEBERG",
@@ -175,6 +176,7 @@ class Generator(metaclass=_Generator):
         exp.PivotAny: lambda self, e: f"ANY{self.sql(e, 'this')}",
         exp.ProjectionPolicyColumnConstraint: lambda self,
         e: f"PROJECTION POLICY {self.sql(e, 'this')}",
+        exp.Put: lambda self, e: self.get_put_sql(e),
         exp.RemoteWithConnectionModelProperty: lambda self,
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
         exp.ReturnsProperty: lambda self, e: (
@@ -4903,9 +4905,16 @@ class Generator(metaclass=_Generator):
         self.unsupported("Unsupported SHOW statement")
         return ""
 
-    def put_sql(self, expression: exp.Put) -> str:
+    def get_put_sql(self, expression: exp.Put | exp.Get) -> str:
+        # Snowflake GET/PUT statements:
+        #   PUT <file> <internalStage> <properties>
+        #   GET <internalStage> <file> <properties>
         props = expression.args.get("properties")
         props_sql = self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
         this = self.sql(expression, "this")
         target = self.sql(expression, "target")
-        return f"PUT {this} {target}{props_sql}"
+
+        if isinstance(expression, exp.Put):
+            return f"PUT {this} {target}{props_sql}"
+        else:
+            return f"GET {target} {this}{props_sql}"

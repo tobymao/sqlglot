@@ -889,3 +889,5 @@ CAST(x AS INT128)
 CAST(x AS UINT128)
 CAST(x AS UINT256)
 SELECT export
+SELECT ARG_MAX(DISTINCT selected_col, filtered_col) FROM table
+SELECT ARG_MIN(DISTINCT selected_col, filtered_col) FROM table

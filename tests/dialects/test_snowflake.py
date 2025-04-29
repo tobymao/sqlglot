@@ -2578,3 +2578,11 @@ SINGLE = TRUE""",
         self.assertEqual(expr.find(exp.Placeholder), exp.Placeholder(this="1"))
         self.validate_identity("SELECT :1, :2")
         self.validate_identity("SELECT :1 + :2")
+
+    def test_max_by_min_by(self):
+        max_by = self.validate_identity("MAX_BY(DISTINCT selected_col, filtered_col)")
+        min_by = self.validate_identity("MIN_BY(DISTINCT selected_col, filtered_col)")
+
+        for node in (max_by, min_by):
+            self.assertEqual(len(node.this.expressions), 1)
+            self.assertIsInstance(node.expression, exp.Column)

@@ -859,21 +859,17 @@ class Snowflake(Dialect):
             )
 
         def _parse_get(self) -> exp.Get | exp.Command:
-            base = self._prev
-
-            if self._curr.token_type not in (TokenType.STRING, TokenType.PARAMETER):
-                return self._parse_as_command(base)
-
-            source = self._parse_location_path()
+            start = self._prev
+            target = self._parse_location_path()
 
             # Parse as command if unquoted file path
             if self._curr.token_type == TokenType.URI_START:
-                return self._parse_as_command(base)
+                return self._parse_as_command(start)
 
             return self.expression(
                 exp.Get,
-                source=source,
                 this=self._parse_string(),
+                target=target,
                 properties=self._parse_properties(),
             )
 

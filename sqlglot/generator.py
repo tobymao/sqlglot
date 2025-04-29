@@ -4904,16 +4904,18 @@ class Generator(metaclass=_Generator):
         return ""
 
     def put_sql(self, expression: exp.Put) -> str:
-        props_sql = self._format_props(expression.args.get("properties"))
-        this = self.sql(expression, "this")
-        target = self.sql(expression, "target")
-        return f"PUT {this} {target}{props_sql}"
+        return self._get_put_sql(expression)
 
     def get_sql(self, expression: exp.Get) -> str:
-        props_sql = self._format_props(expression.args.get("properties"))
-        this = self.sql(expression, "this")
-        source = self.sql(expression, "source")
-        return f"GET {source} {this}{props_sql}"
+        return self._get_put_sql(expression)
 
-    def _format_props(self, props: exp.Properties | None) -> str:
-        return self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
+    def _get_put_sql(self, expression: exp.Put | exp.Get) -> str:
+        props = expression.args.get("properties")
+        props_sql = self.properties(props, prefix=" ", sep=" ", wrapped=False) if props else ""
+        this = self.sql(expression, "this")
+        target = self.sql(expression, "target")
+
+        if isinstance(expression, exp.Put):
+            return f"PUT {this} {target}{props_sql}"
+        else:
+            return f"GET {target} {this}{props_sql}"

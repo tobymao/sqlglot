@@ -3309,7 +3309,7 @@ class Put(Expression):
 
 # https://docs.snowflake.com/en/sql-reference/sql/get
 class Get(Expression):
-    arg_types = {"source": True, "this": True, "properties": False}
+    arg_types = {"this": True, "target": True, "properties": False}
 
 
 class Table(Expression):

@@ -846,6 +846,33 @@ class Expression(metaclass=_Expression):
         """
         return not_(self, copy=copy)
 
+    def update_positions(self: E, other: t.Optional[Token | Expression | t.Dict[str, t.Any]]) -> E:
+        """
+        Update this expression with positions from a token or other expression.
+
+        Args:
+            other: a token or expression to update this expression with.
+
+        Returns:
+            The updated expression.
+        """
+        if isinstance(other, Expression):
+            self.meta.update(
+                {k: v for k, v in other.meta.items() if k in ("line", "col", "start", "end")}
+            )
+        elif isinstance(other, dict):
+            self.meta.update(other)
+        elif other is not None:
+            self.meta.update(
+                {
+                    "line": other.line,
+                    "col": other.col,
+                    "start": other.start,
+                    "end": other.end,
+                }
+            )
+        return self
+
     def as_(
         self,
         alias: str | Identifier,

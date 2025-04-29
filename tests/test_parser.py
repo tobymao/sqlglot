@@ -2,7 +2,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from sqlglot import Parser, Token, exp, parse, parse_one
+from sqlglot import Parser, exp, parse, parse_one
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.parser import logger as parser_logger
 from tests.helpers import assert_logger_contains
@@ -962,16 +962,25 @@ class TestParser(unittest.TestCase):
             "SELECT a, b FROM test_schema.test_table_a UNION ALL SELECT c, d FROM test_catalog.test_schema.test_table_b"
         )
         for identifier in ast.find_all(exp.Identifier):
-            self.assertIsInstance(identifier.meta.get("token"), Token)
+            self.assertEqual(set(identifier.meta), {"line", "col", "start", "end"})
 
-        self.assertEqual(ast.this.args["from"].this.args["this"].meta["token"].text, "test_table_a")
-        self.assertEqual(ast.this.args["from"].this.args["db"].meta["token"].text, "test_schema")
         self.assertEqual(
-            ast.expression.args["from"].this.args["this"].meta["token"].text, "test_table_b"
+            ast.this.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 41, "start": 29, "end": 40},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["db"].meta["token"].text, "test_schema"
+            ast.this.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 28, "start": 17, "end": 27},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["catalog"].meta["token"].text, "test_catalog"
+            ast.expression.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 106, "start": 94, "end": 105},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 93, "start": 82, "end": 92},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["catalog"].meta,
+            {"line": 1, "col": 81, "start": 69, "end": 80},
         )

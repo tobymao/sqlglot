@@ -5690,7 +5690,7 @@ class Parser(metaclass=_Parser):
                 this = func
             else:
                 if token_type == TokenType.IDENTIFIER:
-                    this = exp.Identifier(this=this, quoted=True)
+                    this = exp.Identifier(this=this, quoted=True).update_positions(self._curr)
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
         if isinstance(this, exp.Expression):
@@ -6989,7 +6989,10 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _parse_string_as_identifier(self) -> t.Optional[exp.Identifier]:
-        return exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
+        output = exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
+        if output:
+            output.update_positions(self._prev)
+        return output
 
     def _parse_number(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.NUMERIC_PARSERS):
@@ -8250,5 +8253,5 @@ class Parser(metaclass=_Parser):
     ) -> exp.Identifier:
         token = token or self._prev
         expression = self.expression(exp.Identifier, this=token.text, **kwargs)
-        expression.meta["token"] = token
+        expression.update_positions(token)
         return expression

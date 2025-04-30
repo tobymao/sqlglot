@@ -64,6 +64,7 @@ SQLGLOT_META = "sqlglot.meta"
 SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
+POSITION_META_KEYS = ("line", "col", "start", "end")
 
 
 class Expression(metaclass=_Expression):
@@ -845,6 +846,32 @@ class Expression(metaclass=_Expression):
             The new Not instance.
         """
         return not_(self, copy=copy)
+
+    def update_positions(
+        self: E, other: t.Optional[Token | Expression] = None, **kwargs: t.Any
+    ) -> E:
+        """
+        Update this expression with positions from a token or other expression.
+
+        Args:
+            other: a token or expression to update this expression with.
+
+        Returns:
+            The updated expression.
+        """
+        if isinstance(other, Expression):
+            self.meta.update({k: v for k, v in other.meta.items() if k in POSITION_META_KEYS})
+        elif other is not None:
+            self.meta.update(
+                {
+                    "line": other.line,
+                    "col": other.col,
+                    "start": other.start,
+                    "end": other.end,
+                }
+            )
+        self.meta.update({k: v for k, v in kwargs.items() if k in POSITION_META_KEYS})
+        return self
 
     def as_(
         self,

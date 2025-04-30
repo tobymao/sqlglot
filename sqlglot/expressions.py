@@ -64,6 +64,7 @@ SQLGLOT_META = "sqlglot.meta"
 SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
+POSITION_META_KEYS = ("line", "col", "start", "end")
 
 
 class Expression(metaclass=_Expression):
@@ -858,9 +859,8 @@ class Expression(metaclass=_Expression):
         Returns:
             The updated expression.
         """
-        position_keys = ("line", "col", "start", "end")
         if isinstance(other, Expression):
-            self.meta.update({k: v for k, v in other.meta.items() if k in position_keys})
+            self.meta.update({k: v for k, v in other.meta.items() if k in POSITION_META_KEYS})
         elif other is not None:
             self.meta.update(
                 {
@@ -870,7 +870,7 @@ class Expression(metaclass=_Expression):
                     "end": other.end,
                 }
             )
-        self.meta.update({k: v for k, v in kwargs.items() if k in position_keys})
+        self.meta.update({k: v for k, v in kwargs.items() if k in POSITION_META_KEYS})
         return self
 
     def as_(

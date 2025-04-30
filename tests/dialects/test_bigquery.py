@@ -2432,3 +2432,56 @@ OPTIONS (
                     f"SELECT * FROM t1, UNNEST([1, 2]) AS hit WITH OFFSET {join_ops} JOIN foo",
                     f"SELECT * FROM t1, UNNEST([1, 2]) AS hit WITH OFFSET AS offset {join_ops} JOIN foo",
                 )
+
+    def test_identifier_meta(self):
+        ast = parse_one(
+            "SELECT a, b FROM test_schema.test_table_a UNION ALL SELECT c, d FROM test_catalog.test_schema.test_table_b",
+            dialect="bigquery",
+        )
+        for identifier in ast.find_all(exp.Identifier):
+            self.assertEqual(set(identifier.meta), {"line", "col", "start", "end"})
+
+        self.assertEqual(
+            ast.this.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 41, "start": 29, "end": 40},
+        )
+        self.assertEqual(
+            ast.this.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 28, "start": 17, "end": 27},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 106, "start": 94, "end": 105},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 93, "start": 82, "end": 92},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["catalog"].meta,
+            {"line": 1, "col": 81, "start": 69, "end": 80},
+        )
+
+        information_schema_sql = "SELECT a, b FROM region.INFORMATION_SCHEMA.COLUMNS"
+        ast = parse_one(information_schema_sql, dialect="bigquery")
+        meta = ast.args["from"].this.this.meta
+        self.assertEqual(meta, {"line": 1, "col": 50, "start": 24, "end": 49})
+        assert (
+            information_schema_sql[meta["start"] : meta["end"] + 1] == "INFORMATION_SCHEMA.COLUMNS"
+        )
+
+    def test_quoted_identifier_meta(self):
+        sql = "SELECT `a` FROM `test_schema`.`test_table_a`"
+        ast = parse_one(sql, dialect="bigquery")
+        db_meta = ast.args["from"].this.args["db"].meta
+        self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], "`test_schema`")
+        table_meta = ast.args["from"].this.this.meta
+        self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], "`test_table_a`")
+
+        information_schema_sql = "SELECT a, b FROM `region.INFORMATION_SCHEMA.COLUMNS`"
+        ast = parse_one(information_schema_sql, dialect="bigquery")
+        table_meta = ast.args["from"].this.this.meta
+        assert (
+            information_schema_sql[table_meta["start"] : table_meta["end"] + 1]
+            == "`region.INFORMATION_SCHEMA.COLUMNS`"
+        )

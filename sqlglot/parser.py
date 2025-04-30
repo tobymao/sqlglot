@@ -5618,6 +5618,7 @@ class Parser(metaclass=_Parser):
             return None
 
         comments = self._curr.comments
+        token = self._curr
         token_type = self._curr.token_type
         this = self._curr.text
         upper = this.upper()
@@ -5692,7 +5693,7 @@ class Parser(metaclass=_Parser):
                 this = func
             else:
                 if token_type == TokenType.IDENTIFIER:
-                    this = exp.Identifier(this=this, quoted=True)
+                    this = exp.Identifier(this=this, quoted=True).update_positions(token)
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
         if isinstance(this, exp.Expression):
@@ -5751,7 +5752,7 @@ class Parser(metaclass=_Parser):
         if literal:
             return self.expression(exp.Introducer, this=token.text, expression=literal)
 
-        return self.expression(exp.Identifier, this=token.text)
+        return self._identifier_expression(token)
 
     def _parse_session_parameter(self) -> exp.SessionParameter:
         kind = None
@@ -6981,7 +6982,7 @@ class Parser(metaclass=_Parser):
             (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS)
         ):
             quoted = self._prev.token_type == TokenType.STRING
-            expression = self.expression(exp.Identifier, this=self._prev.text, quoted=quoted)
+            expression = self._identifier_expression(quoted=quoted)
 
         return expression
 
@@ -6991,7 +6992,10 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _parse_string_as_identifier(self) -> t.Optional[exp.Identifier]:
-        return exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
+        output = exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
+        if output:
+            output.update_positions(self._prev)
+        return output
 
     def _parse_number(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.NUMERIC_PARSERS):
@@ -7000,7 +7004,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_identifier(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.IDENTIFIER):
-            return self.expression(exp.Identifier, this=self._prev.text, quoted=True)
+            return self._identifier_expression(quoted=True)
         return self._parse_placeholder()
 
     def _parse_var(
@@ -8246,3 +8250,11 @@ class Parser(metaclass=_Parser):
         return self.expression(
             expr_type, this=seq_get(args, 0), expression=seq_get(args, 1), count=seq_get(args, 2)
         )
+
+    def _identifier_expression(
+        self, token: t.Optional[Token] = None, **kwargs: t.Any
+    ) -> exp.Identifier:
+        token = token or self._prev
+        expression = self.expression(exp.Identifier, this=token.text, **kwargs)
+        expression.update_positions(token)
+        return expression

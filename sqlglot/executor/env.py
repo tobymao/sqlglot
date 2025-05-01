@@ -131,6 +131,13 @@ def cast(this, to):
     raise NotImplementedError(f"Casting {this} to '{to}' not implemented.")
 
 
+@null_if_any
+def try_cast(this, to):
+    try:
+        return cast(this, to)
+    except Exception:
+        return this
+
 def ordered(this, desc, nulls_first):
     if desc:
         return reverse_key(this)
@@ -188,6 +195,7 @@ ENV = {
     "BITWISERIGHTSHIFT": null_if_any(lambda this, e: this >> e),
     "BITWISEXOR": null_if_any(lambda this, e: this ^ e),
     "CAST": cast,
+    "TRYCAST": try_cast,
     "COALESCE": lambda *args: next((a for a in args if a is not None), None),
     "CONCAT": null_if_any(lambda *args: "".join(args)),
     "SAFECONCAT": null_if_any(lambda *args: "".join(str(arg) for arg in args)),

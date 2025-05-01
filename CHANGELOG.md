@@ -1,6 +1,26 @@
 Changelog
 =========
 
+## [v26.16.3] - 2025-05-01
+### :boom: BREAKING CHANGES
+- due to [`f5358d8`](https://github.com/tobymao/sqlglot/commit/f5358d8a3e2743b5ac0d540f10502d333ad4e082) - add support for GET statements *(PR [#5019](https://github.com/tobymao/sqlglot/pull/5019) by [@eruditmorina](https://github.com/eruditmorina))*:
+
+  add support for GET statements (#5019)
+
+
+### :sparkles: New Features
+- [`6010302`](https://github.com/tobymao/sqlglot/commit/60103020879db5f23a6c4a1775848e31cce13415) - **postgres**: transpile QUARTER interval unit *(PR [#5015](https://github.com/tobymao/sqlglot/pull/5015) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#5013](https://github.com/tobymao/sqlglot/issues/5013) opened by [@Wiill007](https://github.com/Wiill007)*
+- [`f5358d8`](https://github.com/tobymao/sqlglot/commit/f5358d8a3e2743b5ac0d540f10502d333ad4e082) - **snowflake**: add support for GET statements *(PR [#5019](https://github.com/tobymao/sqlglot/pull/5019) by [@eruditmorina](https://github.com/eruditmorina))*
+- [`df5ecdb`](https://github.com/tobymao/sqlglot/commit/df5ecdbebcdce491031538f6baa0f87ec7eefee8) - Include token refereces in the meta of identifier expressions *(PR [#5022](https://github.com/tobymao/sqlglot/pull/5022) by [@izeigerman](https://github.com/izeigerman))*
+
+### :bug: Bug Fixes
+- [`c594b63`](https://github.com/tobymao/sqlglot/commit/c594b630c1c940e9a47abfce1633b435a2607f13) - Add MAX_BY & MIN_BY to FUNCTION_PARSER *(PR [#5021](https://github.com/tobymao/sqlglot/pull/5021) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5020](https://github.com/tobymao/sqlglot/issues/5020) opened by [@omerhadari](https://github.com/omerhadari)*
+- [`c1c892c`](https://github.com/tobymao/sqlglot/commit/c1c892cebb89ddf29369ff3c7647f96d217acb71) - **parser**: parse column ops after no-paren type casting *(PR [#5025](https://github.com/tobymao/sqlglot/pull/5025) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5024](https://github.com/tobymao/sqlglot/issues/5024) opened by [@MagdaSousa](https://github.com/MagdaSousa)*
+
+
 ## [v26.16.2] - 2025-04-24
 ### :sparkles: New Features
 - [`5feae00`](https://github.com/tobymao/sqlglot/commit/5feae00ec7a4826285e7fd0be85d377cc0de09b5) - **databricks**: add support for the VOID type *(PR [#5012](https://github.com/tobymao/sqlglot/pull/5012) by [@georgesittas](https://github.com/georgesittas))*
@@ -6466,3 +6486,4 @@ Changelog
 [v26.16.0]: https://github.com/tobymao/sqlglot/compare/v26.15.0...v26.16.0
 [v26.16.1]: https://github.com/tobymao/sqlglot/compare/v26.16.0...v26.16.1
 [v26.16.2]: https://github.com/tobymao/sqlglot/compare/v26.16.1...v26.16.2
+[v26.16.3]: https://github.com/tobymao/sqlglot/compare/v26.16.2...v26.16.3

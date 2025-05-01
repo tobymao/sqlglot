@@ -165,6 +165,8 @@ class TestDatabricks(Validator):
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")
+        self.validate_identity("SELECT TRY_CAST(c1:price AS ARRAY<VARIANT>)")
+        self.validate_identity("""SELECT TRY_CAST(c1:["foo bar"]["baz qux"] AS ARRAY<VARIANT>)""")
         self.validate_identity(
             """SELECT c1:item[1].price FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
         )

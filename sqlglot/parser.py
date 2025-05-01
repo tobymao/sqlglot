@@ -4725,7 +4725,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        while True:
+        while this:
             setop = self.parse_set_operation(this)
             if not setop:
                 break

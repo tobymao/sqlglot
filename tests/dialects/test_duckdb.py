@@ -298,6 +298,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
         self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
         self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
+        self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("UNION_VALUE(k1 := 1)").find(exp.PropertyEQ).this.assert_is(
             exp.Identifier
         )

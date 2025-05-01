@@ -334,7 +334,9 @@ class Spark2(Hive):
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             arg = expression.this
-            is_json_extract = isinstance(arg, (exp.JSONExtract, exp.JSONExtractScalar))
+            is_json_extract = isinstance(
+                arg, (exp.JSONExtract, exp.JSONExtractScalar)
+            ) and not arg.args.get("variant_extract")
 
             # We can't use a non-nested type (eg. STRING) as a schema
             if expression.to.args.get("nested") and (is_parse_json(arg) or is_json_extract):

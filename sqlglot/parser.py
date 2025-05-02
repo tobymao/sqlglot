@@ -607,6 +607,7 @@ class Parser(metaclass=_Parser):
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,
+        TokenType.GET,
         TokenType.GLOB,
         TokenType.IDENTIFIER,
         TokenType.INDEX,

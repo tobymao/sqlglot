@@ -11,6 +11,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT GET(a, b)")
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),

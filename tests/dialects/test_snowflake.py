@@ -1025,10 +1025,33 @@ class TestSnowflake(Validator):
         self.validate_all(
             "DAYOFWEEKISO(foo)",
             read={
+                "presto": "DAY_OF_WEEK(foo)",
                 "trino": "DAY_OF_WEEK(foo)",
             },
             write={
                 "snowflake": "DAYOFWEEKISO(foo)",
+            },
+        )
+
+        self.validate_all(
+            "DAYOFWEEKISO(foo)",
+            read={
+                "presto": "DOW(foo)",
+                "trino": "DOW(foo)",
+            },
+            write={
+                "snowflake": "DAYOFWEEKISO(foo)",
+            },
+        )
+
+        self.validate_all(
+            "DAYOFYEAR(foo)",
+            read={
+                "presto": "DOY(foo)",
+                "trino": "DOY(foo)",
+            },
+            write={
+                "snowflake": "DAYOFYEAR(foo)",
             },
         )
 

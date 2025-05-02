@@ -35,13 +35,20 @@ def pushdown_predicates(expression, dialect=None):
                 }
 
                 # a right join can only push down to itself and not the source FROM table
+                # presto and trino don't support inner joins where the RHS is an UNNEST expression
+                join_rhs_unnest = False
                 for k, (node, source) in selected_sources.items():
                     parent = node.find_ancestor(exp.Join, exp.From)
-                    if isinstance(parent, exp.Join) and parent.side == "RIGHT":
-                        selected_sources = {k: (node, source)}
-                        break
+                    if isinstance(parent, exp.Join):
+                        if parent.side == "RIGHT":
+                            selected_sources = {k: (node, source)}
+                            break
+                        if parent.kind == "CROSS" and isinstance(node, exp.Unnest):
+                            join_rhs_unnest = True
+                            break
 
-                pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
+                if not (join_rhs_unnest and dialect in ("presto", "trino")):
+                    pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
 
             # joins should only pushdown into itself, not to other joins
             # so we limit the selected sources to only itself

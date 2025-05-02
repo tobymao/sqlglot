@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v26.16.4] - 2025-05-02
+### :bug: Bug Fixes
+- [`52e068f`](https://github.com/tobymao/sqlglot/commit/52e068f74bd6844d0273ddcc7637d249e6ed51c1) - **databricks**: Preserve colon operators in TRY_CAST *(PR [#5028](https://github.com/tobymao/sqlglot/pull/5028) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5027](https://github.com/tobymao/sqlglot/issues/5027) opened by [@aersam](https://github.com/aersam)*
+- [`91e5036`](https://github.com/tobymao/sqlglot/commit/91e5036831b87fd4670424e6a49e81efead432f2) - **parser**: Do not parse set ops if input expr is None *(PR [#5030](https://github.com/tobymao/sqlglot/pull/5030) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`8f77b30`](https://github.com/tobymao/sqlglot/commit/8f77b301a267eadb4c4792201e112159db554d1c) - **snowflake**: get function *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v26.16.3] - 2025-05-01
 ### :boom: BREAKING CHANGES
 - due to [`f5358d8`](https://github.com/tobymao/sqlglot/commit/f5358d8a3e2743b5ac0d540f10502d333ad4e082) - add support for GET statements *(PR [#5019](https://github.com/tobymao/sqlglot/pull/5019) by [@eruditmorina](https://github.com/eruditmorina))*:
@@ -6487,3 +6495,4 @@ Changelog
 [v26.16.1]: https://github.com/tobymao/sqlglot/compare/v26.16.0...v26.16.1
 [v26.16.2]: https://github.com/tobymao/sqlglot/compare/v26.16.1...v26.16.2
 [v26.16.3]: https://github.com/tobymao/sqlglot/compare/v26.16.2...v26.16.3
+[v26.16.4]: https://github.com/tobymao/sqlglot/compare/v26.16.3...v26.16.4

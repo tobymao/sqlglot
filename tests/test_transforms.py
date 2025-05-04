@@ -248,6 +248,13 @@ class TestTransforms(unittest.TestCase):
                 "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col1 + 25",
                 dialect,
             )
+            # eliminate join mark while preserving non-participating joins
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM a, b, c WHERE a.id = b.id AND b.id(+) = c.id",
+                "SELECT * FROM a LEFT JOIN b ON b.id = c.id CROSS JOIN c WHERE a.id = b.id",
+                dialect,
+            )
 
             alias = "AS " if dialect != "oracle" else ""
             self.validate(

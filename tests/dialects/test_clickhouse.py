@@ -167,6 +167,7 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER '{cluster}' (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple() AS SELECT * FROM test_data"
         )
+        self.validate_identity("CREATE TABLE test (id UInt8) ENGINE=Null()")
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view ON CLUSTER cl1 TO table1 AS SELECT * FROM test_data"
         )

@@ -926,17 +926,27 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 else:
                     predicate_parent.replace(predicate_parent.left)
 
+        only_old_join_sources = old_joins.keys() - new_joins.keys()
+
         if query_from.alias_or_name in new_joins:
-            only_old_joins = old_joins.keys() - new_joins.keys()
             assert (
-                len(only_old_joins) >= 1
+                len(only_old_join_sources) >= 1
             ), "Cannot determine which table to use in the new FROM clause"
 
-            new_from_name = list(only_old_joins)[0]
-            query.set("from", exp.From(this=old_joins[new_from_name].this))
+            new_from_name = list(only_old_join_sources)[0]
+            query.set("from", exp.From(this=old_joins.pop(new_from_name).this))
+            only_old_join_sources.remove(new_from_name)
 
         if new_joins:
-            query.set("joins", list(new_joins.values()))
+            only_old_join_expressions = []
+            for old_join_source in only_old_join_sources:
+                old_join_expression = old_joins[old_join_source]
+                if not old_join_expression.kind:
+                    old_join_expression.set("kind", "CROSS")
+
+                only_old_join_expressions.append(old_join_expression)
+
+            query.set("joins", list(new_joins.values()) + only_old_join_expressions)
 
         if not where.this:
             where.pop()

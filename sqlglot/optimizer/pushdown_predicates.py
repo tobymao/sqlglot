@@ -2,6 +2,8 @@ from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
+from sqlglot import Dialect
+from sqlglot.dialects.presto import Presto
 
 
 def pushdown_predicates(expression, dialect=None):
@@ -22,6 +24,9 @@ def pushdown_predicates(expression, dialect=None):
     """
     root = build_scope(expression)
 
+    dialect = Dialect.get_or_raise(dialect)
+    unnest_requires_cross_join = isinstance(dialect, Presto)
+
     if root:
         scope_ref_count = root.ref_count()
 
@@ -35,19 +40,19 @@ def pushdown_predicates(expression, dialect=None):
                 }
 
                 # a right join can only push down to itself and not the source FROM table
-                # presto and trino don't support inner joins where the RHS is an UNNEST expression
-                join_rhs_unnest = False
+                # presto, trino and athena don't support inner joins where the RHS is an UNNEST expression
+                pushdown_allowed = True
                 for k, (node, source) in selected_sources.items():
                     parent = node.find_ancestor(exp.Join, exp.From)
                     if isinstance(parent, exp.Join):
                         if parent.side == "RIGHT":
                             selected_sources = {k: (node, source)}
                             break
-                        if isinstance(node, exp.Unnest) and dialect in ("presto", "trino"):
-                            join_rhs_unnest = True
+                        if isinstance(node, exp.Unnest):
+                            pushdown_allowed = False
                             break
 
-                if not join_rhs_unnest:
+                if pushdown_allowed or not unnest_requires_cross_join:
                     pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
 
             # joins should only pushdown into itself, not to other joins

@@ -56,10 +56,18 @@ SELECT x.a, u.val FROM x AS x CROSS JOIN UNNEST(ARRAY[0, 1]) AS u("val") WHERE x
 SELECT x.a, u.val FROM x AS x CROSS JOIN UNNEST(ARRAY[0, 1]) AS u("val") WHERE x.a > u.val;
 SELECT x.a, u.val FROM x AS x CROSS JOIN UNNEST(ARRAY[0, 1]) AS u("val") WHERE x.a > u.val;
 
+# dialect: athena
+SELECT x.a, u.val FROM x AS x CROSS JOIN UNNEST(ARRAY[0, 1]) AS u("val") WHERE x.a > u.val;
+SELECT x.a, u.val FROM x AS x CROSS JOIN UNNEST(ARRAY[0, 1]) AS u("val") WHERE x.a > u.val;
+
 # dialect: presto
 SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") CROSS JOIN x AS x WHERE x.a > u.val;
 SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") JOIN x AS x ON u.val < x.a WHERE TRUE;
 
 # dialect: trino
+SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") CROSS JOIN x AS x WHERE x.a > u.val;
+SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") JOIN x AS x ON u.val < x.a WHERE TRUE;
+
+# dialect: athena
 SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") CROSS JOIN x AS x WHERE x.a > u.val;
 SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") JOIN x AS x ON u.val < x.a WHERE TRUE;

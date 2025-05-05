@@ -500,6 +500,9 @@ class ClickHouse(Dialect):
 
         PROPERTY_PARSERS = parser.Parser.PROPERTY_PARSERS.copy()
         PROPERTY_PARSERS.pop("DYNAMIC")
+        PROPERTY_PARSERS["ENGINE"] = lambda self: self._parse_property_assignment(
+            exp.EngineProperty, anonymous_func=True
+        )
 
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
         NO_PAREN_FUNCTION_PARSERS.pop("ANY")

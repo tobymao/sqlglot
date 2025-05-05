@@ -237,6 +237,10 @@ LANGUAGE js AS
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
+            'SELECT r"\\t"',
+            "SELECT '\\\\t'",
+        )
+        self.validate_identity(
             "ARRAY(SELECT AS STRUCT e.x AS y, e.z AS bla FROM UNNEST(bob))::ARRAY<STRUCT<y STRING, bro NUMERIC>>",
             "CAST(ARRAY(SELECT AS STRUCT e.x AS y, e.z AS bla FROM UNNEST(bob)) AS ARRAY<STRUCT<y STRING, bro NUMERIC>>)",
         )
@@ -1023,8 +1027,8 @@ LANGUAGE js AS
             r'r"""/\*.*\*/"""',
             write={
                 "bigquery": r"'/\\*.*\\*/'",
-                "duckdb": r"'/\\*.*\\*/'",
-                "presto": r"'/\\*.*\\*/'",
+                "duckdb": r"'/\*.*\*/'",
+                "presto": r"'/\*.*\*/'",
                 "hive": r"'/\\*.*\\*/'",
                 "spark": r"'/\\*.*\\*/'",
             },
@@ -1033,8 +1037,8 @@ LANGUAGE js AS
             r'R"""/\*.*\*/"""',
             write={
                 "bigquery": r"'/\\*.*\\*/'",
-                "duckdb": r"'/\\*.*\\*/'",
-                "presto": r"'/\\*.*\\*/'",
+                "duckdb": r"'/\*.*\*/'",
+                "presto": r"'/\*.*\*/'",
                 "hive": r"'/\\*.*\\*/'",
                 "spark": r"'/\\*.*\\*/'",
             },

@@ -1349,7 +1349,11 @@ class Generator(metaclass=_Generator):
         return f"{left_quote}{this}{right_quote}{escape_sql}"
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
-        string = self.escape_str(expression.this.replace("\\", "\\\\"), escape_backslash=False)
+        string = expression.this
+        if "\\" in self.dialect.tokenizer_class.STRING_ESCAPES:
+            string = string.replace("\\", "\\\\")
+
+        string = self.escape_str(string, escape_backslash=False)
         return f"{self.dialect.QUOTE_START}{string}{self.dialect.QUOTE_END}"
 
     def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:

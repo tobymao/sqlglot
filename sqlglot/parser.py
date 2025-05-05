@@ -963,6 +963,9 @@ class Parser(metaclass=_Parser):
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         "EMPTY": lambda self: self.expression(exp.EmptyProperty),
         "ENGINE": lambda self: self._parse_property_assignment(exp.EngineProperty),
+        "ENVIRONMENT": lambda self: self.expression(
+            exp.EnviromentProperty, expressions=self._parse_wrapped_csv(self._parse_assignment)
+        ),
         "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
         "EXTERNAL": lambda self: self.expression(exp.ExternalProperty),
         "FALLBACK": lambda self, **kwargs: self._parse_fallback(**kwargs),

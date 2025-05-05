@@ -48,11 +48,11 @@ def pushdown_predicates(expression, dialect=None):
                         if parent.side == "RIGHT":
                             selected_sources = {k: (node, source)}
                             break
-                        if isinstance(node, exp.Unnest):
+                        if isinstance(node, exp.Unnest) and unnest_requires_cross_join:
                             pushdown_allowed = False
                             break
 
-                if pushdown_allowed or not unnest_requires_cross_join:
+                if pushdown_allowed:
                     pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
 
             # joins should only pushdown into itself, not to other joins

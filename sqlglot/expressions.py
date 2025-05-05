@@ -2869,6 +2869,10 @@ class LanguageProperty(Property):
     arg_types = {"this": True}
 
 
+class EnviromentProperty(Property):
+    arg_types = {"expressions": True}
+
+
 # spark ddl
 class ClusteredByProperty(Property):
     arg_types = {"expressions": True, "sorted_by": False, "buckets": True}

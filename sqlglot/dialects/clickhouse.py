@@ -27,9 +27,6 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
 from sqlglot.generator import unsupported_args
 
-if t.TYPE_CHECKING:
-    from sqlglot._typing import E
-
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
 
@@ -501,7 +498,10 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS.pop("MATCH")
 
-        PROPERTY_PARSERS = parser.Parser.PROPERTY_PARSERS.copy()
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "ENGINE": lambda self: self._parse_engine_property(),
+        }
         PROPERTY_PARSERS.pop("DYNAMIC")
 
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
@@ -571,11 +571,12 @@ class ClickHouse(Dialect):
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
-        def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
-            this = super()._parse_property_assignment(exp_class, **kwargs)
-            if isinstance(this, exp.EngineProperty) and isinstance(this.this, exp.Null):
-                this.this.replace(exp.Anonymous(this="Null"))
-            return this
+        def _parse_engine_property(self) -> exp.EngineProperty:
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.EngineProperty,
+                this=self._parse_field(any_token=True, anonymous_func=True),
+            )
 
         # https://clickhouse.com/docs/en/sql-reference/statements/create/function
         def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expression]:

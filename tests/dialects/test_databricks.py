@@ -339,7 +339,7 @@ class TestDatabricks(Validator):
             "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
         )
 
-    def test_udf_enviroment_property(self):
+    def test_udf_environment_property(self):
         self.validate_identity(
             """CREATE FUNCTION a() ENVIRONMENT (dependencies = '["foo1==1", "foo2==2"]', environment_version = 'None')"""
         )

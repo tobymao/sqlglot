@@ -2196,22 +2196,18 @@ class Parser(metaclass=_Parser):
             ),
         )
 
-    def _parse_unquoted_field(self, anonymous_func: bool = False) -> t.Optional[exp.Expression]:
-        field = self._parse_field(anonymous_func=anonymous_func)
+    def _parse_unquoted_field(self) -> t.Optional[exp.Expression]:
+        field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
             field = exp.var(field)
 
         return field
 
-    def _parse_property_assignment(
-        self, exp_class: t.Type[E], anonymous_func: bool = False, **kwargs: t.Any
-    ) -> E:
+    def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
 
-        return self.expression(
-            exp_class, this=self._parse_unquoted_field(anonymous_func=anonymous_func), **kwargs
-        )
+        return self.expression(exp_class, this=self._parse_unquoted_field(), **kwargs)
 
     def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
         properties = []

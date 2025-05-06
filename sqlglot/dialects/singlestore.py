@@ -70,7 +70,8 @@ class SingleStore(Dialect):
             "START": TokenType.BEGIN
         }
 
-        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {TokenType.SHOW}
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {
+            TokenType.SHOW}
 
     # TODO: implement
     # class Parser(parser.Parser):
@@ -89,7 +90,7 @@ class SingleStore(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         PAD_FILL_PATTERN_IS_REQUIRED = True
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
-        SUPPORTED_JSON_PATH_PARTS = set(exp.JSONPathKey)
+        SUPPORTED_JSON_PATH_PARTS = {exp.JSONPathKey}
         SET_OP_MODIFIERS = False
         TRY_SUPPORTED = False
         SUPPORTS_UESCAPE = False
@@ -97,6 +98,14 @@ class SingleStore(Dialect):
         SUPPORTS_CONVERT_TIMEZONE = True
         SUPPORTS_UNIX_SECONDS = True
         PARSE_JSON_NAME: t.Optional[str] = "TO_JSON"
+
+        TRANSFORMS = {
+            **generator.Generator.TRANSFORMS,
+            exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
+            exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
+            exp.JSONArrayContains: lambda self, e: self.func(
+                "JSON_ARRAY_CONTAINS_JSON", e.expression, e.this),
+        }
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1152,3 +1161,36 @@ class SingleStore(Dialect):
             "ZEROFILL",
             "ZONE"
         }
+
+        def all_sql(self, expression: exp.All) -> str:
+            self.unsupported(
+                "ALL subquery predicate is not supported in SingleStore")
+            return super().all_sql(expression)
+
+        def any_sql(self, expression: exp.Any) -> str:
+            self.unsupported(
+                "ANY subquery predicate is not supported in SingleStore")
+            return super().any_sql(expression)
+
+        def glob_sql(self, expression: exp.Glob) -> str:
+            self.unsupported("GLOB predicate is not supported in SingleStore")
+            return super().glob_sql(expression)
+
+        def ilike_sql(self, expression: exp.ILike) -> str:
+            self.unsupported("ILIKE predicate is not supported in SingleStore")
+            return super().ilike_sql(expression)
+
+        def ilikeany_sql(self, expression: exp.ILikeAny) -> str:
+            self.unsupported(
+                "ILIKE ANY predicate is not supported in SingleStore")
+            return super().ilikeany_sql(expression)
+
+        def likeany_sql(self, expression: exp.LikeAny) -> str:
+            self.unsupported(
+                "LIKE ANY predicate is not supported in SingleStore")
+            return super().likeany_sql(expression)
+
+        def similarto_sql(self, expression: exp.SimilarTo) -> str:
+            self.unsupported(
+                "SIMILAR TO predicate is not supported in SingleStore")
+            return super().similarto_sql(expression)

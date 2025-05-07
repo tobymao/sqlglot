@@ -1016,6 +1016,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.DECIMAL128: "Decimal128",
             exp.DataType.Type.DECIMAL256: "Decimal256",
             exp.DataType.Type.TIMESTAMP: "DateTime",
+            exp.DataType.Type.TIMESTAMPNTZ: "DateTime",
             exp.DataType.Type.TIMESTAMPTZ: "DateTime",
             exp.DataType.Type.DOUBLE: "Float64",
             exp.DataType.Type.ENUM: "Enum",

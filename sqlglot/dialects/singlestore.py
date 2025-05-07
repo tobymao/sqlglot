@@ -1,7 +1,9 @@
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql
 import typing as t
+import re
 from sqlglot import exp
+from sqlglot.generator import ESCAPED_UNICODE_RE
 
 
 class SingleStore(Dialect):
@@ -54,6 +56,7 @@ class SingleStore(Dialect):
     class Tokenizer(tokens.Tokenizer):
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
+        BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         IDENTIFIERS = ['"', '`']
         QUOTES = ["'", '"']
         STRING_ESCAPES = ["'", '"', "\\"]
@@ -1191,3 +1194,26 @@ class SingleStore(Dialect):
             self.unsupported(
                 "SIMILAR TO predicate is not supported in SingleStore")
             return super().similarto_sql(expression)
+
+        def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
+            this = self.sql(expression, "this")
+            escape = expression.args.get("escape")
+
+            left_quote, right_quote = self.dialect.QUOTE_START, self.dialect.QUOTE_END
+
+            if escape:
+                escape_pattern = re.compile(rf"{escape.name}(\d+)")
+            else:
+                escape_pattern = ESCAPED_UNICODE_RE
+
+            this = re.sub(escape_pattern, lambda m: chr(int(m.group(1), 16)), this)
+
+            return f"{left_quote}{this}{right_quote}"
+
+        def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            # Named parameters are query parameters that are prefixed with a colon (:).
+            # https://docs.oracle.com/cd/E19798-01/821-1841/bnbrh/index.html
+            if expression.this:
+                self.unsupported(
+                    "Named placeholders are not supported in SingleStore")
+            return super().placeholder_sql(expression)

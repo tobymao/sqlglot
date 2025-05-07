@@ -198,3 +198,60 @@ class TestSingleStore(Validator):
             expected_sql="SELECT * FROM events WHERE JSON_ARRAY_CONTAINS_JSON(metadata, '\"promo\"')",
             exp_type=exp.JSONArrayContains
         )
+
+    def test_condition_generation(self):
+        self.validate_generation(
+            sql="SELECT b'1010'",
+            exp_type=exp.BitString)
+        self.validate_generation(
+            sql="SELECT x'1F'",
+            exp_type=exp.HexString)
+        self.validate_generation(
+            sql="SELECT e'hello'",
+            from_dialect="postgres",
+            exp_type=exp.ByteString)
+        self.validate_generation(
+            sql="SELECT r'raw\\nstring'",
+            expected_sql="SELECT 'raw\\\\nstring'",
+            from_dialect="spark",
+            exp_type=exp.RawString)
+        self.validate_generation(
+            sql="SELECT U&'d\\0061t\\0061'",
+            expected_sql="SELECT 'data'",
+            from_dialect="presto",
+            exp_type=exp.UnicodeString)
+        self.validate_generation(
+            sql="SELECT name FROM users",
+            exp_type=exp.Column)
+        self.validate_generation(
+            sql="SELECT 42",
+            exp_type=exp.Literal)
+        self.validate_generation(
+            sql="SELECT RANK() OVER (PARTITION BY category ORDER BY price) FROM products",
+            exp_type=exp.Window)
+        self.validate_generation(
+            sql="SELECT @a",
+            exp_type=exp.Parameter,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT @@session.time_zone",
+            exp_type=exp.SessionParameter)
+        self.validate_generation(
+            sql="SELECT ?",
+            exp_type=exp.Placeholder,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT :name",
+            from_dialect="oracle",
+            exp_type=exp.Placeholder,
+            error_message="Named placeholders are not supported in SingleStore",
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM users WHERE name IS NULL",
+            exp_type=exp.Null)
+        self.validate_generation(
+            sql="SELECT TRUE",
+            exp_type=exp.Boolean)

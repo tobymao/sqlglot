@@ -1,5 +1,6 @@
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
-from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, bool_xor_sql, rename_func
+from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
+    bool_xor_sql, rename_func
 import typing as t
 import re
 from sqlglot import exp
@@ -111,10 +112,7 @@ class SingleStore(Dialect):
             exp.ILike: no_ilike_sql,
             exp.Xor: bool_xor_sql,
             exp.IntDiv: lambda self, e: f"{self.binary(e, 'DIV')}",
-<<<<<<< HEAD
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
-=======
->>>>>>> edfac580 (Added binary functions generation)
         }
 
         TRANSFORMS.pop(exp.Operator)
@@ -1216,7 +1214,8 @@ class SingleStore(Dialect):
             else:
                 escape_pattern = ESCAPED_UNICODE_RE
 
-            this = re.sub(escape_pattern, lambda m: chr(int(m.group(1), 16)), this)
+            this = re.sub(escape_pattern, lambda m: chr(int(m.group(1), 16)),
+                          this)
 
             return f"{left_quote}{this}{right_quote}"
 
@@ -1235,7 +1234,8 @@ class SingleStore(Dialect):
             return super().overlaps_sql(expression)
 
         def dot_sql(self, expression: exp.Dot) -> str:
-            self.unsupported("Dot condition (.) is not supported in SingleStore")
+            self.unsupported(
+                "Dot condition (.) is not supported in SingleStore")
             return super().dot_sql(expression)
 
         def dpipe_sql(self, expression: exp.DPipe) -> str:
@@ -1243,15 +1243,18 @@ class SingleStore(Dialect):
 
         # TODO: implement using REPLACE
         def escape_sql(self, expression: exp.Escape) -> str:
-            self.unsupported("ESCAPE condition in LIKE is not supported in SingleStore")
+            self.unsupported(
+                "ESCAPE condition in LIKE is not supported in SingleStore")
             return super().escape_sql(expression)
 
         def kwarg_sql(self, expression: exp.Kwarg) -> str:
-            self.unsupported("Kwarg condition (=>) is not supported in SingleStore")
+            self.unsupported(
+                "Kwarg condition (=>) is not supported in SingleStore")
             return super().kwarg_sql(expression)
 
         def operator_sql(self, expression: exp.Operator) -> str:
-            self.unsupported("Custom operators are not supported in SingleStore")
+            self.unsupported(
+                "Custom operators are not supported in SingleStore")
             return self.binary(expression, "")
 
         def slice_sql(self, expression: exp.Slice) -> str:
@@ -1289,16 +1292,20 @@ class SingleStore(Dialect):
             return self.format_args(*args)
 
         def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
-            return self.func("JSON_EXTRACT_JSON", expression.this, expression.expression)
+            return self.func("JSON_EXTRACT_JSON", expression.this,
+                             expression.expression)
 
         def jsonextractscalar_sql(self, expression: exp.JSONExtract) -> str:
-            return self.func("JSON_EXTRACT_STRING", expression.this, expression.expression)
+            return self.func("JSON_EXTRACT_STRING", expression.this,
+                             expression.expression)
 
         def jsonbextract_sql(self, expression: exp.JSONBExtract) -> str:
-            return self.func("BSON_EXTRACT_BSON", expression.this, expression.expression)
+            return self.func("BSON_EXTRACT_BSON", expression.this,
+                             expression.expression)
 
         def jsonbextractscalar_sql(self, expression: exp.JSONBExtract) -> str:
-            return self.func("BSON_EXTRACT_STRING", expression.this, expression.expression)
+            return self.func("BSON_EXTRACT_STRING", expression.this,
+                             expression.expression)
 
         # TODO: handle partial case using BSON_ARRAY_CONTAINS_BSON
         def jsonbcontains_sql(self, expression: exp.JSONBContains) -> str:
@@ -1308,7 +1315,8 @@ class SingleStore(Dialect):
         def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
             return self.binary(
                 exp.RegexpLike(
-                    this=exp.Lower(this=expression.this), expression=exp.Lower(this=expression.expression)
+                    this=exp.Lower(this=expression.this),
+                    expression=exp.Lower(this=expression.expression)
                 ), "RLIKE")
 
         def bracket_sql(self, expression: exp.Bracket) -> str:

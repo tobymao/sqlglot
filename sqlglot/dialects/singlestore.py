@@ -111,7 +111,10 @@ class SingleStore(Dialect):
             exp.ILike: no_ilike_sql,
             exp.Xor: bool_xor_sql,
             exp.IntDiv: lambda self, e: f"{self.binary(e, 'DIV')}",
+<<<<<<< HEAD
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+=======
+>>>>>>> edfac580 (Added binary functions generation)
         }
 
         TRANSFORMS.pop(exp.Operator)

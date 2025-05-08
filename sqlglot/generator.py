@@ -3346,7 +3346,8 @@ class Generator(metaclass=_Generator):
             collate = f" COLLATE {collate}" if collate else ""
             using = self.sql(expression, "using")
             using = f" USING {using}" if using else ""
-            return f"ALTER COLUMN {this} {self.ALTER_SET_TYPE} {dtype}{collate}{using}"
+            alter_set_type = self.ALTER_SET_TYPE + " " if self.ALTER_SET_TYPE else ""
+            return f"ALTER COLUMN {this} {alter_set_type}{dtype}{collate}{using}"
 
         default = self.sql(expression, "default")
         if default:

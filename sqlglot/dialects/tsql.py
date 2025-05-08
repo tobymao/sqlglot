@@ -910,6 +910,7 @@ class TSQL(Dialect):
         COPY_PARAMS_EQ_REQUIRED = True
         PARSE_JSON_NAME = None
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        ALTER_SET_TYPE = ""
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Create,

@@ -1,7 +1,7 @@
 from sqlglot import exp, parse, parse_one
-from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
+from tests.dialects.test_dialect import Validator
 
 
 class TestTSQL(Validator):
@@ -2242,3 +2242,11 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
             },
         )
+
+    def test_collation_parse(self):
+        self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
+            exp.Alter
+        )
+        self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").args.get(
+            "actions"
+        )[0].args.get("collate").this.assert_is(exp.Var)

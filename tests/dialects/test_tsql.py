@@ -2246,4 +2246,4 @@ FROM OPENJSON(@json) WITH (
     def test_collation_parse(self):
         self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
             exp.Alter
-        ).args.get("actions")[0].get("collate").this.assert_is(exp.Var)
+        ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)

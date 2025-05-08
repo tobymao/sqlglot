@@ -175,7 +175,7 @@ class Teradata(Dialect):
             TokenType.DSTAR: exp.Pow,
         }
 
-        def _parse_translate(self) -> exp.Expression:
+        def _parse_translate(self) -> exp.TranslateCharacters:
             this = self._parse_assignment()
             self._match(TokenType.USING)
             self._match_texts(self.CHARSET_TRANSLATORS)

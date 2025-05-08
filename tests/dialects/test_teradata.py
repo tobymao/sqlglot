@@ -41,13 +41,8 @@ class TestTeradata(Validator):
         ).assert_is(exp.Command)
 
     def test_translate(self):
-        self.validate_all(
-            "TRANSLATE(x USING LATIN_TO_UNICODE)",
-            write={
-                "teradata": "CAST(x AS CHAR CHARACTER SET UNICODE)",
-            },
-        )
-        self.validate_identity("CAST(x AS CHAR CHARACTER SET UNICODE)")
+        self.validate_identity("TRANSLATE(x USING LATIN_TO_UNICODE)")
+        self.validate_identity("TRANSLATE(x USING LATIN_TO_UNICODE WITH ERROR)")
 
     def test_update(self):
         self.validate_all(

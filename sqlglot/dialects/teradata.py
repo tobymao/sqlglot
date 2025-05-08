@@ -178,20 +178,17 @@ class Teradata(Dialect):
         def _parse_translate(self, strict: bool) -> exp.Expression:
             this = self._parse_assignment()
 
-            if not self._match(TokenType.USING):
-                self.raise_error("Expected USING in TRANSLATE")
+            self._match(TokenType.USING)
 
-            if self._match_texts(self.CHARSET_TRANSLATORS):
-                charset = self._prev.text.upper()
-                if self._match_text_seq("WITH", "ERROR"):
-                    return self.expression(exp.TranslateCharacters, this=this, expression=charset)
+            self._match_texts(self.CHARSET_TRANSLATORS)
+            charset = self._prev.text.upper()
 
-                charset_split = charset.split("_TO_")
-                to = self.expression(exp.CharacterSet, this=charset_split[1])
-            else:
-                self.raise_error("Expected a character set translator after USING in TRANSLATE")
-
-            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+            return self.expression(
+                exp.TranslateCharacters,
+                this=this,
+                expression=charset,
+                with_error=self._match_text_seq("WITH", "ERROR"),
+            )
 
         # FROM before SET in Teradata UPDATE syntax
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause

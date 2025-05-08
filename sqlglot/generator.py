@@ -4925,3 +4925,8 @@ class Generator(metaclass=_Generator):
             return f"PUT {this} {target}{props_sql}"
         else:
             return f"GET {target} {this}{props_sql}"
+
+    def translatecharacters_sql(self, expression: exp.TranslateCharacters):
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        return f"TRANSLATE({this} USING {expr} WITH ERROR)"

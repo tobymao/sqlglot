@@ -182,7 +182,11 @@ class Teradata(Dialect):
                 self.raise_error("Expected USING in TRANSLATE")
 
             if self._match_texts(self.CHARSET_TRANSLATORS):
-                charset_split = self._prev.text.split("_TO_")
+                charset = self._prev.text.upper()
+                if self._match_text_seq("WITH", "ERROR"):
+                    return self.expression(exp.TranslateCharacters, this=this, expression=charset)
+
+                charset_split = charset.split("_TO_")
                 to = self.expression(exp.CharacterSet, this=charset_split[1])
             else:
                 self.raise_error("Expected a character set translator after USING in TRANSLATE")

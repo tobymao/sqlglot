@@ -5698,6 +5698,11 @@ class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
 
+# https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/String-Operators-and-Functions/TRANSLATE/TRANSLATE-Function-Syntax
+class TranslateCharacters(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class Collate(Binary, Func):
     pass
 

@@ -49,6 +49,14 @@ class TestTeradata(Validator):
         )
         self.validate_identity("CAST(x AS CHAR CHARACTER SET UNICODE)")
 
+    def test_translate_with_error(self):
+        self.validate_all(
+            "TRANSLATE(x USING LATIN_TO_UNICODE WITH ERROR)",
+            write={
+                "teradata": "CAST(x AS CHAR CHARACTER SET UNICODE)",
+            },
+        )
+
     def test_update(self):
         self.validate_all(
             "UPDATE A FROM schema.tableA AS A, (SELECT col1 FROM schema.tableA GROUP BY col1) AS B SET col2 = '' WHERE A.col1 = B.col1",

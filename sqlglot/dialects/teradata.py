@@ -162,7 +162,7 @@ class Teradata(Dialect):
             # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
             "TRYCAST": parser.Parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),
-            "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
+            "TRANSLATE": lambda self: self._parse_translate(),
         }
 
         FUNCTIONS = {
@@ -175,7 +175,7 @@ class Teradata(Dialect):
             TokenType.DSTAR: exp.Pow,
         }
 
-        def _parse_translate(self, strict: bool) -> exp.Expression:
+        def _parse_translate(self) -> exp.Expression:
             this = self._parse_assignment()
             self._match(TokenType.USING)
             self._match_texts(self.CHARSET_TRANSLATORS)

@@ -885,3 +885,13 @@ class TestExecutor(unittest.TestCase):
             "avg_bill_length",
             "avg_bill_depth",
         ]
+
+    def test_table_to_pylist(self):
+        columns = ["id", "product", "price"]
+        rows = [[1, "Shirt", 20.0], [2, "Shoes", 60.0]]
+        table = Table(columns=columns, rows=rows)
+        expected = [
+            {"id": 1, "product": "Shirt", "price": 20.0},
+            {"id": 2, "product": "Shoes", "price": 60.0},
+        ]
+        self.assertEqual(table.to_pylist(), expected)

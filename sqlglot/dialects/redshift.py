@@ -169,7 +169,6 @@ class Redshift(Postgres):
             exp.DataType.Type.BLOB: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.ROWVERSION: "VARBYTE",

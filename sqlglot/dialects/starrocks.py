@@ -119,7 +119,6 @@ class StarRocks(MySQL):
             exp.DataType.Type.INT128: "LARGEINT",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
-            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
         }
 

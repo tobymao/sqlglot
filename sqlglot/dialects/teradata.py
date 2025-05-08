@@ -177,16 +177,13 @@ class Teradata(Dialect):
 
         def _parse_translate(self, strict: bool) -> exp.Expression:
             this = self._parse_assignment()
-
             self._match(TokenType.USING)
-
             self._match_texts(self.CHARSET_TRANSLATORS)
-            charset = self._prev.text.upper()
 
             return self.expression(
                 exp.TranslateCharacters,
                 this=this,
-                expression=charset,
+                expression=self._prev.text.upper(),
                 with_error=self._match_text_seq("WITH", "ERROR"),
             )
 

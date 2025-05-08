@@ -10,16 +10,16 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     any_value_to_max_sql,
+    build_date_delta,
     date_delta_sql,
     datestrtodate_sql,
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
-    build_date_delta,
     rename_func,
     strposition_sql,
-    trim_sql,
     timestrtotime_sql,
+    trim_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.parser import build_coalesce
@@ -889,6 +889,17 @@ class TSQL(Dialect):
                     value = self._parse_bitwise()
 
             return self.expression(exp.DeclareItem, this=var, kind=data_type, default=value)
+
+        def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
+            expression = super()._parse_alter_table_alter()
+
+            if expression is not None:
+                collation = expression.args.get("collate")
+                if isinstance(collation, exp.Column) and isinstance(collation.this, exp.Identifier):
+                    identifier = collation.this
+                    collation.set("this", exp.Var(this=identifier.name))
+
+            return expression
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

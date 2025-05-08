@@ -3,7 +3,6 @@ from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import Dialect
-from sqlglot.dialects.presto import Presto
 
 
 def pushdown_predicates(expression, dialect=None):
@@ -22,6 +21,8 @@ def pushdown_predicates(expression, dialect=None):
     Returns:
         sqlglot.Expression: optimized expression
     """
+    from sqlglot.dialects.presto import Presto
+
     root = build_scope(expression)
 
     dialect = Dialect.get_or_raise(dialect)

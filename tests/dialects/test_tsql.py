@@ -1063,6 +1063,16 @@ WHERE
             },
         )
         self.validate_all(
+            "ALTER TABLE a ALTER COLUMN b INTEGER",
+            read={
+                "": "ALTER TABLE a ALTER COLUMN b INT",
+            },
+            write={
+                "": "ALTER TABLE a ALTER COLUMN b SET DATA TYPE INT",
+                "tsql": "ALTER TABLE a ALTER COLUMN b INTEGER",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT) USING PARQUET",

@@ -1,6 +1,6 @@
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
-    bool_xor_sql, rename_func
+    bool_xor_sql, rename_func, count_if_to_sum
 import typing as t
 import re
 from sqlglot import exp
@@ -113,6 +113,14 @@ class SingleStore(Dialect):
             exp.Xor: bool_xor_sql,
             exp.IntDiv: lambda self, e: f"{self.binary(e, 'DIV')}",
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),
+            exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
+            exp.CountIf: count_if_to_sum,
+            exp.LogicalOr: rename_func("MAX"),
+            exp.LogicalAnd: rename_func("MIN"),
+            exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
+            exp.Variance: rename_func("VAR_SAMP"),
+            exp.VariancePop: rename_func("VAR_POP"),
         }
 
         TRANSFORMS.pop(exp.Operator)
@@ -1322,3 +1330,85 @@ class SingleStore(Dialect):
         def bracket_sql(self, expression: exp.Bracket) -> str:
             self.unsupported("Arrays are not supported in SingleStore")
             return super().bracket_sql(expression)
+
+        # TODO: investigate which Clickhouse parametrized/combined functions can be translated to SingleStore
+        def combinedparameterizedagg_sql(self,
+            expression: exp.CombinedParameterizedAgg) -> str:
+            # https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantileGK
+            # https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
+            self.unsupported(
+                "Parametrized aggregate functions are not supported in SingleStore")
+            return super().combinedparameterizedagg_sql(expression)
+
+        def parameterizedagg_sql(self, expression: exp.ParameterizedAgg) -> str:
+            # https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantileGK
+            self.unsupported(
+                "Parametrized aggregate functions are not supported in SingleStore")
+            return super().parameterizedagg_sql(expression)
+
+        def anonymousaggfunc_sql(self, expression: exp.AnonymousAggFunc) -> str:
+            # https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantileGK
+            self.unsupported(
+                "Anonymous aggregate functions are not supported in SingleStore")
+            return super().anonymousaggfunc_sql(expression)
+
+        def combinedaggfunc_sql(self, expression: exp.CombinedAggFunc) -> str:
+            # https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
+            self.unsupported(
+                "Aggregate function combinators are not supported in SingleStore")
+            return super().anonymousaggfunc_sql(expression)
+
+        def argmin_sql(self, expression: exp.ArgMin) -> str:
+            self.unsupported("ARG_MIN function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def argmax_sql(self, expression: exp.ArgMax) -> str:
+            self.unsupported("ARG_MAX function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def approxtopk_sql(self, expression: exp.ApproxTopK) -> str:
+            self.unsupported(
+                "APPROX_TOP_K function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().arrayagg_sql(expression)
+
+        def arrayuniqueagg_sql(self, expression: exp.ArrayAgg) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arrayunionagg_sql(self, expression: exp.ArrayAgg) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def jsonobjectagg_sql(self, expression: exp.JSONObjectAgg) -> str:
+            self.unsupported(
+                "JSON_OBJECT_AGG function is not supported in SingleStore")
+            return super().jsonobjectagg_sql(expression)
+
+        def jsonbobjectagg_sql(self, expression: exp.JSONBObjectAgg) -> str:
+            self.unsupported(
+                "JSONB_OBJECT_AGG function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def quantile_sql(self, expression: exp.Quantile) -> str:
+            self.unsupported(
+                "QUANTILE function is not supported in SingleStore")
+            return self.func("APPROX_PERCENTILE", expression.this,
+                             expression.args.get("quantile"))
+
+        def corr_sql(self, expression: exp.Corr) -> str:
+            self.unsupported("CORR function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def covarsamp_sql(self, expression: exp.CovarSamp) -> str:
+            self.unsupported(
+                "COVAR_SAMP function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def covarpop_sql(self, expression: exp.CovarPop) -> str:
+            self.unsupported(
+                "COVAR_POP function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)

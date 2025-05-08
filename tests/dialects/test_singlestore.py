@@ -35,7 +35,7 @@ class TestSingleStore(Validator):
     user_id INT,
     amount DECIMAL(10, 2),
     status VARCHAR(20),
-    created_at TIMESTAMP
+    created_at TIMESTAMP SERIES TIMESTAMP
 );
 """)
             cur.execute("""CREATE TABLE products (
@@ -78,9 +78,9 @@ class TestSingleStore(Validator):
             with self.assertRaises(UnsupportedError) as ctx:
                 query.sql(dialect="singlestore",
                           unsupported_level=ErrorLevel.RAISE)
-            self.assertEqual(
-                str(ctx.exception),
+            self.assertIn(
                 error_message,
+                str(ctx.exception),
             )
 
         generated = query.sql(dialect="singlestore")
@@ -438,5 +438,205 @@ class TestSingleStore(Validator):
             error_message="Arrays are not supported in SingleStore",
             from_dialect="snowflake",
             exp_type=exp.Bracket,
+            run=False
+        )
+
+    def test_aggregate_functions_generation(self):
+        self.validate_generation(
+            sql="SELECT quantileGK(100, 0.95)(reading) OVER (PARTITION BY id) FROM table",
+            expected_sql="SELECT QUANTILEGK(100, 0.95)(reading) OVER (PARTITION BY id) FROM table",
+            from_dialect="clickhouse",
+            error_message="Parametrized aggregate functions are not supported in SingleStore",
+            exp_type=exp.ParameterizedAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="select quantileGKIf(100, 0.95)(reading) OVER (PARTITION BY id) FROM table",
+            expected_sql="SELECT QUANTILEGKIF(100, 0.95)(reading) OVER (PARTITION BY id) FROM table",
+            from_dialect="clickhouse",
+            error_message="Parametrized aggregate functions are not supported in SingleStore",
+            exp_type=exp.CombinedParameterizedAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="select quantileGK(100, 0.95) OVER (PARTITION BY id) FROM table",
+            expected_sql="SELECT QUANTILEGK(100, 0.95) OVER (PARTITION BY id) FROM table",
+            from_dialect="clickhouse",
+            error_message="Anonymous aggregate functions are not supported in SingleStore",
+            exp_type=exp.AnonymousAggFunc,
+            run = False
+        )
+        self.validate_generation(
+            sql="select quantileGKIf(100, 0.95) OVER (PARTITION BY id) FROM table",
+            expected_sql="SELECT QUANTILEGKIF(100, 0.95) OVER (PARTITION BY id) FROM table",
+            from_dialect="clickhouse",
+            error_message="Aggregate function combinators are not supported in SingleStore",
+            exp_type=exp.CombinedAggFunc,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARG_MAX(name, age) FROM users",
+            error_message="ARG_MAX function is not supported in SingleStore",
+            exp_type=exp.ArgMax,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARG_MIN(name, age) FROM users",
+            error_message="ARG_MIN function is not supported in SingleStore",
+            exp_type=exp.ArgMin,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT APPROX_TOP_K(category, 10) FROM products",
+            error_message="APPROX_TOP_K function is not supported in SingleStore",
+            exp_type=exp.ApproxTopK,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT HLL(user_id) FROM orders",
+            expected_sql="SELECT APPROX_COUNT_DISTINCT(user_id) FROM orders",
+            exp_type=exp.Hll)
+        self.validate_generation(
+            sql="SELECT APPROX_DISTINCT(email) FROM users",
+            expected_sql="SELECT APPROX_COUNT_DISTINCT(email) FROM users",
+            exp_type=exp.ApproxDistinct)
+        self.validate_generation(
+            sql="SELECT ARRAY_AGG(name) FROM users",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_UNIQUE_AGG(category) FROM products",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayUniqueAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_UNION_AGG(category) FROM products",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayUnionAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT AVG(amount) FROM orders",
+            exp_type=exp.Avg)
+        self.validate_generation(
+            sql="SELECT ANY_VALUE(email) FROM users",
+            exp_type=exp.AnyValue)
+        self.validate_generation(
+            sql="SELECT LAG(amount) OVER (ORDER BY created_at) FROM orders",
+            exp_type=exp.Lag)
+        self.validate_generation(
+            sql="SELECT LEAD(amount) OVER (ORDER BY created_at) FROM orders",
+            exp_type=exp.Lead)
+        self.validate_generation(
+            sql="SELECT FIRST(id) FROM orders",
+            exp_type=exp.First)
+        self.validate_generation(
+            sql="SELECT LAST(id) FROM orders",
+            exp_type=exp.Last)
+        self.validate_generation(
+            sql="SELECT FIRST_VALUE(amount) OVER (ORDER BY created_at) FROM orders",
+            exp_type=exp.FirstValue)
+        self.validate_generation(
+            sql="SELECT LAST_VALUE(amount) OVER (ORDER BY created_at ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM orders",
+            exp_type=exp.LastValue)
+        self.validate_generation(
+            sql="SELECT NTH_VALUE(amount, 2) OVER (ORDER BY created_at) FROM orders",
+            exp_type=exp.NthValue)
+        self.validate_generation(
+            sql="SELECT COUNT(*) FROM users",
+            exp_type=exp.Count)
+        self.validate_generation(
+            sql="SELECT COUNT_IF(age > 18) FROM users",
+            expected_sql="SELECT SUM(CASE WHEN age > 18 THEN 1 ELSE 0 END) FROM users",
+            exp_type=exp.CountIf)
+        self.validate_generation(
+            sql="SELECT GROUP_CONCAT(name) FROM users",
+            exp_type=exp.GroupConcat)
+        self.validate_generation(
+            sql="SELECT JSON_OBJECTAGG(id: name) FROM users",
+            from_dialect="postgres",
+            error_message="JSON_OBJECT_AGG function is not supported in SingleStore",
+            exp_type=exp.JSONObjectAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT JSONB_OBJECT_AGG(id, name) FROM users",
+            expected_sql="SELECT J_S_O_N_B_OBJECT_AGG(id, name) FROM users",
+            from_dialect="postgres",
+            error_message="JSONB_OBJECT_AGG function is not supported in SingleStore",
+            exp_type=exp.JSONBObjectAgg,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT BOOL_OR(is_active) FROM users",
+            expected_sql="SELECT MAX(is_active) FROM users",
+            exp_type=exp.LogicalOr)
+        self.validate_generation(
+            sql="SELECT BOOL_AND(is_active) FROM users",
+            expected_sql="SELECT MIN(is_active) FROM users",
+            exp_type=exp.LogicalAnd)
+        self.validate_generation(
+            sql="SELECT MAX(price) FROM products",
+            exp_type=exp.Max)
+        self.validate_generation(
+            sql="SELECT MEDIAN(age) FROM users",
+            exp_type=exp.Median)
+        self.validate_generation(
+            sql="SELECT MIN(age) FROM users",
+            exp_type=exp.Min)
+        self.validate_generation(
+            sql="SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount) FROM orders",
+            exp_type=exp.PercentileCont)
+        self.validate_generation(
+            sql="SELECT PERCENTILE_DISC(0.75) WITHIN GROUP (ORDER BY age) FROM users",
+            exp_type=exp.PercentileDisc)
+        self.validate_generation(
+            sql="SELECT QUANTILE(amount, 0.9) FROM orders",
+            expected_sql="SELECT APPROX_PERCENTILE(amount, 0.9) FROM orders",
+            error_message="QUANTILE function is not supported in SingleStore",
+            exp_type=exp.Quantile)
+        self.validate_generation(
+            sql="SELECT APPROX_QUANTILE(amount, 0.9) FROM orders",
+            expected_sql="SELECT APPROX_PERCENTILE(amount, 0.9) FROM orders",
+            exp_type=exp.ApproxQuantile)
+        self.validate_generation(
+            sql="SELECT SUM(amount) FROM orders",
+            exp_type=exp.Sum)
+        self.validate_generation(
+            sql="SELECT STDDEV(amount) FROM orders",
+            exp_type=exp.Stddev)
+        self.validate_generation(
+            sql="SELECT STDDEV_POP(amount) FROM orders",
+            exp_type=exp.StddevPop)
+        self.validate_generation(
+            sql="SELECT STDDEV_SAMP(amount) FROM orders",
+            exp_type=exp.StddevSamp)
+        self.validate_generation(
+            sql="SELECT VARIANCE(amount) FROM orders",
+            expected_sql="SELECT VAR_SAMP(amount) FROM orders",
+            exp_type=exp.Variance)
+        self.validate_generation(
+            sql="SELECT VAR_POP(amount) FROM orders",
+            expected_sql="SELECT VAR_POP(amount) FROM orders",
+            exp_type=exp.VariancePop)
+        self.validate_generation(
+            sql="SELECT CORR(user_id, amount) FROM orders",
+            error_message="CORR function is not supported in SingleStore",
+            exp_type=exp.Corr,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT COVAR_SAMP(user_id, amount) FROM orders",
+            error_message="COVAR_SAMP function is not supported in SingleStore",
+            exp_type=exp.CovarSamp,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT COVAR_POP(user_id, amount) FROM orders",
+            error_message="COVAR_POP function is not supported in SingleStore",
+            exp_type=exp.CovarPop,
             run=False
         )

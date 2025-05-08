@@ -818,6 +818,7 @@ class MySQL(Dialect):
             exp.DataType.Type.DATETIME2: "DATETIME",
             exp.DataType.Type.SMALLDATETIME: "DATETIME",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
+            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
         }

@@ -428,6 +428,7 @@ class TestDuckDB(Validator):
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={
                 "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
+                "spark": "SELECT DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP_NTZ), CONCAT(COALESCE('yyyy', ''), COALESCE('MM', '')))",
                 "tsql": "SELECT FORMAT(CAST('2020-01-01' AS DATETIME2), CONCAT('yyyy', 'MM'))",
             },
         )
@@ -1107,6 +1108,28 @@ class TestDuckDB(Validator):
                 "bigquery": "TIMESTAMP(DATETIME(CAST(start AS TIMESTAMP), 'America/New_York'))",
                 "duckdb": "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
                 "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT TIMESTAMP 'foo'",
+            write={
+                "duckdb": "SELECT CAST('foo' AS TIMESTAMP)",
+                "hive": "SELECT CAST('foo' AS TIMESTAMP)",
+                "spark2": "SELECT CAST('foo' AS TIMESTAMP)",
+                "spark": "SELECT CAST('foo' AS TIMESTAMP_NTZ)",
+                "postgres": "SELECT CAST('foo' AS TIMESTAMP)",
+                "mysql": "SELECT CAST('foo' AS DATETIME)",
+                "clickhouse": "SELECT CAST('foo' AS Nullable(DateTime))",
+                "databricks": "SELECT CAST('foo' AS TIMESTAMP_NTZ)",
+                "snowflake": "SELECT CAST('foo' AS TIMESTAMPNTZ)",
+                "redshift": "SELECT CAST('foo' AS TIMESTAMP)",
+                "tsql": "SELECT CAST('foo' AS DATETIME2)",
+                "presto": "SELECT CAST('foo' AS TIMESTAMP)",
+                "trino": "SELECT CAST('foo' AS TIMESTAMP)",
+                "oracle": "SELECT CAST('foo' AS TIMESTAMP)",
+                "bigquery": "SELECT CAST('foo' AS DATETIME)",
+                "starrocks": "SELECT CAST('foo' AS DATETIME)",
             },
         )
 

@@ -404,6 +404,9 @@ class Generator(metaclass=_Generator):
     # Whether the function TO_NUMBER is supported
     SUPPORTS_TO_NUMBER = True
 
+    # Whether EXCLUDE in window specification is supported
+    SUPPORTS_WINDOW_EXCLUDE = True
+
     # Whether or not set op modifiers apply to the outer set op or select.
     # SELECT * FROM x UNION SELECT * FROM y LIMIT 1
     # True means limit 1 happens after the set op, False means it it happens on y.
@@ -2806,6 +2809,12 @@ class Generator(metaclass=_Generator):
             csv(self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" ")
             or "CURRENT ROW"
         )
+
+        if self.SUPPORTS_WINDOW_EXCLUDE:
+            exclude = self.sql(expression, "exclude")
+            if exclude:
+                return f"{kind} BETWEEN {start} AND {end} EXCLUDE {exclude}"
+
         return f"{kind} BETWEEN {start} AND {end}"
 
     def withingroup_sql(self, expression: exp.WithinGroup) -> str:

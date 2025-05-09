@@ -6887,6 +6887,7 @@ class Parser(metaclass=_Parser):
             start = self._parse_window_spec()
             self._match(TokenType.AND)
             end = self._parse_window_spec()
+            exclude = self._parse_window_frame_exclude()
 
             spec = self.expression(
                 exp.WindowSpec,
@@ -6895,6 +6896,7 @@ class Parser(metaclass=_Parser):
                 start_side=start["side"],
                 end=end["value"],
                 end_side=end["side"],
+                exclude=exclude,
             )
         else:
             spec = None
@@ -6935,6 +6937,17 @@ class Parser(metaclass=_Parser):
             ),
             "side": self._match_texts(self.WINDOW_SIDES) and self._prev.text,
         }
+
+    def _parse_window_frame_exclude(self) -> t.Optional[str]:
+        if self._match_text_seq("EXCLUDE"):
+            return (
+                (self._match_text_seq("CURRENT", "ROW") and "CURRENT ROW")
+                or (self._match_text_seq("GROUP") and "GROUP")
+                or (self._match_text_seq("TIES") and "TIES")
+                or (self._match_text_seq("NO", "OTHERS") and "NO OTHERS")
+            )
+
+        return None
 
     def _parse_alias(
         self, this: t.Optional[exp.Expression], explicit: bool = False

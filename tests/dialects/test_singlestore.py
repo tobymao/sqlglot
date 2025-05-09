@@ -63,6 +63,21 @@ class TestSingleStore(Validator):
     occurred_at TIMESTAMP
 );
     """)
+            cur.execute("""CREATE FUNCTION is_prime(n BIGINT NOT NULL) returns BIGINT AS
+  BEGIN
+    IF n <= 1 THEN
+      RETURN FALSE;
+    END IF;
+    FOR i IN 2 .. (n-1) LOOP
+      EXIT WHEN i * i > n;
+      IF n % i != 0 THEN
+        CONTINUE;
+      END IF;
+      RETURN FALSE;
+    END LOOP;
+    RETURN TRUE;
+  END
+""")
 
     def validate_generation(self,
         sql: str, expected_sql: str = None, error_message: str = None,
@@ -640,3 +655,245 @@ class TestSingleStore(Validator):
             exp_type=exp.CovarPop,
             run=False
         )
+
+    def test_functions_generation(self):
+        self.validate_generation(
+            sql="SELECT ABS(age) FROM users",
+            exp_type=exp.Abs)
+        self.validate_generation(
+            sql="SELECT FLATTEN(ARRAY(ARRAY(1, 2), ARRAY(3, 4)))",
+            error_message="Arrays are not supported in SingleStore",
+            from_dialect="spark",
+            exp_type=exp.Flatten,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT TRANSFORM(ARRAY(1, 2, 3), x -> x + 1)",
+            from_dialect="spark",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Transform,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT db.is_prime(age) FROM users",
+            exp_type=exp.Anonymous)
+        self.validate_generation(
+            sql="SELECT id, age APPLY(sum) FROM users",
+            error_message="APPLY function is not supported in SingleStore",
+            from_dialect="clickhouse",
+            exp_type=exp.Apply,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY(1, 2, 3)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Array,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT TO_ARRAY(name) FROM users",
+            expected_sql="SELECT CASE WHEN name IS NULL THEN NULL ELSE ARRAY(name) END FROM users",
+            error_message="Arrays are not supported in SingleStore",
+            from_dialect="snowflake",
+            exp_type=exp.ToArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT LIST(id) FROM users",
+            error_message="LIST function is not supported in SingleStore",
+            exp_type=exp.List,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT RPAD('ohai', 10, '_') AS o",
+            exp_type=exp.Pad)
+        self.validate_generation(
+            sql="SELECT TO_CHAR(created_at, 'YYYY-MM-DD') FROM orders",
+            exp_type=exp.ToChar)
+        self.validate_generation(
+            sql="SELECT TO_NUMBER(price, '999,999,999.99999') FROM products",
+            exp_type=exp.ToNumber)
+        self.validate_generation(
+            sql="SELECT TO_DOUBLE(amount) FROM orders",
+            expected_sql="SELECT amount :> DOUBLE FROM orders",
+            exp_type=exp.ToDouble)
+        self.validate_generation(
+            sql="SELECT COLUMNS('.*_amount') FROM trips LIMIT 10",
+            from_dialect="clickhouse",
+            error_message="Dynamic column selection is not supported in SingleStore",
+            exp_type=exp.Columns,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT CONVERT(INT, name) FROM users",
+            from_dialect="tsql",
+            expected_sql="SELECT name :> INT FROM users",
+            exp_type=exp.Convert)
+        self.validate_generation(
+            sql="SELECT CONVERT_TIMEZONE('UTC', 'America/New_York', created_at) FROM orders",
+            expected_sql="SELECT CONVERT_TZ(created_at, 'UTC', 'America/New_York') FROM orders",
+            exp_type=exp.ConvertTimezone)
+        self.validate_generation(
+            sql="SELECT GENERATE_SERIES(1, 5)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.GenerateSeries,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM EXPLODING_GENERATE_SERIES(1, 5)",
+            expected_sql="SELECT * FROM GENERATE_SERIES(1, 5)",
+            error_message="EXPLODING_GENERATE_SERIES function is not supported in SingleStore",
+            exp_type=exp.ExplodingGenerateSeries,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_ALL(ARRAY(1, 2, 3), x -> x > 0)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayAll,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_ANY(ARRAY(0, 1, 0), x -> x = 1)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayAny,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_CONCAT(ARRAY(1, 2), ARRAY(3, 4))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayConcat,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_CONSTRUCT_COMPACT(NULL, 1, NULL, 2)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayConstructCompact,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT FILTER(ARRAY(1, 2, 3), x -> x > 1)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayFilter,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_TO_STRING(ARRAY('a', 'b', 'c'), ',')",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayToString,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT STRING(created_at, 'UTC') FROM orders",
+            expected_sql="SELECT CONVERT_TZ(created_at, 'UTC', 'UTC') :> TEXT FROM orders",
+            exp_type=exp.String)
+        self.validate_generation(
+            sql="SELECT STRING_TO_ARRAY('a,b,c', ',')",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.StringToArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_LENGTH(ARRAY(1, 2, 3))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArraySize,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_SORT(ARRAY(3, 1, 2))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArraySort,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_SUM(ARRAY(amount, 2, 3)) FROM orders",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArraySum,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT CASE WHEN age < 18 THEN 'minor' ELSE 'adult' END FROM users",
+            exp_type=exp.Case)
+        self.validate_generation(
+            sql="SELECT CAST(age AS DOUBLE) FROM users",
+            expected_sql="SELECT age :> DOUBLE FROM users",
+            exp_type=exp.Cast)
+        self.validate_generation(
+            sql="SELECT TRY_CAST(age AS INT) FROM users",
+            expected_sql="SELECT age !:> INT FROM users",
+            exp_type=exp.TryCast)
+
+        self.validate_generation(
+            sql="SELECT metadata.:STRING FROM events",
+            from_dialect="clickhouse",
+            expected_sql="SELECT metadata :> TEXT FROM events",
+            exp_type=exp.JSONCast)
+        self.validate_generation(
+            sql="SELECT TRY(PARSE_JSON('{bad: json}') IS NULL)",
+            expected_sql="SELECT TO_JSON('{bad: json}') IS NULL",
+            error_message="Unsupported TRY function",
+            exp_type=exp.Try,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT CAST(age, 'TEXT') FROM users",
+            expected_sql="SELECT age :> TEXT FROM users",
+            exp_type=exp.CastToStrType)
+        self.validate_generation(
+            sql="SELECT CEIL(amount) FROM orders",
+            exp_type=exp.Ceil)
+        self.validate_generation(
+            sql="SELECT COALESCE(email, 'none') FROM users",
+            exp_type=exp.Coalesce)
+        self.validate_generation(
+            sql="SELECT CHR(65)",
+            expected_sql="SELECT CHAR(65)",
+            exp_type=exp.Chr)
+        self.validate_generation(
+            sql="SELECT CONCAT(name, 'a') FROM users",
+            exp_type=exp.Concat)
+        self.validate_generation(
+            sql="SELECT CONCAT_WS('-', name, 'a') FROM users",
+            exp_type=exp.ConcatWs)
+        self.validate_generation(
+            sql="SELECT CONTAINS(name, 'book') FROM products",
+            expected_sql="SELECT INSTR(name, 'book') FROM products",
+            exp_type=exp.Contains)
+        self.validate_generation(
+            sql="SELECT CONNECT_BY_ROOT DEPTNAME AS ROOT, DEPTNAME FROM DEPARTMENT START WITH DEPTNO IN ('B01', 'C01', 'D01', 'E01') CONNECT BY PRIOR DEPTNO = ADMRDEPT",
+            error_message="CONNECT_BY_ROOT function is not supported in SingleStore",
+            exp_type=exp.ConnectByRoot,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT CBRT(id) FROM orders",
+            expected_sql="SELECT POWER(id, 0.3333333333333333) FROM orders",
+            exp_type=exp.Cbrt)
+        self.validate_generation(
+            sql="SELECT CURRENT_DATE",
+            exp_type=exp.CurrentDate)
+        self.validate_generation(
+            sql="SELECT CURRENT_DATETIME",
+            expected_sql="SELECT CURRENT_TIMESTAMP() :> DATETIME",
+            from_dialect="bigquery",
+            exp_type=exp.CurrentDatetime)
+        self.validate_generation(
+            sql="SELECT CURRENT_TIME()",
+            exp_type=exp.CurrentTime)
+        self.validate_generation(
+            sql="SELECT CURRENT_TIMESTAMP()",
+            exp_type=exp.CurrentTimestamp)
+        self.validate_generation(
+            sql="SELECT CURRENT_SCHEMA",
+            expected_sql="SELECT SCHEMA()",
+            from_dialect="postgres",
+            exp_type=exp.CurrentSchema)
+        self.validate_generation(
+            sql="SELECT CURRENT_USER()",
+            exp_type=exp.CurrentUser)
+        self.validate_generation(
+            sql="SELECT DATE_ADD(created_at, INTERVAL '1' DAY) FROM orders",
+            exp_type=exp.DateAdd)
+        self.validate_generation(
+            sql="SELECT DATE_BIN(INTERVAL 15 MINUTE, created_at, TIMESTAMP '2001-01-01 00:00:00') FROM orders",
+            expected_sql="SELECT TIME_BUCKET(INTERVAL '15' MINUTE, created_at, '2001-01-01 00:00:00' :> TIMESTAMP) FROM orders",
+            exp_type=exp.DateBin)

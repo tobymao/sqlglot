@@ -1,10 +1,12 @@
+import this
+
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
-    bool_xor_sql, rename_func, count_if_to_sum
+    bool_xor_sql, rename_func, count_if_to_sum, unit_to_str
 import typing as t
 import re
 from sqlglot import exp
-from sqlglot.generator import ESCAPED_UNICODE_RE
+from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
 
 
 class SingleStore(Dialect):
@@ -121,11 +123,17 @@ class SingleStore(Dialect):
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.Variance: rename_func("VAR_SAMP"),
             exp.VariancePop: rename_func("VAR_POP"),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.Chr: rename_func("CHAR"),
+            exp.Contains: rename_func("INSTR"),
+            exp.CurrentSchema: rename_func("SCHEMA"),
+            exp.DateBin: rename_func("TIME_BUCKET"),
         }
 
         TRANSFORMS.pop(exp.Operator)
         TRANSFORMS.pop(exp.ArrayContainsAll)
         TRANSFORMS.pop(exp.ArrayOverlaps)
+        TRANSFORMS.pop(exp.ConnectByRoot)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1412,3 +1420,152 @@ class SingleStore(Dialect):
             self.unsupported(
                 "COVAR_POP function is not supported in SingleStore")
             return self.function_fallback_sql(expression)
+
+        def flatten_sql(self, expression: exp.Flatten) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def transform_sql(self, expression: exp.Transform) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        # TODO: rewrite APPLY to call function for each column
+        def apply_sql(self, expression: exp.Apply) -> str:
+            # https://clickhouse.com/docs/ru/sql-reference/statements/select#apply
+            self.unsupported("APPLY function is not supported in SingleStore")
+            return super().apply_sql(expression)
+
+        def array_sql(self, expression: exp.Array) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def toarray_sql(self, expression: exp.ToArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().toarray_sql(expression)
+
+        def list_sql(self, expression: exp.List) -> str:
+            self.unsupported("LIST function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        @unsupported_args("format")
+        @unsupported_args("action")
+        @unsupported_args("default")
+        def cast_sql(self, expression: exp.Cast) -> str:
+            return f"{self.sql(expression, 'this')} :> {self.sql(expression, 'to')}"
+
+        @unsupported_args("format")
+        @unsupported_args("action")
+        @unsupported_args("default")
+        def trycast_sql(self, expression: exp.TryCast) -> str:
+            return f"{self.sql(expression, 'this')} !:> {self.sql(expression, 'to')}"
+
+        def columns_sql(self, expression: exp.Columns) -> str:
+            # https://clickhouse.com/docs/ru/sql-reference/statements/select#dynamic-column-selection
+            self.unsupported(
+                "Dynamic column selection is not supported in SingleStore")
+            return super().columns_sql(expression)
+
+        def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+            from_tz = expression.args.get("source_tz")
+            to_tz = expression.args.get("target_tz")
+            dt = expression.args.get("timestamp")
+
+            return self.func("CONVERT_TZ", dt, from_tz, to_tz)
+
+        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def explodinggenerateseries_sql(self,
+            expression: exp.ExplodingGenerateSeries) -> str:
+            self.unsupported(
+                "EXPLODING_GENERATE_SERIES function is not supported in SingleStore")
+            return super().explodinggenerateseries_sql(expression)
+
+        def arrayall_sql(self, expression: exp.ArrayAll) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arrayany_sql(self, expression: exp.ArrayAny) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().arrayany_sql(expression)
+
+        def arrayconcat_sql(self, expression: exp.ArrayConcat,
+            name: str = "ARRAY_CONCAT") -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().arrayconcat_sql(expression)
+
+        def arrayconstructcompact_sql(self,
+            expression: exp.ArrayConstructCompact):
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arrayfilter_sql(self, expression: exp.ArrayFilter) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def stringtoarray_sql(self, expression: exp.StringToArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arraysize_sql(self, expression: exp.ArraySize) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().arraysize_sql(expression)
+
+        def arraysort_sql(self, expression: exp.ArraySort) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arraysum_sql(self, expression: exp.ArraySum) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arrayconcat_sql(self, expression: exp.ArrayConcat):
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def string_sql(self, expression: exp.String) -> str:
+            this = expression.this
+            zone = expression.args.get("zone")
+
+            if zone:
+                # This is a BigQuery specific argument for STRING(<timestamp_expr>, <time_zone>)
+                # BigQuery stores timestamps internally as UTC, so ConvertTimezone is used with UTC
+                # set for source_tz to transpile the time conversion before the STRING cast
+                this = exp.ConvertTimezone(
+                    source_tz=exp.Literal.string("UTC"), target_tz=zone,
+                    timestamp=this
+                )
+
+            return self.sql(exp.cast(this, exp.DataType.Type.TEXT))
+
+        def casttostrtype_sql(self, expression: exp.CastToStrType) -> str:
+            to = expression.args.get("to")
+            if not to or not isinstance(to, exp.Literal) or not to.is_string:
+                self.unsupported("Invalid type for CAST")
+            return self.sql(
+                exp.cast(expression.this, expression.args.get("to").this))
+
+        def connectbyroot_sql(self, expression: exp.ConnectByRoot) -> str:
+            self.unsupported(
+                "CONNECT_BY_ROOT function is not supported in SingleStore")
+            return f"CONNECT_BY_ROOT {self.sql(expression, 'this')}"
+
+        def cbrt_sql(self, expression: exp.Cbrt) -> str:
+            return self.sql(exp.Pow(this=expression.this,
+                                    expression=exp.Literal.number(1 / 3)))
+
+        def currentdatetime_sql(self, expression: exp.CurrentDatetime) -> str:
+            return self.sql(exp.cast(exp.CurrentTimestamp(),
+                                     exp.DataType.Type.DATETIME))
+
+        def dateadd_sql(self, expression: exp.DateAdd) -> str:
+            date = self.sql(expression.this)
+            interval = self.sql(
+                exp.Interval(this=expression.expression, unit=expression.unit))
+
+            return f"DATE_ADD({date}, {interval})"

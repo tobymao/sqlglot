@@ -2709,6 +2709,35 @@ SELECT
             },
         )
 
+    def test_window_exclude(self):
+        for option in ("CURRENT ROW", "TIES", "GROUP"):
+            self.validate_all(
+                f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                write={
+                    "duckdb": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                    "postgres": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                    "sqlite": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                    "oracle": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                },
+            )
+
+        # EXCLUDE NO OTHERS is the default behaviour
+        self.validate_all(
+            "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            read={
+                "duckdb": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+                "postgres": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+                "sqlite": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+                "oracle": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+            },
+            write={
+                "duckdb": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "postgres": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "sqlite": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "oracle": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            },
+        )
+
     def test_nested_ctes(self):
         self.validate_all(
             "SELECT * FROM (WITH t AS (SELECT 1 AS c) SELECT c FROM t) AS subq",

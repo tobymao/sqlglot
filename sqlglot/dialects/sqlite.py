@@ -124,6 +124,7 @@ class SQLite(Dialect):
         SUPPORTS_CREATE_TABLE_LIKE = False
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
         SUPPORTS_TO_NUMBER = False
+        SUPPORTS_WINDOW_EXCLUDE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = False
         JSON_KEY_VALUE_PAIR_SEP = ","

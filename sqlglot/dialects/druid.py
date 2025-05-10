@@ -15,5 +15,6 @@ class Druid(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.Mod: rename_func("MOD"),
         }

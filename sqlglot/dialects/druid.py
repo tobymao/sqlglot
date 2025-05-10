@@ -1,5 +1,5 @@
 from sqlglot import exp, generator
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import rename_func, Dialect
 
 
 class Druid(Dialect):
@@ -12,7 +12,9 @@ class Druid(Dialect):
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.UUID: "STRING",
         }
-        
-        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
-            this = expression.this
-            return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"
+
+        TRANSFORMS = {
+            **generator.Generator.TRANSFORMS,
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.Mod: rename_func("MOD"),
+        }

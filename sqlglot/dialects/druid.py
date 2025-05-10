@@ -12,3 +12,7 @@ class Druid(Dialect):
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.UUID: "STRING",
         }
+        
+        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            this = expression.this
+            return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"

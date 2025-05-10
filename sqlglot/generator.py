@@ -2810,12 +2810,16 @@ class Generator(metaclass=_Generator):
             or "CURRENT ROW"
         )
 
-        if self.SUPPORTS_WINDOW_EXCLUDE:
-            exclude = self.sql(expression, "exclude")
-            if exclude:
-                return f"{kind} BETWEEN {start} AND {end} EXCLUDE {exclude}"
+        window_spec = f"{kind} BETWEEN {start} AND {end}"
 
-        return f"{kind} BETWEEN {start} AND {end}"
+        exclude = self.sql(expression, "exclude")
+        if exclude:
+            if self.SUPPORTS_WINDOW_EXCLUDE:
+                window_spec += f" EXCLUDE {exclude}"
+            else:
+                self.unsupported("EXCLUDE clause is not supported in the WINDOW clause")
+
+        return window_spec
 
     def withingroup_sql(self, expression: exp.WithinGroup) -> str:
         this = self.sql(expression, "this")

@@ -4423,6 +4423,7 @@ class WindowSpec(Expression):
         "start_side": False,
         "end": False,
         "end_side": False,
+        "exclude": False,
     }
 
 

@@ -1,5 +1,5 @@
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
-from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql
+from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, bool_xor_sql, rename_func
 import typing as t
 import re
 from sqlglot import exp
@@ -109,7 +109,14 @@ class SingleStore(Dialect):
             exp.JSONArrayContains: lambda self, e: self.func(
                 "JSON_ARRAY_CONTAINS_JSON", e.expression, e.this),
             exp.ILike: no_ilike_sql,
+            exp.Xor: bool_xor_sql,
+            exp.IntDiv: lambda self, e: f"{self.binary(e, 'DIV')}",
+            exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }
+
+        TRANSFORMS.pop(exp.Operator)
+        TRANSFORMS.pop(exp.ArrayContainsAll)
+        TRANSFORMS.pop(exp.ArrayOverlaps)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1217,3 +1224,86 @@ class SingleStore(Dialect):
                 self.unsupported(
                     "Named placeholders are not supported in SingleStore")
             return super().placeholder_sql(expression)
+
+        # TODO: implement using comparison operators
+        def overlaps_sql(self, expression: exp.Overlaps) -> str:
+            self.unsupported(
+                "OVERLAPS is not supported in SingleStore")
+            return super().overlaps_sql(expression)
+
+        def dot_sql(self, expression: exp.Dot) -> str:
+            self.unsupported("Dot condition (.) is not supported in SingleStore")
+            return super().dot_sql(expression)
+
+        def dpipe_sql(self, expression: exp.DPipe) -> str:
+            return self.func("CONCAT", *expression.flatten())
+
+        # TODO: implement using REPLACE
+        def escape_sql(self, expression: exp.Escape) -> str:
+            self.unsupported("ESCAPE condition in LIKE is not supported in SingleStore")
+            return super().escape_sql(expression)
+
+        def kwarg_sql(self, expression: exp.Kwarg) -> str:
+            self.unsupported("Kwarg condition (=>) is not supported in SingleStore")
+            return super().kwarg_sql(expression)
+
+        def operator_sql(self, expression: exp.Operator) -> str:
+            self.unsupported("Custom operators are not supported in SingleStore")
+            return self.binary(expression, "")
+
+        def slice_sql(self, expression: exp.Slice) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().slice_sql(expression)
+
+        def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arraycontainsall_sql(self, expression: exp.ArrayContainsAll) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def arrayoverlaps_sql(self, expression: exp.ArrayOverlaps) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def collate_sql(self, expression: exp.Collate) -> str:
+            return self.binary(expression, ":> LONGTEXT COLLATE")
+
+        def jsonpath_sql(self, expression: exp.JSONPath) -> str:
+            args = []
+            for path_key in expression.expressions[1:]:
+                if isinstance(path_key, exp.JSONPathKey):
+                    args.append(exp.Literal.string(path_key.this))
+                elif isinstance(path_key, exp.JSONPathSubscript):
+                    args.append(exp.Literal.number(path_key.this))
+                else:
+                    self.unsupported(
+                        f"JSONPath segment '{path_key}' is not supported in SingleStore"
+                    )
+                    continue
+
+            return self.format_args(*args)
+
+        def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
+            return self.func("JSON_EXTRACT_JSON", expression.this, expression.expression)
+
+        def jsonextractscalar_sql(self, expression: exp.JSONExtract) -> str:
+            return self.func("JSON_EXTRACT_STRING", expression.this, expression.expression)
+
+        def jsonbextract_sql(self, expression: exp.JSONBExtract) -> str:
+            return self.func("BSON_EXTRACT_BSON", expression.this, expression.expression)
+
+        def jsonbextractscalar_sql(self, expression: exp.JSONBExtract) -> str:
+            return self.func("BSON_EXTRACT_STRING", expression.this, expression.expression)
+
+        # TODO: handle partial case using BSON_ARRAY_CONTAINS_BSON
+        def jsonbcontains_sql(self, expression: exp.JSONBContains) -> str:
+            self.unsupported("JSONBContains is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
+            return self.binary(
+                exp.RegexpLike(
+                    this=exp.Lower(this=expression.this), expression=exp.Lower(this=expression.expression)
+                ), "RLIKE")

@@ -59,6 +59,7 @@ class TestSingleStore(Validator):
     user_id INT,
     event_type VARCHAR(50),
     metadata JSON,
+    metadatab BSON,
     occurred_at TIMESTAMP
 );
     """)
@@ -255,3 +256,164 @@ class TestSingleStore(Validator):
         self.validate_generation(
             sql="SELECT TRUE",
             exp_type=exp.Boolean)
+
+    def test_binary_functions_generation(self):
+        self.validate_generation(
+            sql="SELECT 1 + 2",
+            exp_type=exp.Add)
+        self.validate_generation(
+            sql="SELECT TRUE AND FALSE",
+            exp_type=exp.And)
+        self.validate_generation(
+            sql="SELECT TRUE OR FALSE",
+            exp_type=exp.Or)
+        self.validate_generation(
+            sql="SELECT TRUE XOR FALSE",
+            expected_sql="SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",
+            exp_type=exp.Xor)
+        self.validate_generation(
+            sql="SELECT 5 & 3",
+            exp_type=exp.BitwiseAnd)
+        self.validate_generation(
+            sql="SELECT 1 << 2",
+            exp_type=exp.BitwiseLeftShift)
+        self.validate_generation(
+            sql="SELECT 5 | 2",
+            exp_type=exp.BitwiseOr)
+        self.validate_generation(
+            sql="SELECT 8 >> 1",
+            exp_type=exp.BitwiseRightShift)
+        self.validate_generation(
+            sql="SELECT 5 ^ 2",
+            exp_type=exp.BitwiseXor)
+        self.validate_generation(
+            sql="SELECT 10 / 2",
+            exp_type=exp.Div)
+        self.validate_generation(
+            sql="SELECT DATERANGE('2023-01-01', '2023-02-01') OVERLAPS DATERANGE('2023-01-15', '2023-03-01')",
+            error_message="OVERLAPS is not supported in SingleStore",
+            exp_type=exp.Overlaps,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT 'f.g'.'h.e' FROM users",
+            error_message="Dot condition (.) is not supported in SingleStore",
+            exp_type=exp.Dot,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT 'a' || 'b'",
+            expected_sql="SELECT CONCAT('a', 'b')",
+            from_dialect="postgres",
+            exp_type=exp.DPipe)
+        self.validate_generation(
+            sql="key1 := 'value1'",
+            exp_type=exp.PropertyEQ,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT UNHEX('AE47E13EF2D20D3F7B14AE3E52B81E3F') <-> UNHEX('AE47E13EF2D20D3F7B14AE3E52B81E3F')",
+            exp_type=exp.Distance)
+        self.validate_generation(
+            sql="SELECT 'abc' LIKE 'ABC' ESCAPE 'a'",
+            error_message="ESCAPE condition in LIKE is not supported in SingleStore",
+            exp_type=exp.Escape,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT 10 DIV 3",
+            exp_type=exp.IntDiv)
+        self.validate_generation(
+            sql="SELECT FUNC(key => 'value')",
+            error_message="Kwarg condition (=>) is not supported in SingleStore",
+            exp_type=exp.Kwarg,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT 10 % 3",
+            exp_type=exp.Mod)
+        self.validate_generation(
+            sql="SELECT 2 * 3",
+            exp_type=exp.Mul)
+        self.validate_generation(
+            sql="SELECT 1 OPERATOR(+) 2",
+            error_message="Custom operators are not supported in SingleStore",
+            from_dialect="postgres",
+            exp_type=exp.Operator,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT [2,3,4][2:3]",
+            expected_sql="SELECT ARRAY(2, 3, 4)[2 : 3]",
+            from_dialect="duckdb",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Slice,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT 5 - 3",
+            exp_type=exp.Sub)
+        self.validate_generation(
+            sql="SELECT ARRAY_CONTAINS('hello'::VARIANT, ARRAY_CONSTRUCT('hello', 'hi'))",
+            expected_sql="SELECT ARRAY_CONTAINS(ARRAY('hello', 'hi'), CAST('hello' AS VARIANT))",
+            from_dialect="snowflake",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayContains,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_CONTAINS_ALL(arr, ARRAY(1, 2))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayContainsAll,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT ARRAY_OVERLAPS(arr1, arr2)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ArrayOverlaps,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT name COLLATE 'utf8mb4_bin' FROM users",
+            expected_sql="SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM users",
+            exp_type=exp.Collate)
+        self.validate_generation(
+            sql="SELECT POWER(2, 10)",
+            exp_type=exp.Pow)
+        self.validate_generation(
+            sql="SELECT metadata->'arr'->1->'key' FROM events",
+            expected_sql="SELECT JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(metadata, 'arr'), 1), 'key') FROM events",
+            from_dialect="postgres",
+            exp_type=exp.JSONExtract)
+        self.validate_generation(
+            sql="SELECT metadata->'arr'->1->>'key' FROM events",
+            expected_sql="SELECT JSON_EXTRACT_STRING(JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(metadata, 'arr'), 1), 'key') FROM events",
+            from_dialect="postgres",
+            exp_type=exp.JSONExtractScalar)
+        self.validate_generation(
+            sql="SELECT metadatab#>'arr'#>1#>'key' FROM events",
+            expected_sql="SELECT BSON_EXTRACT_BSON(BSON_EXTRACT_BSON(BSON_EXTRACT_BSON(metadatab, 'arr'), 1), 'key') FROM events",
+            from_dialect="postgres",
+            exp_type=exp.JSONBExtract)
+        self.validate_generation(
+            sql="SELECT metadatab#>'arr'#>1#>>'key' FROM events",
+            expected_sql="SELECT BSON_EXTRACT_STRING(BSON_EXTRACT_BSON(BSON_EXTRACT_BSON(metadatab, 'arr'), 1), 'key') FROM events",
+            from_dialect="postgres",
+            exp_type=exp.JSONBExtractScalar)
+        self.validate_generation(
+            sql="SELECT metadatab?'arr' FROM events",
+            expected_sql="SELECT JSONB_CONTAINS(metadatab, 'arr') FROM events",
+            error_message="JSONBContains is not supported in SingleStore",
+            exp_type=exp.JSONBContains,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT 'abc' ~ 'a.*'",
+            expected_sql="SELECT 'abc' RLIKE 'a.*'",
+            from_dialect="postgres",
+            exp_type=exp.RegexpLike)
+        self.validate_generation(
+            sql="SELECT 'ABC' ~* 'a.*'",
+            expected_sql="SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            from_dialect="postgres",
+            exp_type=exp.RegexpILike)

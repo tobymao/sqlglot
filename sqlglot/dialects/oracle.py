@@ -251,6 +251,7 @@ class Oracle(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_SELECT_INTO = True
         TZ_TO_WITH_TIME_ZONE = True
+        SUPPORTS_WINDOW_EXCLUDE = True
         QUERY_HINT_SEP = " "
 
         TYPE_MAPPING = {

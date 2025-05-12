@@ -1345,6 +1345,12 @@ class Parser(metaclass=_Parser):
         **dict.fromkeys(("DEFERRABLE", "NORELY", "RELY"), tuple()),
     }
 
+    WINDOW_EXCLUDE_OPTIONS: OPTIONS_TYPE = {
+        "NO": ("OTHERS",),
+        "CURRENT": ("ROW",),
+        **dict.fromkeys(("GROUP", "TIES"), tuple()),
+    }
+
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     CLONE_KEYWORDS = {"CLONE", "COPY"}
@@ -6887,6 +6893,11 @@ class Parser(metaclass=_Parser):
             start = self._parse_window_spec()
             self._match(TokenType.AND)
             end = self._parse_window_spec()
+            exclude = (
+                self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
+                if self._match_text_seq("EXCLUDE")
+                else None
+            )
 
             spec = self.expression(
                 exp.WindowSpec,
@@ -6895,6 +6906,7 @@ class Parser(metaclass=_Parser):
                 start_side=start["side"],
                 end=end["value"],
                 end_side=end["side"],
+                exclude=exclude,
             )
         else:
             spec = None

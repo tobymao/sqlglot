@@ -464,7 +464,7 @@ class TestSingleStore(Validator):
             from_dialect="clickhouse",
             error_message="Anonymous aggregate functions are not supported in SingleStore",
             exp_type=exp.AnonymousAggFunc,
-            run = False
+            run=False
         )
         self.validate_generation(
             sql="select quantileGKIf(100, 0.95) OVER (PARTITION BY id) FROM table",
@@ -572,11 +572,11 @@ class TestSingleStore(Validator):
         )
         self.validate_generation(
             sql="SELECT BOOL_OR(is_active) FROM users",
-            expected_sql="SELECT MAX(is_active) FROM users",
+            expected_sql="SELECT MAX(ABS(is_active)) FROM users",
             exp_type=exp.LogicalOr)
         self.validate_generation(
             sql="SELECT BOOL_AND(is_active) FROM users",
-            expected_sql="SELECT MIN(is_active) FROM users",
+            expected_sql="SELECT MIN(ABS(is_active)) FROM users",
             exp_type=exp.LogicalAnd)
         self.validate_generation(
             sql="SELECT MAX(price) FROM products",

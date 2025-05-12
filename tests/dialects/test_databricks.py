@@ -162,6 +162,10 @@ class TestDatabricks(Validator):
             },
         )
 
+        self.validate_identity(
+            "CREATE TABLE t1 (foo BIGINT NOT NULL CONSTRAINT foo_c FOREIGN KEY REFERENCES t2)"
+        )
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")

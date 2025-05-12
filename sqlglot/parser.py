@@ -6088,7 +6088,11 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Reference, this=this, expressions=expressions, options=options)
 
     def _parse_foreign_key(self) -> exp.ForeignKey:
-        expressions = self._parse_wrapped_id_vars()
+        expressions = (
+            self._parse_wrapped_id_vars()
+            if not self._match(TokenType.REFERENCES, advance=False)
+            else None
+        )
         reference = self._parse_references()
         on_options = {}
 

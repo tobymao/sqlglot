@@ -162,6 +162,12 @@ class TestDatabricks(Validator):
             },
         )
 
+        for option in ("", " (foo)", " MATCH FULL", " NOT ENFORCED"):
+            with self.subTest(f"Databricks foreign key REFERENCES option: {option}."):
+                self.validate_identity(
+                    f"CREATE TABLE t1 (foo BIGINT NOT NULL CONSTRAINT foo_c FOREIGN KEY REFERENCES t2{option})"
+                )
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")

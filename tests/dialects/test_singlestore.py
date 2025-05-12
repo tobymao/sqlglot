@@ -417,3 +417,17 @@ class TestSingleStore(Validator):
             expected_sql="SELECT LOWER('ABC') RLIKE LOWER('a.*')",
             from_dialect="postgres",
             exp_type=exp.RegexpILike)
+
+    def test_unary_functions_generation(self):
+        self.validate_generation(
+            sql="SELECT ~5",
+            exp_type=exp.BitwiseNot)
+        self.validate_generation(
+            sql="SELECT NOT TRUE",
+            exp_type=exp.Not)
+        self.validate_generation(
+            sql="SELECT (1 + 2)",
+            exp_type=exp.Paren)
+        self.validate_generation(
+            sql="SELECT -42",
+            exp_type=exp.Neg)

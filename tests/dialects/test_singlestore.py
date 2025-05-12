@@ -431,3 +431,12 @@ class TestSingleStore(Validator):
         self.validate_generation(
             sql="SELECT -42",
             exp_type=exp.Neg)
+
+    def test_bracket(self):
+        self.validate_generation(
+            sql="SELECT arr[1] FROM events",
+            error_message="Arrays are not supported in SingleStore",
+            from_dialect="snowflake",
+            exp_type=exp.Bracket,
+            run=False
+        )

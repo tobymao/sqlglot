@@ -1307,3 +1307,7 @@ class SingleStore(Dialect):
                 exp.RegexpLike(
                     this=exp.Lower(this=expression.this), expression=exp.Lower(this=expression.expression)
                 ), "RLIKE")
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().bracket_sql(expression)

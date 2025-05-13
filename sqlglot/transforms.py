@@ -309,10 +309,9 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
         }
         if unnest_aliases:
             for column in expression.find_all(exp.Column):
-                if column.table in unnest_aliases:
-                    column.set("table", None)
-                elif column.db in unnest_aliases:
-                    column.set("db", None)
+                leftmost_part = column.parts[0]
+                if leftmost_part.arg_key != "this" and leftmost_part.this in unnest_aliases:
+                    leftmost_part.pop()
 
     return expression
 

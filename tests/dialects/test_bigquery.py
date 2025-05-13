@@ -1684,6 +1684,39 @@ WHERE
             "EXPORT DATA WITH CONNECTION myproject.us.myconnection OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') AS SELECT * FROM all_rows"
         )
 
+        self.validate_all(
+            "SELECT * FROM t1, UNNEST(`t1`) AS `col`",
+            read={
+                "duckdb": 'SELECT * FROM t1, UNNEST("t1") "t1" ("col")',
+            },
+            write={
+                "bigquery": "SELECT * FROM t1, UNNEST(`t1`) AS `col`",
+                "redshift": 'SELECT * FROM t1, "t1" AS "col"',
+            },
+        )
+
+        self.validate_all(
+            "SELECT * FROM t1, UNNEST(`t2`.`t3`) AS `col`",
+            read={
+                "duckdb": 'SELECT * FROM t1, UNNEST("t1"."t2"."t3") "t1" ("col")',
+            },
+            write={
+                "bigquery": "SELECT * FROM t1, UNNEST(`t2`.`t3`) AS `col`",
+                "redshift": 'SELECT * FROM t1, "t2"."t3" AS "col"',
+            },
+        )
+
+        self.validate_all(
+            "SELECT * FROM t1, UNNEST(`t1`.`t2`.`t3`.`t4`) AS `col`",
+            read={
+                "duckdb": 'SELECT * FROM t1, UNNEST("t1"."t2"."t3"."t4") "t3" ("col")',
+            },
+            write={
+                "bigquery": "SELECT * FROM t1, UNNEST(`t1`.`t2`.`t3`.`t4`) AS `col`",
+                "redshift": 'SELECT * FROM t1, "t1"."t2"."t3"."t4" AS "col"',
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")

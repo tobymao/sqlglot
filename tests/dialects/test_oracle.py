@@ -320,6 +320,7 @@ class TestOracle(Validator):
             },
         )
         self.validate_identity("CREATE OR REPLACE FORCE VIEW foo1.foo2")
+        self.validate_identity("TO_TIMESTAMP('foo')")
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")

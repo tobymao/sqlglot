@@ -31,6 +31,13 @@ def _trim_sql(self: Oracle.Generator, expression: exp.Trim) -> str:
     return trim_sql(self, expression)
 
 
+def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
+    if len(args) == 1:
+        return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
+
+    return build_formatted_time(exp.StrToTime, "oracle")(args)
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -106,7 +113,7 @@ class Oracle(Dialect):
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": build_timetostr_or_tochar,
-            "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
+            "TO_TIMESTAMP": _build_to_timestamp,
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1) or exp.Literal.string("DD"),

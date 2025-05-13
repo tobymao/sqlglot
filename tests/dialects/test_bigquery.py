@@ -1696,13 +1696,13 @@ WHERE
         )
 
         self.validate_all(
-            "SELECT * FROM t1, UNNEST(`t2`.`t3`) AS `col`",
+            "SELECT * FROM t, UNNEST(`t2`.`t3`) AS `col`",
             read={
-                "duckdb": 'SELECT * FROM t1, UNNEST("t1"."t2"."t3") "t1" ("col")',
+                "duckdb": 'SELECT * FROM t, UNNEST("t1"."t2"."t3") "t1" ("col")',
             },
             write={
-                "bigquery": "SELECT * FROM t1, UNNEST(`t2`.`t3`) AS `col`",
-                "redshift": 'SELECT * FROM t1, "t2"."t3" AS "col"',
+                "bigquery": "SELECT * FROM t, UNNEST(`t2`.`t3`) AS `col`",
+                "redshift": 'SELECT * FROM t, "t2"."t3" AS "col"',
             },
         )
 

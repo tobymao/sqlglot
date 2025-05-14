@@ -110,7 +110,6 @@ class Oracle(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "CONVERT": exp.ConvertToCharset.from_arg_list,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": build_timetostr_or_tochar,

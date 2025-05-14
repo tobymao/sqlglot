@@ -27,7 +27,10 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
 from sqlglot.generator import unsupported_args
 
-DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
+DATEΤΙΜΕ_DELTA = t.Union[
+    exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd
+]
+
 
 class ExasolTokenType:
     WITH_LOCAL_TIME_ZONE = "WITH_LOCAL_TIME_ZONE"
@@ -37,7 +40,8 @@ class ExasolTokenType:
     DAY = "DAY"
     SECOND = "SECOND"
     TO = "TO"
-        
+
+
 def _build_date_format(args: t.List) -> exp.TimeToStr:
     expr = build_formatted_time(exp.TimeToStr, "exasol")(args)
 
@@ -53,18 +57,27 @@ def _unix_to_time_sql(self: Exasol.Generator, expression: exp.UnixToTime) -> str
     timestamp = expression.this
 
     if scale in (None, exp.UnixToTime.SECONDS):
-        return self.func("fromUnixTimestamp", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func(
+            "fromUnixTimestamp", exp.cast(timestamp, exp.DataType.Type.BIGINT)
+        )
     if scale == exp.UnixToTime.MILLIS:
-        return self.func("fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func(
+            "fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DataType.Type.BIGINT)
+        )
     if scale == exp.UnixToTime.MICROS:
-        return self.func("fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func(
+            "fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DataType.Type.BIGINT)
+        )
     if scale == exp.UnixToTime.NANOS:
-        return self.func("fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func(
+            "fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DataType.Type.BIGINT)
+        )
 
     return self.func(
         "fromUnixTimestamp",
         exp.cast(
-            exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
+            exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)),
+            exp.DataType.Type.BIGINT,
         ),
     )
 
@@ -145,7 +158,9 @@ def _timestrtotime_sql(self: Exasol.Generator, expression: exp.TimeStrToTime):
                     ".",
                     ts_frac_parts[0],  # fractional seconds
                     offset_sep if num_frac_parts > 1 else "",
-                    ts_frac_parts[1] if num_frac_parts > 1 else "",  # utc offset (if present)
+                    (
+                        ts_frac_parts[1] if num_frac_parts > 1 else ""
+                    ),  # utc offset (if present)
                 ]
             )
 
@@ -153,7 +168,9 @@ def _timestrtotime_sql(self: Exasol.Generator, expression: exp.TimeStrToTime):
         # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if
         # it's part of the timestamp string
         ts_without_tz = (
-            datetime.datetime.fromisoformat(ts_string).replace(tzinfo=None).isoformat(sep=" ")
+            datetime.datetime.fromisoformat(ts_string)
+            .replace(tzinfo=None)
+            .isoformat(sep=" ")
         )
         ts = exp.Literal.string(ts_without_tz)
 
@@ -187,23 +204,7 @@ def _map_sql(self: Exasol.Generator, expression: exp.Map | exp.VarMap) -> str:
 
     return f"{{{csv_args}}}"
 
-class Tokenizer(tokens.Tokenizer):
 
-        IDENTIFIER_ESCAPES = ['"']
-        STRING_ESCAPES = ["'"]
-
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            "YEAR": TokenType.YEAR,
-            "WITH LOCAL TIME ZONE": ExasolTokenType.WITH_LOCAL_TIME_ZONE,
-            "MONTH": ExasolTokenType.MONTH,
-            "DAY": ExasolTokenType.DAY,
-            "SECOND": ExasolTokenType.SECOND,
-            "TO": ExasolTokenType.TO,
-            "HASHTYPE": ExasolTokenType.HASHTYPE,
-            "BYTE": ExasolTokenType.BYTE,
-        }
-        
 class Exasol(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
@@ -230,9 +231,23 @@ class Exasol(Dialect):
         exp.Intersect: False,
         exp.Union: None,
     }
-   
 
+    class Tokenizer(tokens.Tokenizer):
 
+        IDENTIFIER_ESCAPES = ['"']
+        STRING_ESCAPES = ["'"]
+
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "YEAR": TokenType.YEAR,
+            "WITH LOCAL TIME ZONE": ExasolTokenType.WITH_LOCAL_TIME_ZONE,
+            "MONTH": ExasolTokenType.MONTH,
+            "DAY": ExasolTokenType.DAY,
+            "SECOND": ExasolTokenType.SECOND,
+            "TO": ExasolTokenType.TO,
+            "HASHTYPE": ExasolTokenType.HASHTYPE,
+            "BYTE": ExasolTokenType.BYTE,
+        }
 
     class Parser(parser.Parser):
         # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
@@ -271,8 +286,12 @@ class Exasol(Dialect):
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
             "MD5": exp.MD5Digest.from_arg_list,
-            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
-            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "SHA256": lambda args: exp.SHA2(
+                this=seq_get(args, 0), length=exp.Literal.number(256)
+            ),
+            "SHA512": lambda args: exp.SHA2(
+                this=seq_get(args, 0), length=exp.Literal.number(512)
+            ),
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
         }
@@ -432,11 +451,16 @@ class Exasol(Dialect):
             }
         )(AGG_FUNCTIONS, AGG_FUNCTIONS_SUFFIXES)
 
-        FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
+        FUNCTIONS_WITH_ALIASED_ARGS = {
+            *parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS,
+            "TUPLE",
+        }
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
+            "ARRAYJOIN": lambda self: self.expression(
+                exp.Explode, this=self._parse_expression()
+            ),
             "QUANTILE": lambda self: self._parse_quantile(),
             "MEDIAN": lambda self: self._parse_quantile(),
             "COLUMNS": lambda self: self._parse_columns(),
@@ -490,7 +514,10 @@ class Exasol(Dialect):
                 "settings",
                 self._advance() or self._parse_csv(self._parse_assignment),
             ),
-            TokenType.FORMAT: lambda self: ("format", self._advance() or self._parse_id_var()),
+            TokenType.FORMAT: lambda self: (
+                "format",
+                self._advance() or self._parse_id_var(),
+            ),
         }
 
         CONSTRAINT_PARSERS = {
@@ -519,12 +546,20 @@ class Exasol(Dialect):
             return self._parse_lambda()
 
         def _parse_types(
-            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+            self,
+            check_func: bool = False,
+            schema: bool = False,
+            allow_identifiers: bool = True,
         ) -> t.Optional[exp.Expression]:
             dtype = super()._parse_types(
-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                check_func=check_func,
+                schema=schema,
+                allow_identifiers=allow_identifiers,
             )
-            if isinstance(dtype, exp.DataType) and dtype.args.get("nullable") is not True:
+            if (
+                isinstance(dtype, exp.DataType)
+                and dtype.args.get("nullable") is not True
+            ):
                 # Mark every type as non-nullable which is ClickHouse's default, unless it's
                 # already marked as nullable. This marker helps us transpile types from other
                 # dialects to ClickHouse, so that we can e.g. produce `CAST(x AS Nullable(String))`
@@ -600,19 +635,25 @@ class Exasol(Dialect):
                     if not isinstance(expression, exp.PropertyEQ):
                         break
 
-                    varmap.args["keys"].append("expressions", exp.Literal.string(expression.name))
+                    varmap.args["keys"].append(
+                        "expressions", exp.Literal.string(expression.name)
+                    )
                     varmap.args["values"].append("expressions", expression.expression)
 
                 return varmap
 
             return bracket
 
-        def _parse_in(self, this: t.Optional[exp.Expression], is_global: bool = False) -> exp.In:
+        def _parse_in(
+            self, this: t.Optional[exp.Expression], is_global: bool = False
+        ) -> exp.In:
             this = super()._parse_in(this)
             this.set("is_global", is_global)
             return this
 
-        def _parse_global_in(self, this: t.Optional[exp.Expression]) -> exp.Not | exp.In:
+        def _parse_global_in(
+            self, this: t.Optional[exp.Expression]
+        ) -> exp.Not | exp.In:
             is_negated = self._match(TokenType.NOT)
             this = self._match(TokenType.IN) and self._parse_in(this, is_global=True)
             return self.expression(exp.Not, this=this) if is_negated else this
@@ -638,7 +679,11 @@ class Exasol(Dialect):
                 inner = this.this
                 alias = this.args.get("alias")
 
-                if isinstance(inner, exp.GenerateSeries) and alias and not alias.columns:
+                if (
+                    isinstance(inner, exp.GenerateSeries)
+                    and alias
+                    and not alias.columns
+                ):
                     alias.set("columns", [exp.to_identifier("generate_series")])
 
             if self._match(TokenType.FINAL):
@@ -685,7 +730,9 @@ class Exasol(Dialect):
         def _parse_join(
             self, skip_join_token: bool = False, parse_bracket: bool = False
         ) -> t.Optional[exp.Join]:
-            join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
+            join = super()._parse_join(
+                skip_join_token=skip_join_token, parse_bracket=True
+            )
             if join:
                 join.set("global", join.args.pop("method", None))
 
@@ -715,7 +762,9 @@ class Exasol(Dialect):
 
             # Aggregate functions can be split in 2 parts: <func_name><suffix>
             parts = (
-                self.AGG_FUNC_MAPPING.get(func.this) if isinstance(func, exp.Anonymous) else None
+                self.AGG_FUNC_MAPPING.get(func.this)
+                if isinstance(func, exp.Anonymous)
+                else None
             )
 
             if parts:
@@ -770,9 +819,13 @@ class Exasol(Dialect):
             params = self._parse_func_params()
             if params:
                 return self.expression(exp.Quantile, this=params[0], quantile=this)
-            return self.expression(exp.Quantile, this=this, quantile=exp.Literal.number(0.5))
+            return self.expression(
+                exp.Quantile, this=this, quantile=exp.Literal.number(0.5)
+            )
 
-        def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:
+        def _parse_wrapped_id_vars(
+            self, optional: bool = False
+        ) -> t.List[exp.Expression]:
             return super()._parse_wrapped_id_vars(optional=True)
 
         def _parse_primary_key(
@@ -835,7 +888,9 @@ class Exasol(Dialect):
                 return None
 
             return self.expression(
-                exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
+                exp.ReplacePartition,
+                expression=partition,
+                source=self._parse_table_parts(),
             )
 
         def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
@@ -872,7 +927,9 @@ class Exasol(Dialect):
             return this
 
         def _parse_columns(self) -> exp.Expression:
-            this: exp.Expression = self.expression(exp.Columns, this=self._parse_lambda())
+            this: exp.Expression = self.expression(
+                exp.Columns, this=self._parse_lambda()
+            )
 
             while self._next and self._match_text_seq(")", "APPLY", "("):
                 self._match(TokenType.R_PAREN)
@@ -885,9 +942,7 @@ class Exasol(Dialect):
         NVL2_SUPPORTED = False
         TABLESAMPLE_REQUIRES_PARENS = False
         TABLESAMPLE_SIZE_IS_ROWS = False
-        TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
-        CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
         JOIN_HINTS = False
         TABLE_HINTS = False
@@ -910,140 +965,287 @@ class Exasol(Dialect):
             exp.DataType.Type.VARCHAR: "VARCHAR",
         }
 
-
         SUPPORTED_JSON_PATH_PARTS = {
-            exp.JSONPathKey,
-            exp.JSONPathRoot,
-            exp.JSONPathSubscript,
+            exp.JSONPathRoot,  # $
+            exp.JSONPathKey,  # .key or ['key']
+            exp.JSONPathSubscript,  # ['key'] or [0]
+            exp.JSONPathWildcard,  # [*]
+            exp.JSONPathUnion,  # ['key1','key2']
+            exp.JSONPathSlice,  # [start:end:step]
         }
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             **STRING_TYPE_MAPPING,
-            exp.DataType.Type.ARRAY: "Array",
-            exp.DataType.Type.BOOLEAN: "Bool",
-            exp.DataType.Type.BIGINT: "Int64",
-            exp.DataType.Type.DATE32: "Date32",
-            exp.DataType.Type.DATETIME: "DateTime",
-            exp.DataType.Type.DATETIME2: "DateTime",
-            exp.DataType.Type.SMALLDATETIME: "DateTime",
-            exp.DataType.Type.DATETIME64: "DateTime64",
-            exp.DataType.Type.DECIMAL: "Decimal",
-            exp.DataType.Type.DECIMAL32: "Decimal32",
-            exp.DataType.Type.DECIMAL64: "Decimal64",
-            exp.DataType.Type.DECIMAL128: "Decimal128",
-            exp.DataType.Type.DECIMAL256: "Decimal256",
-            exp.DataType.Type.TIMESTAMP: "DateTime",
-            exp.DataType.Type.TIMESTAMPTZ: "DateTime",
-            exp.DataType.Type.DOUBLE: "Float64",
-            exp.DataType.Type.ENUM: "Enum",
-            exp.DataType.Type.ENUM8: "Enum8",
-            exp.DataType.Type.ENUM16: "Enum16",
-            exp.DataType.Type.FIXEDSTRING: "FixedString",
-            exp.DataType.Type.FLOAT: "Float32",
-            exp.DataType.Type.INT: "Int32",
-            exp.DataType.Type.MEDIUMINT: "Int32",
-            exp.DataType.Type.INT128: "Int128",
-            exp.DataType.Type.INT256: "Int256",
-            exp.DataType.Type.LOWCARDINALITY: "LowCardinality",
-            exp.DataType.Type.MAP: "Map",
-            exp.DataType.Type.NESTED: "Nested",
-            exp.DataType.Type.SMALLINT: "Int16",
-            exp.DataType.Type.STRUCT: "Tuple",
-            exp.DataType.Type.TINYINT: "Int8",
-            exp.DataType.Type.UBIGINT: "UInt64",
-            exp.DataType.Type.UINT: "UInt32",
-            exp.DataType.Type.UINT128: "UInt128",
-            exp.DataType.Type.UINT256: "UInt256",
-            exp.DataType.Type.USMALLINT: "UInt16",
-            exp.DataType.Type.UTINYINT: "UInt8",
-            exp.DataType.Type.IPV4: "IPv4",
-            exp.DataType.Type.IPV6: "IPv6",
-            exp.DataType.Type.POINT: "Point",
-            exp.DataType.Type.RING: "Ring",
-            exp.DataType.Type.LINESTRING: "LineString",
-            exp.DataType.Type.MULTILINESTRING: "MultiLineString",
-            exp.DataType.Type.POLYGON: "Polygon",
-            exp.DataType.Type.MULTIPOLYGON: "MultiPolygon",
-            exp.DataType.Type.AGGREGATEFUNCTION: "AggregateFunction",
-            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
-            exp.DataType.Type.DYNAMIC: "Dynamic",
+            exp.DataType.Type.TINYINT: "SMALLINT",
+            exp.DataType.Type.SMALLINT: "SMALLINT",
+            exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.MEDIUMINT: "INTEGER",
+            exp.DataType.Type.BIGINT: "BIGINT",
+            exp.DataType.Type.FLOAT: "FLOAT",
+            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
+            exp.DataType.Type.DECIMAL: "DECIMAL",
+            exp.DataType.Type.DECIMAL32: "DECIMAL",
+            exp.DataType.Type.DECIMAL64: "DECIMAL",
+            exp.DataType.Type.DECIMAL128: "DECIMAL",
+            exp.DataType.Type.DECIMAL256: "DECIMAL",
+            exp.DataType.Type.DATE: "DATE",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
+            exp.DataType.Type.DATETIME2: "TIMESTAMP",
+            exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
+            exp.DataType.Type.BOOLEAN: "BOOLEAN",
         }
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.AnyValue: rename_func("any"),
-            exp.ApproxDistinct: rename_func("uniq"),
-            exp.ArrayConcat: rename_func("arrayConcat"),
-            exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
-            exp.ArraySum: rename_func("arraySum"),
-            exp.ArgMax: arg_max_or_min_no_count("argMax"),
-            exp.ArgMin: arg_max_or_min_no_count("argMin"),
-            exp.Array: inline_array_sql,
-            exp.CastToStrType: rename_func("CAST"),
-            exp.CountIf: rename_func("countIf"),
-            exp.CompressColumnConstraint: lambda self,
-            e: f"CODEC({self.expressions(e, key='this', flat=True)})",
-            exp.ComputedColumnConstraint: lambda self,
-            e: f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}",
-            exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
-            exp.DateAdd: _datetime_delta_sql("DATE_ADD"),
-            exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
-            exp.DateStrToDate: rename_func("toDate"),
-            exp.DateSub: _datetime_delta_sql("DATE_SUB"),
-            exp.Explode: rename_func("arrayJoin"),
-            exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
-            exp.IsNan: rename_func("isNaN"),
-            exp.JSONCast: lambda self, e: f"{self.sql(e, 'this')}.:{self.sql(e, 'to')}",
-            exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
-            exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
-            exp.JSONPathKey: json_path_key_only_name,
-            exp.JSONPathRoot: lambda *_: "",
-            exp.Length: length_or_char_length_sql,
-            exp.Map: _map_sql,
-            exp.Median: rename_func("median"),
-            exp.Nullif: rename_func("nullIf"),
-            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
-            exp.Pivot: no_pivot_sql,
-            exp.Quantile: _quantile_sql,
-            exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
-            exp.Rand: rename_func("randCanonical"),
-            exp.StartsWith: rename_func("startsWith"),
-            exp.StrPosition: lambda self, e: strposition_sql(
-                self,
-                e,
-                func_name="POSITION",
-                supports_position=True,
-                use_ansi_position=False,
+            # exp.Abs : rename_func("ABS"),
+            exp.Anonymous: lambda self, e: self._anonymous_func(e),
+            exp.Acos: lambda self, e: f"ACOS({self.sql(e, 'this')})",
+            exp.DateAdd: lambda self, e: f"ADD_DAYS({self._timestamp_literal(e.this, 'this')}, {self.sql(e, 'expression')})",
+            exp.AddHours: lambda self, e: f"ADD_HOURS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.AddMinutes: lambda self, e: f"ADD_MINUTES({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.AddMonths: lambda self, e: f"ADD_MONTHS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.AddSeconds: lambda self, e: f"ADD_SECONDS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.AddWeeks: lambda self, e: f"ADD_WEEKS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.AddYears: lambda self, e: f"ADD_YEARS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.AnyValue: lambda self, e: self.windowed_func("ANY", e),
+            exp.ApproxDistinct: rename_func("APPROXIMATE_COUNT_DISTINCT"),
+            exp.Ascii: lambda self, e: f"ASCII({self.sql(e, 'this')})",
+            exp.Asin: lambda self, e: f"ASIN({self.sql(e, 'this')})",
+            exp.Atan: lambda self, e: f"ATAN({self.sql(e, 'this')})",
+            exp.Atan2: lambda self, e: f"ATAN2({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.Avg: lambda self, e: self.windowed_func("AVG", e),
+            exp.BitwiseAnd: rename_func("BIT_AND"),
+            exp.BitCheck: lambda self, e: f"BIT_CHECK({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.BitLength: lambda self, e: f"BIT_LENGTH({self.sql(e, 'this')})",
+            exp.BitLRotate: lambda self, e: f"BIT_LROTATE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.BitwiseLeftShift: rename_func("BIT_LSHIFT"),
+            exp.BitwiseNot: rename_func("BIT_NOT"),
+            exp.BitwiseOr: rename_func("BIT_OR"),
+            exp.BitRRotate: lambda self, e: f"BIT_RROTATE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
+            exp.BitSet: lambda self, e: f"BIT_SET({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.BitToNum: lambda self, e: f"BIT_TO_NUM({', '.join(self.sql(arg) for arg in e.expressions)})",
+            exp.BitwiseXor: rename_func("BIT_XOR"),
+            # Case
+            # Cast
+            # exp.Ceil
+            # exp.Chr: rename_func("CHR"),
+            exp.CharacterLength: rename_func("CHARACTER_LENGTH"),
+            # exp.Coalesce,
+            exp.ColognePhonetic: lambda self, e: f"COLOGNE_PHONETIC({self.sql(e, 'this')})",
+            exp.ConnectByIsCycle: lambda self, e: "CONNECT_BY_ISCYCLE",
+            exp.ConnectByIsLeaf: lambda self, e: "CONNECT_BY_ISLEAF",
+            exp.SysConnectByPath: lambda self, e: f"SYS_CONNECT_BY_PATH({self.sql(e, 'this')}, {', '.join(self.sql(x) for x in e.expressions)})",
+            exp.Command: lambda self, e: " ".join(self.sql(x) for x in e.expressions),
+            # exp.Concat
+            # exp.Convert
+            exp.ConvertTZ: lambda self, e: self.convert_tz_sql(e),
+            # exp.Corr: lambda self, e: self.corr_sql(e), - already exist
+            exp.Cos: lambda self, e: self.cos_sql(e),
+            exp.CosH: lambda self, e: self.cosh_sql(e),
+            exp.Cot: lambda self, e: self.cot_sql(e),
+            exp.Count: lambda self, e: self.windowed_func("COUNT", e),
+            exp.CovarPop: rename_func("COVAR_POP"),
+            exp.CovarSamp: rename_func("COVAR_SAMP"),
+            exp.CumeDist: lambda self, e: self.windowed_func("CUME_DIST"),
+            exp.CurrentCluster: lambda self, e: "CURRENT_CLUSTER",
+            exp.CurrentDate: rename_func("CURDATE"),
+            exp.CurrentSchema: lambda self, e: "CURRENT_SCHEMA",
+            exp.CurrentSession: lambda self, e: "CURRENT_SESSION",
+            exp.CurrentStatement: lambda self, e: "CURRENT_STATEMENT",
+            exp.CurrentUser: lambda self, e: "CURRENT_USER",
+            # exp.CountDistinct: lambda self, e: self.windowed_func("COUNT_DISTINCT", e),
+            # exp.CountStar: lambda self, e: "COUNT(*)",
+            # exp.Covar: rename_func("COVAR
+            exp.CurrentTimestamp: lambda self, e: (
+                f"CURRENT_TIMESTAMP({self.sql(e, 'this')})"
+                if e.args.get("this")
+                else "CURRENT_TIMESTAMP"
             ),
-            exp.TimeToStr: lambda self, e: self.func(
-                "formatDateTime", e.this, self.format_time(e), e.args.get("zone")
+            exp.DateTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
+            # exp.Day
+            exp.DaysBetween: lambda self, e: f"DAYS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.Date: lambda self, e: f"DATE {self.sql(e, 'this')}",
+            exp.Timestamp: lambda self, e: f"TIMESTAMP {self.sql(e, 'this')}",
+            exp.DBTimezone: lambda self, e: "DBTIMEZONE",
+            exp.Decode: lambda self, e: f"DECODE({', '.join(self.sql(arg) for arg in e.expressions)})",
+            exp.Degrees: lambda self, e: f"DEGREES({self.sql(e, 'this')})",
+            exp.DenseRank: lambda self, e: self.windowed_func("DENSE_RANK", e),
+            # exp.Div
+            exp.Dump: lambda self, e: f"DUMP({', '.join(filter(None, [
+                self.sql(e, 'this'),
+                self.sql(e, 'format'),
+                self.sql(e, 'start_position'),
+                self.sql(e, 'length')
+            ]))})",
+            exp.EditDistance: lambda self, e: f"EDIT_DISTANCE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.Every: lambda self, e: f"EVERY({self.sql(e, 'this')})",
+            exp.Extract: lambda self, e: f"EXTRACT({self.sql(e, 'expression')} FROM {self._timestamp_literal(e, 'this')})",
+            # exp.Extract
+            # exp.FirstValue: rename_func("FIRST_VALUE"),
+            # exp.Exp: lambda self, e: f"EXP({self.sql(e, 'this')})",
+            exp.FirstValue: lambda self, e: self.windowed_func("FIRST_VALUE", e),
+            # exp.Floor: lambda self, e: f"FLOOR({self.sql(e, 'this')})",
+            exp.FromPosixTime: lambda self, e: f"FROM_POSIX_TIME({self.sql(e, 'this')})",
+            # exp.Greatest: lambda self, e: f"GREATEST({', '.join(self.sql(arg) for arg in e.expressions)})", //Todo:
+            exp.GroupConcat: lambda self, e: self.group_concat_sql(e),
+            exp.Grouping: lambda self, e: f"GROUPING({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.GroupingId: lambda self, e: f"GROUPING_ID({self.sql(e, 'this')})",
+            exp.MD5: lambda self, e: f"HASH_MD5({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.SHA: lambda self, e: f"HASH_SHA1({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashSha256: lambda self, e: f"HASH_SHA256({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashSha512: lambda self, e: f"HASH_SHA512({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashTiger: lambda self, e: f"HASH_TIGER({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashTypeMd5: lambda self, e: f"HASHTYPE_MD5({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashTypeSha1: lambda self, e: f"HASHTYPE_SHA1({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashTypeSha256: lambda self, e: f"HASHTYPE_SHA256({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashTypeSha512: lambda self, e: f"HASHTYPE_SHA512({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.HashTypeTiger: lambda self, e: f"HASHTYPE_TIGER({', '.join(self.sql(x) for x in e.expressions)})",
+            exp.Hour: lambda self, e: f"HOUR({self._timestamp_literal(e, 'this')})",
+            exp.HoursBetween: lambda self, e: f"HOURS_BETWEEN({self._timestamp_literal(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
+            exp.If: lambda self, e: (
+                f"IF {self.sql(e, 'this')} THEN {self.sql(e, 'true')} ELSE {self.sql(e, 'false')} ENDIF"
             ),
-            exp.TimeStrToTime: _timestrtotime_sql,
-            exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
-            exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
-            exp.VarMap: _map_sql,
-            exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
-            exp.MD5Digest: rename_func("MD5"),
-            exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
-            exp.SHA: rename_func("SHA1"),
-            exp.SHA2: sha256_sql,
-            exp.UnixToTime: _unix_to_time_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
-            exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
-            exp.Variance: rename_func("varSamp"),
-            exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
-            exp.Stddev: rename_func("stddevSamp"),
-            exp.Chr: rename_func("CHAR"),
-            exp.Lag: lambda self, e: self.func(
-                "lagInFrame", e.this, e.args.get("offset"), e.args.get("default")
+            exp.InitCap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
+            exp.Insert: lambda self, e: f"INSERT({self.sql(e, 'this')}, {self.sql(e, 'start')}, {self.sql(e, 'length')}, {self.sql(e, 'expression')})",
+            exp.Instr: lambda self, e: (
+                "INSTR("
+                + ", ".join(
+                    filter(
+                        None,
+                        [
+                            self.sql(e, "this"),
+                            self.sql(e, "substr"),
+                            e.args.get("position") and self.sql(e, "position"),
+                            e.args.get("occurrence") and self.sql(e, "occurrence"),
+                        ],
+                    )
+                )
+                + ")"
             ),
-            exp.Lead: lambda self, e: self.func(
-                "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
+            exp.Iproc: lambda self, e: f"IPROC({self.sql(e, 'this')})",
+            exp.Is: lambda self, e: f"IS_{self.sql(e, 'type')}({self.sql(e, 'this')}"
+            + (f", {self.sql(e, 'expression')}" if e.args.get("expression") else "")
+            + ")",
+            exp.JSONBExtract: lambda self, e: self.jsonb_extract_sql(e),
+            exp.JSONValue: lambda self, e: (
+                f"JSON_VALUE({self.sql(e, 'this')}, {self.sql(e, 'path')}"
+                + (
+                    f" NULL ON EMPTY DEFAULT {self.sql(e, 'default')} ON ERROR"
+                    if e.args.get("null_on_empty")
+                    and e.args.get("default")
+                    and e.args.get("on_error")
+                    else ""
+                )
+                + ")"
             ),
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("editDistance")
+            exp.Lag: lambda self, e: (
+                f"LAG({self.sql(e, 'this')}, {self.sql(e, 'expression')})"
+                if e.args.get("expression") is not None
+                else f"LAG({self.sql(e, 'this')})"
             ),
+            # exp.LastValue
+            exp.LCase: rename_func("LCASE"),
+            exp.Lead: lambda self, e: (
+                f"LEAD({self.sql(e, 'this')}, {self.sql(e, 'expression')})"
+                if e.args.get("expression") is not None
+                else f"LEAD({self.sql(e, 'this')})"
+            ),
+            # exp.Least
+            exp.Left: lambda self, e: f"LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            # exp.Length
+            exp.ConnectBy: lambda self, e: f"CONNECT BY {'PRIOR ' if e.args.get('prior') else ''}{self.sql(e, 'this')}",
+            exp.StartWith: lambda self, e: f"START WITH {self.sql(e, 'this')}",
+            exp.Level: lambda self, e: "LEVEL",
+            exp.Log: lambda self, e: f"LOG({self.sql(e, 'this')}, {self.sql(e, 'base')})",
+            exp.Log2: lambda self, e: f"LOG2({self.sql(e, 'this')})",
+            exp.Log10: lambda self, e: f"LOG10({self.sql(e, 'this')})",
+            exp.ListAgg: lambda self, e: (
+                f"LISTAGG({self.sql(e, 'this')}"
+                f"{', ' + self.sql(e, 'separator') if e.args.get('separator') else ''})"
+                f" WITHIN GROUP (ORDER BY {self.sql(e, 'order')})"
+                if e.args.get("order")
+                else ""
+            ),
+            # exp.Ln: lambda self, e: f"LN({self.sql(e, 'this')})",
+            exp.LocalTimestamp: lambda self, e: (
+                f"LOCALTIMESTAMP({self.sql(e, 'precision')})"
+                if e.args.get("precision")
+                else "LOCALTIMESTAMP"
+            ),
+            exp.Locate: lambda self, e: (
+                f"LOCATE({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'start')})"
+                if e.args.get("start")
+                else f"LOCATE({self.sql(e, 'this')}, {self.sql(e, 'expression')})"
+            ),
+            # exp.Lower
+            exp.LPad: lambda self, e: f"LPAD({self.sql(e, 'this')}, {self.sql(e, 'length')}, {self.sql(e, 'pad')})",
+            exp.LTrim: lambda self, e: (
+                f"LTRIM({self.sql(e, 'this')}, {self.sql(e, 'trim_chars')})"
+                if e.args.get("trim_chars")
+                else f"LTRIM({self.sql(e, 'this')})"
+            ),
+            # exp.Trim
+            # exp.Max
+            # exp.Median
+            # exp.Min
+            exp.Mid: lambda self, e: (
+                f"MID({self.sql(e, 'this')}, {self.sql(e, 'start')}, {self.sql(e, 'length')})"
+                if e.args.get("length")
+                else f"MID({self.sql(e, 'this')}, {self.sql(e, 'start')})"
+            ),
+            exp.Mod: rename_func("MOD"),
+            exp.MinScale: lambda self, e: f"MIN_SCALE({self.sql(e, 'this')})",
+            # exp.MinutesBetween: lambda self, e: f"MINUTES_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            # exp.Month: lambda self, e: f"MONTH({self.sql(e, 'this')})",
+            # exp.MonthsBetween: lambda self, e: f"MONTHS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            # exp.Mul: lambda self, e: f"MUL({self.sql(e, 'this')})",
+            # exp.Now: lambda self, e: "NOW()",
+            # exp.NProc: lambda self, e: "NPROC()",
+            # exp.NTile: lambda self, e: f"NTILE({self.sql(e, 'this')})",
+            # exp.NullIf: lambda self, e: f"NULLIF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            # exp.NullIfZero: lambda self, e: f"NULLIFZERO({self.sql(e, 'this')})",
+            # exp.NumToDSInterval: lambda self, e: f"NUMTODSINTERVAL({self.sql(e, 'this')}, {self.sql(e, 'unit')})",
+            # exp.NumToYMInterval: lambda self, e: f"NUMTOYMINTERVAL({self.sql(e, 'this')}, {self.sql(e, 'unit')})",
+            # exp.NVL: lambda self, e: f"NVL({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            # exp.NVL2: lambda self, e: f"NVL2({self.sql(e, 'this')}, {self.sql(e, 'true_value')}, {self.sql(e, 'false_value')})",
+            # exp.OctetLength: lambda self, e: f"OCTET_LENGTH({self.sql(e, 'this')})",
+            # exp.PercentRank: lambda self, e: "PERCENT_RANK()",
+            # exp.Pi: lambda self, e: "PI()",
+            # exp.PosixTime: lambda self, e: f"POSIX_TIME({self.sql(e, 'this')})",
+            # exp.Month: lambda self, e: f"MONTH({self.sql(e, 'this')})",
+            # exp.MonthsBetween: lambda self, e
+            # exp.Nullif
+            exp.NthValue: lambda self, e: (
+                f"NTH_VALUE({self.sql(e, 'this')}, {self.sql(e, 'expression')})"
+                + (" FROM LAST" if e.args.get("from_last") else " FROM FIRST")
+                + (" RESPECT NULLS" if e.args.get("respect_nulls") else " IGNORE NULLS")
+                + self.sql(e, "over")
+            ),
+            exp.PercentileCont: lambda self, e: (
+                f"PERCENTILE_CONT({self.sql(e, 'this')})"
+                f" WITHIN GROUP ({self.sql(e, 'order').strip()})"
+                f"{self.sql(e, 'over')}"
+            ),
+            exp.PercentileDisc: lambda self, e: (
+                f"PERCENTILE_DISC({self.sql(e, 'this')})"
+                f" WITHIN GROUP ({self.sql(e, 'order').strip()})"
+                f"{self.sql(e, 'over')}"
+            ),
+            exp.StrPosition: lambda self, e: f"POSITION({self.sql(e, 'this')} IN {self.sql(e, 'expression')})",
+            exp.Pow: rename_func("POWER"),
+            exp.Rand: rename_func("RANDOM"),
+            
+            exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
+            exp.RegexpReplace: rename_func("REGEXP_REPLACE"),
+            
+            # exp.Repeat
+            # exp.Right
+            exp.Round: lambda self, e: self.round_sql(e),
+            # exp.Round: lambda self, e: f"ADD_DAYS({self._timestamp_literal(e.this, 'this')}, {self.sql(e, 'expression')})",
+            
         }
 
         PROPERTIES_LOCATION = {
@@ -1080,6 +1282,205 @@ class Exasol(Dialect):
             exp.DataType.Type.MULTIPOLYGON,
         }
 
+        def _anonymous_func(self, e):
+            func_name = e.this.upper()
+            handlers = {
+                "MIN_SCALE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "MONTH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "MINUTES_BETWEEN": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "MONTHS_BETWEEN": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "MUL": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "NOW": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "NPROC": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "NTILE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "NULLIF": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "NULLIFZERO": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "NUMTODSINTERVAL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "NUMTOYMINTERVAL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "NVL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "NVL2": lambda e: self._render_func_with_args(e, expected_arg_count=3),
+                "OCTET_LENGTH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "PERCENT_RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "PI": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "POSIX_TIME": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "RADIANS": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "RADIANS": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "RATIO_TO_REPORT": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "REGEXP_INSTR": lambda e: self._render_func_with_args(e,  min_arg_count=2, max_arg_count=5),
+                "REPLACE": lambda e: self._render_func_with_args(e,  expected_arg_count=3),
+                "REVERSE": lambda e: self._render_func_with_args(e,  expected_arg_count=3),
+                "ROWNUM": lambda e: "ROWNUM",
+                "ROW_NUMBER": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "ROWID": lambda e: "ROWID",
+                "RPAD": lambda e: self._render_func_with_args(e,  expected_arg_count=3),
+                "RTRIM": lambda e: self._render_func_with_args(e,  expected_arg_count=2),
+                
+            }
+
+            regr_funcs = [
+                "REGR_AVGX", "REGR_AVGY", "REGR_COUNT", "REGR_INTERCEPT", "REGR_R2",
+                "REGR_SLOPE", "REGR_SXX", "REGR_SXY", "REGR_SYY"
+            ]
+            for name in regr_funcs:
+                handlers[name] = lambda e: self._render_func_with_args(e, expected_arg_count=2)
+
+            if func_name in handlers:
+                return handlers[func_name](e)
+            return f"{func_name}({', '.join(self.sql(arg) for arg in e.expressions)})"
+
+     
+
+        def _render_func_with_args(self, e, expected_arg_count=None, min_arg_count=None, max_arg_count=None):
+            arg_count = len(e.expressions)
+
+            if expected_arg_count is not None and arg_count != expected_arg_count:
+                raise ValueError(f"{e.this} expects exactly {expected_arg_count} arguments, got {arg_count}")
+
+            if min_arg_count is not None and arg_count < min_arg_count:
+                raise ValueError(f"{e.this} expects at least {min_arg_count} arguments, got {arg_count}")
+
+            if max_arg_count is not None and arg_count > max_arg_count:
+                raise ValueError(f"{e.this} expects at most {max_arg_count} arguments, got {arg_count}")
+
+            def format_arg(arg):
+                if isinstance(arg, exp.Literal) and isinstance(arg.this, str) and arg.this.startswith("TIMESTAMP "):
+                    return arg.this
+                return self.sql(arg)
+
+            formatted_args = ", ".join(format_arg(arg) for arg in e.expressions)
+            return f"{e.this.upper()}({formatted_args})"
+
+ 
+
+        def round_sql(self, expression):
+            value = expression.this
+            arg = expression.args.get("decimals")
+
+            datetime_units = {
+                "CC", "SCC", "YYYY", "SYYY", "YEAR", "SYEAR", "YYY", "YY", "Y",
+                "IYYY", "IYY", "IY", "I", "Q", "MONTH", "MON", "MM", "RM",
+                "WW", "IW", "W", "DDD", "DD", "J", "DAY", "DY", "D",
+                "HH", "HH24", "HH12", "MI", "SS",
+            }
+
+            def is_datetime_literal(lit):
+                return (
+                    isinstance(lit, exp.Literal)
+                    and lit.is_string
+                    and (lit.this.startswith("DATE ") or lit.this.startswith("TIMESTAMP "))
+                )
+
+            # Render the first argument properly
+            value_sql = value.this if is_datetime_literal(value) else self.sql(value)
+
+            if arg is None:
+                return f"ROUND({value_sql})"
+
+            # If rounding a datetime, the second arg should be a valid datetime unit
+            if is_datetime_literal(value):
+                unit = arg.this.strip("'").upper() if isinstance(arg, exp.Literal) else self.sql(arg)
+                if unit not in datetime_units:
+                    raise ValueError(f"Invalid ROUND datetime unit for Exasol: {unit}")
+                return f"ROUND({value_sql}, '{unit}')"
+
+            # Else, treat second argument as numeric (e.g., ROUND(42.123, 2))
+            return f"ROUND({value_sql}, {self.sql(arg)})"
+
+        def _timestamp_literal(self, e, key):
+            arg = e.args.get(key)
+            if isinstance(arg, exp.Literal) and arg.args.get("prefix"):
+                # print(arg.args.get("prefix"))
+                # print("The fame I waited for")
+                return f"{arg.args['prefix']} '{arg.this}'"
+            return self.sql(e, key)
+
+        def alias_sql(self, expression):
+            return f"{self.sql(expression, 'this')} {self.sql(expression, 'alias')}"
+
+        def windowed_func(self, name, e):
+            sql = f"{name}({self.sql(e, 'this')})"
+            if e.args.get("over"):
+                sql += f"{self.sql(e, 'over')}"
+            return sql
+
+        def convert_tz_sql(self, expression):
+            this = self.sql(expression, "this")
+            from_tz = self.sql(expression, "from_tz")
+            to_tz = self.sql(expression, "to_tz")
+            options = self.sql(expression, "options")
+            if options:
+                return f"CONVERT_TZ({this}, {from_tz}, {to_tz}, {options})"
+            return f"CONVERT_TZ({this}, {from_tz}, {to_tz})"
+
+        def convert_tz(self, e):
+            args = [
+                self.sql(e, "this"),
+                self.sql(e, "timezone"),
+                self.sql(e, "to_timezone"),
+            ]
+            if e.args.get("options"):
+                args.append(self.sql(e, "options"))
+            return f"CONVERT_TZ({', '.join(args)})"
+
+        def cos_sql(self, expression):
+            return f"COS({self.sql(expression, 'this')})"
+
+        def cosh_sql(self, expression):
+            return f"COSH({self.sql(expression, 'this')})"
+
+        def cot_sql(self, expression):
+            return f"COT({self.sql(expression, 'this')})"
+
+        # def connect_by_sql(self, expression):
+        #     prior = expression.args.get("prior")
+        #     prefix = "CONNECT BY PRIOR " if prior else "CONNECT BY "
+        #     return prefix + self.sql(expression, "this")
+
+        # def start_with_sql(self, expression):
+        #     return "START WITH " + self.sql(expression, "this")
+
+        # def corr_sql(self, expression):
+        #     return f"CORR({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
+
+        def group_concat_sql(self, e):
+            order = e.args.get("order")
+            order_sql = ""
+            if order:
+                # order is a list of Ordered expressions
+                order_sql = " ORDER BY " + ", ".join(self.sql(o) for o in order)
+
+            return (
+                "GROUP_CONCAT("
+                + ("DISTINCT " if e.args.get("distinct") else "")
+                + self.sql(e, "this")
+                + order_sql
+                + (
+                    f" SEPARATOR {self.sql(e, 'separator')}"
+                    if e.args.get("separator")
+                    else ""
+                )
+                + ")"
+                + self.sql(e, "over")
+            )
+
+        def jsonb_extract_sql(self, e):
+            args_sql = ", ".join(self.sql(arg) for arg in e.expressions)
+            emits = e.args.get("emits")
+            emits_sql = ""
+
+            if emits:
+                emits_sql = (
+                    " EMITS("
+                    + ", ".join(f"{name} {datatype}" for name, datatype in emits)
+                    + ")"
+                )
+
+            return f"JSON_EXTRACT({self.sql(e, 'this')}, {args_sql}){emits_sql}"
+
+        def convert_sql(self, expression):
+            return f"CONVERT({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
+
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)
 
@@ -1090,14 +1491,19 @@ class Exasol(Dialect):
 
             return strtodate_sql
 
-        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+        def cast_sql(
+            self, expression: exp.Cast, safe_prefix: t.Optional[str] = None
+        ) -> str:
             this = expression.this
 
-            if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
+            if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build(
+                "datetime"
+            ):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
+        # Important method
         def trycast_sql(self, expression: exp.TryCast) -> str:
             dtype = expression.to
             if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True):
@@ -1160,7 +1566,7 @@ class Exasol(Dialect):
             #   String or FixedString (possibly LowCardinality) or UUID or IPv6"
             # - It's not a composite type, e.g. `Nullable(Array(...))` is not a valid type
             # parent = expression.parent
-    
+
             # nullable = expression.args.get("nullable")
             # if nullable is True or (
             #     nullable is None
@@ -1186,7 +1592,8 @@ class Exasol(Dialect):
         def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:
             return super().after_limit_modifiers(expression) + [
                 (
-                    self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
+                    self.seg("SETTINGS ")
+                    + self.expressions(expression, key="settings", flat=True)
                     if expression.args.get("settings")
                     else ""
                 ),
@@ -1203,16 +1610,25 @@ class Exasol(Dialect):
         def oncluster_sql(self, expression: exp.OnCluster) -> str:
             return f"ON CLUSTER {self.sql(expression, 'this')}"
 
-        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+        def createable_sql(
+            self, expression: exp.Create, locations: t.DefaultDict
+        ) -> str:
             if expression.kind in self.ON_CLUSTER_TARGETS and locations.get(
                 exp.Properties.Location.POST_NAME
             ):
                 this_name = self.sql(
-                    expression.this if isinstance(expression.this, exp.Schema) else expression,
+                    (
+                        expression.this
+                        if isinstance(expression.this, exp.Schema)
+                        else expression
+                    ),
                     "this",
                 )
                 this_properties = " ".join(
-                    [self.sql(prop) for prop in locations[exp.Properties.Location.POST_NAME]]
+                    [
+                        self.sql(prop)
+                        for prop in locations[exp.Properties.Location.POST_NAME]
+                    ]
                 )
                 this_schema = self.schema_columns_sql(expression.this)
                 this_schema = f"{self.sep()}{this_schema}" if this_schema else ""
@@ -1243,7 +1659,9 @@ class Exasol(Dialect):
             this = self.indent(self.sql(expression, "this"))
             return f"{self.seg('PREWHERE')}{self.sep()}{this}"
 
-        def indexcolumnconstraint_sql(self, expression: exp.IndexColumnConstraint) -> str:
+        def indexcolumnconstraint_sql(
+            self, expression: exp.IndexColumnConstraint
+        ) -> str:
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
             expr = self.sql(expression, "expression")
@@ -1262,9 +1680,7 @@ class Exasol(Dialect):
             return f"ID {self.sql(expression.this)}"
 
         def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
-            return (
-                f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
-            )
+            return f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
 
         def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
             return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"
@@ -1281,13 +1697,17 @@ class Exasol(Dialect):
         def in_sql(self, expression: exp.In) -> str:
             in_sql = super().in_sql(expression)
 
-            if isinstance(expression.parent, exp.Not) and expression.args.get("is_global"):
+            if isinstance(expression.parent, exp.Not) and expression.args.get(
+                "is_global"
+            ):
                 in_sql = in_sql.replace("GLOBAL IN", "GLOBAL NOT IN", 1)
 
             return in_sql
 
         def not_sql(self, expression: exp.Not) -> str:
-            if isinstance(expression.this, exp.In) and expression.this.args.get("is_global"):
+            if isinstance(expression.this, exp.In) and expression.this.args.get(
+                "is_global"
+            ):
                 # let `GLOBAL IN` child interpose `NOT`
                 return self.sql(expression, "this")
 

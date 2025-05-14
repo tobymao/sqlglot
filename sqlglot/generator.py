@@ -2296,7 +2296,8 @@ class Generator(metaclass=_Generator):
         if op_sql != "STRAIGHT_JOIN":
             op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
 
-        return f"{self.seg(op_sql)} {this_sql}{match_cond}{on_sql}"
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+        return f"{self.seg(op_sql)} {this_sql}{match_cond}{on_sql}{pivots}"
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
         args = self.expressions(expression, flat=True)

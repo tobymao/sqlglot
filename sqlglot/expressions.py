@@ -2497,6 +2497,7 @@ class Join(Expression):
         "hint": False,
         "match_condition": False,  # Snowflake
         "expressions": False,
+        "pivots": False,
     }
 
     @property

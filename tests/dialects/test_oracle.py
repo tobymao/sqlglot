@@ -523,6 +523,8 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
 )) src""",
             pretty=True,
         )
+        self.validate_identity("CONVERT('foo', 'dst')")
+        self.validate_identity("CONVERT('foo', 'dst', 'src')")
 
     def test_connect_by(self):
         start = "START WITH last_name = 'King'"

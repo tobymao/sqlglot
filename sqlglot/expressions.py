@@ -5498,7 +5498,6 @@ class Convert(Func):
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CONVERT.html
 class ConvertToCharset(Func):
     arg_types = {"this": True, "dest": True, "source": False}
-    _sql_names = ["CONVERT"]
 
 
 class ConvertTimezone(Func):

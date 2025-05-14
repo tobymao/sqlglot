@@ -131,6 +131,9 @@ class Generator(metaclass=_Generator):
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.ConnectByRoot: lambda self, e: f"CONNECT_BY_ROOT {self.sql(e, 'this')}",
+        exp.ConvertToCharset: lambda self, e: self.func(
+            "CONVERT", e.this, e.args["dest"], e.args.get("source")
+        ),
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
         exp.CredentialsProperty: lambda self,
         e: f"CREDENTIALS=({self.expressions(e, 'expressions', sep=' ')})",

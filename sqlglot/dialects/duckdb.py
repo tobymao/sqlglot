@@ -502,6 +502,7 @@ class DuckDB(Dialect):
             parse_bracket: bool = False,
             is_db_reference: bool = False,
             parse_partition: bool = False,
+            qualified_schema_col: bool = False,
         ) -> t.Optional[exp.Expression]:
             # DuckDB supports prefix aliases, e.g. FROM foo: bar
             if self._next and self._next.token_type == TokenType.COLON:

@@ -189,6 +189,7 @@ class PRQL(Dialect):
             parse_bracket: bool = False,
             is_db_reference: bool = False,
             parse_partition: bool = False,
+            qualified_schema_col: bool = False,
         ) -> t.Optional[exp.Expression]:
             return self._parse_table_parts()
 

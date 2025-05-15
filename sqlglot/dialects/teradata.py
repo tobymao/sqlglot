@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     to_number_with_nls_param,
 )
-from sqlglot.helper import seq_get
+from sqlglot.helper import seq_get, ensure_list
 from sqlglot.tokens import TokenType
 
 
@@ -217,6 +217,44 @@ class Teradata(Dialect):
                 this.set("on", None)
                 self._retreat(self._index - 2)
             return this
+
+        def _parse_insert(self) -> t.Union[exp.Insert, exp.MultitableInserts]:
+            comments = []
+            hint = self._parse_hint()
+            overwrite = self._match(TokenType.OVERWRITE)
+            ignore = self._match(TokenType.IGNORE)
+            alternative = None
+
+            self._match(TokenType.INTO)
+            comments += ensure_list(self._prev_comments)
+            self._match(TokenType.TABLE)
+
+            this = self._parse_table(schema=True, parse_partition=True, qualified_schema_col=True)
+            if isinstance(this, exp.Table) and self._match(TokenType.ALIAS, advance=False):
+                this.set("alias", self._parse_table_alias())
+
+            returning = self._parse_returning()
+
+            return self.expression(
+                exp.Insert,
+                comments=comments,
+                hint=hint,
+                is_function=False,
+                this=this,
+                stored=self._match_text_seq("STORED") and self._parse_stored(),
+                by_name=self._match_text_seq("BY", "NAME"),
+                exists=self._parse_exists(),
+                where=self._match_pair(TokenType.REPLACE, TokenType.WHERE) and self._parse_assignment(),
+                partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
+                settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
+                expression=self._parse_derived_table_values() or self._parse_ddl_select(),
+                conflict=self._parse_on_conflict(),
+                returning=returning or self._parse_returning(),
+                overwrite=overwrite,
+                alternative=alternative,
+                ignore=ignore,
+                source=self._match(TokenType.TABLE) and self._parse_table(),
+            )
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

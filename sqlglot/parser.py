@@ -3928,6 +3928,7 @@ class Parser(metaclass=_Parser):
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,
+        qualified_schema_col: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -3977,7 +3978,7 @@ class Parser(metaclass=_Parser):
             this.set("partition", self._parse_partition())
 
         if schema:
-            return self._parse_schema(this=this)
+            return self._parse_schema(this=this, qualified_schema_col=qualified_schema_col)
 
         version = self._parse_version()
 
@@ -5814,7 +5815,11 @@ class Parser(metaclass=_Parser):
             self._parse_order(self._parse_having_max(self._parse_respect_or_ignore_nulls(this)))
         )
 
-    def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
+    def _parse_schema(
+            self,
+            this: t.Optional[exp.Expression] = None,
+            qualified_schema_col: bool = False,
+    ) -> t.Optional[exp.Expression]:
         index = self._index
         if not self._match(TokenType.L_PAREN):
             return this
@@ -5824,12 +5829,14 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.SELECT_START_TOKENS):
             self._retreat(index)
             return this
-        args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())
+        args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def(qualified_schema_col))
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
 
-    def _parse_field_def(self) -> t.Optional[exp.Expression]:
-        return self._parse_column_def(self._parse_field(any_token=True))
+    def _parse_field_def(self, qualified_schema_col: bool = False) -> t.Optional[exp.Expression]:
+        return self._parse_column_def(
+            self._parse_column() if qualified_schema_col else self._parse_field(any_token=True)
+        )
 
     def _parse_column_def(
         self, this: t.Optional[exp.Expression], computed_column: bool = True

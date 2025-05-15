@@ -169,6 +169,12 @@ class TestTeradata(Validator):
             "INS INTO x SELECT * FROM y", write={"teradata": "INSERT INTO x SELECT * FROM y"}
         )
 
+    def test_insert_fully_qualified_col(self):
+        self.validate_all(
+            "INS INTO x (y.b, y.c) SELECT * FROM tbl_y AS y JOIN tbl_z AS z ON y.a = z.a",
+            write={"teradata": "INSERT INTO x (b, c) SELECT * FROM tbl_y AS y JOIN tbl_z AS z ON y.a = z.a"}
+        )
+
     def test_mod(self):
         self.validate_all("a MOD b", write={"teradata": "a MOD b", "mysql": "a % b"})
 

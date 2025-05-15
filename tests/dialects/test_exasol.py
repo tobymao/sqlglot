@@ -12,6 +12,95 @@ from sqlglot.errors import ErrorLevel
 class TestExasol(Validator):
     dialect = "exasol"
 
+    def test_integration_cross(self):
+        pass
+
+    def test_integration_identity(self):
+        ########## STRING FUNCTIONS ###########
+        self.validate_identity("SELECT ASCII('X')")
+        self.validate_identity("SELECT BIT_LENGTH('aou') BIT_LENGTH")
+        # currently CHARACTER_LENGTH allows more than 1 arg (3)
+        self.validate_identity(
+            "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
+            "SELECT LENGTH('aeiouäöü') C_LENGTH",
+        )
+        self.validate_identity("SELECT CHAR(88) CHR", "SELECT CHR(88) CHR")
+        self.validate_identity(
+            "SELECT COLOGNE_PHONETIC('schmitt'), COLOGNE_PHONETIC('Schmidt')"
+        )
+        self.validate_identity("SELECT CONCAT('abc', 'def', 'g') CONCAT")
+
+        dumps = [
+            "SELECT DUMP('123abc') DUMP",
+            "SELECT DUMP('üäö45', 16) DUMP",
+            "SELECT DUMP('üäö45', 16, 1) DUMP",
+            "SELECT DUMP('üäö45', 16, 1, 3) DUMP",
+        ]
+        for d in dumps:
+            self.validate_identity(d)
+
+        self.validate_identity("SELECT EDIT_DISTANCE('schmitt', 'Schmidt')")
+        # INITCAP currently allows more than 1 argument (2)
+        self.validate_identity("SELECT INITCAP('ExAsOl is great', 'tre T') INITCAP")
+        self.validate_identity(
+            "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')"
+        )
+
+        instrs = [
+            (
+                "SELECT INSTR('abcabcabc', 'cab') INSTR1",
+                "SELECT POSITION('cab' IN 'abcabcabc') INSTR1",
+            ),
+            (
+                "SELECT INSTR('user1,user2,user3,user4,user5', 'user', -1) INSTR2",
+                "SELECT LOCATE('user', 'user1,user2,user3,user4,user5', -1) INSTR2",
+            ),
+            (
+                "SELECT INSTR('user1,user2,user3,user4,user5', 'user', -1, 2) INSTR3",
+                None,
+            ),
+        ]
+        for sql, write_sql in instrs:
+            self.validate_identity(sql, write_sql)
+
+        self.validate_identity("SELECT LOCATE('cab', 'abcabcabc', -1) LOC")
+        self.validate_identity("SELECT POSITION('cab' IN 'abcabcabc') POS")
+        self.validate_identity(
+            "SELECT LCASE('AbCdEf') LCASE", "SELECT LOWER('AbCdEf') LCASE"
+        )
+        self.validate_identity("SELECT LOWER('AbCdEf') LCASE")
+        self.validate_identity("SELECT LEFT('abcdef', 3) LEFT_SUBSTR")
+        self.validate_identity("SELECT LENGTH('abc') LENGTH")
+        self.validate_identity("SELECT LTRIM('ab cdef', ' ab') LTRIM")
+        self.validate_identity("SELECT RTRIM('ab cdef', ' efd') RTRIM")
+        self.validate_identity(
+            "SELECT MID('abcdef', 2, 3) S1, MID('abcdef', -3) S2, MID('abcdef', 7) S3, MID('abcdef', -7) S4"
+        )
+        # self.validate_identity("SELECT OCTET_LENGTH('abcd') OCT_LENGTH")
+        self.validate_identity(
+            r"SELECT REGEXP_REPLACE('From: my_mail@yahoo.com', '(?i)^From: ([a-z0-9._%+-]+)@([a-z0-9.-]+\.[a-z]{2,4}$)', 'Name: \1 - Domain: \2') REGEXP_REPLACE"
+        )
+        self.validate_identity(
+            r"SELECT REGEXP_SUBSTR('My mail address is my_mail@yahoo.com', '(?i)[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}') EMAIL"
+        )
+        self.validate_identity("SELECT REPEAT('abc', 3)")
+        self.validate_identity(
+            "SELECT REPLACE('Apple juice is great', 'Apple', 'Orange') REPLACE_1"
+        )
+        self.validate_identity("SELECT REVERSE('abcde') REVERSE")
+        self.validate_identity("SELECT RIGHT('abcdef', 3) RIGHT_SUBSTR")
+        self.validate_identity("SELECT RPAD('abc', 5, 'X')")
+        self.validate_identity("SELECT LPAD('abc', 5, 'X')")
+        self.validate_identity(
+            "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
+            "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",
+        )
+        self.validate_identity("SELECT TO_CHAR(DATE '2013-12-16', 'DD. MON YYYY', 'NLS_DATE_LANGUAGE=DEU') TO_CHAR")
+        # , SUBSTRING('abcdef FROM -3) S3
+        ########## STRING FUNCTIONS ###########
+
+        # print("yay")
+
     # def test_tokenizer_hashtype_variants(self):
     #     sql = "HASHTYPE(256 BIT), HASHTYPE(64 BYTE)"
     #     tokenizer = Exasol.Tokenizer()
@@ -2310,15 +2399,13 @@ class TestExasol(Validator):
                 exp.Select(
                     expressions=[
                         exp.Anonymous(
-                        this="RPAD",
-                        expressions=[
-                        exp.Literal.string("abc"),
-                        exp.Literal.number(5),
-                        exp.Literal.string("X"),
-
-                        ]
-                           
-                    )
+                            this="RPAD",
+                            expressions=[
+                                exp.Literal.string("abc"),
+                                exp.Literal.number(5),
+                                exp.Literal.string("X"),
+                            ],
+                        )
                     ]
                 ),
                 "SELECT RPAD('abc', 5, 'X')",

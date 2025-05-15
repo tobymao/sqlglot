@@ -5816,9 +5816,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_schema(
-            self,
-            this: t.Optional[exp.Expression] = None,
-            qualified_schema_col: bool = False,
+        self,
+        this: t.Optional[exp.Expression] = None,
+        qualified_schema_col: bool = False,
     ) -> t.Optional[exp.Expression]:
         index = self._index
         if not self._match(TokenType.L_PAREN):

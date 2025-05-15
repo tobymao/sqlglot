@@ -244,7 +244,8 @@ class Teradata(Dialect):
                 stored=self._match_text_seq("STORED") and self._parse_stored(),
                 by_name=self._match_text_seq("BY", "NAME"),
                 exists=self._parse_exists(),
-                where=self._match_pair(TokenType.REPLACE, TokenType.WHERE) and self._parse_assignment(),
+                where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
+                and self._parse_assignment(),
                 partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
                 settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
                 expression=self._parse_derived_table_values() or self._parse_ddl_select(),

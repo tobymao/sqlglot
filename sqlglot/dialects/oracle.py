@@ -126,6 +126,7 @@ class Oracle(Dialect):
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "NEXT": lambda self: self._parse_next_value_for(),
+            "PRIOR": lambda self: self.expression(exp.Prior, this=self._parse_bitwise()),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }
 
@@ -248,6 +249,9 @@ class Oracle(Dialect):
                 )
 
             return self.expression(exp.Into, bulk_collect=bulk_collect, expressions=expressions)
+
+        def _parse_connect_with_prior(self):
+            return self._parse_assignment()
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

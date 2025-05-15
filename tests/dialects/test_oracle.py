@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError
+from sqlglot import exp, UnsupportedError, ParseError, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -708,3 +708,11 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity(
             "ANALYZE TABLE tbl VALIDATE STRUCTURE CASCADE COMPLETE OFFLINE INTO db.tbl"
         )
+
+    def test_prior(self):
+        self.validate_identity(
+            "SELECT id, PRIOR name AS parent_name, name FROM tree CONNECT BY NOCYCLE PRIOR id = parent_id"
+        )
+
+        with self.assertRaises(ParseError):
+            parse_one("PRIOR as foo", read="oracle")

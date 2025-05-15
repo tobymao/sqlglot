@@ -5,6 +5,7 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -35,7 +36,7 @@ from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E, Lit
+    from sqlglot._typing import Lit
 
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
@@ -440,7 +441,7 @@ class BigQuery(Dialect):
     def normalize_identifier(self, expression: E) -> E:
         if (
             isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
+            and self.normalization_strategy is self.NORMALIZATION_STRATEGY
         ):
             parent = expression.parent
             while isinstance(parent, exp.Dot):
@@ -462,7 +463,9 @@ class BigQuery(Dialect):
             if not case_sensitive:
                 expression.set("this", expression.this.lower())
 
-        return expression
+            return t.cast(E, expression)
+
+        return super().normalize_identifier(expression)
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"', '"""', "'''"]

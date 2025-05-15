@@ -7115,7 +7115,7 @@ class DenseRank(Expression):
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/dump.htm
-class Dump(Expression):
+class Dump(Func):
     arg_types = {
         "this": True,  # The expression (e.g., a column or literal)
         "format": False,  # Optional format (e.g., 1010)
@@ -7125,7 +7125,7 @@ class Dump(Expression):
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm
-class EditDistance(Expression):
+class EditDistance(Func):
     arg_types = {
         "this": True,  # First string
         "expression": True,  # Second string

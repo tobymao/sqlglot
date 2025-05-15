@@ -5829,7 +5829,9 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.SELECT_START_TOKENS):
             self._retreat(index)
             return this
-        args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def(qualified_schema_col))
+        args = self._parse_csv(
+            lambda: self._parse_constraint() or self._parse_field_def(qualified_schema_col)
+        )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
 

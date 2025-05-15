@@ -99,6 +99,7 @@ class TestSingleStore(Validator):
             )
 
         generated = query.sql(dialect="singlestore")
+        print(generated)
 
         if run:
             with conn.cursor() as cur:
@@ -897,3 +898,216 @@ class TestSingleStore(Validator):
             sql="SELECT DATE_BIN(INTERVAL 15 MINUTE, created_at, TIMESTAMP '2001-01-01 00:00:00') FROM orders",
             expected_sql="SELECT TIME_BUCKET(INTERVAL '15' MINUTE, created_at, '2001-01-01 00:00:00' :> TIMESTAMP) FROM orders",
             exp_type=exp.DateBin)
+        self.validate_generation(
+            sql="SELECT DATE_SUB(created_at, INTERVAL '1' DAY) FROM orders",
+            exp_type=exp.DateSub)
+        self.validate_generation(
+            sql="SELECT DATE_DIFF(DAY, created_at, NOW()) FROM orders",
+            expected_sql="SELECT TIMESTAMPDIFF(DAY, created_at, NOW()) FROM orders",
+            exp_type=exp.DateDiff)
+        self.validate_generation(
+            sql="SELECT DATE_TRUNC('MONTH', created_at) FROM orders",
+            exp_type=exp.DateTrunc)
+        self.validate_generation(
+            sql="SELECT DATETIME('2024-05-06 13:00:00')",
+            expected_sql="SELECT '2024-05-06 13:00:00' :> DATETIME",
+            exp_type=exp.Datetime
+        )
+        self.validate_generation(
+            sql="SELECT DATETIME_ADD(created_at, INTERVAL 2 HOUR) FROM orders",
+            expected_sql="SELECT DATE_ADD(created_at, INTERVAL '2' HOUR) FROM orders",
+            exp_type=exp.DatetimeAdd)
+        self.validate_generation(
+            sql="SELECT DATETIME_SUB(created_at, INTERVAL 30 MINUTE) FROM orders",
+            expected_sql="SELECT DATE_SUB(created_at, INTERVAL '30' MINUTE) FROM orders",
+            exp_type=exp.DatetimeSub)
+        self.validate_generation(
+            sql="SELECT DATETIME_DIFF(MINUTE, created_at, NOW()) FROM orders",
+            expected_sql="SELECT TIMESTAMPDIFF(MINUTE, created_at, NOW()) FROM orders",
+            exp_type=exp.DatetimeDiff)
+        self.validate_generation(
+            sql="SELECT DATETIME_TRUNC(created_at, MINUTE) FROM orders",
+            expected_sql="SELECT DATE_TRUNC('MINUTE', created_at) FROM orders",
+            exp_type=exp.DatetimeTrunc)
+        self.validate_generation(
+            sql="SELECT DAY_OF_WEEK(created_at) FROM orders",
+            expected_sql="SELECT DAYOFWEEK(created_at) FROM orders",
+            exp_type=exp.DayOfWeek)
+        self.validate_generation(
+            sql="SELECT DAY_OF_WEEK(created_at) FROM orders",
+            expected_sql="SELECT ((DAYOFWEEK(created_at) % 7) + 1) FROM orders",
+            from_dialect="presto",
+            exp_type=exp.DayOfWeekIso)
+        self.validate_generation(
+            sql="SELECT DAY_OF_MONTH(created_at) FROM orders",
+            expected_sql="SELECT DAY(created_at) FROM orders",
+            exp_type=exp.DayOfMonth)
+        self.validate_generation(
+            sql="SELECT DAY_OF_YEAR(created_at) FROM orders",
+            expected_sql="SELECT DAYOFYEAR(created_at) FROM orders",
+            exp_type=exp.DayOfYear)
+        self.validate_generation(
+            sql="SELECT WEEK_OF_YEAR(created_at) FROM orders",
+            expected_sql="SELECT WEEKOFYEAR(created_at) FROM orders",
+            exp_type=exp.WeekOfYear)
+        self.validate_generation(
+            sql="SELECT MONTHS_BETWEEN(NOW(), created_at) FROM orders",
+            exp_type=exp.MonthsBetween)
+        self.validate_generation(
+            sql="SELECT MAKE_INTERVAL(1, 2, 3, 4)",
+            error_message="INTERVAL data type is not supported in SingleStore",
+            exp_type=exp.MakeInterval,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT LAST_DAY(created_at) FROM orders",
+            exp_type=exp.LastDay)
+        self.validate_generation(
+            sql="SELECT EXTRACT(DAY FROM created_at) FROM orders",
+            exp_type=exp.Extract)
+        self.validate_generation(
+            sql="SELECT TIMESTAMP('2024-01-01 12:00:00')",
+            exp_type=exp.Timestamp)
+        self.validate_generation(
+            sql="SELECT TIMESTAMP_ADD(created_at, INTERVAL 2 DAY) FROM orders",
+            expected_sql="SELECT DATE_ADD(created_at, INTERVAL '2' DAY) FROM orders",
+            exp_type=exp.TimestampAdd)
+        self.validate_generation(
+            sql="SELECT TIMESTAMP_SUB(created_at, INTERVAL 1 HOUR) FROM orders",
+            expected_sql="SELECT DATE_SUB(created_at, INTERVAL '1' HOUR) FROM orders",
+            exp_type=exp.TimestampSub)
+        self.validate_generation(
+            sql="SELECT TIMESTAMP_DIFF(DAY, created_at, NOW()) FROM orders",
+            expected_sql="SELECT TIMESTAMPDIFF(DAY, created_at, NOW()) FROM orders",
+            exp_type=exp.TimestampDiff)
+        self.validate_generation(
+            sql="SELECT TIMESTAMP_TRUNC(created_at, HOUR) FROM orders",
+            expected_sql="SELECT DATE_TRUNC('HOUR', created_at) FROM orders",
+            exp_type=exp.TimestampTrunc)
+        self.validate_generation(
+            sql="SELECT TIME_ADD(TIME '12:00:00', INTERVAL 1 HOUR)",
+            expected_sql="SELECT DATE_ADD('12:00:00' :> TIME, INTERVAL '1' HOUR)",
+            exp_type=exp.TimeAdd)
+        self.validate_generation(
+            sql="SELECT TIME_SUB(TIME '12:00:00', INTERVAL 30 MINUTE)",
+            expected_sql="SELECT DATE_SUB('12:00:00' :> TIME, INTERVAL '30' MINUTE)",
+            exp_type=exp.TimeSub)
+        self.validate_generation(
+            sql="SELECT TIME_DIFF(MINUTE, TIME '10:00:00', TIME '11:00:00')",
+            expected_sql="SELECT TIMESTAMPDIFF(MINUTE, '10:00:00' :> TIME, '11:00:00' :> TIME)",
+            exp_type=exp.TimeDiff)
+        self.validate_generation(
+            sql="SELECT TIME_TRUNC(TIME '12:34:56', MINUTE)",
+            expected_sql="SELECT DATE_TRUNC('MINUTE', '12:34:56' :> TIME)",
+            exp_type=exp.TimeTrunc)
+        self.validate_generation(
+            sql="SELECT DATE_FROM_PARTS(2024, 5, 6)",
+            error_message="DATE_FROM_PARTS function is not supported in SingleStore",
+            exp_type=exp.DateFromParts,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT TIME_FROM_PARTS(10, 30, 0)",
+            error_message="TIME_FROM_PARTS function is not supported in SingleStore",
+            exp_type=exp.TimeFromParts,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT DATE_STR_TO_DATE('2024-05-06')",
+            expected_sql="SELECT '2024-05-06' :> DATE",
+            exp_type=exp.DateStrToDate)
+        self.validate_generation(
+            sql="SELECT DATE_TO_DI(created_at) FROM orders",
+            expected_sql="SELECT (DATE_FORMAT(created_at, '%Y%m%d') :> INT) FROM orders",
+            exp_type=exp.DateToDi)
+        self.validate_generation(
+            sql="SELECT DATE('2024-05-06')",
+            expected_sql="SELECT '2024-05-06' :> DATE",
+            from_dialect="bigquery",
+            exp_type=exp.Date)
+        self.validate_generation(
+            sql="SELECT DAY(created_at) FROM orders",
+            expected_sql="SELECT DAY(created_at :> DATE) FROM orders",
+            exp_type=exp.Day)
+        self.validate_generation(
+            sql="SELECT DECODE('aGVsbG8=', 'base64')",
+            error_message="DECODE function is not supported in SingleStore",
+            exp_type=exp.Decode,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT DI_TO_DATE(20240506)",
+            expected_sql="SELECT STR_TO_DATE(20240506, '%Y%m%d')",
+            exp_type=exp.DiToDate)
+        self.validate_generation(
+            sql="SELECT ENCODE('hello', 'base64')",
+            error_message="ENCODE function is not supported in SingleStore",
+            exp_type=exp.Encode,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT EXP(price) FROM products",
+            exp_type=exp.Exp)
+        self.validate_generation(
+            sql="SELECT * FROM EXPLODE(ARRAY(1, 2, 3))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Explode,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM EXPLODE_OUTER(ARRAY(1, 2, 3))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.ExplodeOuter,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM POSEXPLODE_OUTER(ARRAY(1, 2, 3))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.PosexplodeOuter,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM POSEXPLODE(ARRAY(1, 2, 3))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Posexplode,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM INLINE(ARRAY((1, 'a'), (2, 'b')))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Inline,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM UNNEST(ARRAY(1, 2, 3))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.Unnest,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT FLOOR(amount) FROM orders",
+            exp_type=exp.Floor)
+        self.validate_generation(
+            sql="SELECT FROM_BASE64('aGVsbG8=')",
+            exp_type=exp.FromBase64)
+        self.validate_generation(
+            sql="SELECT FEATURES_AT_TIME(state, '2024-01-01 00:00:00')",
+            error_message="FEATURES_AT_TIME function is not supported in SingleStore",
+            exp_type=exp.FeaturesAtTime,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT TO_BASE64('hello')",
+            exp_type=exp.ToBase64)
+        self.validate_generation(
+            sql="SELECT FROM_ISO8601_TIMESTAMP('2024-05-06T12:00:00Z')",
+            error_message="FROM_ISO8601_TIMESTAMP function is not supported in SingleStore",
+            exp_type=exp.FromISO8601Timestamp,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, partitioning_columns => ARRAY('device_id'), value_columns => ARRAY(('signal', 'locf'))) ORDER BY device_id",
+            error_message="GAP_FILL function is not supported in SingleStore",
+            exp_type=exp.GapFill,
+            run=False
+        )

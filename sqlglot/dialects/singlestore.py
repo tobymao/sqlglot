@@ -128,6 +128,24 @@ class SingleStore(Dialect):
             exp.Contains: rename_func("INSTR"),
             exp.CurrentSchema: rename_func("SCHEMA"),
             exp.DateBin: rename_func("TIME_BUCKET"),
+            exp.DatetimeAdd: rename_func("DATE_ADD"),
+            exp.DatetimeSub: rename_func("DATE_SUB"),
+            exp.DatetimeDiff: rename_func("TIMESTAMPDIFF"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfWeekIso: lambda self,
+                e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
+            exp.DayOfMonth: rename_func("DAY"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.TimestampAdd: rename_func("DATE_ADD"),
+            exp.TimestampSub: rename_func("DATE_SUB"),
+            exp.TimeAdd: rename_func("DATE_ADD"),
+            exp.TimeSub: rename_func("DATE_SUB"),
+            exp.TimeDiff: rename_func("TIMESTAMPDIFF"),
+            exp.DateToDi: lambda self,
+                e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+            exp.DiToDate: lambda self,
+                e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})"
         }
 
         TRANSFORMS.pop(exp.Operator)
@@ -1490,11 +1508,6 @@ class SingleStore(Dialect):
             self.unsupported("Arrays are not supported in SingleStore")
             return super().arrayany_sql(expression)
 
-        def arrayconcat_sql(self, expression: exp.ArrayConcat,
-            name: str = "ARRAY_CONCAT") -> str:
-            self.unsupported("Arrays are not supported in SingleStore")
-            return super().arrayconcat_sql(expression)
-
         def arrayconstructcompact_sql(self,
             expression: exp.ArrayConstructCompact):
             self.unsupported("Arrays are not supported in SingleStore")
@@ -1526,7 +1539,7 @@ class SingleStore(Dialect):
 
         def arrayconcat_sql(self, expression: exp.ArrayConcat):
             self.unsupported("Arrays are not supported in SingleStore")
-            return self.function_fallback_sql(expression)
+            return super().arrayconcat_sql(expression)
 
         def string_sql(self, expression: exp.String) -> str:
             this = expression.this
@@ -1564,8 +1577,121 @@ class SingleStore(Dialect):
                                      exp.DataType.Type.DATETIME))
 
         def dateadd_sql(self, expression: exp.DateAdd) -> str:
-            date = self.sql(expression.this)
+            date = self.sql(expression, "this")
             interval = self.sql(
                 exp.Interval(this=expression.expression, unit=expression.unit))
 
             return f"DATE_ADD({date}, {interval})"
+
+        def datesub_sql(self, expression: exp.DateSub) -> str:
+            date = self.sql(expression, "this")
+            interval = self.sql(
+                exp.Interval(this=expression.expression, unit=expression.unit))
+
+            return f"DATE_SUB({date}, {interval})"
+
+        @unsupported_args("zone")
+        def datediff_sql(self, expression: exp.DateDiff) -> str:
+            return rename_func("TIMESTAMPDIFF")(self, expression)
+
+        @unsupported_args("zone")
+        def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+            return self.function_fallback_sql(expression)
+
+        @unsupported_args("zone")
+        @unsupported_args("expressions")
+        def datetime_sql(self, expression: exp.Datetime) -> str:
+            return self.sql(
+                exp.cast(expression.this, exp.DataType.Type.DATETIME))
+
+        @unsupported_args("zone")
+        def datetimetrunc_sql(self, expression: exp.DateTrunc) -> str:
+            unit = self.sql(exp.Literal.string(expression.unit))
+            datetime = self.sql(expression, "this")
+            return f"DATE_TRUNC({unit}, {datetime})"
+
+        def makeinterval_sql(self, expression: exp.MakeInterval) -> str:
+            self.unsupported(
+                "INTERVAL data type is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        @unsupported_args("zone")
+        def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+            unit = self.sql(exp.Literal.string(expression.unit))
+            datetime = self.sql(expression, "this")
+            return f"DATE_TRUNC({unit}, {datetime})"
+
+        @unsupported_args("zone")
+        def timetrunc_sql(self, expression: exp.TimeTrunc) -> str:
+            unit = self.sql(exp.Literal.string(expression.unit))
+            datetime = self.sql(expression, "this")
+            return f"DATE_TRUNC({unit}, {datetime})"
+
+        def datestrtodate_sql(self, expression: exp.DateStrToDate) -> str:
+            return self.sql(
+                exp.cast(expression.this, exp.DataType.Type.DATE))
+
+        def datetodatestr_sql(self, expression: exp.DateToDateStr) -> str:
+            return self.sql(
+                exp.cast(expression.this, exp.DataType.Type.TEXT))
+
+        def datefromparts_sql(self, expression: exp.DateFromParts) -> str:
+            self.unsupported(
+                "DATE_FROM_PARTS function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
+            self.unsupported(
+                "TIME_FROM_PARTS function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        @unsupported_args("zone")
+        @unsupported_args("expressions")
+        def date_sql(self, expression: exp.Date) -> str:
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.DATE))
+
+        def decode_sql(self, expression: exp.Decode) -> str:
+            self.unsupported(
+                "DECODE function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def encode_sql(self, expression: exp.Encode) -> str:
+            self.unsupported(
+                "ENCODE function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def explode_sql(self, expression: exp.Explode) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def posexplodeouter_sql(self, expression: exp.PosexplodeOuter) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def posexplode_sql(self, expression: exp.Posexplode) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def inline_sql(self, expression: exp.Inline) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().unnest_sql(expression)
+
+        def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
+            self.unsupported(
+                "FEATURES_AT_TIME function is not supported in SingleStore")
+            return super().featuresattime_sql(expression)
+
+        def fromiso8601timestamp_sql(self,
+            expression: exp.FromISO8601Timestamp):
+            self.unsupported(
+                "FROM_ISO8601_TIMESTAMP function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def gapfill_sql(self, expression: exp.GapFill) -> str:
+            self.unsupported(
+                "GAP_FILL function is not supported in SingleStore")
+            return super().gapfill_sql(expression)

@@ -103,7 +103,7 @@ class SingleStore(Dialect):
         WITH_PROPERTIES_PREFIX = " "
         SUPPORTS_CONVERT_TIMEZONE = True
         SUPPORTS_UNIX_SECONDS = True
-        PARSE_JSON_NAME: t.Optional[str] = "TO_JSON"
+        JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -145,13 +145,34 @@ class SingleStore(Dialect):
             exp.DateToDi: lambda self,
                 e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.DiToDate: lambda self,
-                e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})"
+                e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})",
+            exp.LowerHex: lambda self, e: f"LOWER(HEX({self.sql(e, 'this')}))",
+            exp.IsAscii: lambda self,
+                e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7F]*$')",
+            exp.Int64: lambda self, e: f"{self.sql(e, 'this')} :> BIGINT",
+            exp.JSONFormat: rename_func("JSON_PRETTY"),
+            exp.MD5Digest: lambda self, e: self.func("UNHEX",
+                                                     self.func("MD5", e.this)),
+            exp.AddMonths: lambda self,
+                e: f"TIMESTAMPADD(MONTH, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
         }
 
         TRANSFORMS.pop(exp.Operator)
         TRANSFORMS.pop(exp.ArrayContainsAll)
         TRANSFORMS.pop(exp.ArrayOverlaps)
         TRANSFORMS.pop(exp.ConnectByRoot)
+        TRANSFORMS.pop(exp.JSONPathFilter)
+        TRANSFORMS.pop(exp.JSONPathKey)
+        TRANSFORMS.pop(exp.JSONPathRecursive)
+        TRANSFORMS.pop(exp.JSONPathRoot)
+        TRANSFORMS.pop(exp.JSONPathScript)
+        TRANSFORMS.pop(exp.JSONPathSelector)
+        TRANSFORMS.pop(exp.JSONPathSlice)
+        TRANSFORMS.pop(exp.JSONPathSubscript)
+        TRANSFORMS.pop(exp.JSONPathUnion)
+        TRANSFORMS.pop(exp.JSONPathWildcard)
+        TRANSFORMS.pop(exp.ToMap)
+        TRANSFORMS.pop(exp.VarMap)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1310,18 +1331,56 @@ class SingleStore(Dialect):
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.binary(expression, ":> LONGTEXT COLLATE")
 
+        def jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
+            return self.sql(exp.Literal.string(expression.this))
+
+        def jsonpathsubscript_sql(self,
+            expression: exp.JSONPathSubscript) -> str:
+            return self.sql(exp.Literal.number(expression.this))
+
+        def jsonpathfilter_sql(self, expression: exp.JSONPathFilter) -> str:
+            self.unsupported("JSONPathFilter is not supported in SingleStore")
+            return f"?{expression.this}"
+
+        def jsonpathrecursive_sql(self,
+            expression: exp.JSONPathRecursive) -> str:
+            self.unsupported(
+                "JSONPathRecursive is not supported in SingleStore")
+            return f"..{expression.this or ''}"
+
+        def jsonpathroot_sql(self, expression: exp.JSONPathRoot) -> str:
+            self.unsupported("JSONPathRoot is not supported in SingleStore")
+            return "$"
+
+        def jsonpathscript_sql(self, expression: exp.JSONPathScript) -> str:
+            self.unsupported("JSONPathScript is not supported in SingleStore")
+            return f"({expression.this}"
+
+        def jsonpathselector_sql(self, expression: exp.JSONPathSelector) -> str:
+            self.unsupported("JSONPathSelector is not supported in SingleStore")
+            return f"[{self.json_path_part(expression.this)}]"
+
+        def jsonpathslice_sql(self, expression: exp.JSONPathSlice) -> str:
+            self.unsupported("JSONPathSlice is not supported in SingleStore")
+            return ":".join(
+                "" if p is False else self.json_path_part(p)
+                for p in
+                [expression.args.get("start"), expression.args.get("end"),
+                 expression.args.get("step")]
+                if p is not None
+            )
+
+        def jsonpathunion_sql(self, expression: exp.JSONPathUnion) -> str:
+            self.unsupported("JSONPathUnion is not supported in SingleStore")
+            return f"[{','.join(self.json_path_part(p) for p in expression.expressions)}]"
+
+        def jsonpathwildcard_sql(self, expression: exp.JSONPathWildcard) -> str:
+            self.unsupported("JSONPathWildcard is not supported in SingleStore")
+            return "*"
+
         def jsonpath_sql(self, expression: exp.JSONPath) -> str:
-            args = []
-            for path_key in expression.expressions[1:]:
-                if isinstance(path_key, exp.JSONPathKey):
-                    args.append(exp.Literal.string(path_key.this))
-                elif isinstance(path_key, exp.JSONPathSubscript):
-                    args.append(exp.Literal.number(path_key.this))
-                else:
-                    self.unsupported(
-                        f"JSONPath segment '{path_key}' is not supported in SingleStore"
-                    )
-                    continue
+            args = [e for e in expression.expressions if
+                    not isinstance(e, exp.JSONPathRoot)]
 
             return self.format_args(*args)
 
@@ -1695,3 +1754,139 @@ class SingleStore(Dialect):
             self.unsupported(
                 "GAP_FILL function is not supported in SingleStore")
             return super().gapfill_sql(expression)
+
+        def generatedatearray_sql(self,
+            expression: exp.GenerateDateArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def generatetimestamparray_sql(self,
+            expression: exp.GenerateTimestampArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def isinf_sql(self, expression: exp.IsInf) -> str:
+            self.unsupported("IS_INF function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def isnan_sql(self, expression: exp.IsNan) -> str:
+            self.unsupported("IS_NAN function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        @unsupported_args("null_handling")
+        @unsupported_args("unique_keys")
+        @unsupported_args("return_type")
+        @unsupported_args("encoding")
+        def jsonobject_sql(self, expression: exp.JSONObject) -> str:
+            return self.func("JSON_BUILD_OBJECT", *expression.expressions)
+
+        @unsupported_args("null_handling")
+        @unsupported_args("return_type")
+        @unsupported_args("strict")
+        def jsonarray_sql(self, expression: exp.JSONArray) -> str:
+            return self.func("JSON_BUILD_ARRAY", *expression.expressions)
+
+        @unsupported_args("null_handling")
+        @unsupported_args("return_type")
+        @unsupported_args("strict")
+        def jsonarrayagg_sql(self, expression: exp.JSONArrayAgg) -> str:
+            this = self.sql(expression, "this")
+            order = self.sql(expression, "order")
+
+            return self.func("JSON_AGG", this, suffix=f"{order})")
+
+        @unsupported_args("passing")
+        @unsupported_args("on_condition")
+        def jsonexists_sql(self, expression: exp.JSONExists) -> str:
+            this = self.sql(expression, "this")
+            path = self.sql(expression, "path")
+            return self.func("JSON_MATCH_ANY_EXISTS", this, path)
+
+        def jsonvaluearray_sql(self, expression: exp.JSONValueArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def jsontable_sql(self, expression: exp.JSONTable) -> str:
+            self.unsupported(
+                "JSON_TABLE function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
+            return self.func("JSON_SET_JSON", expression.this,
+                             expression.args.get("key"),
+                             expression.args.get("value"))
+
+        def openjson_sql(self, expression: exp.OpenJSON) -> str:
+            self.unsupported(
+                "OpenJSON function is not supported in SingleStore")
+            return super().openjson_sql(expression)
+
+        def parsejson_sql(self, expression: exp.ParseJSON) -> str:
+            self.unsupported(
+                "PARSE_JSON function is not supported in SingleStore")
+            return super().parsejson_sql(expression)
+
+        def jsonbexists_sql(self, expression: exp.JSONBExists) -> str:
+            this = self.sql(expression, "this")
+            path = self.sql(expression, "path")
+            return self.func("BSON_MATCH_ANY_EXISTS", this, path)
+
+        def jsonextractarray_sql(self, expression: exp.JSONExtractArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def levenshtein_sql(self, expression: exp.Levenshtein) -> str:
+            self.unsupported(
+                "LEVENSHTEIN function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def map_sql(self, expression: exp.Map) -> str:
+            self.unsupported("Maps are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def tomap_sql(self, expression: exp.ToMap) -> str:
+            self.unsupported("Maps are not supported in SingleStore")
+            return f"MAP {self.sql(expression, 'this')}"
+
+        def mapfromentries_sql(self, expression: exp.MapFromEntries) -> str:
+            self.unsupported("Maps are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def starmap_sql(self, expression: exp.StarMap) -> str:
+            self.unsupported("Maps are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def varmap_sql(self, expression: exp.VarMap) -> str:
+            self.unsupported("Maps are not supported in SingleStore")
+            return self.func("MAP", expression.args["keys"],
+                             expression.args["values"])
+
+        def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
+            self.unsupported(
+                "MATCH_AGAINST function is not supported in SingleStore")
+            return super().matchagainst_sql(expression)
+
+        def normalize_sql(self, expression: exp.Normalize) -> str:
+            self.unsupported(
+                "NORMALIZE function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def overlay_sql(self, expression: exp.Overlay) -> str:
+            self.unsupported(
+                "OVERLAY function is not supported in SingleStore")
+            return super().overlay_sql(expression)
+
+        def predict_sql(self, expression: exp.Predict) -> str:
+            self.unsupported(
+                "PREDICT function is not supported in SingleStore")
+            return super().predict_sql(expression)
+
+        def randn_sql(self, expression: exp.Randn) -> str:
+            self.unsupported(
+                "RANDN function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def rangen_sql(self, expression: exp.RangeN) -> str:
+            self.unsupported(
+                "RANGE_N function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)

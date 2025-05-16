@@ -830,7 +830,7 @@ class TestSingleStore(Validator):
             exp_type=exp.JSONCast)
         self.validate_generation(
             sql="SELECT TRY(PARSE_JSON('{bad: json}') IS NULL)",
-            expected_sql="SELECT TO_JSON('{bad: json}') IS NULL",
+            expected_sql="SELECT PARSE_JSON('{bad: json}') IS NULL",
             error_message="Unsupported TRY function",
             exp_type=exp.Try,
             run=False
@@ -1109,5 +1109,244 @@ class TestSingleStore(Validator):
             sql="SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, partitioning_columns => ARRAY('device_id'), value_columns => ARRAY(('signal', 'locf'))) ORDER BY device_id",
             error_message="GAP_FILL function is not supported in SingleStore",
             exp_type=exp.GapFill,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT GENERATE_DATE_ARRAY(DATE '2024-01-01', DATE '2024-01-10', INTERVAL 1 DAY)",
+            expected_sql="SELECT GENERATE_DATE_ARRAY('2024-01-01' :> DATE, '2024-01-10' :> DATE, INTERVAL '1' DAY)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.GenerateDateArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-01-02 00:00:00', INTERVAL 1 HOUR)",
+            expected_sql="SELECT GENERATE_TIMESTAMP_ARRAY('2024-01-01 00:00:00' :> TIMESTAMP, '2024-01-02 00:00:00' :> TIMESTAMP, INTERVAL '1' HOUR)",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.GenerateTimestampArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT GREATEST(age, 30) FROM users",
+            exp_type=exp.Greatest)
+        self.validate_generation(
+            sql="SELECT HEX(255)",
+            exp_type=exp.Hex)
+        self.validate_generation(
+            sql="SELECT LOWER_HEX(255)",
+            expected_sql="SELECT LOWER(HEX(255))",
+            exp_type=exp.LowerHex)
+        self.validate_generation(
+            sql="SELECT IF(age > 18, 'adult', 'minor') FROM users",
+            expected_sql="SELECT CASE WHEN age > 18 THEN 'adult' ELSE 'minor' END FROM users",
+            exp_type=exp.If)
+        self.validate_generation(
+            sql="SELECT NULLIF(age, 0) FROM users",
+            exp_type=exp.Nullif)
+        self.validate_generation(
+            sql="SELECT INITCAP(name) FROM users",
+            exp_type=exp.Initcap)
+        self.validate_generation(
+            sql="SELECT IS_ASCII(name) FROM users",
+            expected_sql="SELECT (name RLIKE '^[\x00-\x7F]*$') FROM users",
+            exp_type=exp.IsAscii)
+        self.validate_generation(
+            sql="SELECT IS_NAN(0.0 / 0.0)",
+            error_message="IS_NAN function is not supported in SingleStore",
+            exp_type=exp.IsNan,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT INT64(age) FROM users",
+            expected_sql="SELECT age :> BIGINT FROM users",
+            exp_type=exp.Int64)
+        self.validate_generation(
+            sql="SELECT IS_INF(1.0 / 0.0)",
+            error_message="IS_INF function is not supported in SingleStore",
+            exp_type=exp.IsInf,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT JSON_OBJECT('name', name) FROM users",
+            expected_sql="SELECT JSON_BUILD_OBJECT('name', name) FROM users",
+            exp_type=exp.JSONObject
+        )
+        self.validate_generation(
+            sql="SELECT JSON_ARRAY(id, age) FROM users",
+            from_dialect="oracle",
+            expected_sql="SELECT JSON_BUILD_ARRAY(id, age) FROM users",
+            exp_type=exp.JSONArray)
+        self.validate_generation(
+            sql="SELECT JSON_ARRAYAGG(name ORDER BY id ASC, name DESC) FROM users",
+            from_dialect="oracle",
+            expected_sql="SELECT JSON_AGG(name ORDER BY id ASC NULLS LAST, name DESC NULLS FIRST) FROM users",
+            exp_type=exp.JSONArrayAgg)
+        self.validate_generation(
+            sql="SELECT JSON_EXISTS('{\"a\":1}', '$.a')",
+            expected_sql="SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
+            from_dialect="oracle",
+            exp_type=exp.JSONExists)
+        self.validate_generation(
+            sql="SELECT JSON_VALUE_ARRAY('[1,2,3]', '$')",
+            expected_sql="SELECT J_S_O_N_VALUE_ARRAY('[1,2,3]', )",
+            from_dialect="bigquery",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.JSONValueArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM JSON_TABLE('[{\"id\":1}]', '$[*]' COLUMNS(id INT PATH '$.id'))",
+            expected_sql="SELECT * FROM J_S_O_N_TABLE('[{\"id\":1}]', COLUMNS(id INT PATH '$.id'), '$[*]')",
+            error_message="JSON_TABLE function is not supported in SingleStore",
+            exp_type=exp.JSONTable,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT OBJECT_INSERT('{\"a\":1}', 'b', 2)",
+            expected_sql="SELECT JSON_SET_JSON('{\"a\":1}', 'b', 2)",
+            exp_type=exp.ObjectInsert)
+        self.validate_generation(
+            sql="SELECT * FROM OPENJSON('{\"a\":1,\"b\":2}')",
+            error_message="OpenJSON function is not supported in SingleStore",
+            exp_type=exp.OpenJSON,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT JSONB_EXISTS('{\"x\":true}', 'x')",
+            expected_sql="SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+            exp_type=exp.JSONBExists)
+        self.validate_generation(
+            sql="SELECT JSON_EXTRACT_ARRAY(json_col, '$.items') FROM users",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.JSONExtractArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT JSON_FORMAT('{\"a\":1}')",
+            expected_sql="SELECT JSON_PRETTY('{\"a\":1}')",
+            exp_type=exp.JSONFormat)
+        self.validate_generation(
+            sql="SELECT PARSE_JSON('{\"foo\": 123}')",
+            error_message="PARSE_JSON function is not supported in SingleStore",
+            exp_type=exp.ParseJSON,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT LEAST(age, 30) FROM users",
+            exp_type=exp.Least)
+        self.validate_generation(
+            sql="SELECT LEFT(name, 2) FROM users",
+            exp_type=exp.Left)
+        self.validate_generation(
+            sql="SELECT RIGHT(name, 2) FROM users",
+            exp_type=exp.Right)
+        self.validate_generation(
+            sql="SELECT LENGTH(name) FROM users",
+            exp_type=exp.Length)
+        self.validate_generation(
+            sql="SELECT LEVENSHTEIN('kitten', 'sitting')",
+            error_message="LEVENSHTEIN function is not supported in SingleStore",
+            exp_type=exp.Levenshtein,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT LN(price) FROM products",
+            exp_type=exp.Ln)
+        self.validate_generation(
+            sql="SELECT LOG(10, price) FROM products",
+            exp_type=exp.Log)
+        self.validate_generation(
+            sql="SELECT LOWER(name) FROM users",
+            exp_type=exp.Lower)
+        self.validate_generation(
+            sql="SELECT MAP(ARRAY('k1', 'k2'), ARRAY('v1', 'v2'))",
+            error_message="Maps are not supported in SingleStore",
+            exp_type=exp.Map,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT TO_MAP(ARRAY('k1', 'k2'))",
+            expected_sql="SELECT MAP ARRAY('k1', 'k2')",
+            error_message="Maps are not supported in SingleStore",
+            exp_type=exp.ToMap,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT MAP_FROM_ENTRIES(ARRAY(('k1', 'v1'), ('k2', 'v2')))",
+            error_message="Maps are not supported in SingleStore",
+            exp_type=exp.MapFromEntries,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT STAR_MAP(ARRAY('a', 'b'))",
+            error_message="Maps are not supported in SingleStore",
+            exp_type=exp.StarMap,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT VAR_MAP(ARRAY('k1', 'k2'), ARRAY('v1', 'v2'))",
+            expected_sql="SELECT MAP(ARRAY(ARRAY('k1', 'k2')), ARRAY(ARRAY('v1', 'v2')))",
+            error_message="Maps are not supported in SingleStore",
+            exp_type=exp.VarMap,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT MATCH(name, name) AGAINST('book') FROM products",
+            error_message="MATCH_AGAINST function is not supported in SingleStore",
+            exp_type=exp.MatchAgainst,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT MD5(email) FROM users",
+            exp_type=exp.MD5)
+        self.validate_generation(
+            sql="SELECT MD5_DIGEST(email) FROM users",
+            expected_sql="SELECT UNHEX(MD5(email)) FROM users",
+            exp_type=exp.MD5Digest)
+        self.validate_generation(
+            sql="SELECT MONTH(created_at) FROM orders",
+            expected_sql="SELECT MONTH(created_at :> DATE) FROM orders",
+            exp_type=exp.Month)
+        self.validate_generation(
+            sql="SELECT ADD_MONTHS(created_at, 1) FROM orders",
+            expected_sql="SELECT TIMESTAMPADD(MONTH, 1, created_at) FROM orders",
+            exp_type=exp.AddMonths)
+        self.validate_generation(
+            sql="SELECT NVL2(email, 'known', 'unknown') FROM users",
+            expected_sql="SELECT CASE WHEN NOT email IS NULL THEN 'known' ELSE 'unknown' END FROM users",
+            exp_type=exp.Nvl2)
+        self.validate_generation(
+            sql="SELECT NORMALIZE(name) FROM users",
+            error_message="NORMALIZE function is not supported in SingleStore",
+            exp_type=exp.Normalize,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT OVERLAY('abcdef' PLACING '123' FROM 2)",
+            error_message="OVERLAY function is not supported in SingleStore",
+            exp_type=exp.Overlay,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT PREDICT(MODEL model_col, TABLE input_col) FROM users",
+            error_message="PREDICT function is not supported in SingleStore",
+            exp_type=exp.Predict,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT QUARTER(created_at) FROM orders",
+            exp_type=exp.Quarter)
+        self.validate_generation(
+            sql="SELECT RAND()",
+            exp_type=exp.Rand)
+        self.validate_generation(
+            sql="SELECT RANDN()",
+            error_message="RANDN function is not supported in SingleStore",
+            exp_type=exp.Randn,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT RANGE_N(1, 10, 2)",
+            error_message="RANGE_N function is not supported in SingleStore",
+            exp_type=exp.RangeN,
             run=False
         )

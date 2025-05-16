@@ -441,7 +441,7 @@ class BigQuery(Dialect):
     def normalize_identifier(self, expression: E) -> E:
         if (
             isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is self.NORMALIZATION_STRATEGY
+            and self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE
         ):
             parent = expression.parent
             while isinstance(parent, exp.Dot):

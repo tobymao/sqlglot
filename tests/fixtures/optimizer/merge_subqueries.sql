@@ -329,6 +329,11 @@ FROM
   t1;
 SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x ORDER BY x.a, x.b, row_num;
 
+# title: Keep ORDER BY
+# execute: false
+WITH t AS (SELECT t1.x AS x, t1.y AS y, t2.a AS a, t2.b AS b FROM t1 AS t1(x, y) CROSS JOIN t2 AS t2(a, b) ORDER BY t2.a) SELECT t.x AS x, t.y AS y, t.a AS a, t.b AS b FROM t AS t;
+SELECT t1.x AS x, t1.y AS y, t2.a AS a, t2.b AS b FROM t1 AS t1(x, y) CROSS JOIN t2 AS t2(a, b) ORDER BY t2.a;
+
 # title: Don't merge window functions, inner table is aliased in outer query
 with t1 as (
   SELECT

@@ -253,6 +253,7 @@ class ClickHouse(Dialect):
             "DYNAMIC": TokenType.DYNAMIC,
             "ENUM8": TokenType.ENUM8,
             "ENUM16": TokenType.ENUM16,
+            "EXCHANGE": TokenType.COMMAND,
             "FINAL": TokenType.FINAL,
             "FIXEDSTRING": TokenType.FIXEDSTRING,
             "FLOAT32": TokenType.FLOAT,

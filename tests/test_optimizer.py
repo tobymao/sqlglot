@@ -1261,10 +1261,6 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             )
             self.assertEqual(expression.expressions[0].type.this, target_type)
 
-    def test_concat_annotation(self):
-        expression = annotate_types(parse_one("CONCAT('A', 'B')"))
-        self.assertEqual(expression.type.this, exp.DataType.Type.VARCHAR)
-
     def test_root_subquery_annotation(self):
         expression = annotate_types(parse_one("(SELECT 1, 2 FROM x) LIMIT 0"))
         self.assertIsInstance(expression, exp.Subquery)

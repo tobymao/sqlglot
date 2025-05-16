@@ -86,3 +86,9 @@ TIME;
 # dialect: bigquery
 EXTRACT(day from x);
 INT;
+
+CONCAT(1, '2');
+TEXT;
+
+CONCAT('1', '2');
+TEXT;

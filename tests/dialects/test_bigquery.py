@@ -16,6 +16,7 @@ from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
 
 
 class TestBigQuery(Validator):
@@ -2382,3 +2383,9 @@ OPTIONS (
 
         for select in annotated.selects:
             self.assertEqual(select.type.sql("bigquery"), "TIMESTAMP")
+
+    def test_override_normalization_strategy(self):
+        sql = "SELECT * FROM p.d.t"
+        ast = self.parse_one(sql)
+        qualified = qualify(ast, dialect="bigquery,normalization_strategy=uppercase")
+        self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")

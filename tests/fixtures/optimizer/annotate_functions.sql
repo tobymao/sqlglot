@@ -206,6 +206,14 @@ CONCAT(tbl.bin_col, tbl.bin_col);
 BINARY;
 
 # dialect: bigquery
+CONCAT(0, tbl.str_col);
+STRING;
+
+# dialect: bigquery
+CONCAT(tbl.str_col, 0);
+STRING;
+
+# dialect: bigquery
 LEFT(tbl.str_col, 1);
 STRING;
 

@@ -2,7 +2,7 @@ import this
 
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
-    bool_xor_sql, rename_func, count_if_to_sum, unit_to_str
+    bool_xor_sql, rename_func, count_if_to_sum, unit_to_str, timestrtotime_sql, time_format
 import typing as t
 import re
 from sqlglot import exp
@@ -155,6 +155,33 @@ class SingleStore(Dialect):
                                                      self.func("MD5", e.this)),
             exp.AddMonths: lambda self,
                 e: f"TIMESTAMPADD(MONTH, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+            exp.RegexpExtract: unsupported_args("group")(rename_func("REGEXP_SUBSTR")),
+            exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(rename_func("REGEXP_MATCH")),
+            exp.Repeat: lambda self, e: f"LPAD('', LENGTH({self.sql(e, 'this')}) * {self.sql(e, 'times')}, {self.sql(e, 'this')})",
+            exp.StartsWith: lambda self, e: f"REGEXP_INSTR({self.sql(e, 'this')}, CONCAT('^', {self.sql(e, 'expression')}))",
+            exp.StrToDate: unsupported_args("safe")(rename_func("STR_TO_DATE")),
+            exp.StrToTime: unsupported_args("safe", "zone")(rename_func("STR_TO_DATE")),
+            exp.StrToUnix: unsupported_args("format")(rename_func("UNIX_TIMESTAMP")),
+            exp.NumberToStr: unsupported_args("culture")(rename_func("FORMAT")),
+            exp.FromBase: lambda self, e: self.func("CONV", e.this, e.expression, exp.Literal.number(10)),
+            exp.Time: unsupported_args("zone")(lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
+            exp.TimeToStr: unsupported_args("zone", "culture")
+                (lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')} :> TIME, {self.sql(e, 'format')})"),
+            exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
+            exp.TimeStrToTime: unsupported_args("zone")(timestrtotime_sql),
+            exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
+            exp.TsOrDsDiff: rename_func("TIMESTAMPDIFF"),
+            exp.TsOrDsToDate: unsupported_args("format", "safe")
+                (lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE))),
+            exp.TsOrDsToDatetime: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATETIME)),
+            exp.TsOrDsToTime: unsupported_args("format", "safe") (lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.TIME))),
+            exp.TsOrDsToTimestamp: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.TIMESTAMP)),
+            exp.TsOrDiToDi: lambda self, e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+            exp.UnixToStr: lambda self, e: self.func(
+                "FROM_UNIXTIME", e.this, time_format("singlestore")(self, e)
+            ),
         }
 
         TRANSFORMS.pop(exp.Operator)
@@ -1651,7 +1678,7 @@ class SingleStore(Dialect):
 
         @unsupported_args("zone")
         def datediff_sql(self, expression: exp.DateDiff) -> str:
-            return rename_func("TIMESTAMPDIFF")(self, expression)
+            return self.func("TIMESTAMPDIFF", expression.unit, expression.this, expression.expression)
 
         @unsupported_args("zone")
         def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
@@ -1889,4 +1916,73 @@ class SingleStore(Dialect):
         def rangen_sql(self, expression: exp.RangeN) -> str:
             self.unsupported(
                 "RANGE_N function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def readcsv_sql(self, expression: exp.ReadCSV) -> str:
+            self.unsupported("READ_CSV function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def reduce_sql(self, expression: exp.Reduce) -> str:
+            self.unsupported("REDUCE function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def regexpsplit_sql(self, expression: exp.RegexpSplit) -> str:
+            self.unsupported("REGEXP_SPLIT function is not supported in SingleStore")
+            return self.func("SPLIT", expression.this, expression.expression)
+
+        def sortarray_sql(self, expression: exp.SortArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def splitpart_sql(self, expression: exp.SplitPart) -> str:
+            self.unsupported("SPLIT_PART function is not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def standardhash_sql(self, expression: exp.StandardHash) -> str:
+            hash_function = expression.expression
+            if hash_function is None:
+                return self.func("SHA", expression.this)
+            if isinstance(hash_function, exp.Literal):
+                if hash_function.is_string and hash_function.this.lower() == "sha":
+                    return self.func("SHA", expression.this)
+                if hash_function.is_string and hash_function.this.lower() == "md5":
+                    return self.func("MD5", expression.this)
+
+                self.unsupported(f"{hash_function.this} hash method is not supported in SingleStore")
+
+            self.unsupported(f"STANDARD_HASH function is not supported in SingleStore")
+            return self.func("SHA", expression.this)
+
+        @unsupported_args("occurrence")
+        def strposition_sql(self, expression: exp.StrPosition) -> str:
+            haystack = self.sql(expression, "this")
+            needle = self.sql(expression, "substr")
+            if expression.args.get("position") is not None:
+                position = self.sql(expression, "position")
+                return self.func("LOCATE", needle, haystack, position)
+
+            return self.func("LOCATE", needle, haystack)
+
+        def strtomap_sql(self, expression: exp.StrToMap) -> str:
+            self.unsupported("Maps are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def struct_sql(self, expression: exp.Struct) -> str:
+            self.unsupported("Structs are not supported in SingleStore")
+            return super().struct_sql(expression)
+
+        def structextract_sql(self, expression: exp.StructExtract) -> str:
+            self.unsupported("Structs are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        def stuff_sql(self, expression: exp.Stuff) -> str:
+            text = self.sql(expression, "this")
+            start = self.sql(expression, "start")
+            length = self.sql(expression, "length")
+            value = self.sql(expression, "expression")
+
+            return f"CONCAT(SUBSTRING({text}, 1, {start}-1), {value}, SUBSTRING({text}, {start}+{length}))"
+
+        def unicode_sql(self, expression: exp.Unicode) -> str:
+            self.unsupported("UNICODE function is not supported in SingleStore")
             return self.function_fallback_sql(expression)

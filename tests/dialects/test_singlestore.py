@@ -902,7 +902,7 @@ class TestSingleStore(Validator):
             sql="SELECT DATE_SUB(created_at, INTERVAL '1' DAY) FROM orders",
             exp_type=exp.DateSub)
         self.validate_generation(
-            sql="SELECT DATE_DIFF(DAY, created_at, NOW()) FROM orders",
+            sql="SELECT DATE_DIFF(created_at, NOW(), DAY) FROM orders",
             expected_sql="SELECT TIMESTAMPDIFF(DAY, created_at, NOW()) FROM orders",
             exp_type=exp.DateDiff)
         self.validate_generation(
@@ -1350,3 +1350,214 @@ class TestSingleStore(Validator):
             exp_type=exp.RangeN,
             run=False
         )
+        self.validate_generation(
+            sql="SELECT READ_CSV('path/to/file.csv')",
+            error_message="READ_CSV function is not supported in SingleStore",
+            exp_type=exp.ReadCSV,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT REDUCE(ARRAY(1, 2, 3), 0, (acc, x) -> acc + x, acc -> acc * 2)",
+            error_message="REDUCE function is not supported in SingleStore",
+            exp_type=exp.Reduce,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT REGEXP_EXTRACT(name, '[a-z]+') FROM users",
+            expected_sql="SELECT REGEXP_SUBSTR(name, '[a-z]+') FROM users",
+            exp_type=exp.RegexpExtract)
+        self.validate_generation(
+            sql="SELECT REGEXP_EXTRACT_ALL(name, '[a-z]+') FROM users",
+            expected_sql="SELECT REGEXP_MATCH(name, '[a-z]+') FROM users",
+            exp_type=exp.RegexpExtractAll)
+        self.validate_generation(
+            sql="SELECT REGEXP_REPLACE(name, '[aeiou]', '*') FROM users",
+            exp_type=exp.RegexpReplace)
+        self.validate_generation(
+            sql="SELECT REGEXP_SPLIT(name, ' ') FROM users",
+            expected_sql="SELECT SPLIT(name, ' ') FROM users",
+            error_message="REGEXP_SPLIT function is not supported in SingleStore",
+            exp_type=exp.RegexpSplit,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT REPEAT(name, 2) FROM users",
+            expected_sql="SELECT LPAD('', LENGTH(name) * 2, name) FROM users",
+            exp_type=exp.Repeat)
+        self.validate_generation(
+            sql="SELECT ROUND(price, 1) FROM products",
+            exp_type=exp.Round)
+        self.validate_generation(
+            sql="SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM orders",
+            exp_type=exp.RowNumber)
+        self.validate_generation(
+            sql="SELECT SAFE_DIVIDE(amount, 0) FROM orders",
+            expected_sql="SELECT CASE WHEN 0 <> 0 THEN amount / 0 ELSE NULL END FROM orders",
+            exp_type=exp.SafeDivide)
+        self.validate_generation(
+            sql="SELECT SHA(email) FROM users",
+            exp_type=exp.SHA)
+        self.validate_generation(
+            sql="SELECT SHA2(email, 256) FROM users",
+            exp_type=exp.SHA2)
+        self.validate_generation(
+            sql="SELECT SIGN(age - 30) FROM users",
+            exp_type=exp.Sign)
+        self.validate_generation(
+            sql="SELECT SORT_ARRAY(ARRAY(3, 1, 2))",
+            error_message="Arrays are not supported in SingleStore",
+            exp_type=exp.SortArray,
+            run=False
+        )
+        self.validate_generation(
+            sql="SPLIT(name, ' ')",
+            exp_type=exp.Split,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT SPLIT_PART(email, '@', 1) FROM users",
+            error_message="SPLIT_PART function is not supported in SingleStore",
+            exp_type=exp.SplitPart,
+            run=False)
+        self.validate_generation(
+            sql="SELECT SUBSTRING(name, 2, 3) FROM users",
+            exp_type=exp.Substring)
+        self.validate_generation(
+            sql="SELECT STANDARD_HASH(email) FROM users",
+            expected_sql="SELECT SHA(email) FROM users",
+            exp_type=exp.StandardHash)
+        self.validate_generation(
+            sql="SELECT STANDARD_HASH(email, 'MD5') FROM users",
+            expected_sql="SELECT MD5(email) FROM users",
+            exp_type=exp.StandardHash)
+        self.validate_generation(
+            sql="SELECT STANDARD_HASH(email, 'SHA512') FROM users",
+            expected_sql="SELECT SHA(email) FROM users",
+            error_message="SHA512 hash method is not supported in SingleStore",
+            exp_type=exp.StandardHash,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT STARTS_WITH(name, 'A') FROM users",
+            expected_sql="SELECT REGEXP_INSTR(name, CONCAT('^', 'A')) FROM users",
+            exp_type=exp.StartsWith)
+        self.validate_generation(
+            sql="SELECT STRPOS(name, 'a') FROM users",
+            expected_sql="SELECT LOCATE('a', name) FROM users",
+            exp_type=exp.StrPosition)
+        self.validate_generation(
+            sql="SELECT STR_TO_DATE('2024-01-01', '%Y-%m-%d')",
+            exp_type=exp.StrToDate)
+        self.validate_generation(
+            sql="SELECT STR_TO_TIME('12:00:00', '%H:%i:%s')",
+            expected_sql="SELECT STR_TO_DATE('12:00:00', '%H:%i:%s')",
+            exp_type=exp.StrToTime)
+        self.validate_generation(
+            sql="SELECT STR_TO_UNIX('2024-01-01 00:00:00')",
+            expected_sql="SELECT UNIX_TIMESTAMP('2024-01-01 00:00:00')",
+            exp_type=exp.StrToUnix)
+        self.validate_generation(
+            sql="SELECT STR_TO_MAP('k1=v1,k2=v2', ',', '=')",
+            error_message="Maps are not supported in SingleStore",
+            exp_type=exp.StrToMap,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT NUMBER_TO_STR(123.456, 2)",
+            expected_sql="SELECT FORMAT(123.456, 2)",
+            exp_type=exp.NumberToStr)
+        self.validate_generation(
+            sql="SELECT FROM_BASE('1010', 2)",
+            expected_sql="SELECT CONV('1010', 2, 10)",
+            exp_type=exp.FromBase)
+        self.validate_generation(
+            sql="SELECT STRUCT(id, name) FROM users",
+            error_message="Structs are not supported in SingleStore",
+            exp_type=exp.Struct,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT STRUCT_EXTRACT(my_struct, 'name')",
+            error_message="Structs are not supported in SingleStore",
+            exp_type=exp.StructExtract,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT STUFF('abcdef', 2, 3, 'xyz')",
+            expected_sql="SELECT CONCAT(SUBSTRING('abcdef', 1, 2-1), 'xyz', SUBSTRING('abcdef', 2+3))",
+            exp_type=exp.Stuff)
+        self.validate_generation(
+            sql="SELECT SQRT(amount) FROM orders",
+            exp_type=exp.Sqrt)
+        self.validate_generation(
+            sql="SELECT TIME('12:00:00')",
+            expected_sql="SELECT '12:00:00' :> TIME",
+            exp_type=exp.Time)
+        self.validate_generation(
+            sql="SELECT TIME_TO_STR('12:00:00', '%H:%i:%s')",
+            expected_sql="SELECT DATE_FORMAT('12:00:00' :> TIME, '%H:%i:%s')",
+            exp_type=exp.TimeToStr)
+        self.validate_generation(
+            sql="SELECT TIME_TO_UNIX(TIME '12:00:00')",
+            expected_sql="SELECT UNIX_TIMESTAMP('12:00:00' :> TIME)",
+            exp_type=exp.TimeToUnix)
+        self.validate_generation(
+            sql="SELECT TIME_STR_TO_DATE('2020-01-01 12:13:14')",
+            expected_sql="SELECT '2020-01-01 12:13:14' :> DATE",
+            exp_type=exp.TimeStrToDate)
+        self.validate_generation(
+            sql="SELECT TIME_STR_TO_TIME('2020-01-01 12:13:14')",
+            expected_sql="SELECT '2020-01-01 12:13:14' :> TIMESTAMP",
+            exp_type=exp.TimeStrToTime)
+        self.validate_generation(
+            sql="SELECT TIME_STR_TO_UNIX('2020-01-01 12:13:14')",
+            expected_sql="SELECT UNIX_TIMESTAMP('2020-01-01 12:13:14')",
+            exp_type=exp.TimeStrToUnix)
+        self.validate_generation(
+            sql="SELECT TRIM(name) FROM users",
+            exp_type=exp.Trim)
+        self.validate_generation(
+            sql="SELECT TS_OR_DS_ADD(created_at, INTERVAL 1 DAY) FROM orders",
+            expected_sql="SELECT DATE_ADD(created_at, INTERVAL '1' DAY) FROM orders",
+            exp_type=exp.TsOrDsAdd)
+        self.validate_generation(
+            sql="SELECT TS_OR_DS_DIFF(DAY, created_at, NOW()) FROM orders",
+            expected_sql="SELECT TIMESTAMPDIFF(DAY, created_at, NOW()) FROM orders",
+            exp_type=exp.TsOrDsDiff)
+        self.validate_generation(
+            sql="SELECT TS_OR_DS_TO_DATE(created_at) FROM orders",
+            expected_sql="SELECT created_at :> DATE FROM orders",
+            exp_type=exp.TsOrDsToDate)
+        self.validate_generation(
+            sql="SELECT TS_OR_DS_TO_DATETIME(created_at) FROM orders",
+            expected_sql="SELECT created_at :> DATETIME FROM orders",
+            exp_type=exp.TsOrDsToDatetime)
+        self.validate_generation(
+            sql="SELECT TS_OR_DS_TO_TIME(created_at) FROM orders",
+            expected_sql="SELECT created_at :> TIME FROM orders",
+            exp_type=exp.TsOrDsToTime)
+        self.validate_generation(
+            sql="SELECT TS_OR_DS_TO_TIMESTAMP(created_at) FROM orders",
+            expected_sql="SELECT created_at :> TIMESTAMP FROM orders",
+            exp_type=exp.TsOrDsToTimestamp)
+        self.validate_generation(
+            sql="SELECT TS_OR_DI_TO_DI(created_at) FROM orders",
+            expected_sql="SELECT (DATE_FORMAT(created_at, '%Y%m%d') :> INT) FROM orders",
+            exp_type=exp.TsOrDiToDi)
+        self.validate_generation(
+            sql="SELECT UNHEX('4d2')",
+            exp_type=exp.Unhex)
+        self.validate_generation(
+            sql="SELECT UNICODE('a')",
+            error_message="UNICODE function is not supported in SingleStore",
+            exp_type=exp.Unicode,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT UNIX_DATE(DATE '2024-01-01')",
+            expected_sql="SELECT TIMESTAMPDIFF(DAY, '2024-01-01' :> DATE, '1970-01-01' :> DATE)",
+            exp_type=exp.UnixDate)
+        self.validate_generation(
+            sql="SELECT UNIX_TO_STR(1704067200)",
+            expected_sql="SELECT FROM_UNIXTIME(1704067200)",
+            exp_type=exp.UnixToStr)

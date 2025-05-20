@@ -907,6 +907,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "JSONB": TokenType.JSONB,
         "CHAR": TokenType.CHAR,
         "CHARACTER": TokenType.CHAR,
+        "CHAR VARYING": TokenType.VARCHAR,
+        "CHARACTER VARYING": TokenType.VARCHAR,
         "NCHAR": TokenType.NCHAR,
         "VARCHAR": TokenType.VARCHAR,
         "VARCHAR2": TokenType.VARCHAR,

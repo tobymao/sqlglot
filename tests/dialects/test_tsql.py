@@ -752,26 +752,6 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            "CAST(x AS VARCHAR(16))",
-            read={
-                "tsql": "CAST(x AS CHAR VARYING(16))",
-            },
-            write={
-                "databricks": "CAST(x AS VARCHAR(16))",
-            },
-        )
-
-        self.validate_all(
-            "CAST(x AS VARCHAR(16))",
-            read={
-                "tsql": "CAST(x AS CHARACTER VARYING(16))",
-            },
-            write={
-                "databricks": "CAST(x AS VARCHAR(16))",
-            },
-        )
-
-        self.validate_all(
             "CAST(x as NCHAR(1))",
             write={
                 "spark": "CAST(x AS CHAR(1))",

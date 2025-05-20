@@ -1132,6 +1132,7 @@ class Snowflake(Dialect):
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.NESTED: "OBJECT",
             exp.DataType.Type.STRUCT: "OBJECT",
+            exp.DataType.Type.BIGDECIMAL: "DOUBLE",
         }
 
         TOKEN_MAPPING = {

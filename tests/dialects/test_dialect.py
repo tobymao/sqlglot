@@ -326,7 +326,6 @@ class TestDialect(Validator):
                 "doris": "CAST(a AS VARCHAR(3))",
             },
         )
-        
         self.validate_all(
             "CAST(a AS CHARACTER VARYING)",
             write={
@@ -367,8 +366,6 @@ class TestDialect(Validator):
                 "doris": "CAST(a AS VARCHAR(3))",
             },
         )
-        
-        
         self.validate_all(
             "CAST(a AS SMALLINT)",
             write={

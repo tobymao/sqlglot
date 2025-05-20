@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
     date_delta_sql,
@@ -23,6 +22,18 @@ def _jsonextract_sql(
 class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
+
+    TEXT_COERCES_TO = {key: set() for key in exp.DataType.TEXT_TYPES}
+    for text_type in exp.DataType.TEXT_TYPES:
+        TEXT_COERCES_TO[text_type] |= {*exp.DataType.SIGNED_INTEGER_TYPES}
+        TEXT_COERCES_TO[text_type] |= {*exp.DataType.TEMPORAL_TYPES}
+        TEXT_COERCES_TO[text_type] |= {*exp.DataType.FLOAT_TYPES}
+        TEXT_COERCES_TO[text_type] |= {
+            exp.DataType.Type.BINARY,
+            exp.DataType.Type.BOOLEAN,
+            exp.DataType.Type.DOUBLE,
+            exp.DataType.Type.INTERVAL,
+        }
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']

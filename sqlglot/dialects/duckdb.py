@@ -320,7 +320,6 @@ class DuckDB(Dialect):
             "BITSTRING": TokenType.BIT,
             "BPCHAR": TokenType.TEXT,
             "CHAR": TokenType.TEXT,
-            "CHARACTER VARYING": TokenType.TEXT,
             "DATETIME": TokenType.TIMESTAMPNTZ,
             "DETACH": TokenType.DETACH,
             "EXCLUDE": TokenType.EXCEPT,

@@ -949,8 +949,6 @@ class Snowflake(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "FILE://": TokenType.URI_START,
             "BYTEINT": TokenType.INT,
-            "CHAR VARYING": TokenType.VARCHAR,
-            "CHARACTER VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,

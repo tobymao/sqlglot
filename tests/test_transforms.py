@@ -5,6 +5,7 @@ from sqlglot.transforms import (
     eliminate_distinct_on,
     eliminate_join_marks,
     eliminate_qualify,
+    eliminate_window_clause,
     remove_precision_parameterized_types,
     unalias_group,
 )
@@ -272,3 +273,15 @@ class TestTransforms(unittest.TestCase):
                 tree.sql(dialect=dialect)
                 == "SELECT a.id FROM a LEFT JOIN b ON a.id = b.id AND b.d = const"
             )
+
+    def test_eliminate_window_clause(self):
+        self.validate(
+            eliminate_window_clause,
+            "SELECT purchases, LAST_VALUE(item) OVER (d) AS most_popular FROM Produce WINDOW a AS (PARTITION BY purchases), b AS (a ORDER BY purchases), c AS (b ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING), d AS (c)",
+            "SELECT purchases, LAST_VALUE(item) OVER (PARTITION BY purchases ORDER BY purchases ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce",
+        )
+        self.validate(
+            eliminate_window_clause,
+            "SELECT LAST_VALUE(c) OVER (a) AS c2 FROM (SELECT LAST_VALUE(i) OVER (a) AS c FROM p WINDOW a AS (PARTITION BY x)) AS q(c) WINDOW a AS (PARTITION BY y)",
+            "SELECT LAST_VALUE(c) OVER (PARTITION BY y) AS c2 FROM (SELECT LAST_VALUE(i) OVER (PARTITION BY x) AS c FROM p) AS q(c)",
+        )

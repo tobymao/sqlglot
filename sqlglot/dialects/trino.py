@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from sqlglot import exp, parser
+from sqlglot import exp, parser, transforms
 from sqlglot.dialects.dialect import (
     merge_without_target_sql,
     trim_sql,
     timestrtotime_sql,
     groupconcat_sql,
 )
-from sqlglot.dialects.presto import Presto
+from sqlglot.dialects.presto import amend_exploded_column_table, Presto
 from sqlglot.tokens import TokenType
 import typing as t
 
@@ -75,6 +75,15 @@ class Trino(Presto):
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
             exp.LocationProperty: lambda self, e: self.property_sql(e),
             exp.Merge: merge_without_target_sql,
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.explode_projection_to_unnest(1),
+                    transforms.eliminate_semi_and_anti_joins,
+                    amend_exploded_column_table,
+                ]
+            ),
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
         }

@@ -1078,6 +1078,7 @@ class Snowflake(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_window_clause,
                     transforms.eliminate_distinct_on,
                     transforms.explode_projection_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,

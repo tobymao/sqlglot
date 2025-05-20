@@ -965,16 +965,47 @@ def any_to_exists(expression: exp.Expression) -> exp.Expression:
     transformation
     """
     if isinstance(expression, exp.Select):
-        for any in expression.find_all(exp.Any):
-            this = any.this
+        for any_expr in expression.find_all(exp.Any):
+            this = any_expr.this
             if isinstance(this, exp.Query):
                 continue
 
-            binop = any.parent
+            binop = any_expr.parent
             if isinstance(binop, exp.Binary):
                 lambda_arg = exp.to_identifier("x")
-                any.replace(lambda_arg)
+                any_expr.replace(lambda_arg)
                 lambda_expr = exp.Lambda(this=binop.copy(), expressions=[lambda_arg])
                 binop.replace(exp.Exists(this=this.unnest(), expression=lambda_expr))
+
+    return expression
+
+
+def eliminate_window_clause(expression: exp.Expression) -> exp.Expression:
+    """Eliminates the `WINDOW` query clause by inling each named window."""
+    if isinstance(expression, exp.Select) and expression.args.get("windows"):
+        from sqlglot.optimizer.scope import find_all_in_scope
+
+        windows = expression.args["windows"]
+        expression.set("windows", None)
+
+        window_expression: t.Dict[str, exp.Expression] = {}
+
+        def _inline_inherited_window(window: exp.Expression) -> None:
+            inherited_window = window_expression.get(window.alias.lower())
+            if not inherited_window:
+                return
+
+            window.set("alias", None)
+            for key in ("partition_by", "order", "spec"):
+                arg = inherited_window.args.get(key)
+                if arg:
+                    window.set(key, arg.copy())
+
+        for window in windows:
+            _inline_inherited_window(window)
+            window_expression[window.name.lower()] = window
+
+        for window in find_all_in_scope(expression, exp.Window):
+            _inline_inherited_window(window)
 
     return expression

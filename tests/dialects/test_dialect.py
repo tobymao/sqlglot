@@ -327,6 +327,46 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CAST(a AS CHARACTER VARYING)",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "drill": "CAST(a AS VARCHAR)",
+                "duckdb": "CAST(a AS TEXT)",
+                "materialize": "CAST(a AS VARCHAR)",
+                "mysql": "CAST(a AS CHAR)",
+                "hive": "CAST(a AS STRING)",
+                "oracle": "CAST(a AS VARCHAR2)",
+                "postgres": "CAST(a AS VARCHAR)",
+                "presto": "CAST(a AS VARCHAR)",
+                "redshift": "CAST(a AS VARCHAR)",
+                "snowflake": "CAST(a AS VARCHAR)",
+                "spark": "CAST(a AS STRING)",
+                "starrocks": "CAST(a AS VARCHAR)",
+                "tsql": "CAST(a AS VARCHAR)",
+                "doris": "CAST(a AS VARCHAR)",
+            },
+        )
+        self.validate_all(
+            "CAST(a AS CHARACTER VARYING(3))",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "drill": "CAST(a AS VARCHAR(3))",
+                "duckdb": "CAST(a AS TEXT(3))",
+                "materialize": "CAST(a AS VARCHAR(3))",
+                "mysql": "CAST(a AS CHAR(3))",
+                "hive": "CAST(a AS VARCHAR(3))",
+                "oracle": "CAST(a AS VARCHAR2(3))",
+                "postgres": "CAST(a AS VARCHAR(3))",
+                "presto": "CAST(a AS VARCHAR(3))",
+                "redshift": "CAST(a AS VARCHAR(3))",
+                "snowflake": "CAST(a AS VARCHAR(3))",
+                "spark": "CAST(a AS VARCHAR(3))",
+                "starrocks": "CAST(a AS VARCHAR(3))",
+                "tsql": "CAST(a AS VARCHAR(3))",
+                "doris": "CAST(a AS VARCHAR(3))",
+            },
+        )
+        self.validate_all(
             "CAST(a AS SMALLINT)",
             write={
                 "bigquery": "CAST(a AS INT64)",

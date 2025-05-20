@@ -67,9 +67,19 @@ x"""
         tokens = Tokenizer().tokenize("SELECT\r\n  1,\r\n  2")
 
         self.assertEqual(tokens[0].line, 1)
+        self.assertEqual(tokens[0].col, 6)
         self.assertEqual(tokens[1].line, 2)
+        self.assertEqual(tokens[1].col, 3)
         self.assertEqual(tokens[2].line, 2)
+        self.assertEqual(tokens[2].col, 4)
         self.assertEqual(tokens[3].line, 3)
+        self.assertEqual(tokens[3].col, 3)
+
+        tokens = Tokenizer().tokenize("  SELECT\n    100")
+        self.assertEqual(tokens[0].line, 1)
+        self.assertEqual(tokens[0].col, 8)
+        self.assertEqual(tokens[1].line, 2)
+        self.assertEqual(tokens[1].col, 7)
 
     def test_crlf(self):
         tokens = Tokenizer().tokenize("SELECT a\r\nFROM b")

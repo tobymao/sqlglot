@@ -197,6 +197,7 @@ class Redshift(Postgres):
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_window_clause,
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.unqualify_unnest,

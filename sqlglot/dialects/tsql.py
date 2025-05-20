@@ -506,6 +506,7 @@ class TSQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CHARACTER VARYING": TokenType.VARCHAR,
+            "CHAR VARYING": TokenType.VARCHAR,
             "CLUSTERED INDEX": TokenType.INDEX,
             "DATETIME2": TokenType.DATETIME2,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,

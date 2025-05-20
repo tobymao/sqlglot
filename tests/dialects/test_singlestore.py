@@ -1561,3 +1561,54 @@ class TestSingleStore(Validator):
             sql="SELECT UNIX_TO_STR(1704067200)",
             expected_sql="SELECT FROM_UNIXTIME(1704067200)",
             exp_type=exp.UnixToStr)
+        self.validate_generation(
+            sql="SELECT UNIX_TO_TIME(1704067200)",
+            expected_sql="SELECT FROM_UNIXTIME(1704067200)",
+            exp_type=exp.UnixToTime)
+        self.validate_generation(
+            sql="SELECT UNIX_TO_TIME_STR(1704067200)",
+            expected_sql="SELECT FROM_UNIXTIME(1704067200) :> TEXT",
+            exp_type=exp.UnixToTimeStr)
+        self.validate_generation(
+            sql="SELECT UNIX_SECONDS(created_at) FROM orders",
+            expected_sql="SELECT UNIX_TIMESTAMP(created_at) FROM orders",
+            exp_type=exp.UnixSeconds)
+        self.validate_generation(
+            sql="SELECT UUID()",
+            exp_type=exp.Uuid)
+        self.validate_generation(
+            sql="SELECT TIMESTAMP_FROM_PARTS(2024, 5, 6, 12, 0, 0)",
+            error_message="TIMESTAMP_FROM_PARTS function is not supported in SingleStore",
+            exp_type=exp.TimestampFromParts,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT UPPER(name) FROM users",
+            exp_type=exp.Upper)
+        self.validate_generation(
+            sql="SELECT WEEK(created_at) FROM orders",
+            expected_sql="SELECT WEEK(created_at :> DATE) FROM orders",
+            exp_type=exp.Week)
+        self.validate_generation(
+            sql="SELECT XMLELEMENT(NAME foo, 'bar')",
+            error_message="XMLELEMENT function is not supported in SingleStore",
+            exp_type=exp.XMLElement,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM XMLTABLE('/items/item' PASSING xml_data COLUMNS id INT PATH '@id')",
+            error_message="XMLTABLE function is not supported in SingleStore",
+            exp_type=exp.XMLTable,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT YEAR(created_at) FROM orders",
+            expected_sql="SELECT YEAR(created_at :> DATE) FROM orders",
+            exp_type=exp.Year)
+        self.validate_generation(
+            sql="SELECT NEXT VALUE FOR Test.CountBy1 AS FirstUse",
+            from_dialect="tsql",
+            error_message="NEXT_VALUE_FOR function is not supported in SingleStore",
+            exp_type=exp.NextValueFor,
+            run=False
+        )

@@ -343,12 +343,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if type2_value in self.coerces_to.get(type1_value, {}):
             return type2_value
 
-        if coerce_text:
-            return (
-                type2_value
-                if type2_value in self.text_coerces_to.get(type1_value, {})
-                else type1_value
-            )
+        if coerce_text and type2_value in self.text_coerces_to.get(type1_value, {}):
+            return type2_value
+
         return type1_value
 
     def _annotate_binary(self, expression: B) -> B:

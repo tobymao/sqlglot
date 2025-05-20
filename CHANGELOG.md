@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.18.1] - 2025-05-20
+### :wrench: Chores
+- [`db2af6f`](https://github.com/tobymao/sqlglot/commit/db2af6fa1e2c2bf0f4cebb272287d0b2e8e69f76) - bump sqlglotrs to 0.4.2 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.18.0] - 2025-05-20
 ### :boom: BREAKING CHANGES
 - due to [`1df7f61`](https://github.com/tobymao/sqlglot/commit/1df7f611bc96616cb07950a80f6669d0bc331b0e) - refactor length_sql so it handles any type, not just varchar/blob *(PR [#4935](https://github.com/tobymao/sqlglot/pull/4935) by [@tekumara](https://github.com/tekumara))*:
@@ -6751,3 +6756,4 @@ Changelog
 [v26.16.3]: https://github.com/tobymao/sqlglot/compare/v26.16.2...v26.16.3
 [v26.16.4]: https://github.com/tobymao/sqlglot/compare/v26.16.3...v26.16.4
 [v26.18.0]: https://github.com/tobymao/sqlglot/compare/v26.12.3...v26.18.0
+[v26.18.1]: https://github.com/tobymao/sqlglot/compare/v26.18.0...v26.18.1

@@ -25,7 +25,7 @@ from sqlglot.transforms import (
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
-from sqlglot.optimizer.annotate_types import TypeAnnotator
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
 def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:

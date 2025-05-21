@@ -223,10 +223,8 @@ class Hive(Dialect):
     # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for target_type in {
-        *exp.DataType.INTEGER_TYPES,
+        *exp.DataType.NUMERIC_TYPES,
         *exp.DataType.TEMPORAL_TYPES,
-        *exp.DataType.FLOAT_TYPES,
-        exp.DataType.Type.DECIMAL,
         exp.DataType.Type.INTERVAL,
     }:
         COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES

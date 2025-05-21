@@ -30,12 +30,10 @@ class Databricks(Spark):
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for text_type in exp.DataType.TEXT_TYPES:
         COERCES_TO[text_type] |= {
-            *exp.DataType.INTEGER_TYPES,
+            *exp.DataType.NUMERIC_TYPES,
             *exp.DataType.TEMPORAL_TYPES,
-            *exp.DataType.FLOAT_TYPES,
             exp.DataType.Type.BINARY,
             exp.DataType.Type.BOOLEAN,
-            exp.DataType.Type.DECIMAL,
             exp.DataType.Type.INTERVAL,
         }
 

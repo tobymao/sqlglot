@@ -239,7 +239,7 @@ class _Dialect(type):
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
-        if enum not in ("", "athena", "presto", "trino"):
+        if enum not in ("", "athena", "presto", "trino", "duckdb"):
             klass.generator_class.TRY_SUPPORTED = False
             klass.generator_class.SUPPORTS_UESCAPE = False
 

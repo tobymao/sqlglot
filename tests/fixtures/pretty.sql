@@ -449,3 +449,11 @@ SELECT
 FROM foo
 WHERE
   1 = 1 AND /* first comment */ foo.a /* second comment */ = 1;
+
+MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET status = s.status, amount = s.amount;
+MERGE INTO t
+USING s
+ON t.id = s.id
+WHEN MATCHED THEN UPDATE SET
+  status = s.status,
+  amount = s.amount;

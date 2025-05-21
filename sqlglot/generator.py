@@ -3841,7 +3841,7 @@ class Generator(metaclass=_Generator):
             if isinstance(then_expression.args.get("expressions"), exp.Star):
                 then = f"UPDATE {self.sql(then_expression, 'expressions')}"
             else:
-                then = f"UPDATE SET {self.expressions(then_expression, flat=True)}"
+                then = f"UPDATE SET{self.sep()}{self.expressions(then_expression)}"
         else:
             then = self.sql(then_expression)
         return f"WHEN {matched}{source}{condition} THEN {then}"

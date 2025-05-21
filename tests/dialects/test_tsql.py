@@ -962,7 +962,8 @@ FROM (
       ProductID
   ) AS src(ProductID, OrderQty)
   ON pi.ProductID = src.ProductID
-  WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty
+  WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET
+    pi.Quantity = pi.Quantity - src.OrderQty
   WHEN MATCHED AND pi.Quantity - src.OrderQty <= 0 THEN DELETE
   OUTPUT $action, Inserted.ProductID, Inserted.LocationID, Inserted.Quantity AS NewQty, Deleted.Quantity AS PreviousQty
 ) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty)

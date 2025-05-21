@@ -185,7 +185,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     ) -> None:
         self.schema = schema
         self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
-        self.coerces_to = coerces_to or self.COERCES_TO
+        self.coerces_to = (
+            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
+        )
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
@@ -310,7 +312,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _maybe_coerce(
-        self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
+        self,
+        type1: exp.DataType | exp.DataType.Type,
+        type2: exp.DataType | exp.DataType.Type,
     ) -> exp.DataType | exp.DataType.Type:
         """
         Returns type2 if type1 can be coerced into it, otherwise type1.

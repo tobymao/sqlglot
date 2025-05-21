@@ -789,6 +789,9 @@ class Dialect(metaclass=_Dialect):
         exp.VarMap: lambda self, e: self._annotate_map(e),
     }
 
+    # Specifies what types a given type can be coerced into
+    COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
+
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
         """

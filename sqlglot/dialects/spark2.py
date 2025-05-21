@@ -160,25 +160,7 @@ class Spark2(Hive):
         exp.Pad: lambda self, e: _annotate_by_similar_args(
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         ),
-        exp.If: lambda self, e: self._annotate_by_args(
-            e, "true", "false", promote=True, coerce_text=True
-        ),
-        exp.Coalesce: lambda self, e: self._annotate_by_args(
-            e, "this", "expressions", promote=True, coerce_text=True
-        ),
     }
-
-    TEXT_COERCES_TO = {}
-    for target_type in {
-        *exp.DataType.SIGNED_INTEGER_TYPES,
-        *exp.DataType.TEMPORAL_TYPES,
-        *exp.DataType.FLOAT_TYPES,
-        exp.DataType.Type.BINARY,
-        exp.DataType.Type.BOOLEAN,
-        exp.DataType.Type.DOUBLE,
-        exp.DataType.Type.INTERVAL,
-    }:
-        TEXT_COERCES_TO.setdefault(target_type, set()).update(exp.DataType.TEXT_TYPES)
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'"), ("x'", "'")]

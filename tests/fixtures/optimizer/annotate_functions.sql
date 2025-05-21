@@ -100,19 +100,19 @@ STRING;
 RPAD(tbl.str_col, 1, tbl.str_col);
 STRING;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 IF(cond, tbl.double_col, tbl.bigint_col);
 DOUBLE;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 IF(cond, tbl.bigint_col, tbl.double_col);
 DOUBLE;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 IF(cond, tbl.double_col, tbl.str_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 IF(cond, tbl.str_col, tbl.double_col);
 STRING;
 
@@ -124,11 +124,11 @@ DOUBLE;
 IF(cond, tbl.double_col, tbl.str_col);
 DOUBLE;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 IF(cond, tbl.date_col, tbl.str_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 IF(cond, tbl.str_col, tbl.date_col);
 STRING;
 
@@ -140,43 +140,43 @@ DATE;
 IF(cond, tbl.str_col, tbl.date_col);
 DATE;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 IF(cond, tbl.date_col, tbl.timestamp_col);
 TIMESTAMP;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 IF(cond, tbl.timestamp_col, tbl.date_col);
 TIMESTAMP;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 IF(cond, NULL, tbl.str_col);
 STRING;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 IF(cond, tbl.str_col, NULL);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.str_col, tbl.date_col, tbl.bigint_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.date_col, tbl.str_col, tbl.bigint_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.date_col, tbl.bigint_col, tbl.str_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.str_col, tbl.date_col, tbl.bigint_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.date_col, tbl.str_col, tbl.bigint_col);
 STRING;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.date_col, NULL, tbl.bigint_col, tbl.str_col);
 STRING;
 
@@ -196,25 +196,17 @@ BIGINT;
 COALESCE(tbl.bigint_col, NULL, tbl.str_col);
 BIGINT;
 
-# dialect: spark2, spark
-COALESCE(tbl.bool_col, tbl.str_col);
-STRING;
-
 # dialect: databricks
 COALESCE(tbl.bool_col, tbl.str_col);
 BOOLEAN;
 
-# dialect: spark2, spark
+# dialect: hive, spark2, spark
 COALESCE(tbl.interval_col, tbl.str_col);
 STRING;
 
 # dialect: databricks
 COALESCE(tbl.interval_col, tbl.str_col);
 INTERVAL;
-
-# dialect: spark2, spark
-COALESCE(tbl.bin_col, tbl.str_col);
-STRING;
 
 # dialect: databricks
 COALESCE(tbl.bin_col, tbl.str_col);

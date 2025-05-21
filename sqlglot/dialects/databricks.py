@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from collections import defaultdict
+
 from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
     date_delta_sql,
@@ -9,6 +12,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
 def _jsonextract_sql(
@@ -23,12 +27,12 @@ class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
 
-    TEXT_COERCES_TO = {key: set() for key in exp.DataType.TEXT_TYPES}
+    COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for text_type in exp.DataType.TEXT_TYPES:
-        TEXT_COERCES_TO[text_type] |= {*exp.DataType.SIGNED_INTEGER_TYPES}
-        TEXT_COERCES_TO[text_type] |= {*exp.DataType.TEMPORAL_TYPES}
-        TEXT_COERCES_TO[text_type] |= {*exp.DataType.FLOAT_TYPES}
-        TEXT_COERCES_TO[text_type] |= {
+        COERCES_TO[text_type] |= {
+            *exp.DataType.INTEGER_TYPES,
+            *exp.DataType.TEMPORAL_TYPES,
+            *exp.DataType.TEMPORAL_TYPES,
             exp.DataType.Type.BINARY,
             exp.DataType.Type.BOOLEAN,
             exp.DataType.Type.DOUBLE,

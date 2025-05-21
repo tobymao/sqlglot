@@ -182,11 +182,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         annotators: t.Optional[AnnotatorsType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
+        dialect: t.Optional[DialectType] = None,
     ) -> None:
         self.schema = schema
         self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
-        self.coerces_to = coerces_to or self.COERCES_TO
-        self.text_coerces_to = Dialect.get_or_raise(dialect).TEXT_COERCES_TO
+        self.coerces_to = (
+            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
+        )
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
@@ -314,7 +316,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self,
         type1: exp.DataType | exp.DataType.Type,
         type2: exp.DataType | exp.DataType.Type,
-        coerce_text: bool = False,
     ) -> exp.DataType | exp.DataType.Type:
         """
         Returns type2 if type1 can be coerced into it, otherwise type1.
@@ -340,13 +341,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
-        if type2_value in self.coerces_to.get(type1_value, {}):
-            return type2_value
-
-        if coerce_text and type2_value in self.text_coerces_to.get(type1_value, {}):
-            return type2_value
-
-        return type1_value
+        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
     def _annotate_binary(self, expression: B) -> B:
         self._annotate_args(expression)
@@ -396,7 +391,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         *args: str,
         promote: bool = False,
         array: bool = False,
-        coerce_text: bool = False,
     ) -> E:
         self._annotate_args(expression)
 
@@ -415,9 +409,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 break
 
             if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
-                last_datatype = self._maybe_coerce(
-                    last_datatype or expr_type, expr_type, coerce_text=coerce_text
-                )
+                last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
 
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 

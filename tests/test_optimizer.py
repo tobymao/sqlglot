@@ -1552,3 +1552,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
         self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
+
+    def test_manually_annotate_snowflake(self):
+        dialect = "snowflake"
+        schema = {
+            "SCHEMA": {
+                "TBL": {"COL": "INT", "col2": "VARCHAR"},
+            }
+        }
+        example_query = 'SELECT * FROM "SCHEMA"."TBL"'
+
+        expression = parse_one(example_query, dialect=dialect)
+        qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
+        annotated = optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
+
+        self.assertTrue(annotated.selects[0].is_type("INT"))
+        self.assertTrue(annotated.selects[1].is_type("VARCHAR"))

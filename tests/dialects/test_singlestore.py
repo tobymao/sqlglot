@@ -1612,3 +1612,14 @@ class TestSingleStore(Validator):
             exp_type=exp.NextValueFor,
             run=False
         )
+
+    def test_set_operations_generation(self):
+        self.validate_generation(
+            sql="SELECT id FROM users UNION SELECT id FROM orders",
+            exp_type=exp.Union)
+        self.validate_generation(
+            sql="SELECT id FROM users EXCEPT SELECT id FROM orders",
+            exp_type=exp.Except)
+        self.validate_generation(
+            sql="SELECT id FROM users INTERSECT SELECT id FROM orders",
+            exp_type=exp.Intersect)

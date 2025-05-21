@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 from functools import partial
-from copy import deepcopy
 from collections import defaultdict
 
 from sqlglot import exp, generator, parser, tokens, transforms

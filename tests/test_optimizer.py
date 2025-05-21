@@ -891,7 +891,17 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_annotate_funcs(self):
         test_schema = {
-            "tbl": {"bin_col": "BINARY", "str_col": "STRING", "bignum_col": "BIGNUMERIC"}
+            "tbl": {
+                "bin_col": "BINARY",
+                "str_col": "STRING",
+                "bignum_col": "BIGNUMERIC",
+                "date_col": "DATE",
+                "timestamp_col": "TIMESTAMP",
+                "double_col": "DOUBLE",
+                "bigint_col": "BIGINT",
+                "bool_col": "BOOLEAN",
+                "interval_col": "INTERVAL",
+            }
         }
 
         for i, (meta, sql, expected) in enumerate(

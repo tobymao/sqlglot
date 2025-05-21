@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+from copy import deepcopy
 from functools import partial
+from collections import defaultdict
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -43,6 +45,7 @@ from sqlglot.transforms import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -208,6 +211,23 @@ class Hive(Dialect):
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.If: lambda self, e: self._annotate_by_args(e, "true", "false", promote=True),
+        exp.Coalesce: lambda self, e: self._annotate_by_args(
+            e, "this", "expressions", promote=True
+        ),
+    }
+
+    # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
+    COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
+    for target_type in {
+        *exp.DataType.NUMERIC_TYPES,
+        *exp.DataType.TEMPORAL_TYPES,
+        exp.DataType.Type.INTERVAL,
+    }:
+        COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES
 
     TIME_MAPPING = {
         "y": "%Y",

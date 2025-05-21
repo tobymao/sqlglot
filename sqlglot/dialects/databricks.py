@@ -32,10 +32,10 @@ class Databricks(Spark):
         COERCES_TO[text_type] |= {
             *exp.DataType.INTEGER_TYPES,
             *exp.DataType.TEMPORAL_TYPES,
-            *exp.DataType.TEMPORAL_TYPES,
+            *exp.DataType.FLOAT_TYPES,
             exp.DataType.Type.BINARY,
             exp.DataType.Type.BOOLEAN,
-            exp.DataType.Type.DOUBLE,
+            exp.DataType.Type.DECIMAL,
             exp.DataType.Type.INTERVAL,
         }
 

@@ -226,7 +226,7 @@ class Hive(Dialect):
         *exp.DataType.INTEGER_TYPES,
         *exp.DataType.TEMPORAL_TYPES,
         *exp.DataType.FLOAT_TYPES,
-        exp.DataType.Type.DOUBLE,
+        exp.DataType.Type.DECIMAL,
         exp.DataType.Type.INTERVAL,
     }:
         COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES

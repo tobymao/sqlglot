@@ -23,6 +23,7 @@ def qualify_columns(
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
     allow_partial_qualification: bool = False,
+    dialect: DialectType = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have fully qualified columns.
@@ -50,7 +51,7 @@ def qualify_columns(
     Notes:
         - Currently only handles a single PIVOT or UNPIVOT operator
     """
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = Dialect.get_or_raise(schema.dialect)

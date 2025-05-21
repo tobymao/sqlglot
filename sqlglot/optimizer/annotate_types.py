@@ -32,7 +32,7 @@ def annotate_types(
     schema: t.Optional[t.Dict | Schema] = None,
     annotators: t.Optional[AnnotatorsType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
-    dialect: t.Optional[DialectType] = None,
+    dialect: DialectType = None,
 ) -> E:
     """
     Infers the types of an expression, annotating its AST accordingly.
@@ -55,9 +55,9 @@ def annotate_types(
         The expression annotated with types.
     """
 
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, dialect=dialect)
 
-    return TypeAnnotator(schema, annotators, coerces_to, dialect=dialect).annotate(expression)
+    return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 
 
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
@@ -182,10 +182,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         annotators: t.Optional[AnnotatorsType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
-        dialect: t.Optional[DialectType] = None,
     ) -> None:
         self.schema = schema
-        self.annotators = annotators or Dialect.get_or_raise(dialect).ANNOTATORS
+        self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
         self.coerces_to = coerces_to or self.COERCES_TO
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 

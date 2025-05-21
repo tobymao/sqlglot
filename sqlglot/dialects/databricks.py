@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from collections import defaultdict
 
 from sqlglot import exp, transforms, jsonpath

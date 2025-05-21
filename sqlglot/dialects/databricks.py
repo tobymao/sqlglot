@@ -26,7 +26,7 @@ class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
 
-    COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
+    COERCES_TO = defaultdict(set, TypeAnnotator.COERCES_TO.copy())
     for text_type in exp.DataType.TEXT_TYPES:
         COERCES_TO[text_type] |= {
             *exp.DataType.NUMERIC_TYPES,

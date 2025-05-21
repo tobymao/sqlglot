@@ -182,7 +182,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         annotators: t.Optional[AnnotatorsType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
-        dialect: t.Optional[DialectType] = None,
     ) -> None:
         self.schema = schema
         self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS

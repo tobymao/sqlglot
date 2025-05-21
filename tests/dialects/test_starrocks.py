@@ -38,6 +38,9 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE foo (col1 LARGEINT) DISTRIBUTED BY HASH (col1) BUCKETS 1"
         )
+        self.validate_identity(
+            "CREATE VIEW foo (foo_col1) SECURITY NONE AS SELECT bar_col1 FROM bar"
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")

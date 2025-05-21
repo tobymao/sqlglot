@@ -2241,7 +2241,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_security(self) -> t.Optional[exp.SecurityProperty]:
-        if self._match_texts(("DEFINER", "INVOKER")):
+        if self._match_texts(("NONE", "DEFINER", "INVOKER")):
             security_specifier = self._prev.text.upper()
             return self.expression(exp.SecurityProperty, this=security_specifier)
         return None

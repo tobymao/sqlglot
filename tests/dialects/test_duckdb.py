@@ -9,6 +9,7 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("SELECT UUIDV7()")
         self.validate_identity("SELECT TRY(LOG(0))")
         self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
         self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")

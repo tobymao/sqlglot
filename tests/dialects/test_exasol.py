@@ -98,6 +98,7 @@ class TestExasol(Validator):
         self.validate_identity("SELECT RIGHT('abcdef', 3) RIGHT_SUBSTR")
         self.validate_identity("SELECT RPAD('abc', 5, 'X')")
         self.validate_identity("SELECT LPAD('abc', 5, 'X')")
+
         # self.validate_identity(
         #     "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
         #     "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",

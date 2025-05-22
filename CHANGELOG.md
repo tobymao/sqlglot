@@ -1,6 +1,33 @@
 Changelog
 =========
 
+## [v26.19.0] - 2025-05-22
+### :boom: BREAKING CHANGES
+- due to [`886f85b`](https://github.com/tobymao/sqlglot/commit/886f85bf61d23ef968b9bcfd98ab606c8a590526) - pass dialect to ensure_schema *(PR [#5100](https://github.com/tobymao/sqlglot/pull/5100) by [@georgesittas](https://github.com/georgesittas))*:
+
+  pass dialect to ensure_schema (#5100)
+
+- due to [`7570f8a`](https://github.com/tobymao/sqlglot/commit/7570f8a8e77b045b5fd97dde8b4112b901df7e15) - hive, spark2, spark, databricks type coercion for IF and COALESCE functions *(PR [#5096](https://github.com/tobymao/sqlglot/pull/5096) by [@geooo109](https://github.com/geooo109))*:
+
+  hive, spark2, spark, databricks type coercion for IF and COALESCE functions (#5096)
+
+
+### :sparkles: New Features
+- [`f5f4ca1`](https://github.com/tobymao/sqlglot/commit/f5f4ca195b57007afa80fd3d9ef69953e36536ea) - **starrocks**: Support parsing "NONE" as security option *(PR [#5099](https://github.com/tobymao/sqlglot/pull/5099) by [@alpolishchuk](https://github.com/alpolishchuk))*
+- [`2b928e2`](https://github.com/tobymao/sqlglot/commit/2b928e238cba63e5e043207dae1bfe2f140a1c2b) - improve pretty-printing of MERGE statement *(PR [#5102](https://github.com/tobymao/sqlglot/pull/5102) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#5101](https://github.com/tobymao/sqlglot/issues/5101) opened by [@maoxingda](https://github.com/maoxingda)*
+- [`69ce6b4`](https://github.com/tobymao/sqlglot/commit/69ce6b4e5d597288e4001f9696713aee083617be) - **duckdb**: add support for TRY *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`886f85b`](https://github.com/tobymao/sqlglot/commit/886f85bf61d23ef968b9bcfd98ab606c8a590526) - **optimizer**: pass dialect to ensure_schema *(PR [#5100](https://github.com/tobymao/sqlglot/pull/5100) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5098](https://github.com/tobymao/sqlglot/issues/5098) opened by [@sh-rp](https://github.com/sh-rp)*
+- [`7570f8a`](https://github.com/tobymao/sqlglot/commit/7570f8a8e77b045b5fd97dde8b4112b901df7e15) - **optimizer**: hive, spark2, spark, databricks type coercion for IF and COALESCE functions *(PR [#5096](https://github.com/tobymao/sqlglot/pull/5096) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5067](https://github.com/tobymao/sqlglot/issues/5067) opened by [@fernandomorato](https://github.com/fernandomorato)*
+
+### :wrench: Chores
+- [`cb96a0c`](https://github.com/tobymao/sqlglot/commit/cb96a0c57d94b172e6a46f8498d726cec65cfb3f) - **duckdb**: add test for UUIDV7 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.18.1] - 2025-05-20
 ### :wrench: Chores
 - [`db2af6f`](https://github.com/tobymao/sqlglot/commit/db2af6fa1e2c2bf0f4cebb272287d0b2e8e69f76) - bump sqlglotrs to 0.4.2 *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -6757,3 +6784,4 @@ Changelog
 [v26.16.4]: https://github.com/tobymao/sqlglot/compare/v26.16.3...v26.16.4
 [v26.18.0]: https://github.com/tobymao/sqlglot/compare/v26.12.3...v26.18.0
 [v26.18.1]: https://github.com/tobymao/sqlglot/compare/v26.18.0...v26.18.1
+[v26.19.0]: https://github.com/tobymao/sqlglot/compare/v26.18.1...v26.19.0

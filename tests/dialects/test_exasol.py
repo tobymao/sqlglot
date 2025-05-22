@@ -95,7 +95,10 @@ class TestExasol(Validator):
             "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
             "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",
         )
-        self.validate_identity("SELECT TO_CHAR(DATE '2013-12-16', 'DD. MON YYYY', 'NLS_DATE_LANGUAGE=DEU') TO_CHAR")
+        self.validate_identity(
+            "SELECT TO_CHAR(DATE '2013-12-16', 'DD. MON YYYY', 'NLS_DATE_LANGUAGE=DEU') TO_CHAR",
+            "SELECT TO_CHAR(CAST('2013-12-16' AS DATE), 'DD. MON YYYY', 'NLS_DATE_LANGUAGE=DEU') TO_CHAR",
+        )
         # , SUBSTRING('abcdef FROM -3) S3
         ########## STRING FUNCTIONS ###########
 

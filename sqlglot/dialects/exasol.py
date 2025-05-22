@@ -282,6 +282,58 @@ class Exasol(Dialect):
         # PI() has no args
     }
 
+    DATE_FORMAT = "'yyyy-MM-dd'"
+    DATEINT_FORMAT = "'yyyyMMdd'"
+    TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
+
+    TIME_MAPPING = {
+        # --- Year ---
+        "YYYY": "%Y",  # 4-digit year (e.g., 2025)
+        "YYY": "%Y",  # 3-digit year (often same as YYYY in practice for TO_CHAR)
+        "YY": "%y",  # Last 2 digits of year (e.g., 25)
+        "Y": "%y",  # Last digit of year
+        # --- Month ---
+        "MM": "%m",  # Month (01-12)
+        "MON": "%b",  # Abbreviated month name (e.g., JAN)
+        "MONTH": "%B",  # Full month name (e.g., JANUARY)
+        "RM": "%m",  # Roman numeral month (no direct strftime, maps to decimal)
+        # --- Day ---
+        "DD": "%d",  # Day of month (01-31)
+        "DDD": "%j",  # Day of year (001-366)
+        "DY": "%a",  # Abbreviated weekday name (e.g., MON)
+        "DAY": "%A",  # Full weekday name (e.g., MONDAY)
+        "D": "%w",  # Day of week (1-7, 1=Sunday, matches %w; for ISO 8601 day, see ID)
+        # --- Hour ---
+        "HH24": "%H",  # Hour (00-23)
+        "HH12": "%I",  # Hour (01-12)
+        "HH": "%I",  # (alias for HH12)
+        "AM": "%p",  # AM/PM meridian indicator
+        "PM": "%p",  # AM/PM meridian indicator
+        # --- Minute ---
+        "MI": "%M",  # Minute (00-59)
+        # --- Second ---
+        "SS": "%S",  # Second (00-59)
+        # Fractional Seconds: Exasol uses FF[1-9]. strftime uses %f (microseconds)
+        "FF": "%f",  # Maps to microseconds. Precision (FF1-FF9) might need truncation/padding.
+        "FF1": "%f",
+        "FF2": "%f",
+        "FF3": "%f",  # Often used for milliseconds
+        "FF4": "%f",
+        "FF5": "%f",
+        "FF6": "%f",  # Microseconds
+        "FF7": "%f",
+        "FF8": "%f",
+        "FF9": "%f",
+        # --- Timezone ---
+        "TZH": "%z",  # Timezone hour offset (+/-HH)
+        "TZM": "%z",  # Timezone minute offset (often combined with TZH)
+        "TZHTZM": "%z",  # Combined timezone offset (+/-HHMM). Note: strftime %z is +/-HHMM or +/-HH:MM
+        # --- ISO 8601 Specific ---
+        "IYYY": "%G",  # ISO Year (4-digit)
+        "IW": "%V",  # ISO Week of year (01-53)
+        "ID": "%u",  # ISO Day of week (1-7, 1=Monday)
+    }
+
     class Tokenizer(tokens.Tokenizer):
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
@@ -331,6 +383,7 @@ class Exasol(Dialect):
             ######### NEED MORE RESEARCH ##########
             # "OCTET_LENGTH": , # Anonymous
             # "REGEXP_INSTR": ,
+            # "TO_CHAR": _build_to_char # sqlglot/dialects/presto.py line 175 - research formats
             ######### NEED MORE RESEARCH ##########
         }
 
@@ -351,7 +404,12 @@ class Exasol(Dialect):
         MODIFIERS_ATTACHED_TO_SET_OP = False  # default True
         SET_OP_MODIFIERS = {"order", "limit", "offset"}
 
+        # Whether the 'AS' keyword is optional in the CTE definition syntax
+        # https://docs.exasol.com/db/latest/sql/select.htm
+        OPTIONAL_ALIAS_TOKEN_CTE = False
+
         ########################### CHECKED (not changed) ##############################
+
         # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
         # If this is True and '(' is not found, the keyword will be treated as an identifier
         # Exasol: generally true, however different when VALUES BETWEEN ... is used (https://docs.exasol.com/db/latest/sql/insert.htm)
@@ -385,13 +443,20 @@ class Exasol(Dialect):
         # exasol: https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
         NO_PAREN_IF_COMMANDS = True
 
-        ############################ NOT SURE ##########################
+        # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
+        # https://docs.exasol.com/db/latest/sql_references/literals.htm#IntervalLiterals
+        INTERVAL_SPANS = True
 
+        # Whether implicit unnesting is supported, e.g. SELECT 1 FROM y.z AS z, z.a (Redshift)
+        SUPPORTS_IMPLICIT_UNNEST = False
+
+        # Whether a PARTITION clause can follow a table reference
+        SUPPORTS_PARTITION_SELECTION = False
+
+        ############################ NOT SURE ##########################
         # Whether the SET command needs a delimiter (e.g. "=") for assignments
         # Exasol: https://docs.exasol.com/db/latest/search.htm?q=SET%20&f=aws
         SET_REQUIRES_ASSIGNMENT_DELIMITER = True
-
-        ############################ DEFAULT ##########################
 
         PARTITION_KEYWORDS = {"PARTITION", "SUBPARTITION"}
 
@@ -412,20 +477,8 @@ class Exasol(Dialect):
         # Whether the `:` operator is used to extract a value from a VARIANT column
         COLON_IS_VARIANT_EXTRACT = False
 
-        # Whether implicit unnesting is supported, e.g. SELECT 1 FROM y.z AS z, z.a (Redshift)
-        SUPPORTS_IMPLICIT_UNNEST = False
-
-        # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
-        INTERVAL_SPANS = True
-
-        # Whether a PARTITION clause can follow a table reference
-        SUPPORTS_PARTITION_SELECTION = False
-
         # Whether the `name AS expr` schema/column constraint requires parentheses around `expr`
         WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
-
-        # Whether the 'AS' keyword is optional in the CTE definition syntax
-        OPTIONAL_ALIAS_TOKEN_CTE = True
 
     class Generator(generator.Generator):
         QUERY_HINTS = False
@@ -788,7 +841,8 @@ class Exasol(Dialect):
             exp.Round: lambda self, e: self.round_sql(e),
             # exp.Round: lambda self, e: f"ADD_DAYS({self._timestamp_literal(e.this, 'this')}, {self.sql(e, 'expression')})",
             exp.StrPosition: _string_position_sql,
-            exp.Substring: rename_func("SUBSTR")
+            exp.Substring: rename_func("SUBSTR"),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
         PROPERTIES_LOCATION = {

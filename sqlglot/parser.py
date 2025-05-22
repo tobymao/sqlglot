@@ -150,8 +150,10 @@ def build_trim(args: t.List, is_left: bool = True):
     )
 
 
-def build_coalesce(args: t.List, is_nvl: t.Optional[bool] = None) -> exp.Coalesce:
-    return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl)
+def build_coalesce(
+    args: t.List, is_nvl: t.Optional[bool] = None, is_null: t.Optional[bool] = None
+) -> exp.Coalesce:
+    return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl, is_null=is_null)
 
 
 def build_locate_strposition(args: t.List):

@@ -578,7 +578,7 @@ class TSQL(Dialect):
             "FORMAT": _build_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "HASHBYTES": _build_hashbytes,
-            "ISNULL": build_coalesce,
+            "ISNULL": lambda args: build_coalesce(args=args, is_null=True),
             "JSON_QUERY": _build_json_query,
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),
@@ -1351,3 +1351,7 @@ class TSQL(Dialect):
             output = self.sql(expression, "output")
             output = f" {output}" if output else ""
             return f"{this}{default}{output}"
+
+        def coalesce_sql(self, expression: exp.Coalesce) -> str:
+            func_name = "ISNULL" if expression.args.get("is_null") else "COALESCE"
+            return rename_func(func_name)(self, expression)

@@ -5720,7 +5720,7 @@ class Ceil(Func):
 
 
 class Coalesce(Func):
-    arg_types = {"this": True, "expressions": False, "is_nvl": False}
+    arg_types = {"this": True, "expressions": False, "is_nvl": False, "is_null": False}
     is_var_len_args = True
     _sql_names = ["COALESCE", "IFNULL", "NVL"]
 

@@ -2041,3 +2041,136 @@ class SingleStore(Dialect):
             self.unsupported(
                 "NEXT_VALUE_FOR function is not supported in SingleStore")
             return super().nextvaluefor_sql(expression)
+
+        @unsupported_args("kind")
+        def select_sql(self, expression: exp.Select) -> str:
+            return super().select_sql(expression)
+
+        def cache_sql(self, expression: exp.Cache) -> str:
+            self.unsupported(
+                "CACHE query is not supported in SingleStore")
+            return super().cache_sql(expression)
+
+        def uncache_sql(self, expression: exp.Uncache) -> str:
+            self.unsupported(
+                "UNCACHE query is not supported in SingleStore")
+            return super().uncache_sql(expression)
+
+        def refresh_sql(self, expression: exp.Refresh) -> str:
+            self.unsupported(
+                "REFRESH query is not supported in SingleStore")
+            return super().refresh_sql(expression)
+
+        def sequenceproperties_sql(self,
+            expression: exp.SequenceProperties) -> str:
+            self.unsupported(
+                "Sequences are not supported in SingleStore")
+            return super().sequenceproperties_sql(expression)
+
+        @unsupported_args("history")
+        @unsupported_args("terse")
+        @unsupported_args("offset")
+        @unsupported_args("starts_with")
+        @unsupported_args("limit")
+        @unsupported_args("from")
+        @unsupported_args("scope")
+        @unsupported_args("scope_kind")
+        @unsupported_args("mutex")
+        @unsupported_args("query")
+        @unsupported_args("channel")
+        @unsupported_args("log")
+        @unsupported_args("types")
+        @unsupported_args("privileges")
+        # TODO: add support of SingleStore specific SHOW command parts
+        # TODO: translate some SHOW commands to selects from information_schema
+        def show_sql(self, expression: exp.Show) -> str:
+            this = f" {expression.name}"
+            full = " FULL" if expression.args.get("full") else ""
+            global_ = " GLOBAL" if expression.args.get("global") else ""
+
+            target = self.sql(expression, "target")
+            target = f" {target}" if target else ""
+            if expression.name in (
+                "COLUMNS", "INDEX", "INDEXES", "KEYS"):
+                target = f" FROM{target}"
+            elif expression.name == "GRANTS":
+                target = f" FOR{target}"
+
+            db = self._prefixed_sql("FROM", expression, "db")
+
+            like = self._prefixed_sql("LIKE", expression, "like")
+            where = self.sql(expression, "where")
+
+            return f"SHOW{full}{global_}{this}{target}{db}{like}{where}"
+
+        def _prefixed_sql(self, prefix: str, expression: exp.Expression,
+            arg: str) -> str:
+            sql = self.sql(expression, arg)
+            return f" {prefix} {sql}" if sql else ""
+
+        @unsupported_args("is_database")
+        @unsupported_args("exists")
+        @unsupported_args("cluster")
+        @unsupported_args("identity")
+        @unsupported_args("option")
+        @unsupported_args("partition")
+        def truncatetable_sql(self, expression: exp.TruncateTable) -> str:
+            statements = []
+            for expression in expression.expressions:
+                statements.append(f"TRUNCATE {self.sql(expression)}")
+
+            return "; ".join(statements)
+
+        def clone_sql(self, expression: exp.Clone) -> str:
+            this = self.sql(expression, "this")
+
+            if expression.args.get("copy"):
+                shallow = "WITH SHALLOW" if expression.args.get(
+                    "shallow") else "WITH DEEP"
+                return f"LIKE {this} {shallow} COPY"
+
+            return f"LIKE {this}"
+
+        @unsupported_args("style")
+        @unsupported_args("kind")
+        @unsupported_args("expressions")
+        @unsupported_args("partition")
+        @unsupported_args("format")
+        def describe_sql(self, expression: exp.Describe) -> str:
+            return f"DESCRIBE {self.sql(expression, 'this')}"
+
+        # TODO: parse credentials
+        @unsupported_args("exists")
+        def attach_sql(self, expression: exp.Attach) -> str:
+            this = self.sql(expression, "this")
+            expressions = self.expressions(expression)
+
+            return f"ATTACH DATABASE {this} {expressions}"
+
+        @unsupported_args("exists")
+        def detach_sql(self, expression: exp.Detach) -> str:
+            this = self.sql(expression, "this")
+
+            return f"DETACH DATABASE {this}"
+
+        def summarize_sql(self, expression: exp.Summarize) -> str:
+            self.unsupported("SUMMARIZE query is not supported in SingleStore")
+            return super().summarize_sql(expression)
+
+        def pragma_sql(self, expression: exp.Pragma) -> str:
+            self.unsupported("PRAGMA query is not supported in SingleStore")
+            return super().pragma_sql(expression)
+
+        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
+            if isinstance(expression.this, exp.Parameter):
+                variable = self.sql(expression.this, "this")
+            else:
+                variable = self.sql(expression, "this")
+            default = self.sql(expression, "default")
+            default = f" = {default}" if default else ""
+
+            kind = self.sql(expression, "kind")
+            if isinstance(expression.args.get("kind"), exp.Schema):
+                kind = f"TABLE {kind}"
+
+            return f"{variable} {kind}{default}"

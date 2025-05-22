@@ -1318,6 +1318,7 @@ WHERE
         )
 
     def test_isnull(self):
+        self.validate_identity("ISNULL(x, y)")
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
     def test_json(self):

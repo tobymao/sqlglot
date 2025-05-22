@@ -551,6 +551,7 @@ class Exasol(Dialect):
             exp.DataType.Type.DATETIME2: "TIMESTAMP",
             exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
             exp.DataType.Type.BOOLEAN: "BOOLEAN",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP WITH LOCAL TIME ZONE"
         }
 
         TRANSFORMS = {

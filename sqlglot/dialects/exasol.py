@@ -394,6 +394,18 @@ class Exasol(Dialect):
             **STRING_FUNCTIONS,
         }
 
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            # exasol allows: VARCHAR(200) [CHARACTER SET]? [UTF8 | ASCII]
+            # stringtype def: https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm
+            "UTF8": lambda self: self.expression(
+                exp.CharacterSetColumnConstraint, this=exp.Var(this="UTF8")
+            ),
+            "ASCII": lambda self: self.expression(
+                exp.CharacterSetColumnConstraint, this=exp.Var(this="ASCII")
+            ),
+        }
+
         ############################# CHECKED (changed) ##########################
         # Whether string aliases are supported `SELECT COUNT(*) 'count'`
         # Exasol: supports this, tested with exasol db

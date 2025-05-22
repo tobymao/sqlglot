@@ -331,7 +331,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(type2, exp.DataType):
             if type2.expressions:
-                return type1
+                return type2
             type2_value = type2.this
         else:
             type2_value = type2

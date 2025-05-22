@@ -6939,93 +6939,10 @@ class NextValueFor(Func):
     arg_types = {"this": True, "order": False}
 
 
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/acos.htm
-class Acos(Func):
-    arg_types = {"this": True}
 
 
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/asin.htm
-class Asin(Func):
-    arg_types = {"this": True}
 
 
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/atan.htm
-class Atan(Func):
-    arg_types = {"this": True}
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/atan2.htm
-class Atan2(Func):
-    arg_types = {"this": True}
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_hour.htm
-class AddHours(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_minutes.htm
-class AddMinutes(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_seconds.htm
-class AddSeconds(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_weeks.htm
-class AddWeeks(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_years.htm
-class AddYears(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/ascii.htm
-class Ascii(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_check.htm
-class BitCheck(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_length.htm
-class BitLength(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_lrotate.htm
-class BitLRotate(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_rrotate.htm
-class BitRRotate(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_set.htm
-class BitSet(Func):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_to_num.htm
-class BitToNum(Func):
-    arg_types = {"expressions": True}
-
-
-class CharacterLength(Length):
-    pass
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/cologne_phonetic.htm
-class ColognePhonetic(Func):
-    pass
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/connect_by_iscycle.htm
@@ -7055,20 +6972,6 @@ class ConvertTZ(Func):
         "options": False,  # Optional flags like 'INVALID REJECT...'
     }
 
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/cos.htm
-class Cos(Func):
-    arg_types = {"this": True}
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/cosh.htm
-class CosH(Func):
-    arg_types = {"this": True}
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/cot.htm
-class Cot(Func):
-    arg_types = {"this": True}
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/cume_dist.htm
@@ -7121,14 +7024,6 @@ class Dump(Func):
         "format": False,  # Optional format (e.g., 1010)
         "start_position": False,  # Optional start position
         "length": False,  # Optional length
-    }
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm
-class EditDistance(Func):
-    arg_types = {
-        "this": True,  # First string
-        "expression": True,  # Second string
     }
 
 
@@ -7213,21 +7108,6 @@ class HoursBetween(Func):
     arg_types = {"this": True, "expression": True}
 
 
-# class If(If):
-#     pass  # Already exists in sqlglot
-
-
-class InitCap(Func):
-    arg_types = {"this": True}
-
-
-# class Insert(Func):
-#     arg_types = {"this": True, "expression": True, "start": True, "length": True}
-
-
-class Instr(Func):
-    arg_types = {"this": True, "substr": True}
-
 
 class Iproc(Func):
     arg_types = {"this": True}
@@ -7236,9 +7116,6 @@ class Iproc(Func):
 class Level(Expression):
     arg_types = {}
 
-
-class ConnectBy(Expression):
-    arg_types = {"this": True, "prior": False}
 
 
 class StartWith(Expression):
@@ -7261,9 +7138,6 @@ class Locate(Func):
     arg_types = {"this": True, "expression": True, "start": False}
 
 
-# class Ln(Func):
-#     arg_types = {"this": True}
-
 
 
 class Log2(Func):
@@ -7273,21 +7147,7 @@ class Log2(Func):
 class Log10(Func):
     arg_types = {"this": True}
 
-class LCase(Func):
-    arg_types = {"this": True}
 
-class LPad(Func):
-    arg_types = {
-        "this": True,     
-        "length": True,   
-        "pad": True,     
-    }
-
-class LTrim(Func):
-    arg_types = {
-        "this": True,           
-        "trim_chars": False,     
-    }
 
 class Mid(Func):
     arg_types = {

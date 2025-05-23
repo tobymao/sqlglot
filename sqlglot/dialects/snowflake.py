@@ -1387,7 +1387,7 @@ class Snowflake(Dialect):
                 # We default CopyGrantsProperty to POST_SCHEMA which means we need to output it POST_NAME if a materialized view is detected
                 # ref: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view#syntax
                 # ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
-                post_schema_properties = locations.get(exp.Properties.Location.POST_SCHEMA, [])
+                post_schema_properties = locations[exp.Properties.Location.POST_SCHEMA]
                 post_schema_properties.pop(post_schema_properties.index(copy_grants_property))
 
                 this_name = self.sql(expression.this, "this")

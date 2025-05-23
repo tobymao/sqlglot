@@ -1381,7 +1381,7 @@ class Snowflake(Dialect):
             is_materialized = expression.find(exp.MaterializedProperty)
             copy_grants_property = expression.find(exp.CopyGrantsProperty)
 
-            if kind == "VIEW" and is_materialized and copy_grants_property:
+            if expression.kind == "VIEW" and is_materialized and copy_grants_property:
                 # For materialized views, COPY GRANTS is located *before* the columns list
                 # This is in contrast to normal views where COPY GRANTS is located *after* the columns list
                 # We default CopyGrantsProperty to POST_SCHEMA which means we need to output it POST_NAME if a materialized view is detected

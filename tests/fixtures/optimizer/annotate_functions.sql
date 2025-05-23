@@ -28,6 +28,15 @@ TIME;
 TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR);
 TIME;
 
+SORT_ARRAY(tbl.str_col);
+ARRAY<STRING>;
+
+SORT_ARRAY(tbl.double_col);
+ARRAY<DOUBLE>;
+
+SORT_ARRAY(tbl.bigint_col);
+ARRAY<BIGINT>;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

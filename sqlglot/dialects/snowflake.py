@@ -1378,7 +1378,6 @@ class Snowflake(Dialect):
             return super().select_sql(expression)
 
         def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
-            kind = self.sql(expression, "kind").upper()
             is_materialized = expression.find(exp.MaterializedProperty)
             copy_grants_property = expression.find(exp.CopyGrantsProperty)
 

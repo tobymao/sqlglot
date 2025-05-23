@@ -1376,3 +1376,25 @@ class Snowflake(Dialect):
             if offset and not limit:
                 expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)
+
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+            is_materialized = expression.find(exp.MaterializedProperty)
+            copy_grants_property = expression.find(exp.CopyGrantsProperty)
+
+            if expression.kind == "VIEW" and is_materialized and copy_grants_property:
+                # For materialized views, COPY GRANTS is located *before* the columns list
+                # This is in contrast to normal views where COPY GRANTS is located *after* the columns list
+                # We default CopyGrantsProperty to POST_SCHEMA which means we need to output it POST_NAME if a materialized view is detected
+                # ref: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view#syntax
+                # ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
+                post_schema_properties = locations[exp.Properties.Location.POST_SCHEMA]
+                post_schema_properties.pop(post_schema_properties.index(copy_grants_property))
+
+                this_name = self.sql(expression.this, "this")
+                copy_grants = self.sql(copy_grants_property)
+                this_schema = self.schema_columns_sql(expression.this)
+                this_schema = f"{self.sep()}{this_schema}" if this_schema else ""
+
+                return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
+
+            return super().createable_sql(expression, locations)

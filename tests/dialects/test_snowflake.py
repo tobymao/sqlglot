@@ -2667,3 +2667,25 @@ SINGLE = TRUE""",
         for node in (max_by, min_by):
             self.assertEqual(len(node.this.expressions), 1)
             self.assertIsInstance(node.expression, exp.Column)
+
+    def test_create_view_copy_grants(self):
+        # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
+        self.validate_identity(
+            "CREATE OR REPLACE VIEW FOO (A, B) COPY GRANTS AS SELECT A, B FROM TBL"
+        )
+
+        # for materialized views, 'COPY GRANTS' must go *before* the column list or an error will be thrown. ref: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view#syntax
+        self.validate_identity(
+            "CREATE OR REPLACE MATERIALIZED VIEW FOO COPY GRANTS (A, B) AS SELECT A, B FROM TBL"
+        )
+
+        # check that only 'COPY GRANTS' goes before the column list and other properties still go after
+        self.validate_identity(
+            "CREATE OR REPLACE MATERIALIZED VIEW FOO COPY GRANTS (A, B) COMMENT='foo' TAG (a='b') AS SELECT A, B FROM TBL"
+        )
+
+        # no COPY GRANTS
+        self.validate_identity("CREATE OR REPLACE VIEW FOO (A, B) AS SELECT A, B FROM TBL")
+        self.validate_identity(
+            "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
+        )

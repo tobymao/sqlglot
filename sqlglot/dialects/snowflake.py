@@ -1393,7 +1393,8 @@ class Snowflake(Dialect):
                 this_name = self.sql(expression.this, "this")
                 copy_grants = self.sql(copy_grants_property)
                 this_schema = self.schema_columns_sql(expression.this)
+                this_schema = f"{self.sep()}{this_schema}" if this_schema else ""
 
-                return f"{this_name}{self.sep()}{copy_grants}{self.sep()}{this_schema}"
+                return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
 
             return super().createable_sql(expression, locations)

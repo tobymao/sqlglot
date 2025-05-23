@@ -37,6 +37,12 @@ ARRAY<DOUBLE>;
 SORT_ARRAY(ARRAY(tbl.bigint_col));
 ARRAY<BIGINT>;
 
+tbl.bigint || tbl.str_col;
+VARCHAR;
+
+tbl.str_col || tbl.bigint;
+VARCHAR;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

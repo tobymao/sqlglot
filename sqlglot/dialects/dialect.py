@@ -708,6 +708,7 @@ class Dialect(metaclass=_Dialect):
             exp.Concat,
             exp.ConcatWs,
             exp.DateToDateStr,
+            exp.DPipe,
             exp.GroupConcat,
             exp.Initcap,
             exp.Lower,

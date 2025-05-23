@@ -779,7 +779,7 @@ class Dialect(metaclass=_Dialect):
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Struct: lambda self, e: self._annotate_struct(e),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
-        exp.SortArray: lambda self, e: self._annotate_by_args(e, "this", array=True),
+        exp.SortArray: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Timestamp: lambda self, e: self._annotate_with_type(
             e,
             exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,

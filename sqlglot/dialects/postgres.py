@@ -321,7 +321,6 @@ class Postgres(Dialect):
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
-            "CHARACTER VARYING": TokenType.VARCHAR,
             "CONSTRAINT TRIGGER": TokenType.COMMAND,
             "CSTRING": TokenType.PSEUDO_TYPE,
             "DECLARE": TokenType.COMMAND,
@@ -519,6 +518,7 @@ class Postgres(Dialect):
         LIKE_PROPERTY_INSIDE_SCHEMA = True
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        SUPPORTS_WINDOW_EXCLUDE = True
         COPY_HAS_INTO_KEYWORD = False
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_MEDIAN = False
@@ -539,6 +539,7 @@ class Postgres(Dialect):
             exp.DataType.Type.VARBINARY: "BYTEA",
             exp.DataType.Type.ROWVERSION: "BYTEA",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.BLOB: "BYTEA",
         }
 
@@ -586,7 +587,6 @@ class Postgres(Dialect):
                 [transforms.add_within_group_for_percentiles]
             ),
             exp.Pivot: no_pivot_sql,
-            exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
@@ -743,3 +743,12 @@ class Postgres(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "CURRENT_SCHEMA"
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            unit = expression.text("unit").lower()
+
+            if unit.startswith("quarter") and isinstance(expression.this, exp.Literal):
+                expression.this.replace(exp.Literal.number(int(expression.this.to_py()) * 3))
+                expression.args["unit"].replace(exp.var("MONTH"))
+
+            return super().interval_sql(expression)

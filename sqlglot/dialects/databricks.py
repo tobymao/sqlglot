@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import typing as t
+from copy import deepcopy
+from collections import defaultdict
 
 from sqlglot import exp, transforms, jsonpath
 from sqlglot.dialects.dialect import (
@@ -11,13 +12,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
-
-
-def _build_json_extract(args: t.List) -> exp.JSONExtract:
-    # Transform GET_JSON_OBJECT(expr, '$.<path>') -> expr:<path>
-    this = args[0]
-    path = args[1].name.lstrip("$.")
-    return exp.JSONExtract(this=this, expression=path)
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
 def _jsonextract_sql(
@@ -32,8 +27,24 @@ class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
 
+    COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
+    for text_type in exp.DataType.TEXT_TYPES:
+        COERCES_TO[text_type] |= {
+            *exp.DataType.NUMERIC_TYPES,
+            *exp.DataType.TEMPORAL_TYPES,
+            exp.DataType.Type.BINARY,
+            exp.DataType.Type.BOOLEAN,
+            exp.DataType.Type.INTERVAL,
+        }
+
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']
+
+    class Tokenizer(Spark.Tokenizer):
+        KEYWORDS = {
+            **Spark.Tokenizer.KEYWORDS,
+            "VOID": TokenType.VOID,
+        }
 
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
@@ -46,7 +57,6 @@ class Databricks(Spark):
             "DATE_ADD": build_date_delta(exp.DateAdd),
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
-            "GET_JSON_OBJECT": _build_json_extract,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
         }
 
@@ -91,6 +101,11 @@ class Databricks(Spark):
         }
 
         TRANSFORMS.pop(exp.TryCast)
+
+        TYPE_MAPPING = {
+            **Spark.Generator.TYPE_MAPPING,
+            exp.DataType.Type.NULL: "VOID",
+        }
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             constraint = expression.find(exp.GeneratedAsIdentityColumnConstraint)

@@ -5,6 +5,7 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -35,7 +36,7 @@ from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E, Lit
+    from sqlglot._typing import Lit
 
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
@@ -352,6 +353,17 @@ def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -
     return sql
 
 
+def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
+    annotated = self._annotate_by_args(expression, "expressions")
+
+    # Args must be BYTES or types that can be cast to STRING, return type is either BYTES or STRING
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#concat
+    if not annotated.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.UNKNOWN):
+        annotated.type = exp.DataType.Type.VARCHAR
+
+    return annotated
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -432,7 +444,7 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
-        exp.Concat: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Concat: _annotate_concat,
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
     }
@@ -440,7 +452,7 @@ class BigQuery(Dialect):
     def normalize_identifier(self, expression: E) -> E:
         if (
             isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
+            and self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE
         ):
             parent = expression.parent
             while isinstance(parent, exp.Dot):
@@ -462,7 +474,9 @@ class BigQuery(Dialect):
             if not case_sensitive:
                 expression.set("this", expression.this.lower())
 
-        return expression
+            return t.cast(E, expression)
+
+        return super().normalize_identifier(expression)
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"', '"""', "'''"]
@@ -645,14 +659,16 @@ class BigQuery(Dialect):
 
                     table_name += self._find_sql(start, self._prev)
 
-                this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
+                this = exp.Identifier(
+                    this=table_name, quoted=this.args.get("quoted")
+                ).update_positions(this)
             elif isinstance(this, exp.Literal):
                 table_name = this.name
 
                 if self._is_connected() and self._parse_var(any_token=True):
                     table_name += self._prev.text
 
-                this = exp.Identifier(this=table_name, quoted=True)
+                this = exp.Identifier(this=table_name, quoted=True).update_positions(this)
 
             return this
 
@@ -666,15 +682,23 @@ class BigQuery(Dialect):
             # proj-1.db.tbl -- `1.` is tokenized as a float so we need to unravel it here
             if not table.catalog:
                 if table.db:
+                    previous_db = table.args["db"]
                     parts = table.db.split(".")
                     if len(parts) == 2 and not table.args["db"].quoted:
-                        table.set("catalog", exp.Identifier(this=parts[0]))
-                        table.set("db", exp.Identifier(this=parts[1]))
+                        table.set(
+                            "catalog", exp.Identifier(this=parts[0]).update_positions(previous_db)
+                        )
+                        table.set("db", exp.Identifier(this=parts[1]).update_positions(previous_db))
                 else:
+                    previous_this = table.this
                     parts = table.name.split(".")
                     if len(parts) == 2 and not table.this.quoted:
-                        table.set("db", exp.Identifier(this=parts[0]))
-                        table.set("this", exp.Identifier(this=parts[1]))
+                        table.set(
+                            "db", exp.Identifier(this=parts[0]).update_positions(previous_this)
+                        )
+                        table.set(
+                            "this", exp.Identifier(this=parts[1]).update_positions(previous_this)
+                        )
 
             if isinstance(table.this, exp.Identifier) and any("." in p.name for p in table.parts):
                 alias = table.this
@@ -682,6 +706,10 @@ class BigQuery(Dialect):
                     exp.to_identifier(p, quoted=True)
                     for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)
                 )
+
+                for part in (catalog, db, this):
+                    if part:
+                        part.update_positions(table.this)
 
                 if rest and this:
                     this = exp.Dot.build([this, *rest])  # type: ignore
@@ -717,7 +745,13 @@ class BigQuery(Dialect):
                 )
 
                 info_schema_view = f"{table_parts[-2].name}.{table_parts[-1].name}"
-                table.set("this", exp.Identifier(this=info_schema_view, quoted=True))
+                new_this = exp.Identifier(this=info_schema_view, quoted=True).update_positions(
+                    line=table_parts[-2].meta.get("line"),
+                    col=table_parts[-1].meta.get("col"),
+                    start=table_parts[-2].meta.get("start"),
+                    end=table_parts[-1].meta.get("end"),
+                )
+                table.set("this", new_this)
                 table.set("db", seq_get(table_parts, -3))
                 table.set("catalog", seq_get(table_parts, -4))
 
@@ -1020,6 +1054,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
+            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",

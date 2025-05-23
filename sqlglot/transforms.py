@@ -309,10 +309,9 @@ def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
         }
         if unnest_aliases:
             for column in expression.find_all(exp.Column):
-                if column.table in unnest_aliases:
-                    column.set("table", None)
-                elif column.db in unnest_aliases:
-                    column.set("db", None)
+                leftmost_part = column.parts[0]
+                if leftmost_part.arg_key != "this" and leftmost_part.this in unnest_aliases:
+                    leftmost_part.pop()
 
     return expression
 
@@ -926,17 +925,27 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 else:
                     predicate_parent.replace(predicate_parent.left)
 
+        only_old_join_sources = old_joins.keys() - new_joins.keys()
+
         if query_from.alias_or_name in new_joins:
-            only_old_joins = old_joins.keys() - new_joins.keys()
             assert (
-                len(only_old_joins) >= 1
+                len(only_old_join_sources) >= 1
             ), "Cannot determine which table to use in the new FROM clause"
 
-            new_from_name = list(only_old_joins)[0]
-            query.set("from", exp.From(this=old_joins[new_from_name].this))
+            new_from_name = list(only_old_join_sources)[0]
+            query.set("from", exp.From(this=old_joins.pop(new_from_name).this))
+            only_old_join_sources.remove(new_from_name)
 
         if new_joins:
-            query.set("joins", list(new_joins.values()))
+            only_old_join_expressions = []
+            for old_join_source in only_old_join_sources:
+                old_join_expression = old_joins[old_join_source]
+                if not old_join_expression.kind:
+                    old_join_expression.set("kind", "CROSS")
+
+                only_old_join_expressions.append(old_join_expression)
+
+            query.set("joins", list(new_joins.values()) + only_old_join_expressions)
 
         if not where.this:
             where.pop()
@@ -956,16 +965,47 @@ def any_to_exists(expression: exp.Expression) -> exp.Expression:
     transformation
     """
     if isinstance(expression, exp.Select):
-        for any in expression.find_all(exp.Any):
-            this = any.this
+        for any_expr in expression.find_all(exp.Any):
+            this = any_expr.this
             if isinstance(this, exp.Query):
                 continue
 
-            binop = any.parent
+            binop = any_expr.parent
             if isinstance(binop, exp.Binary):
                 lambda_arg = exp.to_identifier("x")
-                any.replace(lambda_arg)
+                any_expr.replace(lambda_arg)
                 lambda_expr = exp.Lambda(this=binop.copy(), expressions=[lambda_arg])
                 binop.replace(exp.Exists(this=this.unnest(), expression=lambda_expr))
+
+    return expression
+
+
+def eliminate_window_clause(expression: exp.Expression) -> exp.Expression:
+    """Eliminates the `WINDOW` query clause by inling each named window."""
+    if isinstance(expression, exp.Select) and expression.args.get("windows"):
+        from sqlglot.optimizer.scope import find_all_in_scope
+
+        windows = expression.args["windows"]
+        expression.set("windows", None)
+
+        window_expression: t.Dict[str, exp.Expression] = {}
+
+        def _inline_inherited_window(window: exp.Expression) -> None:
+            inherited_window = window_expression.get(window.alias.lower())
+            if not inherited_window:
+                return
+
+            window.set("alias", None)
+            for key in ("partition_by", "order", "spec"):
+                arg = inherited_window.args.get(key)
+                if arg:
+                    window.set(key, arg.copy())
+
+        for window in windows:
+            _inline_inherited_window(window)
+            window_expression[window.name.lower()] = window
+
+        for window in find_all_in_scope(expression, exp.Window):
+            _inline_inherited_window(window)
 
     return expression

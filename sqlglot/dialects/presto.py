@@ -57,8 +57,14 @@ def _no_sort_array(self: Presto.Generator, expression: exp.SortArray) -> str:
 
 def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
     if isinstance(expression.parent, exp.PartitionedByProperty):
-        columns = ", ".join(f"'{c.name}'" for c in expression.expressions)
-        return f"ARRAY[{columns}]"
+        # Any columns in the ARRAY[] string literals should not be quoted
+        expression.transform(lambda n: n.name if isinstance(n, exp.Identifier) else n, copy=False)
+
+        partition_exprs = [
+            self.sql(c) if isinstance(c, (exp.Func, exp.Property)) else self.sql(c, "this")
+            for c in expression.expressions
+        ]
+        return self.sql(exp.Array(expressions=[exp.Literal.string(c) for c in partition_exprs]))
 
     if expression.parent:
         for schema in expression.parent.find_all(exp.Schema):
@@ -214,7 +220,7 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
     return explode_to_unnest_sql(self, expression)
 
 
-def _amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
+def amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
     # We check for expression.type because the columns can be amended only if types were inferred
     if isinstance(expression, exp.Select) and expression.type:
         for lateral in expression.args.get("laterals") or []:
@@ -324,6 +330,8 @@ class Presto(Dialect):
             "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
             "DATE_TRUNC": date_trunc_to_time,
             "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
+            "DOW": exp.DayOfWeekIso.from_arg_list,
+            "DOY": exp.DayOfYear.from_arg_list,
             "ELEMENT_AT": lambda args: exp.Bracket(
                 this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
             ),
@@ -476,11 +484,12 @@ class Presto(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_window_clause,
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     transforms.explode_projection_to_unnest(1),
                     transforms.eliminate_semi_and_anti_joins,
-                    _amend_exploded_column_table,
+                    amend_exploded_column_table,
                 ]
             ),
             exp.SortArray: _no_sort_array,

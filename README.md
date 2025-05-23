@@ -1,6 +1,6 @@
 ![SQLGlot logo](sqlglot.png)
 
-SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [24 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
+SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [27 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
 
 It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks), while being written purely in Python.
 
@@ -496,7 +496,7 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 * [Apache Superset](https://github.com/apache/superset)
 * [Dagster](https://github.com/dagster-io/dagster)
 * [Fugue](https://github.com/fugue-project/fugue)
-* [ibis](https://github.com/ibis-project/ibis)
+* [Ibis](https://github.com/ibis-project/ibis)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)
 * [Querybook](https://github.com/pinterest/querybook)
 * [Quokka](https://github.com/marsupialtail/quokka)
@@ -533,6 +533,10 @@ make check  # Full test suite & linter checks
 |            long |   0.00889 (1.0) | 0.00572 (0.643) | 0.36982 (41.56) | 0.00614 (0.690) | 0.02530 (2.844) | 0.02931 (3.294) | 0.00059 (0.066) |
 |           crazy |   0.02918 (1.0) | 0.01991 (0.682) | 1.88695 (64.66) | 0.02003 (0.686) | 7.46894 (255.9) | 0.64994 (22.27) | 0.00327 (0.112) |
 
+```
+make bench            # Run parsing benchmark
+make bench-optimize   # Run optimization benchmark
+```
 
 ## Optional Dependencies
 

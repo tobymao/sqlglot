@@ -728,6 +728,12 @@ class TestExecutor(unittest.TestCase):
                 result = execute(f"SELECT {sql}")
                 self.assertEqual(result.rows, [(expected,)])
 
+        result = execute(
+            "WITH t AS (SELECT 'a' AS c1, 'b' AS c2) SELECT NVL(c1, c2) FROM t",
+            dialect="oracle",
+        )
+        self.assertEqual(result.rows, [("a",)])
+
     def test_case_sensitivity(self):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})
         self.assertEqual(result.columns, ("a",))
@@ -879,3 +885,13 @@ class TestExecutor(unittest.TestCase):
             "avg_bill_length",
             "avg_bill_depth",
         ]
+
+    def test_table_to_pylist(self):
+        columns = ["id", "product", "price"]
+        rows = [[1, "Shirt", 20.0], [2, "Shoes", 60.0]]
+        table = Table(columns=columns, rows=rows)
+        expected = [
+            {"id": 1, "product": "Shirt", "price": 20.0},
+            {"id": 2, "product": "Shoes", "price": 60.0},
+        ]
+        self.assertEqual(table.to_pylist(), expected)

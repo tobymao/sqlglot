@@ -31,6 +31,13 @@ def _trim_sql(self: Oracle.Generator, expression: exp.Trim) -> str:
     return trim_sql(self, expression)
 
 
+def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
+    if len(args) == 1:
+        return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
+
+    return build_formatted_time(exp.StrToTime, "oracle")(args)
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -103,10 +110,11 @@ class Oracle(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CONVERT": exp.ConvertToCharset.from_arg_list,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": build_timetostr_or_tochar,
-            "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
+            "TO_TIMESTAMP": _build_to_timestamp,
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1) or exp.Literal.string("DD"),
@@ -118,6 +126,7 @@ class Oracle(Dialect):
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "NEXT": lambda self: self._parse_next_value_for(),
+            "PRIOR": lambda self: self.expression(exp.Prior, this=self._parse_bitwise()),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }
 
@@ -134,6 +143,7 @@ class Oracle(Dialect):
             ),
             "JSON_EXISTS": lambda self: self._parse_json_exists(),
         }
+        FUNCTION_PARSERS.pop("CONVERT")
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
@@ -240,6 +250,9 @@ class Oracle(Dialect):
 
             return self.expression(exp.Into, bulk_collect=bulk_collect, expressions=expressions)
 
+        def _parse_connect_with_prior(self):
+            return self._parse_assignment()
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -251,6 +264,7 @@ class Oracle(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_SELECT_INTO = True
         TZ_TO_WITH_TIME_ZONE = True
+        SUPPORTS_WINDOW_EXCLUDE = True
         QUERY_HINT_SEP = " "
 
         TYPE_MAPPING = {
@@ -266,6 +280,7 @@ class Oracle(Dialect):
             exp.DataType.Type.NCHAR: "NCHAR",
             exp.DataType.Type.TEXT: "CLOB",
             exp.DataType.Type.TIMETZ: "TIME",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.VARBINARY: "BLOB",

@@ -56,7 +56,7 @@ class TestSpark(Validator):
             "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             write={
                 "duckdb": "CREATE TABLE x",
-                "presto": "CREATE TABLE x WITH (FORMAT='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS'])",
+                "presto": "CREATE TABLE x WITH (FORMAT='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS(y)'])",
                 "hive": "CREATE TABLE x STORED AS ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
                 "spark": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             },
@@ -465,8 +465,8 @@ TBLPROPERTIES (
                 "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMPTZ), CAST('1997-02-28 10:30:00' AS TIMESTAMPTZ))",
             },
             write={
-                "spark": "SELECT DATEDIFF(MONTH, TO_DATE(CAST('1996-10-30' AS TIMESTAMP)), TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)))",
-                "spark2": "SELECT CAST(MONTHS_BETWEEN(TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)), TO_DATE(CAST('1996-10-30' AS TIMESTAMP))) AS INT)",
+                "spark": "SELECT DATEDIFF(MONTH, CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+                "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('1997-02-28 10:30:00' AS TIMESTAMP), CAST('1996-10-30' AS TIMESTAMP)) AS INT)",
             },
         )
         self.validate_all(
@@ -474,11 +474,11 @@ TBLPROPERTIES (
             write={
                 "bigquery": "SELECT DATE_DIFF(CAST('2020-12-31' AS DATE), CAST('2020-01-01' AS DATE), WEEK)",
                 "duckdb": "SELECT DATE_DIFF('WEEK', CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
-                "hive": "SELECT CAST(DATEDIFF(TO_DATE('2020-12-31'), TO_DATE('2020-01-01')) / 7 AS INT)",
+                "hive": "SELECT CAST(DATEDIFF('2020-12-31', '2020-01-01') / 7 AS INT)",
                 "postgres": "SELECT CAST(EXTRACT(days FROM (CAST(CAST('2020-12-31' AS DATE) AS TIMESTAMP) - CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP))) / 7 AS BIGINT)",
                 "redshift": "SELECT DATEDIFF(WEEK, CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
                 "snowflake": "SELECT DATEDIFF(WEEK, TO_DATE('2020-01-01'), TO_DATE('2020-12-31'))",
-                "spark": "SELECT DATEDIFF(WEEK, TO_DATE('2020-01-01'), TO_DATE('2020-12-31'))",
+                "spark": "SELECT DATEDIFF(WEEK, '2020-01-01', '2020-12-31')",
             },
         )
         self.validate_all(
@@ -592,11 +592,11 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT DATEDIFF(MONTH, '2020-01-01', '2020-03-05')",
             write={
-                "databricks": "SELECT DATEDIFF(MONTH, TO_DATE('2020-01-01'), TO_DATE('2020-03-05'))",
-                "hive": "SELECT CAST(MONTHS_BETWEEN(TO_DATE('2020-03-05'), TO_DATE('2020-01-01')) AS INT)",
+                "databricks": "SELECT DATEDIFF(MONTH, '2020-01-01', '2020-03-05')",
+                "hive": "SELECT CAST(MONTHS_BETWEEN('2020-03-05', '2020-01-01') AS INT)",
                 "presto": "SELECT DATE_DIFF('MONTH', CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE), CAST(CAST('2020-03-05' AS TIMESTAMP) AS DATE))",
-                "spark": "SELECT DATEDIFF(MONTH, TO_DATE('2020-01-01'), TO_DATE('2020-03-05'))",
-                "spark2": "SELECT CAST(MONTHS_BETWEEN(TO_DATE('2020-03-05'), TO_DATE('2020-01-01')) AS INT)",
+                "spark": "SELECT DATEDIFF(MONTH, '2020-01-01', '2020-03-05')",
+                "spark2": "SELECT CAST(MONTHS_BETWEEN('2020-03-05', '2020-01-01') AS INT)",
                 "trino": "SELECT DATE_DIFF('MONTH', CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE), CAST(CAST('2020-03-05' AS TIMESTAMP) AS DATE))",
             },
         )
@@ -707,8 +707,8 @@ TBLPROPERTIES (
             write={
                 "duckdb": "MONTH(CAST('2021-03-01' AS DATE))",
                 "presto": "MONTH(CAST(CAST('2021-03-01' AS TIMESTAMP) AS DATE))",
-                "hive": "MONTH(TO_DATE('2021-03-01'))",
-                "spark": "MONTH(TO_DATE('2021-03-01'))",
+                "hive": "MONTH('2021-03-01')",
+                "spark": "MONTH('2021-03-01')",
             },
         )
         self.validate_all(
@@ -716,8 +716,8 @@ TBLPROPERTIES (
             write={
                 "duckdb": "YEAR(CAST('2021-03-01' AS DATE))",
                 "presto": "YEAR(CAST(CAST('2021-03-01' AS TIMESTAMP) AS DATE))",
-                "hive": "YEAR(TO_DATE('2021-03-01'))",
-                "spark": "YEAR(TO_DATE('2021-03-01'))",
+                "hive": "YEAR('2021-03-01')",
+                "spark": "YEAR('2021-03-01')",
             },
         )
         self.validate_all(

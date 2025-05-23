@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+from copy import deepcopy
 from functools import partial
+from collections import defaultdict
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -43,6 +45,7 @@ from sqlglot.transforms import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -61,6 +64,13 @@ TIME_DIFF_FACTOR = {
 }
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
+
+TS_OR_DS_EXPRESSIONS = (
+    exp.DateDiff,
+    exp.Day,
+    exp.Month,
+    exp.Year,
+)
 
 
 def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
@@ -167,7 +177,7 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     if time_format and time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         return self.func("TO_DATE", expression.this, time_format)
 
-    if isinstance(expression.this, exp.TsOrDsToDate):
+    if isinstance(expression.parent, TS_OR_DS_EXPRESSIONS):
         return self.sql(expression, "this")
 
     return self.func("TO_DATE", expression.this)
@@ -201,6 +211,23 @@ class Hive(Dialect):
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.If: lambda self, e: self._annotate_by_args(e, "true", "false", promote=True),
+        exp.Coalesce: lambda self, e: self._annotate_by_args(
+            e, "this", "expressions", promote=True
+        ),
+    }
+
+    # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
+    COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
+    for target_type in {
+        *exp.DataType.NUMERIC_TYPES,
+        *exp.DataType.TEMPORAL_TYPES,
+        exp.DataType.Type.INTERVAL,
+    }:
+        COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES
 
     TIME_MAPPING = {
         "y": "%Y",
@@ -307,7 +334,9 @@ class Hive(Dialect):
             "FIRST": _build_with_ignore_nulls(exp.First),
             "FIRST_VALUE": _build_with_ignore_nulls(exp.FirstValue),
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, "hive", True),
-            "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
+            "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
+                this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
+            ),
             "LAST": _build_with_ignore_nulls(exp.Last),
             "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
             "MAP": parser.build_var_map,
@@ -494,6 +523,7 @@ class Hive(Dialect):
             exp.DataType.Type.ROWVERSION: "BINARY",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.VARBINARY: "BINARY",
@@ -608,6 +638,8 @@ class Hive(Dialect):
             e: f"({self.expressions(e, 'this', indent=False)})",
             exp.NotForReplicationColumnConstraint: lambda *_: "",
             exp.OnProperty: lambda *_: "",
+            exp.PartitionedByBucket: lambda self, e: self.func("BUCKET", e.expression, e.this),
+            exp.PartitionByTruncate: lambda self, e: self.func("TRUNCATE", e.expression, e.this),
             exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),

@@ -1,4 +1,5 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -8,6 +9,8 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("SELECT UUIDV7()")
+        self.validate_identity("SELECT TRY(LOG(0))")
         self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
         self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")
         self.validate_identity("x::timestamp with time zone", "CAST(x AS TIMESTAMPTZ)")
@@ -297,6 +300,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
         self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
         self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
+        self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("UNION_VALUE(k1 := 1)").find(exp.PropertyEQ).this.assert_is(
             exp.Identifier
         )
@@ -426,6 +430,7 @@ class TestDuckDB(Validator):
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={
                 "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
+                "spark": "SELECT DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP_NTZ), CONCAT(COALESCE('yyyy', ''), COALESCE('MM', '')))",
                 "tsql": "SELECT FORMAT(CAST('2020-01-01' AS DATETIME2), CONCAT('yyyy', 'MM'))",
             },
         )
@@ -1034,7 +1039,7 @@ class TestDuckDB(Validator):
                 "clickhouse": "fromUnixTimestamp64Milli(CAST(x AS Nullable(Int64)))",
                 "duckdb": "EPOCH_MS(x)",
                 "mysql": "FROM_UNIXTIME(x / POWER(10, 3))",
-                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / 10 ^ 3)",
+                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / POWER(10, 3))",
                 "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / POW(10, 3))",
                 "spark": "TIMESTAMP_MILLIS(x)",
             },
@@ -1105,6 +1110,28 @@ class TestDuckDB(Validator):
                 "bigquery": "TIMESTAMP(DATETIME(CAST(start AS TIMESTAMP), 'America/New_York'))",
                 "duckdb": "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
                 "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT TIMESTAMP 'foo'",
+            write={
+                "duckdb": "SELECT CAST('foo' AS TIMESTAMP)",
+                "hive": "SELECT CAST('foo' AS TIMESTAMP)",
+                "spark2": "SELECT CAST('foo' AS TIMESTAMP)",
+                "spark": "SELECT CAST('foo' AS TIMESTAMP_NTZ)",
+                "postgres": "SELECT CAST('foo' AS TIMESTAMP)",
+                "mysql": "SELECT CAST('foo' AS DATETIME)",
+                "clickhouse": "SELECT CAST('foo' AS Nullable(DateTime))",
+                "databricks": "SELECT CAST('foo' AS TIMESTAMP_NTZ)",
+                "snowflake": "SELECT CAST('foo' AS TIMESTAMPNTZ)",
+                "redshift": "SELECT CAST('foo' AS TIMESTAMP)",
+                "tsql": "SELECT CAST('foo' AS DATETIME2)",
+                "presto": "SELECT CAST('foo' AS TIMESTAMP)",
+                "trino": "SELECT CAST('foo' AS TIMESTAMP)",
+                "oracle": "SELECT CAST('foo' AS TIMESTAMP)",
+                "bigquery": "SELECT CAST('foo' AS DATETIME)",
+                "starrocks": "SELECT CAST('foo' AS DATETIME)",
             },
         )
 
@@ -1416,20 +1443,26 @@ class TestDuckDB(Validator):
 
     def test_ignore_nulls(self):
         # Note that DuckDB differentiates window functions (e.g. LEAD, LAG) from aggregate functions (e.g. SUM)
-        from sqlglot.dialects.duckdb import WINDOW_FUNCS_WITH_IGNORE_NULLS
+        from sqlglot.dialects.duckdb import DuckDB
 
         agg_funcs = (exp.Sum, exp.Max, exp.Min)
 
-        for func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS + agg_funcs:
+        for func_type in DuckDB.Generator.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS + agg_funcs:
             func = func_type(this=exp.to_identifier("col"))
             ignore_null = exp.IgnoreNulls(this=func)
             windowed_ignore_null = exp.Window(this=ignore_null)
 
-            if func_type in WINDOW_FUNCS_WITH_IGNORE_NULLS:
+            if func_type in DuckDB.Generator.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS:
                 self.assertIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
             else:
-                self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
-                self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+                with self.assertLogs(generator_logger) as cm:
+                    self.assertEqual(ignore_null.sql("duckdb"), func.sql("duckdb"))
+                    self.assertNotIn("IGNORE NULLS", windowed_ignore_null.sql("duckdb"))
+
+                self.assertEqual(
+                    str(cm.output[0]),
+                    "WARNING:sqlglot:IGNORE NULLS is not supported for non-window functions.",
+                )
 
     def test_attach_detach(self):
         # ATTACH

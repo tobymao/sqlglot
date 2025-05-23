@@ -327,6 +327,46 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CAST(a AS CHARACTER VARYING)",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "drill": "CAST(a AS VARCHAR)",
+                "duckdb": "CAST(a AS TEXT)",
+                "materialize": "CAST(a AS VARCHAR)",
+                "mysql": "CAST(a AS CHAR)",
+                "hive": "CAST(a AS STRING)",
+                "oracle": "CAST(a AS VARCHAR2)",
+                "postgres": "CAST(a AS VARCHAR)",
+                "presto": "CAST(a AS VARCHAR)",
+                "redshift": "CAST(a AS VARCHAR)",
+                "snowflake": "CAST(a AS VARCHAR)",
+                "spark": "CAST(a AS STRING)",
+                "starrocks": "CAST(a AS VARCHAR)",
+                "tsql": "CAST(a AS VARCHAR)",
+                "doris": "CAST(a AS VARCHAR)",
+            },
+        )
+        self.validate_all(
+            "CAST(a AS CHARACTER VARYING(3))",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "drill": "CAST(a AS VARCHAR(3))",
+                "duckdb": "CAST(a AS TEXT(3))",
+                "materialize": "CAST(a AS VARCHAR(3))",
+                "mysql": "CAST(a AS CHAR(3))",
+                "hive": "CAST(a AS VARCHAR(3))",
+                "oracle": "CAST(a AS VARCHAR2(3))",
+                "postgres": "CAST(a AS VARCHAR(3))",
+                "presto": "CAST(a AS VARCHAR(3))",
+                "redshift": "CAST(a AS VARCHAR(3))",
+                "snowflake": "CAST(a AS VARCHAR(3))",
+                "spark": "CAST(a AS VARCHAR(3))",
+                "starrocks": "CAST(a AS VARCHAR(3))",
+                "tsql": "CAST(a AS VARCHAR(3))",
+                "doris": "CAST(a AS VARCHAR(3))",
+            },
+        )
+        self.validate_all(
             "CAST(a AS SMALLINT)",
             write={
                 "bigquery": "CAST(a AS INT64)",
@@ -2706,6 +2746,35 @@ SELECT
                 "oracle": 'SELECT "user id", some_id, other_id, "2 nd id" FROM (SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id", COUNT(*) OVER () AS _w FROM t) _t WHERE _w > 1',
                 "postgres": 'SELECT "user id", some_id, other_id, "2 nd id" FROM (SELECT "user id", some_id, 1 AS other_id, 2 AS "2 nd id", COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1',
                 "tsql": "SELECT [user id], some_id, other_id, [2 nd id] FROM (SELECT [user id] AS [user id], some_id AS some_id, 1 AS other_id, 2 AS [2 nd id], COUNT_BIG(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+            },
+        )
+
+    def test_window_exclude(self):
+        for option in ("CURRENT ROW", "TIES", "GROUP"):
+            self.validate_all(
+                f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                write={
+                    "duckdb": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                    "postgres": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                    "sqlite": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                    "oracle": f"SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE {option})",
+                },
+            )
+
+        # EXCLUDE NO OTHERS is the default behaviour
+        self.validate_all(
+            "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            read={
+                "duckdb": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+                "postgres": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+                "sqlite": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+                "oracle": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS)",
+            },
+            write={
+                "duckdb": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "postgres": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "sqlite": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "oracle": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
             },
         )
 

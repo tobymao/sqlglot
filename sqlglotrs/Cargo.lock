@@ -503,7 +503,7 @@ dependencies = [
 
 [[package]]
 name = "sqlglotrs"
-version = "0.4.0"
+version = "0.4.2"
 dependencies = [
  "criterion",
  "pyo3",

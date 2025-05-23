@@ -176,6 +176,11 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                     actual,
                 )
+                for expression in optimized.walk():
+                    for arg_key, arg in expression.args.items():
+                        if isinstance(arg, exp.Expression):
+                            self.assertEqual(arg_key, arg.arg_key)
+                            self.assertIs(arg.parent, expression)
 
                 if string_to_bool(execute):
                     with self.subTest(f"(execute) {title}"):
@@ -533,6 +538,16 @@ class TestOptimizer(unittest.TestCase):
     def test_simplify(self):
         self.check_file("simplify", simplify)
 
+        # Stress test with huge union query
+        union_sql = "SELECT 1 UNION ALL " * 1000 + "SELECT 1"
+        expression = parse_one(union_sql)
+        self.assertEqual(simplify(expression).sql(), union_sql)
+
+        # Ensure simplify mutates the AST properly
+        expression = parse_one("SELECT 1 + 2")
+        simplify(expression.selects[0])
+        self.assertEqual(expression.sql(), "SELECT 3")
+
         expression = parse_one("SELECT a, c, b FROM table1 WHERE 1 = 1")
         self.assertEqual(simplify(simplify(expression.find(exp.Where))).sql(), "WHERE TRUE")
 
@@ -876,7 +891,17 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_annotate_funcs(self):
         test_schema = {
-            "tbl": {"bin_col": "BINARY", "str_col": "STRING", "bignum_col": "BIGNUMERIC"}
+            "tbl": {
+                "bin_col": "BINARY",
+                "str_col": "STRING",
+                "bignum_col": "BIGNUMERIC",
+                "date_col": "DATE",
+                "timestamp_col": "TIMESTAMP",
+                "double_col": "DOUBLE",
+                "bigint_col": "BIGINT",
+                "bool_col": "BOOLEAN",
+                "interval_col": "INTERVAL",
+            }
         }
 
         for i, (meta, sql, expected) in enumerate(
@@ -1537,3 +1562,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
         self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
+
+    def test_manually_annotate_snowflake(self):
+        dialect = "snowflake"
+        schema = {
+            "SCHEMA": {
+                "TBL": {"COL": "INT", "col2": "VARCHAR"},
+            }
+        }
+        example_query = 'SELECT * FROM "SCHEMA"."TBL"'
+
+        expression = parse_one(example_query, dialect=dialect)
+        qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
+        annotated = optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
+
+        self.assertTrue(annotated.selects[0].is_type("INT"))
+        self.assertTrue(annotated.selects[1].is_type("VARCHAR"))

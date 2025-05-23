@@ -1,7 +1,7 @@
 from sqlglot import exp, parse, parse_one
-from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
+from tests.dialects.test_dialect import Validator
 
 
 class TestTSQL(Validator):
@@ -17,6 +17,8 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("GO").assert_is(exp.Command)
+        self.validate_identity("SELECT go").selects[0].assert_is(exp.Column)
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
@@ -960,7 +962,8 @@ FROM (
       ProductID
   ) AS src(ProductID, OrderQty)
   ON pi.ProductID = src.ProductID
-  WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty
+  WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET
+    pi.Quantity = pi.Quantity - src.OrderQty
   WHEN MATCHED AND pi.Quantity - src.OrderQty <= 0 THEN DELETE
   OUTPUT $action, Inserted.ProductID, Inserted.LocationID, Inserted.Quantity AS NewQty, Deleted.Quantity AS PreviousQty
 ) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty)
@@ -1058,6 +1061,16 @@ WHERE
             write={
                 "": "ALTER TABLE a ADD COLUMN b INT, ADD COLUMN c INT",
                 "tsql": "ALTER TABLE a ADD b INTEGER, c INTEGER",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE a ALTER COLUMN b INTEGER",
+            read={
+                "": "ALTER TABLE a ALTER COLUMN b INT",
+            },
+            write={
+                "": "ALTER TABLE a ALTER COLUMN b SET DATA TYPE INT",
+                "tsql": "ALTER TABLE a ALTER COLUMN b INTEGER",
             },
         )
         self.validate_all(
@@ -1305,6 +1318,7 @@ WHERE
         )
 
     def test_isnull(self):
+        self.validate_identity("ISNULL(x, y)")
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
     def test_json(self):
@@ -2230,3 +2244,8 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
             },
         )
+
+    def test_collation_parse(self):
+        self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
+            exp.Alter
+        ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)

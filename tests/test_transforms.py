@@ -5,6 +5,7 @@ from sqlglot.transforms import (
     eliminate_distinct_on,
     eliminate_join_marks,
     eliminate_qualify,
+    eliminate_window_clause,
     remove_precision_parameterized_types,
     unalias_group,
 )
@@ -248,6 +249,13 @@ class TestTransforms(unittest.TestCase):
                 "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col1 + 25",
                 dialect,
             )
+            # eliminate join mark while preserving non-participating joins
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM a, b, c WHERE a.id = b.id AND b.id(+) = c.id",
+                "SELECT * FROM a LEFT JOIN b ON b.id = c.id CROSS JOIN c WHERE a.id = b.id",
+                dialect,
+            )
 
             alias = "AS " if dialect != "oracle" else ""
             self.validate(
@@ -265,3 +273,15 @@ class TestTransforms(unittest.TestCase):
                 tree.sql(dialect=dialect)
                 == "SELECT a.id FROM a LEFT JOIN b ON a.id = b.id AND b.d = const"
             )
+
+    def test_eliminate_window_clause(self):
+        self.validate(
+            eliminate_window_clause,
+            "SELECT purchases, LAST_VALUE(item) OVER (d) AS most_popular FROM Produce WINDOW a AS (PARTITION BY purchases), b AS (a ORDER BY purchases), c AS (b ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING), d AS (c)",
+            "SELECT purchases, LAST_VALUE(item) OVER (PARTITION BY purchases ORDER BY purchases ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce",
+        )
+        self.validate(
+            eliminate_window_clause,
+            "SELECT LAST_VALUE(c) OVER (a) AS c2 FROM (SELECT LAST_VALUE(i) OVER (a) AS c FROM p WINDOW a AS (PARTITION BY x)) AS q(c) WINDOW a AS (PARTITION BY y)",
+            "SELECT LAST_VALUE(c) OVER (PARTITION BY y) AS c2 FROM (SELECT LAST_VALUE(i) OVER (PARTITION BY x) AS c FROM p) AS q(c)",
+        )

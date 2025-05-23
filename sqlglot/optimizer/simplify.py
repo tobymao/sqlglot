@@ -40,7 +40,6 @@ def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
     dialect: DialectType = None,
-    max_depth: t.Optional[int] = None,
 ):
     """
     Rewrite sqlglot AST to simplify expressions.
@@ -54,112 +53,97 @@ def simplify(
     Args:
         expression: expression to simplify
         constant_propagation: whether the constant propagation rule should be used
-        max_depth: Chains of Connectors (AND, OR, etc) exceeding `max_depth` will be skipped
     Returns:
         sqlglot.Expression: simplified expression
     """
 
     dialect = Dialect.get_or_raise(dialect)
 
-    def _simplify(expression, root=True):
-        if (
-            max_depth
-            and isinstance(expression, exp.Connector)
-            and not isinstance(expression.parent, exp.Connector)
-        ):
-            depth = connector_depth(expression)
-            if depth > max_depth:
-                logger.info(
-                    f"Skipping simplification because connector depth {depth} exceeds max {max_depth}"
-                )
-                return expression
+    def _simplify(expression):
+        pre_transformation_stack = [expression]
+        post_transformation_stack = []
 
-        if expression.meta.get(FINAL):
-            return expression
+        while pre_transformation_stack:
+            node = pre_transformation_stack.pop()
 
-        # group by expressions cannot be simplified, for example
-        # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
-        # the projection must exactly match the group by key
-        group = expression.args.get("group")
+            if node.meta.get(FINAL):
+                continue
 
-        if group and hasattr(expression, "selects"):
-            groups = set(group.expressions)
-            group.meta[FINAL] = True
+            # group by expressions cannot be simplified, for example
+            # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
+            # the projection must exactly match the group by key
+            group = node.args.get("group")
 
-            for e in expression.selects:
-                for node in e.walk():
-                    if node in groups:
-                        e.meta[FINAL] = True
-                        break
+            if group and hasattr(node, "selects"):
+                groups = set(group.expressions)
+                group.meta[FINAL] = True
 
-            having = expression.args.get("having")
-            if having:
-                for node in having.walk():
-                    if node in groups:
-                        having.meta[FINAL] = True
-                        break
+                for s in node.selects:
+                    for n in s.walk():
+                        if n in groups:
+                            s.meta[FINAL] = True
+                            break
 
-        # Pre-order transformations
-        node = expression
-        node = rewrite_between(node)
-        node = uniq_sort(node, root)
-        node = absorb_and_eliminate(node, root)
-        node = simplify_concat(node)
-        node = simplify_conditionals(node)
+                having = node.args.get("having")
+                if having:
+                    for n in having.walk():
+                        if n in groups:
+                            having.meta[FINAL] = True
+                            break
 
-        if constant_propagation:
-            node = propagate_constants(node, root)
+            parent = node.parent
+            root = node is expression
 
-        exp.replace_children(node, lambda e: _simplify(e, False))
+            new_node = rewrite_between(node)
+            new_node = uniq_sort(new_node, root)
+            new_node = absorb_and_eliminate(new_node, root)
+            new_node = simplify_concat(new_node)
+            new_node = simplify_conditionals(new_node)
 
-        # Post-order transformations
-        node = simplify_not(node)
-        node = flatten(node)
-        node = simplify_connectors(node, root)
-        node = remove_complements(node, root)
-        node = simplify_coalesce(node, dialect)
-        node.parent = expression.parent
-        node = simplify_literals(node, root)
-        node = simplify_equality(node)
-        node = simplify_parens(node)
-        node = simplify_datetrunc(node, dialect)
-        node = sort_comparison(node)
-        node = simplify_startswith(node)
+            if constant_propagation:
+                new_node = propagate_constants(new_node, root)
 
-        if root:
-            expression.replace(node)
-        return node
+            if new_node is not node:
+                node.replace(new_node)
+
+            pre_transformation_stack.extend(
+                n for n in new_node.iter_expressions(reverse=True) if not n.meta.get(FINAL)
+            )
+            post_transformation_stack.append((new_node, parent))
+
+        while post_transformation_stack:
+            node, parent = post_transformation_stack.pop()
+            root = node is expression
+
+            # Resets parent, arg_key, index pointers– this is needed because some of the
+            # previous transformations mutate the AST, leading to an inconsistent state
+            for k, v in tuple(node.args.items()):
+                node.set(k, v)
+
+            # Post-order transformations
+            new_node = simplify_not(node)
+            new_node = flatten(new_node)
+            new_node = simplify_connectors(new_node, root)
+            new_node = remove_complements(new_node, root)
+            new_node = simplify_coalesce(new_node, dialect)
+
+            new_node.parent = parent
+
+            new_node = simplify_literals(new_node, root)
+            new_node = simplify_equality(new_node)
+            new_node = simplify_parens(new_node)
+            new_node = simplify_datetrunc(new_node, dialect)
+            new_node = sort_comparison(new_node)
+            new_node = simplify_startswith(new_node)
+
+            if new_node is not node:
+                node.replace(new_node)
+
+        return new_node
 
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)
     return expression
-
-
-def connector_depth(expression: exp.Expression) -> int:
-    """
-    Determine the maximum depth of a tree of Connectors.
-
-    For example:
-        >>> from sqlglot import parse_one
-        >>> connector_depth(parse_one("a AND b AND c AND d"))
-        3
-    """
-    stack = deque([(expression, 0)])
-    max_depth = 0
-
-    while stack:
-        expression, depth = stack.pop()
-
-        if not isinstance(expression, exp.Connector):
-            continue
-
-        depth += 1
-        max_depth = max(depth, max_depth)
-
-        stack.append((expression.left, depth))
-        stack.append((expression.right, depth))
-
-    return max_depth
 
 
 def catch(*exceptions):

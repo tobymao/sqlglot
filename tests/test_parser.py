@@ -956,3 +956,41 @@ class TestParser(unittest.TestCase):
         # Incomplete or incorrect anonymous meta comments are not registered
         ast = parse_one("YEAR(a) /* sqlglot.anon */")
         self.assertIsInstance(ast, exp.Year)
+
+    def test_identifier_meta(self):
+        ast = parse_one(
+            "SELECT a, b FROM test_schema.test_table_a UNION ALL SELECT c, d FROM test_catalog.test_schema.test_table_b"
+        )
+        for identifier in ast.find_all(exp.Identifier):
+            self.assertEqual(set(identifier.meta), {"line", "col", "start", "end"})
+
+        self.assertEqual(
+            ast.this.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 41, "start": 29, "end": 40},
+        )
+        self.assertEqual(
+            ast.this.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 28, "start": 17, "end": 27},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 106, "start": 94, "end": 105},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 93, "start": 82, "end": 92},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["catalog"].meta,
+            {"line": 1, "col": 81, "start": 69, "end": 80},
+        )
+
+    def test_quoted_identifier_meta(self):
+        sql = 'SELECT "a" FROM "test_schema"."test_table_a"'
+        ast = parse_one(sql)
+
+        db_meta = ast.args["from"].this.args["db"].meta
+        self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], '"test_schema"')
+
+        table_meta = ast.args["from"].this.this.meta
+        self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], '"test_table_a"')

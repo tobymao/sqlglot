@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import typing as t
 from collections import defaultdict
 
 from sqlglot import alias, exp
@@ -5,6 +8,12 @@ from sqlglot.optimizer.qualify_columns import Resolver
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
+from sqlglot.helper import seq_get
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+    from sqlglot.schema import Schema
+    from sqlglot.dialects.dialect import DialectType
 
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
@@ -15,7 +24,12 @@ def default_selection(is_agg: bool) -> exp.Alias:
     return alias(exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_")
 
 
-def pushdown_projections(expression, schema=None, remove_unused_selections=True):
+def pushdown_projections(
+    expression: E,
+    schema: t.Optional[t.Dict | Schema] = None,
+    remove_unused_selections: bool = True,
+    dialect: DialectType = None,
+) -> E:
     """
     Rewrite sqlglot AST to remove unused columns projections.
 
@@ -33,9 +47,9 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
         sqlglot.Expression: optimized expression
     """
     # Map of Scope to all columns being selected by outer queries.
-    schema = ensure_schema(schema)
-    source_column_alias_count = {}
-    referenced_columns = defaultdict(set)
+    schema = ensure_schema(schema, dialect=dialect)
+    source_column_alias_count: t.Dict[exp.Expression | Scope, int] = {}
+    referenced_columns: t.DefaultDict[Scope, t.Set[str | object]] = defaultdict(set)
 
     # We build the scope tree (which is traversed in DFS postorder), then iterate
     # over the result in reverse order. This should ensure that the set of selected
@@ -68,12 +82,12 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
                     if scope.expression.args.get("by_name"):
                         referenced_columns[right] = referenced_columns[left]
                     else:
-                        referenced_columns[right] = [
+                        referenced_columns[right] = {
                             right.expression.selects[i].alias_or_name
                             for i, select in enumerate(left.expression.selects)
                             if SELECT_ALL in parent_selections
                             or select.alias_or_name in parent_selections
-                        ]
+                        }
 
         if isinstance(scope.expression, exp.Select):
             if remove_unused_selections:
@@ -92,7 +106,13 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():
                 if isinstance(source, Scope):
-                    columns = {SELECT_ALL} if scope.pivots else selects.get(name) or set()
+                    select = seq_get(source.expression.selects, 0)
+
+                    if scope.pivots or isinstance(select, exp.QueryTransform):
+                        columns = {SELECT_ALL}
+                    else:
+                        columns = selects.get(name) or set()
+
                     referenced_columns[source].update(columns)
 
                 column_aliases = node.alias_column_names

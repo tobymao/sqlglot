@@ -1,12 +1,12 @@
+import sys
 import typing as t
 from argparse import ArgumentParser
 
-from helpers import ascii_table
+from benchmarks.helpers import ascii_table
 from sqlglot.optimizer import optimize
 from sqlglot import parse_one
 from tests.helpers import load_sql_fixture_pairs, TPCH_SCHEMA, TPCDS_SCHEMA
 from timeit import Timer
-import sys
 
 # Deeply nested conditions currently require a lot of recursion
 sys.setrecursionlimit(10000)

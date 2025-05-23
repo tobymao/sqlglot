@@ -401,6 +401,8 @@ class Snowflake(Dialect):
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
         TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
 
+        COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
@@ -510,6 +512,7 @@ class Snowflake(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.GET: lambda self: self._parse_get(),
             TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
@@ -855,6 +858,21 @@ class Snowflake(Dialect):
                 properties=self._parse_properties(),
             )
 
+        def _parse_get(self) -> exp.Get | exp.Command:
+            start = self._prev
+            target = self._parse_location_path()
+
+            # Parse as command if unquoted file path
+            if self._curr.token_type == TokenType.URI_START:
+                return self._parse_as_command(start)
+
+            return self.expression(
+                exp.Get,
+                this=self._parse_string(),
+                target=target,
+                properties=self._parse_properties(),
+            )
+
         def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
@@ -931,10 +949,9 @@ class Snowflake(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "FILE://": TokenType.URI_START,
             "BYTEINT": TokenType.INT,
-            "CHAR VARYING": TokenType.VARCHAR,
-            "CHARACTER VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,
             "FILE FORMAT": TokenType.FILE_FORMAT,
+            "GET": TokenType.GET,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
@@ -1013,6 +1030,7 @@ class Snowflake(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: rename_func("DATE_PART"),
@@ -1060,6 +1078,7 @@ class Snowflake(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_window_clause,
                     transforms.eliminate_distinct_on,
                     transforms.explode_projection_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
@@ -1112,6 +1131,7 @@ class Snowflake(Dialect):
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.NESTED: "OBJECT",
             exp.DataType.Type.STRUCT: "OBJECT",
+            exp.DataType.Type.BIGDECIMAL: "DOUBLE",
         }
 
         TOKEN_MAPPING = {
@@ -1356,3 +1376,25 @@ class Snowflake(Dialect):
             if offset and not limit:
                 expression.limit(exp.Null(), copy=False)
             return super().select_sql(expression)
+
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+            is_materialized = expression.find(exp.MaterializedProperty)
+            copy_grants_property = expression.find(exp.CopyGrantsProperty)
+
+            if expression.kind == "VIEW" and is_materialized and copy_grants_property:
+                # For materialized views, COPY GRANTS is located *before* the columns list
+                # This is in contrast to normal views where COPY GRANTS is located *after* the columns list
+                # We default CopyGrantsProperty to POST_SCHEMA which means we need to output it POST_NAME if a materialized view is detected
+                # ref: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view#syntax
+                # ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
+                post_schema_properties = locations[exp.Properties.Location.POST_SCHEMA]
+                post_schema_properties.pop(post_schema_properties.index(copy_grants_property))
+
+                this_name = self.sql(expression.this, "this")
+                copy_grants = self.sql(copy_grants_property)
+                this_schema = self.schema_columns_sql(expression.this)
+                this_schema = f"{self.sep()}{this_schema}" if this_schema else ""
+
+                return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
+
+            return super().createable_sql(expression, locations)

@@ -31,6 +31,8 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.Alter)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
+        self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
@@ -76,6 +78,7 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_SCHEMA")
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
+        self.validate_identity("SELECT INTERVAL '-1 MONTH'")
         self.validate_identity(
             "SELECT * FROM test_data, LATERAL JSONB_ARRAY_ELEMENTS(data) WITH ORDINALITY AS elem(value, ordinality)"
         )
@@ -372,6 +375,14 @@ FROM json_data, field_ids""",
         )
 
         self.validate_all(
+            "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
+            read={
+                "mysql": "SELECT DATE_ADD(CURRENT_TIMESTAMP, INTERVAL -1 QUARTER)",
+                "postgres": "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
+                "tsql": "SELECT DATEADD(QUARTER, -1, GETDATE())",
+            },
+        )
+        self.validate_all(
             "SELECT ARRAY[]::INT[] AS foo",
             write={
                 "postgres": "SELECT CAST(ARRAY[] AS INT[]) AS foo",
@@ -568,7 +579,7 @@ FROM json_data, field_ids""",
             "x ^ y",
             write={
                 "": "POWER(x, y)",
-                "postgres": "x ^ y",
+                "postgres": "POWER(x, y)",
             },
         )
         self.validate_all(
@@ -765,7 +776,7 @@ FROM json_data, field_ids""",
             "x / y ^ z",
             write={
                 "": "x / POWER(y, z)",
-                "postgres": "x / y ^ z",
+                "postgres": "x / POWER(y, z)",
             },
         )
         self.validate_all(

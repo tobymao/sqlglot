@@ -11,6 +11,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT GET(a, b)")
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),
@@ -22,7 +23,7 @@ class TestSnowflake(Validator):
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
-        self.validate_identity("exclude := [foo]")
+        self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
@@ -109,6 +110,10 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT 1 put",
             "SELECT 1 AS put",
+        )
+        self.validate_identity(
+            "SELECT 1 get",
+            "SELECT 1 AS get",
         )
         self.validate_identity(
             "WITH t (SELECT 1 AS c) SELECT c FROM t",
@@ -609,7 +614,7 @@ class TestSnowflake(Validator):
                 "hive": "POWER(x, 2)",
                 "mysql": "POWER(x, 2)",
                 "oracle": "POWER(x, 2)",
-                "postgres": "x ^ 2",
+                "postgres": "POWER(x, 2)",
                 "presto": "POWER(x, 2)",
                 "redshift": "POWER(x, 2)",
                 "snowflake": "POWER(x, 2)",
@@ -1014,6 +1019,55 @@ class TestSnowflake(Validator):
                 "bigquery": "SELECT FROM_HEX('65')",
                 "duckdb": "SELECT UNHEX('65')",
                 "snowflake": "SELECT HEX_DECODE_BINARY('65')",
+            },
+        )
+
+        self.validate_all(
+            "DAYOFWEEKISO(foo)",
+            read={
+                "presto": "DAY_OF_WEEK(foo)",
+                "trino": "DAY_OF_WEEK(foo)",
+            },
+            write={
+                "snowflake": "DAYOFWEEKISO(foo)",
+            },
+        )
+
+        self.validate_all(
+            "DAYOFWEEKISO(foo)",
+            read={
+                "presto": "DOW(foo)",
+                "trino": "DOW(foo)",
+            },
+            write={
+                "snowflake": "DAYOFWEEKISO(foo)",
+            },
+        )
+
+        self.validate_all(
+            "DAYOFYEAR(foo)",
+            read={
+                "presto": "DOY(foo)",
+                "trino": "DOY(foo)",
+            },
+            write={
+                "snowflake": "DAYOFYEAR(foo)",
+            },
+        )
+
+        with self.assertRaises(ParseError):
+            parse_one(
+                "SELECT id, PRIOR name AS parent_name, name FROM tree CONNECT BY NOCYCLE PRIOR id = parent_id",
+                dialect="snowflake",
+            )
+
+        self.validate_all(
+            "SELECT CAST(1 AS DOUBLE), CAST(1 AS DOUBLE)",
+            read={
+                "bigquery": "SELECT CAST(1 AS BIGDECIMAL), CAST(1 AS BIGNUMERIC)",
+            },
+            write={
+                "snowflake": "SELECT CAST(1 AS DOUBLE), CAST(1 AS DOUBLE)",
             },
         )
 
@@ -2465,6 +2519,33 @@ SINGLE = TRUE""",
             check_command_warning=True,
         )
 
+    def test_get_from_stage(self):
+        self.validate_identity('GET @"my_DB"."schEMA1"."MYstage" \'file:///dir/tmp.csv\'')
+        self.validate_identity("GET @s1/test 'file:///dir/tmp.csv'")
+
+        # GET with file path and stage ref containing spaces (wrapped in single quotes)
+        ast = parse_one("GET '@s1/my folder' 'file://my file.txt'", read="snowflake")
+        self.assertIsInstance(ast, exp.Get)
+        self.assertEqual(ast.args["target"], exp.Var(this="'@s1/my folder'"))
+        self.assertEqual(ast.this, exp.Literal(this="file://my file.txt", is_string=True))
+        self.assertEqual(ast.sql("snowflake"), "GET '@s1/my folder' 'file://my file.txt'")
+
+        # expression with additional properties
+        ast = parse_one("GET @stage1/folder 'file:///tmp/my.txt' PARALLEL = 1", read="snowflake")
+        self.assertIsInstance(ast, exp.Get)
+        self.assertEqual(ast.args["target"], exp.Var(this="@stage1/folder"))
+        self.assertEqual(ast.this, exp.Literal(this="file:///tmp/my.txt", is_string=True))
+        properties = ast.args.get("properties")
+        props_dict = {prop.this.this: prop.args["value"].this for prop in properties.expressions}
+        self.assertEqual(props_dict, {"PARALLEL": "1"})
+
+        # the unquoted URI variant is not fully supported yet
+        self.validate_identity("GET @%table file:///dir/tmp.csv", check_command_warning=True)
+        self.validate_identity(
+            "GET @s1/test file:///dir/tmp.csv PARALLEL=1",
+            check_command_warning=True,
+        )
+
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")
         self.validate_identity("SELECT $1.elem")
@@ -2563,3 +2644,48 @@ SINGLE = TRUE""",
                     "duckdb": f"SELECT LISTAGG({distinct}col, '|SEPARATOR|' ORDER BY col2) FROM t",
                 },
             )
+
+    def test_rely_options(self):
+        for option in ("NORELY", "RELY"):
+            self.validate_identity(
+                f"CREATE TABLE t (col1 INT PRIMARY KEY {option}, col2 INT UNIQUE {option}, col3 INT NOT NULL FOREIGN KEY REFERENCES other_t (id) {option})"
+            )
+            self.validate_identity(
+                f"CREATE TABLE t (col1 INT, col2 INT, col3 INT, PRIMARY KEY (col1) {option}, UNIQUE (col1, col2) {option}, FOREIGN KEY (col3) REFERENCES other_t (id) {option})"
+            )
+
+    def test_parameter(self):
+        expr = self.validate_identity("SELECT :1")
+        self.assertEqual(expr.find(exp.Placeholder), exp.Placeholder(this="1"))
+        self.validate_identity("SELECT :1, :2")
+        self.validate_identity("SELECT :1 + :2")
+
+    def test_max_by_min_by(self):
+        max_by = self.validate_identity("MAX_BY(DISTINCT selected_col, filtered_col)")
+        min_by = self.validate_identity("MIN_BY(DISTINCT selected_col, filtered_col)")
+
+        for node in (max_by, min_by):
+            self.assertEqual(len(node.this.expressions), 1)
+            self.assertIsInstance(node.expression, exp.Column)
+
+    def test_create_view_copy_grants(self):
+        # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
+        self.validate_identity(
+            "CREATE OR REPLACE VIEW FOO (A, B) COPY GRANTS AS SELECT A, B FROM TBL"
+        )
+
+        # for materialized views, 'COPY GRANTS' must go *before* the column list or an error will be thrown. ref: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view#syntax
+        self.validate_identity(
+            "CREATE OR REPLACE MATERIALIZED VIEW FOO COPY GRANTS (A, B) AS SELECT A, B FROM TBL"
+        )
+
+        # check that only 'COPY GRANTS' goes before the column list and other properties still go after
+        self.validate_identity(
+            "CREATE OR REPLACE MATERIALIZED VIEW FOO COPY GRANTS (A, B) COMMENT='foo' TAG (a='b') AS SELECT A, B FROM TBL"
+        )
+
+        # no COPY GRANTS
+        self.validate_identity("CREATE OR REPLACE VIEW FOO (A, B) AS SELECT A, B FROM TBL")
+        self.validate_identity(
+            "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
+        )

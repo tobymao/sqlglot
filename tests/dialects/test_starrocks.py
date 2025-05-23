@@ -6,6 +6,8 @@ class TestStarrocks(Validator):
     dialect = "starrocks"
 
     def test_starrocks(self):
+        self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_', 'NULL')")
+        self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
 
     def test_ddl(self):
@@ -35,6 +37,9 @@ class TestStarrocks(Validator):
         )
         self.validate_identity(
             "CREATE TABLE foo (col1 LARGEINT) DISTRIBUTED BY HASH (col1) BUCKETS 1"
+        )
+        self.validate_identity(
+            "CREATE VIEW foo (foo_col1) SECURITY NONE AS SELECT bar_col1 FROM bar"
         )
 
     def test_identity(self):

@@ -62,6 +62,7 @@ dialect implementations in order to understand how their various components can 
 """
 
 import importlib
+import threading
 
 DIALECTS = [
     "Athena",
@@ -105,11 +106,14 @@ MODULE_BY_ATTRIBUTE = {
 
 __all__ = list(MODULE_BY_ATTRIBUTE)
 
+_import_lock = threading.Lock()
+
 
 def __getattr__(name):
     module_name = MODULE_BY_ATTRIBUTE.get(name)
     if module_name:
-        module = importlib.import_module(f"sqlglot.dialects.{module_name}")
+        with _import_lock:
+            module = importlib.import_module(f"sqlglot.dialects.{module_name}")
         return getattr(module, name)
 
     raise AttributeError(f"module {__name__} has no attribute {name}")

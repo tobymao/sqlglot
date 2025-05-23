@@ -222,6 +222,7 @@ class TokenType(AutoName):
     UNKNOWN = auto()
     VECTOR = auto()
     DYNAMIC = auto()
+    VOID = auto()
 
     # keywords
     ALIAS = auto()
@@ -289,6 +290,7 @@ class TokenType(AutoName):
     FROM = auto()
     FULL = auto()
     FUNCTION = auto()
+    GET = auto()
     GLOB = auto()
     GLOBAL = auto()
     GRANT = auto()
@@ -333,6 +335,7 @@ class TokenType(AutoName):
     MODEL = auto()
     NATURAL = auto()
     NEXT = auto()
+    NOTHING = auto()
     NOTNULL = auto()
     NULL = auto()
     OBJECT_IDENTIFIER = auto()
@@ -904,6 +907,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "JSONB": TokenType.JSONB,
         "CHAR": TokenType.CHAR,
         "CHARACTER": TokenType.CHAR,
+        "CHAR VARYING": TokenType.VARCHAR,
+        "CHARACTER VARYING": TokenType.VARCHAR,
         "NCHAR": TokenType.NCHAR,
         "VARCHAR": TokenType.VARCHAR,
         "VARCHAR2": TokenType.VARCHAR,
@@ -1106,7 +1111,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             # Ensures we don't count an extra line if we get a \r\n line break sequence
             if not (self._char == "\r" and self._peek == "\n"):
-                self._col = 1
+                self._col = i
                 self._line += 1
         else:
             self._col += i

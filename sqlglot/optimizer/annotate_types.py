@@ -32,7 +32,7 @@ def annotate_types(
     schema: t.Optional[t.Dict | Schema] = None,
     annotators: t.Optional[AnnotatorsType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
-    dialect: t.Optional[DialectType] = None,
+    dialect: DialectType = None,
 ) -> E:
     """
     Infers the types of an expression, annotating its AST accordingly.
@@ -55,9 +55,9 @@ def annotate_types(
         The expression annotated with types.
     """
 
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, dialect=dialect)
 
-    return TypeAnnotator(schema, annotators, coerces_to, dialect=dialect).annotate(expression)
+    return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 
 
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
@@ -182,11 +182,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         annotators: t.Optional[AnnotatorsType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
-        dialect: t.Optional[DialectType] = None,
     ) -> None:
         self.schema = schema
-        self.annotators = annotators or Dialect.get_or_raise(dialect).ANNOTATORS
-        self.coerces_to = coerces_to or self.COERCES_TO
+        self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
+        self.coerces_to = (
+            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
+        )
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
@@ -311,7 +312,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _maybe_coerce(
-        self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
+        self,
+        type1: exp.DataType | exp.DataType.Type,
+        type2: exp.DataType | exp.DataType.Type,
     ) -> exp.DataType | exp.DataType.Type:
         """
         Returns type2 if type1 can be coerced into it, otherwise type1.
@@ -328,7 +331,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(type2, exp.DataType):
             if type2.expressions:
-                return type1
+                return type2
             type2_value = type2.this
         else:
             type2_value = type2

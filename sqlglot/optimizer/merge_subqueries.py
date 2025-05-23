@@ -5,7 +5,7 @@ import typing as t
 from collections import defaultdict
 
 from sqlglot import expressions as exp
-from sqlglot.helper import find_new_name
+from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -92,9 +92,9 @@ def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(outer_scope, inner_scope, table, alias)
             _merge_expressions(outer_scope, inner_scope, alias)
+            _merge_order(outer_scope, inner_scope)
             _merge_joins(outer_scope, inner_scope, from_or_join)
             _merge_where(outer_scope, inner_scope, from_or_join)
-            _merge_order(outer_scope, inner_scope)
             _merge_hints(outer_scope, inner_scope)
             _pop_cte(inner_scope)
             outer_scope.clear_cache()
@@ -111,9 +111,9 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
                 _merge_expressions(outer_scope, inner_scope, alias)
+                _merge_order(outer_scope, inner_scope)
                 _merge_joins(outer_scope, inner_scope, from_or_join)
                 _merge_where(outer_scope, inner_scope, from_or_join)
-                _merge_order(outer_scope, inner_scope)
                 _merge_hints(outer_scope, inner_scope)
                 outer_scope.clear_cache()
 
@@ -217,6 +217,7 @@ def _mergeable(
         and not _is_a_window_expression_in_unmergable_operation()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)
+        and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
     )
 
 

@@ -197,6 +197,7 @@ class Redshift(Postgres):
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_window_clause,
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.unqualify_unnest,
@@ -220,9 +221,6 @@ class Redshift(Postgres):
 
         # Postgres doesn't support JSON_PARSE, but Redshift does
         TRANSFORMS.pop(exp.ParseJSON)
-
-        # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
-        TRANSFORMS.pop(exp.Pow)
 
         # Redshift supports these functions
         TRANSFORMS.pop(exp.AnyValue)

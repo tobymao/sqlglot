@@ -162,7 +162,7 @@ class Teradata(Dialect):
             # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
             "TRYCAST": parser.Parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),
-            "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
+            "TRANSLATE": lambda self: self._parse_translate(),
         }
 
         FUNCTIONS = {
@@ -175,19 +175,17 @@ class Teradata(Dialect):
             TokenType.DSTAR: exp.Pow,
         }
 
-        def _parse_translate(self, strict: bool) -> exp.Expression:
+        def _parse_translate(self) -> exp.TranslateCharacters:
             this = self._parse_assignment()
+            self._match(TokenType.USING)
+            self._match_texts(self.CHARSET_TRANSLATORS)
 
-            if not self._match(TokenType.USING):
-                self.raise_error("Expected USING in TRANSLATE")
-
-            if self._match_texts(self.CHARSET_TRANSLATORS):
-                charset_split = self._prev.text.split("_TO_")
-                to = self.expression(exp.CharacterSet, this=charset_split[1])
-            else:
-                self.raise_error("Expected a character set translator after USING in TRANSLATE")
-
-            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+            return self.expression(
+                exp.TranslateCharacters,
+                this=this,
+                expression=self._prev.text.upper(),
+                with_error=self._match_text_seq("WITH", "ERROR"),
+            )
 
         # FROM before SET in Teradata UPDATE syntax
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause

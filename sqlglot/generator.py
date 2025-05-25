@@ -4287,7 +4287,8 @@ class Generator(metaclass=_Generator):
             agg_func = expression.find(exp.AggFunc)
 
             if agg_func:
-                return self.sql(agg_func)[:-1] + f" {text})"
+                agg_func_sql = self.sql(agg_func, comment=False)[:-1] + f" {text})"
+                return self.maybe_comment(agg_func_sql, comments=agg_func.comments)
 
         return f"{self.sql(expression, 'this')} {text}"
 

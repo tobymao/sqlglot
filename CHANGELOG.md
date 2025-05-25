@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v26.20.0] - 2025-05-25
+### :sparkles: New Features
+- [`a51744f`](https://github.com/tobymao/sqlglot/commit/a51744f84945dbb99a2ab3b576eccf1543e21e17) - **optimizer**: annotate SORT_ARRAY *(PR [#5110](https://github.com/tobymao/sqlglot/pull/5110) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#5107](https://github.com/tobymao/sqlglot/issues/5107) opened by [@fernandomorato](https://github.com/fernandomorato)*
+
+### :bug: Bug Fixes
+- [`ef93832`](https://github.com/tobymao/sqlglot/commit/ef938328ea18dede07ea4be7425a203770b4ca7d) - **tsql**: separate ISNULL from COALESCE *(PR [#5105](https://github.com/tobymao/sqlglot/pull/5105) by [@geooo109](https://github.com/geooo109))*
+- [`10fe4c0`](https://github.com/tobymao/sqlglot/commit/10fe4c039a15f12c97bdf74e2e4cf547691f8546) - Return parameterized `type2` in `_maybe_coerce` *(PR [#5106](https://github.com/tobymao/sqlglot/pull/5106) by [@aninhalbuquerque](https://github.com/aninhalbuquerque))*
+- [`2a95777`](https://github.com/tobymao/sqlglot/commit/2a957772fb2d95442604cf19451bf8cb58be0aeb) - **snowflake**: Put COPY GRANTS in the right place for materialized views *(PR [#5109](https://github.com/tobymao/sqlglot/pull/5109) by [@erindru](https://github.com/erindru))*
+- [`8ba0eca`](https://github.com/tobymao/sqlglot/commit/8ba0ecaa4c3b81594a0bc0a6a88f205dc64fb9aa) - **optimizer**: avoid creating extra ARRAY for annotate SORT_ARRAY *(commit by [@geooo109](https://github.com/geooo109))*
+- [`a2ba1aa`](https://github.com/tobymao/sqlglot/commit/a2ba1aa14891db9edb853296501fac6995f8d802) - **optimizer**: annotate DPipe with VARCHAR *(PR [#5111](https://github.com/tobymao/sqlglot/pull/5111) by [@geooo109](https://github.com/geooo109))*
+- [`57db62a`](https://github.com/tobymao/sqlglot/commit/57db62ac9cf115b699076af2fb951188b54639be) - ignore/respect nulls generation edge case *(PR [#5117](https://github.com/tobymao/sqlglot/pull/5117) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`a330093`](https://github.com/tobymao/sqlglot/commit/a33009349b49f244f857976dad72bee3943b80c0) - **executor**: add type hints in table module *(PR [#5113](https://github.com/tobymao/sqlglot/pull/5113) by [@esadek](https://github.com/esadek))*
+
+
 ## [v26.19.0] - 2025-05-22
 ### :boom: BREAKING CHANGES
 - due to [`886f85b`](https://github.com/tobymao/sqlglot/commit/886f85bf61d23ef968b9bcfd98ab606c8a590526) - pass dialect to ensure_schema *(PR [#5100](https://github.com/tobymao/sqlglot/pull/5100) by [@georgesittas](https://github.com/georgesittas))*:
@@ -6785,3 +6802,4 @@ Changelog
 [v26.18.0]: https://github.com/tobymao/sqlglot/compare/v26.12.3...v26.18.0
 [v26.18.1]: https://github.com/tobymao/sqlglot/compare/v26.18.0...v26.18.1
 [v26.19.0]: https://github.com/tobymao/sqlglot/compare/v26.18.1...v26.19.0
+[v26.20.0]: https://github.com/tobymao/sqlglot/compare/v26.19.0...v26.20.0

@@ -55,6 +55,17 @@ class Scope:
         union_scopes (list[Scope, Scope]): If this Scope is for a Union expression, this will be
             a list of the left and right child scopes.
     """
+    __slots__ = (
+        "expression", "sources", "lateral_sources", "cte_sources", "outer_columns",
+        "parent", "scope_type", "subquery_scopes", "derived_table_scopes",
+        "table_scopes", "cte_scopes", "union_scopes", "udtf_scopes",
+        "can_be_correlated",
+        # cached fields
+        "_collected", "_raw_columns", "_stars", "_derived_tables", "_udtfs",
+        "_tables", "_ctes", "_subqueries", "_selected_sources", "_columns",
+        "_external_columns", "_join_hints", "_pivots", "_references",
+        "_semi_anti_join_tables",
+    )
 
     def __init__(
         self,
@@ -87,20 +98,27 @@ class Scope:
 
     def clear_cache(self):
         self._collected = False
-        self._raw_columns = None
-        self._stars = None
-        self._derived_tables = None
-        self._udtfs = None
-        self._tables = None
-        self._ctes = None
-        self._subqueries = None
-        self._selected_sources = None
-        self._columns = None
-        self._external_columns = None
-        self._join_hints = None
-        self._pivots = None
-        self._references = None
-        self._semi_anti_join_tables = None
+        for attr, empty in (
+            ("_raw_columns", []),
+            ("_stars", []),
+            ("_derived_tables", []),
+            ("_udtfs", []),
+            ("_tables", []),
+            ("_ctes", []),
+            ("_subqueries", []),
+            ("_selected_sources", {}),
+            ("_columns", []),
+            ("_external_columns", []),
+            ("_join_hints", []),
+            ("_pivots", []),
+            ("_references", []),
+        ):
+            val = getattr(self, attr, None)
+            if val:
+                val.clear() if hasattr(val, "clear") else None
+            else:
+                setattr(self, attr, empty)
+        self._semi_anti_join_tables = set()
 
     def branch(
         self, expression, scope_type, sources=None, cte_sources=None, lateral_sources=None, **kwargs

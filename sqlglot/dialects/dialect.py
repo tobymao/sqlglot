@@ -12,7 +12,15 @@ from sqlglot import exp
 from sqlglot.dialects import DIALECT_MODULE_NAMES
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
-from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses, to_bool
+from sqlglot.helper import (
+    AutoName,
+    flatten,
+    is_int,
+    seq_get,
+    subclasses,
+    suggest_closest_match_and_fail,
+    to_bool,
+)
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -794,6 +802,12 @@ class Dialect(metaclass=_Dialect):
     # Specifies what types a given type can be coerced into
     COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
 
+    # Determines the supported Dialect instance settings
+    SUPPORTED_SETTINGS = {
+        "normalization_strategy",
+        "version",
+    }
+
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
         """
@@ -843,16 +857,9 @@ class Dialect(metaclass=_Dialect):
 
             result = cls.get(dialect_name.strip())
             if not result:
-                from difflib import get_close_matches
+                suggest_closest_match_and_fail("dialect", dialect_name, list(DIALECT_MODULE_NAMES))
 
-                close_matches = get_close_matches(dialect_name, list(DIALECT_MODULE_NAMES), n=1)
-
-                similar = seq_get(close_matches, 0) or ""
-                if similar:
-                    similar = f" Did you mean {similar}?"
-
-                raise ValueError(f"Unknown dialect '{dialect_name}'.{similar}")
-
+            assert result is not None
             return result(**kwargs)
 
         raise ValueError(f"Invalid dialect type for '{dialect}': '{type(dialect)}'.")
@@ -874,14 +881,18 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def __init__(self, **kwargs) -> None:
-        normalization_strategy = kwargs.pop("normalization_strategy", None)
+        self.version = Version(kwargs.pop("version", None))
 
+        normalization_strategy = kwargs.pop("normalization_strategy", None)
         if normalization_strategy is None:
             self.normalization_strategy = self.NORMALIZATION_STRATEGY
         else:
             self.normalization_strategy = NormalizationStrategy(normalization_strategy.upper())
 
         self.settings = kwargs
+
+        for unsupported_setting in kwargs.keys() - self.SUPPORTED_SETTINGS:
+            suggest_closest_match_and_fail("setting", unsupported_setting, self.SUPPORTED_SETTINGS)
 
     def __eq__(self, other: t.Any) -> bool:
         # Does not currently take dialect state into account
@@ -1025,10 +1036,6 @@ class Dialect(metaclass=_Dialect):
 
     def generator(self, **opts) -> Generator:
         return self.generator_class(dialect=self, **opts)
-
-    @property
-    def version(self) -> Version:
-        return Version(self.settings.get("version", None))
 
     def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
         return [

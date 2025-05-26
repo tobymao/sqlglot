@@ -11,6 +11,7 @@ from sqlglot import (
     parse_one,
 )
 from sqlglot.dialects import BigQuery, Hive, Snowflake
+from sqlglot.dialects.dialect import Version
 from sqlglot.parser import logger as parser_logger
 
 
@@ -134,12 +135,23 @@ class TestDialect(Validator):
             "oracle, normalization_strategy = lowercase, version = 19.5"
         )
         self.assertEqual(oracle_with_settings.normalization_strategy.value, "LOWERCASE")
-        self.assertEqual(oracle_with_settings.settings, {"version": "19.5"})
+        self.assertEqual(oracle_with_settings.version, Version("19.5"))
 
-        bool_settings = Dialect.get_or_raise("oracle, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool")
+        class MyDialect(Dialect):
+            SUPPORTED_SETTINGS = {"s1", "s2", "s3", "s4", "s5"}
+
+        bool_settings = Dialect.get_or_raise("mydialect, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool")
         self.assertEqual(
             bool_settings.settings,
             {"s1": True, "s2": True, "s3": False, "s4": False, "s5": "nonbool"},
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            Dialect.get_or_raise("tsql,normalisation_strategy=case_sensitive")
+
+        self.assertEqual(
+            "Unknown setting 'normalisation_strategy'. Did you mean normalization_strategy?",
+            str(cm.exception),
         )
 
     def test_compare_dialects(self):
@@ -170,7 +182,9 @@ class TestDialect(Validator):
 
     def test_compare_dialect_versions(self):
         ddb_v1 = Dialect.get_or_raise("duckdb, version=1.0")
-        ddb_v1_2 = Dialect.get_or_raise("duckdb, foo=bar, version=1.0")
+        ddb_v1_2 = Dialect.get_or_raise(
+            "duckdb, normalization_strategy=case_sensitive, version=1.0"
+        )
         ddb_v2 = Dialect.get_or_raise("duckdb, version=2.2.4")
         ddb_latest = Dialect.get_or_raise("duckdb")
 

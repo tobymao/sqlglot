@@ -1,12 +1,6 @@
-from datetime import date, datetime, timezone
-from sqlglot import exp, parse_one
-from sqlglot.dialects.exasol import Exasol, ExasolTokenType
-from sqlglot.expressions import convert
-from sqlglot.optimizer import traverse_scope
-from sqlglot.optimizer.qualify_columns import quote_identifiers
-from sqlglot.tokens import TokenType
+from sqlglot import exp
+from sqlglot.dialects.exasol import Exasol
 from tests.dialects.test_dialect import Validator
-from sqlglot.errors import ErrorLevel
 
 
 class TestExasol(Validator):
@@ -19,11 +13,11 @@ class TestExasol(Validator):
         ########## STRING FUNCTIONS ###########
         # self.validate_identity("SELECT ASCII('X')")
         self.validate_identity("SELECT BIT_LENGTH('aou') BIT_LENGTH")
-            # currently CHARACTER_LENGTH allows more than 1 arg (3)
+        # currently CHARACTER_LENGTH allows more than 1 arg (3)
         self.validate_identity(
-                "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
-                "SELECT LENGTH('aeiouäöü') C_LENGTH",
-            )
+            "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
+            "SELECT LENGTH('aeiouäöü') C_LENGTH",
+        )
         self.validate_identity("SELECT CHAR(88) CHR", "SELECT CHR(88) CHR")
         self.validate_identity(
             "SELECT COLOGNE_PHONETIC('schmitt'), COLOGNE_PHONETIC('Schmidt')"
@@ -40,7 +34,7 @@ class TestExasol(Validator):
         #     self.validate_identity(d)
 
         self.validate_identity("SELECT EDIT_DISTANCE('schmitt', 'Schmidt')")
-        # self.validate_identity("SELECT INITCAP('ExAsOl is great') INITCAP")
+        self.validate_identity("SELECT INITCAP('ExAsOl is great')")
         self.validate_identity(
             "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')"
         )
@@ -99,10 +93,148 @@ class TestExasol(Validator):
         self.validate_identity("SELECT RPAD('abc', 5, 'X')")
         self.validate_identity("SELECT LPAD('abc', 5, 'X')")
 
-        # self.validate_identity(
-        #     "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
-        #     "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",
-        # )
+        self.validate_identity(
+            "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
+            "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",
+        )
+        self.validate_identity("SELECT UPPER('AbCdEf') UPPER")
+        self.validate_identity(
+            "SELECT UCASE('bCdEf') UCASE", "SELECT UPPER('bCdEf') UCASE"
+        )
+
+        self.validate_all(
+            "SELECT LENGTH('aeiouäöü') C_LENGTH",
+            read={
+                "exasol": "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
+                "databricks": "SELECT char_length('aeiouäöü') C_LENGTH",
+                "clickhouse": "SELECT length('aeiouäöü') C_LENGTH",
+            },
+            write={
+                "exasol": "SELECT LENGTH('aeiouäöü') C_LENGTH",
+                "databricks": "SELECT LENGTH('aeiouäöü') AS C_LENGTH",
+                "clickhouse": "SELECT CHAR_LENGTH('aeiouäöü') AS C_LENGTH",
+            },
+        )
+
+        self.validate_all(
+            "SELECT CHR(88) CHR",
+            read={
+                "exasol": "SELECT CHAR(88) CHR",
+                "databricks": "SELECT char(88) AS CHR",
+                "mysql": "SELECT CHAR(88) AS CHR",
+            },
+            write={
+                "exasol": "SELECT CHR(88) CHR",
+                "mysql": "SELECT CHAR(88) AS CHR",
+                "databricks": "SELECT CHR(88) AS CHR",
+            },
+        )
+
+        self.validate_all(
+            "SELECT CONCAT('abc', 'def', 'g') CONCAT",
+            read={
+                "exasol": "SELECT CONCAT('abc', 'def', 'g') CONCAT",
+                "databricks": "SELECT CONCAT('abc', 'def', 'g') AS CONCAT",
+                "clickhouse": "SELECT CONCAT('abc', 'def', 'g') AS CONCAT",
+            },
+            write={
+                "exasol": "SELECT CONCAT('abc', 'def', 'g') CONCAT",
+                "databricks": "SELECT CONCAT('abc', 'def', 'g') AS CONCAT",
+                "clickhouse": "SELECT CONCAT('abc', 'def', 'g') AS CONCAT",
+            },
+        )
+
+        self.validate_all(
+            "SELECT EDIT_DISTANCE('schmitt', 'Schmidt')",
+            read={
+                "exasol": "SELECT EDIT_DISTANCE('schmitt', 'Schmidt')",
+                "databricks": "SELECT levenshtein('schmitt', 'Schmidt')",
+                "clickhouse": "SELECT editDistance('schmitt', 'Schmidt')",
+            },
+            write={
+                "exasol": "SELECT EDIT_DISTANCE('schmitt', 'Schmidt')",
+                "databricks": "SELECT LEVENSHTEIN('schmitt', 'Schmidt')",
+                "clickhouse": "SELECT editDistance('schmitt', 'Schmidt')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+            read={
+                "exasol": "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+                "mysql": "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+                "snowflake": "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+            },
+            write={
+                "exasol": "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+                "mysql": "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+                "snowflake": "SELECT INSERT('abc', 2, 2, 'xxx'), INSERT('abcdef', 3, 2, 'CD')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LOWER('AbCdEf') LCASE",
+            read={
+                "exasol": "SELECT LCASE('AbCdEf') LCASE",
+                "databricks": "SELECT LCASE('AbCdEf') AS LCASE",
+                "clickhouse": "SELECT lower('AbCdEf') AS LCASE",
+            },
+            write={
+                "exasol": "SELECT LOWER('AbCdEf') LCASE",
+                "databricks": "SELECT LOWER('AbCdEf') AS LCASE",
+                "clickhouse": "SELECT LOWER('AbCdEf') AS LCASE",
+            },
+        )
+
+        self.validate_all(
+            "SELECT UPPER('AbCdEf') UPPER",
+            read={
+                "exasol": "SELECT UCASE('AbCdEf') UPPER",
+                "databricks": "SELECT UCASE('AbCdEf') AS UPPER",
+                "clickhouse": "SELECT upper('AbCdEf') AS UPPER",
+            },
+            write={
+                "exasol": "SELECT UPPER('AbCdEf') UPPER",
+                "databricks": "SELECT UPPER('AbCdEf') AS UPPER",
+                "clickhouse": "SELECT UPPER('AbCdEf') AS UPPER",
+            },
+        )
+
+        self.validate_all(
+            "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",
+            read={
+                "exasol": "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
+                "databricks": "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
+                "clickhouse": "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTRING('abcdef' FROM 4 FOR 2) S2, SUBSTRING('abcdef' FROM -3) S3, SUBSTR('abcdef', 7) S4",
+            },
+            write={
+                "exasol": "SELECT SUBSTR('abcdef', 2, 3) S1, SUBSTR('abcdef', 4, 2) S2, SUBSTR('abcdef', -3) S3, SUBSTR('abcdef', 7) S4",
+                "databricks": "SELECT SUBSTRING('abcdef', 2, 3) AS S1, SUBSTRING('abcdef', 4, 2) AS S2, SUBSTRING('abcdef', -3) AS S3, SUBSTRING('abcdef', 7) AS S4",
+                "clickhouse": "SELECT SUBSTRING('abcdef', 2, 3) AS S1, SUBSTRING('abcdef', 4, 2) AS S2, SUBSTRING('abcdef', -3) AS S3, SUBSTRING('abcdef', 7) AS S4",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LOCATE('cab', 'abcabcabc', -1) LOC",
+            write={
+                "exasol": "SELECT LOCATE('cab', 'abcabcabc', -1) LOC",
+                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('abcabcabc', -1), 'cab') = 0 THEN 0 ELSE STRPOS(SUBSTRING('abcabcabc', -1), 'cab') + -1 - 1 END AS LOC",
+                "presto": "SELECT IF(STRPOS(SUBSTRING('abcabcabc', -1), 'cab') = 0, 0, STRPOS(SUBSTRING('abcabcabc', -1), 'cab') + -1 - 1) AS LOC",
+                "hive": "SELECT LOCATE('cab', 'abcabcabc', -1) AS LOC",
+                "spark": "SELECT LOCATE('cab', 'abcabcabc', -1) AS LOC",
+            },
+        )
+
+        self.validate_all(
+            "SELECT INITCAP('ExAsOl is great')",
+            write={
+                "exasol": "SELECT INITCAP('ExAsOl is great')",
+                "duckdb": "SELECT INITCAP('ExAsOl is great')",
+                "presto": r"SELECT REGEXP_REPLACE('ExAsOl is great', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+                "hive": "SELECT INITCAP('ExAsOl is great')",
+                "spark": "SELECT INITCAP('ExAsOl is great')",
+            },
+        )
         # self.validate_identity(
         #     "SELECT TO_CHAR(DATE '2013-12-16', 'DD. MON YYYY', 'NLS_DATE_LANGUAGE=DEU') TO_CHAR"
         # )
@@ -1735,35 +1867,35 @@ class TestExasol(Validator):
                 exp.Mod(this=exp.Column(this="15"), expression=exp.Column(this="6")),
                 "MOD(15, 6)",
             ),
-            (
-                exp.Select(
-                    expressions=[
-                        exp.Alias(
-                            this=exp.Mid(
-                                this=exp.Literal.string("abcdef"),
-                                start=exp.Literal.number(2),
-                            ),
-                            alias="MID_COL",
-                        )
-                    ]
-                ),
-                "SELECT MID('abcdef', 2) MID_COL",
-            ),
-            (
-                exp.Select(
-                    expressions=[
-                        exp.Alias(
-                            this=exp.Mid(
-                                this=exp.Literal.string("abcdef"),
-                                start=exp.Literal.number(2),
-                                length=exp.Literal.number(3),
-                            ),
-                            alias="MID_COL",
-                        )
-                    ]
-                ),
-                "SELECT MID('abcdef', 2, 3) MID_COL",
-            ),
+            # (
+            #     exp.Select(
+            #         expressions=[
+            #             exp.Alias(
+            #                 this=exp.Mid(
+            #                     this=exp.Literal.string("abcdef"),
+            #                     start=exp.Literal.number(2),
+            #                 ),
+            #                 alias="MID_COL",
+            #             )
+            #         ]
+            #     ),
+            #     "SELECT MID('abcdef', 2) MID_COL",
+            # ),
+            # (
+            #     exp.Select(
+            #         expressions=[
+            #             exp.Alias(
+            #                 this=exp.Mid(
+            #                     this=exp.Literal.string("abcdef"),
+            #                     start=exp.Literal.number(2),
+            #                     length=exp.Literal.number(3),
+            #                 ),
+            #                 alias="MID_COL",
+            #             )
+            #         ]
+            #     ),
+            #     "SELECT MID('abcdef', 2, 3) MID_COL",
+            # ),
             (
                 exp.Select(
                     expressions=[
@@ -2770,7 +2902,8 @@ class TestExasol(Validator):
                         )
                     ]
                 ),
-                "SELECT SUBSTRING('abcdef' FROM 4 FOR 2) S2",
+                "SELECT SUBSTR('abcdef', 4, 2) S2",
+                # "SELECT SUBSTRING('abcdef' FROM 4 FOR 2) S2",
             ),
             (
                 exp.Select(

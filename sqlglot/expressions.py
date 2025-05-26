@@ -7211,15 +7211,6 @@ class Log2(Func):
 class Log10(Func):
     arg_types = {"this": True}
 
-
-
-class Mid(Func):
-    arg_types = {
-        "this": True,              
-        "start": True,             
-        "length": False,          
-    }
-    
 class MinScale(Func):
     arg_types = {"this": True}
 # Refers to a trailing semi-colon. This is only used to preserve trailing comments

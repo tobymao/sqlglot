@@ -578,7 +578,6 @@ class Exasol(Dialect):
             exp.Unicode: lambda self, e: self.unicode_sql(e),
             # exp.Abs : rename_func("ABS"),
             exp.Anonymous: lambda self, e: self._anonymous_func(e),
-            
             # exp.Acos: lambda self, e: f"ACOS({self.sql(e, 'this')})",
             # exp.DateAdd: rename_func(
             #     "ADD_DAYS"
@@ -590,13 +589,13 @@ class Exasol(Dialect):
             # exp.AddWeeks: lambda self, e: f"ADD_WEEKS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
             # exp.AddYears: lambda self, e: f"ADD_YEARS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
             exp.AnyValue: lambda self, e: self.windowed_func("ANY", e),
-            exp.ApproxDistinct: rename_func("APPROXIMATE_COUNT_DISTINCT"),
+            exp.ApproxDistinct: unsupported_args("accuracy")(rename_func("APPROXIMATE_COUNT_DISTINCT")),
             # exp.Ascii: lambda self, e: f"ASCII({self.sql(e, 'this')})",
             # exp.Asin: lambda self, e: f"ASIN({self.sql(e, 'this')})",
             # exp.Atan: lambda self, e: f"ATAN({self.sql(e, 'this')})",
             # exp.Atan2: lambda self, e: f"ATAN2({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.Avg: lambda self, e: self.windowed_func("AVG", e),
-            exp.BitwiseAnd: rename_func("BIT_AND"),#Good
+            exp.BitwiseAnd: rename_func("BIT_AND"),  # Good
             # exp.BitCheck: lambda self, e: f"BIT_CHECK({self.sql(e, 'this')}, {self.sql(e, 'expression')})", #Bad
             # exp.BitLength: lambda self, e: f"BIT_LENGTH({self.sql(e, 'this')})",#Bad
             # exp.BitLRotate: lambda self, e: f"BIT_LROTATE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",#Bad
@@ -607,7 +606,7 @@ class Exasol(Dialect):
             exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
             # exp.BitSet: lambda self, e: f"BIT_SET({self.sql(e, 'this')}, {self.sql(e, 'expression')})", #Bad
             # exp.BitToNum: lambda self, e: f"BIT_TO_NUM({', '.join(self.sql(arg) for arg in e.expressions)})", #Bad
-            exp.BitwiseXor: rename_func("BIT_XOR"), 
+            exp.BitwiseXor: rename_func("BIT_XOR"),
             # Case
             # Cast
             # exp.Ceil
@@ -670,9 +669,9 @@ class Exasol(Dialect):
             #         )
             #     )
             # })",
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("EDIT_DISTANCE")
-            ),
+            exp.Levenshtein: unsupported_args(
+                "ins_cost", "del_cost", "sub_cost", "max_dist"
+            )(rename_func("EDIT_DISTANCE")),
             exp.Every: lambda self, e: f"EVERY({self.sql(e, 'this')})",
             exp.Extract: lambda self, e: f"EXTRACT({self.sql(e, 'expression')} FROM {self._timestamp_literal(e, 'this')})",
             # exp.Extract
@@ -741,6 +740,7 @@ class Exasol(Dialect):
                 if e.args.get("expression") is not None
                 else f"LAG({self.sql(e, 'this')})"
             ),
+            # exp.Left
             # exp.LastValue
             # exp.LCase: rename_func("LCASE"),
             # LOWER and LCASE are aliases in exasol
@@ -843,7 +843,6 @@ class Exasol(Dialect):
             # exp.Round: lambda self, e: f"ADD_DAYS({self._timestamp_literal(e.this, 'this')}, {self.sql(e, 'expression')})",
             exp.StrPosition: _string_position_sql,
             exp.SessionParameter: lambda self, e: self.session_parameter_sql(e),
-            
             # exp.Sign
             # SOME in exasol is an alias of ANY
             # exp.Sqrt
@@ -865,8 +864,10 @@ class Exasol(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             # upper and ucase can be done like this
             exp.Variance: lambda self, e: self.variance_sql(e),
+            exp.Upper: lambda self, e: f"{e.args.get('sql_name', 'UPPER')}({self.sql(e.this)})",
             # exp.Week
             # exp.Year
+            # exp.Upper
         }
 
         PROPERTIES_LOCATION = {
@@ -1006,7 +1007,7 @@ class Exasol(Dialect):
                 "UNICODECHR": lambda e: self._render_func_with_args(
                     e, expected_arg_count=1
                 ),
-                "UCASE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                # "UCASE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "USER": lambda e: "USER",
                 "VALUE2PROC": lambda e: self._render_func_with_args(
                     e, expected_arg_count=1
@@ -1087,7 +1088,7 @@ class Exasol(Dialect):
                 "COT",
                 "SIN",
                 "TAN",
-                "TANH"
+                "TANH",
             ]
             for name in regr_funcs:
                 handlers[name] = lambda e: self._render_func_with_args(
@@ -1208,17 +1209,15 @@ class Exasol(Dialect):
 
             # Else, treat second argument as numeric (e.g., ROUND(42.123, 2))
             return f"ROUND({value_sql}, {self.sql(arg)})"
-        
+
         def connect_sql(self, expression: exp.Connect) -> str:
             prior = "PRIOR " if expression.args.get("prior") else ""
             nocycle = " NOCYCLE" if expression.args.get("nocycle") else ""
             condition = self.sql(expression, "this")
             return self.seg(f"CONNECT BY{nocycle} {prior}{condition}")
-        
+
         def dump_sql(self, expression: exp.Func) -> str:
             return self.func("DUMP", *expression.expressions)
-
-
 
         def _timestamp_literal(self, e, key):
             arg = e.args.get(key)
@@ -1248,15 +1247,17 @@ class Exasol(Dialect):
             kind = e.args.get("kind")
             return f"SESSION_PARAMETER({self.sql(e.this)}, {self.sql(kind)})"
 
-        def substring_sql(self, expression):
-            this = self.sql(expression.this)
-            start = self.sql(expression.args.get("start"))
-            length = expression.args.get("length")
+        def substring_sql(self, expression: exp.Substring) -> str:
+            if expression.args.get("_from_for"):
+                return f"SUBSTRING({self.sql(expression.this)} FROM {self.sql(expression.args.get('start'))} FOR {self.sql(expression.args.get('length'))})"
 
-            if length:
-                # Use ANSI style for full compatibility with Exasol
-                return f"SUBSTRING({this} FROM {start} FOR {self.sql(length)})"
-            return f"SUBSTR({this}, {start})"
+            # Default to SUBSTR format
+            return self.func(
+                "SUBSTR",
+                expression.this,
+                expression.args.get("start"),
+                expression.args.get("length"),
+            )
 
         def to_char_sql(self, expression):
             def format_arg(arg):

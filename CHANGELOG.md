@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v26.21.0] - 2025-05-26
+### :boom: BREAKING CHANGES
+- due to [`de67d3c`](https://github.com/tobymao/sqlglot/commit/de67d3c953191d77ecf8cf57e375e7d203cd8857) - error on unsupported dialect settings *(PR [#5119](https://github.com/tobymao/sqlglot/pull/5119) by [@georgesittas](https://github.com/georgesittas))*:
+
+  error on unsupported dialect settings (#5119)
+
+
+### :sparkles: New Features
+- [`344f2f1`](https://github.com/tobymao/sqlglot/commit/344f2f12b6ed02d3cfd265c33fe4428741bcf6d6) - store line/col position for Anonymous functions *(PR [#5120](https://github.com/tobymao/sqlglot/pull/5120) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`de67d3c`](https://github.com/tobymao/sqlglot/commit/de67d3c953191d77ecf8cf57e375e7d203cd8857) - error on unsupported dialect settings *(PR [#5119](https://github.com/tobymao/sqlglot/pull/5119) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.20.0] - 2025-05-25
 ### :sparkles: New Features
 - [`a51744f`](https://github.com/tobymao/sqlglot/commit/a51744f84945dbb99a2ab3b576eccf1543e21e17) - **optimizer**: annotate SORT_ARRAY *(PR [#5110](https://github.com/tobymao/sqlglot/pull/5110) by [@geooo109](https://github.com/geooo109))*
@@ -6803,3 +6817,4 @@ Changelog
 [v26.18.1]: https://github.com/tobymao/sqlglot/compare/v26.18.0...v26.18.1
 [v26.19.0]: https://github.com/tobymao/sqlglot/compare/v26.18.1...v26.19.0
 [v26.20.0]: https://github.com/tobymao/sqlglot/compare/v26.19.0...v26.20.0
+[v26.21.0]: https://github.com/tobymao/sqlglot/compare/v26.20.0...v26.21.0

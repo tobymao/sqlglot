@@ -281,6 +281,11 @@ class Presto(Dialect):
         else self._set_type(e, exp.DataType.Type.DOUBLE),
     }
 
+    SUPPORTED_SETTINGS = {
+        *Dialect.SUPPORTED_SETTINGS,
+        "variant_extract_is_json_extract",
+    }
+
     class Tokenizer(tokens.Tokenizer):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         UNICODE_STRINGS = [

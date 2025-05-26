@@ -9,6 +9,7 @@ import typing as t
 from collections.abc import Collection, Set
 from contextlib import contextmanager
 from copy import copy
+from difflib import get_close_matches
 from enum import Enum
 from itertools import count
 
@@ -43,6 +44,20 @@ class classproperty(property):
 
     def __get__(self, obj: t.Any, owner: t.Any = None) -> t.Any:
         return classmethod(self.fget).__get__(None, owner)()  # type: ignore
+
+
+def suggest_closest_match_and_fail(
+    kind: str,
+    word: str,
+    possibilities: t.Iterable[str],
+) -> None:
+    close_matches = get_close_matches(word, possibilities, n=1)
+
+    similar = seq_get(close_matches, 0) or ""
+    if similar:
+        similar = f" Did you mean {similar}?"
+
+    raise ValueError(f"Unknown {kind} '{word}'.{similar}")
 
 
 def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:

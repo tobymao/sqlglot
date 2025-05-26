@@ -892,12 +892,7 @@ class Dialect(metaclass=_Dialect):
         self.settings = kwargs
 
         for unsupported_setting in kwargs.keys() - self.SUPPORTED_SETTINGS:
-            suggest_closest_match_and_fail(
-                "setting",
-                unsupported_setting,
-                self.SUPPORTED_SETTINGS,
-                warn_only=True,
-            )
+            suggest_closest_match_and_fail("setting", unsupported_setting, self.SUPPORTED_SETTINGS)
 
     def __eq__(self, other: t.Any) -> bool:
         # Does not currently take dialect state into account

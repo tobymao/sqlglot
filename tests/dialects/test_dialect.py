@@ -12,7 +12,6 @@ from sqlglot import (
 )
 from sqlglot.dialects import BigQuery, Hive, Snowflake
 from sqlglot.dialects.dialect import Version
-from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
 
 
@@ -138,26 +137,22 @@ class TestDialect(Validator):
         self.assertEqual(oracle_with_settings.normalization_strategy.value, "LOWERCASE")
         self.assertEqual(oracle_with_settings.version, Version("19.5"))
 
-        with self.assertLogs(helper_logger) as cm:
-            bool_settings = Dialect.get_or_raise(
-                "oracle, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool"
-            )
-            self.assertEqual(
-                bool_settings.settings,
-                {"s1": True, "s2": True, "s3": False, "s4": False, "s5": "nonbool"},
-            )
+        class MyDialect(Dialect):
+            SUPPORTED_SETTINGS = {"s1", "s2", "s3", "s4", "s5"}
 
-            for i in range(5):
-                logged_warnings = " ".join(cm.output)
-                with self.subTest(f"Setting {i + 1} logged as unknown"):
-                    self.assertIn(f"Unknown setting 's{i + 1}'", logged_warnings)
+        bool_settings = Dialect.get_or_raise("mydialect, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool")
+        self.assertEqual(
+            bool_settings.settings,
+            {"s1": True, "s2": True, "s3": False, "s4": False, "s5": "nonbool"},
+        )
 
-        with self.assertLogs(helper_logger) as cm:
+        with self.assertRaises(ValueError) as cm:
             Dialect.get_or_raise("tsql,normalisation_strategy=case_sensitive")
-            self.assertIn(
-                "Unknown setting 'normalisation_strategy'. Did you mean normalization_strategy?",
-                cm.output[0],
-            )
+
+        self.assertEqual(
+            "Unknown setting 'normalisation_strategy'. Did you mean normalization_strategy?",
+            str(cm.exception),
+        )
 
     def test_compare_dialects(self):
         bigquery_class = Dialect["bigquery"]

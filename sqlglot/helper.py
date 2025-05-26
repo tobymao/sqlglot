@@ -50,7 +50,6 @@ def suggest_closest_match_and_fail(
     kind: str,
     word: str,
     possibilities: t.Iterable[str],
-    warn_only: bool = False,
 ) -> None:
     close_matches = get_close_matches(word, possibilities, n=1)
 
@@ -58,11 +57,7 @@ def suggest_closest_match_and_fail(
     if similar:
         similar = f" Did you mean {similar}?"
 
-    msg = f"Unknown {kind} '{word}'.{similar}"
-    if warn_only:
-        logger.warning(msg)
-    else:
-        raise ValueError(msg)
+    raise ValueError(f"Unknown {kind} '{word}'.{similar}")
 
 
 def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:

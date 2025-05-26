@@ -25,7 +25,6 @@ class Tokenizer(tokens.Tokenizer):
     KEYWORDS = {
         **tokens.Tokenizer.KEYWORDS,
         "YEAR": TokenType.YEAR,
-        "YEAR": TokenType.YEAR,
         "WITH LOCAL TIME ZONE": TokenType.TIME,
         "TO": TokenType.COMMAND,
         "HASHTYPE": TokenType.UUID,

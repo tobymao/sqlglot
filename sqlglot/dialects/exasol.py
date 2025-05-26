@@ -31,17 +31,7 @@ class Tokenizer(tokens.Tokenizer):
     }
 
 
-def _build_truncate(args: t.List) -> exp.Div:
-    """
-    exasol TRUNC[ATE] (number): https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc[ate]%20(number).htm#TRUNC[ATE]_(number)
-    example:
-        exasol query: SELECT TRUNC(123.456,-2) -> 100
-        generic query: SELECT FLOOR(123.456 * POWER(10,-2)) / POWER(10,-2) -> 100
-    """
-    number = seq_get(args, 0)
-    truncate = seq_get(args, 1) or 0  # if no truncate arg then integer truncation
-    sql = f"FLOOR({number} * POWER(10,{truncate})) / POWER(10,{truncate})"
-    return parse_one(sql)
+
 
 
 def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) -> str:
@@ -162,8 +152,6 @@ class Exasol(Dialect):
             "RANDOM": lambda args: exp.Rand(
                 lower=seq_get(args, 0), upper=seq_get(args, 1)
             ),
-            "TRUNCATE": _build_truncate,
-            "TRUNC": _build_truncate,
         }
 
         STRING_FUNCTIONS = {

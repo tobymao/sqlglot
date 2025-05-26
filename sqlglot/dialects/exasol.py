@@ -16,14 +16,6 @@ DATEΤΙΜΕ_DELTA = t.Union[
 ]
 
 
-class ExasolTokenType:
-    WITH_LOCAL_TIME_ZONE = "WITH_LOCAL_TIME_ZONE"
-    HASHTYPE = "HASHTYPE"
-    BYTE = "BYTE"
-    MONTH = "MONTH"
-    DAY = "DAY"
-    SECOND = "SECOND"
-    TO = "TO"
 
 
 class Tokenizer(tokens.Tokenizer):
@@ -33,13 +25,10 @@ class Tokenizer(tokens.Tokenizer):
     KEYWORDS = {
         **tokens.Tokenizer.KEYWORDS,
         "YEAR": TokenType.YEAR,
-        "WITH LOCAL TIME ZONE": ExasolTokenType.WITH_LOCAL_TIME_ZONE,
-        "MONTH": ExasolTokenType.MONTH,
-        "DAY": ExasolTokenType.DAY,
-        "SECOND": ExasolTokenType.SECOND,
-        "TO": ExasolTokenType.TO,
-        "HASHTYPE": ExasolTokenType.HASHTYPE,
-        "BYTE": ExasolTokenType.BYTE,
+        "YEAR": TokenType.YEAR,
+        "WITH LOCAL TIME ZONE": TokenType.TIME,
+        "TO": TokenType.COMMAND,
+        "HASHTYPE": TokenType.UUID,
     }
 
 

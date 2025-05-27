@@ -1,6 +1,25 @@
 Changelog
 =========
 
+## [v26.22.0] - 2025-05-27
+### :boom: BREAKING CHANGES
+- due to [`f2bf000`](https://github.com/tobymao/sqlglot/commit/f2bf000a410fb18531bb90ef1d767baf0e8bce7a) - avoid creating new alias for qualifying unpivot *(PR [#5121](https://github.com/tobymao/sqlglot/pull/5121) by [@geooo109](https://github.com/geooo109))*:
+
+  avoid creating new alias for qualifying unpivot (#5121)
+
+- due to [`a126ce8`](https://github.com/tobymao/sqlglot/commit/a126ce8a25287cf3531d815035fa3d567dc772fb) - make coalesce simplification optional, skip by default *(PR [#5123](https://github.com/tobymao/sqlglot/pull/5123) by [@barakalon](https://github.com/barakalon))*:
+
+  make coalesce simplification optional, skip by default (#5123)
+
+
+### :sparkles: New Features
+- [`82c50ce`](https://github.com/tobymao/sqlglot/commit/82c50ce68d9a1ad25095086ae3645f5c4996c18b) - **duckdb**: extend time travel parsing to take VERSION into account *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`f2bf000`](https://github.com/tobymao/sqlglot/commit/f2bf000a410fb18531bb90ef1d767baf0e8bce7a) - **optimizer**: avoid creating new alias for qualifying unpivot *(PR [#5121](https://github.com/tobymao/sqlglot/pull/5121) by [@geooo109](https://github.com/geooo109))*
+- [`a126ce8`](https://github.com/tobymao/sqlglot/commit/a126ce8a25287cf3531d815035fa3d567dc772fb) - **optimizer**: make coalesce simplification optional, skip by default *(PR [#5123](https://github.com/tobymao/sqlglot/pull/5123) by [@barakalon](https://github.com/barakalon))*
+
+
 ## [v26.21.0] - 2025-05-26
 ### :boom: BREAKING CHANGES
 - due to [`de67d3c`](https://github.com/tobymao/sqlglot/commit/de67d3c953191d77ecf8cf57e375e7d203cd8857) - error on unsupported dialect settings *(PR [#5119](https://github.com/tobymao/sqlglot/pull/5119) by [@georgesittas](https://github.com/georgesittas))*:
@@ -6818,3 +6837,4 @@ Changelog
 [v26.19.0]: https://github.com/tobymao/sqlglot/compare/v26.18.1...v26.19.0
 [v26.20.0]: https://github.com/tobymao/sqlglot/compare/v26.19.0...v26.20.0
 [v26.21.0]: https://github.com/tobymao/sqlglot/compare/v26.20.0...v26.21.0
+[v26.22.0]: https://github.com/tobymao/sqlglot/compare/v26.21.0...v26.22.0

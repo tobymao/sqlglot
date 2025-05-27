@@ -102,9 +102,7 @@ def qualify_tables(
                 if pivots:
                     pivot = pivots[0]
                     if not pivot.alias:
-                        pivot_alias = (
-                            source.alias if pivot.args.get("unpivot") else next_alias_name()
-                        )
+                        pivot_alias = source.alias if pivot.unpivot else next_alias_name()
                         pivot.set("alias", exp.TableAlias(this=exp.to_identifier(pivot_alias)))
 
                     # This case corresponds to a pivoted CTE, we don't want to qualify that

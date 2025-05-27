@@ -51,7 +51,9 @@ def normalize(expression, **kwargs):
 
 
 def simplify(expression, **kwargs):
-    return optimizer.simplify.simplify(expression, constant_propagation=True, **kwargs)
+    return optimizer.simplify.simplify(
+        expression, constant_propagation=True, coalesce_simplification=True, **kwargs
+    )
 
 
 def annotate_functions(expression, **kwargs):

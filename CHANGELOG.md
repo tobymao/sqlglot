@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.22.1] - 2025-05-28
+### :bug: Bug Fixes
+- [`f7401fd`](https://github.com/tobymao/sqlglot/commit/f7401fdc29a35738eb23f424ceba03463a4d8af9) - **bigquery**: avoid getting stuck in infinite loop when parsing tables *(PR [#5130](https://github.com/tobymao/sqlglot/pull/5130) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.22.0] - 2025-05-27
 ### :boom: BREAKING CHANGES
 - due to [`f2bf000`](https://github.com/tobymao/sqlglot/commit/f2bf000a410fb18531bb90ef1d767baf0e8bce7a) - avoid creating new alias for qualifying unpivot *(PR [#5121](https://github.com/tobymao/sqlglot/pull/5121) by [@geooo109](https://github.com/geooo109))*:
@@ -6838,3 +6843,4 @@ Changelog
 [v26.20.0]: https://github.com/tobymao/sqlglot/compare/v26.19.0...v26.20.0
 [v26.21.0]: https://github.com/tobymao/sqlglot/compare/v26.20.0...v26.21.0
 [v26.22.0]: https://github.com/tobymao/sqlglot/compare/v26.21.0...v26.22.0
+[v26.22.1]: https://github.com/tobymao/sqlglot/compare/v26.22.0...v26.22.1

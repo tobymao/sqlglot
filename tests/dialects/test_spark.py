@@ -66,6 +66,8 @@ class TestSpark(Validator):
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
                 "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "trino": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "athena": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",  # note: lowercase format property is important
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },

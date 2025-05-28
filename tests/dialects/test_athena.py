@@ -337,3 +337,22 @@ class TestAthena(Validator):
         assert isinstance(parsed.this, exp.Schema)
         assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionedByBucket))
         assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionByTruncate))
+
+    def test_ctas_uses_string_for_format(self):
+        # When transpiling, sometimes the FileFormatProperty is a Var, not a
+        # string literal and we need to ensure the athena dialect uses a string
+        # literal for the format
+        ctas_hive = exp.Create(
+            this=exp.to_table("foo.bar"),
+            kind="TABLE",
+            properties=exp.Properties(
+                expressions=[exp.FileFormatProperty(this=exp.Var(this="parquet"))]
+            ),
+            expression=exp.select("1"),
+        )
+
+        # Even if identify=True, the column names should not be quoted within the string literals in the partitioned_by ARRAY[]
+        self.assertEqual(
+            ctas_hive.sql(dialect=self.dialect, identify=True),
+            'CREATE TABLE "foo"."bar" WITH (format=\'parquet\') AS SELECT 1',
+        )

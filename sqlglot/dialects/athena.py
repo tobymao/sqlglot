@@ -71,6 +71,13 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
+def _file_format_property_sql(self: Athena.Generator, e: exp.FileFormatProperty) -> str:
+    this = e.args.get("this")
+    if not this:
+        return "format=''"
+    return f"format={exp.Literal.string(this.name)}"
+
+
 class Athena(Trino):
     """
     Over the years, it looks like AWS has taken various execution engines, bolted on AWS-specific modifications and then
@@ -148,7 +155,7 @@ class Athena(Trino):
 
         TRANSFORMS = {
             **Trino.Generator.TRANSFORMS,
-            exp.FileFormatProperty: lambda self, e: f"format={self.sql(e, 'this')}",
+            exp.FileFormatProperty: _file_format_property_sql,
             exp.PartitionedByProperty: _partitioned_by_property_sql,
             exp.LocationProperty: _location_property_sql,
         }

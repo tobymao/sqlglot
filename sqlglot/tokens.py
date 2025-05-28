@@ -57,6 +57,7 @@ class TokenType(AutoName):
     OR = auto()
     AMP = auto()
     DPIPE = auto()
+    PIPE_GT = auto()
     PIPE = auto()
     PIPE_SLASH = auto()
     DPIPE_SLASH = auto()
@@ -680,6 +681,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "||": TokenType.DPIPE,
+        "|>": TokenType.PIPE_GT,
         ">=": TokenType.GTE,
         "<=": TokenType.LTE,
         "<>": TokenType.NEQ,

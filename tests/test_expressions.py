@@ -669,6 +669,12 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ARRAY_AGG(a)"), exp.ArrayAgg)
         self.assertIsInstance(parse_one("ARRAY_CONTAINS(a, 'a')"), exp.ArrayContains)
         self.assertIsInstance(parse_one("ARRAY_SIZE(a)"), exp.ArraySize)
+        self.assertIsInstance(parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])"), exp.ArrayIntersection)
+        self.assertIsInstance(parse_one("ARRAY_INTERSECT([1, 2], [2, 3])"), exp.ArrayIntersection)
+        self.assertIsInstance(parse_one("ST_MAKEPOINT(10, 20)"), exp.StPoint)
+        self.assertIsInstance(parse_one("ST_POINT(10, 20)"), exp.StPoint)
+        self.assertIsInstance(parse_one("ST_DISTANCE(a, b)"), exp.StDistance)
+        self.assertIsInstance(parse_one("ST_DISTANCE_SPHERE(a, b)"), exp.StDistance)
         self.assertIsInstance(parse_one("AVG(a)"), exp.Avg)
         self.assertIsInstance(parse_one("BEGIN DEFERRED TRANSACTION"), exp.Transaction)
         self.assertIsInstance(parse_one("CEIL(a)"), exp.Ceil)
@@ -1218,3 +1224,33 @@ FROM foo""",
 
     def test_parse_identifier(self):
         self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))
+
+    def test_array_intersection(self):
+        expr = parse_one('ARRAY_INTERSECTION([1, 2], [2, 3])')
+        self.assertIsInstance(expr, exp.ArrayIntersection)
+        self.assertEqual(expr.sql(), 'ARRAY_INTERSECTION(ARRAY(1, 2), ARRAY(2, 3))')
+
+        expr2 = parse_one('ARRAY_INTERSECT([1, 2], [2, 3])')
+        self.assertIsInstance(expr2, exp.ArrayIntersection)
+        self.assertEqual(expr2.sql(), 'ARRAY_INTERSECTION(ARRAY(1, 2), ARRAY(2, 3))')
+
+    def test_st_point(self):
+        expr = parse_one('ST_MAKEPOINT(10, 20)')
+        self.assertIsInstance(expr, exp.StPoint)
+        self.assertEqual(expr.sql(), 'ST_MAKEPOINT(10, 20)')
+
+        expr2 = parse_one('ST_POINT(10, 20)')
+        self.assertIsInstance(expr2, exp.StPoint)
+        self.assertEqual(expr2.sql(), 'ST_MAKEPOINT(10, 20)')
+
+    def test_st_distance(self):
+        expr = parse_one('ST_DISTANCE(a, b)')
+        self.assertIsInstance(expr, exp.StDistance)
+        self.assertEqual(expr.sql(), 'ST_DISTANCE(a, b)')
+
+        expr2 = parse_one('ST_DISTANCE_SPHERE(a, b)')
+        self.assertIsInstance(expr2, exp.StDistance)
+        self.assertEqual(expr2.sql(), 'ST_DISTANCE(a, b)')
+
+
+

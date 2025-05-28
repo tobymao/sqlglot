@@ -5562,6 +5562,20 @@ class ArrayToString(Func):
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
+class ArrayIntersection(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
+    _sql_names = ["ARRAY_INTERSECTION", "ARRAY_INTERSECT"]
+
+
+class StPoint(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
+    _sql_names = ["ST_MAKEPOINT", "ST_POINT"]
+
+
+class StDistance(Func):
+    arg_types = {"this": True, "expression": True}
+    _sql_names = ["ST_DISTANCE","ST_DISTANCE_SPHERE"]
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string
 class String(Func):
     arg_types = {"this": True, "zone": False}

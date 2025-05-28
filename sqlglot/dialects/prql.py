@@ -44,11 +44,10 @@ class PRQL(Dialect):
         }
 
         TRANSFORM_PARSERS = {
-            **parser.Parser.TRANSFORM_PARSERS,
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
-            "FILTER": lambda self, query: query.where(self._parse_assignment()),
+            "FILTER": lambda self, query: query.where(self._parse_disjunction()),
             "APPEND": lambda self, query: query.union(
                 _select_all(self._parse_table()), distinct=False, copy=False
             ),
@@ -89,7 +88,7 @@ class PRQL(Dialect):
             expression = expression if expression else self._parse_query()
             return expression
 
-        def _parse_query(self, query: t.Optional[exp.Query] = None) -> t.Optional[exp.Query]:
+        def _parse_query(self) -> t.Optional[exp.Query]:
             from_ = self._parse_from()
 
             if not from_:

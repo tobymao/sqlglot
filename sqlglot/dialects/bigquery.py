@@ -657,6 +657,9 @@ class BigQuery(Dialect):
                     ):
                         self._advance()
 
+                    if start == self._curr:
+                        break
+
                     table_name += self._find_sql(start, self._prev)
 
                 this = exp.Identifier(

@@ -3241,7 +3241,6 @@ class Parser(metaclass=_Parser):
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
-            # parse pipe syntaxt
             if self._match(TokenType.PIPE_GT, advance=False):
                 this = self._parse_query(this)
         elif self._match(TokenType.SUMMARIZE):

@@ -16,6 +16,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
+
 def st_distance_sphere(self, expression: exp.StDistance) -> str:
     """
     Converts ST_Distance(point1, point2) to StarRocks format:
@@ -23,16 +24,16 @@ def st_distance_sphere(self, expression: exp.StDistance) -> str:
     """
     point1 = expression.this
     point2 = expression.expression
-    
+
     if not point1 or not point2:
         raise ValueError("ST_Distance requires two point arguments")
-    
+
     # Generate the four coordinate expressions for StarRocks format
     point1_x = f"ST_X({self.sql(point1)})"
     point1_y = f"ST_Y({self.sql(point1)})"
     point2_x = f"ST_X({self.sql(point2)})"
     point2_y = f"ST_Y({self.sql(point2)})"
-    
+
     # Return in StarRocks ST_Distance_Sphere format with proper formatting
     return f"ST_Distance_Sphere({point1_x}, {point1_y}, {point2_x}, {point2_y})"
 
@@ -123,7 +124,7 @@ class StarRocks(MySQL):
                     partition_expressions=partition_expressions,
                     create_expressions=create_expressions,
                 )
-            return super()._parse_partitioned_by()      
+            return super()._parse_partitioned_by()
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False

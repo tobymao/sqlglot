@@ -1118,7 +1118,7 @@ class Parser(metaclass=_Parser):
 
     TRANSFORM_PARSERS = {
         "SELECT": lambda self, query: query.select(*self._parse_select(), append=False, copy=False),
-        "WHERE": lambda self, query: query.where(self._parse_assignment()),
+        "WHERE": lambda self, query: query.where(self._parse_assignment(), copy=False),
     }
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:

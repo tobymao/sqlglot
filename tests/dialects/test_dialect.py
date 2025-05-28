@@ -3457,5 +3457,10 @@ FROM subquery2""",
     def test_pipe_syntax(self):
         self.validate_identity("FROM x", "SELECT * FROM x")
         self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM x")
-        self.validate_identity("FROM x |> SELECT x1 as c1, x2 as c2", "SELECT x1 AS c1, x2 AS c2 FROM x")
-        self.validate_identity("FROM x |> SELECT x1, x2 |> WHERE x1 > 0 AND x2 != 0", "SELECT x1, x2 FROM x WHERE x1 > 0 AND x2 <> 0")
+        self.validate_identity(
+            "FROM x |> SELECT x1 as c1, x2 as c2", "SELECT x1 AS c1, x2 AS c2 FROM x"
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1, x2 |> WHERE x1 > 0 AND x2 != 0",
+            "SELECT x1, x2 FROM x WHERE x1 > 0 AND x2 <> 0",
+        )

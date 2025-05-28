@@ -1116,7 +1116,7 @@ class Parser(metaclass=_Parser):
         "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
 
-    PIPE_SYNTAXT_TRANSFORM_PARSERS = {
+    PIPE_SYNTAX_TRANSFORM_PARSERS = {
         "SELECT": lambda self, query: query.select(*self._parse_select(), append=False, copy=False),
         "WHERE": lambda self, query: query.where(self._parse_disjunction(), copy=False),
     }
@@ -7143,7 +7143,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_pipe_syntax_query(self, query: exp.Query) -> exp.Query:
         while self._match(TokenType.PIPE_GT):
-            query = self.PIPE_SYNTAXT_TRANSFORM_PARSERS[self._curr.text.upper()](self, query)
+            query = self.PIPE_SYNTAX_TRANSFORM_PARSERS[self._curr.text.upper()](self, query)
         return query
 
     def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:

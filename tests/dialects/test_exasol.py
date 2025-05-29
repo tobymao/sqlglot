@@ -9,6 +9,24 @@ class TestExasol(Validator):
     def test_integration_cross(self):
         pass
 
+    def test_identity_schema_creation(self):
+        # this is a valid exasol schema creation
+        # we can parse the queries
+        # TODO test still fails - need to check what is generated and adapt accordingly
+        self.maxDiff = None
+        queries = [
+            ('DROP SCHEMA IF EXISTS "test_schema" CASCADE', None),
+            ("CREATE SCHEMA IF NOT EXISTS test_schema", None),
+            ("CREATE TABLE test_schema.t1 (a INTEGER NOT NULL PRIMARY KEY,  b VARCHAR(200) UTF8 DEFAULT 'Default Product',  c DATE DEFAULT CURRENT_DATE,  d DECIMAL(15, 3) DEFAULT 0.00,  e BOOLEAN DEFAULT FALSE,  f DOUBLE PRECISION,  g CHAR(10),  h CHAR(20),  i GEOMETRY(4326),  j INTERVAL YEAR(2) TO MONTH,  k HASHTYPE(20 BYTE) )", None),
+            ("CREATE TABLE test_schema.t2 (a INTEGER NOT NULL PRIMARY KEY,  b INTEGER,  c VARCHAR(100) ascii,  d TIMESTAMP,  e INTERVAL DAY TO SECOND(3),  ref_t1_id INTEGER,  CONSTRAINT fk_t2_t1 FOREIGN KEY (ref_t1_id) REFERENCES test_schema.t1(a) )", None),
+            ("CREATE TABLE test_schema.t3 (a SMALLINT NOT NULL PRIMARY KEY,  b VARCHAR(50) NOT NULL,  c CHAR(5) DEFAULT 'N/A',  d BOOLEAN DEFAULT FALSE )", None),
+            ("CREATE TABLE test_schema.t4 (a BIGINT IDENTITY,  b TIMESTAMP WITH LOCAL TIME ZONE DEFAULT CURRENT_TIMESTAMP,  c DOUBLE PRECISION,  d CLOB,  e CLOB(100),  f INTERVAL DAY(2) TO SECOND(3),  ref_t1_id INTEGER,  CONSTRAINT fk_t4_t1 FOREIGN KEY (ref_t1_id) REFERENCES test_schema.t1(a) )", None),
+            ("CREATE TABLE test_schema.t5 (a INTEGER,  b VARCHAR(20),  c DECIMAL(5, 0) DEFAULT 0,  d DATE )", None),
+            ("CREATE TABLE test_schema.t6 (a INTEGER)", None)
+        ]
+        for read, write in queries:
+            self.validate_identity(read,write)
+
     def test_integration_identity(self):
         ########## STRING FUNCTIONS ###########
         # self.validate_identity("SELECT ASCII('X')")

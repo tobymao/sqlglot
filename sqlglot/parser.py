@@ -1117,9 +1117,21 @@ class Parser(metaclass=_Parser):
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
-        "SELECT": lambda self, query: query.select(*self._parse_select(), append=False, copy=False),
-        "WHERE": lambda self, query: query.where(self._parse_disjunction(), copy=False),
+        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
+        "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
     }
+
+    def _parse_pipe_syntax_select(self, query: exp.Query) -> t.Optional[exp.Query]:
+        select = self._parse_select()
+        if isinstance(select, exp.Select):
+            return select.from_(query.subquery(copy=False), copy=False)
+        return None
+
+    def _parse_pipe_syntax_where(self, query: exp.Query) -> t.Optional[exp.Query]:
+        where = self._parse_where()
+        if isinstance(where, exp.Where) and isinstance(query, exp.Select):
+            return query.where(where.this)
+        return None
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (

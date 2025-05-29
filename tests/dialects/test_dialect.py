@@ -3456,11 +3456,24 @@ FROM subquery2""",
 
     def test_pipe_syntax(self):
         self.validate_identity("FROM x", "SELECT * FROM x")
-        self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM x")
+        self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM (SELECT * FROM x)")
         self.validate_identity(
-            "FROM x |> SELECT x1 as c1, x2 as c2", "SELECT x1 AS c1, x2 AS c2 FROM x"
+            "FROM x |> SELECT x1 as c1, x2 as c2",
+            "SELECT x1 AS c1, x2 AS c2 FROM (SELECT * FROM x)",
         )
         self.validate_identity(
-            "FROM x |> SELECT x1, x2 |> WHERE x1 > 0 AND x2 != 0",
-            "SELECT x1, x2 FROM x WHERE x1 > 0 AND x2 <> 0",
+            "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1",
+            "SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1 |> SELECT x2_a",
+            "SELECT x2_a FROM (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 1 |> WHERE x2 > 2 |> SELECT x1 as gt1, x2 as gt2",
+            "SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 1 AND x2 > 2 |> SELECT x1 as gt1, x2 as gt2 |> SELECT gt1 * 2 + gt2 * 2 AS gt2_2",
+            "SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM (SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2))",
         )

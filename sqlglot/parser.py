@@ -1130,7 +1130,7 @@ class Parser(metaclass=_Parser):
     def _parse_pipe_syntax_where(self, query: exp.Query) -> t.Optional[exp.Query]:
         where = self._parse_where()
         if isinstance(where, exp.Where) and isinstance(query, exp.Select):
-            return query.where(where.this)
+            return query.where(where.this, copy=False)
         return None
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:

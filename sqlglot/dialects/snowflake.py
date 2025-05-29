@@ -1154,6 +1154,8 @@ class Snowflake(Dialect):
             exp.VarMap,
         }
 
+        RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS = (exp.ArrayAgg,)
+
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
@@ -1414,20 +1416,3 @@ class Snowflake(Dialect):
                 expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
 
             return expr_sql
-
-        def _respect_ignore_nulls_sql(self, expression: exp.RespectNulls | exp.IgnoreNulls) -> str:
-            this = expression.this
-            if isinstance(this, exp.ArrayAgg):
-                self.unsupported(
-                    f"RESPECT/IGNORE NULLS is not supported for {this.sql_name()} in Snowflake"
-                )
-                return self.sql(this)
-
-            text = "IGNORE NULLS" if isinstance(expression, exp.IgnoreNulls) else "RESPECT NULLS"
-            return self._embed_ignore_nulls(expression, text)
-
-        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
-            return self._respect_ignore_nulls_sql(expression)
-
-        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
-            return self._respect_ignore_nulls_sql(expression)

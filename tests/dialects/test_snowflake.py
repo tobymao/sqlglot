@@ -1071,6 +1071,14 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT DATE_PART(WEEKISO, CAST('2013-12-25' AS DATE))",
+            read={
+                "bigquery": "SELECT EXTRACT(ISOWEEK FROM CAST('2013-12-25' AS DATE))",
+                "snowflake": "SELECT DATE_PART(WEEKISO, CAST('2013-12-25' AS DATE))",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

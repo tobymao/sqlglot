@@ -1154,6 +1154,8 @@ class Snowflake(Dialect):
             exp.VarMap,
         }
 
+        RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS = (exp.ArrayAgg,)
+
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
@@ -1403,3 +1405,19 @@ class Snowflake(Dialect):
                 return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
 
             return super().createable_sql(expression, locations)
+
+        def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+            this = expression.this
+
+            # If an ORDER BY clause is present, we need to remove it from ARRAY_AGG
+            # and add it later as part of the WITHIN GROUP clause
+            order = this if isinstance(this, exp.Order) else None
+            if order:
+                expression.set("this", order.this.pop())
+
+            expr_sql = super().arrayagg_sql(expression)
+
+            if order:
+                expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
+
+            return expr_sql

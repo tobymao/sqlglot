@@ -667,6 +667,8 @@ class Generator(metaclass=_Generator):
     # Expressions that need to have all CTEs under them bubbled up to them
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
 
+    RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = ()
+
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -4268,6 +4270,13 @@ class Generator(metaclass=_Generator):
         return expression
 
     def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
+        this = expression.this
+        if isinstance(this, self.RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS):
+            self.unsupported(
+                f"RESPECT/IGNORE NULLS is not supported for {type(this).key} in {self.dialect.__class__.__name__}"
+            )
+            return self.sql(this)
+
         if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
             # The first modifier here will be the one closest to the AggFunc's arg
             mods = sorted(

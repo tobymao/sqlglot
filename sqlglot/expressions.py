@@ -5539,6 +5539,10 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
+class ArrayConcatAgg(AggFunc):
+    pass
+
+
 class ArrayConstructCompact(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

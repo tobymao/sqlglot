@@ -1,7 +1,7 @@
 use crate::settings::TokenType;
-use pyo3::prelude::PyListMethods;
-use pyo3::types::{PyList, PyNone, PyString};
-use pyo3::{pyclass, IntoPy, Py, PyObject, Python};
+use pyo3::prelude::*;
+use pyo3::types::{PyList, PyString};
+use pyo3::{pyclass, Py, PyObject, Python};
 
 #[derive(Debug)]
 #[pyclass]
@@ -36,13 +36,13 @@ impl Token {
     ) -> Token {
         Python::with_gil(|py| Token {
             token_type,
-            token_type_py: PyNone::get_bound(py).into_py(py),
-            text: PyString::new_bound(py, &text).into_py(py),
+            token_type_py: py.None(),
+            text: PyString::new(py, &text).unbind(),
             line,
             col,
             start,
             end,
-            comments: PyList::new_bound(py, &comments).into(),
+            comments: PyList::new(py, &comments).unwrap().unbind(),
         })
     }
 

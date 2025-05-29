@@ -4272,9 +4272,8 @@ class Generator(metaclass=_Generator):
     def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
         this = expression.this
         if isinstance(this, self.RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS):
-            this_name = this.sql_name() if isinstance(this, exp.Func) else this.__class__
             self.unsupported(
-                f"RESPECT/IGNORE NULLS is not supported for {this_name} in {self.dialect.__class__.__name__}"
+                f"RESPECT/IGNORE NULLS is not supported for {type(this).key} in {self.dialect.__class__.__name__}"
             )
             return self.sql(this)
 

@@ -1224,13 +1224,15 @@ class Snowflake(Dialect):
             unnest_alias = expression.args.get("alias")
             offset = expression.args.get("offset")
 
+            value = seq_get(unnest_alias.columns if unnest_alias else [], 0) or exp.to_identifier(
+                "value"
+            )
             columns = [
                 exp.to_identifier("seq"),
                 exp.to_identifier("key"),
                 exp.to_identifier("path"),
                 offset.pop() if isinstance(offset, exp.Expression) else exp.to_identifier("index"),
-                seq_get(unnest_alias.columns if unnest_alias else [], 0)
-                or exp.to_identifier("value"),
+                value,
                 exp.to_identifier("this"),
             ]
 
@@ -1246,7 +1248,10 @@ class Snowflake(Dialect):
             explode = f"TABLE(FLATTEN({table_input}))"
             alias = self.sql(unnest_alias)
             alias = f" AS {alias}" if alias else ""
-            return f"{explode}{alias}"
+            value = (
+                f"{value} FROM " if not isinstance(expression.parent, (exp.From, exp.Join)) else ""
+            )
+            return f"{value}{explode}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
             terse = "TERSE " if expression.args.get("terse") else ""

@@ -372,6 +372,11 @@ class Snowflake(Dialect):
         "ff6": "%f",
     }
 
+    DATE_PART_MAPPING = {
+        **Dialect.DATE_PART_MAPPING,
+        "ISOWEEK": "WEEKISO",
+    }
+
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
@@ -1033,7 +1038,9 @@ class Snowflake(Dialect):
             exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
-            exp.Extract: rename_func("DATE_PART"),
+            exp.Extract: lambda self, e: self.func(
+                "DATE_PART", map_date_part(e.this, self.dialect), e.expression
+            ),
             exp.FileFormatProperty: lambda self,
             e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
             exp.FromTimeZone: lambda self, e: self.func(

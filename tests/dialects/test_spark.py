@@ -56,7 +56,7 @@ class TestSpark(Validator):
             "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             write={
                 "duckdb": "CREATE TABLE x",
-                "presto": "CREATE TABLE x WITH (FORMAT='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS(y)'])",
+                "presto": "CREATE TABLE x WITH (format='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS(y)'])",
                 "hive": "CREATE TABLE x STORED AS ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
                 "spark": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             },
@@ -65,7 +65,9 @@ class TestSpark(Validator):
             "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
+                "trino": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
+                "athena": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",  # note: lowercase format property is important for Athena
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
@@ -83,7 +85,7 @@ class TestSpark(Validator):
 COMMENT 'Test comment: blah'
 WITH (
   PARTITIONED_BY=ARRAY['date'],
-  FORMAT='ICEBERG',
+  format='ICEBERG',
   x='1'
 )""",
                 "hive": """CREATE TABLE blah (

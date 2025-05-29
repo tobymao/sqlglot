@@ -465,7 +465,7 @@ class TestPresto(Validator):
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
@@ -474,7 +474,7 @@ class TestPresto(Validator):
             "CREATE TABLE test STORED AS 'PARQUET' AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
@@ -483,7 +483,7 @@ class TestPresto(Validator):
             "CREATE TABLE test WITH (FORMAT = 'PARQUET', X = '1', Z = '2') AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET', X='1', Z='2') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET', X='1', Z='2') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X'='1', 'Z'='2') AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET TBLPROPERTIES ('X'='1', 'Z'='2') AS SELECT 1",
             },

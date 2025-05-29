@@ -148,7 +148,6 @@ class Athena(Trino):
 
         TRANSFORMS = {
             **Trino.Generator.TRANSFORMS,
-            exp.FileFormatProperty: lambda self, e: f"format={self.sql(e, 'this')}",
             exp.PartitionedByProperty: _partitioned_by_property_sql,
             exp.LocationProperty: _location_property_sql,
         }

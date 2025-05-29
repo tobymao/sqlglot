@@ -478,7 +478,9 @@ class Exasol(Dialect):
                 return True
             return False
 
-        def _handle_interval_day_or_year(self, unit: str) -> exp.DataType:
+        def _handle_interval_day_or_year(
+            self, this: t.Optional[exp.Expression]
+        ) -> exp.DataType:
             """
             INTERVAL DAY(lfp) TO SECOND(fsp)
             lfp = leading field precision (optional) 1 <= lfp <= 9, default = 2
@@ -487,7 +489,17 @@ class Exasol(Dialect):
             INTERVAL YEAR(p) TO MONTH
             p = leading field precision (optional) 1 <= p <= 9, default = 2
             """
-            if unit == "DAY" or unit == "YEAR":
+            if not (
+                this
+                and isinstance(this, exp.DataType)
+                and isinstance(this.this, exp.Interval)
+            ):
+                return this
+            interval = this.this
+            if isinstance(interval.unit, exp.Var) and (
+                interval.unit.this == "DAY" or interval.unit.this == "YEAR"
+            ):
+                unit = interval.unit.this
                 # if parser does not match `TO`, it returns DataType(Interval(Var(DAY | YEAR))) - parser.py line 5263
                 # this is the case when parser wants to match `TO` but needs to handle `(`
 
@@ -500,10 +512,11 @@ class Exasol(Dialect):
                         expression=self._parse_var(upper=True),
                     )
                     this = self.expression(
-                        exp.DataType, this=self.expression(exp.Interval, unit=interval_unit)
+                        exp.DataType,
+                        this=self.expression(exp.Interval, unit=interval_unit),
                     )
                     if unit == "DAY":
-                        is_match = self._match_lfp_or_fsp()  # handle SECOND(fsp)
+                        self._match_lfp_or_fsp()  # handle SECOND(fsp)
                 if not is_match:
                     # there is no `TO`
                     # or there is no `TO` and no `(`
@@ -511,6 +524,9 @@ class Exasol(Dialect):
                     self.raise_error(
                         f"Expected `TO` to follow `{unit}` in `INTERVAL` type"
                     )
+            elif isinstance(interval.unit, exp.IntervalSpan):
+                # handle case: DAY TO SECOND(fsp)
+                self._match_lfp_or_fsp()
             else:
                 self.raise_error(f"Expected `{unit}` to follow `INTERVAL` type")
 
@@ -530,14 +546,7 @@ class Exasol(Dialect):
                 schema=schema,
                 allow_identifiers=allow_identifiers,
             )
-            if (
-                this
-                and isinstance(this, exp.DataType)
-                and isinstance(this.this, exp.Interval)
-                and isinstance(this.this.unit, exp.Var)
-            ):
-                this = self._handle_interval_day_or_year(this.this.unit.this)
-            return this
+            return self._handle_interval_day_or_year(this)
 
     class Generator(generator.Generator):
         QUERY_HINTS = False

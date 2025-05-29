@@ -6234,7 +6234,12 @@ class Parser(metaclass=_Parser):
             expressions = apply_index_offset(
                 this, expressions, -self.dialect.INDEX_OFFSET, dialect=self.dialect
             )
-            this = self.expression(exp.Bracket, this=this, expressions=expressions)
+            this = self.expression(
+                exp.Bracket,
+                this=this,
+                expressions=expressions,
+                comments=this.pop_comments(),
+            )
 
         self._add_comments(this)
         return self._parse_bracket(this)

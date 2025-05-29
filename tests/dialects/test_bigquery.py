@@ -2560,3 +2560,22 @@ OPTIONS (
             self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    def test_array_agg(self):
+        for distinct in ("", "DISTINCT "):
+            self.validate_all(
+                f"SELECT ARRAY_AGG({distinct}x ORDER BY x)",
+                write={
+                    "bigquery": f"SELECT ARRAY_AGG({distinct}x ORDER BY x)",
+                    "snowflake": f"SELECT ARRAY_AGG({distinct}x) WITHIN GROUP (ORDER BY x NULLS FIRST)",
+                },
+            )
+
+        for nulls in ("", " IGNORE NULLS", " RESPECT NULLS"):
+            self.validate_all(
+                f"SELECT ARRAY_AGG(x{nulls} ORDER BY col1 ASC, col2 DESC)",
+                write={
+                    "bigquery": f"SELECT ARRAY_AGG(x{nulls} ORDER BY col1 ASC, col2 DESC)",
+                    "snowflake": "SELECT ARRAY_AGG(x) WITHIN GROUP (ORDER BY col1 ASC NULLS FIRST, col2 DESC NULLS LAST)",
+                },
+            )

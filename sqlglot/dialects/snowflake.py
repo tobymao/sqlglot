@@ -1398,3 +1398,36 @@ class Snowflake(Dialect):
                 return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
 
             return super().createable_sql(expression, locations)
+
+        def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+            this = expression.this
+
+            # If an ORDER BY clause is present, we need to remove it from ARRAY_AGG
+            # and add it later as part of the WITHIN GROUP clause
+            order = this if isinstance(this, exp.Order) else None
+            if order:
+                expression.set("this", order.this.pop())
+
+            expr_sql = super().arrayagg_sql(expression)
+
+            if order:
+                expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
+
+            return expr_sql
+
+        def _respect_ignore_nulls_sql(self, expression: exp.RespectNulls | exp.IgnoreNulls) -> str:
+            this = expression.this
+            if isinstance(this, exp.ArrayAgg):
+                self.unsupported(
+                    f"RESPECT/IGNORE NULLS is not supported for {this.sql_name()} in Snowflake"
+                )
+                return self.sql(this)
+
+            text = "IGNORE NULLS" if isinstance(expression, exp.IgnoreNulls) else "RESPECT NULLS"
+            return self._embed_ignore_nulls(expression, text)
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            return self._respect_ignore_nulls_sql(expression)
+
+        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+            return self._respect_ignore_nulls_sql(expression)

@@ -1,6 +1,26 @@
 Changelog
 =========
 
+## [v26.23.0] - 2025-05-29
+### :boom: BREAKING CHANGES
+- due to [`6910744`](https://github.com/tobymao/sqlglot/commit/6910744e6260793b3f9190782cf60fbbd9adcd38) - update py03 version *(PR [#5136](https://github.com/tobymao/sqlglot/pull/5136) by [@benfdking](https://github.com/benfdking))*:
+
+  update py03 version (#5136)
+
+- due to [`a56deab`](https://github.com/tobymao/sqlglot/commit/a56deabc2b9543209fb5e41f19c3bef89177a577) - bump sqlglotrs to 0.5.0 *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  bump sqlglotrs to 0.5.0
+
+
+### :bug: Bug Fixes
+- [`e9b3156`](https://github.com/tobymao/sqlglot/commit/e9b3156aa1ed95fdee4c6b419134d8ca746964b6) - **athena**: Handle transpilation of FileFormatProperty from dialects that treat it as a variable and not a string literal *(PR [#5133](https://github.com/tobymao/sqlglot/pull/5133) by [@erindru](https://github.com/erindru))*
+
+### :wrench: Chores
+- [`6910744`](https://github.com/tobymao/sqlglot/commit/6910744e6260793b3f9190782cf60fbbd9adcd38) - update py03 version *(PR [#5136](https://github.com/tobymao/sqlglot/pull/5136) by [@benfdking](https://github.com/benfdking))*
+  - :arrow_lower_right: *addresses issue [#5134](https://github.com/tobymao/sqlglot/issues/5134) opened by [@mgorny](https://github.com/mgorny)*
+- [`a56deab`](https://github.com/tobymao/sqlglot/commit/a56deabc2b9543209fb5e41f19c3bef89177a577) - bump sqlglotrs to 0.5.0 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.22.1] - 2025-05-28
 ### :bug: Bug Fixes
 - [`f7401fd`](https://github.com/tobymao/sqlglot/commit/f7401fdc29a35738eb23f424ceba03463a4d8af9) - **bigquery**: avoid getting stuck in infinite loop when parsing tables *(PR [#5130](https://github.com/tobymao/sqlglot/pull/5130) by [@georgesittas](https://github.com/georgesittas))*
@@ -6844,3 +6864,4 @@ Changelog
 [v26.21.0]: https://github.com/tobymao/sqlglot/compare/v26.20.0...v26.21.0
 [v26.22.0]: https://github.com/tobymao/sqlglot/compare/v26.21.0...v26.22.0
 [v26.22.1]: https://github.com/tobymao/sqlglot/compare/v26.22.0...v26.22.1
+[v26.23.0]: https://github.com/tobymao/sqlglot/compare/v26.22.1...v26.23.0

@@ -7261,7 +7261,7 @@ class Parser(metaclass=_Parser):
 
             return ensure_list(schema) if schema else self._parse_csv(self._parse_field_def)
 
-        return self._parse_wrapped_csv(_parse_add_column_or_constraint, optional=True)
+        return self._parse_csv(_parse_add_column_or_constraint)
 
     def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
         if self._match_texts(self.ALTER_ALTER_PARSERS):

@@ -1,6 +1,24 @@
 Changelog
 =========
 
+## [v26.24.0] - 2025-05-30
+### :boom: BREAKING CHANGES
+- due to [`c484ca3`](https://github.com/tobymao/sqlglot/commit/c484ca39bad750a96b62e2edae85612cac66ba30) - recognize ARRAY_CONCAT_AGG as an aggregate function *(PR [#5141](https://github.com/tobymao/sqlglot/pull/5141) by [@georgesittas](https://github.com/georgesittas))*:
+
+  recognize ARRAY_CONCAT_AGG as an aggregate function (#5141)
+
+
+### :sparkles: New Features
+- [`bb4f428`](https://github.com/tobymao/sqlglot/commit/bb4f4283b53bc060a8c7e0f12c1e7ef5b521c4e6) - bubble up comments nested under a Bracket, fixes [#5131](https://github.com/tobymao/sqlglot/pull/5131) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`9f318eb`](https://github.com/tobymao/sqlglot/commit/9f318ebe4502bb484a34873252cf4a40c7e440e4) - **snowflake**: Transpile BQ's `ARRAY(SELECT AS STRUCT ...)` *(PR [#5140](https://github.com/tobymao/sqlglot/pull/5140) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :bug: Bug Fixes
+- [`a3fccd9`](https://github.com/tobymao/sqlglot/commit/a3fccd9be294499b53477da931f8b097cdbe09fc) - **snowflake**: generate SELECT for UNNEST without JOIN or FROM *(PR [#5138](https://github.com/tobymao/sqlglot/pull/5138) by [@geooo109](https://github.com/geooo109))*
+- [`993919d`](https://github.com/tobymao/sqlglot/commit/993919d05d5d3c814471607b56831bb65d349eb4) - **snowflake**: Properly transpile ARRAY_AGG, IGNORE/RESPECT NULLS *(PR [#5137](https://github.com/tobymao/sqlglot/pull/5137) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`6e57619`](https://github.com/tobymao/sqlglot/commit/6e57619f85375e789bb39a6478aa01cd7c7758f0) - **snowflake**: Transpile ISOWEEK to WEEKISO *(PR [#5139](https://github.com/tobymao/sqlglot/pull/5139) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`c484ca3`](https://github.com/tobymao/sqlglot/commit/c484ca39bad750a96b62e2edae85612cac66ba30) - **bigquery**: recognize ARRAY_CONCAT_AGG as an aggregate function *(PR [#5141](https://github.com/tobymao/sqlglot/pull/5141) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.23.0] - 2025-05-29
 ### :boom: BREAKING CHANGES
 - due to [`6910744`](https://github.com/tobymao/sqlglot/commit/6910744e6260793b3f9190782cf60fbbd9adcd38) - update py03 version *(PR [#5136](https://github.com/tobymao/sqlglot/pull/5136) by [@benfdking](https://github.com/benfdking))*:
@@ -6865,3 +6883,4 @@ Changelog
 [v26.22.0]: https://github.com/tobymao/sqlglot/compare/v26.21.0...v26.22.0
 [v26.22.1]: https://github.com/tobymao/sqlglot/compare/v26.22.0...v26.22.1
 [v26.23.0]: https://github.com/tobymao/sqlglot/compare/v26.22.1...v26.23.0
+[v26.24.0]: https://github.com/tobymao/sqlglot/compare/v26.23.0...v26.24.0

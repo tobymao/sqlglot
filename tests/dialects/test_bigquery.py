@@ -2590,10 +2590,10 @@ OPTIONS (
         )
 
         self.validate_all(
-            "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+            "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
             write={
-                "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
-                "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('alias_x1', x1, 'x2', x2)) FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+                "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+                "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('alias_x1', x1, 'x2', x2 /* test */)) FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
             },
         )
 
@@ -2602,5 +2602,13 @@ OPTIONS (
             write={
                 "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b) AS array_col) SELECT array_col[0].a, array_col[0].b FROM t1",
                 "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('a', 1, 'b', 2))) AS array_col) SELECT array_col[0].a, array_col[0].b FROM t1",
+            },
+        )
+
+        self.validate_all(
+            "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2 WHERE x2 = 4) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+            write={
+                "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2 WHERE x2 = 4) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+                "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('alias_x1', x1, 'x2', x2 /* test */)) FROM t2 WHERE x2 = 4) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
             },
         )

@@ -1433,29 +1433,22 @@ class Snowflake(Dialect):
             first_expr = seq_get(expressions, 0)
             if isinstance(first_expr, exp.Select):
                 # SELECT AS STRUCT foo AS alias_foo -> ARRAY_AGG(OBJECT_CONSTRUCT('alias_foo', foo))
-                kind = first_expr.args.get("kind")
-                if kind and kind.upper() == "STRUCT":
+                if first_expr.text("kind").upper() == "STRUCT":
                     object_construct_args = []
                     for expr in first_expr.expressions:
-                        if isinstance(expr, exp.Alias):
-                            # SELECT AS STRUCT foo AS alias_foo -> OBJECT_CONSTRUCT('alias_foo', foo)
-                            name = expr.this.name
-                            alias = f"'{expr.alias}'"
-                        else:
-                            # SELECT AS STRUCT foo -> OBJECT_CONSTRUCT('foo', foo)
-                            name = expr.name
-                            alias = f"'{name}'"
+                        # Alias case: SELECT AS STRUCT foo AS alias_foo -> OBJECT_CONSTRUCT('alias_foo', foo)
+                        # Column case: SELECT AS STRUCT foo -> OBJECT_CONSTRUCT('foo', foo)
+                        name = expr.this if isinstance(expr, exp.Alias) else expr
 
-                        object_construct_args.extend([alias, name])
+                        object_construct_args.extend([exp.Literal.string(expr.alias_or_name), name])
 
                     array_agg = exp.ArrayAgg(
                         this=_build_object_construct(args=object_construct_args)
                     )
-                    select = exp.select(array_agg, dialect=self.dialect)
-                    from_ = first_expr.args.get("from")
-                    if from_:
-                        select = select.from_(from_, dialect=self.dialect)
 
-                    return self.sql(select.subquery())
+                    first_expr.set("kind", None)
+                    first_expr.set("expressions", [array_agg])
+
+                    return self.sql(first_expr.subquery())
 
             return inline_array_sql(self, expression)

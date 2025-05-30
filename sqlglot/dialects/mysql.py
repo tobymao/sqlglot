@@ -211,6 +211,7 @@ class MySQL(Dialect):
             "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
+            "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "UNLOCK TABLES": TokenType.COMMAND,
             "UNSIGNED": TokenType.UBIGINT,
             "UNSIGNED INTEGER": TokenType.UBIGINT,

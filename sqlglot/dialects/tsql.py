@@ -390,6 +390,7 @@ class TSQL(Dialect):
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
@@ -540,7 +541,6 @@ class TSQL(Dialect):
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
         LOG_DEFAULTS_TO_LN = True
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         STRING_ALIASES = True
         NO_PAREN_IF_COMMANDS = False
 

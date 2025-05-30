@@ -1449,9 +1449,6 @@ class Parser(metaclass=_Parser):
 
     LOG_DEFAULTS_TO_LN = False
 
-    # Whether ADD is present for each column added by ALTER TABLE
-    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
-
     # Whether the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
@@ -7216,7 +7213,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Refresh, this=self._parse_string() or self._parse_table())
 
     def _parse_add_column(self) -> t.Optional[exp.Expression]:
-        if not self._match_text_seq("ADD"):
+        if not self._prev.text.upper() == "ADD":
             return None
 
         self._match(TokenType.COLUMN)
@@ -7249,26 +7246,22 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_alter_table_add(self) -> t.List[exp.Expression]:
-        index = self._index - 1
-
-        if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
-            return self._parse_csv(
-                lambda: self.expression(
+        def _parse_add_column_or_constraint():
+            self._match_text_seq("ADD")
+            if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
+                return self.expression(
                     exp.AddConstraint, expressions=self._parse_csv(self._parse_constraint)
                 )
-            )
+            return self._parse_add_column()
 
-        self._retreat(index)
-        if not self.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and self._match_text_seq("ADD"):
-            return self._parse_wrapped_csv(self._parse_field_def, optional=True)
-
-        if self._match_text_seq("ADD", "COLUMNS"):
+        if not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN or self._match_text_seq(
+            "COLUMNS"
+        ):
             schema = self._parse_schema()
-            if schema:
-                return [schema]
-            return []
 
-        return self._parse_wrapped_csv(self._parse_add_column, optional=True)
+            return ensure_list(schema) if schema else self._parse_csv(self._parse_field_def)
+
+        return self._parse_wrapped_csv(_parse_add_column_or_constraint, optional=True)
 
     def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
         if self._match_texts(self.ALTER_ALTER_PARSERS):

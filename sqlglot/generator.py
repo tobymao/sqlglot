@@ -3435,16 +3435,24 @@ class Generator(metaclass=_Generator):
     def alter_sql(self, expression: exp.Alter) -> str:
         actions = expression.args["actions"]
 
-        if isinstance(actions[0], exp.ColumnDef):
-            actions = self.add_column_sql(expression)
-        elif isinstance(actions[0], exp.Schema):
-            actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
-        elif isinstance(actions[0], exp.Delete):
-            actions = self.expressions(expression, key="actions", flat=True)
-        elif isinstance(actions[0], exp.Query):
-            actions = "AS " + self.expressions(expression, key="actions")
+        if not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and isinstance(
+            actions[0], exp.ColumnDef
+        ):
+            actions_sql = self.expressions(expression, key="actions", flat=True)
+            actions_sql = f"ADD {actions_sql}"
         else:
-            actions = self.expressions(expression, key="actions", flat=True)
+            actions_list = []
+            for action in actions:
+                if isinstance(action, (exp.ColumnDef, exp.Schema)):
+                    action_sql = self.add_column_sql(action)
+                else:
+                    action_sql = self.sql(action)
+                    if isinstance(action, exp.Query):
+                        action_sql = f"AS {action_sql}"
+
+                actions_list.append(action_sql)
+
+            actions_sql = self.format_args(*actions_list)
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         on_cluster = self.sql(expression, "cluster")
@@ -3455,17 +3463,18 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
 
-        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions_sql}{not_valid}{options}"
 
-    def add_column_sql(self, expression: exp.Alter) -> str:
-        if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
-            return self.expressions(
-                expression,
-                key="actions",
-                prefix="ADD COLUMN ",
-                skip_first=True,
-            )
-        return f"ADD {self.expressions(expression, key='actions', flat=True)}"
+    def add_column_sql(self, expression: exp.Expression) -> str:
+        sql = self.sql(expression)
+        if isinstance(expression, exp.Schema):
+            column_text = " COLUMNS"
+        elif isinstance(expression, exp.ColumnDef) and self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
+            column_text = " COLUMN"
+        else:
+            column_text = ""
+
+        return f"ADD{column_text} {sql}"
 
     def droppartition_sql(self, expression: exp.DropPartition) -> str:
         expressions = self.expressions(expression)

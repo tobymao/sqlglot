@@ -499,6 +499,9 @@ class Dialect(metaclass=_Dialect):
     equivalent of CREATE SCHEMA is CREATE DATABASE.
     """
 
+    # Whether ADD is present for each column added by ALTER TABLE
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

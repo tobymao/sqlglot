@@ -44,6 +44,7 @@ class Oracle(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     NULL_ORDERING = "nulls_are_large"
     ON_CONDITION_EMPTY_BEFORE_ERROR = False
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -104,7 +105,6 @@ class Oracle(Dialect):
         }
 
     class Parser(parser.Parser):
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
         VALUES_FOLLOWED_BY_PAREN = False
 
@@ -341,11 +341,8 @@ class Oracle(Dialect):
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def add_column_sql(self, expression: exp.Alter) -> str:
-            actions = self.expressions(expression, key="actions", flat=True)
-            if len(expression.args.get("actions", [])) > 1:
-                return f"ADD ({actions})"
-            return f"ADD {actions}"
+        def add_column_sql(self, expression: exp.Expression) -> str:
+            return f"ADD {self.sql(expression)}"
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:
             option = self.sql(expression, "this")

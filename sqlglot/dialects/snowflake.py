@@ -1017,7 +1017,6 @@ class Snowflake(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
-            exp.Array: inline_array_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
             exp.AtTimeZone: lambda self, e: self.func(
@@ -1427,3 +1426,29 @@ class Snowflake(Dialect):
                 expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
 
             return expr_sql
+
+        def array_sql(self, expression: exp.Array) -> str:
+            expressions = expression.expressions
+
+            first_expr = seq_get(expressions, 0)
+            if isinstance(first_expr, exp.Select):
+                # SELECT AS STRUCT foo AS alias_foo -> ARRAY_AGG(OBJECT_CONSTRUCT('alias_foo', foo))
+                if first_expr.text("kind").upper() == "STRUCT":
+                    object_construct_args = []
+                    for expr in first_expr.expressions:
+                        # Alias case: SELECT AS STRUCT foo AS alias_foo -> OBJECT_CONSTRUCT('alias_foo', foo)
+                        # Column case: SELECT AS STRUCT foo -> OBJECT_CONSTRUCT('foo', foo)
+                        name = expr.this if isinstance(expr, exp.Alias) else expr
+
+                        object_construct_args.extend([exp.Literal.string(expr.alias_or_name), name])
+
+                    array_agg = exp.ArrayAgg(
+                        this=_build_object_construct(args=object_construct_args)
+                    )
+
+                    first_expr.set("kind", None)
+                    first_expr.set("expressions", [array_agg])
+
+                    return self.sql(first_expr.subquery())
+
+            return inline_array_sql(self, expression)

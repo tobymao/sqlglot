@@ -460,6 +460,9 @@ class Generator(metaclass=_Generator):
     # Whether UNIX_SECONDS(timestamp) is supported
     SUPPORTS_UNIX_SECONDS = False
 
+    # Whether to wrap <props> in `AlterSet`, e.g., ALTER ... SET (<props>)
+    ALTER_SET_WRAPPED = False
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
 
@@ -3430,6 +3433,9 @@ class Generator(metaclass=_Generator):
 
     def alterset_sql(self, expression: exp.AlterSet) -> str:
         exprs = self.expressions(expression, flat=True)
+        if self.ALTER_SET_WRAPPED:
+            exprs = f"({exprs})"
+
         return f"SET {exprs}"
 
     def alter_sql(self, expression: exp.Alter) -> str:

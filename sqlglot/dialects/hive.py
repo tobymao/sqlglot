@@ -741,6 +741,17 @@ class Hive(Dialect):
 
             return self.func("STRUCT", *values)
 
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            return super().columndef_sql(
+                expression,
+                sep=(
+                    ": "
+                    if isinstance(expression.parent, exp.DataType)
+                    and expression.parent.is_type("struct")
+                    else sep
+                ),
+            )
+
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)
             exprs = f" {exprs}" if exprs else ""

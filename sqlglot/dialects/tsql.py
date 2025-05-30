@@ -637,6 +637,9 @@ class TSQL(Dialect):
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
 
+        def _parse_alter_table_set(self) -> exp.AlterSet:
+            return self._parse_wrapped(super()._parse_alter_table_set)
+
         def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
             if self._match(TokenType.MERGE):
                 comments = self._prev_comments
@@ -921,6 +924,7 @@ class TSQL(Dialect):
         COPY_PARAMS_EQ_REQUIRED = True
         PARSE_JSON_NAME = None
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        ALTER_SET_WRAPPED = True
         ALTER_SET_TYPE = ""
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {

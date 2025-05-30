@@ -7391,7 +7391,8 @@ class Parser(metaclass=_Parser):
             if self._match_text_seq("SERDE"):
                 alter_set.set("serde", self._parse_field())
 
-            alter_set.set("expressions", [self._parse_properties()])
+            properties = self._parse_wrapped(self._parse_properties, optional=True)
+            alter_set.set("expressions", [properties])
 
         return alter_set
 

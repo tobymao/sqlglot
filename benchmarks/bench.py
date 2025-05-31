@@ -1,12 +1,8 @@
 import collections.abc
-
-from benchmarks.helpers import ascii_table
+import pyperf
 
 # moz_sql_parser 3.10 compatibility
 collections.Iterable = collections.abc.Iterable
-import timeit
-
-import numpy as np
 
 # import sqlfluff
 # import moz_sql_parser
@@ -190,41 +186,24 @@ def sqlfluff_parse(sql):
     sqlfluff.parse(sql)
 
 
-def diff(row, column):
-    if column == "Query":
-        return ""
-    column = row[column]
-    if isinstance(column, str):
-        return " (N/A)"
-    return f" ({str(column / row['sqlglot'])[0:5]})"
+QUERIES = {"tpch": tpch, "short": short, "long": long, "crazy": crazy}
 
 
-libs = [
-    "sqlglot",
-    "sqlglotrs",
-    # "sqlfluff",
-    # "sqltree",
-    # "sqlparse",
-    # "moz_sql_parser",
-    # "sqloxide",
-]
-table = []
+def run_benchmarks():
+    runner = pyperf.Runner()
 
-for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.items():
-    row = {"Query": name}
-    table.append(row)
+    # Run benchmarks for each combination
+    # Only enabled libraries
+    libs = ["sqlglot", "sqlglotrs"]
+
     for lib in libs:
-        try:
-            row[lib] = np.mean(timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=3))
-        except Exception as e:
-            print(e)
-            row[lib] = "error"
+        for query_name, sql in QUERIES.items():
+            bench_name = f"parse_{lib}_{query_name}"
+            parse_func = globals()[f"{lib}_parse"]
 
-print(
-    ascii_table(
-        [
-            {k: v if v == "Query" else str(row[k])[0:7] + diff(row, k) for k, v in row.items()}
-            for row in table
-        ]
-    )
-)
+            # Use runner.bench_func which handles the inner loop
+            runner.bench_func(bench_name, parse_func, sql)
+
+
+if __name__ == "__main__":
+    run_benchmarks()

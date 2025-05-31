@@ -29,6 +29,7 @@ setup(
             "types-pytz",
             "typing_extensions",
             "maturin>=1.4,<2.0",
+            "pyperf",
         ],
         "rs": [f"sqlglotrs=={sqlglotrs_version()}"],
     },

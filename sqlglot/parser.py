@@ -1116,6 +1116,23 @@ class Parser(metaclass=_Parser):
         "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
 
+    PIPE_SYNTAX_TRANSFORM_PARSERS = {
+        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
+        "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
+    }
+
+    def _parse_pipe_syntax_select(self, query: exp.Query) -> t.Optional[exp.Query]:
+        select = self._parse_select()
+        if isinstance(select, exp.Select):
+            return select.from_(query.subquery(copy=False), copy=False)
+        return None
+
+    def _parse_pipe_syntax_where(self, query: exp.Query) -> t.Optional[exp.Query]:
+        where = self._parse_where()
+        if isinstance(where, exp.Where) and isinstance(query, exp.Select):
+            return query.where(where.this, copy=False)
+        return None
+
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (
             exp.PartitionedByBucket
@@ -3236,6 +3253,8 @@ class Parser(metaclass=_Parser):
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
+            if self._match(TokenType.PIPE_GT, advance=False):
+                return self._parse_pipe_syntax_query(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -7133,6 +7152,11 @@ class Parser(metaclass=_Parser):
             )
 
         return this
+
+    def _parse_pipe_syntax_query(self, query: exp.Query) -> exp.Query:
+        while self._match(TokenType.PIPE_GT):
+            query = self.PIPE_SYNTAX_TRANSFORM_PARSERS[self._curr.text.upper()](self, query)
+        return query
 
     def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_id_var, optional=optional)

@@ -676,7 +676,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ST_MAKEPOINT(10, 20)"), exp.StPoint)
         self.assertIsInstance(parse_one("ST_POINT(10, 20)"), exp.StPoint)
         self.assertIsInstance(parse_one("ST_DISTANCE(a, b)"), exp.StDistance)
-        self.assertIsInstance(parse_one("ST_DISTANCE_SPHERE(a, b)"), exp.StDistance)
+        self.assertIsInstance(parse_one("ST_DISTANCE_SPHERE(1, 2, 3, 4)"), exp.StDistanceSphere)
         self.assertIsInstance(parse_one("AVG(a)"), exp.Avg)
         self.assertIsInstance(parse_one("BEGIN DEFERRED TRANSACTION"), exp.Transaction)
         self.assertIsInstance(parse_one("CEIL(a)"), exp.Ceil)
@@ -1230,26 +1230,51 @@ FROM foo""",
     def test_array_intersection(self):
         expr = parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])")
         self.assertIsInstance(expr, exp.ArrayIntersection)
-        self.assertEqual(expr.sql(), "ARRAY_INTERSECTION(ARRAY(1, 2), ARRAY(2, 3))")
+        self.assertEqual(expr.sql(dialect="snowflake"), "ARRAY_INTERSECTION([1, 2], [2, 3])")
 
         expr2 = parse_one("ARRAY_INTERSECT([1, 2], [2, 3])")
         self.assertIsInstance(expr2, exp.ArrayIntersection)
-        self.assertEqual(expr2.sql(), "ARRAY_INTERSECTION(ARRAY(1, 2), ARRAY(2, 3))")
+        self.assertEqual(expr2.sql(dialect="snowflake"), "ARRAY_INTERSECTION([1, 2], [2, 3])")
+
+        expr = parse_one("ARRAY_INTERSECT([1, 2], [2, 3])")
+        self.assertIsInstance(expr, exp.ArrayIntersection)
+        self.assertEqual(expr.sql(dialect="starrocks"), "ARRAY_INTERSECT([1, 2], [2, 3])")
+
+        expr2 = parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])")
+        self.assertIsInstance(expr2, exp.ArrayIntersection)
+        self.assertEqual(expr2.sql(dialect="starrocks"), "ARRAY_INTERSECT([1, 2], [2, 3])")
 
     def test_st_point(self):
-        expr = parse_one("ST_MAKEPOINT(10, 20)")
+        # Both ST_POINT and ST_MAKEPOINT should serialize to ST_MAKEPOINT in Snowflake
+        expr = parse_one("ST_POINT(10, 20)")
         self.assertIsInstance(expr, exp.StPoint)
-        self.assertEqual(expr.sql(), "ST_MAKEPOINT(10, 20)")
+        self.assertEqual(expr.sql(dialect="snowflake"), "ST_MAKEPOINT(10, 20)")
 
-        expr2 = parse_one("ST_POINT(10, 20)")
+        expr2 = parse_one("ST_MAKEPOINT(10, 20)")
         self.assertIsInstance(expr2, exp.StPoint)
-        self.assertEqual(expr2.sql(), "ST_MAKEPOINT(10, 20)")
+        self.assertEqual(expr2.sql(dialect="snowflake"), "ST_MAKEPOINT(10, 20)")
+
+        # Both ST_POINT and ST_MAKEPOINT should serialize to ST_POINT in StarRocks
+        expr = parse_one("ST_POINT(10, 20)")
+        self.assertIsInstance(expr, exp.StPoint)
+        self.assertEqual(expr.sql(dialect="starrocks"), "ST_POINT(10, 20)")
+
+        expr2 = parse_one("ST_MAKEPOINT(10, 20)")
+        self.assertIsInstance(expr2, exp.StPoint)
+        self.assertEqual(expr2.sql(dialect="starrocks"), "ST_POINT(10, 20)")
 
     def test_st_distance(self):
-        expr = parse_one("ST_DISTANCE(a, b)")
+        expr = parse_one("ST_DISTANCE(1, 2)")
         self.assertIsInstance(expr, exp.StDistance)
-        self.assertEqual(expr.sql(), "ST_DISTANCE(a, b)")
+        self.assertEqual(expr.sql(dialect="snowflake"), "ST_DISTANCE(1, 2)")
 
-        expr2 = parse_one("ST_DISTANCE_SPHERE(a, b)")
+        # st_distance_sphere required 4 numerics and if geo points passed
+        expr2 = parse_one("ST_DISTANCE(a, b)")
         self.assertIsInstance(expr2, exp.StDistance)
-        self.assertEqual(expr2.sql(), "ST_DISTANCE(a, b)")
+        self.assertEqual(
+            expr2.sql(dialect="starrocks"), "ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))"
+        )
+
+        expr3 = parse_one("ST_DISTANCE_SPHERE(1, 2, 3, 4)")
+        self.assertIsInstance(expr3, exp.StDistanceSphere)
+        self.assertEqual(expr3.sql(dialect="starrocks"), "ST_DISTANCE_SPHERE(1, 2, 3, 4)")

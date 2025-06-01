@@ -25,17 +25,14 @@ def st_distance_sphere(self, expression: exp.StDistance) -> str:
     point1 = expression.this
     point2 = expression.expression
 
-    if not point1 or not point2:
-        raise ValueError("ST_Distance requires two point arguments")
-
     # Generate the four coordinate expressions for StarRocks format
-    point1_x = f"ST_X({self.sql(point1)})"
-    point1_y = f"ST_Y({self.sql(point1)})"
-    point2_x = f"ST_X({self.sql(point2)})"
-    point2_y = f"ST_Y({self.sql(point2)})"
+    point1_x = self.func("ST_X", point1)
+    point1_y = self.func("ST_Y", point1)
+    point2_x = self.func("ST_X", point2)
+    point2_y = self.func("ST_Y", point2)
 
     # Return in StarRocks ST_Distance_Sphere format with proper formatting
-    return f"ST_Distance_Sphere({point1_x}, {point1_y}, {point2_x}, {point2_y})"
+    return self.func("ST_Distance_Sphere", point1_x, point1_y, point2_x, point2_y)
 
 
 class StarRocks(MySQL):

@@ -61,6 +61,7 @@ class Doris(MySQL):
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
+            exp.ArrayIntersection: rename_func("ARRAY_INTERSECT"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(
@@ -73,6 +74,7 @@ class Doris(MySQL):
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
             exp.Split: rename_func("SPLIT_BY_STRING"),
+            exp.StPoint: rename_func("ST_POINT"),
             exp.StringToArray: rename_func("SPLIT_BY_STRING"),
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimeStrToDate: rename_func("TO_DATE"),

@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     timestrtotime_sql,
     groupconcat_sql,
+    rename_func,
 )
 from sqlglot.dialects.presto import amend_exploded_column_table, Presto
 from sqlglot.tokens import TokenType
@@ -69,6 +70,7 @@ class Trino(Presto):
 
         TRANSFORMS = {
             **Presto.Generator.TRANSFORMS,
+            exp.ArrayIntersection: rename_func("ARRAY_INTERSECT"),
             exp.ArraySum: lambda self,
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",

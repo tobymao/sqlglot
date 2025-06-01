@@ -5563,7 +5563,8 @@ class ArrayToString(Func):
 
 
 class ArrayIntersection(Func):
-    arg_types = {"this": True, "expression": True, "null": False}
+    arg_types = {"expressions": True}
+    is_var_len_args = True
     _sql_names = ["ARRAY_INTERSECTION", "ARRAY_INTERSECT"]
 
 
@@ -5575,6 +5576,24 @@ class StPoint(Func):
 class StDistance(Func):
     arg_types = {"this": True, "expression": True}
     _sql_names = ["ST_DISTANCE", "ST_DISTANCE_SPHERE"]
+
+
+class StDistanceSphere(Func):
+    """
+    Args:
+        x_lng: longitude of point X
+        x_lat: latitude of point X
+        y_lng: longitude of point Y
+        y_lat: latitude of point Y
+    """
+
+    arg_types = {
+        "x_lng": True,
+        "x_lat": True,
+        "y_lng": True,
+        "y_lat": True,
+    }
+    _sql_names = ["ST_DISTANCE_SPHERE"]
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string

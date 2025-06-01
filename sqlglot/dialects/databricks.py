@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     timestamptrunc_sql,
     build_formatted_time,
+    rename_func,
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
@@ -75,6 +76,7 @@ class Databricks(Spark):
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
+            exp.ArrayIntersection: rename_func("ARRAY_INTERSECT"),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(

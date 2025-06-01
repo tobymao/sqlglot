@@ -319,6 +319,21 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT ARRAY_INTERSECTION([1, 2], [2, 3])",
+            write={"starrocks": "SELECT ARRAY_INTERSECT([1, 2], [2, 3])"},
+        )
+
+        self.validate_all(
+            "SELECT ST_MAKEPOINT(10, 20)",
+            write={"starrocks": "SELECT ST_POINT(10, 20)"},
+        )
+
+        self.validate_all(
+            "SELECT ST_DISTANCE(a, b)",
+            write={"starrocks": "SELECT ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))"},
+        )
+
+        self.validate_all(
             "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
             write={
                 "duckdb": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL)",

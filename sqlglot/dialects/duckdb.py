@@ -625,6 +625,7 @@ class DuckDB(Dialect):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
+            exp.ArrayIntersection: rename_func("ARRAY_INTERSECT"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.BitwiseXor: rename_func("XOR"),
@@ -701,6 +702,7 @@ class DuckDB(Dialect):
             exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
+            exp.StPoint: rename_func("ST_POINT"),
             exp.StrPosition: strposition_sql,
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))

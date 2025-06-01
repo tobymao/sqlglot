@@ -878,9 +878,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 continue
 
             predicate = column.find_ancestor(exp.Predicate, exp.Select)
-            assert isinstance(predicate, exp.Binary), (
-                "Columns can only be marked with (+) when involved in a binary operation"
-            )
+            assert isinstance(
+                predicate, exp.Binary
+            ), "Columns can only be marked with (+) when involved in a binary operation"
 
             predicate_parent = predicate.parent
             join_predicate = predicate.pop()
@@ -892,9 +892,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 c for c in join_predicate.right.find_all(exp.Column) if c.args.get("join_mark")
             ]
 
-            assert not (left_columns and right_columns), (
-                "The (+) marker cannot appear in both sides of a binary predicate"
-            )
+            assert not (
+                left_columns and right_columns
+            ), "The (+) marker cannot appear in both sides of a binary predicate"
 
             marked_column_tables = set()
             for col in left_columns or right_columns:
@@ -904,9 +904,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 col.set("join_mark", False)
                 marked_column_tables.add(table)
 
-            assert len(marked_column_tables) == 1, (
-                "Columns of only a single table can be marked with (+) in a given binary predicate"
-            )
+            assert (
+                len(marked_column_tables) == 1
+            ), "Columns of only a single table can be marked with (+) in a given binary predicate"
 
             # Add predicate if join already copied, or add join if it is new
             join_this = old_joins.get(col.table, query_from).this
@@ -928,9 +928,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
         only_old_join_sources = old_joins.keys() - new_joins.keys()
 
         if query_from.alias_or_name in new_joins:
-            assert len(only_old_join_sources) >= 1, (
-                "Cannot determine which table to use in the new FROM clause"
-            )
+            assert (
+                len(only_old_join_sources) >= 1
+            ), "Cannot determine which table to use in the new FROM clause"
 
             new_from_name = list(only_old_join_sources)[0]
             query.set("from", exp.From(this=old_joins.pop(new_from_name).this))

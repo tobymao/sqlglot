@@ -7153,7 +7153,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_pipe_syntax_query(self, query: exp.Select) -> exp.Query:
         while self._match(TokenType.PIPE_GT):
-            query = self.PIPE_SYNTAX_TRANSFORM_PARSERS[self._curr.text.upper()](self, query)
+            parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
+            if not parser:
+                self.raise_error(f"Unsupported pipe syntax operator: '{self._curr.text.upper()}'.")
+            else:
+                query = parser(self, query)
+
         return query
 
     def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:

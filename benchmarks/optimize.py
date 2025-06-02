@@ -56,7 +56,7 @@ def run_benchmarks():
     # Define benchmarks with their setup functions
     benchmarks = {
         "tpch": get_tpch_setup,
-        "tpcds": get_tpcds_setup,
+        # "tpcds": get_tpcds_setup,  # This is left out because it's too slow in CI
         "condition_10": get_condition_10_setup,
         "condition_100": get_condition_100_setup,
         "condition_1000": get_condition_1000_setup,

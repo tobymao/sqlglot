@@ -52,7 +52,7 @@ ORDER BY
   "e"."employee_id"
 """
 
-short = "select 1 as a, case when 1 then 1 when 2 then 2 else 3 end as b, c from x"
+short = "SELECT 1 AS a, CASE WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END AS b, c FROM x"
 
 crazy = "SELECT 1+"
 crazy += "+".join(str(i) for i in range(500))
@@ -192,16 +192,12 @@ QUERIES = {"tpch": tpch, "short": short, "long": long, "crazy": crazy}
 def run_benchmarks():
     runner = pyperf.Runner()
 
-    # Run benchmarks for each combination
-    # Only enabled libraries
     libs = ["sqlglot", "sqlglotrs"]
-
     for lib in libs:
         for query_name, sql in QUERIES.items():
             bench_name = f"parse_{lib}_{query_name}"
             parse_func = globals()[f"{lib}_parse"]
 
-            # Use runner.bench_func which handles the inner loop
             runner.bench_func(bench_name, parse_func, sql)
 
 

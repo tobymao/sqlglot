@@ -1,0 +1,53 @@
+name: Benchmark pull requests
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-benchmark:
+    name: run benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed to fetch main branch too
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Create a virtual environment
+        run: |
+          python -m venv .venv
+      - name: Install dependencies
+        run: |
+          source ./.venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install pyperf
+          make install-dev
+          make install-dev-rs-release
+      - name: Run benchmark on PR branch
+        run: |
+          source ./.venv/bin/activate
+          python benchmarks/parse.py -o bench_parse_pr.json
+      - name: Checkout main branch into subdir
+        run: |
+          git fetch origin main
+          git worktree add main-branch origin/main
+      - name: Run benchmark on main branch
+        run: |
+          source ./.venv/bin/activate
+          cd main-branch
+          python benchmarks/parse.py --output ../bench_parse_main.json
+          cd ..
+      - name: Compare benchmarks and save results
+        run: |
+          source ./.venv/bin/activate
+          python -m pyperf compare_to bench_parse_pr.json bench_parse_main.json --table --table-format=md > bench_parse_comparison.txt
+      - name: Comment on PR for parse benchmark results
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: bench_parse_comparison.txt

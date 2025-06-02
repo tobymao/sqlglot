@@ -933,6 +933,7 @@ class Parser(metaclass=_Parser):
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
         "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
         "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
+        "ORDER BY": lambda self, query: query.order_by(self._parse_order(), copy=False),
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {

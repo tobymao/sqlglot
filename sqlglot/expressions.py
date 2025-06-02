@@ -1243,6 +1243,45 @@ class Query(Expression):
         """
         raise NotImplementedError("Query objects must implement `select`")
 
+    def where(
+        self: Q,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Q:
+        """
+        Append to or set the WHERE expressions.
+
+        Examples:
+            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
+            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append: if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified expression.
+        """
+        return _apply_conjunction_builder(
+            *[expr.this if isinstance(expr, Where) else expr for expr in expressions],
+            instance=self,
+            arg="where",
+            append=append,
+            into=Where,
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
+
     def with_(
         self: Q,
         alias: ExpOrStr,
@@ -4050,45 +4089,6 @@ class Select(Query):
             instance=self,
             arg="joins",
             append=append,
-            copy=copy,
-            **opts,
-        )
-
-    def where(
-        self,
-        *expressions: t.Optional[ExpOrStr],
-        append: bool = True,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Select:
-        """
-        Append to or set the WHERE expressions.
-
-        Example:
-            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
-            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-                Multiple expressions are combined with an AND operator.
-            append: if `True`, AND the new expressions to any existing expression.
-                Otherwise, this resets the expression.
-            dialect: the dialect used to parse the input expressions.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            Select: the modified expression.
-        """
-        return _apply_conjunction_builder(
-            *expressions,
-            instance=self,
-            arg="where",
-            append=append,
-            into=Where,
-            dialect=dialect,
             copy=copy,
             **opts,
         )

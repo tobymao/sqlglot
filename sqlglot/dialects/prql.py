@@ -47,7 +47,7 @@ class PRQL(Dialect):
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
-            "FILTER": lambda self, query: query.where(self._parse_assignment()),
+            "FILTER": lambda self, query: query.where(self._parse_disjunction()),
             "APPEND": lambda self, query: query.union(
                 _select_all(self._parse_table()), distinct=False, copy=False
             ),

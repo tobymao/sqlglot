@@ -1,4 +1,4 @@
-name: Publish Python Release to PyPI
+name: Publish sqlglot and sqlglotrs to PyPI
 
 on:
   push:

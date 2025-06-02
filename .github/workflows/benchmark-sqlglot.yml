@@ -20,26 +20,33 @@ jobs:
       - name: Create a virtual environment
         run: |
           python -m venv .venv
-      - name: Install dependencies
-        run: |
           source ./.venv/bin/activate
           python -m pip install --upgrade pip
           pip install pyperf
-          make install-dev
-          make install-dev-rs-release
       - name: Run benchmark on PR branch
         run: |
           source ./.venv/bin/activate
+          make install-dev
+          make install-dev-rs-release
           python benchmarks/parse.py --quiet --output bench_parse_pr.json
           python benchmarks/optimize.py --quiet --fast --output bench_optimize_pr.json
       - name: Checkout main branch into subdir
         run: |
           git fetch origin main
           git worktree add main-branch origin/main
+      - name: Reset virtual environment
+        run: |
+          rm -rf .venv
+          python -m venv .venv
+          source ./.venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install pyperf
       - name: Run benchmark on main branch
         run: |
           source ./.venv/bin/activate
           cd main-branch
+          make install-dev
+          make install-dev-rs-release
           python benchmarks/parse.py --quiet --output ../bench_parse_main.json
           python benchmarks/optimize.py --quiet --fast --output ../bench_optimize_main.json
           cd ..

@@ -186,3 +186,18 @@ x"""
                 (TokenType.STRING, ") }}"),
             ],
         )
+
+    def test_partial_token_list(self):
+        tokenizer = Tokenizer()
+
+        try:
+            # This is expected to fail due to the unbalanced string quotes
+            tokenizer.tokenize("foo 'bar")
+        except TokenError as e:
+            self.assertIn("Error tokenizing 'foo 'ba'", str(e))
+
+        partial_tokens = tokenizer.tokens
+
+        self.assertEqual(len(partial_tokens), 1)
+        self.assertEqual(partial_tokens[0].token_type, TokenType.VAR)
+        self.assertEqual(partial_tokens[0].text, "foo")

@@ -1507,10 +1507,14 @@ class Tokenizer(metaclass=_Tokenizer):
         if not self._RS_TOKENIZER:
             raise SqlglotError("Rust tokenizer is not available")
 
-        try:
-            tokens = self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
-            for token in tokens:
-                token.token_type = _ALL_TOKEN_TYPES[token.token_type_index]
-            return tokens
-        except Exception as e:
-            raise TokenError(str(e))
+        tokens, error_msg = self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
+        for token in tokens:
+            token.token_type = _ALL_TOKEN_TYPES[token.token_type_index]
+
+        # Setting this here so partial token lists can be inspected even if there is a failure
+        self.tokens = tokens
+
+        if error_msg is not None:
+            raise TokenError(error_msg)
+
+        return tokens

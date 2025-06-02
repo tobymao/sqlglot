@@ -811,9 +811,14 @@ class Generator(metaclass=_Generator):
     def seg(self, sql: str, sep: str = " ") -> str:
         return f"{self.sep(sep)}{sql}"
 
-    def pad_comment(self, comment: str) -> str:
+    def sanitize_comment(self, comment: str) -> str:
         comment = " " + comment if comment[0].strip() else comment
         comment = comment + " " if comment[-1].strip() else comment
+
+        if not self.dialect.tokenizer_class.NESTED_COMMENTS:
+            # Necessary workaround to avoid syntax errors due to nesting: /* ... */ ... */
+            comment = comment.replace("*/", "* /")
+
         return comment
 
     def maybe_comment(
@@ -833,7 +838,7 @@ class Generator(metaclass=_Generator):
             return sql
 
         comments_sql = " ".join(
-            f"/*{self.pad_comment(comment)}*/" for comment in comments if comment
+            f"/*{self.sanitize_comment(comment)}*/" for comment in comments if comment
         )
 
         if not comments_sql:
@@ -3251,7 +3256,7 @@ class Generator(metaclass=_Generator):
                 if expression.comments and self.comments:
                     for comment in expression.comments:
                         if comment:
-                            op += f" /*{self.pad_comment(comment)}*/"
+                            op += f" /*{self.sanitize_comment(comment)}*/"
                 stack.extend((op, expression.left))
             return op
 

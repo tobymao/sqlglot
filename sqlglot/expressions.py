@@ -1272,7 +1272,7 @@ class Query(Expression):
             The modified expression.
         """
         return _apply_conjunction_builder(
-            [expr.this if isinstance(expr, Where) else expr for expr in expressions],
+            *[expr.this if isinstance(expr, Where) else expr for expr in expressions],
             instance=self,
             arg="where",
             append=append,

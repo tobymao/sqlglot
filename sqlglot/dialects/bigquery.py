@@ -494,6 +494,8 @@ class BigQuery(Dialect):
             (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("r", "R")
         ]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ANY TYPE": TokenType.VARIANT,

@@ -94,6 +94,8 @@ class SQLite(Dialect):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")
 

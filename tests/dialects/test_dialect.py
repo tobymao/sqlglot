@@ -3453,3 +3453,31 @@ FROM subquery2""",
                     parse_one("SELECT 0xCC", read=read_dialect).sql(other_integer_dialects),
                     "SELECT 0xCC",
                 )
+
+    def test_pipe_syntax(self):
+        self.validate_identity("FROM x", "SELECT * FROM x")
+        self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM (SELECT * FROM x)")
+        self.validate_identity(
+            "FROM x |> SELECT x1 as c1, x2 as c2",
+            "SELECT x1 AS c1, x2 AS c2 FROM (SELECT * FROM x)",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1",
+            "SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1 |> SELECT x2_a",
+            "SELECT x2_a FROM (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 0 OR x2 > 0 |> WHERE x3 > 1 AND x4 > 1 |> SELECT x1, x4",
+            "SELECT x1, x4 FROM (SELECT * FROM x WHERE (x1 > 0 OR x2 > 0) AND (x3 > 1 AND x4 > 1))",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 1 |> WHERE x2 > 2 |> SELECT x1 as gt1, x2 as gt2",
+            "SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 1 AND x2 > 2 |> SELECT x1 as gt1, x2 as gt2 |> SELECT gt1 * 2 + gt2 * 2 AS gt2_2",
+            "SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM (SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2))",
+        )

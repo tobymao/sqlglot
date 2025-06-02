@@ -475,6 +475,7 @@ class TSQL(Dialect):
         "114": "%H:%M:%S:%f",
         "120": "%Y-%m-%d %H:%M:%S",
         "121": "%Y-%m-%d %H:%M:%S.%f",
+        "126": "%Y-%m-%dT%H:%M:%S.%f",
     }
 
     FORMAT_TIME_MAPPING = {

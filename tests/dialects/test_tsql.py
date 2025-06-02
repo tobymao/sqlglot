@@ -63,6 +63,13 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
+            write={
+                "duckdb": "SELECT STRPTIME('2006-04-25T15:50:59.997', '%Y-%m-%dT%H:%M:%S.%f')",
+                "tsql": "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
+            },
+        )
+        self.validate_all(
             "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
             read={
                 "snowflake": "CREATE TABLE TEMP_NESTED_WITH AS WITH C AS (WITH A AS (SELECT 2 AS value) SELECT * FROM A) SELECT * FROM C",

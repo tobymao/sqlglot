@@ -30,8 +30,7 @@ jobs:
       - name: Run benchmark on PR branch
         run: |
           source ./.venv/bin/activate
-          python -m benchmarks.parse -o bench_parse_pr.json
-          python -m benchmarks.optimize -o bench_optimize_pr.json
+          python benchmarks/parse.py -o bench_parse_pr.json
       - name: Checkout main branch into subdir
         run: |
           git fetch origin main
@@ -40,23 +39,15 @@ jobs:
         run: |
           source ./.venv/bin/activate
           cd main-branch
-          python -m benchmarks.parse --output ../bench_parse_main.json
-          # python -m benchmarks.optimize --output ../bench_optimize_main.json
+          python benchmarks/parse.py --output ../bench_parse_main.json
           cd ..
       - name: Compare benchmarks and save results
         run: |
           source ./.venv/bin/activate
-          python -m pyperf compare_to bench_parse_pr.json bench_parse_main.json --table > bench_parse_comparison.txt
-          # python -m pyperf compare_to bench_optimize_pr.json bench_optimize_main.json --table > bench_optimize_comparison.txt
+          python -m pyperf compare_to bench_parse_pr.json bench_parse_main.json --table --table-format=md > bench_parse_comparison.txt
       - name: Comment on PR for parse benchmark results
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body-file: bench_parse_comparison.txt
-      # - name: Comment on PR for optimize benchmark results
-      #   uses: peter-evans/create-or-update-comment@v4
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     issue-number: ${{ github.event.pull_request.number }}
-      #     body-file: bench_optimize_comparison.txt

@@ -1,8 +1,10 @@
+name: Benchmark Rust tokenizer changes
+
 on:
   pull_request:
     paths:
       - 'sqlglotrs/**'
-name: benchmark pull requests
+
 jobs:
   run-benchmark:
     name: run benchmark

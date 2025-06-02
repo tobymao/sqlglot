@@ -62,12 +62,9 @@ def run_benchmarks():
         "condition_1000": get_condition_1000_setup,
     }
 
-    # Run all benchmarks
-    for benchmark_name in benchmarks:
-        # Get setup data
-        expressions, schema = benchmarks[benchmark_name]()
+    for benchmark_name, benchmark_setup in benchmarks.items():
+        expressions, schema = benchmark_setup()
 
-        # Run the benchmark
         runner.bench_func(f"optimize_{benchmark_name}", optimize_queries, expressions, schema)
 
 

@@ -3497,8 +3497,19 @@ FROM subquery2""",
             "FROM x |> WHERE x1 > 0 |> SELECT x1 |> ORDER BY x1",
             "SELECT x1 FROM (SELECT * FROM x WHERE x1 > 0) ORDER BY x1",
         )
-
         self.validate_identity(
             "FROM x |> SELECT x1, x2, x3 |> ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
             "SELECT x1, x2, x3 FROM (SELECT * FROM x) ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
         )
+        for option in ("LIMIT 1", "OFFSET 2", "LIMIT 1 OFFSET 2"):
+            with self.subTest(f"Testing pipe syntax LIMIT and OFFSET option: {option}"):
+                self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
+                self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
+                self.validate_identity(
+                    f"FROM x |> {option} |> SELECT x1, x2 |> WHERE x1 > 0 |> WHERE x2 > 0  |> ORDER BY x1, x2 ",
+                    f"SELECT x1, x2 FROM (SELECT * FROM x {option}) WHERE x1 > 0 AND x2 > 0 ORDER BY x1, x2",
+                )
+                self.validate_identity(
+                    f"FROM x |> SELECT x1, x2 |> WHERE x1 > 0 |> WHERE x2 > 0  |> ORDER BY x1, x2 |> {option}",
+                    f"SELECT x1, x2 FROM (SELECT * FROM x) WHERE x1 > 0 AND x2 > 0 ORDER BY x1, x2 {option}",
+                )

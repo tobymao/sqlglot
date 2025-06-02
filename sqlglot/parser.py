@@ -934,6 +934,8 @@ class Parser(metaclass=_Parser):
         "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
         "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
         "ORDER BY": lambda self, query: query.order_by(self._parse_order(), copy=False),
+        "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
+        "OFFSET": lambda self, query: query.offset(self._parse_offset(), copy=False),
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
@@ -1131,6 +1133,15 @@ class Parser(metaclass=_Parser):
     def _parse_pipe_syntax_where(self, query: exp.Query) -> exp.Query:
         where = self._parse_where()
         return query.where(where, copy=False)
+
+    def _parse_pipe_syntax_limit(self, query: exp.Query) -> exp.Query:
+        limit = self._parse_limit()
+        offset = self._parse_offset()
+        if limit:
+            query.limit(limit, copy=False)
+        if offset:
+            query.offset(offset, copy=False)
+        return query
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (

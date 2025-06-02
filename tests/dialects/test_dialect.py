@@ -3470,6 +3470,10 @@ FROM subquery2""",
             "SELECT x2_a FROM (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1)",
         )
         self.validate_identity(
+            "FROM x |> WHERE x1 > 0 OR x2 > 0 |> WHERE x3 > 1 AND x4 > 1 |> SELECT x1, x4",
+            "SELECT x1, x4 FROM (SELECT * FROM x WHERE (x1 > 0 OR x2 > 0) AND (x3 > 1 AND x4 > 1))",
+        )
+        self.validate_identity(
             "FROM x |> WHERE x1 > 1 |> WHERE x2 > 2 |> SELECT x1 as gt1, x2 as gt2",
             "SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2)",
         )

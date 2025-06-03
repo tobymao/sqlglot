@@ -215,6 +215,9 @@ class SingleStore(Dialect):
             exp.UnixToTimeStr: lambda self,
                                       e: f"FROM_UNIXTIME({self.sql(e, 'this')}) :> TEXT",
             exp.UnixSeconds: rename_func("UNIX_TIMESTAMP"),
+            exp.FromTimeZone: lambda self, e: self.func(
+                "CONVERT_TZ", e.this, e.args.get("zone"), "'UTC'"
+            ),
         }
 
         TRANSFORMS.pop(exp.Operator)
@@ -251,6 +254,140 @@ class SingleStore(Dialect):
         TRANSFORMS.pop(exp.Tags)
         TRANSFORMS.pop(exp.WithOperator)
         TRANSFORMS.pop(exp.AllowedValuesProperty)
+        TRANSFORMS.pop(exp.IntervalSpan)
+        TRANSFORMS.pop(exp.PivotAny)
+
+        UNSIGNED_TYPE_MAPPING = {
+            exp.DataType.Type.UBIGINT: "BIGINT",
+            exp.DataType.Type.UINT: "INT",
+            exp.DataType.Type.UMEDIUMINT: "MEDIUMINT",
+            exp.DataType.Type.USMALLINT: "SMALLINT",
+            exp.DataType.Type.UTINYINT: "TINYINT",
+            exp.DataType.Type.UDECIMAL: "DECIMAL",
+            exp.DataType.Type.UDOUBLE: "DOUBLE",
+        }
+
+        UNSUPPORTED_TYPE_MAPPING = {
+            exp.DataType.Type.ARRAY: "TEXT",
+            exp.DataType.Type.AGGREGATEFUNCTION: "TEXT",
+            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "TEXT",
+            exp.DataType.Type.BIGSERIAL: "BIGINT AUTO_INCREMENT KEY",
+            exp.DataType.Type.BPCHAR: "TEXT",
+            exp.DataType.Type.DATEMULTIRANGE: "TEXT",
+            exp.DataType.Type.DATERANGE: "TEXT",
+            exp.DataType.Type.DYNAMIC: "TEXT",
+            exp.DataType.Type.HLLSKETCH: "TEXT",
+            exp.DataType.Type.HSTORE: "TEXT",
+            exp.DataType.Type.IMAGE: "BLOB",
+            exp.DataType.Type.INET: "TEXT",
+            exp.DataType.Type.INT128: "DECIMAL(39,0)",
+            exp.DataType.Type.INT256: "DECIMAL(65,0)",
+            exp.DataType.Type.INT4MULTIRANGE: "TEXT",
+            exp.DataType.Type.INT4RANGE: "TEXT",
+            exp.DataType.Type.INT8MULTIRANGE: "TEXT",
+            exp.DataType.Type.INT8RANGE: "TEXT",
+            exp.DataType.Type.INTERVAL: "TEXT",
+            exp.DataType.Type.IPADDRESS: "TEXT",
+            exp.DataType.Type.IPPREFIX: "TEXT",
+            exp.DataType.Type.IPV4: "TEXT",
+            exp.DataType.Type.IPV6: "TEXT",
+            exp.DataType.Type.LIST: "TEXT",
+            exp.DataType.Type.MAP: "TEXT",
+            exp.DataType.Type.LOWCARDINALITY: "TEXT",  # TODO: replace LOWCARDINALITY with underlying data type
+            exp.DataType.Type.MONEY: "DECIMAL(15,4)",
+            exp.DataType.Type.NAME: "TEXT",
+            exp.DataType.Type.NESTED: "TEXT",
+            exp.DataType.Type.NOTHING: "INT",
+            exp.DataType.Type.NULL: "INT",
+            exp.DataType.Type.NUMMULTIRANGE: "TEXT",
+            exp.DataType.Type.NUMRANGE: "TEXT",
+            exp.DataType.Type.OBJECT: "BLOB",
+            exp.DataType.Type.RANGE: "TEXT",
+            exp.DataType.Type.ROWVERSION: "BIGINT AUTO_INCREMENT KEY",
+            exp.DataType.Type.SERIAL: "BIGINT AUTO_INCREMENT KEY",
+            exp.DataType.Type.SMALLSERIAL: "BIGINT AUTO_INCREMENT KEY",
+            exp.DataType.Type.SMALLMONEY: "DECIMAL(6,4)",
+            exp.DataType.Type.STRUCT: "TEXT",
+            exp.DataType.Type.SUPER: "TEXT",
+            exp.DataType.Type.TIMETZ: "TIME",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP(6)",
+            exp.DataType.Type.TSMULTIRANGE: "TEXT",
+            exp.DataType.Type.TSRANGE: "TEXT",
+            exp.DataType.Type.TSTZMULTIRANGE: "TEXT",
+            exp.DataType.Type.TSTZRANGE: "TEXT",
+            exp.DataType.Type.UINT128: "DECIMAL(39,0)",
+            exp.DataType.Type.UINT256: "DECIMAL(65,0)",
+            exp.DataType.Type.UNION: "TEXT",
+            exp.DataType.Type.UNKNOWN: "TEXT",
+            exp.DataType.Type.USERDEFINED: "TEXT",
+            exp.DataType.Type.UUID: "TEXT",
+            exp.DataType.Type.VARIANT: "TEXT",
+            exp.DataType.Type.XML: "TEXT",
+            exp.DataType.Type.TDIGEST: "BLOB",
+        }
+
+        TYPE_MAPPING = {
+            **UNSIGNED_TYPE_MAPPING,
+            exp.DataType.Type.BIGDECIMAL: "DECIMAL",
+            exp.DataType.Type.BIGINT: "BIGINT",
+            exp.DataType.Type.BINARY: "BINARY",
+            exp.DataType.Type.BIT: "BIT",
+            exp.DataType.Type.BLOB: "BLOB",
+            exp.DataType.Type.BOOLEAN: "BOOLEAN",
+            exp.DataType.Type.CHAR: "CHAR",
+            exp.DataType.Type.DATE: "DATE",
+            exp.DataType.Type.DATE32: "DATE",
+            exp.DataType.Type.DATETIME: "DATETIME",
+            exp.DataType.Type.DATETIME2: "DATETIME",
+            exp.DataType.Type.DATETIME64: "DATETIME",
+            exp.DataType.Type.DECIMAL: "DECIMAL",
+            exp.DataType.Type.DECIMAL32: "DECIMAL",
+            exp.DataType.Type.DECIMAL64: "DECIMAL",
+            exp.DataType.Type.DECIMAL128: "DECIMAL",
+            exp.DataType.Type.DECIMAL256: "DECIMAL",
+            exp.DataType.Type.DOUBLE: "DOUBLE",
+            exp.DataType.Type.ENUM: "ENUM",
+            exp.DataType.Type.ENUM8: "ENUM",
+            exp.DataType.Type.ENUM16: "ENUM",
+            exp.DataType.Type.FIXEDSTRING: "TEXT",
+            exp.DataType.Type.FLOAT: "FLOAT",
+            exp.DataType.Type.GEOGRAPHY: "GEOGRAPHY",
+            exp.DataType.Type.GEOMETRY: "GEOGRAPHY",
+            exp.DataType.Type.POINT: "GEOGRAPHYPOINT",
+            exp.DataType.Type.RING: "GEOGRAPHY",
+            exp.DataType.Type.LINESTRING: "GEOGRAPHY",
+            exp.DataType.Type.MULTILINESTRING: "GEOGRAPHY",
+            exp.DataType.Type.POLYGON: "GEOGRAPHY",
+            exp.DataType.Type.MULTIPOLYGON: "GEOGRAPHY",
+            exp.DataType.Type.INT: "INT",
+            exp.DataType.Type.JSON: "JSON",
+            exp.DataType.Type.JSONB: "BSON",
+            exp.DataType.Type.LONGBLOB: "LONGBLOB",
+            exp.DataType.Type.LONGTEXT: "LONGTEXT",
+            exp.DataType.Type.MEDIUMBLOB: "MEDIUMBLOB",
+            exp.DataType.Type.MEDIUMINT: "MEDIUMINT",
+            exp.DataType.Type.MEDIUMTEXT: "MEDIUMTEXT",
+            exp.DataType.Type.NCHAR: "CHAR",
+            exp.DataType.Type.NVARCHAR: "VARCHAR",
+            exp.DataType.Type.SET: "SET",
+            exp.DataType.Type.SMALLDATETIME: "DATETIME",
+            exp.DataType.Type.SMALLINT: "SMALLINT",
+            exp.DataType.Type.TEXT: "TEXT",
+            exp.DataType.Type.TINYBLOB: "TINYBLOB",
+            exp.DataType.Type.TINYTEXT: "TINYTEXT",
+            exp.DataType.Type.TIME: "TIME",
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP(6)",
+            exp.DataType.Type.TINYINT: "TINYINT",
+            exp.DataType.Type.VARBINARY: "VARBINARY",
+            exp.DataType.Type.VARCHAR: "VARCHAR",
+            exp.DataType.Type.VECTOR: "VECTOR",
+            exp.DataType.Type.YEAR: "YEAR",
+        }
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -2958,6 +3095,9 @@ class SingleStore(Dialect):
 
         @unsupported_args("unpivot", "this", "include_nulls", "default_on_null")
         def pivot_sql(self, expression: exp.Pivot) -> str:
+            if expression.unpivot:
+                return super().pivot_sql(expression)
+
             expressions = self.expressions(expression, flat=True)
             if len(expression.expressions) > 1:
                 self.unsupported("Multiple aggregations in PIVOT are not supported in SingleStore")
@@ -2991,3 +3131,147 @@ class SingleStore(Dialect):
         @unsupported_args("except", "replace", "rename")
         def star_sql(self, expression: exp.Star) -> str:
             return "*"
+
+        @unsupported_args("kind", "nested", "values")
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            type_value = expression.this
+
+            if type_value in self.UNSUPPORTED_TYPE_MAPPING:
+                self.unsupported(f"Data type {type_value.value} is not supported in SingleStore")
+                return self.UNSUPPORTED_TYPE_MAPPING.get(type_value)
+
+            if (expression.is_type(exp.DataType.Type.VARCHAR)
+                    and not expression.expressions
+            ):
+                # `VARCHAR` must always have a size - if it doesn't, we always generate `TEXT`
+                return "TEXT"
+            if (expression.is_type(exp.DataType.Type.VARBINARY)
+                    and not expression.expressions
+            ):
+                # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
+                return "BLOB"
+
+            interior = self.expressions(expression, flat=True)
+            interior = f"({interior})" if interior else ""
+
+            type_sql = (
+                self.TYPE_MAPPING.get(type_value, type_value.value)
+                if isinstance(type_value, exp.DataType.Type)
+                else type_value
+            )
+
+            unsigned = " UNSIGNED" if expression.this in self.UNSIGNED_TYPE_MAPPING else ""
+
+            return f"{type_sql}{interior}{unsigned}"
+
+        def pseudotype_sql(self, expression: exp.PseudoType) -> str:
+            self.unsupported("Pseudo-Types are not supported in SingleStore")
+            return "TEXT"
+
+        def objectidentifier_sql(self, expression: exp.ObjectIdentifier) -> str:
+            self.unsupported("Object Identifiers Types are not supported in SingleStore")
+            return "INT"
+
+        def intervalspan_sql(self, expression: exp.IntervalSpan) -> str:
+            self.unsupported("INTERVAL spans are not supported in SingleStore")
+            return f"{self.sql(expression, 'this')} TO {self.sql(expression, 'expression')}"
+
+        @unsupported_args("chain")
+        def commit_sql(self, expression: exp.Commit) -> str:
+            return f"COMMIT"
+
+        @unsupported_args("savepoint")
+        def rollback_sql(self, expression: exp.Rollback) -> str:
+            return f"ROLLBACK"
+
+        @unsupported_args("options", "partition", "mode")
+        def analyze_sql(self, expression: exp.Analyze) -> str:
+            kind = self.sql(expression, "kind")
+            kind = f" {kind}" if kind else ""
+            this = self.sql(expression, "this")
+            this = f" {this}" if this else ""
+            properties = self.sql(expression, "properties")
+            properties = f" {properties}" if properties else ""
+            inner_expression = self.sql(expression, "expression")
+            inner_expression = f" {inner_expression}" if inner_expression else ""
+            return f"ANALYZE{kind}{this}{inner_expression}{properties}"
+
+        @unsupported_args("exists", "only", "on_cluster", "not_valid", "options")
+        def alter_sql(self, expression: exp.Alter) -> str:
+            actions = expression.args["actions"]
+
+            if isinstance(actions[0], exp.ColumnDef):
+                actions = self.add_column_sql(expression)
+            elif isinstance(actions[0], exp.Schema):
+                actions = self.expressions(expression, key="actions", prefix="ADD COLUMN ")
+            else:
+                actions = self.expressions(expression, key="actions", flat=True)
+
+            kind = self.sql(expression, "kind")
+
+            return f"ALTER {kind} {self.sql(expression, 'this')} {actions}"
+
+        def attachoption_sql(self, expression: exp.AttachOption) -> str:
+            self.unsupported("ATTACH options are not supported in SingleStore")
+            return ""
+
+        def droppartition_sql(self, expression: exp.DropPartition) -> str:
+            self.unsupported("ALTER TABLE DROP PARTITION is not supported in SingleStore")
+            return super().droppartition_sql(expression)
+
+        def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
+            self.unsupported("ALTER TABLE REPLACE PARTITION is not supported in SingleStore")
+            return (
+                f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
+            )
+
+        def pivotany_sql(self, expression: exp.PivotAny) -> str:
+            self.unsupported("PIVOT ANY [ ORDER BY ... ] is not supported in SingleStore")
+            return f"ANY{self.sql(expression, 'this')}",
+
+        # TODO: I didn't find this syntax in other databases. This should be investigated deeper
+        def aliases_sql(self, expression: exp.Aliases) -> str:
+            self.unsupported("Specifying multiple aliases in parrents is not supported in SingleStore")
+            return super().aliases_sql(expression)
+
+        def atindex_sql(self, expression: exp.AtIndex) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return super().atindex_sql(expression)
+
+        def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+            self.unsupported("AT TIME ZONE is not supported in SingleStore")
+            return self.sql(expression.this)
+
+        @unsupported_args("on")
+        def distinct_sql(self, expression: exp.Distinct) -> str:
+            this = self.expressions(expression, flat=True)
+            this = f" {this}" if this else ""
+
+            return f"DISTINCT{this}"
+
+        def forin_sql(self, expression: exp.ForIn) -> str:
+            this = self.sql(expression, "this")
+            expression_sql = self.sql(expression, "expression")
+            return f"FOR {this} LOOP {expression_sql}"
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            self.unsupported("IGNORE NULLS clause is not supported in SingleStore")
+            return self.sql(expression, "this")
+
+        def respectnulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            self.unsupported("RESPECT NULLS clause is not supported in SingleStore")
+            return self.sql(expression, "this")
+
+        def havingmax_sql(self, expression: exp.HavingMax) -> str:
+            self.unsupported("HAVING NULL clause is not supported in SingleStore")
+            return self.sql(expression, "this")
+
+        @unsupported_args("kind")
+        def use_sql(self, expression: exp.Use) -> str:
+            this = self.sql(expression, "this") or self.expressions(expression, flat=True)
+            this = f" {this}" if this else ""
+            return f"USE{this}"
+
+        def json_sql(self, expression: exp.JSON) -> str:
+            self.unsupported("JSON testing functions are not supported in SingleStore")
+            return super().json_sql(expression)

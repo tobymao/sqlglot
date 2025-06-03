@@ -82,6 +82,7 @@ class TestSingleStore(Validator):
     RETURN TRUE;
   END
 """)
+            cur.execute("""CREATE OR REPLACE PROCEDURE proc() RETURNS void AS BEGIN ECHO SELECT 1; END""")
 
     def validate_generation(self,
                             sql: str, expected_sql: str = None, error_message: str = None,
@@ -2399,6 +2400,207 @@ class TestSingleStore(Validator):
         self.validate_generation(
             sql="SELECT * FROM users",
             exp_type=exp.Star
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataTypeParam (x INT(10))",
+            exp_type=exp.DataTypeParam,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataType1 (x VARCHAR)",
+            expected_sql="CREATE TABLE DataType1 (x TEXT)",
+            exp_type=exp.DataType,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataType2 (x VARCHAR(1))",
+            expected_sql="CREATE TABLE DataType2 (x VARCHAR(1))",
+            exp_type=exp.DataType,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataType3 (x VECTOR(5))",
+            expected_sql="CREATE TABLE DataType3 (x VECTOR(5))",
+            exp_type=exp.DataType,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataType4 (x ENUM('v1', 'v2'))",
+            expected_sql="CREATE TABLE DataType4 (x ENUM('v1', 'v2'))",
+            exp_type=exp.DataType,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataType5 (x UINT (1))",
+            expected_sql="CREATE TABLE DataType5 (x INT(1) UNSIGNED)",
+            exp_type=exp.DataType,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE DataType6 (x ARRAY)",
+            expected_sql="CREATE TABLE DataType6 (x TEXT)",
+            error_message="Data type ARRAY is not supported in SingleStore",
+            exp_type=exp.DataType,
+        )
+        self.validate_generation(
+            sql="CREATE FUNCTION PseudoType(x CSTRING)",
+            expected_sql="CREATE FUNCTION PseudoType(x TEXT)",
+            error_message="Pseudo-Types are not supported in SingleStore",
+            from_dialect="postgres",
+            exp_type=exp.PseudoType,
+            run=False
+        )
+        self.validate_generation(
+            sql="CREATE TABLE ObjectIdentifier (c oid)",
+            expected_sql="CREATE TABLE ObjectIdentifier (c INT)",
+            from_dialect="postgres",
+            exp_type=exp.ObjectIdentifier,
+        )
+        self.validate_generation(
+            sql="SELECT INTERVAL '1' YEAR TO MONTHS",
+            error_message="INTERVAL spans are not supported in SingleStore",
+            exp_type=exp.IntervalSpan,
+            run=False
+        )
+        self.validate_generation(
+            sql="CALL proc()",
+            exp_type=exp.Command,
+        )
+        self.validate_generation(
+            sql="BEGIN",
+            exp_type=exp.Transaction,
+        )
+        self.validate_generation(
+            sql="COMMIT",
+            exp_type=exp.Commit,
+        )
+        self.validate_generation(
+            sql="ROLLBACK",
+            exp_type=exp.Rollback,
+        )
+        self.validate_generation(
+            sql="ALTER TABLE users ADD COLUMNS (a INT, c DOUBLE)",
+            expected_sql="ALTER TABLE users ADD COLUMN (a INT, c DOUBLE)",
+            exp_type=exp.Alter,
+        )
+        self.validate_generation(
+            sql="ALTER TABLE users ADD INDEX (id)",
+            exp_type=exp.AddConstraint,
+        )
+        self.validate_generation(
+            sql="ATTACH 'sqlite_file.db' AS sqlite_db (TYPE sqlite)",
+            expected_sql="ATTACH DATABASE 'sqlite_file.db' AS sqlite_db",
+            from_dialect="duckdb",
+            exp_type=exp.AttachOption,
+            error_message="ATTACH options are not supported in SingleStore",
+            run=False
+        )
+        self.validate_generation(
+            sql="ALTER TABLE orders DROP PARTITION(dt = '2014-05-14', country = 'IN')",
+            error_message="ALTER TABLE DROP PARTITION is not supported in SingleStore",
+            exp_type=exp.DropPartition,
+            from_dialect="athena",
+            run=False
+        )
+        self.validate_generation(
+            sql="ALTER TABLE table2 REPLACE PARTITION '123' FROM table1",
+            expected_sql="ALTER TABLE table2 REPLACE PARTITION('123') FROM table1",
+            from_dialect="clickhouse",
+            exp_type=exp.ReplacePartition,
+            error_message="ALTER TABLE REPLACE PARTITION is not supported in SingleStore",
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT name AS n FROM users",
+            exp_type=exp.Alias,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM table_name UNPIVOT (value FOR category IN (`col1` AS 'c1', `col2` AS 'c2')) AS unpivoted",
+            expected_sql="SELECT * FROM table_name UNPIVOT(value FOR category IN (`col1` AS c1, `col2` AS c2)) AS unpivoted",
+            error_message="Argument 'unpivot' is not supported for expression 'Pivot' when targeting SingleStore.",
+            from_dialect="bigquery",
+            exp_type=exp.PivotAlias,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid",
+            expected_sql="SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (('ANY ORDER BY quarter',)))_t0 ORDER BY empid",
+            error_message="PIVOT ANY [ ORDER BY ... ] is not supported in SingleStore",
+            exp_type=exp.PivotAny,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT id, item AS (a, b) FROM orders",
+            expected_sql="SELECT id, item AS (a, b) FROM orders",
+            error_message="Specifying multiple aliases in parrents is not supported in SingleStore",
+            from_dialect="postgres",
+            exp_type=exp.Aliases,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT c_name, orders.o_orderkey AS orderkey, index AS orderkey_index FROM customer_orders_lineitem AS c, c.c_orders AS orders AT index ORDER BY orderkey_index NULLS LAST",
+            error_message="Arrays are not supported in SingleStore",
+            from_dialect="redshift",
+            exp_type=exp.AtIndex,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT occurred_at AT TIME ZONE 'UTC' FROM events",
+            expected_sql="SELECT occurred_at FROM events",
+            error_message="AT TIME ZONE is not supported in SingleStore",
+            exp_type=exp.AtTimeZone,
+        )
+        self.validate_generation(
+            sql="SELECT TO_UTC_TIMESTAMP(occurred_at, 'PST') FROM events",
+            expected_sql="SELECT CONVERT_TZ(occurred_at :> TIMESTAMP, 'PST', 'UTC') FROM events",
+            from_dialect="spark2",
+            exp_type=exp.FromTimeZone,
+        )
+        self.validate_generation(
+            sql="SELECT DISTINCT name FROM users",
+            exp_type=exp.Distinct,
+        )
+        self.validate_generation(
+            sql="FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count",
+            expected_sql="FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) LOOP SELECT record.word, record.word_count",
+            from_dialect="bigquery",
+            exp_type=exp.ForIn,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT DATE_ADD(created_at, INTERVAL '1' DAY) FROM orders",
+            exp_type=exp.TimeUnit,
+        )
+        self.validate_generation(
+            sql="SELECT user_id, created_at, AVG(amount) IGNORE NULLS OVER ( PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING ) AS avg_amount_7_rows, SUM(amount) OVER ( PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING ) AS sum_amount_7_rows FROM orders;",
+            expected_sql="SELECT user_id, created_at, AVG(amount) OVER (PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS avg_amount_7_rows, SUM(amount) OVER (PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS sum_amount_7_rows FROM orders",
+            error_message="IGNORE NULLS clause is not supported in SingleStore",
+            exp_type=exp.IgnoreNulls,
+        )
+        self.validate_generation(
+            sql="SELECT user_id, created_at, AVG(amount) RESPECT NULLS OVER ( PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING ) AS avg_amount_7_rows, SUM(amount) OVER ( PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING ) AS sum_amount_7_rows FROM orders;",
+            expected_sql="SELECT user_id, created_at, AVG(amount) OVER (PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS avg_amount_7_rows, SUM(amount) OVER (PARTITION BY user_id ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS sum_amount_7_rows FROM orders",
+            error_message="RESPECT NULLS clause is not supported in SingleStore",
+            exp_type=exp.RespectNulls,
+        )
+        self.validate_generation(
+            sql="SELECT ANY_VALUE(name HAVING MAX id) FROM users",
+            expected_sql="SELECT ANY_VALUE(name) FROM users",
+            error_message="HAVING NULL clause is not supported in SingleStore",
+            exp_type=exp.HavingMax,
+        )
+        self.validate_generation(
+            sql="USE db",
+            exp_type=exp.Use,
+        )
+        self.validate_generation(
+            sql="SELECT listagg(name, ',' ON OVERFLOW TRUNCATE '.....' WITH COUNT) FROM users",
+            expected_sql="SELECT GROUP_CONCAT(name, ',') FROM users",
+            from_dialect="trino",
+        )
+        self.validate_generation(
+            sql="SELECT name IS JSON ARRAY WITH UNIQUE KEYS FROM users",
+            exp_type=exp.JSON,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT JSON_OBJECT('name': 'Alice', 'age': 30)",
+            expected_sql="SELECT JSON_BUILD_OBJECT('name', 'Alice', 'age', 30)",
+            exp_type=exp.JSONKeyValue,
         )
 
     def test_drop_generation(self):

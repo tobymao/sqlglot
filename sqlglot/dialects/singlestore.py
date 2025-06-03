@@ -2921,16 +2921,19 @@ class SingleStore(Dialect):
 
             return f"{alias}{columns}"
 
-        @unsupported_args("sample")
         def subquery_sql(self, expression: exp.Subquery,
-                         sep: str = " AS ") -> str:
+                         sep: str = " AS ", wrap: bool = True) -> str:
+            if expression.args.get("sample") is not None:
+                self.unsupported(
+                    "Argument 'sample' is not supported for expression 'subquery' when targeting SingleStore.")
+
             alias = self.sql(expression, "alias")
             alias = f"{sep}{alias}" if alias else ""
 
             pivots = self.expressions(expression, key="pivots", sep="",
                                       flat=True)
-            sql = self.query_modifiers(expression, self.wrap(expression), alias,
-                                       pivots)
+            sql = self.query_modifiers(expression, self.wrap(expression) if wrap else self.sql(expression, "this"),
+                                       alias, pivots)
             return self.prepend_ctes(expression, sql)
 
         @unsupported_args("returning", "overwrite", "alternative",
@@ -3503,13 +3506,18 @@ class SingleStore(Dialect):
             self.unsupported("Unsupported property viewattribute")
             return ""
 
+        @unsupported_args("concurrently", "refresh", "unique", "clustered")
         def create_sql(self, expression: exp.Create) -> str:
             kind = self.sql(expression, "kind")
             kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
             properties = expression.args.get("properties")
             properties_locs = self.locate_properties(properties) if properties else defaultdict()
 
-            this = self.createable_sql(expression, properties_locs)
+            if isinstance(expression.this, exp.Schema):
+                indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
+                this = self.schema_sql(expression.this, indexes)
+            else:
+                this = self.sql(expression, "this")
 
             properties_sql = ""
             if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
@@ -3533,11 +3541,12 @@ class SingleStore(Dialect):
             begin = " BEGIN" if expression.args.get("begin") else ""
             end = " END" if expression.args.get("end") else ""
 
-            expression_sql = self.sql(expression, "expression")
+            if isinstance(expression.expression, exp.Subquery):
+                expression_sql = self.subquery_sql(expression.expression, " AS ", False)
+            else:
+                expression_sql = self.sql(expression, "expression")
             if expression_sql:
                 expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
-                if isinstance(expression.expression, exp.Subquery):
-                    expression_sql = f" SELECT * FROM{expression_sql}"
 
                 if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
                     postalias_props_sql = ""
@@ -3551,29 +3560,7 @@ class SingleStore(Dialect):
                     postalias_props_sql = f" {postalias_props_sql}" if postalias_props_sql else ""
                     expression_sql = f" AS{postalias_props_sql}{expression_sql}"
 
-            postindex_props_sql = ""
-            if properties_locs.get(exp.Properties.Location.POST_INDEX):
-                postindex_props_sql = self.properties(
-                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_INDEX]),
-                    wrapped=False,
-                    prefix=" ",
-                )
-
-            indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
-            indexes = f" {indexes}" if indexes else ""
-            index_sql = indexes + postindex_props_sql
-
             replace = " OR REPLACE" if expression.args.get("replace") else ""
-            refresh = " OR REFRESH" if expression.args.get("refresh") else ""
-            unique = " UNIQUE" if expression.args.get("unique") else ""
-
-            clustered = expression.args.get("clustered")
-            if clustered is None:
-                clustered_sql = ""
-            elif clustered:
-                clustered_sql = " CLUSTERED COLUMNSTORE"
-            else:
-                clustered_sql = " NONCLUSTERED COLUMNSTORE"
 
             postcreate_props_sql = ""
             if properties_locs.get(exp.Properties.Location.POST_CREATE):
@@ -3584,7 +3571,7 @@ class SingleStore(Dialect):
                     wrapped=False,
                 )
 
-            modifiers = "".join((clustered_sql, replace, refresh, unique, postcreate_props_sql))
+            modifiers = "".join((replace, postcreate_props_sql))
 
             postexpression_props_sql = ""
             if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
@@ -3597,19 +3584,26 @@ class SingleStore(Dialect):
                     wrapped=False,
                 )
 
-            concurrently = " CONCURRENTLY" if expression.args.get("concurrently") else ""
             exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
             no_schema_binding = (
-                " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
+                " SCHEMA_BINDING=OFF" if expression.args.get("no_schema_binding") else ""
             )
 
             clone = self.sql(expression, "clone")
             clone = f" {clone}" if clone else ""
 
-            if kind in self.EXPRESSION_PRECEDES_PROPERTIES_CREATABLES:
-                properties_expression = f"{expression_sql}{properties_sql}"
-            else:
-                properties_expression = f"{properties_sql}{expression_sql}"
+            properties_expression = f"{properties_sql}{expression_sql}"
 
-            expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_expression}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
+            expression_sql = f"CREATE{modifiers}{no_schema_binding} {kind}{exists_sql} {this}{properties_expression}{postexpression_props_sql}{clone}"
             return self.prepend_ctes(expression, expression_sql)
+
+        def schema_sql(self, expression: exp.Schema, indexes: str = None) -> str:
+            this = self.sql(expression, "this")
+            sql = self.schema_columns_sql(expression, indexes)
+            return f"{this} {sql}" if this and sql else this or sql
+
+        def schema_columns_sql(self, expression: exp.Schema, indexes: str = None) -> str:
+            if expression.expressions:
+                indexes = f"{self.sep(', ')}{indexes}" if indexes else ""
+                return f"({self.sep('')}{self.expressions(expression)}{indexes}{self.seg(')', sep='')}"
+            return ""

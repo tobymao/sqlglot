@@ -3467,7 +3467,7 @@ class TestSingleStore(Validator):
         )
         self.validate_generation(
             sql="CREATE TABLE NoPrimaryIndexProperty AS (SELECT * FROM users) NO PRIMARY INDEX",
-            expected_sql="CREATE TABLE NoPrimaryIndexProperty AS SELECT * FROM (SELECT * FROM users)",
+            expected_sql="CREATE TABLE NoPrimaryIndexProperty AS SELECT * FROM users",
             error_message="Unsupported property noprimaryindexproperty",
             exp_type=exp.NoPrimaryIndexProperty
         )
@@ -3585,7 +3585,7 @@ class TestSingleStore(Validator):
         )
         self.validate_generation(
             sql="CREATE TABLE SharingProperty AS (SELECT * FROM users) SHARING='PUBLIC'",
-            expected_sql="CREATE TABLE SharingProperty AS SELECT * FROM (SELECT * FROM users)",
+            expected_sql="CREATE TABLE SharingProperty AS SELECT * FROM users",
             error_message="Unsupported property sharing",
             exp_type=exp.SharingProperty
         )
@@ -3736,4 +3736,41 @@ class TestSingleStore(Validator):
             expected_sql="CREATE SCHEMA_BINDING=ON VIEW ViewAttributeProperty AS SELECT * FROM users",
             from_dialect="tsql",
             exp_type=exp.ViewAttributeProperty
+        )
+
+    def test_create_generation(self):
+        self.validate_generation(
+            sql="CREATE TABLE users1 (id INT, name VARCHAR(100))",
+            exp_type=exp.Create,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE IF NOT EXISTS users2 (id INT, name VARCHAR(100))",
+            exp_type=exp.Create,
+        )
+        self.validate_generation(
+            sql="CREATE VIEW user_view AS SELECT id, name FROM users",
+            exp_type=exp.Create,
+        )
+        self.validate_generation(
+            sql="CREATE FUNCTION is_active(u_id INT) RETURNS BOOLEAN AS BEGIN RETURN u_id > 0",
+            exp_type=exp.Create,
+            run=False
+        )
+        self.validate_generation(
+            sql="CREATE TEMPORARY TABLE logs (id INT, message TEXT)",
+            exp_type=exp.Create,
+        )
+        self.validate_generation(
+            sql="CREATE VIEW user_view2 AS SELECT id, name FROM users WITH NO SCHEMA BINDING",
+            expected_sql="CREATE SCHEMA_BINDING=OFF VIEW user_view2 AS SELECT id, name FROM users",
+            exp_type=exp.Create,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE events1 SHALLOW COPY events",
+            expected_sql="CREATE TABLE events1 LIKE events WITH SHALLOW COPY",
+            exp_type=exp.Create,
+        )
+        self.validate_generation(
+            sql="CREATE TABLE products2 (id INT, name TEXT, price DECIMAL(10, 2), INDEX (name))",
+            exp_type=exp.Create,
         )

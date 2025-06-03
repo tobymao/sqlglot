@@ -256,6 +256,7 @@ class SingleStore(Dialect):
         TRANSFORMS.pop(exp.AllowedValuesProperty)
         TRANSFORMS.pop(exp.IntervalSpan)
         TRANSFORMS.pop(exp.PivotAny)
+        TRANSFORMS.pop(exp.Stream)
 
         UNSIGNED_TYPE_MAPPING = {
             exp.DataType.Type.UBIGINT: "BIGINT",
@@ -1599,6 +1600,7 @@ class SingleStore(Dialect):
 
             return self.format_args(*args)
 
+        @unsupported_args("quote")
         def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
             return self.func("JSON_EXTRACT_JSON", expression.this,
                              expression.expression)
@@ -2034,7 +2036,7 @@ class SingleStore(Dialect):
 
         def openjson_sql(self, expression: exp.OpenJSON) -> str:
             self.unsupported(
-                "OpenJSON function is not supported in SingleStore")
+                "OPENJSON function is not supported in SingleStore")
             return super().openjson_sql(expression)
 
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:
@@ -3275,3 +3277,51 @@ class SingleStore(Dialect):
         def json_sql(self, expression: exp.JSON) -> str:
             self.unsupported("JSON testing functions are not supported in SingleStore")
             return super().json_sql(expression)
+
+        def formatjson_sql(self, expression: exp.FormatJson) -> str:
+            self.unsupported("FORMAT JSON clause is not supported in SingleStore")
+            return self.sql(expression, "this")
+
+        def jsoncolumndef_sql(self, expression: exp.JSONColumnDef) -> str:
+            self.unsupported("JSON_TABLE function is not supported in SingleStore")
+            return super().jsoncolumndef_sql(expression)
+
+        def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
+            self.unsupported("JSON_TABLE function is not supported in SingleStore")
+            return super().jsonschema_sql(expression)
+
+        def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
+            self.unsupported("OPENJSON function is not supported in SingleStore")
+            return super().openjsoncolumndef_sql(expression)
+
+        def xmlnamespace_sql(self, expression: exp.XMLNamespace) -> str:
+            self.unsupported("XMLTABLE function is not supported in SingleStore")
+            return super().xmlnamespace_sql(expression)
+
+        @unsupported_args("on_condition")
+        def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
+            path = self.sql(expression, "path")
+
+            res = self.func("JSON_EXTRACT_STRING", expression.this, f"{path}")
+
+            returning = self.sql(expression, "returning")
+            if returning:
+                return f"{res} :> {returning}"
+            else:
+                return res
+
+        def jsonextractquote_sql(self, expression: exp.JSONExtractQuote) -> str:
+            self.unsupported("QUOTES clause is not supported in SingleStore")
+            return ""
+
+        def scoperesolution_sql(self, expression: exp.ScopeResolution) -> str:
+            self.unsupported("SCOPE_RESOLUTION is not supported in SingleStore")
+            return super().scoperesolution_sql(expression)
+
+        def stream_sql(self, expression: exp.Stream) -> str:
+            self.unsupported("STREAM is not supported in SingleStore")
+            return f"STREAM {self.sql(expression, 'this')}"
+
+        def whens_sql(self, expression: exp.Whens) -> str:
+            self.unsupported("WHEN MATCHED clause is not supported in SingleStore")
+            return super().whens_sql(expression)

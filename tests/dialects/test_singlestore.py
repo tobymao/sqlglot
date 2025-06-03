@@ -2602,6 +2602,76 @@ class TestSingleStore(Validator):
             expected_sql="SELECT JSON_BUILD_OBJECT('name', 'Alice', 'age', 30)",
             exp_type=exp.JSONKeyValue,
         )
+        self.validate_generation(
+            sql="SELECT JSON_OBJECT('a': 1 FORMAT JSON)",
+            expected_sql="SELECT JSON_BUILD_OBJECT('a', 1)",
+            error_message="FORMAT JSON clause is not supported in SingleStore",
+            exp_type=exp.FormatJson,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM JSON_TABLE('[1,2,[\"a\",\"b\"]]', '$' COLUMNS (outer_value_0 NUMBER PATH '$[0]', outer_value_1 NUMBER PATH '$[1]'));",
+            expected_sql="SELECT * FROM J_S_O_N_TABLE('[1,2,[\"a\",\"b\"]]', COLUMNS(outer_value_0 DECIMAL PATH '$[0]', outer_value_1 DECIMAL PATH '$[1]'), '$')",
+            from_dialect="oracle",
+            error_message="JSON_TABLE function is not supported in SingleStore",
+            exp_type=exp.JSONColumnDef,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM JSON_TABLE('[1,2,[\"a\",\"b\"]]', '$' COLUMNS (outer_value_0 NUMBER PATH '$[0]', outer_value_1 NUMBER PATH '$[1]'));",
+            expected_sql="SELECT * FROM J_S_O_N_TABLE('[1,2,[\"a\",\"b\"]]', COLUMNS(outer_value_0 DECIMAL PATH '$[0]', outer_value_1 DECIMAL PATH '$[1]'), '$')",
+            from_dialect="oracle",
+            error_message="JSON_TABLE function is not supported in SingleStore",
+            exp_type=exp.JSONSchema,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT value FROM OPENJSON(doc) WITH (id INT, name VARCHAR(100))",
+            from_dialect="tsql",
+            error_message="OPENJSON function is not supported in SingleStore",
+            exp_type=exp.OpenJSONColumnDef,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT * FROM XMLTABLE(XMLNAMESPACES('uri' AS a), '/items/item' PASSING xml_data COLUMNS id INT)",
+            error_message="XMLTABLE function is not supported in SingleStore",
+            exp_type=exp.XMLNamespace,
+            run=False
+        )
+        self.validate_generation(
+            sql="SELECT JSON_VALUE(metadata, '$.name') FROM events",
+            expected_sql="SELECT JSON_EXTRACT_STRING(metadata, 'name') FROM events",
+            exp_type=exp.JSONValue,
+        )
+        self.validate_generation(
+            sql="SELECT JSON_VALUE(metadata, '$.name' RETURNING INT) FROM events",
+            expected_sql="SELECT JSON_EXTRACT_STRING(metadata, 'name') :> INT FROM events",
+            exp_type=exp.JSONValue,
+        )
+        self.validate_generation(
+            sql="SELECT JSON_QUERY(metadata, 'comment' OMIT QUOTES ON SCALAR STRING)  FROM events",
+            expected_sql="SELECT JSON_EXTRACT_JSON(metadata, 'comment') FROM events",
+            error_message="Argument 'quote' is not supported for expression 'JSONExtract' when targeting SingleStore.",
+            from_dialect="trino",
+            exp_type=exp.JSONExtractQuote,
+        )
+        self.validate_generation(
+            sql="SELECT SCOPE_RESOLUTION(INT, 123) FROM dual",
+            exp_type=exp.ScopeResolution,
+            error_message="SCOPE_RESOLUTION is not supported in SingleStore",
+            run=False
+        )
+        self.validate_generation(
+            sql="MERGE INTO x AS z USING (WITH t(c) AS (SELECT 1) SELECT c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+            error_message="WHEN MATCHED clause is not supported in SingleStore",
+            exp_type=exp.Whens,
+            run=False
+        )
+        self.validate_generation(
+            sql="MERGE INTO x AS z USING (WITH t(c) AS (SELECT 1) SELECT c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+            error_message="WHEN MATCHED clause is not supported in SingleStore",
+            exp_type=exp.When,
+            run=False
+        )
 
     def test_drop_generation(self):
         with conn.cursor() as cur:

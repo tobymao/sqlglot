@@ -702,7 +702,7 @@ class TSQL(Dialect):
             return exp.XMLKeyValueOption(this=this, expression=expression)
 
         def _parse_for(self) -> t.Optional[t.List[exp.Expression]]:
-            if not (self._match(TokenType.FOR) and self._match(TokenType.XML)):
+            if not self._match_pair(TokenType.FOR, TokenType.XML):
                 return None
 
             def _parse_for_xml() -> t.Optional[exp.Expression]:

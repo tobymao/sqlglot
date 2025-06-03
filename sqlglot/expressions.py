@@ -6972,6 +6972,7 @@ class XMLNamespace(Expression):
     pass
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql?view=sql-server-ver17#syntax
 class XMLKeyValueOption(Expression):
     arg_types = {"this": True, "expression": False}
 

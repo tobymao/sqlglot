@@ -2614,7 +2614,7 @@ class Generator(metaclass=_Generator):
 
     def for_modifiers(self, expression: exp.Expression) -> str:
         for_modifiers = self.expressions(expression, key="for")
-        return f" FOR XML {for_modifiers}" if for_modifiers else ""
+        return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         self.unsupported("Unsupported query option.")

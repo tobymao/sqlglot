@@ -637,6 +637,18 @@ class TestTSQL(Validator):
             with self.subTest(f"Testing FOR XML option: {xml_option}"):
                 self.validate_identity(f"SELECT * FROM t FOR XML {xml_option}")
 
+        self.validate_identity(
+            "SELECT * FROM t FOR XML PATH, BINARY BASE64, ELEMENTS XSINIL",
+            """SELECT
+  *
+FROM t
+FOR XML
+  PATH,
+  BINARY BASE64,
+  ELEMENTS XSINIL""",
+            pretty=True,
+        )
+
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")

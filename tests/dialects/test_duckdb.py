@@ -9,6 +9,7 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
         self.validate_identity("SELECT UUIDV7()")
         self.validate_identity("SELECT TRY(LOG(0))")
         self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
@@ -567,6 +568,9 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "STRING_TO_ARRAY(x, 'a')",
+            read={
+                "snowflake": "STRTOK_TO_ARRAY(x, 'a')",
+            },
             write={
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",

@@ -1,12 +1,13 @@
 import sys
-import typing as t
-from argparse import ArgumentParser
+import os
+import pyperf
 
-from benchmarks.helpers import ascii_table
+# Add the project root to the path so we can import from tests
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sqlglot.optimizer import optimize
 from sqlglot import parse_one
 from tests.helpers import load_sql_fixture_pairs, TPCH_SCHEMA, TPCDS_SCHEMA
-from timeit import Timer
 
 # Deeply nested conditions currently require a lot of recursion
 sys.setrecursionlimit(10000)
@@ -16,55 +17,56 @@ def gen_condition(n):
     return parse_one(" OR ".join(f"a = {i} AND b = {i}" for i in range(n)))
 
 
-BENCHMARKS = {
-    "tpch": lambda: (
+# Create benchmark functions that return the setup data
+def get_tpch_setup():
+    return (
         [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")],
         TPCH_SCHEMA,
-        3,
-    ),
-    "tpcds": lambda: (
+    )
+
+
+def get_tpcds_setup():
+    return (
         [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")],
         TPCDS_SCHEMA,
-        3,
-    ),
-    "condition_10": lambda: (
-        [gen_condition(10)],
-        {},
-        10,
-    ),
-    "condition_100": lambda: (
-        [gen_condition(100)],
-        {},
-        10,
-    ),
-    "condition_1000": lambda: (
-        [gen_condition(1000)],
-        {},
-        3,
-    ),
-}
+    )
 
 
-def bench() -> list[dict[str, t.Any]]:
-    parser = ArgumentParser()
-    parser.add_argument("-b", "--benchmark", choices=BENCHMARKS, action="append")
-    args = parser.parse_args()
-    benchmarks = list(args.benchmark or BENCHMARKS)
+def get_condition_10_setup():
+    return ([gen_condition(10)], {})
 
-    table = []
-    for benchmark in benchmarks:
-        expressions, schema, n = BENCHMARKS[benchmark]()
 
-        def func():
-            for e in expressions:
-                optimize(e, schema)
+def get_condition_100_setup():
+    return ([gen_condition(100)], {})
 
-        timer = Timer(func)
-        min_duration = min(timer.repeat(repeat=n, number=1))
-        table.append({"Benchmark": benchmark, "Duration (s)": round(min_duration, 4)})
 
-    return table
+def get_condition_1000_setup():
+    return ([gen_condition(1000)], {})
+
+
+# Optimizer functions that will be benchmarked
+def optimize_queries(expressions, schema):
+    for e in expressions:
+        optimize(e, schema)
+
+
+def run_benchmarks():
+    runner = pyperf.Runner()
+
+    # Define benchmarks with their setup functions
+    benchmarks = {
+        "tpch": get_tpch_setup,
+        # "tpcds": get_tpcds_setup,  # This is left out because it's too slow in CI
+        "condition_10": get_condition_10_setup,
+        "condition_100": get_condition_100_setup,
+        "condition_1000": get_condition_1000_setup,
+    }
+
+    for benchmark_name, benchmark_setup in benchmarks.items():
+        expressions, schema = benchmark_setup()
+
+        runner.bench_func(f"optimize_{benchmark_name}", optimize_queries, expressions, schema)
 
 
 if __name__ == "__main__":
-    print(ascii_table(bench()))
+    run_benchmarks()

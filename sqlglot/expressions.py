@@ -1243,6 +1243,45 @@ class Query(Expression):
         """
         raise NotImplementedError("Query objects must implement `select`")
 
+    def where(
+        self: Q,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Q:
+        """
+        Append to or set the WHERE expressions.
+
+        Examples:
+            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
+            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append: if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified expression.
+        """
+        return _apply_conjunction_builder(
+            *[expr.this if isinstance(expr, Where) else expr for expr in expressions],
+            instance=self,
+            arg="where",
+            append=append,
+            into=Where,
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
+
     def with_(
         self: Q,
         alias: ExpOrStr,
@@ -4054,45 +4093,6 @@ class Select(Query):
             **opts,
         )
 
-    def where(
-        self,
-        *expressions: t.Optional[ExpOrStr],
-        append: bool = True,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Select:
-        """
-        Append to or set the WHERE expressions.
-
-        Example:
-            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
-            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-                Multiple expressions are combined with an AND operator.
-            append: if `True`, AND the new expressions to any existing expression.
-                Otherwise, this resets the expression.
-            dialect: the dialect used to parse the input expressions.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            Select: the modified expression.
-        """
-        return _apply_conjunction_builder(
-            *expressions,
-            instance=self,
-            arg="where",
-            append=append,
-            into=Where,
-            dialect=dialect,
-            copy=copy,
-            **opts,
-        )
-
     def having(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -5370,6 +5370,10 @@ class AggFunc(Func):
     pass
 
 
+class ArrayRemove(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ParameterizedAgg(AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
 
@@ -5539,6 +5543,10 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
+class ArrayConcatAgg(AggFunc):
+    pass
+
+
 class ArrayConstructCompact(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True
@@ -5569,7 +5577,7 @@ class String(Func):
 
 class StringToArray(Func):
     arg_types = {"this": True, "expression": True, "null": False}
-    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]
+    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
 
 
 class ArrayOverlaps(Binary, Func):
@@ -6966,6 +6974,11 @@ class XMLTable(Func):
 
 class XMLNamespace(Expression):
     pass
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql?view=sql-server-ver17#syntax
+class XMLKeyValueOption(Expression):
+    arg_types = {"this": True, "expression": False}
 
 
 class Year(Func):

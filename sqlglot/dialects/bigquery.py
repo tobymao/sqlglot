@@ -494,6 +494,8 @@ class BigQuery(Dialect):
             (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("r", "R")
         ]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ANY TYPE": TokenType.VARIANT,
@@ -656,6 +658,9 @@ class BigQuery(Dialect):
                         self.DASHED_TABLE_PART_FOLLOW_TOKENS, advance=False
                     ):
                         self._advance()
+
+                    if start == self._curr:
+                        break
 
                     table_name += self._find_sql(start, self._prev)
 
@@ -927,6 +932,7 @@ class BigQuery(Dialect):
             exp.Array: inline_array_unless_query,
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
+            exp.ArrayRemove: filter_array_using_unnest,
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: (
                 f"DEFAULT COLLATE {self.sql(e, 'this')}"

@@ -281,6 +281,11 @@ class Presto(Dialect):
         else self._set_type(e, exp.DataType.Type.DOUBLE),
     }
 
+    SUPPORTED_SETTINGS = {
+        *Dialect.SUPPORTED_SETTINGS,
+        "variant_extract_is_json_extract",
+    }
+
     class Tokenizer(tokens.Tokenizer):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         UNICODE_STRINGS = [
@@ -288,6 +293,8 @@ class Presto(Dialect):
             for q in t.cast(t.List[str], tokens.Tokenizer.QUOTES)
             for prefix in ("U&", "u&")
         ]
+
+        NESTED_COMMENTS = False
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
@@ -456,7 +463,8 @@ class Presto(Dialect):
             exp.DiToDate: lambda self,
             e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
-            exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
+            exp.FileFormatProperty: lambda self,
+            e: f"format={self.sql(exp.Literal.string(e.name))}",
             exp.First: _first_last_sql,
             exp.FromTimeZone: lambda self,
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",

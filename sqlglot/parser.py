@@ -930,6 +930,14 @@ class Parser(metaclass=_Parser):
         TokenType.FOR: lambda self, this: self._parse_comprehension(this),
     }
 
+    PIPE_SYNTAX_TRANSFORM_PARSERS = {
+        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
+        "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
+        "ORDER BY": lambda self, query: query.order_by(self._parse_order(), copy=False),
+        "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
+        "OFFSET": lambda self, query: query.offset(self._parse_offset(), copy=False),
+    }
+
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
         "ALLOWED_VALUES": lambda self: self.expression(
             exp.AllowedValuesProperty, expressions=self._parse_csv(self._parse_primary)
@@ -1115,6 +1123,25 @@ class Parser(metaclass=_Parser):
         "BUCKET": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
         "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
+
+    def _parse_pipe_syntax_select(self, query: exp.Query) -> exp.Query:
+        select = self._parse_select()
+        if isinstance(select, exp.Select):
+            return select.from_(query.subquery(copy=False), copy=False)
+        return query
+
+    def _parse_pipe_syntax_where(self, query: exp.Query) -> exp.Query:
+        where = self._parse_where()
+        return query.where(where, copy=False)
+
+    def _parse_pipe_syntax_limit(self, query: exp.Query) -> exp.Query:
+        limit = self._parse_limit()
+        offset = self._parse_offset()
+        if limit:
+            query.limit(limit, copy=False)
+        if offset:
+            query.offset(offset, copy=False)
+        return query
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (
@@ -1357,7 +1384,7 @@ class Parser(metaclass=_Parser):
 
     CLONE_KEYWORDS = {"CLONE", "COPY"}
     HISTORICAL_DATA_PREFIX = {"AT", "BEFORE", "END"}
-    HISTORICAL_DATA_KIND = {"TIMESTAMP", "OFFSET", "STATEMENT", "STREAM"}
+    HISTORICAL_DATA_KIND = {"OFFSET", "STATEMENT", "STREAM", "TIMESTAMP", "VERSION"}
 
     OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS", "WITH"}
 
@@ -1448,9 +1475,6 @@ class Parser(metaclass=_Parser):
     IDENTIFY_PIVOT_STRINGS = False
 
     LOG_DEFAULTS_TO_LN = False
-
-    # Whether ADD is present for each column added by ALTER TABLE
-    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
     # Whether the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
@@ -3239,6 +3263,8 @@ class Parser(metaclass=_Parser):
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
+            if self._match(TokenType.PIPE_GT, advance=False):
+                return self._parse_pipe_syntax_query(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -5712,7 +5738,9 @@ class Parser(metaclass=_Parser):
             else:
                 if token_type == TokenType.IDENTIFIER:
                     this = exp.Identifier(this=this, quoted=True).update_positions(token)
+
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
+                this = this.update_positions(token)
 
         if isinstance(this, exp.Expression):
             this.add_comments(comments)
@@ -6232,7 +6260,12 @@ class Parser(metaclass=_Parser):
             expressions = apply_index_offset(
                 this, expressions, -self.dialect.INDEX_OFFSET, dialect=self.dialect
             )
-            this = self.expression(exp.Bracket, this=this, expressions=expressions)
+            this = self.expression(
+                exp.Bracket,
+                this=this,
+                expressions=expressions,
+                comments=this.pop_comments(),
+            )
 
         self._add_comments(this)
         return self._parse_bracket(this)
@@ -7130,6 +7163,16 @@ class Parser(metaclass=_Parser):
 
         return this
 
+    def _parse_pipe_syntax_query(self, query: exp.Select) -> exp.Query:
+        while self._match(TokenType.PIPE_GT):
+            parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
+            if not parser:
+                self.raise_error(f"Unsupported pipe syntax operator: '{self._curr.text.upper()}'.")
+            else:
+                query = parser(self, query)
+
+        return query
+
     def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_id_var, optional=optional)
 
@@ -7209,7 +7252,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Refresh, this=self._parse_string() or self._parse_table())
 
     def _parse_add_column(self) -> t.Optional[exp.Expression]:
-        if not self._match_text_seq("ADD"):
+        if not self._prev.text.upper() == "ADD":
             return None
 
         self._match(TokenType.COLUMN)
@@ -7242,26 +7285,22 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_alter_table_add(self) -> t.List[exp.Expression]:
-        index = self._index - 1
-
-        if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
-            return self._parse_csv(
-                lambda: self.expression(
+        def _parse_add_column_or_constraint():
+            self._match_text_seq("ADD")
+            if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
+                return self.expression(
                     exp.AddConstraint, expressions=self._parse_csv(self._parse_constraint)
                 )
-            )
+            return self._parse_add_column()
 
-        self._retreat(index)
-        if not self.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and self._match_text_seq("ADD"):
-            return self._parse_wrapped_csv(self._parse_field_def, optional=True)
-
-        if self._match_text_seq("ADD", "COLUMNS"):
+        if not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN or self._match_text_seq(
+            "COLUMNS"
+        ):
             schema = self._parse_schema()
-            if schema:
-                return [schema]
-            return []
 
-        return self._parse_wrapped_csv(self._parse_add_column, optional=True)
+            return ensure_list(schema) if schema else self._parse_csv(self._parse_field_def)
+
+        return self._parse_csv(_parse_add_column_or_constraint)
 
     def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
         if self._match_texts(self.ALTER_ALTER_PARSERS):
@@ -7384,7 +7423,8 @@ class Parser(metaclass=_Parser):
             if self._match_text_seq("SERDE"):
                 alter_set.set("serde", self._parse_field())
 
-            alter_set.set("expressions", [self._parse_properties()])
+            properties = self._parse_wrapped(self._parse_properties, optional=True)
+            alter_set.set("expressions", [properties])
 
         return alter_set
 

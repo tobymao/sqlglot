@@ -11,6 +11,7 @@ from sqlglot import (
     parse_one,
 )
 from sqlglot.dialects import BigQuery, Hive, Snowflake
+from sqlglot.dialects.dialect import Version
 from sqlglot.parser import logger as parser_logger
 
 
@@ -134,12 +135,23 @@ class TestDialect(Validator):
             "oracle, normalization_strategy = lowercase, version = 19.5"
         )
         self.assertEqual(oracle_with_settings.normalization_strategy.value, "LOWERCASE")
-        self.assertEqual(oracle_with_settings.settings, {"version": "19.5"})
+        self.assertEqual(oracle_with_settings.version, Version("19.5"))
 
-        bool_settings = Dialect.get_or_raise("oracle, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool")
+        class MyDialect(Dialect):
+            SUPPORTED_SETTINGS = {"s1", "s2", "s3", "s4", "s5"}
+
+        bool_settings = Dialect.get_or_raise("mydialect, s1=TruE, s2=1, s3=FaLse, s4=0, s5=nonbool")
         self.assertEqual(
             bool_settings.settings,
             {"s1": True, "s2": True, "s3": False, "s4": False, "s5": "nonbool"},
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            Dialect.get_or_raise("tsql,normalisation_strategy=case_sensitive")
+
+        self.assertEqual(
+            "Unknown setting 'normalisation_strategy'. Did you mean normalization_strategy?",
+            str(cm.exception),
         )
 
     def test_compare_dialects(self):
@@ -170,7 +182,9 @@ class TestDialect(Validator):
 
     def test_compare_dialect_versions(self):
         ddb_v1 = Dialect.get_or_raise("duckdb, version=1.0")
-        ddb_v1_2 = Dialect.get_or_raise("duckdb, foo=bar, version=1.0")
+        ddb_v1_2 = Dialect.get_or_raise(
+            "duckdb, normalization_strategy=case_sensitive, version=1.0"
+        )
         ddb_v2 = Dialect.get_or_raise("duckdb, version=2.2.4")
         ddb_latest = Dialect.get_or_raise("duckdb")
 
@@ -2177,6 +2191,21 @@ class TestDialect(Validator):
                 "bigquery": "MOD(a, b + 1)",
             },
         )
+        self.validate_all(
+            "ARRAY_REMOVE(the_array, target)",
+            write={
+                "": "ARRAY_REMOVE(the_array, target)",
+                "clickhouse": "arrayFilter(_u -> _u <> target, the_array)",
+                "duckdb": "LIST_FILTER(the_array, _u -> _u <> target)",
+                "bigquery": "ARRAY(SELECT _u FROM UNNEST(the_array) AS _u WHERE _u <> target)",
+                "hive": "ARRAY_REMOVE(the_array, target)",
+                "postgres": "ARRAY_REMOVE(the_array, target)",
+                "presto": "ARRAY_REMOVE(the_array, target)",
+                "starrocks": "ARRAY_REMOVE(the_array, target)",
+                "databricks": "ARRAY_REMOVE(the_array, target)",
+                "snowflake": "ARRAY_REMOVE(the_array, target)",
+            },
+        )
 
     def test_typeddiv(self):
         typed_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), typed=True)
@@ -3438,4 +3467,64 @@ FROM subquery2""",
                 self.assertEqual(
                     parse_one("SELECT 0xCC", read=read_dialect).sql(other_integer_dialects),
                     "SELECT 0xCC",
+                )
+
+    def test_pipe_syntax(self):
+        self.validate_identity("FROM x", "SELECT * FROM x")
+        self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM (SELECT * FROM x)")
+        self.validate_identity(
+            "FROM x |> SELECT x1 as c1, x2 as c2",
+            "SELECT x1 AS c1, x2 AS c2 FROM (SELECT * FROM x)",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1",
+            "SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1 |> SELECT x2_a",
+            "SELECT x2_a FROM (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM (SELECT * FROM x) WHERE x1_a > 1)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 0 OR x2 > 0 |> WHERE x3 > 1 AND x4 > 1 |> SELECT x1, x4",
+            "SELECT x1, x4 FROM (SELECT * FROM x WHERE (x1 > 0 OR x2 > 0) AND (x3 > 1 AND x4 > 1))",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 1 |> WHERE x2 > 2 |> SELECT x1 as gt1, x2 as gt2",
+            "SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 1 AND x2 > 2 |> SELECT x1 as gt1, x2 as gt2 |> SELECT gt1 * 2 + gt2 * 2 AS gt2_2",
+            "SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM (SELECT x1 AS gt1, x2 AS gt2 FROM (SELECT * FROM x WHERE x1 > 1 AND x2 > 2))",
+        )
+        self.validate_identity("FROM x |> ORDER BY x1", "SELECT * FROM x ORDER BY x1")
+        self.validate_identity(
+            "FROM x |> ORDER BY x1 |> ORDER BY x2", "SELECT * FROM x ORDER BY x1, x2"
+        )
+        self.validate_identity(
+            "FROM x |> ORDER BY x1 |> WHERE x1 > 0 OR x1 != 1 |> ORDER BY x2 |> WHERE x2 > 0 AND x2 != 1 |> SELECT x1, x2",
+            "SELECT x1, x2 FROM (SELECT * FROM x WHERE (x1 > 0 OR x1 <> 1) AND (x2 > 0 AND x2 <> 1) ORDER BY x1, x2)",
+        )
+        self.validate_identity(
+            "FROM x |> ORDER BY x1 |> WHERE x1 > 0 |> SELECT x1",
+            "SELECT x1 FROM (SELECT * FROM x WHERE x1 > 0 ORDER BY x1)",
+        )
+        self.validate_identity(
+            "FROM x |> WHERE x1 > 0 |> SELECT x1 |> ORDER BY x1",
+            "SELECT x1 FROM (SELECT * FROM x WHERE x1 > 0) ORDER BY x1",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1, x2, x3 |> ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
+            "SELECT x1, x2, x3 FROM (SELECT * FROM x) ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
+        )
+        for option in ("LIMIT 1", "OFFSET 2", "LIMIT 1 OFFSET 2"):
+            with self.subTest(f"Testing pipe syntax LIMIT and OFFSET option: {option}"):
+                self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
+                self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
+                self.validate_identity(
+                    f"FROM x |> {option} |> SELECT x1, x2 |> WHERE x1 > 0 |> WHERE x2 > 0  |> ORDER BY x1, x2 ",
+                    f"SELECT x1, x2 FROM (SELECT * FROM x {option}) WHERE x1 > 0 AND x2 > 0 ORDER BY x1, x2",
+                )
+                self.validate_identity(
+                    f"FROM x |> SELECT x1, x2 |> WHERE x1 > 0 |> WHERE x2 > 0  |> ORDER BY x1, x2 |> {option}",
+                    f"SELECT x1, x2 FROM (SELECT * FROM x) WHERE x1 > 0 AND x2 > 0 ORDER BY x1, x2 {option}",
                 )

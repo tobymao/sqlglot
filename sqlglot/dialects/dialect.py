@@ -12,7 +12,15 @@ from sqlglot import exp
 from sqlglot.dialects import DIALECT_MODULE_NAMES
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
-from sqlglot.helper import AutoName, flatten, is_int, seq_get, subclasses, to_bool
+from sqlglot.helper import (
+    AutoName,
+    flatten,
+    is_int,
+    seq_get,
+    subclasses,
+    suggest_closest_match_and_fail,
+    to_bool,
+)
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -492,6 +500,9 @@ class Dialect(metaclass=_Dialect):
     equivalent of CREATE SCHEMA is CREATE DATABASE.
     """
 
+    # Whether ADD is present for each column added by ALTER TABLE
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -795,6 +806,12 @@ class Dialect(metaclass=_Dialect):
     # Specifies what types a given type can be coerced into
     COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
 
+    # Determines the supported Dialect instance settings
+    SUPPORTED_SETTINGS = {
+        "normalization_strategy",
+        "version",
+    }
+
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
         """
@@ -844,16 +861,9 @@ class Dialect(metaclass=_Dialect):
 
             result = cls.get(dialect_name.strip())
             if not result:
-                from difflib import get_close_matches
+                suggest_closest_match_and_fail("dialect", dialect_name, list(DIALECT_MODULE_NAMES))
 
-                close_matches = get_close_matches(dialect_name, list(DIALECT_MODULE_NAMES), n=1)
-
-                similar = seq_get(close_matches, 0) or ""
-                if similar:
-                    similar = f" Did you mean {similar}?"
-
-                raise ValueError(f"Unknown dialect '{dialect_name}'.{similar}")
-
+            assert result is not None
             return result(**kwargs)
 
         raise ValueError(f"Invalid dialect type for '{dialect}': '{type(dialect)}'.")
@@ -875,14 +885,18 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def __init__(self, **kwargs) -> None:
-        normalization_strategy = kwargs.pop("normalization_strategy", None)
+        self.version = Version(kwargs.pop("version", None))
 
+        normalization_strategy = kwargs.pop("normalization_strategy", None)
         if normalization_strategy is None:
             self.normalization_strategy = self.NORMALIZATION_STRATEGY
         else:
             self.normalization_strategy = NormalizationStrategy(normalization_strategy.upper())
 
         self.settings = kwargs
+
+        for unsupported_setting in kwargs.keys() - self.SUPPORTED_SETTINGS:
+            suggest_closest_match_and_fail("setting", unsupported_setting, self.SUPPORTED_SETTINGS)
 
     def __eq__(self, other: t.Any) -> bool:
         # Does not currently take dialect state into account
@@ -1026,10 +1040,6 @@ class Dialect(metaclass=_Dialect):
 
     def generator(self, **opts) -> Generator:
         return self.generator_class(dialect=self, **opts)
-
-    @property
-    def version(self) -> Version:
-        return Version(self.settings.get("version", None))
 
     def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
         return [
@@ -1727,13 +1737,18 @@ def json_path_key_only_name(self: Generator, expression: exp.JSONPathKey) -> str
     return expression.name
 
 
-def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> str:
+def filter_array_using_unnest(
+    self: Generator, expression: exp.ArrayFilter | exp.ArrayRemove
+) -> str:
     cond = expression.expression
     if isinstance(cond, exp.Lambda) and len(cond.expressions) == 1:
         alias = cond.expressions[0]
         cond = cond.this
     elif isinstance(cond, exp.Predicate):
         alias = "_u"
+    elif isinstance(expression, exp.ArrayRemove):
+        alias = "_u"
+        cond = exp.NEQ(this=alias, expression=expression.expression)
     else:
         self.unsupported("Unsupported filter condition")
         return ""
@@ -1741,6 +1756,16 @@ def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> s
     unnest = exp.Unnest(expressions=[expression.this])
     filtered = exp.select(alias).from_(exp.alias_(unnest, None, table=[alias])).where(cond)
     return self.sql(exp.Array(expressions=[filtered]))
+
+
+def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
+    lambda_id = exp.to_identifier("_u")
+    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+    return self.sql(
+        exp.ArrayFilter(
+            this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
+        )
+    )
 
 
 def to_number_with_nls_param(self: Generator, expression: exp.ToNumber) -> str:

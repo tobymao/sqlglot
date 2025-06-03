@@ -372,6 +372,11 @@ class Snowflake(Dialect):
         "ff6": "%f",
     }
 
+    DATE_PART_MAPPING = {
+        **Dialect.DATE_PART_MAPPING,
+        "ISOWEEK": "WEEKISO",
+    }
+
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
@@ -1012,7 +1017,6 @@ class Snowflake(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
-            exp.Array: inline_array_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
             exp.AtTimeZone: lambda self, e: self.func(
@@ -1033,7 +1037,9 @@ class Snowflake(Dialect):
             exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
-            exp.Extract: rename_func("DATE_PART"),
+            exp.Extract: lambda self, e: self.func(
+                "DATE_PART", map_date_part(e.this, self.dialect), e.expression
+            ),
             exp.FileFormatProperty: lambda self,
             e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
             exp.FromTimeZone: lambda self, e: self.func(
@@ -1154,6 +1160,8 @@ class Snowflake(Dialect):
             exp.VarMap,
         }
 
+        RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS = (exp.ArrayAgg,)
+
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
@@ -1224,13 +1232,15 @@ class Snowflake(Dialect):
             unnest_alias = expression.args.get("alias")
             offset = expression.args.get("offset")
 
+            unnest_alias_columns = unnest_alias.columns if unnest_alias else []
+            value = seq_get(unnest_alias_columns, 0) or exp.to_identifier("value")
+
             columns = [
                 exp.to_identifier("seq"),
                 exp.to_identifier("key"),
                 exp.to_identifier("path"),
                 offset.pop() if isinstance(offset, exp.Expression) else exp.to_identifier("index"),
-                seq_get(unnest_alias.columns if unnest_alias else [], 0)
-                or exp.to_identifier("value"),
+                value,
                 exp.to_identifier("this"),
             ]
 
@@ -1246,7 +1256,9 @@ class Snowflake(Dialect):
             explode = f"TABLE(FLATTEN({table_input}))"
             alias = self.sql(unnest_alias)
             alias = f" AS {alias}" if alias else ""
-            return f"{explode}{alias}"
+            value = "" if isinstance(expression.parent, (exp.From, exp.Join)) else f"{value} FROM "
+
+            return f"{value}{explode}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
             terse = "TERSE " if expression.args.get("terse") else ""
@@ -1398,3 +1410,45 @@ class Snowflake(Dialect):
                 return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
 
             return super().createable_sql(expression, locations)
+
+        def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+            this = expression.this
+
+            # If an ORDER BY clause is present, we need to remove it from ARRAY_AGG
+            # and add it later as part of the WITHIN GROUP clause
+            order = this if isinstance(this, exp.Order) else None
+            if order:
+                expression.set("this", order.this.pop())
+
+            expr_sql = super().arrayagg_sql(expression)
+
+            if order:
+                expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
+
+            return expr_sql
+
+        def array_sql(self, expression: exp.Array) -> str:
+            expressions = expression.expressions
+
+            first_expr = seq_get(expressions, 0)
+            if isinstance(first_expr, exp.Select):
+                # SELECT AS STRUCT foo AS alias_foo -> ARRAY_AGG(OBJECT_CONSTRUCT('alias_foo', foo))
+                if first_expr.text("kind").upper() == "STRUCT":
+                    object_construct_args = []
+                    for expr in first_expr.expressions:
+                        # Alias case: SELECT AS STRUCT foo AS alias_foo -> OBJECT_CONSTRUCT('alias_foo', foo)
+                        # Column case: SELECT AS STRUCT foo -> OBJECT_CONSTRUCT('foo', foo)
+                        name = expr.this if isinstance(expr, exp.Alias) else expr
+
+                        object_construct_args.extend([exp.Literal.string(expr.alias_or_name), name])
+
+                    array_agg = exp.ArrayAgg(
+                        this=_build_object_construct(args=object_construct_args)
+                    )
+
+                    first_expr.set("kind", None)
+                    first_expr.set("expressions", [array_agg])
+
+                    return self.sql(first_expr.subquery())
+
+            return inline_array_sql(self, expression)

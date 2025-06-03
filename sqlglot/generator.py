@@ -2604,12 +2604,17 @@ class Generator(metaclass=_Generator):
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
             self.options_modifier(expression),
+            self.for_modifiers(expression),
             sep="",
         )
 
     def options_modifier(self, expression: exp.Expression) -> str:
         options = self.expressions(expression, key="options")
         return f" {options}" if options else ""
+
+    def for_modifiers(self, expression: exp.Expression) -> str:
+        for_modifiers = self.expressions(expression, key="for")
+        return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         self.unsupported("Unsupported query option.")
@@ -4814,6 +4819,12 @@ class Generator(metaclass=_Generator):
     def xmlelement_sql(self, expression: exp.XMLElement) -> str:
         name = f"NAME {self.sql(expression, 'this')}"
         return self.func("XMLELEMENT", name, *expression.expressions)
+
+    def xmlkeyvalueoption_sql(self, expression: exp.XMLKeyValueOption) -> str:
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        expr = f"({expr})" if expr else ""
+        return f"{this}{expr}"
 
     def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
         partitions = self.expressions(expression, "partition_expressions")

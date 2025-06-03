@@ -590,7 +590,6 @@
                 <dd id="Dune.Tokenizer.HEREDOC_TAG_IS_IDENTIFIER" class="variable"><a href="../tokens.html#Tokenizer.HEREDOC_TAG_IS_IDENTIFIER">HEREDOC_TAG_IS_IDENTIFIER</a></dd>
                 <dd id="Dune.Tokenizer.HEREDOC_STRING_ALTERNATIVE" class="variable"><a href="../tokens.html#Tokenizer.HEREDOC_STRING_ALTERNATIVE">HEREDOC_STRING_ALTERNATIVE</a></dd>
                 <dd id="Dune.Tokenizer.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS">STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS</a></dd>
-                <dd id="Dune.Tokenizer.NESTED_COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.NESTED_COMMENTS">NESTED_COMMENTS</a></dd>
                 <dd id="Dune.Tokenizer.HINT_START" class="variable"><a href="../tokens.html#Tokenizer.HINT_START">HINT_START</a></dd>
                 <dd id="Dune.Tokenizer.TOKENS_PRECEDING_HINT" class="variable"><a href="../tokens.html#Tokenizer.TOKENS_PRECEDING_HINT">TOKENS_PRECEDING_HINT</a></dd>
                 <dd id="Dune.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
@@ -610,6 +609,7 @@
             </div>
             <div><dt><a href="presto.html#Presto.Tokenizer">sqlglot.dialects.presto.Presto.Tokenizer</a></dt>
                                 <dd id="Dune.Tokenizer.UNICODE_STRINGS" class="variable"><a href="presto.html#Presto.Tokenizer.UNICODE_STRINGS">UNICODE_STRINGS</a></dd>
+                <dd id="Dune.Tokenizer.NESTED_COMMENTS" class="variable"><a href="presto.html#Presto.Tokenizer.NESTED_COMMENTS">NESTED_COMMENTS</a></dd>
                 <dd id="Dune.Tokenizer.KEYWORDS" class="variable"><a href="presto.html#Presto.Tokenizer.KEYWORDS">KEYWORDS</a></dd>
 
             </div>
@@ -798,6 +798,7 @@ Default: True</li>
                 <dd id="Dune.Generator.ARRAY_CONCAT_IS_VAR_LEN" class="variable"><a href="../generator.html#Generator.ARRAY_CONCAT_IS_VAR_LEN">ARRAY_CONCAT_IS_VAR_LEN</a></dd>
                 <dd id="Dune.Generator.SUPPORTS_CONVERT_TIMEZONE" class="variable"><a href="../generator.html#Generator.SUPPORTS_CONVERT_TIMEZONE">SUPPORTS_CONVERT_TIMEZONE</a></dd>
                 <dd id="Dune.Generator.SUPPORTS_UNIX_SECONDS" class="variable"><a href="../generator.html#Generator.SUPPORTS_UNIX_SECONDS">SUPPORTS_UNIX_SECONDS</a></dd>
+                <dd id="Dune.Generator.ALTER_SET_WRAPPED" class="variable"><a href="../generator.html#Generator.ALTER_SET_WRAPPED">ALTER_SET_WRAPPED</a></dd>
                 <dd id="Dune.Generator.ALTER_SET_TYPE" class="variable"><a href="../generator.html#Generator.ALTER_SET_TYPE">ALTER_SET_TYPE</a></dd>
                 <dd id="Dune.Generator.ARRAY_SIZE_DIM_REQUIRED" class="variable"><a href="../generator.html#Generator.ARRAY_SIZE_DIM_REQUIRED">ARRAY_SIZE_DIM_REQUIRED</a></dd>
                 <dd id="Dune.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
@@ -829,7 +830,7 @@ Default: True</li>
                 <dd id="Dune.Generator.unsupported" class="function"><a href="../generator.html#Generator.unsupported">unsupported</a></dd>
                 <dd id="Dune.Generator.sep" class="function"><a href="../generator.html#Generator.sep">sep</a></dd>
                 <dd id="Dune.Generator.seg" class="function"><a href="../generator.html#Generator.seg">seg</a></dd>
-                <dd id="Dune.Generator.pad_comment" class="function"><a href="../generator.html#Generator.pad_comment">pad_comment</a></dd>
+                <dd id="Dune.Generator.sanitize_comment" class="function"><a href="../generator.html#Generator.sanitize_comment">sanitize_comment</a></dd>
                 <dd id="Dune.Generator.maybe_comment" class="function"><a href="../generator.html#Generator.maybe_comment">maybe_comment</a></dd>
                 <dd id="Dune.Generator.wrap" class="function"><a href="../generator.html#Generator.wrap">wrap</a></dd>
                 <dd id="Dune.Generator.no_identify" class="function"><a href="../generator.html#Generator.no_identify">no_identify</a></dd>
@@ -962,6 +963,7 @@ Default: True</li>
                 <dd id="Dune.Generator.matchrecognize_sql" class="function"><a href="../generator.html#Generator.matchrecognize_sql">matchrecognize_sql</a></dd>
                 <dd id="Dune.Generator.query_modifiers" class="function"><a href="../generator.html#Generator.query_modifiers">query_modifiers</a></dd>
                 <dd id="Dune.Generator.options_modifier" class="function"><a href="../generator.html#Generator.options_modifier">options_modifier</a></dd>
+                <dd id="Dune.Generator.for_modifiers" class="function"><a href="../generator.html#Generator.for_modifiers">for_modifiers</a></dd>
                 <dd id="Dune.Generator.queryoption_sql" class="function"><a href="../generator.html#Generator.queryoption_sql">queryoption_sql</a></dd>
                 <dd id="Dune.Generator.after_limit_modifiers" class="function"><a href="../generator.html#Generator.after_limit_modifiers">after_limit_modifiers</a></dd>
                 <dd id="Dune.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
@@ -1190,6 +1192,7 @@ Default: True</li>
                 <dd id="Dune.Generator.encodeproperty_sql" class="function"><a href="../generator.html#Generator.encodeproperty_sql">encodeproperty_sql</a></dd>
                 <dd id="Dune.Generator.includeproperty_sql" class="function"><a href="../generator.html#Generator.includeproperty_sql">includeproperty_sql</a></dd>
                 <dd id="Dune.Generator.xmlelement_sql" class="function"><a href="../generator.html#Generator.xmlelement_sql">xmlelement_sql</a></dd>
+                <dd id="Dune.Generator.xmlkeyvalueoption_sql" class="function"><a href="../generator.html#Generator.xmlkeyvalueoption_sql">xmlkeyvalueoption_sql</a></dd>
                 <dd id="Dune.Generator.partitionbyrangeproperty_sql" class="function"><a href="../generator.html#Generator.partitionbyrangeproperty_sql">partitionbyrangeproperty_sql</a></dd>
                 <dd id="Dune.Generator.partitionbyrangepropertydynamic_sql" class="function"><a href="../generator.html#Generator.partitionbyrangepropertydynamic_sql">partitionbyrangepropertydynamic_sql</a></dd>
                 <dd id="Dune.Generator.unpivotcolumns_sql" class="function"><a href="../generator.html#Generator.unpivotcolumns_sql">unpivotcolumns_sql</a></dd>

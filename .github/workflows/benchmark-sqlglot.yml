@@ -1,14 +1,21 @@
 name: Benchmark pull requests
 
 on:
-  issue_comment:                                     
-    types: [created, edited]
+  issue_comment:
+    types: [created, edited, deleted]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   run-benchmark:
     name: run benchmark
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, '/benchmark') 
+    if: |
+      (github.event_name == 'issue_comment' && 
+       contains(github.event.comment.body, '/benchmark') &&
+       github.event.issue.pull_request) ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.body, '/benchmark'))
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -67,5 +74,5 @@ jobs:
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
+          issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
           body-file: combined_benchmarks.md

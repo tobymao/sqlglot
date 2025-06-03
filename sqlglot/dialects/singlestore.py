@@ -257,6 +257,7 @@ class SingleStore(Dialect):
         TRANSFORMS.pop(exp.IntervalSpan)
         TRANSFORMS.pop(exp.PivotAny)
         TRANSFORMS.pop(exp.Stream)
+        TRANSFORMS.pop(exp.AnalyzeColumns)
 
         UNSIGNED_TYPE_MAPPING = {
             exp.DataType.Type.UBIGINT: "BIGINT",
@@ -3186,18 +3187,6 @@ class SingleStore(Dialect):
         def rollback_sql(self, expression: exp.Rollback) -> str:
             return f"ROLLBACK"
 
-        @unsupported_args("options", "partition", "mode")
-        def analyze_sql(self, expression: exp.Analyze) -> str:
-            kind = self.sql(expression, "kind")
-            kind = f" {kind}" if kind else ""
-            this = self.sql(expression, "this")
-            this = f" {this}" if this else ""
-            properties = self.sql(expression, "properties")
-            properties = f" {properties}" if properties else ""
-            inner_expression = self.sql(expression, "expression")
-            inner_expression = f" {inner_expression}" if inner_expression else ""
-            return f"ANALYZE{kind}{this}{inner_expression}{properties}"
-
         @unsupported_args("exists", "only", "on_cluster", "not_valid", "options")
         def alter_sql(self, expression: exp.Alter) -> str:
             actions = expression.args["actions"]
@@ -3325,3 +3314,35 @@ class SingleStore(Dialect):
         def whens_sql(self, expression: exp.Whens) -> str:
             self.unsupported("WHEN MATCHED clause is not supported in SingleStore")
             return super().whens_sql(expression)
+
+        @unsupported_args("options", "partition", "mode", "properties")
+        def analyze_sql(self, expression: exp.Analyze) -> str:
+            kind = self.sql(expression, "kind")
+            kind = f" {kind}" if kind else ""
+            this = self.sql(expression, "this")
+            this = f" {this}" if this else ""
+            inner_expression = self.sql(expression, "expression")
+            inner_expression = f" {inner_expression}" if inner_expression else ""
+            return f"ANALYZE{kind}{this}{inner_expression}"
+
+        def analyzestatistics_sql(self, expression: exp.AnalyzeStatistics) -> str:
+            # SingleStore always updates statistic of all columns when running ANALYZE
+            return ""
+
+        def analyzehistogram_sql(self, expression: exp.AnalyzeHistogram) -> str:
+            columns = self.expressions(expression)
+            return f"COLUMNS {columns} ENABLE"
+
+        def analyzelistchainedrows_sql(self, expression: exp.AnalyzeListChainedRows) -> str:
+            self.unsupported("LIST CHAINED ROWS clause is not supported in SingleStore")
+            return ""
+
+        def analyzedelete_sql(self, expression: exp.AnalyzeDelete) -> str:
+            return "DROP"
+
+        def analyzevalidate_sql(self, expression: exp.AnalyzeValidate) -> str:
+            self.unsupported("VALIDATE STRUCTURE clause is not supported in SingleStore")
+            return ""
+
+        def analyzecolumns_sql(self, expression: exp.AnalyzeColumns):
+            return "COLUMNS ALL ENABLE"

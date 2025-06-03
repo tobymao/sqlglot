@@ -3090,3 +3090,52 @@ class TestSingleStore(Validator):
             exp_type=exp.Merge,
             run=False
         )
+
+    def test_analyze_generation(self):
+        self.validate_generation(
+            sql="ANALYZE TABLE users",
+            exp_type=exp.Analyze,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users COMPUTE STATISTICS FOR COLUMNS name",
+            expected_sql="ANALYZE TABLE users",
+            exp_type=exp.AnalyzeStatistics,
+            from_dialect="spark2",
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users UPDATE HISTOGRAM ON id, name WITH 10 BUCKETS",
+            expected_sql="ANALYZE TABLE users COLUMNS id, name ENABLE",
+            exp_type=exp.AnalyzeHistogram,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users COMPUTE STATISTICS SAMPLE 10 PERCENT",
+            expected_sql="ANALYZE TABLE users",
+            exp_type=exp.AnalyzeSample,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users LIST CHAINED ROWS",
+            expected_sql="ANALYZE TABLE users",
+            error_message="LIST CHAINED ROWS clause is not supported in SingleStore",
+            exp_type=exp.AnalyzeListChainedRows,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users DELETE SYSTEM STATISTICS",
+            expected_sql="ANALYZE TABLE users DROP",
+            exp_type=exp.AnalyzeDelete,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users UPDATE HISTOGRAM ON id, name WITH 10 BUCKETS",
+            expected_sql="ANALYZE TABLE users COLUMNS id, name ENABLE",
+            exp_type=exp.AnalyzeWith,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users VALIDATE STRUCTURE CASCADE FAST",
+            error_message="VALIDATE STRUCTURE clause is not supported in SingleStore",
+            expected_sql="ANALYZE TABLE users",
+            exp_type=exp.AnalyzeValidate,
+        )
+        self.validate_generation(
+            sql="ANALYZE TABLE users ALL COLUMNS",
+            expected_sql="ANALYZE TABLE users COLUMNS ALL ENABLE",
+            exp_type=exp.AnalyzeColumns,
+        )

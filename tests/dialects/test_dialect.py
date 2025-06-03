@@ -2191,6 +2191,21 @@ class TestDialect(Validator):
                 "bigquery": "MOD(a, b + 1)",
             },
         )
+        self.validate_all(
+            "ARRAY_REMOVE(the_array, target)",
+            write={
+                "": "ARRAY_REMOVE(the_array, target)",
+                "clickhouse": "arrayFilter(_u -> _u <> target, the_array)",
+                "duckdb": "LIST_FILTER(the_array, _u -> _u <> target)",
+                "bigquery": "ARRAY(SELECT _u FROM UNNEST(the_array) AS _u WHERE _u <> target)",
+                "hive": "ARRAY_REMOVE(the_array, target)",
+                "postgres": "ARRAY_REMOVE(the_array, target)",
+                "presto": "ARRAY_REMOVE(the_array, target)",
+                "starrocks": "ARRAY_REMOVE(the_array, target)",
+                "databricks": "ARRAY_REMOVE(the_array, target)",
+                "snowflake": "ARRAY_REMOVE(the_array, target)",
+            },
+        )
 
     def test_typeddiv(self):
         typed_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), typed=True)

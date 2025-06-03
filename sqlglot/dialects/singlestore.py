@@ -3346,3 +3346,46 @@ class SingleStore(Dialect):
 
         def analyzecolumns_sql(self, expression: exp.AnalyzeColumns):
             return "COLUMNS ALL ENABLE"
+
+        # TODO: investigate if MATCH_CONDITION can be translated into SingleStore syntax
+        @unsupported_args("global", "match_condition")
+        def join_sql(self, expression: exp.Join) -> str:
+            op_sql = " ".join(
+                op
+                for op in (
+                    expression.method,
+                    expression.side,
+                    expression.kind
+                )
+                if op
+            )
+            on_sql = self.sql(expression, "on")
+            using = expression.args.get("using")
+
+            if not on_sql and using:
+                on_sql = csv(*(self.sql(column) for column in using))
+
+            this = expression.this
+            this_sql = self.sql(this)
+
+            exprs = self.expressions(expression)
+            if exprs:
+                this_sql = f"{this_sql},{self.seg(exprs)}"
+
+            if on_sql:
+                on_sql = self.indent(on_sql, skip_first=True)
+                space = self.seg(" " * self.pad) if self.pretty else " "
+                if using:
+                    on_sql = f"{space}USING ({on_sql})"
+                else:
+                    on_sql = f"{space}ON {on_sql}"
+            elif not op_sql:
+                if isinstance(this, exp.Lateral) and this.args.get("cross_apply") is not None:
+                    return f" {this_sql}"
+
+                return f", {this_sql}"
+
+            if op_sql != "STRAIGHT_JOIN":
+                op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
+
+            return f"{self.seg(op_sql)} {this_sql}{on_sql}"

@@ -3139,3 +3139,45 @@ class TestSingleStore(Validator):
             expected_sql="ANALYZE TABLE users COLUMNS ALL ENABLE",
             exp_type=exp.AnalyzeColumns,
         )
+
+    def test_join_sql_generation(self):
+        self.validate_generation(
+            sql="SELECT * FROM orders JOIN order_items ON orders.id = order_items.order_id",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders LEFT JOIN order_items ON orders.id = order_items.order_id",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM order_items RIGHT JOIN orders ON order_items.order_id = orders.id",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders FULL OUTER JOIN events ON orders.user_id = events.user_id",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders CROSS JOIN products",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders JOIN events USING (user_id)",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders STRAIGHT_JOIN order_items ON orders.id = order_items.order_id",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM order_items JOIN products ON order_items.product_id = products.id AND products.stock_quantity > 0",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders, products",
+            exp_type=exp.Join,
+        )
+        self.validate_generation(
+            sql="SELECT * FROM orders, LATERAL (SELECT * FROM events WHERE events.user_id = orders.user_id)",
+            exp_type=exp.Join,
+        )

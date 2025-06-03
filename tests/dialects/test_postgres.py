@@ -79,6 +79,11 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity("SELECT INTERVAL '-1 MONTH'")
+        self.validate_identity("SELECT INTERVAL '4.1 DAY'")
+        self.validate_identity("SELECT INTERVAL '3.14159 HOUR'")
+        self.validate_identity("SELECT INTERVAL '2.5 MONTH'")
+        self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
+        self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
         self.validate_identity(
             "SELECT * FROM test_data, LATERAL JSONB_ARRAY_ELEMENTS(data) WITH ORDINALITY AS elem(value, ordinality)"
         )

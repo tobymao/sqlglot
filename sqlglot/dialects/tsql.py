@@ -102,6 +102,23 @@ OPTIONS: parser.OPTIONS_TYPE = {
     "USE": ("PLAN",),
 }
 
+
+XML_OPTIONS: parser.OPTIONS_TYPE = {
+    **dict.fromkeys(
+        (
+            "AUTO" "EXPLICIT",
+            "TYPE",
+        ),
+        tuple(),
+    ),
+    "ELEMENTS": (
+        "XSINIL",
+        "ABSENT",
+    ),
+    "BINARY": ("BASE64",),
+}
+
+
 OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
 
 
@@ -548,6 +565,7 @@ class TSQL(Dialect):
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.OPTION: lambda self: ("options", self._parse_options()),
+            TokenType.FOR: lambda self: ("for", self._parse_for()),
         }
 
         # T-SQL does not allow BEGIN to be used as an identifier
@@ -673,6 +691,27 @@ class TSQL(Dialect):
                 )
 
             return self._parse_wrapped_csv(_parse_option)
+
+        def _parse_xml_key_value_option(self) -> exp.XMLKeyValueOption:
+            this = self._parse_primary_or_var()
+            if self._match(TokenType.L_PAREN, advance=False):
+                expression = self._parse_wrapped(self._parse_string)
+            else:
+                expression = None
+            return exp.XMLKeyValueOption(this=this, expression=expression)
+
+        def _parse_for(self) -> t.Optional[t.List[exp.Expression]]:
+            if not (self._match(TokenType.FOR) and self._match(TokenType.XML)):
+                return None
+
+            def _parse_for_xml() -> t.Optional[exp.Expression]:
+                return self.expression(
+                    exp.QueryOption,
+                    this=self._parse_var_from_options(XML_OPTIONS, raise_unmatched=False)
+                    or self._parse_xml_key_value_option(),
+                )
+
+            return self._parse_csv(_parse_for_xml)
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """

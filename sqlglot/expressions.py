@@ -6972,6 +6972,10 @@ class XMLNamespace(Expression):
     pass
 
 
+class XMLKeyValueOption(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
 class Year(Func):
     pass
 

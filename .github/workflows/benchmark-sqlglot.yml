@@ -1,13 +1,14 @@
 name: Benchmark pull requests
 
 on:
-  pull_request:
-    branches: [ main ]
+  issue_comment:                                     
+    types: [created, edited]
 
 jobs:
   run-benchmark:
     name: run benchmark
     runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '/benchmark') 
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4

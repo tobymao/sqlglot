@@ -5370,6 +5370,10 @@ class AggFunc(Func):
     pass
 
 
+class ArrayRemove(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ParameterizedAgg(AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
 

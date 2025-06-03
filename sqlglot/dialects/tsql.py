@@ -106,7 +106,8 @@ OPTIONS: parser.OPTIONS_TYPE = {
 XML_OPTIONS: parser.OPTIONS_TYPE = {
     **dict.fromkeys(
         (
-            "AUTO" "EXPLICIT",
+            "AUTO",
+            "EXPLICIT",
             "TYPE",
         ),
         tuple(),

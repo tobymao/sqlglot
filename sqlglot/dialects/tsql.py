@@ -698,6 +698,7 @@ class TSQL(Dialect):
                 expression = self._parse_wrapped(self._parse_string)
             else:
                 expression = None
+
             return exp.XMLKeyValueOption(this=this, expression=expression)
 
         def _parse_for(self) -> t.Optional[t.List[exp.Expression]]:

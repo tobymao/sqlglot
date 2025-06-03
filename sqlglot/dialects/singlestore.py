@@ -258,6 +258,8 @@ class SingleStore(Dialect):
         TRANSFORMS.pop(exp.PivotAny)
         TRANSFORMS.pop(exp.Stream)
         TRANSFORMS.pop(exp.AnalyzeColumns)
+        TRANSFORMS.pop(exp.WithSchemaBindingProperty)
+        TRANSFORMS.pop(exp.ViewAttributeProperty)
 
         UNSIGNED_TYPE_MAPPING = {
             exp.DataType.Type.UBIGINT: "BIGINT",
@@ -389,6 +391,106 @@ class SingleStore(Dialect):
             exp.DataType.Type.VARCHAR: "VARCHAR",
             exp.DataType.Type.VECTOR: "VECTOR",
             exp.DataType.Type.YEAR: "YEAR",
+        }
+
+        PROPERTIES_LOCATION = {
+            exp.AllowedValuesProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.AlgorithmProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.AutoRefreshProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.BackupProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.BlockCompressionProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.ChecksumProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.CollateProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.CopyGrantsProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.Cluster: exp.Properties.Location.UNSUPPORTED,
+            exp.ClusteredByProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DistributedByProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DuplicateKeyProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DataBlocksizeProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DataDeletionProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DefinerProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.DictRange: exp.Properties.Location.UNSUPPORTED,
+            exp.DictProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DynamicProperty: exp.Properties.Location.UNSUPPORTED,
+            # TODO: replace with SHARD KEY
+            exp.DistKeyProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.DistStyleProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.EmptyProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.EncodeProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.ExecuteAsProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.ExternalProperty: exp.Properties.Location.POST_CREATE,
+            exp.FallbackProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.FileFormatProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.FreespaceProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.GlobalProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.HeapProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.InheritsProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.IcebergProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.IncludeProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.InputModelProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.IsolatedLoadingProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.JournalProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.LanguageProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.LikeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.LocationProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.LockProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.LockingProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.LogProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.MaterializedProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.MergeBlockRatioProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.NoPrimaryIndexProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.OnProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.OnCommitProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.Order: exp.Properties.Location.UNSUPPORTED,
+            exp.OutputModelProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.PartitionedByProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.PartitionedOfProperty: exp.Properties.Location.UNSUPPORTED,
+            # TODO: Move PK into Schema
+            exp.PrimaryKey: exp.Properties.Location.UNSUPPORTED,
+            exp.Property: exp.Properties.Location.UNSUPPORTED,
+            exp.RemoteWithConnectionModelProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RowFormatProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.RowFormatDelimitedProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.RowFormatSerdeProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SampleProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SchemaCommentProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.SecureProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SecurityProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SerdeProperties: exp.Properties.Location.UNSUPPORTED,
+            exp.Set: exp.Properties.Location.UNSUPPORTED,
+            exp.SettingsProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SetConfigProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SharingProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SequenceProperties: exp.Properties.Location.UNSUPPORTED,
+            # TODO: Move into schema
+            exp.SortKeyProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SqlReadWriteProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.SqlSecurityProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.StabilityProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.StorageHandlerProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.StreamingTableProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.StrictProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.Tags: exp.Properties.Location.UNSUPPORTED,
+            exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
+            exp.ToTableProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.TransformModelProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.MergeTreeTTL: exp.Properties.Location.UNSUPPORTED,
+            exp.UnloggedProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.UsingTemplateProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.ViewAttributeProperty: exp.Properties.Location.POST_CREATE,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.WithJournalTableProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.WithProcedureOptions: exp.Properties.Location.UNSUPPORTED,
+            exp.WithSchemaBindingProperty: exp.Properties.Location.POST_CREATE,
+            exp.WithSystemVersioningProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.ForceProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
@@ -2974,7 +3076,6 @@ class SingleStore(Dialect):
             self.unsupported("FINAL clause is not supported in SingleStore")
             return self.sql(expression, 'this')
 
-        @unsupported_args("siblings")
         def order_sql(self, expression: exp.Order, flat: bool = False) -> str:
             this = self.sql(expression, "this")
             this = f"{this} " if this else this
@@ -3389,3 +3490,126 @@ class SingleStore(Dialect):
                 op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
 
             return f"{self.seg(op_sql)} {this_sql}{on_sql}"
+
+        def withschemabindingproperty_sql(self, expression: exp.WithSchemaBindingProperty) -> str:
+            if isinstance(expression.this, exp.Var) and expression.this.this == "BINDING":
+                return "SCHEMA_BINDING=ON"
+            self.unsupported("Unsupported property withschemabinding")
+            return ""
+
+        def viewattributeproperty_sql(self, expression: exp.ViewAttributeProperty) -> str:
+            if expression.this == "SCHEMABINDING":
+                return "SCHEMA_BINDING=ON"
+            self.unsupported("Unsupported property viewattribute")
+            return ""
+
+        def create_sql(self, expression: exp.Create) -> str:
+            kind = self.sql(expression, "kind")
+            kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
+            properties = expression.args.get("properties")
+            properties_locs = self.locate_properties(properties) if properties else defaultdict()
+
+            this = self.createable_sql(expression, properties_locs)
+
+            properties_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
+                    exp.Properties.Location.POST_WITH
+            ):
+                properties_sql = self.sql(
+                    exp.Properties(
+                        expressions=[
+                            *properties_locs[exp.Properties.Location.POST_SCHEMA],
+                            *properties_locs[exp.Properties.Location.POST_WITH],
+                        ]
+                    )
+                )
+
+                if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
+                    properties_sql = self.sep() + properties_sql
+                elif not self.pretty:
+                    # Standalone POST_WITH properties need a leading whitespace in non-pretty mode
+                    properties_sql = f" {properties_sql}"
+
+            begin = " BEGIN" if expression.args.get("begin") else ""
+            end = " END" if expression.args.get("end") else ""
+
+            expression_sql = self.sql(expression, "expression")
+            if expression_sql:
+                expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
+                if isinstance(expression.expression, exp.Subquery):
+                    expression_sql = f" SELECT * FROM{expression_sql}"
+
+                if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
+                    postalias_props_sql = ""
+                    if properties_locs.get(exp.Properties.Location.POST_ALIAS):
+                        postalias_props_sql = self.properties(
+                            exp.Properties(
+                                expressions=properties_locs[exp.Properties.Location.POST_ALIAS]
+                            ),
+                            wrapped=False,
+                        )
+                    postalias_props_sql = f" {postalias_props_sql}" if postalias_props_sql else ""
+                    expression_sql = f" AS{postalias_props_sql}{expression_sql}"
+
+            postindex_props_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_INDEX):
+                postindex_props_sql = self.properties(
+                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_INDEX]),
+                    wrapped=False,
+                    prefix=" ",
+                )
+
+            indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
+            indexes = f" {indexes}" if indexes else ""
+            index_sql = indexes + postindex_props_sql
+
+            replace = " OR REPLACE" if expression.args.get("replace") else ""
+            refresh = " OR REFRESH" if expression.args.get("refresh") else ""
+            unique = " UNIQUE" if expression.args.get("unique") else ""
+
+            clustered = expression.args.get("clustered")
+            if clustered is None:
+                clustered_sql = ""
+            elif clustered:
+                clustered_sql = " CLUSTERED COLUMNSTORE"
+            else:
+                clustered_sql = " NONCLUSTERED COLUMNSTORE"
+
+            postcreate_props_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_CREATE):
+                postcreate_props_sql = self.properties(
+                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_CREATE]),
+                    sep=" ",
+                    prefix=" ",
+                    wrapped=False,
+                )
+
+            modifiers = "".join((clustered_sql, replace, refresh, unique, postcreate_props_sql))
+
+            postexpression_props_sql = ""
+            if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
+                postexpression_props_sql = self.properties(
+                    exp.Properties(
+                        expressions=properties_locs[exp.Properties.Location.POST_EXPRESSION]
+                    ),
+                    sep=" ",
+                    prefix=" ",
+                    wrapped=False,
+                )
+
+            concurrently = " CONCURRENTLY" if expression.args.get("concurrently") else ""
+            exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+            no_schema_binding = (
+                " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
+            )
+
+            clone = self.sql(expression, "clone")
+            clone = f" {clone}" if clone else ""
+
+            if kind in self.EXPRESSION_PRECEDES_PROPERTIES_CREATABLES:
+                properties_expression = f"{expression_sql}{properties_sql}"
+            else:
+                properties_expression = f"{properties_sql}{expression_sql}"
+
+            expression_sql = f"CREATE{modifiers} {kind}{concurrently}{exists_sql} {this}{properties_expression}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
+            return self.prepend_ctes(expression, expression_sql)

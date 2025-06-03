@@ -1758,10 +1758,12 @@ def filter_array_using_unnest(
 
 
 def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
-    var = exp.Var(this="_u")
-    cond = exp.NEQ(this=var, expression=expression.expression)
+    lambda_id = exp.Identifier(this="_u", quoted=False)
+    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
     return self.sql(
-        exp.ArrayFilter(this=expression.this, expression=exp.Lambda(this=cond, expressions=[var]))
+        exp.ArrayFilter(
+            this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
+        )
     )
 
 

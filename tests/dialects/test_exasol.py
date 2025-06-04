@@ -6,6 +6,37 @@ from tests.dialects.test_dialect import Validator
 class TestExasol(Validator):
     dialect = "exasol"
 
+    def test_databricks_transpilation(self):
+        run = [2]
+        if 0 in run: self.validate_all(
+            "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
+            read={
+                "databricks": "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
+                # "exasol": "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
+            },
+            # write={
+            #     "exasol": "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
+            #     "databricks": "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
+            # },
+        )
+        if 1 in run: self.validate_all(
+            "SELECT TO_CHAR(CAST(CONVERT_TZ(CAST(foo AS TIMESTAMP),'UTC','America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
+            read={
+                "databricks": "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
+
+            },
+            # write={
+            # },
+        )
+        if 2 in run: self.validate_all(
+            "SELECT DAYS_BETWEEN(created_at, CURRENT_DATE)",
+            read={
+                "databricks": "SELECT DATEDIFF(DAY, created_at, CURRENT_DATE)",
+
+            },
+            # write={
+            # },
+        )
 
     def test_integration_identity(self):
         ######### STRING FUNCTIONS ###########

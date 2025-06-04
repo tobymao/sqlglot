@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.25.2] - 2025-06-04
+### :sparkles: New Features
+- [`8b5129f`](https://github.com/tobymao/sqlglot/commit/8b5129f288880032f0bf9d649984d82314039af1) - **postgres**: improve pretty-formatting of ARRAY[...] *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.25.1] - 2025-06-04
 ### :wrench: Chores
 - [`440590b`](https://github.com/tobymao/sqlglot/commit/440590bf92ab1281f50b96a1400cbca695d40f0c) - bump sqlglotrs to 0.6.1 *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -6949,3 +6954,4 @@ Changelog
 [v26.24.0]: https://github.com/tobymao/sqlglot/compare/v26.23.0...v26.24.0
 [v26.25.0]: https://github.com/tobymao/sqlglot/compare/v26.24.0...v26.25.0
 [v26.25.1]: https://github.com/tobymao/sqlglot/compare/v26.25.0...v26.25.1
+[v26.25.2]: https://github.com/tobymao/sqlglot/compare/v26.25.1...v26.25.2

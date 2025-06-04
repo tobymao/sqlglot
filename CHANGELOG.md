@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.25.3] - 2025-06-04
+### :sparkles: New Features
+- [`964b4a1`](https://github.com/tobymao/sqlglot/commit/964b4a1e367e00e243b80edf677cd48d453ed31e) - add line/col position for Star *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.25.2] - 2025-06-04
 ### :sparkles: New Features
 - [`8b5129f`](https://github.com/tobymao/sqlglot/commit/8b5129f288880032f0bf9d649984d82314039af1) - **postgres**: improve pretty-formatting of ARRAY[...] *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -6955,3 +6960,4 @@ Changelog
 [v26.25.0]: https://github.com/tobymao/sqlglot/compare/v26.24.0...v26.25.0
 [v26.25.1]: https://github.com/tobymao/sqlglot/compare/v26.25.0...v26.25.1
 [v26.25.2]: https://github.com/tobymao/sqlglot/compare/v26.25.1...v26.25.2
+[v26.25.3]: https://github.com/tobymao/sqlglot/compare/v26.25.2...v26.25.3

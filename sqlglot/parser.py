@@ -1144,7 +1144,7 @@ class Parser(metaclass=_Parser):
             query.offset(offset, copy=False)
         return query
 
-    def _parse_pipe_syntax_order(self) -> t.Optional[exp.Expression]:
+    def _parse_pipe_syntax_aggregate_fields(self) -> t.Optional[exp.Expression]:
         this = self._parse_assignment()
         if self._match_text_seq("GROUP", advance=False):
             return this
@@ -1159,7 +1159,7 @@ class Parser(metaclass=_Parser):
     def _parse_pipe_syntax_aggregate_group_order_by(
         self, query: exp.Select, group_by_exists: bool = True
     ) -> exp.Select:
-        expr = self._parse_csv(self._parse_pipe_syntax_order)
+        expr = self._parse_csv(self._parse_pipe_syntax_aggregate_fields)
         aggregates_or_groups, orders = [], []
         for element in expr:
             if isinstance(element, exp.Ordered):

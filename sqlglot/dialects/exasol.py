@@ -1,36 +1,23 @@
 from __future__ import annotations
 import typing as t
 import datetime
-from sqlglot import exp, generator, parser, tokens, parse_one
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
-    NormalizationStrategy,
-    arg_max_or_min_no_count,
     binary_from_function,
     build_date_delta,
     build_formatted_time,
-    inline_array_sql,
-    json_extract_segments,
-    json_path_key_only_name,
-    length_or_char_length_sql,
-    no_pivot_sql,
-    build_json_extract_path,
     rename_func,
-    sha256_sql,
-    strposition_sql,
     var_map_sql,
-    timestamptrunc_sql,
     unit_to_var,
-    trim_sql,
+    trim_sql
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
-from sqlglot.tokens import Token, TokenType
+from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
-DATEΤΙΜΕ_DELTA = t.Union[
-    exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd
-]
+DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
 
 def _build_date_format(args: t.List) -> exp.TimeToStr:
@@ -48,21 +35,13 @@ def _unix_to_time_sql(self: Exasol.Generator, expression: exp.UnixToTime) -> str
     timestamp = expression.this
 
     if scale in (None, exp.UnixToTime.SECONDS):
-        return self.func(
-            "fromUnixTimestamp", exp.cast(timestamp, exp.DataType.Type.BIGINT)
-        )
+        return self.func("fromUnixTimestamp", exp.cast(timestamp, exp.DataType.Type.BIGINT))
     if scale == exp.UnixToTime.MILLIS:
-        return self.func(
-            "fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DataType.Type.BIGINT)
-        )
+        return self.func("fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DataType.Type.BIGINT))
     if scale == exp.UnixToTime.MICROS:
-        return self.func(
-            "fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DataType.Type.BIGINT)
-        )
+        return self.func("fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DataType.Type.BIGINT))
     if scale == exp.UnixToTime.NANOS:
-        return self.func(
-            "fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DataType.Type.BIGINT)
-        )
+        return self.func("fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DataType.Type.BIGINT))
 
     return self.func(
         "fromUnixTimestamp",
@@ -149,9 +128,7 @@ def _timestrtotime_sql(self: Exasol.Generator, expression: exp.TimeStrToTime):
                     ".",
                     ts_frac_parts[0],  # fractional seconds
                     offset_sep if num_frac_parts > 1 else "",
-                    (
-                        ts_frac_parts[1] if num_frac_parts > 1 else ""
-                    ),  # utc offset (if present)
+                    (ts_frac_parts[1] if num_frac_parts > 1 else ""),  # utc offset (if present)
                 ]
             )
 
@@ -159,9 +136,7 @@ def _timestrtotime_sql(self: Exasol.Generator, expression: exp.TimeStrToTime):
         # this is because Clickhouse encodes the timezone as a data type parameter and throws an error if
         # it's part of the timestamp string
         ts_without_tz = (
-            datetime.datetime.fromisoformat(ts_string)
-            .replace(tzinfo=None)
-            .isoformat(sep=" ")
+            datetime.datetime.fromisoformat(ts_string).replace(tzinfo=None).isoformat(sep=" ")
         )
         ts = exp.Literal.string(ts_without_tz)
 
@@ -196,16 +171,6 @@ def _map_sql(self: Exasol.Generator, expression: exp.Map | exp.VarMap) -> str:
     return f"{{{csv_args}}}"
 
 
-class ExasolTokenType:
-    WITH_LOCAL_TIME_ZONE = "WITH_LOCAL_TIME_ZONE"
-    HASHTYPE = "HASHTYPE"
-    BYTE = "BYTE"
-    MONTH = "MONTH"
-    DAY = "DAY"
-    SECOND = "SECOND"
-    TO = "TO"
-
-
 class Tokenizer(tokens.Tokenizer):
     IDENTIFIER_ESCAPES = ['"']
     STRING_ESCAPES = ["'"]
@@ -213,44 +178,40 @@ class Tokenizer(tokens.Tokenizer):
     KEYWORDS = {
         **tokens.Tokenizer.KEYWORDS,
         "YEAR": TokenType.YEAR,
-        "WITH LOCAL TIME ZONE": ExasolTokenType.WITH_LOCAL_TIME_ZONE,
-        "MONTH": ExasolTokenType.MONTH,
-        "DAY": ExasolTokenType.DAY,
-        "SECOND": ExasolTokenType.SECOND,
-        "TO": ExasolTokenType.TO,
-        "HASHTYPE": ExasolTokenType.HASHTYPE,
-        "BYTE": ExasolTokenType.BYTE,
+        "WITH LOCAL TIME ZONE": TokenType.TIME,
+        "TO": TokenType.COMMAND,
+        "HASHTYPE": TokenType.UUID,
     }
 
 
-def _build_truncate(args: t.List) -> exp.Div:
-    """
-    exasol TRUNC[ATE] (number): https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc[ate]%20(number).htm#TRUNC[ATE]_(number)
-    example:
-        exasol query: SELECT TRUNC(123.456,-2) -> 100
-        generic query: SELECT FLOOR(123.456 * POWER(10,-2)) / POWER(10,-2) -> 100
-    """
-    number = seq_get(args, 0)
-    truncate = seq_get(args, 1) or 0  # if no truncate arg then integer truncation
-    sql = f"FLOOR({number} * POWER(10,{truncate})) / POWER(10,{truncate})"
-    return parse_one(sql)
-    # return exp.Div(
-    #     this=exp.Floor(
-    #         this=exp.Mul(
-    #             this=exp.Literal(this=number,is_string=isinstance(number,str)),
-    #             expression=exp.Pow(
-    #                 this=exp.Literal(this=10,is_string=False),
-    #                 expression=exp.Literal(this=truncate,is_string=isinstance(number,str)),
-    #             ),
-    #         )
-    #     ),
-    #     expression=exp.Pow(
-    #         this=exp.Literal(this=10,is_string=False),
-    #         expression=exp.Literal(this=truncate,is_string=isinstance(number,str)),
-    #     ),
-    #     # typed=???,
-    #     # safe=???
-    # )
+# def _build_truncate(args: t.List) -> exp.Div:
+#     """
+#     exasol TRUNC[ATE] (number): https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc[ate]%20(number).htm#TRUNC[ATE]_(number)
+#     example:
+#         exasol query: SELECT TRUNC(123.456,-2) -> 100
+#         generic query: SELECT FLOOR(123.456 * POWER(10,-2)) / POWER(10,-2) -> 100
+#     """
+#     number = seq_get(args, 0)
+#     truncate = seq_get(args, 1) or 0  # if no truncate arg then integer truncation
+#     sql = f"FLOOR({number} * POWER(10,{truncate})) / POWER(10,{truncate})"
+#     return parse_one(sql)
+# return exp.Div(
+#     this=exp.Floor(
+#         this=exp.Mul(
+#             this=exp.Literal(this=number,is_string=isinstance(number,str)),
+#             expression=exp.Pow(
+#                 this=exp.Literal(this=10,is_string=False),
+#                 expression=exp.Literal(this=truncate,is_string=isinstance(number,str)),
+#             ),
+#         )
+#     ),
+#     expression=exp.Pow(
+#         this=exp.Literal(this=10,is_string=False),
+#         expression=exp.Literal(this=truncate,is_string=isinstance(number,str)),
+#     ),
+#     # typed=???,
+#     # safe=???
+# )
 
 
 def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) -> str:
@@ -379,11 +340,9 @@ class Exasol(Dialect):
             #       see: https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_number.htm#TO_NUMBER
             ########### HANDLE IN GENERATOR ############
             "DIV": binary_from_function(exp.IntDiv),
-            "RANDOM": lambda args: exp.Rand(
-                lower=seq_get(args, 0), upper=seq_get(args, 1)
-            ),
-            "TRUNCATE": _build_truncate,
-            "TRUNC": _build_truncate,
+            "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+            # "TRUNCATE": _build_truncate,
+            # "TRUNC": _build_truncate,
             ########## NEED MORE RESEARCH ###########
             # "TO_CHAR": # exp.NumberToStr research formats
             # "MIN_SCALE": , # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/min_scale.htm
@@ -568,7 +527,7 @@ class Exasol(Dialect):
             exp.DataType.Type.DATETIME2: "TIMESTAMP",
             exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
             exp.DataType.Type.BOOLEAN: "BOOLEAN",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP WITH LOCAL TIME ZONE"
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
         }
 
         TRANSFORMS = {
@@ -588,8 +547,10 @@ class Exasol(Dialect):
             # exp.AddSeconds: lambda self, e: f"ADD_SECONDS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
             # exp.AddWeeks: lambda self, e: f"ADD_WEEKS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
             # exp.AddYears: lambda self, e: f"ADD_YEARS({self._timestamp_literal(e, 'this')}, {self.sql(e, 'expression')})",
-            exp.AnyValue: lambda self, e: self.windowed_func("ANY", e),
-            exp.ApproxDistinct: unsupported_args("accuracy")(rename_func("APPROXIMATE_COUNT_DISTINCT")),
+            exp.Any: lambda self, e: self.windowed_func("ANY", e),
+            exp.ApproxDistinct: unsupported_args("accuracy")(
+                rename_func("APPROXIMATE_COUNT_DISTINCT")
+            ),
             # exp.Ascii: lambda self, e: f"ASCII({self.sql(e, 'this')})",
             # exp.Asin: lambda self, e: f"ASIN({self.sql(e, 'this')})",
             # exp.Atan: lambda self, e: f"ATAN({self.sql(e, 'this')})",
@@ -607,7 +568,9 @@ class Exasol(Dialect):
             # exp.BitSet: lambda self, e: f"BIT_SET({self.sql(e, 'this')}, {self.sql(e, 'expression')})", #Bad
             # exp.BitToNum: lambda self, e: f"BIT_TO_NUM({', '.join(self.sql(arg) for arg in e.expressions)})", #Bad
             exp.BitwiseXor: rename_func("BIT_XOR"),
-            # Case
+            # exp.Case
+            # exp.Cast
+            # exp.Convert
             # Cast
             # exp.Ceil
             # exp.Chr: rename_func("CHR"),
@@ -616,14 +579,13 @@ class Exasol(Dialect):
             # exp.CharacterLength: rename_func("CHARACTER_LENGTH"),
             ##################################
             # exp.Coalesce,
-
             # exp.ConnectByIsCycle: lambda self, e: "CONNECT_BY_ISCYCLE",
-            exp.ConnectByIsLeaf: lambda self, e: "CONNECT_BY_ISLEAF",
-            exp.SysConnectByPath: lambda self, e: f"SYS_CONNECT_BY_PATH({self.sql(e, 'this')}, {', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.ConnectByIsLeaf: lambda self, e: "CONNECT_BY_ISLEAF",
+            # exp.SysConnectByPath: lambda self, e: f"SYS_CONNECT_BY_PATH({self.sql(e, 'this')}, {', '.join(self.sql(x) for x in e.expressions)})",
             exp.Command: lambda self, e: " ".join(self.sql(x) for x in e.expressions),
             # exp.Concat
             # exp.Convert
-            exp.ConvertTZ: lambda self, e: self.convert_tz_sql(e),
+            exp.ConvertTimezone: lambda self, e: self.convert_tz_sql(e),  # Check mysql
             # exp.Corr: lambda self, e: self.corr_sql(e), - already exist
             # exp.Cos: lambda self, e: self.cos_sql(e),
             # exp.CosH: lambda self, e: self.cosh_sql(e),
@@ -631,12 +593,12 @@ class Exasol(Dialect):
             exp.Count: lambda self, e: self.windowed_func("COUNT", e),
             exp.CovarPop: rename_func("COVAR_POP"),
             exp.CovarSamp: rename_func("COVAR_SAMP"),
-            exp.CumeDist: lambda self, e: self.windowed_func("CUME_DIST"),
-            exp.CurrentCluster: lambda self, e: "CURRENT_CLUSTER",
+            # exp.CumeDist: lambda self, e: self.windowed_func("CUME_DIST"),
+            # exp.CurrentCluster: lambda self, e: "CURRENT_CLUSTER",
             exp.CurrentDate: rename_func("CURDATE"),
             exp.CurrentSchema: lambda self, e: "CURRENT_SCHEMA",
-            exp.CurrentSession: lambda self, e: "CURRENT_SESSION",
-            exp.CurrentStatement: lambda self, e: "CURRENT_STATEMENT",
+            # exp.CurrentSession: lambda self, e: "CURRENT_SESSION",
+            # exp.CurrentStatement: lambda self, e: "CURRENT_STATEMENT",
             exp.CurrentUser: lambda self, e: "CURRENT_USER",
             # exp.CountDistinct: lambda self, e: self.windowed_func("COUNT_DISTINCT", e),
             # exp.CountStar: lambda self, e: "COUNT(*)",
@@ -646,15 +608,17 @@ class Exasol(Dialect):
                 if e.args.get("this")
                 else "CURRENT_TIMESTAMP"
             ),
-            exp.DateTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
+            exp.DateTrunc: lambda self,
+            e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
             # exp.Day
-            exp.DaysBetween: lambda self, e: f"DAYS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            # exp.DaysBetween: lambda self, e: f"DAYS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.Date: lambda self, e: f"DATE {self.sql(e, 'this')}",
             exp.Timestamp: lambda self, e: f"TIMESTAMP {self.sql(e, 'this')}",
-            exp.DBTimezone: lambda self, e: "DBTIMEZONE",
-            exp.Decode: lambda self, e: f"DECODE({', '.join(self.sql(arg) for arg in e.expressions)})",
-            exp.Degrees: lambda self, e: f"DEGREES({self.sql(e, 'this')})",
-            exp.DenseRank: lambda self, e: self.windowed_func("DENSE_RANK", e),
+            # exp.DBTimezone: lambda self, e: "DBTIMEZONE",
+            exp.Decode: lambda self,
+            e: f"DECODE({', '.join(self.sql(arg) for arg in e.expressions)})",
+            # exp.Degrees: lambda self, e: f"DEGREES({self.sql(e, 'this')})",
+            # exp.DenseRank: lambda self, e: self.windowed_func("DENSE_RANK", e),
             # exp.Div
             # exp.Dump: lambda self, e: f"DUMP({
             #     ', '.join(
@@ -669,39 +633,41 @@ class Exasol(Dialect):
             #         )
             #     )
             # })",
-            exp.Levenshtein: unsupported_args(
-                "ins_cost", "del_cost", "sub_cost", "max_dist"
-            )(rename_func("EDIT_DISTANCE")),
-            exp.Every: lambda self, e: f"EVERY({self.sql(e, 'this')})",
-            exp.Extract: lambda self, e: f"EXTRACT({self.sql(e, 'expression')} FROM {self._timestamp_literal(e, 'this')})",
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("EDIT_DISTANCE")
+            ),
+            exp.All: rename_func("EVERY"),
+            # exp.Every: lambda self, e: f"EVERY({self.sql(e, 'this')})",
+            exp.Extract: lambda self,
+            e: f"EXTRACT({self.sql(e, 'expression')} FROM {self._timestamp_literal(e, 'this')})",
             # exp.Extract
             # exp.FirstValue: rename_func("FIRST_VALUE"),
             # exp.Exp: lambda self, e: f"EXP({self.sql(e, 'this')})",
             exp.FirstValue: lambda self, e: self.windowed_func("FIRST_VALUE", e),
             # exp.Floor: lambda self, e: f"FLOOR({self.sql(e, 'this')})",
-            exp.FromPosixTime: lambda self, e: f"FROM_POSIX_TIME({self.sql(e, 'this')})",
+            # exp.FromPosixTime: lambda self, e: f"FROM_POSIX_TIME({self.sql(e, 'this')})",
             # exp.Greatest: lambda self, e: f"GREATEST({', '.join(self.sql(arg) for arg in e.expressions)})", //Todo:
             exp.GroupConcat: lambda self, e: self.group_concat_sql(e),
-            exp.Grouping: lambda self, e: f"GROUPING({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.Grouping: lambda self, e: f"GROUPING({', '.join(self.sql(x) for x in e.expressions)})",
             # exp.GroupingId: lambda self, e: f"GROUPING_ID({self.sql(e, 'this')})",
             exp.MD5: lambda self, e: f"HASH_MD5({', '.join(self.sql(x) for x in e.expressions)})",
             exp.SHA: lambda self, e: f"HASH_SHA1({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashSha256: lambda self, e: f"HASH_SHA256({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashSha512: lambda self, e: f"HASH_SHA512({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashTiger: lambda self, e: f"HASH_TIGER({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashTypeMd5: lambda self, e: f"HASHTYPE_MD5({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashTypeSha1: lambda self, e: f"HASHTYPE_SHA1({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashTypeSha256: lambda self, e: f"HASHTYPE_SHA256({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashTypeSha512: lambda self, e: f"HASHTYPE_SHA512({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.HashTypeTiger: lambda self, e: f"HASHTYPE_TIGER({', '.join(self.sql(x) for x in e.expressions)})",
-            exp.Hour: lambda self, e: f"HOUR({self._timestamp_literal(e, 'this')})",
-            exp.HoursBetween: lambda self, e: f"HOURS_BETWEEN({self._timestamp_literal(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
+            # exp.HashSha256: lambda self, e: f"HASH_SHA256({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashSha512: lambda self, e: f"HASH_SHA512({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashTiger: lambda self, e: f"HASH_TIGER({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashTypeMd5: lambda self, e: f"HASHTYPE_MD5({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashTypeSha1: lambda self, e: f"HASHTYPE_SHA1({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashTypeSha256: lambda self, e: f"HASHTYPE_SHA256({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashTypeSha512: lambda self, e: f"HASHTYPE_SHA512({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.HashTypeTiger: lambda self, e: f"HASHTYPE_TIGER({', '.join(self.sql(x) for x in e.expressions)})",
+            # exp.Hour: lambda self, e: f"HOUR({self._timestamp_literal(e, 'this')})",
+            # exp.HoursBetween: lambda self, e: f"HOURS_BETWEEN({self._timestamp_literal(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
             exp.If: lambda self, e: (
                 f"IF {self.sql(e, 'this')} THEN {self.sql(e, 'true')} ELSE {self.sql(e, 'false')} ENDIF"
             ),
-            # exp.InitCap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
+            # exp.Initcap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
             exp.Stuff: rename_func("INSERT"),
-            exp.StrPosition: _string_position_sql,
+            # exp.StrPosition: _string_position_sql,
             # exp.Insert: lambda self,
             # e: f"INSERT({self.sql(e, 'this')}, {self.sql(e, 'start')}, {self.sql(e, 'length')}, {self.sql(e, 'expression')})",
             # exp.Instr: lambda self, e: (
@@ -719,7 +685,7 @@ class Exasol(Dialect):
             #     )
             #     + ")"
             # ),
-            exp.Iproc: lambda self, e: f"IPROC({self.sql(e, 'this')})",
+            # exp.Iproc: lambda self, e: f"IPROC({self.sql(e, 'this')})",
             exp.Is: lambda self, e: f"IS_{self.sql(e, 'type')}({self.sql(e, 'this')}"
             + (f", {self.sql(e, 'expression')}" if e.args.get("expression") else "")
             + ")",
@@ -755,24 +721,24 @@ class Exasol(Dialect):
             # e: f"LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             # exp.Length - is the same with CHAR_LENGTH
             # exp.ConnectBy: lambda self, e: f"CONNECT BY {'PRIOR ' if e.args.get('prior') else ''}{self.sql(e, 'this')}",
-            exp.StartWith: lambda self, e: f"START WITH {self.sql(e, 'this')}",
-            exp.Level: lambda self, e: "LEVEL",
+            # exp.StartWith: lambda self, e: f"START WITH {self.sql(e, 'this')}",
+            # exp.Level: lambda self, e: "LEVEL",
             exp.Log: lambda self, e: f"LOG({self.sql(e, 'this')}, {self.sql(e, 'base')})",
-            exp.Log2: lambda self, e: f"LOG2({self.sql(e, 'this')})",
-            exp.Log10: lambda self, e: f"LOG10({self.sql(e, 'this')})",
-            exp.ListAgg: lambda self, e: (
-                f"LISTAGG({self.sql(e, 'this')}"
-                f"{', ' + self.sql(e, 'separator') if e.args.get('separator') else ''})"
-                f" WITHIN GROUP (ORDER BY {self.sql(e, 'order')})"
-                if e.args.get("order")
-                else ""
-            ),
+            # exp.Log2: lambda self, e: f"LOG2({self.sql(e, 'this')})",
+            # exp.Log10: lambda self, e: f"LOG10({self.sql(e, 'this')})",
+            # exp.ListAgg: lambda self, e: (
+            #     f"LISTAGG({self.sql(e, 'this')}"
+            #     f"{', ' + self.sql(e, 'separator') if e.args.get('separator') else ''})"
+            #     f" WITHIN GROUP (ORDER BY {self.sql(e, 'order')})"
+            #     if e.args.get("order")
+            #     else ""
+            # ),
             # exp.Ln: lambda self, e: f"LN({self.sql(e, 'this')})",
-            exp.LocalTimestamp: lambda self, e: (
-                f"LOCALTIMESTAMP({self.sql(e, 'precision')})"
-                if e.args.get("precision")
-                else "LOCALTIMESTAMP"
-            ),
+            # exp.LocalTimestamp: lambda self, e: (
+            #     f"LOCALTIMESTAMP({self.sql(e, 'precision')})"
+            #     if e.args.get("precision")
+            #     else "LOCALTIMESTAMP"
+            # ),
             # exp.Locate: lambda self, e: (
             #     f"LOCATE({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'start')})"
             #     if e.args.get("start")
@@ -786,7 +752,7 @@ class Exasol(Dialect):
             #     if e.args.get("trim_chars")
             #     else f"LTRIM({self.sql(e, 'this')})"
             # ),
-            # exp.Trim
+            exp.Trim: trim_sql,
             # exp.Max
             # exp.Median
             # exp.Min
@@ -796,7 +762,7 @@ class Exasol(Dialect):
             #     else f"MID({self.sql(e, 'this')}, {self.sql(e, 'start')})"
             # ),
             exp.Mod: rename_func("MOD"),
-            exp.MinScale: lambda self, e: f"MIN_SCALE({self.sql(e, 'this')})",
+            # exp.MinScale: lambda self, e: f"MIN_SCALE({self.sql(e, 'this')})",
             # exp.MinutesBetween: lambda self, e: f"MINUTES_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             # exp.Month: lambda self, e: f"MONTH({self.sql(e, 'this')})",
             # exp.MonthsBetween: lambda self, e: f"MONTHS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -823,6 +789,7 @@ class Exasol(Dialect):
                 + (" RESPECT NULLS" if e.args.get("respect_nulls") else " IGNORE NULLS")
                 + self.sql(e, "over")
             ),
+            exp.Coalesce: rename_func("NVL"),  # NVL2 also
             exp.PercentileCont: lambda self, e: (
                 f"PERCENTILE_CONT({self.sql(e, 'this')})"
                 f" WITHIN GROUP ({self.sql(e, 'order').strip()})"
@@ -895,132 +862,88 @@ class Exasol(Dialect):
         def _anonymous_func(self, e):
             func_name = e.this.upper()
             handlers = {
-                "COLOGNE_PHONETIC": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                "COLOGNE_PHONETIC": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "CONNECT_BY_ISCYCLE": lambda e: "CONNECT_BY_ISCYCLE",
                 "CONNECT_BY_ISLEAF": lambda e: "CONNECT_BY_LEAF",
-                "MIN_SCALE": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                "MIN_SCALE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "MONTH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
-                "MINUTES_BETWEEN": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "MONTHS_BETWEEN": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "MUL": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "MINUTES_BETWEEN": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "MONTHS_BETWEEN": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                # "MUL": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "NOW": lambda e: self._render_func_with_args(e, expected_arg_count=0),
                 "NPROC": lambda e: self._render_func_with_args(e, expected_arg_count=0),
                 "NTILE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
-                "NULLIF": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "NULLIFZERO": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
-                "NUMTODSINTERVAL": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "NUMTOYMINTERVAL": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "NVL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
-                "NVL2": lambda e: self._render_func_with_args(e, expected_arg_count=3),
-                "OCTET_LENGTH": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
-                "PERCENT_RANK": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=0
-                ),
+                # "NULLIF": lambda e: self._render_func_with_args(
+                #     e, expected_arg_count=2
+                # ),
+                "NULLIFZERO": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "NUMTODSINTERVAL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "NUMTOYMINTERVAL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                # "NVL": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                # "NVL2": lambda e: self._render_func_with_args(e, expected_arg_count=3),
+                # Equivalent to CHARACTER_LENGTH AND LENGTH - https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/octet_length.htm
+                "OCTET_LENGTH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "PERCENT_RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0),
                 "PI": lambda e: self._render_func_with_args(e, expected_arg_count=0),
-                "POSIX_TIME": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
-                "RADIANS": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                "POSIX_TIME": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "RADIANS": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 # "RADIANS": lambda e: self._render_func_with_args(
                 #     e, expected_arg_count=1
                 # ),
                 "RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0),
-                "RATIO_TO_REPORT": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                "RATIO_TO_REPORT": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "REGEXP_INSTR": lambda e: self._render_func_with_args(
                     e, min_arg_count=2, max_arg_count=5
-                ),
-                "REPLACE": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=3
-                ),
-                "REVERSE": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=3
-                ),
+                ),  # exp.RegexpLike
+                "REPLACE": lambda e: self._render_func_with_args(e, expected_arg_count=3),
+                "REVERSE": lambda e: self._render_func_with_args(e, expected_arg_count=3),
                 "ROWNUM": lambda e: "ROWNUM",
                 "ROW_NUMBER": lambda e: self._render_func_with_args(
                     e, expected_arg_count=0
-                ),
+                ),  # exp.RowNumber
                 "ROWID": lambda e: "ROWID",
-                # "RPAD": lambda e: self._render_func_with_args(e, expected_arg_count=3),
-                # "RTRIM": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                # "RPAD": lambda e: self._render_func_with_args(e, expected_arg_count=3), ---Lpad Its similar to Pad
+                # "RTRIM": lambda e: self._render_func_with_args(e, expected_arg_count=2), -- Looking into trim
                 "SCOPE_USER": lambda e: "SCOPE_USER",
-                "SECOND": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "SECONDS_BETWEEN": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
+                "SECOND": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "SECONDS_BETWEEN": lambda e: self._render_func_with_args(e, expected_arg_count=2),
                 "SESSIONTIMEZONE": lambda e: "SESSIONTIMEZONE",
                 # "SIN": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 # "SINH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
-                "SOUNDEX": lambda e: self._render_func_with_args(
+                "SOUNDEX": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "SPACE": lambda e: self._render_func_with_args(
                     e, expected_arg_count=1
-                ),
-                "SPACE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                ),  # Similar to repeat
                 # "SYS_CONNECT_BY_PATH": lambda e: self._render_func_with_args(e, expected_arg_count=2),
-                "SYS_GUID": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=0
-                ),
-                "SYSDATE": lambda e: "SYSDATE",
+                "SYS_GUID": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                "SYSDATE": lambda e: "SYSDATE",  # exp.CurrentTimestamp
                 "SYSTIMESTAMP": lambda e: (
                     "SYSTIMESTAMP"
                     if not e.expressions
                     else self._render_func_with_args(e, expected_arg_count=1)
-                ),
+                ),  # check exp.CurrentTimestamp too
                 # "TAN": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 # "TANH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
-                "TO_DSINTERVAL": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                "TO_DSINTERVAL": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "TO_YMINTERVAL": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
+                    e,
+                    expected_arg_count=1,  # Check out interval
                 ),
                 "TRANSLATE": lambda e: self._render_func_with_args(
                     e, expected_arg_count=3
-                ),
-                "TRUNC": lambda e: self._render_func_with_args(e, expected_arg_count=2),
-                "TRUNC": lambda e: self._render_func_with_args(e, expected_arg_count=2),
-                "TYPEOF": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
-                "UNICODECHR": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                ),  # exp.TransalateCharacters
+                "TRUNC": lambda e: self._render_func_with_args(
+                    e, expected_arg_count=2
+                ),  # Behaves like round check documentation
+                # "TRUNC": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "TYPEOF": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "UNICODECHR": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 # "UCASE": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "USER": lambda e: "USER",
-                "VALUE2PROC": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
-                "WIDTH_BUCKET": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=4
-                ),
-                "YEARS_BETWEEN": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                ),
-                "ZEROIFNULL": lambda e: self._render_func_with_args(
-                    e, expected_arg_count=1
-                ),
+                "VALUE2PROC": lambda e: self._render_func_with_args(e, expected_arg_count=1),
+                "WIDTH_BUCKET": lambda e: self._render_func_with_args(e, expected_arg_count=4),
+                "YEARS_BETWEEN": lambda e: self._render_func_with_args(e, expected_arg_count=2),
+                "ZEROIFNULL": lambda e: self._render_func_with_args(e, expected_arg_count=1),
             }
 
             regr_funcs = [
@@ -1091,9 +1014,7 @@ class Exasol(Dialect):
                 "TANH",
             ]
             for name in regr_funcs:
-                handlers[name] = lambda e: self._render_func_with_args(
-                    e, expected_arg_count=2
-                )
+                handlers[name] = lambda e: self._render_func_with_args(e, expected_arg_count=2)
             for name in trig_funcs:
                 expected_args = 2 if name == "ATAN2" else 1
                 handlers[name] = lambda e, n=expected_args: self._render_func_with_args(
@@ -1130,10 +1051,7 @@ class Exasol(Dialect):
                 if (
                     isinstance(arg, exp.Literal)
                     and isinstance(arg.this, str)
-                    and (
-                        arg.this.startswith("TIMESTAMP ")
-                        or arg.this.startswith("DATE ")
-                    )
+                    and (arg.this.startswith("TIMESTAMP ") or arg.this.startswith("DATE "))
                 ):
                     return arg.this
                 return self.sql(arg)
@@ -1184,10 +1102,7 @@ class Exasol(Dialect):
                 return (
                     isinstance(lit, exp.Literal)
                     and lit.is_string
-                    and (
-                        lit.this.startswith("DATE ")
-                        or lit.this.startswith("TIMESTAMP ")
-                    )
+                    and (lit.this.startswith("DATE ") or lit.this.startswith("TIMESTAMP "))
                 )
 
             # Render the first argument properly
@@ -1199,9 +1114,7 @@ class Exasol(Dialect):
             # If rounding a datetime, the second arg should be a valid datetime unit
             if is_datetime_literal(value):
                 unit = (
-                    arg.this.strip("'").upper()
-                    if isinstance(arg, exp.Literal)
-                    else self.sql(arg)
+                    arg.this.strip("'").upper() if isinstance(arg, exp.Literal) else self.sql(arg)
                 )
                 if unit not in datetime_units:
                     raise ValueError(f"Invalid ROUND datetime unit for Exasol: {unit}")
@@ -1264,10 +1177,7 @@ class Exasol(Dialect):
                 if (
                     isinstance(arg, exp.Literal)
                     and isinstance(arg.this, str)
-                    and (
-                        arg.this.startswith("TIMESTAMP ")
-                        or arg.this.startswith("DATE ")
-                    )
+                    and (arg.this.startswith("TIMESTAMP ") or arg.this.startswith("DATE "))
                 ):
                     return arg.this
                 return self.sql(arg)
@@ -1300,17 +1210,13 @@ class Exasol(Dialect):
             return f"TO_NUMBER({', '.join(self.sql(arg) for arg in expression.expressions)})"
 
         def variance_sql(self, expression):
-            func_name = (
-                expression.args.get("sql_name") or expression.__class__._sql_names[0]
-            )
+            func_name = expression.args.get("sql_name") or expression.__class__._sql_names[0]
             return f"{func_name}({self.sql(expression, 'this')})"
 
         def unicode_sql(self, expression):
             print(expression)
             print(expression.args)
-            func_name = (
-                expression.args.get("sql_name") or expression.__class__._sql_names[0]
-            )
+            func_name = expression.args.get("sql_name") or expression.__class__._sql_names[0]
             return f"{func_name}({self.sql(expression, 'this')})"
 
         # def connect_by_sql(self, expression):
@@ -1336,11 +1242,7 @@ class Exasol(Dialect):
                 + ("DISTINCT " if e.args.get("distinct") else "")
                 + self.sql(e, "this")
                 + order_sql
-                + (
-                    f" SEPARATOR {self.sql(e, 'separator')}"
-                    if e.args.get("separator")
-                    else ""
-                )
+                + (f" SEPARATOR {self.sql(e, 'separator')}" if e.args.get("separator") else "")
                 + ")"
                 + self.sql(e, "over")
             )
@@ -1352,9 +1254,7 @@ class Exasol(Dialect):
 
             if emits:
                 emits_sql = (
-                    " EMITS("
-                    + ", ".join(f"{name} {datatype}" for name, datatype in emits)
-                    + ")"
+                    " EMITS(" + ", ".join(f"{name} {datatype}" for name, datatype in emits) + ")"
                 )
 
             return f"JSON_EXTRACT({self.sql(e, 'this')}, {args_sql}){emits_sql}"
@@ -1372,26 +1272,22 @@ class Exasol(Dialect):
 
             return strtodate_sql
 
-        def cast_sql(
-            self, expression: exp.Cast, safe_prefix: t.Optional[str] = None
-        ) -> str:
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             this = expression.this
 
-            if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build(
-                "datetime"
-            ):
+            if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         # Important method
-        def trycast_sql(self, expression: exp.TryCast) -> str:
-            dtype = expression.to
-            if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True):
-                # Casting x into Nullable(T) appears to behave similarly to TRY_CAST(x AS T)
-                dtype.set("nullable", True)
+        # def trycast_sql(self, expression: exp.TryCast) -> str:
+        #     dtype = expression.to
+        #     if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True):
+        #         # Casting x into Nullable(T) appears to behave similarly to TRY_CAST(x AS T)
+        #         dtype.set("nullable", True)
 
-            return super().cast_sql(expression)
+        #     return super().cast_sql(expression)
 
         def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
             this = self.json_path_part(expression.this)
@@ -1473,8 +1369,7 @@ class Exasol(Dialect):
         def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:
             return super().after_limit_modifiers(expression) + [
                 (
-                    self.seg("SETTINGS ")
-                    + self.expressions(expression, key="settings", flat=True)
+                    self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
                     if expression.args.get("settings")
                     else ""
                 ),
@@ -1540,9 +1435,7 @@ class Exasol(Dialect):
             this = self.indent(self.sql(expression, "this"))
             return f"{self.seg('PREWHERE')}{self.sep()}{this}"
 
-        def indexcolumnconstraint_sql(
-            self, expression: exp.IndexColumnConstraint
-        ) -> str:
+        def indexcolumnconstraint_sql(self, expression: exp.IndexColumnConstraint) -> str:
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
             expr = self.sql(expression, "expression")
@@ -1561,26 +1454,9 @@ class Exasol(Dialect):
             return f"ID {self.sql(expression.this)}"
 
         def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
-            return f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
+            return (
+                f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
+            )
 
         def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
             return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"
-
-        def is_sql(self, expression: exp.Is) -> str:
-            is_sql = super().is_sql(expression)
-
-            if isinstance(expression.parent, exp.Not):
-                # value IS NOT NULL -> NOT (value IS NULL)
-                is_sql = self.wrap(is_sql)
-
-            if isinstance(expression.parent, exp.Not) and expression.args.get(
-                "is_global"
-            ):
-                in_sql = in_sql.replace("GLOBAL IN", "GLOBAL NOT IN", 1)
-
-        def not_sql(self, expression: exp.Not) -> str:
-            if isinstance(expression.this, exp.In) and expression.this.args.get(
-                "is_global"
-            ):
-                # let `GLOBAL IN` child interpose `NOT`
-                return self.sql(expression, "this")

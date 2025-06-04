@@ -8213,6 +8213,8 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_star_ops(self) -> t.Optional[exp.Expression]:
+        star_token = self._prev
+
         if self._match_text_seq("COLUMNS", "(", advance=False):
             this = self._parse_function()
             if isinstance(this, exp.Columns):
@@ -8226,7 +8228,7 @@ class Parser(metaclass=_Parser):
                 "replace": self._parse_star_op("REPLACE"),
                 "rename": self._parse_star_op("RENAME"),
             },
-        )
+        ).update_positions(star_token)
 
     def _parse_grant_privilege(self) -> t.Optional[exp.GrantPrivilege]:
         privilege_parts = []

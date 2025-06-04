@@ -470,6 +470,8 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
+        exp.DataType.Type.UNICHAR: "CHAR",
+        exp.DataType.Type.UNIVARCHAR: "VARCHAR",
         exp.DataType.Type.MEDIUMTEXT: "TEXT",
         exp.DataType.Type.LONGTEXT: "TEXT",
         exp.DataType.Type.TINYTEXT: "TEXT",
@@ -648,10 +650,12 @@ class Generator(metaclass=_Generator):
     )
 
     PARAMETERIZABLE_TEXT_TYPES = {
+        exp.DataType.Type.UNIVARCHAR,
         exp.DataType.Type.NVARCHAR,
         exp.DataType.Type.VARCHAR,
         exp.DataType.Type.CHAR,
         exp.DataType.Type.NCHAR,
+        exp.DataType.Type.UNICHAR,
     }
 
     # Expressions that need to have all CTEs under them bubbled up to them

@@ -3774,3 +3774,25 @@ class TestSingleStore(Validator):
             sql="CREATE TABLE products2 (id INT, name TEXT, price DECIMAL(10, 2), INDEX (name))",
             exp_type=exp.Create,
         )
+
+    def test_tsql_conversion(self):
+        self.validate_generation(
+            sql="CREATE TABLE syb_unichar_example (id INT, uni_field UNICHAR(10))",
+            expected_sql="CREATE TABLE syb_unichar_example (id INT, uni_field CHAR(10))",
+            from_dialect="tsql",
+        )
+        self.validate_generation(
+            sql="CREATE TABLE syb_univarchar_example (id INT, uni_name UNIVARCHAR(100))",
+            expected_sql="CREATE TABLE syb_univarchar_example (id INT, uni_name VARCHAR(100))",
+            from_dialect="tsql",
+        )
+        self.validate_generation(
+            sql="CREATE TABLE syb_bit_example (id INT, is_active BIT)",
+            expected_sql="CREATE TABLE syb_bit_example (id INT, is_active BOOLEAN)",
+            from_dialect="tsql",
+        )
+        self.validate_generation(
+            sql="CREATE TABLE syb_image_example (id INT, photo IMAGE)",
+            expected_sql="CREATE TABLE syb_image_example (id INT, photo LONGBLOB)",
+            from_dialect="tsql",
+        )

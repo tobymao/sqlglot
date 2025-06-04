@@ -137,8 +137,10 @@ class TokenType(AutoName):
     BIGDECIMAL = auto()
     CHAR = auto()
     NCHAR = auto()
+    UNICHAR = auto()
     VARCHAR = auto()
     NVARCHAR = auto()
+    UNIVARCHAR = auto()
     BPCHAR = auto()
     TEXT = auto()
     MEDIUMTEXT = auto()
@@ -906,10 +908,12 @@ class Tokenizer(metaclass=_Tokenizer):
         "CHAR": TokenType.CHAR,
         "CHARACTER": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,
+        "UNICHAR": TokenType.UNICHAR,
         "VARCHAR": TokenType.VARCHAR,
         "VARCHAR2": TokenType.VARCHAR,
         "NVARCHAR": TokenType.NVARCHAR,
         "NVARCHAR2": TokenType.NVARCHAR,
+        "UNIVARCHAR": TokenType.UNIVARCHAR,
         "BPCHAR": TokenType.BPCHAR,
         "STR": TokenType.TEXT,
         "STRING": TokenType.TEXT,

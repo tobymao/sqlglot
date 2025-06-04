@@ -8,19 +8,6 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
-        self.validate_all(
-            "x ? y",
-            write={
-                "": "JSONB_CONTAINS(x, y)",
-                "postgres": "x ? y",
-            },
-        )
-
-        self.validate_identity("SHA384(x)")
-        self.validate_identity("1.x", "1. AS x")
-        self.validate_identity("|/ x", "SQRT(x)")
-        self.validate_identity("||/ x", "CBRT(x)")
-
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
@@ -31,6 +18,14 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.Alter)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        sql = "ARRAY[x" + ",x" * 27 + "]"
+        expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
+        self.validate_identity(sql, expected_sql, pretty=True)
+
+        self.validate_identity("SHA384(x)")
+        self.validate_identity("1.x", "1. AS x")
+        self.validate_identity("|/ x", "SQRT(x)")
+        self.validate_identity("||/ x", "CBRT(x)")
         self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
         self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
@@ -379,6 +374,13 @@ FROM json_data, field_ids""",
             pretty=True,
         )
 
+        self.validate_all(
+            "x ? y",
+            write={
+                "": "JSONB_CONTAINS(x, y)",
+                "postgres": "x ? y",
+            },
+        )
         self.validate_all(
             "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
             read={

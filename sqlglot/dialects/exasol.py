@@ -468,6 +468,87 @@ class Exasol(Dialect):
         # Whether the `name AS expr` schema/column constraint requires parentheses around `expr`
         WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
 
+        def _match_lfp_or_fsp(self) -> bool:
+            if self._match(TokenType.L_PAREN):
+                # TODO how to consume number
+                # handle DAY(lfp) - for now just consume tokens
+                # handle SECOND(fsp) - for now just consume tokens
+                # handle YEAR(p) - for now just consume tokens
+                self._match(TokenType.NUMBER)
+                self._match(TokenType.R_PAREN)
+                return True
+            return False
+
+        def _handle_interval_day_or_year(
+            self, this: t.Optional[exp.Expression]
+        ) -> exp.DataType:
+            """
+            INTERVAL DAY(lfp) TO SECOND(fsp)
+            lfp = leading field precision (optional) 1 <= lfp <= 9, default = 2
+            fsp = fractional second precision (optional) 0 <= fsp <= 9, default = 3
+
+            INTERVAL YEAR(p) TO MONTH
+            p = leading field precision (optional) 1 <= p <= 9, default = 2
+            """
+            if not (
+                this
+                and isinstance(this, exp.DataType)
+                and isinstance(this.this, exp.Interval)
+            ):
+                return this
+            interval = this.this
+            if isinstance(interval.unit, exp.Var) and (
+                interval.unit.this == "DAY" or interval.unit.this == "YEAR"
+            ):
+                unit = interval.unit.this
+                # if parser does not match `TO`, it returns DataType(Interval(Var(DAY | YEAR))) - parser.py line 5263
+                # this is the case when parser wants to match `TO` but needs to handle `(`
+
+                is_match = self._match_lfp_or_fsp()  # handle DAY(lfp) or YEAR(p)
+                if is_match and self._match_text_seq("TO"):
+                    # parser can work like _parser_types line 5263
+                    # i.e. parse SECOND or MONTH
+                    interval_unit = exp.IntervalSpan(
+                        this=self.expression(exp.Var, this=unit),
+                        expression=self._parse_var(upper=True),
+                    )
+                    this = self.expression(
+                        exp.DataType,
+                        this=self.expression(exp.Interval, unit=interval_unit),
+                    )
+                    if unit == "DAY":
+                        self._match_lfp_or_fsp()  # handle SECOND(fsp)
+                if not is_match:
+                    # there is no `TO`
+                    # or there is no `TO` and no `(`
+                    # but exasol requires `TO` -> Syntax Error
+                    self.raise_error(
+                        f"Expected `TO` to follow `{unit}` in `INTERVAL` type"
+                    )
+            elif isinstance(interval.unit, exp.IntervalSpan):
+                # handle case: DAY TO SECOND(fsp)
+                self._match_lfp_or_fsp()
+            else:
+                self.raise_error(f"Expected `{unit}` to follow `INTERVAL` type")
+
+            return this
+
+        def _parse_types(
+            self,
+            check_func: bool = False,
+            schema: bool = False,
+            allow_identifiers: bool = True,
+        ) -> t.Optional[exp.Expression]:
+            """
+            https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#Intervaldatatypes
+            """
+            this = super()._parse_types(
+                check_func=check_func,
+                schema=schema,
+                allow_identifiers=allow_identifiers,
+            )
+            return self._handle_interval_day_or_year(this)
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")

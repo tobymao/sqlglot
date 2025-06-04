@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v26.25.1] - 2025-06-04
+### :wrench: Chores
+- [`440590b`](https://github.com/tobymao/sqlglot/commit/440590bf92ab1281f50b96a1400cbca695d40f0c) - bump sqlglotrs to 0.6.1 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.25.0] - 2025-06-03
 ### :boom: BREAKING CHANGES
 - due to [`72ce404`](https://github.com/tobymao/sqlglot/commit/72ce40405625239a0d6763d502e5af8b12abfe9b) - Refactor ALTER TABLE ADD parsing *(PR [#5144](https://github.com/tobymao/sqlglot/pull/5144) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -6943,3 +6948,4 @@ Changelog
 [v26.23.0]: https://github.com/tobymao/sqlglot/compare/v26.22.1...v26.23.0
 [v26.24.0]: https://github.com/tobymao/sqlglot/compare/v26.23.0...v26.24.0
 [v26.25.0]: https://github.com/tobymao/sqlglot/compare/v26.24.0...v26.25.0
+[v26.25.1]: https://github.com/tobymao/sqlglot/compare/v26.25.0...v26.25.1

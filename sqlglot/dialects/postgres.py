@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     filter_array_using_unnest,
+    inline_array_sql,
     json_extract_segments,
     json_path_key_only_name,
     max_or_greatest,
@@ -728,11 +729,12 @@ class Postgres(Dialect):
 
         def array_sql(self, expression: exp.Array) -> str:
             exprs = expression.expressions
-            return (
-                f"{self.normalize_func('ARRAY')}({self.sql(exprs[0])})"
-                if isinstance(seq_get(exprs, 0), exp.Select)
-                else f"{self.normalize_func('ARRAY')}[{self.expressions(expression, flat=True)}]"
-            )
+            func_name = self.normalize_func("ARRAY")
+
+            if isinstance(seq_get(exprs, 0), exp.Select):
+                return f"{func_name}({self.sql(exprs[0])})"
+
+            return f"{func_name}{inline_array_sql(self, expression)}"
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')}) STORED"

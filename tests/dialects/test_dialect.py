@@ -3567,8 +3567,8 @@ FROM subquery2""",
                 f"Testing pipe syntax AGGREGATE with GROUP AND ORDER BY for order option: {order_option}"
             ):
                 self.validate_all(
-                    f"SELECT g_x1 FROM (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM (SELECT * FROM x) GROUP BY g_x1 ORDER BY g_x1 {order_option})",
+                    f"SELECT g_x1, x_s FROM (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM (SELECT * FROM x) GROUP BY g_x1 ORDER BY g_x1 {order_option})",
                     read={
-                        "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1",
+                        "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
                 )

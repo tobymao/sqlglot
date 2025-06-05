@@ -201,3 +201,10 @@ x"""
         self.assertEqual(len(partial_tokens), 1)
         self.assertEqual(partial_tokens[0].token_type, TokenType.VAR)
         self.assertEqual(partial_tokens[0].text, "foo")
+
+    def test_token_repr(self):
+        # Ensures both the Python and the Rust tokenizer produce a human-friendly representation
+        self.assertEqual(
+            repr(Tokenizer().tokenize("foo")),
+            "[<Token token_type: TokenType.VAR, text: foo, line: 1, col: 3, start: 0, end: 2, comments: []>]",
+        )

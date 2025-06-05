@@ -1164,21 +1164,20 @@ class Parser(metaclass=_Parser):
         for element in expr:
             if isinstance(element, exp.Ordered):
                 this = element.this
-                orders.append(
-                    exp.Ordered(
-                        this=this.alias_or_name,
-                        desc=element.args.get("desc"),
-                        nulls_first=element.args.get("nulls_first"),
-                        with_fill=element.args.get("with_fill"),
-                    )
-                )
-                aggregates_or_groups.append(this)
+                if isinstance(this, exp.Alias):
+                    element.set("this", this.args["alias"])
+                orders.append(element)
             else:
-                aggregates_or_groups.append(element)
+                this = element
+            aggregates_or_groups.append(this)
 
         if group_by_exists and isinstance(query, exp.Select):
             query = query.select(*aggregates_or_groups, copy=False).group_by(
-                *[element.alias_or_name for element in aggregates_or_groups], copy=False
+                *[
+                    element.args["alias"] if isinstance(element, exp.Alias) else element
+                    for element in aggregates_or_groups
+                ],
+                copy=False,
             )
         else:
             query = exp.select(*aggregates_or_groups, copy=False).from_(

@@ -252,6 +252,19 @@ def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) ->
     # Full INSTR
     return self.func("INSTR", this, substr, position, occurrence)
 
+def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff) -> str:
+    # TODO proper error handling
+    # expression.unit can be exp.IntervalSpan
+    # but exasol can only work with certain units
+    assert isinstance(expression.unit, exp.Var)
+    unit = expression.text("unit").upper() 
+    units = {"YEAR","MONTH","DAY","HOUR","MINUTE","SECOND"}
+    if unit not in units:
+        # exasol cannot work with other units
+        raise Exception()
+    return self.func(f"{unit}S_BETWEEN",expression.this,expression.expression)
+
+
 
 class Exasol(Dialect):
     ANNOTATORS = {
@@ -644,6 +657,7 @@ class Exasol(Dialect):
                 if e.args.get("this")
                 else "CURRENT_TIMESTAMP"
             ),
+            exp.DateDiff: _date_diff_sql,
             exp.DateTrunc: lambda self,
             e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
             # exp.Day

@@ -1146,9 +1146,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_pipe_syntax_aggregate_fields(self) -> t.Optional[exp.Expression]:
         this = self._parse_assignment()
-        if self._match(TokenType.GROUP_BY, advance=False) or self._match_text_seq(
-            "GROUP", "AND", advance=False
-        ):
+        if self._match_text_seq("GROUP", "AND", advance=False):
             return this
 
         this = self._parse_alias(this)

@@ -1194,7 +1194,9 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("AGGREGATE")
         query = self._parse_pipe_syntax_aggregate_group_order_by(query, group_by_exists=False)
 
-        if self._match(TokenType.GROUP_BY) or self._match_text_seq("GROUP", "AND", "ORDER BY"):
+        if self._match(TokenType.GROUP_BY) or (
+            self._match_text_seq("GROUP", "AND") and self._match(TokenType.ORDER_BY)
+        ):
             return self._parse_pipe_syntax_aggregate_group_order_by(query)
 
         return query

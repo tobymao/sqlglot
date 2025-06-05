@@ -1096,6 +1096,7 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
+            exp.EndsWith: rename_func("endsWith"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self,
                 e,

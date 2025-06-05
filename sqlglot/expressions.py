@@ -6706,6 +6706,11 @@ class StartsWith(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class EndsWith(Func):
+    _sql_names = ["ENDS_WITH", "ENDSWITH"]
+    arg_types = {"this": True, "expression": True}
+
+
 class StrPosition(Func):
     arg_types = {
         "this": True,

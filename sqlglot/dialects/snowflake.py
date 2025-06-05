@@ -1094,6 +1094,7 @@ class Snowflake(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
+            exp.EndsWith: rename_func("ENDSWITH"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self, e, func_name="CHARINDEX", supports_position=True
             ),

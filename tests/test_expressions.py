@@ -752,6 +752,9 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ADD_MONTHS(a, b)"), exp.AddMonths)
 
     def test_column(self):
+        column = exp.column(exp.Star(), table="t")
+        self.assertEqual(column.sql(), "t.*")
+
         column = parse_one("a.b.c.d")
         self.assertEqual(column.catalog, "a")
         self.assertEqual(column.db, "b")

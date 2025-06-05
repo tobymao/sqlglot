@@ -8115,7 +8115,7 @@ def column(
 
 @t.overload
 def column(
-    col: str | Identifier,
+    col: str | Identifier | Star,
     table: t.Optional[str | Identifier] = None,
     db: t.Optional[str | Identifier] = None,
     catalog: t.Optional[str | Identifier] = None,
@@ -8152,8 +8152,11 @@ def column(
     Returns:
         The new Column instance.
     """
+    if not isinstance(col, Star):
+        col = to_identifier(col, quoted=quoted, copy=copy)
+
     this = Column(
-        this=to_identifier(col, quoted=quoted, copy=copy),
+        this=col,
         table=to_identifier(table, quoted=quoted, copy=copy),
         db=to_identifier(db, quoted=quoted, copy=copy),
         catalog=to_identifier(catalog, quoted=quoted, copy=copy),

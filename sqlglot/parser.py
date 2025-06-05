@@ -1157,8 +1157,8 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_pipe_syntax_aggregate_group_order_by(
-        self, query: exp.Select, group_by_exists: bool = True
-    ) -> exp.Select:
+        self, query: exp.Query, group_by_exists: bool = True
+    ) -> exp.Query:
         expr = self._parse_csv(self._parse_pipe_syntax_aggregate_fields)
         aggregates_or_groups, orders = [], []
         for element in expr:
@@ -1176,7 +1176,7 @@ class Parser(metaclass=_Parser):
             else:
                 aggregates_or_groups.append(element)
 
-        if group_by_exists:
+        if group_by_exists and isinstance(query, exp.Select):
             query = query.select(*aggregates_or_groups, copy=False).group_by(
                 *[element.alias_or_name for element in aggregates_or_groups], copy=False
             )
@@ -1190,7 +1190,7 @@ class Parser(metaclass=_Parser):
 
         return query
 
-    def _parse_pipe_syntax_aggregate(self, query: exp.Select) -> exp.Query:
+    def _parse_pipe_syntax_aggregate(self, query: exp.Query) -> exp.Query:
         self._match_text_seq("AGGREGATE")
         query = self._parse_pipe_syntax_aggregate_group_order_by(query, group_by_exists=False)
 

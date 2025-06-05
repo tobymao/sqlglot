@@ -11,26 +11,9 @@ def read_sql_file(filepath: str) -> str:
     Returns:
          str: The entire content of the SQL file as a single string.
     """
-    # try:
     with open(filepath, "r", encoding="utf-8") as file:
         sql_content = file.read()
     return sql_content
-    # except FileNotFoundError as e:
-    #     raise e
-    # except IOError as e:
-    #     # Catch other I/O related errors (e.g., permission issues) and re-raise them
-    #     # You could also wrap this in a custom exception if you prefer
-    #     raise IOError(f"An error occurred while reading the file '{filepath}': {e}") from e
-    # except Exception as e:
-    #     # Catch any other unexpected errors and raise a generic Exception
-    #     raise Exception(f"An unexpected error occurred: {e}") from e
-
-    # except FileNotFoundError:
-    #     print(f"Error: The file '{filepath}' was not found.")
-    #     return None
-    # except Exception as e:
-    #     print(f"An error occurred while reading the file: {e}")
-    #     return None
 
 
 def write_sql_file(filepath: str, sql_content: str):
@@ -68,22 +51,23 @@ def transpile_sql_content(
         query = read_sql_file(filepath)
     if query is None:
         raise ValueError("Either function arg filepath or query needs to be provided.")
-    return "\n".join(transpile(query, input_dialect, output_dialect))
+    return ";\n".join(transpile(query, input_dialect, output_dialect))
 
 
 if __name__ == "__main__":
-    # read_filepath = ""
-    # content = transpile_sql_content(filepath=read_filepath)
-    # print("Transpiled file content:")
-    # print(content)
-    # write_filepath = ""
-
+    input_dialect = "databricks"
+    output_dialect = "exasol"
+    read_filepath = "./databricks"
+    # insert queries to transpile here
     databricks_query = """
-        SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP);
-        SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t;
         DATEDIFF(DAY, created_at, CURRENT_DATE);
     """
-    content = transpile_sql_content(query=databricks_query)
-    print("Transpiled string query")
-    print(content)
-    write_sql_file("./output.sql",content)
+    content = transpile_sql_content(
+        # filepath=read_filepath + ".sql", # use path to sql file instead of string
+        query=databricks_query,
+        input_dialect=input_dialect,
+        output_dialect=output_dialect,
+    )
+    # write the transpiled content to a file
+    write_filepath = read_filepath + "_to_" + output_dialect + ".sql"
+    write_sql_file(write_filepath, content)

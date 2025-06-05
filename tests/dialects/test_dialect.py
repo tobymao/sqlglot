@@ -3548,6 +3548,9 @@ FROM subquery2""",
             "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x1 |> SELECT s_x1, x1 as ss_x1",
             "SELECT s_x1, x1 AS ss_x1 FROM (SELECT SUM(x1) AS s_x1, x1 FROM (SELECT * FROM x) GROUP BY x1)",
         )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1) GROUP", "SELECT SUM(x1) AS GROUP FROM (SELECT * FROM x)"
+        )
 
         for order_option in ("ASC", "DESC", "ASC NULLS LAST", "DESC NULLS FIRST"):
             with self.subTest(f"Testing pipe syntax AGGREGATE for order option: {order_option}"):

@@ -1581,6 +1581,7 @@ class Parser(metaclass=_Parser):
         Returns:
             The list of the produced syntax trees.
         """
+        x = sum(range(100000))  # noqa
         return self._parse(
             parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
         )

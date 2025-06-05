@@ -84,6 +84,6 @@ if __name__ == "__main__":
         DATEDIFF(DAY, created_at, CURRENT_DATE);
     """
     content = transpile_sql_content(query=databricks_query)
-    print("Transpiled string query:")
+    print("Transpiled string query")
     print(content)
     write_sql_file("./output.sql",content)

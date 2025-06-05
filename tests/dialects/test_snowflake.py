@@ -2013,6 +2013,26 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "spark": "DESCRIBE db.table",
             },
         )
+        self.validate_all(
+            "ENDSWITH('abc', 'c')",
+            read={
+                "bigquery": "ENDS_WITH('abc', 'c')",
+                "clickhouse": "endsWith('abc', 'c')",
+                "databricks": "ENDSWITH('abc', 'c')",
+                "duckdb": "ENDS_WITH('abc', 'c')",
+                "presto": "ENDS_WITH('abc', 'c')",
+                "spark": "ENDSWITH('abc', 'c')",
+            },
+            write={
+                "bigquery": "ENDS_WITH('abc', 'c')",
+                "clickhouse": "endsWith('abc', 'c')",
+                "databricks": "ENDSWITH('abc', 'c')",
+                "duckdb": "ENDS_WITH('abc', 'c')",
+                "presto": "ENDS_WITH('abc', 'c')",
+                "snowflake": "ENDSWITH('abc', 'c')",
+                "spark": "ENDSWITH('abc', 'c')",
+            },
+        )
 
     def test_parse_like_any(self):
         like = parse_one("a LIKE ANY fun('foo')", read="snowflake")

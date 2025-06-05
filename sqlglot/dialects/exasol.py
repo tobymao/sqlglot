@@ -10,7 +10,8 @@ from sqlglot.dialects.dialect import (
     rename_func,
     var_map_sql,
     unit_to_var,
-    trim_sql
+    trim_sql,
+    no_pivot_sql
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
@@ -251,6 +252,19 @@ def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) ->
     # Full INSTR
     return self.func("INSTR", this, substr, position, occurrence)
 
+def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff) -> str:
+    # TODO proper error handling
+    # expression.unit can be exp.IntervalSpan
+    # but exasol can only work with certain units
+    assert isinstance(expression.unit, exp.Var)
+    unit = expression.text("unit").upper() 
+    units = {"YEAR","MONTH","DAY","HOUR","MINUTE","SECOND"}
+    if unit not in units:
+        # exasol cannot work with other units
+        raise Exception()
+    return self.func(f"{unit}S_BETWEEN",expression.this,expression.expression)
+
+
 
 class Exasol(Dialect):
     ANNOTATORS = {
@@ -261,54 +275,6 @@ class Exasol(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
-
-    TIME_MAPPING = {
-        # --- Year ---
-        "YYYY": "%Y",  # 4-digit year (e.g., 2025)
-        "YYY": "%Y",  # 3-digit year (often same as YYYY in practice for TO_CHAR)
-        "YY": "%y",  # Last 2 digits of year (e.g., 25)
-        "Y": "%y",  # Last digit of year
-        # --- Month ---
-        "MM": "%m",  # Month (01-12)
-        "MON": "%b",  # Abbreviated month name (e.g., JAN)
-        "MONTH": "%B",  # Full month name (e.g., JANUARY)
-        "RM": "%m",  # Roman numeral month (no direct strftime, maps to decimal)
-        # --- Day ---
-        "DD": "%d",  # Day of month (01-31)
-        "DDD": "%j",  # Day of year (001-366)
-        "DY": "%a",  # Abbreviated weekday name (e.g., MON)
-        "DAY": "%A",  # Full weekday name (e.g., MONDAY)
-        "D": "%w",  # Day of week (1-7, 1=Sunday, matches %w; for ISO 8601 day, see ID)
-        # --- Hour ---
-        "HH24": "%H",  # Hour (00-23)
-        "HH12": "%I",  # Hour (01-12)
-        "HH": "%I",  # (alias for HH12)
-        "AM": "%p",  # AM/PM meridian indicator
-        "PM": "%p",  # AM/PM meridian indicator
-        # --- Minute ---
-        "MI": "%M",  # Minute (00-59)
-        # --- Second ---
-        "SS": "%S",  # Second (00-59)
-        # Fractional Seconds: Exasol uses FF[1-9]. strftime uses %f (microseconds)
-        "FF": "%f",  # Maps to microseconds. Precision (FF1-FF9) might need truncation/padding.
-        "FF1": "%f",
-        "FF2": "%f",
-        "FF3": "%f",  # Often used for milliseconds
-        "FF4": "%f",
-        "FF5": "%f",
-        "FF6": "%f",  # Microseconds
-        "FF7": "%f",
-        "FF8": "%f",
-        "FF9": "%f",
-        # --- Timezone ---
-        "TZH": "%z",  # Timezone hour offset (+/-HH)
-        "TZM": "%z",  # Timezone minute offset (often combined with TZH)
-        "TZHTZM": "%z",  # Combined timezone offset (+/-HHMM). Note: strftime %z is +/-HHMM or +/-HH:MM
-        # --- ISO 8601 Specific ---
-        "IYYY": "%G",  # ISO Year (4-digit)
-        "IW": "%V",  # ISO Week of year (01-53)
-        "ID": "%u",  # ISO Day of week (1-7, 1=Monday)
-    }
 
     class Tokenizer(tokens.Tokenizer):
         SINGLE_TOKENS = {
@@ -663,6 +629,8 @@ class Exasol(Dialect):
             # exp.ConnectByIsCycle: lambda self, e: "CONNECT_BY_ISCYCLE",
             # exp.ConnectByIsLeaf: lambda self, e: "CONNECT_BY_ISLEAF",
             # exp.SysConnectByPath: lambda self, e: f"SYS_CONNECT_BY_PATH({self.sql(e, 'this')}, {', '.join(self.sql(x) for x in e.expressions)})",
+            # exasol requires IS: https://docs.exasol.com/db/latest/sql/create_view.htm
+            exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
             exp.Command: lambda self, e: " ".join(self.sql(x) for x in e.expressions),
             # exp.Concat
             # exp.Convert
@@ -689,6 +657,7 @@ class Exasol(Dialect):
                 if e.args.get("this")
                 else "CURRENT_TIMESTAMP"
             ),
+            exp.DateDiff: _date_diff_sql,
             exp.DateTrunc: lambda self,
             e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
             # exp.Day
@@ -881,6 +850,7 @@ class Exasol(Dialect):
                 f" WITHIN GROUP ({self.sql(e, 'order').strip()})"
                 f"{self.sql(e, 'over')}"
             ),
+            exp.Pivot: no_pivot_sql,
             exp.Pow: rename_func("POWER"),
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),

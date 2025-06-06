@@ -7366,7 +7366,7 @@ def _apply_set_operation(
     **opts,
 ) -> S:
     return reduce(
-        lambda x, y: set_operation(this=x, expression=y, distinct=distinct),
+        lambda x, y: set_operation(this=x, expression=y, distinct=distinct, **opts),
         (maybe_parse(e, dialect=dialect, copy=copy, **opts) for e in expressions),
     )
 

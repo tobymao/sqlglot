@@ -1993,11 +1993,6 @@ class OnUpdateColumnConstraint(ColumnConstraintKind):
     pass
 
 
-# https://docs.snowflake.com/en/sql-reference/sql/create-external-table#optional-parameters
-class TransformColumnConstraint(ColumnConstraintKind):
-    pass
-
-
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):
     arg_types = {"desc": False, "options": False}
 

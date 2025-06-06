@@ -5900,7 +5900,7 @@ class Parser(metaclass=_Parser):
             constraints.append(
                 self.expression(
                     exp.ColumnConstraint,
-                    kind=exp.TransformColumnConstraint(this=self._parse_disjunction()),
+                    kind=exp.ComputedColumnConstraint(this=self._parse_disjunction()),
                 )
             )
 

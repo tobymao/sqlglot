@@ -36,6 +36,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     count_if_to_sum,
     groupconcat_sql,
+    Version,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -253,6 +254,15 @@ def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein) -> s
     name = "LEVENSHTEIN_LESS_EQUAL" if expression.args.get("max_dist") else "LEVENSHTEIN"
 
     return rename_func(name)(self, expression)
+
+
+def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) -> str:
+    # https://www.postgresql.org/docs/16/functions-aggregate.html
+    # https://www.postgresql.org/about/featurematrix/
+    if self.dialect.version < Version("16.0"):
+        return any_value_to_max_sql(self, expression)
+
+    return rename_func("ANY_VALUE")(self, expression)
 
 
 class Postgres(Dialect):
@@ -546,7 +556,7 @@ class Postgres(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.AnyValue: any_value_to_max_sql,
+            exp.AnyValue: _versioned_anyvalue_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),

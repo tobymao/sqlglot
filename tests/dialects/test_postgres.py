@@ -908,6 +908,18 @@ FROM json_data, field_ids""",
             },
         )
 
+        # Postgres introduced ANY_VALUE in version 16
+        self.validate_all(
+            "SELECT ANY_VALUE(1) AS col",
+            write={
+                "postgres": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=16": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=17.5": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=15": "SELECT MAX(1) AS col",
+                "postgres, version=13.9": "SELECT MAX(1) AS col",
+            },
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
@@ -1436,21 +1448,3 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                         "clickhouse": "SELECT JSONExtractString(foo, '12')",
                     },
                 )
-
-    def test_any_value(self):
-        self.validate_all(
-            "SELECT ANY_VALUE(1) AS col",
-            write={
-                "postgres, version=15": "SELECT MAX(1) AS col",
-                "postgres, version=13.9": "SELECT MAX(1) AS col",
-            },
-        )
-
-        self.validate_all(
-            "SELECT ANY_VALUE(1) AS col",
-            write={
-                "postgres": "SELECT ANY_VALUE(1) AS col",
-                "postgres, version=16": "SELECT ANY_VALUE(1) AS col",
-                "postgres, version=17.5": "SELECT ANY_VALUE(1) AS col",
-            },
-        )

@@ -1018,6 +1018,7 @@ class Generator(metaclass=_Generator):
             persisted = " PERSISTED"
         else:
             persisted = ""
+
         return f"AS {this}{persisted}"
 
     def autoincrementcolumnconstraint_sql(self, _) -> str:
@@ -1078,9 +1079,6 @@ class Generator(metaclass=_Generator):
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"
-
-    def transformcolumnconstraint_sql(self, expression: exp.TransformColumnConstraint) -> str:
-        return f"AS {self.sql(expression, 'this')}"
 
     def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:
         desc = expression.args.get("desc")

@@ -990,14 +990,19 @@ FROM foo""",
         self.assertEqual(table_only.name, "table_name")
         self.assertIsNone(table_only.args.get("db"))
         self.assertIsNone(table_only.args.get("catalog"))
+
         db_and_table = exp.to_table("db.table_name")
         self.assertEqual(db_and_table.name, "table_name")
         self.assertEqual(db_and_table.args.get("db"), exp.to_identifier("db"))
         self.assertIsNone(db_and_table.args.get("catalog"))
+
         catalog_db_and_table = exp.to_table("catalog.db.table_name")
         self.assertEqual(catalog_db_and_table.name, "table_name")
         self.assertEqual(catalog_db_and_table.args.get("db"), exp.to_identifier("db"))
         self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))
+
+        table_only_unsafe_identifier = exp.to_table("3e")
+        self.assertEqual(table_only_unsafe_identifier.sql(), '"3e"')
 
     def test_to_column(self):
         column_only = exp.to_column("column_name")

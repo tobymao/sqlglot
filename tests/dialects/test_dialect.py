@@ -3561,7 +3561,6 @@ FROM subquery2""",
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) GROUP", "SELECT SUM(x1) AS GROUP FROM (SELECT * FROM x)"
         )
-
         for order_option in ("ASC", "DESC", "ASC NULLS LAST", "DESC NULLS FIRST"):
             with self.subTest(f"Testing pipe syntax AGGREGATE for order option: {order_option}"):
                 self.validate_all(
@@ -3585,3 +3584,35 @@ FROM subquery2""",
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
                 )
+
+            for op_operator in (
+                "UNION ALL",
+                "UNION DISTINCT",
+                "INTERSECT DISTINCT",
+                "EXCEPT DISTINCT",
+            ):
+                with self.subTest(f"Testing pipe syntax SET OPERATORS: {op_operator}"):
+                    self.validate_all(
+                        f"FROM x|> {op_operator} (SELECT y1 FROM y), (SELECT z1 FROM z)",
+                        write={
+                            "bigquery": f"SELECT * FROM x {op_operator} (SELECT y1 FROM y) {op_operator} (SELECT z1 FROM z)",
+                        },
+                    )
+
+            for op_prefix in ("LEFT OUTER", "FULL OUTER"):
+                for op_operator in (
+                    "UNION ALL",
+                    "UNION DISTINCT",
+                    "INTERSECT DISTINCT",
+                    "EXCEPT DISTINCT",
+                ):
+                    for suffix_operator in ("BY NAME", "CORRESPONDING"):
+                        with self.subTest(
+                            f"Testing pipe syntax SET OPERATORS: {op_prefix} {op_operator} {suffix_operator}"
+                        ):
+                            self.validate_all(
+                                f"FROM x|> SELECT x1, x2 FROM x |> {op_prefix} {op_operator} {suffix_operator} (SELECT y1, y2 FROM y), (SELECT z1, z2 FROM z)",
+                                write={
+                                    "bigquery": f"SELECT x1, x2 FROM (SELECT * FROM x) {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y) {op_prefix} {op_operator} BY NAME (SELECT z1, z2 FROM z)",
+                                },
+                            )

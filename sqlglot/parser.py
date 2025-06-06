@@ -1197,6 +1197,24 @@ class Parser(metaclass=_Parser):
 
         return query
 
+    def _parse_pipe_syntax_set_operator(self, query: exp.Query) -> exp.Query:
+        first_setop = self.parse_set_operation(this=query)
+
+        # If this condition is True a JOIN parser must be invoked
+        if not first_setop:
+            return query
+
+        first_setop.args.pop("this")
+        distinct = first_setop.args.pop("distinct")
+
+        setops = [first_setop.args.pop("expression"), *self._parse_expressions()]
+
+        if isinstance(first_setop, exp.Union):
+            return query.union(*setops, distinct=distinct, **first_setop.args)
+        elif isinstance(first_setop, exp.Except):
+            return query.except_(*setops, distinct=distinct, **first_setop.args)
+        return query.intersect(*setops, distinct=distinct, **first_setop.args)
+
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (
             exp.PartitionedByBucket
@@ -7217,11 +7235,11 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_pipe_syntax_query(self, query: exp.Select) -> exp.Query:
+    def _parse_pipe_syntax_query(self, query: exp.Query) -> exp.Query:
         while self._match(TokenType.PIPE_GT):
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
-                self.raise_error(f"Unsupported pipe syntax operator: '{self._curr.text.upper()}'.")
+                query = self._parse_pipe_syntax_set_operator(query)
             else:
                 query = parser(self, query)
 

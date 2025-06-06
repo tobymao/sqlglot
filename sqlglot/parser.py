@@ -1173,10 +1173,7 @@ class Parser(metaclass=_Parser):
 
         if group_by_exists and isinstance(query, exp.Select):
             query = query.select(*aggregates_or_groups, copy=False).group_by(
-                *[
-                    element.args["alias"] if isinstance(element, exp.Alias) else element
-                    for element in aggregates_or_groups
-                ],
+                *[element.args.get("alias", element) for element in aggregates_or_groups],
                 copy=False,
             )
         else:

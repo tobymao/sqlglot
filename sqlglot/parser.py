@@ -5897,15 +5897,11 @@ class Parser(metaclass=_Parser):
             )
         ):
             self._advance()
-            constraint_expr = self._parse_disjunction()
-            if constraint_expr:
-                constraint_type = (
-                    exp.ComputedColumnConstraint
-                    if isinstance(constraint_expr.this, exp.Binary)
-                    else exp.TransformColumnConstraint
-                )
             constraints.append(
-                self.expression(exp.ColumnConstraint, kind=constraint_type(this=constraint_expr))
+                self.expression(
+                    exp.ColumnConstraint,
+                    kind=exp.ComputedColumnConstraint(this=self._parse_disjunction()),
+                )
             )
 
         while True:

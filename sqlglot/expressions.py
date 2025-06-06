@@ -31,6 +31,7 @@ from sqlglot.helper import (
     ensure_collection,
     ensure_list,
     seq_get,
+    split_num_words,
     subclasses,
     to_bool,
 )
@@ -7962,7 +7963,15 @@ def to_table(
     if isinstance(sql_path, Table):
         return maybe_copy(sql_path, copy=copy)
 
-    table = maybe_parse(sql_path, into=Table, dialect=dialect)
+    try:
+        table = maybe_parse(sql_path, into=Table, dialect=dialect)
+    except ParseError:
+        catalog, db, this = split_num_words(sql_path, ".", 3)
+
+        if not this:
+            raise
+
+        table = table_(this, db=db, catalog=catalog)
 
     for k, v in kwargs.items():
         table.set(k, v)

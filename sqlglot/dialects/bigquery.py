@@ -525,6 +525,16 @@ class BigQuery(Dialect):
         LOG_DEFAULTS_TO_LN = True
         SUPPORTS_IMPLICIT_UNNEST = True
 
+        # BigQuery does not allow ASC/DESC to be used as an identifier
+        ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.ASC, TokenType.DESC}
+        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.ASC, TokenType.DESC}
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.ASC, TokenType.DESC}
+        COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {
+            TokenType.ASC,
+            TokenType.DESC,
+        }
+        UPDATE_ALIAS_TOKENS = parser.Parser.UPDATE_ALIAS_TOKENS - {TokenType.ASC, TokenType.DESC}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CONTAINS_SUBSTR": _build_contains_substring,

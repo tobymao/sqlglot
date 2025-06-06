@@ -3538,3 +3538,50 @@ FROM subquery2""",
                     f"FROM x |> SELECT x1, x2 |> WHERE x1 > 0 |> WHERE x2 > 0  |> ORDER BY x1, x2 |> {option}",
                     f"SELECT x1, x2 FROM (SELECT * FROM x) WHERE x1 > 0 AND x2 > 0 ORDER BY x1, x2 {option}",
                 )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3)",
+            "SELECT SUM(x1), MAX(x2), MIN(x3) FROM (SELECT * FROM x)",
+        )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1) AS s_x1 |> SELECT s_x1",
+            "SELECT s_x1 FROM (SELECT SUM(x1) AS s_x1 FROM (SELECT * FROM x))",
+        )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4, x5",
+            "SELECT SUM(x1), MAX(x2), MIN(x3), x4, x5 FROM (SELECT * FROM x) GROUP BY x4, x5",
+        )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4 AS a_x4, x5 AS a_x5",
+            "SELECT SUM(x1), MAX(x2), MIN(x3), x4 AS a_x4, x5 AS a_x5 FROM (SELECT * FROM x) GROUP BY a_x4, a_x5",
+        )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x1 |> SELECT s_x1, x1 as ss_x1",
+            "SELECT s_x1, x1 AS ss_x1 FROM (SELECT SUM(x1) AS s_x1, x1 FROM (SELECT * FROM x) GROUP BY x1)",
+        )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1) GROUP", "SELECT SUM(x1) AS GROUP FROM (SELECT * FROM x)"
+        )
+
+        for order_option in ("ASC", "DESC", "ASC NULLS LAST", "DESC NULLS FIRST"):
+            with self.subTest(f"Testing pipe syntax AGGREGATE for order option: {order_option}"):
+                self.validate_all(
+                    f"SELECT SUM(x1) AS x_s FROM (SELECT * FROM x) ORDER BY x_s {order_option}",
+                    read={
+                        "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s {order_option}",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM (SELECT * FROM x) GROUP BY g_x1 ORDER BY x_s {order_option}",
+                    read={
+                        "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s {order_option} GROUP BY x1 AS g_x1",
+                    },
+                )
+            with self.subTest(
+                f"Testing pipe syntax AGGREGATE with GROUP AND ORDER BY for order option: {order_option}"
+            ):
+                self.validate_all(
+                    f"SELECT g_x1, x_s FROM (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM (SELECT * FROM x) GROUP BY g_x1 ORDER BY g_x1 {order_option})",
+                    read={
+                        "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
+                    },
+                )

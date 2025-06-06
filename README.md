@@ -497,6 +497,7 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 * [Dagster](https://github.com/dagster-io/dagster)
 * [Fugue](https://github.com/fugue-project/fugue)
 * [Ibis](https://github.com/ibis-project/ibis)
+* [dlt](https://github.com/dlt-hub/dlt)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)
 * [Querybook](https://github.com/pinterest/querybook)
 * [Quokka](https://github.com/marsupialtail/quokka)

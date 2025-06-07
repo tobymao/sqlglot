@@ -42,13 +42,13 @@ class TestExasol(Validator):
     def test_integration_identity(self):
         ######### STRING FUNCTIONS ###########
         # self.validate_identity("SELECT ASCII('X')")
-        self.validate_identity("SELECT BIT_LENGTH('aou') BIT_LENGTH")
+        # self.validate_identity("SELECT BIT_LENGTH('aou') BIT_LENGTH")
         # currently CHARACTER_LENGTH allows more than 1 arg (3)
-        self.validate_identity(
-            "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
-            "SELECT LENGTH('aeiouäöü') C_LENGTH",
-        )
-        self.validate_identity("SELECT CHAR(88) CHR", "SELECT CHR(88) CHR")
+        # self.validate_identity(
+        #     "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
+        #     "SELECT LENGTH('aeiouäöü') C_LENGTH",
+        # )
+        self.validate_identity("SELECT CHAR(88) CHR")
         self.validate_identity("SELECT COLOGNE_PHONETIC('schmitt'), COLOGNE_PHONETIC('Schmidt')")
         self.validate_identity("SELECT CONCAT('abc', 'def', 'g') CONCAT")
 

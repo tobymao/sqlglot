@@ -14,6 +14,9 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
 
 def _str_to_time_sql(self: Exasol.Generator, expression: exp.StrToTime) -> str:
     this = self.sql(expression.args["this"])
@@ -117,6 +120,21 @@ class Exasol(Dialect):
         # Additional patterns if needed
         "TZH:TZM": "%z",  # Time zone offset (not always supported)
     }
+
+    def quote_identifier(self, expression: E, identify: bool = True) -> E:
+        # Example: special case to skip quoting for specific identifiers if needed
+        # (Modify or remove the condition as per your Exasol requirements)
+        if (
+            isinstance(expression, exp.Identifier)
+            and isinstance(expression.parent, exp.Table)
+            and expression.name.isupper()
+            and (expression.name.isalnum() or "_" in expression.name)
+        ):
+            # Return unquoted for uppercase alphanumeric or underscore-containing identifiers
+            return expression
+
+        # Otherwise, fallback to base implementation
+        return super().quote_identifier(expression, identify=identify)
 
     class Tokenizer(tokens.Tokenizer):
         SINGLE_TOKENS = {
@@ -1116,7 +1134,11 @@ class Exasol(Dialect):
             return self.sql(e, key)
 
         def alias_sql(self, expression):
-            return f"{self.sql(expression, 'this')} {self.sql(expression, 'alias')}"
+            alias = expression.args.get("alias")
+            if alias:
+                alias_str = alias.this if alias.is_identifier else self.sql(alias)
+                return f"{self.sql(expression, 'this')} {alias_str}"
+            return self.sql(expression, "this")
 
         def windowed_func(self, name, e):
             sql = f"{name}({self.sql(e, 'this')})"

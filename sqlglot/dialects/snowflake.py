@@ -1015,6 +1015,7 @@ class Snowflake(Dialect):
             exp.Array: inline_array_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
+            exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),

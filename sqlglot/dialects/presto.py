@@ -432,7 +432,6 @@ class Presto(Dialect):
             exp.ArrayContains: rename_func("CONTAINS"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("SET_AGG"),
-            exp.ArrayIntersection: rename_func("ARRAY_INTERSECT"),
             exp.AtTimeZone: rename_func("AT_TIMEZONE"),
             exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
             exp.BitwiseLeftShift: lambda self, e: self.func(

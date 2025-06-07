@@ -5562,10 +5562,10 @@ class ArrayToString(Func):
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
-class ArrayIntersection(Func):
+class ArrayIntersect(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True
-    _sql_names = ["ARRAY_INTERSECTION", "ARRAY_INTERSECT"]
+    _sql_names = ["ARRAY_INTERSECT", "ARRAY_INTERSECTION"]
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string

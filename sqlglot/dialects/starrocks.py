@@ -133,7 +133,6 @@ class StarRocks(MySQL):
             **MySQL.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
-            exp.ArrayIntersection: rename_func("ARRAY_INTERSECT"),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression

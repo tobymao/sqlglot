@@ -669,6 +669,10 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ARRAY_AGG(a)"), exp.ArrayAgg)
         self.assertIsInstance(parse_one("ARRAY_CONTAINS(a, 'a')"), exp.ArrayContains)
         self.assertIsInstance(parse_one("ARRAY_SIZE(a)"), exp.ArraySize)
+        self.assertIsInstance(
+            parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])"), exp.ArrayIntersection
+        )
+        self.assertIsInstance(parse_one("ARRAY_INTERSECT([1, 2], [2, 3])"), exp.ArrayIntersection)
         self.assertIsInstance(parse_one("AVG(a)"), exp.Avg)
         self.assertIsInstance(parse_one("BEGIN DEFERRED TRANSACTION"), exp.Transaction)
         self.assertIsInstance(parse_one("CEIL(a)"), exp.Ceil)
@@ -1218,3 +1222,20 @@ FROM foo""",
 
     def test_parse_identifier(self):
         self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))
+
+    def test_array_intersection(self):
+        expr = parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])")
+        self.assertIsInstance(expr, exp.ArrayIntersection)
+        self.assertEqual(expr.sql(dialect="snowflake"), "ARRAY_INTERSECTION([1, 2], [2, 3])")
+
+        expr2 = parse_one("ARRAY_INTERSECT([1, 2], [2, 3])")
+        self.assertIsInstance(expr2, exp.ArrayIntersection)
+        self.assertEqual(expr2.sql(dialect="snowflake"), "ARRAY_INTERSECTION([1, 2], [2, 3])")
+
+        expr = parse_one("ARRAY_INTERSECT([1, 2], [2, 3])")
+        self.assertIsInstance(expr, exp.ArrayIntersection)
+        self.assertEqual(expr.sql(dialect="starrocks"), "ARRAY_INTERSECT([1, 2], [2, 3])")
+
+        expr2 = parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])")
+        self.assertIsInstance(expr2, exp.ArrayIntersection)
+        self.assertEqual(expr2.sql(dialect="starrocks"), "ARRAY_INTERSECT([1, 2], [2, 3])")

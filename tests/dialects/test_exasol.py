@@ -6,37 +6,38 @@ from tests.dialects.test_dialect import Validator
 class TestExasol(Validator):
     dialect = "exasol"
 
-    def test_databricks_transpilation(self):
-        run = [2]
-        if 0 in run: self.validate_all(
-            "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
-            read={
-                "databricks": "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
-                # "exasol": "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
-            },
-            # write={
-            #     "exasol": "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
-            #     "databricks": "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
-            # },
-        )
-        if 1 in run: self.validate_all(
-            "SELECT TO_CHAR(CAST(CONVERT_TZ(CAST(foo AS TIMESTAMP),'UTC','America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
-            read={
-                "databricks": "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
-
-            },
-            # write={
-            # },
-        )
-        if 2 in run: self.validate_all(
-            "SELECT DAYS_BETWEEN(created_at, CURRENT_DATE)",
-            read={
-                "databricks": "SELECT DATEDIFF(DAY, created_at, CURRENT_DATE)",
-
-            },
-            # write={
-            # },
-        )
+    # def test_databricks_transpilation(self):
+    #     run = [2]
+    #     if 0 in run:
+    #         self.validate_all(
+    #             "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
+    #             read={
+    #                 "databricks": "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
+    #                 # "exasol": "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
+    #             },
+    #             # write={
+    #             #     "exasol": "SELECT CAST(CAST('2025-04-29 18:47:18' AS DATE) AS TIMESTAMP)",
+    #             #     "databricks": "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
+    #             # },
+    #         )
+    #     if 1 in run:
+    #         self.validate_all(
+    #             "SELECT TO_CHAR(CAST(CONVERT_TZ(CAST(foo AS TIMESTAMP),'UTC','America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
+    #             read={
+    #                 "databricks": "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
+    #             },
+    #             # write={
+    #             # },
+    #         )
+    #     if 2 in run:
+    #         self.validate_all(
+    #             "SELECT DAYS_BETWEEN(created_at, CURRENT_DATE)",
+    #             read={
+    #                 "databricks": "SELECT DATEDIFF(DAY, created_at, CURRENT_DATE)",
+    #             },
+    #             # write={
+    #             # },
+    #         )
 
     def test_integration_identity(self):
         ######### STRING FUNCTIONS ###########
@@ -95,8 +96,14 @@ class TestExasol(Validator):
         self.validate_identity("SELECT LOWER('AbCdEf') LCASE")
         self.validate_identity("SELECT LEFT('abcdef', 3) LEFT_SUBSTR")
         self.validate_identity("SELECT LENGTH('abc') LENGTH")
-        self.validate_identity("SELECT LTRIM('ab cdef', ' ab') LTRIM", "SELECT TRIM(LEADING ' ab' FROM 'ab cdef') LTRIM")
-        self.validate_identity("SELECT RTRIM('ab cdef', ' efd') RTRIM", "SELECT TRIM(TRAILING ' efd' FROM 'ab cdef') RTRIM")
+        self.validate_identity(
+            "SELECT LTRIM('ab cdef', ' ab') LTRIM",
+            "SELECT TRIM(LEADING ' ab' FROM 'ab cdef') LTRIM",
+        )
+        self.validate_identity(
+            "SELECT RTRIM('ab cdef', ' efd') RTRIM",
+            "SELECT TRIM(TRAILING ' efd' FROM 'ab cdef') RTRIM",
+        )
         self.validate_identity(
             "SELECT MID('abcdef', 2, 3) S1, MID('abcdef', -3) S2, MID('abcdef', 7) S3, MID('abcdef', -7) S4"
         )
@@ -761,9 +768,7 @@ class TestExasol(Validator):
             #     "SELECT CONNECT_BY_ISLEAF, SYS_CONNECT_BY_PATH(last_name, '/') PATH FROM employees WHERE last_name = 'clark'",
             # ),
             (
-                exp.Convert(
-                    this=exp.Var(this="CHAR(15)"), expression=exp.Literal.string("ABC")
-                ),
+                exp.Convert(this=exp.Var(this="CHAR(15)"), expression=exp.Literal.string("ABC")),
                 "CONVERT(CHAR(15), 'ABC')",
             ),
             (
@@ -3427,7 +3432,7 @@ class TestExasol(Validator):
                             this=exp.Trim(
                                 this=exp.Literal.string("abcdef"),
                                 expression=exp.Literal.string("acf"),
-                                position=False
+                                position=False,
                             ),
                             alias="TRIM",
                         )

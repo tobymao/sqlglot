@@ -319,6 +319,13 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT ARRAY_INTERSECTION([1, 2], [2, 3])",
+            write={
+                "starrocks": "SELECT ARRAY_INTERSECT([1, 2], [2, 3])",
+            },
+        )
+
+        self.validate_all(
             "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
             write={
                 "duckdb": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL)",

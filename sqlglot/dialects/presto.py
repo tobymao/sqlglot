@@ -294,6 +294,8 @@ class Presto(Dialect):
             for prefix in ("U&", "u&")
         ]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "DEALLOCATE PREPARE": TokenType.COMMAND,

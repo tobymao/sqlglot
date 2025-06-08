@@ -56,18 +56,15 @@ def run_benchmarks():
     # Define benchmarks with their setup functions
     benchmarks = {
         "tpch": get_tpch_setup,
-        "tpcds": get_tpcds_setup,
+        # "tpcds": get_tpcds_setup,  # This is left out because it's too slow in CI
         "condition_10": get_condition_10_setup,
         "condition_100": get_condition_100_setup,
         "condition_1000": get_condition_1000_setup,
     }
 
-    # Run all benchmarks
-    for benchmark_name in benchmarks:
-        # Get setup data
-        expressions, schema = benchmarks[benchmark_name]()
+    for benchmark_name, benchmark_setup in benchmarks.items():
+        expressions, schema = benchmark_setup()
 
-        # Run the benchmark
         runner.bench_func(f"optimize_{benchmark_name}", optimize_queries, expressions, schema)
 
 

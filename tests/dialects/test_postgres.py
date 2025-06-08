@@ -8,19 +8,6 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
-        self.validate_all(
-            "x ? y",
-            write={
-                "": "JSONB_CONTAINS(x, y)",
-                "postgres": "x ? y",
-            },
-        )
-
-        self.validate_identity("SHA384(x)")
-        self.validate_identity("1.x", "1. AS x")
-        self.validate_identity("|/ x", "SQRT(x)")
-        self.validate_identity("||/ x", "CBRT(x)")
-
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
@@ -31,6 +18,14 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.Alter)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        sql = "ARRAY[x" + ",x" * 27 + "]"
+        expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
+        self.validate_identity(sql, expected_sql, pretty=True)
+
+        self.validate_identity("SHA384(x)")
+        self.validate_identity("1.x", "1. AS x")
+        self.validate_identity("|/ x", "SQRT(x)")
+        self.validate_identity("||/ x", "CBRT(x)")
         self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
         self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
@@ -79,6 +74,11 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity("SELECT INTERVAL '-1 MONTH'")
+        self.validate_identity("SELECT INTERVAL '4.1 DAY'")
+        self.validate_identity("SELECT INTERVAL '3.14159 HOUR'")
+        self.validate_identity("SELECT INTERVAL '2.5 MONTH'")
+        self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
+        self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
         self.validate_identity(
             "SELECT * FROM test_data, LATERAL JSONB_ARRAY_ELEMENTS(data) WITH ORDINALITY AS elem(value, ordinality)"
         )
@@ -374,6 +374,13 @@ FROM json_data, field_ids""",
             pretty=True,
         )
 
+        self.validate_all(
+            "x ? y",
+            write={
+                "": "JSONB_CONTAINS(x, y)",
+                "postgres": "x ? y",
+            },
+        )
         self.validate_all(
             "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
             read={
@@ -898,6 +905,18 @@ FROM json_data, field_ids""",
             write={
                 "postgres": "SELECT DATE_BIN('30 days', timestamp_col, (SELECT MIN(TIMESTAMP) FROM table)) FROM table",
                 "duckdb": 'SELECT TIME_BUCKET(\'30 days\', timestamp_col, (SELECT MIN(TIMESTAMP) FROM "table")) FROM "table"',
+            },
+        )
+
+        # Postgres introduced ANY_VALUE in version 16
+        self.validate_all(
+            "SELECT ANY_VALUE(1) AS col",
+            write={
+                "postgres": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=16": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=17.5": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=15": "SELECT MAX(1) AS col",
+                "postgres, version=13.9": "SELECT MAX(1) AS col",
             },
         )
 

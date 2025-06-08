@@ -1687,12 +1687,6 @@ class TestSnowflake(Validator):
                     },
                 )
 
-        self.assertIsNotNone(
-            self.validate_identity("CREATE TABLE foo (bar INT AS (foo))").find(
-                exp.TransformColumnConstraint
-            )
-        )
-
     def test_user_defined_functions(self):
         self.validate_all(
             "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",
@@ -2011,6 +2005,26 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             write={
                 "snowflake": "DESCRIBE VIEW db.table",
                 "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "ENDSWITH('abc', 'c')",
+            read={
+                "bigquery": "ENDS_WITH('abc', 'c')",
+                "clickhouse": "endsWith('abc', 'c')",
+                "databricks": "ENDSWITH('abc', 'c')",
+                "duckdb": "ENDS_WITH('abc', 'c')",
+                "presto": "ENDS_WITH('abc', 'c')",
+                "spark": "ENDSWITH('abc', 'c')",
+            },
+            write={
+                "bigquery": "ENDS_WITH('abc', 'c')",
+                "clickhouse": "endsWith('abc', 'c')",
+                "databricks": "ENDSWITH('abc', 'c')",
+                "duckdb": "ENDS_WITH('abc', 'c')",
+                "presto": "ENDS_WITH('abc', 'c')",
+                "snowflake": "ENDSWITH('abc', 'c')",
+                "spark": "ENDSWITH('abc', 'c')",
             },
         )
 

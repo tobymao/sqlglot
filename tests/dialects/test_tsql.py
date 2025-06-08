@@ -63,6 +63,13 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
+            write={
+                "duckdb": "SELECT STRPTIME('2006-04-25T15:50:59.997', '%Y-%m-%dT%H:%M:%S.%f')",
+                "tsql": "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
+            },
+        )
+        self.validate_all(
             "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
             read={
                 "snowflake": "CREATE TABLE TEMP_NESTED_WITH AS WITH C AS (WITH A AS (SELECT 2 AS value) SELECT * FROM A) SELECT * FROM C",
@@ -567,6 +574,79 @@ class TestTSQL(Validator):
                 "tsql": "SELECT col FROM t OPTION(LABEL = 'foo')",
                 "databricks": UnsupportedError,
             },
+        )
+
+    def test_for_xml(self):
+        xml_possible_options = [
+            "RAW('ElementName')",
+            "RAW('ElementName'), BINARY BASE64",
+            "RAW('ElementName'), TYPE",
+            "RAW('ElementName'), ROOT('RootName')",
+            "RAW('ElementName'), BINARY BASE64, TYPE",
+            "RAW('ElementName'), BINARY BASE64, ROOT('RootName')",
+            "RAW('ElementName'), TYPE, ROOT('RootName')",
+            "RAW('ElementName'), BINARY BASE64, TYPE, ROOT('RootName')",
+            "RAW('ElementName'), XMLDATA",
+            "RAW('ElementName'), XMLSCHEMA('TargetNameSpaceURI')",
+            "RAW('ElementName'), XMLDATA, ELEMENTS XSINIL",
+            "RAW('ElementName'), XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS ABSENT",
+            "RAW('ElementName'), XMLDATA, ELEMENTS ABSENT",
+            "RAW('ElementName'), XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS XSINIL",
+            "AUTO",
+            "AUTO, BINARY BASE64",
+            "AUTO, TYPE",
+            "AUTO, ROOT('RootName')",
+            "AUTO, BINARY BASE64, TYPE",
+            "AUTO, TYPE, ROOT('RootName')",
+            "AUTO, BINARY BASE64, TYPE, ROOT('RootName')",
+            "AUTO, XMLDATA",
+            "AUTO, XMLSCHEMA('TargetNameSpaceURI')",
+            "AUTO, XMLDATA, ELEMENTS XSINIL",
+            "AUTO, XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS ABSENT",
+            "AUTO, XMLDATA, ELEMENTS ABSENT",
+            "AUTO, XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS XSINIL",
+            "EXPLICIT",
+            "EXPLICIT, BINARY BASE64",
+            "EXPLICIT, TYPE",
+            "EXPLICIT, ROOT('RootName')",
+            "EXPLICIT, BINARY BASE64, TYPE",
+            "EXPLICIT, TYPE, ROOT('RootName')",
+            "EXPLICIT, BINARY BASE64, TYPE, ROOT('RootName')",
+            "EXPLICIT, XMLDATA",
+            "EXPLICIT, XMLDATA, BINARY BASE64",
+            "EXPLICIT, XMLDATA, TYPE",
+            "EXPLICIT, XMLDATA, ROOT('RootName')",
+            "EXPLICIT, XMLDATA, BINARY BASE64, TYPE",
+            "EXPLICIT, XMLDATA, BINARY BASE64, TYPE, ROOT('RootName')",
+            "PATH('ElementName')",
+            "PATH('ElementName'), BINARY BASE64",
+            "PATH('ElementName'), TYPE",
+            "PATH('ElementName'), ROOT('RootName')",
+            "PATH('ElementName'), BINARY BASE64, TYPE",
+            "PATH('ElementName'), TYPE, ROOT('RootName')",
+            "PATH('ElementName'), BINARY BASE64, TYPE, ROOT('RootName')",
+            "PATH('ElementName'), ELEMENTS XSINIL",
+            "PATH('ElementName'), ELEMENTS ABSENT",
+            "PATH('ElementName'), BINARY BASE64, ELEMENTS XSINIL",
+            "PATH('ElementName'), TYPE, ELEMENTS ABSENT",
+            "PATH('ElementName'), ROOT('RootName'), ELEMENTS XSINIL",
+            "PATH('ElementName'), BINARY BASE64, TYPE, ROOT('RootName'), ELEMENTS ABSENT",
+        ]
+
+        for xml_option in xml_possible_options:
+            with self.subTest(f"Testing FOR XML option: {xml_option}"):
+                self.validate_identity(f"SELECT * FROM t FOR XML {xml_option}")
+
+        self.validate_identity(
+            "SELECT * FROM t FOR XML PATH, BINARY BASE64, ELEMENTS XSINIL",
+            """SELECT
+  *
+FROM t
+FOR XML
+  PATH,
+  BINARY BASE64,
+  ELEMENTS XSINIL""",
+            pretty=True,
         )
 
     def test_types(self):

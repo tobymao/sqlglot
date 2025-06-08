@@ -31,6 +31,7 @@ from sqlglot.helper import (
     ensure_collection,
     ensure_list,
     seq_get,
+    split_num_words,
     subclasses,
     to_bool,
 )
@@ -1990,11 +1991,6 @@ class NotNullColumnConstraint(ColumnConstraintKind):
 
 # https://dev.mysql.com/doc/refman/5.7/en/timestamp-initialization.html
 class OnUpdateColumnConstraint(ColumnConstraintKind):
-    pass
-
-
-# https://docs.snowflake.com/en/sql-reference/sql/create-external-table#optional-parameters
-class TransformColumnConstraint(ColumnConstraintKind):
     pass
 
 
@@ -5370,6 +5366,10 @@ class AggFunc(Func):
     pass
 
 
+class ArrayRemove(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ParameterizedAgg(AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
 
@@ -5573,7 +5573,7 @@ class String(Func):
 
 class StringToArray(Func):
     arg_types = {"this": True, "expression": True, "null": False}
-    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]
+    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
 
 
 class ArrayOverlaps(Binary, Func):
@@ -6702,6 +6702,11 @@ class StartsWith(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class EndsWith(Func):
+    _sql_names = ["ENDS_WITH", "ENDSWITH"]
+    arg_types = {"this": True, "expression": True}
+
+
 class StrPosition(Func):
     arg_types = {
         "this": True,
@@ -6970,6 +6975,11 @@ class XMLTable(Func):
 
 class XMLNamespace(Expression):
     pass
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql?view=sql-server-ver17#syntax
+class XMLKeyValueOption(Expression):
+    arg_types = {"this": True, "expression": False}
 
 
 class Year(Func):
@@ -7918,7 +7928,7 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
     return expression
 
 
-INTERVAL_STRING_RE = re.compile(r"\s*(-?[0-9]+)\s*([a-zA-Z]+)\s*")
+INTERVAL_STRING_RE = re.compile(r"\s*(-?[0-9]+(?:\.[0-9]+)?)\s*([a-zA-Z]+)\s*")
 
 
 def to_interval(interval: str | Literal) -> Interval:
@@ -7953,7 +7963,15 @@ def to_table(
     if isinstance(sql_path, Table):
         return maybe_copy(sql_path, copy=copy)
 
-    table = maybe_parse(sql_path, into=Table, dialect=dialect)
+    try:
+        table = maybe_parse(sql_path, into=Table, dialect=dialect)
+    except ParseError:
+        catalog, db, this = split_num_words(sql_path, ".", 3)
+
+        if not this:
+            raise
+
+        table = table_(this, db=db, catalog=catalog)
 
     for k, v in kwargs.items():
         table.set(k, v)
@@ -8101,7 +8119,7 @@ def column(
 
 @t.overload
 def column(
-    col: str | Identifier,
+    col: str | Identifier | Star,
     table: t.Optional[str | Identifier] = None,
     db: t.Optional[str | Identifier] = None,
     catalog: t.Optional[str | Identifier] = None,
@@ -8138,8 +8156,11 @@ def column(
     Returns:
         The new Column instance.
     """
+    if not isinstance(col, Star):
+        col = to_identifier(col, quoted=quoted, copy=copy)
+
     this = Column(
-        this=to_identifier(col, quoted=quoted, copy=copy),
+        this=col,
         table=to_identifier(table, quoted=quoted, copy=copy),
         db=to_identifier(db, quoted=quoted, copy=copy),
         catalog=to_identifier(catalog, quoted=quoted, copy=copy),

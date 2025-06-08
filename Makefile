@@ -9,10 +9,6 @@ bench: install-dev-rs-release
 bench-optimize: install-dev-rs-release
 	python -m benchmarks.optimize
 
-benchmarks-ci: ## Run benchmarks quickly in CI to they run
-	python -m benchmarks.bench --debug-single-value
-	python -m benchmarks.optimize --debug-single-value
-
 install-dev-rs-release:
 	cd sqlglotrs/ && python -m maturin develop -r
 
@@ -43,7 +39,7 @@ unit-rs:
 style:
 	pre-commit run --all-files
 
-check: style test test-rs benchmarks-ci
+check: style test test-rs
 
 docs:
 	python pdoc/cli.py -o docs

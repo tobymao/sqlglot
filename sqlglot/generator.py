@@ -811,9 +811,14 @@ class Generator(metaclass=_Generator):
     def seg(self, sql: str, sep: str = " ") -> str:
         return f"{self.sep(sep)}{sql}"
 
-    def pad_comment(self, comment: str) -> str:
+    def sanitize_comment(self, comment: str) -> str:
         comment = " " + comment if comment[0].strip() else comment
         comment = comment + " " if comment[-1].strip() else comment
+
+        if not self.dialect.tokenizer_class.NESTED_COMMENTS:
+            # Necessary workaround to avoid syntax errors due to nesting: /* ... */ ... */
+            comment = comment.replace("*/", "* /")
+
         return comment
 
     def maybe_comment(
@@ -833,7 +838,7 @@ class Generator(metaclass=_Generator):
             return sql
 
         comments_sql = " ".join(
-            f"/*{self.pad_comment(comment)}*/" for comment in comments if comment
+            f"/*{self.sanitize_comment(comment)}*/" for comment in comments if comment
         )
 
         if not comments_sql:
@@ -1013,6 +1018,7 @@ class Generator(metaclass=_Generator):
             persisted = " PERSISTED"
         else:
             persisted = ""
+
         return f"AS {this}{persisted}"
 
     def autoincrementcolumnconstraint_sql(self, _) -> str:
@@ -1073,9 +1079,6 @@ class Generator(metaclass=_Generator):
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"
-
-    def transformcolumnconstraint_sql(self, expression: exp.TransformColumnConstraint) -> str:
-        return f"AS {self.sql(expression, 'this')}"
 
     def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:
         desc = expression.args.get("desc")
@@ -2599,12 +2602,17 @@ class Generator(metaclass=_Generator):
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
             self.options_modifier(expression),
+            self.for_modifiers(expression),
             sep="",
         )
 
     def options_modifier(self, expression: exp.Expression) -> str:
         options = self.expressions(expression, key="options")
         return f" {options}" if options else ""
+
+    def for_modifiers(self, expression: exp.Expression) -> str:
+        for_modifiers = self.expressions(expression, key="for")
+        return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         self.unsupported("Unsupported query option.")
@@ -3251,7 +3259,7 @@ class Generator(metaclass=_Generator):
                 if expression.comments and self.comments:
                     for comment in expression.comments:
                         if comment:
-                            op += f" /*{self.pad_comment(comment)}*/"
+                            op += f" /*{self.sanitize_comment(comment)}*/"
                 stack.extend((op, expression.left))
             return op
 
@@ -4809,6 +4817,12 @@ class Generator(metaclass=_Generator):
     def xmlelement_sql(self, expression: exp.XMLElement) -> str:
         name = f"NAME {self.sql(expression, 'this')}"
         return self.func("XMLELEMENT", name, *expression.expressions)
+
+    def xmlkeyvalueoption_sql(self, expression: exp.XMLKeyValueOption) -> str:
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        expr = f"({expr})" if expr else ""
+        return f"{this}{expr}"
 
     def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
         partitions = self.expressions(expression, "partition_expressions")

@@ -778,7 +778,7 @@ class TestPresto(Validator):
                 "hive": "FIRST(x)",
                 "mysql": "ANY_VALUE(x)",
                 "oracle": "ANY_VALUE(x)",
-                "postgres": "MAX(x)",
+                "postgres": "ANY_VALUE(x)",
                 "presto": "ARBITRARY(x)",
                 "redshift": "ANY_VALUE(x)",
                 "snowflake": "ANY_VALUE(x)",

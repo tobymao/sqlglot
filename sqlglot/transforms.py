@@ -887,7 +887,6 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
     from sqlglot import exp, optimizer
     from collections import defaultdict
 
-
     for scope in traverse_scope(expression):
         query = scope.expression
 
@@ -895,16 +894,18 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
         joins = query.args.get("joins", [])
 
         # nothing to do
-        if not where or not any(
-            c.args.get("join_mark") for c in where.find_all(exp.Column)
-        ):
+        if not where or not any(c.args.get("join_mark") for c in where.find_all(exp.Column)):
             continue
 
         # see point 1: WHERE and JOIN in the same SELECT are incompatible for (+)
-        assert not (where.this and any(j.args.get("on") for j in joins)), "Cannot combine WHERE and JOIN for (+) operator"
+        assert not (
+            where.this and any(j.args.get("on") for j in joins)
+        ), "Cannot combine WHERE and JOIN for (+) operator"
 
         # see point 2: we do not support left correlation
-        assert not any(c.args.get("join_mark") for e in query.expressions for c in e.find_all(exp.Column)), "Correlated queries are not supported"
+        assert not any(
+            c.args.get("join_mark") for e in query.expressions for c in e.find_all(exp.Column)
+        ), "Correlated queries are not supported"
 
         # make sure we have AND of ORs to have clear join terms
         where = optimizer.normalize.normalize(where.this)
@@ -915,16 +916,14 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
         joins_ons = defaultdict(list)  # dict of {name: list of join AND conditions}
         for cond in [where] if not isinstance(where, exp.And) else where.flatten():
             left_join_table = list(
-                set(
-                    col.table
-                    for col in cond.find_all(exp.Column)
-                    if col.args.get("join_mark")
-                )
+                set(col.table for col in cond.find_all(exp.Column) if col.args.get("join_mark"))
             )
             if not left_join_table:
                 continue
 
-            assert not (len(left_join_table) > 1), "Cannot combine JOIN predicates from different tables"
+            assert not (
+                len(left_join_table) > 1
+            ), "Cannot combine JOIN predicates from different tables"
 
             for col in cond.find_all(exp.Column):
                 col.set("join_mark", False)
@@ -936,14 +935,18 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
 
         for table, predicates in joins_ons.items():
             join_what = old_joins.get(table, query_from).this.copy()
-            new_joins[join_what.alias_or_name] = exp.Join(this=join_what, on=exp.and_(*predicates), kind="LEFT")
+            new_joins[join_what.alias_or_name] = exp.Join(
+                this=join_what, on=exp.and_(*predicates), kind="LEFT"
+            )
 
             for p in predicates:
                 p.replace(exp.true())
 
         if query_from.alias_or_name in new_joins:
             only_old_joins = old_joins.keys() - new_joins.keys()
-            assert len(only_old_joins) >= 1, "Cannot determine which table to use in the new FROM clause"
+            assert (
+                len(only_old_joins) >= 1
+            ), "Cannot determine which table to use in the new FROM clause"
 
             new_from_name = list(only_old_joins)[0]
             query.set("from", exp.From(this=old_joins[new_from_name].this))
@@ -957,7 +960,6 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             query.set("joins", list(new_joins.values()))
 
         simplify(expression)
-        
 
     return expression
 

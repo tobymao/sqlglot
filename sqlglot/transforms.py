@@ -957,6 +957,7 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             query.set("joins", list(new_joins.values()))
 
         simplify(expression)
+        
 
     return expression
 

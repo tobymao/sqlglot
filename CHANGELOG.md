@@ -1,6 +1,51 @@
 Changelog
 =========
 
+## [v26.26.0] - 2025-06-09
+### :boom: BREAKING CHANGES
+- due to [`434c45b`](https://github.com/tobymao/sqlglot/commit/434c45b547c3a5ea155dc8d7da2baab326eb6d4f) - improve support for ENDSWITH closes [#5170](https://github.com/tobymao/sqlglot/pull/5170) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve support for ENDSWITH closes #5170
+
+- due to [`bc001ce`](https://github.com/tobymao/sqlglot/commit/bc001cef4c907d8fa421d3190b4fa91865d9ff6c) - Add support for ANY_VALUE for versions 16+ *(PR [#5179](https://github.com/tobymao/sqlglot/pull/5179) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Add support for ANY_VALUE for versions 16+ (#5179)
+
+- due to [`6a2cb39`](https://github.com/tobymao/sqlglot/commit/6a2cb39d0ceec091dc4fc228f26d4f457729a3cf) - virtual column with AS(expr) as ComputedColumnConstraint *(PR [#5180](https://github.com/tobymao/sqlglot/pull/5180) by [@geooo109](https://github.com/geooo109))*:
+
+  virtual column with AS(expr) as ComputedColumnConstraint (#5180)
+
+- due to [`29e2f1d`](https://github.com/tobymao/sqlglot/commit/29e2f1d89c095c9fab0944a6962c99bd745c2c91) - Array_intersection transpilation support *(PR [#5186](https://github.com/tobymao/sqlglot/pull/5186) by [@HarishRavi96](https://github.com/HarishRavi96))*:
+
+  Array_intersection transpilation support (#5186)
+
+
+### :sparkles: New Features
+- [`434c45b`](https://github.com/tobymao/sqlglot/commit/434c45b547c3a5ea155dc8d7da2baab326eb6d4f) - improve support for ENDSWITH closes [#5170](https://github.com/tobymao/sqlglot/pull/5170) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`63f9cb4`](https://github.com/tobymao/sqlglot/commit/63f9cb4b158b88574136b32241ee60254352c9e6) - **sqlglotrs**: match the Python implementation of __repr__ for tokens *(PR [#5172](https://github.com/tobymao/sqlglot/pull/5172) by [@georgesittas](https://github.com/georgesittas))*
+- [`c007afa`](https://github.com/tobymao/sqlglot/commit/c007afa23831e9bd86f401d85260e15edf00328f) - support Star instance as first arg of exp.column helper *(PR [#5177](https://github.com/tobymao/sqlglot/pull/5177) by [@georgesittas](https://github.com/georgesittas))*
+- [`bc001ce`](https://github.com/tobymao/sqlglot/commit/bc001cef4c907d8fa421d3190b4fa91865d9ff6c) - **postgres**: Add support for ANY_VALUE for versions 16+ *(PR [#5179](https://github.com/tobymao/sqlglot/pull/5179) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#4674](https://github.com/TobikoData/sqlmesh/issues/4674) opened by [@petrikoro](https://github.com/petrikoro)*
+- [`ba05ff6`](https://github.com/tobymao/sqlglot/commit/ba05ff67127e056d567fc2c1d3bcc8e3dcce7b7e) - **parser**: AGGREGATE with GROUP AND ORDER BY pipe syntax *(PR [#5171](https://github.com/tobymao/sqlglot/pull/5171) by [@geooo109](https://github.com/geooo109))*
+- [`26077a4`](https://github.com/tobymao/sqlglot/commit/26077a47d9db750f44ab1baf9a434596b5bb613b) - make to_table more lenient *(PR [#5183](https://github.com/tobymao/sqlglot/pull/5183) by [@georgesittas](https://github.com/georgesittas))*
+- [`29e2f1d`](https://github.com/tobymao/sqlglot/commit/29e2f1d89c095c9fab0944a6962c99bd745c2c91) - Array_intersection transpilation support *(PR [#5186](https://github.com/tobymao/sqlglot/pull/5186) by [@HarishRavi96](https://github.com/HarishRavi96))*
+- [`d86a114`](https://github.com/tobymao/sqlglot/commit/d86a1147aeb866ed0ab2c342914ecf8cbfadac8a) - **sqlite**: implement RESPECT/IGNORE NULLS in first_value() *(PR [#5185](https://github.com/tobymao/sqlglot/pull/5185) by [@NickCrews](https://github.com/NickCrews))*
+- [`1d50fca`](https://github.com/tobymao/sqlglot/commit/1d50fca8ffc34e4acbc1b791c4cdf5f184a748db) - improve transpilation of st_point and st_distance *(PR [#5194](https://github.com/tobymao/sqlglot/pull/5194) by [@georgesittas](https://github.com/georgesittas))*
+- [`756ec3b`](https://github.com/tobymao/sqlglot/commit/756ec3b65db1eb2572d017a3ac12ece6bb44c726) - **parser**: SET OPERATORS with pipe syntax *(PR [#5184](https://github.com/tobymao/sqlglot/pull/5184) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`6a2cb39`](https://github.com/tobymao/sqlglot/commit/6a2cb39d0ceec091dc4fc228f26d4f457729a3cf) - **parser**: virtual column with AS(expr) as ComputedColumnConstraint *(PR [#5180](https://github.com/tobymao/sqlglot/pull/5180) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5173](https://github.com/tobymao/sqlglot/issues/5173) opened by [@suyah](https://github.com/suyah)*
+- [`c87ae02`](https://github.com/tobymao/sqlglot/commit/c87ae02aa263be8463ca7283ebd090385a4bfd59) - **sqlite**: Add REPLACE to command tokens *(PR [#5192](https://github.com/tobymao/sqlglot/pull/5192) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5187](https://github.com/tobymao/sqlglot/issues/5187) opened by [@stefanmalanik](https://github.com/stefanmalanik)*
+- [`4b89afd`](https://github.com/tobymao/sqlglot/commit/4b89afdcc0063e70cbc64165c7f1f5102afaa87c) - **starrocks**: array_agg_transpilation_fix *(PR [#5190](https://github.com/tobymao/sqlglot/pull/5190) by [@Swathiraj23](https://github.com/Swathiraj23))*
+- [`461b054`](https://github.com/tobymao/sqlglot/commit/461b0548832ab8d916c3a6638f27a49f681109fe) - **postgres**: support use_spheroid argument in ST_DISTANCE *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`83de4e1`](https://github.com/tobymao/sqlglot/commit/83de4e11bc1547aa22b275b20c0326dfbe43b2b8) - improve benchmark result displaying *(PR [#5176](https://github.com/tobymao/sqlglot/pull/5176) by [@georgesittas](https://github.com/georgesittas))*
+- [`5d5dc2f`](https://github.com/tobymao/sqlglot/commit/5d5dc2fa471bd53730e03ac8039804221949f843) - Clean up exp.ArrayIntersect PR *(PR [#5193](https://github.com/tobymao/sqlglot/pull/5193) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v26.25.3] - 2025-06-04
 ### :sparkles: New Features
 - [`964b4a1`](https://github.com/tobymao/sqlglot/commit/964b4a1e367e00e243b80edf677cd48d453ed31e) - add line/col position for Star *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -6961,3 +7006,4 @@ Changelog
 [v26.25.1]: https://github.com/tobymao/sqlglot/compare/v26.25.0...v26.25.1
 [v26.25.2]: https://github.com/tobymao/sqlglot/compare/v26.25.1...v26.25.2
 [v26.25.3]: https://github.com/tobymao/sqlglot/compare/v26.25.2...v26.25.3
+[v26.26.0]: https://github.com/tobymao/sqlglot/compare/v26.25.3...v26.26.0

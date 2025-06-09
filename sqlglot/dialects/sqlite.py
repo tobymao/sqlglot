@@ -99,6 +99,8 @@ class SQLite(Dialect):
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")
 
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE}
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

@@ -9,6 +9,7 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_', 'NULL')")
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
+        self.validate_identity("SELECT ARRAY_AGG(a) FROM x")
 
     def test_ddl(self):
         ddl_sqls = [

@@ -1086,6 +1086,22 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT ST_MAKEPOINT(10, 20)",
+            write={
+                "snowflake": "SELECT ST_MAKEPOINT(10, 20)",
+                "starrocks": "SELECT ST_POINT(10, 20)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ST_DISTANCE(a, b)",
+            write={
+                "snowflake": "SELECT ST_DISTANCE(a, b)",
+                "starrocks": "SELECT ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

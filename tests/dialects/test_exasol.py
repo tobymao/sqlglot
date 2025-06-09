@@ -950,15 +950,15 @@ class TestExasol(Validator):
             (exp.CurrentTimestamp(this=exp.Literal.number(6)), "CURRENT_TIMESTAMP(6)"),
             (
                 exp.DateTrunc(
-                    this=exp.Literal.string("minute"),
-                    expression=exp.Timestamp(this=exp.Literal.string("2006-12-31 23:59:59")),
+                    unit=exp.Literal.string("minute"),
+                    this=exp.Timestamp(this=exp.Literal.string("2006-12-31 23:59:59")),
                 ),
                 "DATE_TRUNC('minute', TIMESTAMP '2006-12-31 23:59:59')",
             ),
             (
                 exp.DateTrunc(
-                    this=exp.Literal.string("month"),
-                    expression=exp.Date(this=exp.Literal.string("2006-12-31")),
+                    unit=exp.Literal.string("month"),
+                    this=exp.Date(this=exp.Literal.string("2006-12-31")),
                 ),
                 "DATE_TRUNC('month', DATE '2006-12-31')",
             ),

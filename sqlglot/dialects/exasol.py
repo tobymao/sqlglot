@@ -88,7 +88,6 @@ def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) ->
     substr = expression.args.get("substr")
     position = expression.args.get("position")
     occurrence = expression.args.get("occurrence")
-    # print(substr, position, occurrence)
     # POSITION format
     if position is None and occurrence is None:
         return f"POSITION({self.sql(substr)} IN {self.sql(this)})"
@@ -109,18 +108,18 @@ def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) ->
     # Full INSTR
     return self.func("INSTR", this, substr, position, occurrence)
 
+
 def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff) -> str:
     # TODO proper error handling
     # expression.unit can be exp.IntervalSpan
     # but exasol can only work with certain units
     assert isinstance(expression.unit, exp.Var)
-    unit = expression.text("unit").upper() 
-    units = {"YEAR","MONTH","DAY","HOUR","MINUTE","SECOND"}
+    unit = expression.text("unit").upper()
+    units = {"YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND"}
     if unit not in units:
         # exasol cannot work with other units
         raise Exception()
-    return self.func(f"{unit}S_BETWEEN",expression.this,expression.expression)
-
+    return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
 
 
 class Exasol(Dialect):
@@ -175,6 +174,9 @@ class Exasol(Dialect):
         }
 
         NUMERIC_FUNCTIONS = {
+            "TRUNC": exp.DateTrunc.from_arg_list,
+            "DIV": binary_from_function(exp.IntDiv),
+            "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
             ########### HANDLE IN GENERATOR ############
             # "MOD": a % b not allowed
             #       needs to be handled in generator
@@ -184,10 +186,7 @@ class Exasol(Dialect):
             #       see: tonumber_sql in sqlglot/generator.py
             #       see: https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_number.htm#TO_NUMBER
             ########### HANDLE IN GENERATOR ############
-            "DIV": binary_from_function(exp.IntDiv),
-            "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
             # "TRUNCATE": _build_truncate,
-            # "TRUNC": _build_truncate,
             ########## NEED MORE RESEARCH ###########
             # "TO_CHAR": # exp.NumberToStr research formats
             # "MIN_SCALE": , # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/min_scale.htm
@@ -534,8 +533,7 @@ class Exasol(Dialect):
                 else "CURRENT_TIMESTAMP"
             ),
             exp.DateDiff: _date_diff_sql,
-            exp.DateTrunc: lambda self,
-            e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
+            exp.DateTrunc: lambda self, e: self._date_trunc_sql(e),
             # exp.Day
             # exp.DaysBetween: lambda self, e: f"DAYS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.Date: lambda self, e: f"DATE {self.sql(e, 'this')}",
@@ -724,7 +722,7 @@ class Exasol(Dialect):
                 f" WITHIN GROUP ({self.sql(e, 'order').strip()})"
                 f"{self.sql(e, 'over')}"
             ),
-            exp.Pivot: no_pivot_sql,
+            # exp.Pivot: no_pivot_sql,
             exp.Pow: rename_func("POWER"),
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
@@ -807,14 +805,6 @@ class Exasol(Dialect):
             expression.set("this", self.wrap_to_date_if_date_col(expression.this))
             return super().ordered_sql(expression)
 
-        # def identifier(self, expression: exp.Identifier) -> str:
-        #     print("We are true expressions in all ")
-        #     print("Quoting:", expression.name)
-        #     name = expression.name
-        #     if name.isupper() and (name.isalnum() or "_" in name):
-        #         return name
-        #     return f'"{name}"'
-
         def lt_sql(self, expression):
             expression = expression.copy()
             expression.set("this", self.wrap_to_date_if_date_col(expression.this))
@@ -826,14 +816,12 @@ class Exasol(Dialect):
             return super().lte_sql(expression)
 
         def identifier_sql(self, expression: exp.Identifier) -> str:
-            # print("There is a name here in all these")
             name = expression.this
             if (
                 name.upper() in self.RESERVED_KEYWORDS
                 or not name.isidentifier()
                 or name != name.lower()
             ):
-                # print(name)
                 return f'"{name}"'
             return name
 
@@ -859,15 +847,12 @@ class Exasol(Dialect):
             return fmt
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-            # print("We were here in all these")
-            # print (expression.args)
             # Exasol does not support column-level comments in CREATE VIEW/CREATE TABLE
             expression = expression.copy()
             constraints = expression.args.get("constraints", [])
             filtered_constraints = [
                 c for c in constraints if not isinstance(c.kind, exp.CommentColumnConstraint)
             ]
-            # print(constraints)
             expression.set("constraints", filtered_constraints)
             return super().columndef_sql(expression, sep)
 
@@ -921,14 +906,13 @@ class Exasol(Dialect):
                 # "NVL2": lambda e: self._render_func_with_args(e, expected_arg_count=3),
                 # Equivalent to CHARACTER_LENGTH AND LENGTH - https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/octet_length.htm
                 "OCTET_LENGTH": lambda e: self._render_func_with_args(e, expected_arg_count=1),
-                "PERCENT_RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0),
                 "PI": lambda e: self._render_func_with_args(e, expected_arg_count=0),
                 "POSIX_TIME": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "RADIANS": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 # "RADIANS": lambda e: self._render_func_with_args(
                 #     e, expected_arg_count=1
                 # ),
-                "RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0),
+                # "RANK": lambda e: self._render_func_with_args(e, expected_arg_count=0, ignore_extra_args_for={"RANK"}),
                 "RATIO_TO_REPORT": lambda e: self._render_func_with_args(e, expected_arg_count=1),
                 "REGEXP_INSTR": lambda e: self._render_func_with_args(
                     e, min_arg_count=2, max_arg_count=5
@@ -1051,6 +1035,17 @@ class Exasol(Dialect):
                 "TAN",
                 "TANH",
             ]
+
+            analytic_funcs = [
+                "RANK",
+                "DENSE_RANK",
+                "PERCENT_RANK",
+                "CUME_DIST",
+            ]
+            for name in analytic_funcs:
+                handlers[name] = lambda e, name=name: self._render_func_with_args(
+                    e, expected_arg_count=0, ignore_extra_args_for={name}
+                )
             for name in regr_funcs:
                 handlers[name] = lambda e: self._render_func_with_args(e, expected_arg_count=2)
             for name in trig_funcs:
@@ -1066,36 +1061,47 @@ class Exasol(Dialect):
             return f"{func_name}({', '.join(self.sql(arg) for arg in e.expressions)})"
 
         def _render_func_with_args(
-            self, e, expected_arg_count=None, min_arg_count=None, max_arg_count=None
+            self,
+            e,
+            expected_arg_count=None,
+            min_arg_count=None,
+            max_arg_count=None,
+            ignore_extra_args_for=None,
         ):
-            arg_count = len(e.expressions)
+            func_name = e.this.upper()
+            args = list(e.expressions)
+            ignore_extra_args_for = ignore_extra_args_for or set()
 
-            if expected_arg_count is not None and arg_count != expected_arg_count:
+            # Truncate extra args if allowed
+            if expected_arg_count is not None:
+                if func_name in ignore_extra_args_for and len(args) > expected_arg_count:
+                    args = args[:expected_arg_count]
+                elif len(args) != expected_arg_count:
+                    raise ValueError(
+                        f"{func_name} expects exactly {expected_arg_count} arguments, got {len(args)}"
+                    )
+
+            if min_arg_count is not None and len(args) < min_arg_count:
                 raise ValueError(
-                    f"{e.this} expects exactly {expected_arg_count} arguments, got {arg_count}"
+                    f"{func_name} expects at least {min_arg_count} arguments, got {len(args)}"
                 )
 
-            if min_arg_count is not None and arg_count < min_arg_count:
+            if max_arg_count is not None and len(args) > max_arg_count:
                 raise ValueError(
-                    f"{e.this} expects at least {min_arg_count} arguments, got {arg_count}"
+                    f"{func_name} expects at most {max_arg_count} arguments, got {len(args)}"
                 )
 
-            if max_arg_count is not None and arg_count > max_arg_count:
-                raise ValueError(
-                    f"{e.this} expects at most {max_arg_count} arguments, got {arg_count}"
-                )
+            formatted_args = ", ".join(self._format_func_arg(arg) for arg in args)
+            return f"{func_name}({formatted_args})"
 
-            def format_arg(arg):
-                if (
-                    isinstance(arg, exp.Literal)
-                    and isinstance(arg.this, str)
-                    and (arg.this.startswith("TIMESTAMP ") or arg.this.startswith("DATE "))
-                ):
-                    return arg.this
-                return self.sql(arg)
-
-            formatted_args = ", ".join(format_arg(arg) for arg in e.expressions)
-            return f"{e.this.upper()}({formatted_args})"
+        def _format_func_arg(self, arg):
+            if (
+                isinstance(arg, exp.Literal)
+                and isinstance(arg.this, str)
+                and (arg.this.startswith("TIMESTAMP ") or arg.this.startswith("DATE "))
+            ):
+                return arg.this
+            return self.sql(arg)
 
         def round_sql(self, expression):
             value = expression.this
@@ -1169,6 +1175,12 @@ class Exasol(Dialect):
 
         def dump_sql(self, expression: exp.Func) -> str:
             return self.func("DUMP", *expression.expressions)
+
+        def _date_trunc_sql(self, e: exp.DateTrunc) -> str:
+            unit_expr = e.args.get("unit") or e.this  # Fallback to .this if .unit not set
+            unit = self.sql(unit_expr).strip("'").lower()
+            value = self.sql(e.this)
+            return f"DATE_TRUNC('{unit}', {value})"
 
         def _timestamp_literal(self, e, key):
             arg = e.args.get(key)
@@ -1256,8 +1268,6 @@ class Exasol(Dialect):
             return f"{func_name}({self.sql(expression, 'this')})"
 
         def unicode_sql(self, expression):
-            # print(expression)
-            # print(expression.args)
             func_name = expression.args.get("sql_name") or expression.__class__._sql_names[0]
             return f"{func_name}({self.sql(expression, 'this')})"
 
@@ -1316,9 +1326,24 @@ class Exasol(Dialect):
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             this = expression.this
+            to_type = expression.to
 
-            if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
+            # Handle casting STR_TO_DATE to DATETIME → just return the function
+            if isinstance(this, exp.StrToDate) and to_type == exp.DataType.build("datetime"):
                 return self.sql(this)
+
+            # Handle numeric → VARCHAR using TO_CHAR
+            if (
+                to_type
+                and isinstance(to_type, exp.DataType)
+                and to_type.this
+                in {
+                    exp.DataType.Type.VARCHAR,
+                    exp.DataType.Type.TEXT,
+                }
+                and isinstance(this, exp.Expression)
+            ):
+                return f"TO_CHAR({self.sql(this)})"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
@@ -1372,7 +1397,6 @@ class Exasol(Dialect):
             #
             # https://clickhouse.com/docs/en/sql-reference/data-types/string
             if expression.this in self.STRING_TYPE_MAPPING:
-                # print(self.STRING_TYPE_MAPPING[expression.this])
                 dtype = self.STRING_TYPE_MAPPING[expression.this]
             else:
                 dtype = super().datatype_sql(expression)

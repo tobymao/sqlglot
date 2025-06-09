@@ -5579,7 +5579,6 @@ class StPoint(Func):
 
 class StDistance(Func):
     arg_types = {"this": True, "expression": True}
-    _sql_names = ["ST_DISTANCE"]
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string

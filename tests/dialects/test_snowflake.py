@@ -1088,12 +1088,18 @@ class TestSnowflake(Validator):
 
         self.validate_all(
             "SELECT ST_MAKEPOINT(10, 20)",
-            write={"starrocks": "SELECT ST_POINT(10, 20)"},
+            write={
+                "snowflake": "SELECT ST_MAKEPOINT(10, 20)",
+                "starrocks": "SELECT ST_POINT(10, 20)",
+            },
         )
 
         self.validate_all(
             "SELECT ST_DISTANCE(a, b)",
-            write={"starrocks": "SELECT ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))"},
+            write={
+                "snowflake": "SELECT ST_DISTANCE(a, b)",
+                "starrocks": "SELECT ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))",
+            },
         )
 
     def test_null_treatment(self):

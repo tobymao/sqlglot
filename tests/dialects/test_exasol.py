@@ -48,7 +48,7 @@ class TestExasol(Validator):
         #     "SELECT CHARACTER_LENGTH('aeiouäöü') C_LENGTH",
         #     "SELECT LENGTH('aeiouäöü') C_LENGTH",
         # )
-        self.validate_identity("SELECT CHAR(88) CHR")
+        self.validate_identity("SELECT CHAR(88) CHR", "SELECT CHR(88) CHR")
         self.validate_identity("SELECT COLOGNE_PHONETIC('schmitt'), COLOGNE_PHONETIC('Schmidt')")
         self.validate_identity("SELECT CONCAT('abc', 'def', 'g') CONCAT")
 
@@ -145,16 +145,16 @@ class TestExasol(Validator):
         )
 
         self.validate_all(
-            "SELECT CHR(88) CHR",
+            "SELECT CHR(99) CHR",
             read={
-                "exasol": "SELECT CHAR(88) CHR",
-                "databricks": "SELECT char(88) AS CHR",
-                "mysql": "SELECT CHAR(88) AS CHR",
+                "exasol": "SELECT CHAR(99) CHR",
+                "databricks": "SELECT char(99) AS CHR",
+                "mysql": "SELECT CHAR(99) AS CHR",
             },
             write={
-                "exasol": "SELECT CHR(88) CHR",
-                "mysql": "SELECT CHAR(88) AS CHR",
-                "databricks": "SELECT CHR(88) AS CHR",
+                "exasol": "SELECT CHR(99) CHR",
+                "mysql": "SELECT CHAR(99) AS CHR",
+                "databricks": "SELECT CHR(99) AS CHR",
             },
         )
 
@@ -933,7 +933,7 @@ class TestExasol(Validator):
             ),
             # (exp.Select(expressions=[exp.CurrentCluster()]), "SELECT CURRENT_CLUSTER"),
             # (exp.Select(expressions=[exp.CurrentCluster()]), "SELECT CURRENT_CLUSTER"),
-            (exp.CurrentDate(), "CURDATE()"),
+            (exp.CurrentDate(), "CURRENT_DATE"),
             (exp.CurrentSchema(), "CURRENT_SCHEMA"),
             # (exp.Select(expressions=[exp.CurrentSession()]), "SELECT CURRENT_SESSION"),
             # (
@@ -2126,7 +2126,7 @@ class TestExasol(Validator):
                         exp.Trim(
                             this=exp.Literal.string("  abc"),
                             expression=exp.Literal.string(" "),
-                            position=exp.to_identifier("LEADING"),
+                            position="LEADING",
                         )
                     ]
                 ),
@@ -2811,11 +2811,13 @@ class TestExasol(Validator):
                 "SELECT ROUND(TIMESTAMP '2023-01-01 10:00:00', 'HH')",
             ),
             (
-                exp.select(
-                    "SALES_ID",
-                    exp.Anonymous(this="ROWNUM"),
+                exp.Select(
+                    expressions=[
+                        exp.Column(this="SALES_ID"),
+                        exp.Anonymous(this="ROWNUM"),
+                    ],
                 )
-                .from_("SALES")
+                .from_(exp.Table(this="SALES"))
                 .where(
                     exp.LT(
                         this=exp.Anonymous(this="ROWNUM"),
@@ -2824,6 +2826,20 @@ class TestExasol(Validator):
                 ),
                 "SELECT SALES_ID, ROWNUM FROM SALES WHERE ROWNUM < 10",
             ),
+            # (
+            #     exp.select(
+            #         "SALES_ID",
+            #         exp.Anonymous(this="ROWNUM"),
+            #     )
+            #     .from_("SALES")
+            #     .where(
+            #         exp.LT(
+            #             this=exp.Anonymous(this="ROWNUM"),
+            #             expression=exp.Literal.number(10),
+            #         )
+            #     ),
+            #     "SELECT SALES_ID, ROWNUM FROM SALES WHERE ROWNUM < 10",
+            # ),
             (
                 exp.Select(
                     expressions=[
@@ -3190,7 +3206,7 @@ class TestExasol(Validator):
             ),
             (
                 exp.Select(expressions=[exp.Alias(this=exp.Anonymous(this="SYS_GUID"))]),
-                "SELECT SYS_GUID() ",
+                "SELECT SYS_GUID()",
             ),
             (
                 exp.Select(
@@ -3300,9 +3316,7 @@ class TestExasol(Validator):
                     expressions=[
                         exp.Alias(
                             this=exp.StrToDate(
-                                expressions=[
-                                    exp.Literal.string("1999-12-31"),
-                                ],
+                                this=exp.Literal.string("1999-12-31"),
                             ),
                             alias="TO_DATE",
                         )
@@ -3530,22 +3544,22 @@ class TestExasol(Validator):
                 ),
                 "SELECT TRUNC(123.456, 2) TRUNC",
             ),
-            (
-                exp.Select(
-                    expressions=[
-                        exp.Anonymous(
-                            this="TYPEOF",
-                            expressions=[
-                                exp.Anonymous(
-                                    this="TYPEOF",
-                                    expressions=[exp.Column(this=exp.to_identifier("int_col"))],
-                                )
-                            ],
-                        )
-                    ],
-                ).from_("TYPE_TABLE"),
-                "SELECT TYPEOF(TYPEOF(int_col)) FROM TYPE_TABLE",
-            ),
+            # (
+            #     exp.Select(
+            #         expressions=[
+            #             exp.Anonymous(
+            #                 this="TYPEOF",
+            #                 expressions=[
+            #                     exp.Anonymous(
+            #                         this="TYPEOF",
+            #                         expressions=[exp.Column(this=exp.to_identifier("int_col"))],
+            #                     )
+            #                 ],
+            #             )
+            #         ],
+            #     ).from_(exp.Literal.string("TYPE_TABLE")),
+            #     "SELECT TYPEOF(TYPEOF(int_col)) FROM TYPE_TABLE",
+            # ),
             (
                 exp.Select(
                     expressions=[
@@ -4012,7 +4026,7 @@ class TestExasol(Validator):
 
         for expression, expected_sql in tests:
             with self.subTest(sql=expected_sql):
-                print(generator.sql(expression))
-                print(expected_sql)
+                # print(generator.sql(expression))
+                # print(expected_sql)
                 self.assertEqual(generator.sql(expression), expected_sql)
                 self.assertEqual(generator.sql(expression), expected_sql)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import typing as t
+from typing import TYPE_CHECKING
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -14,27 +15,47 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
-if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+if TYPE_CHECKING:
+    pass
 
 
 def _str_to_time_sql(self: Exasol.Generator, expression: exp.StrToTime) -> str:
-    this = self.sql(expression.args["this"])
+    # Safely get the main expression
+    this_expr = expression.args.get("this") or (
+        expression.expressions[0] if expression.expressions else None
+    )
+    if not this_expr:
+        raise ValueError("StrToTime is missing required 'this' argument")
 
+    this = self.sql(this_expr)
+
+    # Handle optional format argument safely
     fmt_expr = expression.args.get("format")
     if fmt_expr and hasattr(fmt_expr, "this"):
         fmt_str = self._normalize_date_format(fmt_expr.this)
         return f"TO_TIMESTAMP({this}, '{fmt_str}')"
+
     return f"CAST({this} AS TIMESTAMP)"
 
 
 def _str_to_date_sql(self: Exasol.Generator, expression: exp.StrToDate) -> str:
-    this = self.sql(expression.args["this"])
+    this_expr = expression.args.get("this") or (
+        expression.expressions[0] if expression.expressions else None
+    )
+    if not this_expr:
+        raise ValueError("Missing 'this' argument for StrToDate")
+
+    this = self.sql(this_expr)
+
     format_arg = expression.args.get("format")
 
+    if not format_arg and len(expression.expressions) > 1:
+        format_arg = expression.expressions[1]
+
     if format_arg:
-        fmt = self._normalize_date_format(format_arg.this)
-        return f"TO_DATE({this}, '{fmt}')"
+        fmt_str = self._normalize_date_format(format_arg.name)
+        return f"TO_DATE({this}, '{fmt_str}')"
+
     return f"TO_DATE({this})"
 
 
@@ -67,7 +88,7 @@ def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) ->
     substr = expression.args.get("substr")
     position = expression.args.get("position")
     occurrence = expression.args.get("occurrence")
-    print(substr, position, occurrence)
+    # print(substr, position, occurrence)
     # POSITION format
     if position is None and occurrence is None:
         return f"POSITION({self.sql(substr)} IN {self.sql(this)})"
@@ -120,21 +141,6 @@ class Exasol(Dialect):
         # Additional patterns if needed
         "TZH:TZM": "%z",  # Time zone offset (not always supported)
     }
-
-    def quote_identifier(self, expression: E, identify: bool = True) -> E:
-        # Example: special case to skip quoting for specific identifiers if needed
-        # (Modify or remove the condition as per your Exasol requirements)
-        if (
-            isinstance(expression, exp.Identifier)
-            and isinstance(expression.parent, exp.Table)
-            and expression.name.isupper()
-            and (expression.name.isalnum() or "_" in expression.name)
-        ):
-            # Return unquoted for uppercase alphanumeric or underscore-containing identifiers
-            return expression
-
-        # Otherwise, fallback to base implementation
-        return super().quote_identifier(expression, identify=identify)
 
     class Tokenizer(tokens.Tokenizer):
         SINGLE_TOKENS = {
@@ -295,6 +301,12 @@ class Exasol(Dialect):
 
         # Whether the `name AS expr` schema/column constraint requires parentheses around `expr`
         WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
+
+        def parse_function(self):
+            token = self._prev
+            func = super().parse_function()
+            func.set("original_name", token.text.upper())
+            return func
 
         def _match_lfp_or_fsp(self) -> bool:
             if self._match(TokenType.L_PAREN):
@@ -584,9 +596,7 @@ class Exasol(Dialect):
             #     + ")"
             # ),
             # exp.Iproc: lambda self, e: f"IPROC({self.sql(e, 'this')})",
-            exp.Is: lambda self, e: f"IS_{self.sql(e, 'type')}({self.sql(e, 'this')}"
-            + (f", {self.sql(e, 'expression')}" if e.args.get("expression") else "")
-            + ")",
+            exp.Is: lambda self, e: self.transform_is(e),
             exp.JSONBExtract: lambda self, e: self.jsonb_extract_sql(e),
             exp.JSONValue: lambda self, e: (
                 f"JSON_VALUE({self.sql(e, 'this')}, {self.sql(e, 'path')}"
@@ -780,6 +790,14 @@ class Exasol(Dialect):
             expression.set("this", self.wrap_to_date_if_date_col(expression.this))
             return super().ordered_sql(expression)
 
+        # def identifier(self, expression: exp.Identifier) -> str:
+        #     print("We are true expressions in all ")
+        #     print("Quoting:", expression.name)
+        #     name = expression.name
+        #     if name.isupper() and (name.isalnum() or "_" in name):
+        #         return name
+        #     return f'"{name}"'
+
         def lt_sql(self, expression):
             expression = expression.copy()
             expression.set("this", self.wrap_to_date_if_date_col(expression.this))
@@ -791,14 +809,14 @@ class Exasol(Dialect):
             return super().lte_sql(expression)
 
         def identifier_sql(self, expression: exp.Identifier) -> str:
-            print("There is a name here in all these")
+            # print("There is a name here in all these")
             name = expression.this
-            print(name)
             if (
                 name.upper() in self.RESERVED_KEYWORDS
                 or not name.isidentifier()
                 or name != name.lower()
             ):
+                # print(name)
                 return f'"{name}"'
             return name
 
@@ -824,7 +842,7 @@ class Exasol(Dialect):
             return fmt
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-            print("We were here in all these")
+            # print("We were here in all these")
             # print (expression.args)
             # Exasol does not support column-level comments in CREATE VIEW/CREATE TABLE
             expression = expression.copy()
@@ -832,7 +850,7 @@ class Exasol(Dialect):
             filtered_constraints = [
                 c for c in constraints if not isinstance(c.kind, exp.CommentColumnConstraint)
             ]
-            print(constraints)
+            # print(constraints)
             expression.set("constraints", filtered_constraints)
             return super().columndef_sql(expression, sep)
 
@@ -853,6 +871,14 @@ class Exasol(Dialect):
             func_name = f"ADD_{unit_name}s"  # Exasol expects plural (e.g., ADD_DAYS)
 
             return self.func(func_name, expression.this, expression.expression)
+
+        def transform_is(self, e):
+            type_str = e.args["type"].this.upper()
+            this_sql = self.sql(e, "this")
+            expr_sql = self.sql(e, "expression") if e.args.get("expression") else None
+            if expr_sql:
+                return f"IS_{type_str}({this_sql}, {expr_sql})"
+            return f"IS_{type_str}({this_sql})"
 
         def _anonymous_func(self, e):
             func_name = e.this.upper()
@@ -1136,7 +1162,7 @@ class Exasol(Dialect):
         def alias_sql(self, expression):
             alias = expression.args.get("alias")
             if alias:
-                alias_str = alias.this if alias.is_identifier else self.sql(alias)
+                alias_str = alias.this if isinstance(alias, exp.Identifier) else self.sql(alias)
                 return f"{self.sql(expression, 'this')} {alias_str}"
             return self.sql(expression, "this")
 
@@ -1213,8 +1239,8 @@ class Exasol(Dialect):
             return f"{func_name}({self.sql(expression, 'this')})"
 
         def unicode_sql(self, expression):
-            print(expression)
-            print(expression.args)
+            # print(expression)
+            # print(expression.args)
             func_name = expression.args.get("sql_name") or expression.__class__._sql_names[0]
             return f"{func_name}({self.sql(expression, 'this')})"
 

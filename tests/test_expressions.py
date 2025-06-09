@@ -712,6 +712,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ROUND(a)"), exp.Round)
         self.assertIsInstance(parse_one("ROUND(a, 2)"), exp.Round)
         self.assertIsInstance(parse_one("SPLIT(a, 'test')"), exp.Split)
+        self.assertIsInstance(parse_one("ST_POINT(10, 20)"), exp.StPoint)
+        self.assertIsInstance(parse_one("ST_DISTANCE(a, b)"), exp.StDistance)
         self.assertIsInstance(parse_one("STR_POSITION(a, 'test')"), exp.StrPosition)
         self.assertIsInstance(parse_one("STR_TO_UNIX(a, 'format')"), exp.StrToUnix)
         self.assertIsInstance(parse_one("STRUCT_EXTRACT(a, 'test')"), exp.StructExtract)
@@ -1228,3 +1230,31 @@ FROM foo""",
 
     def test_parse_identifier(self):
         self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))
+
+    def test_st_point(self):
+        expr = parse_one("ST_POINT(10, 20)")
+        self.assertIsInstance(expr, exp.StPoint)
+        self.assertEqual(expr.sql(dialect="snowflake"), "ST_MAKEPOINT(10, 20)")
+
+        expr2 = parse_one("ST_MAKEPOINT(10, 20)")
+        self.assertIsInstance(expr2, exp.StPoint)
+        self.assertEqual(expr2.sql(dialect="snowflake"), "ST_MAKEPOINT(10, 20)")
+
+        expr = parse_one("ST_POINT(10, 20)")
+        self.assertIsInstance(expr, exp.StPoint)
+        self.assertEqual(expr.sql(dialect="starrocks"), "ST_POINT(10, 20)")
+
+        expr2 = parse_one("ST_MAKEPOINT(10, 20)")
+        self.assertIsInstance(expr2, exp.StPoint)
+        self.assertEqual(expr2.sql(dialect="starrocks"), "ST_POINT(10, 20)")
+
+    def test_st_distance(self):
+        expr = parse_one("ST_DISTANCE(1, 2)")
+        self.assertIsInstance(expr, exp.StDistance)
+        self.assertEqual(expr.sql(dialect="snowflake"), "ST_DISTANCE(1, 2)")
+
+        expr2 = parse_one("ST_DISTANCE(a, b)")
+        self.assertIsInstance(expr2, exp.StDistance)
+        self.assertEqual(
+            expr2.sql(dialect="starrocks"), "ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))"
+        )

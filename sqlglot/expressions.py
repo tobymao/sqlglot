@@ -5578,7 +5578,7 @@ class StPoint(Func):
 
 
 class StDistance(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "use_spheroid": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string

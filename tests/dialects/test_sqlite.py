@@ -113,6 +113,7 @@ class TestSQLite(Validator):
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL, PRIMARY KEY ("foo t id"))',
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL PRIMARY KEY)',
         )
+        self.validate_identity("REPLACE INTO foo (x, y) VALUES (1, 2)", check_command_warning=True)
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

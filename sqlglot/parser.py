@@ -1197,17 +1197,18 @@ class Parser(metaclass=_Parser):
 
         return query
 
-    def _parse_pipe_syntax_set_operator(self, query: exp.Query) -> exp.Query:
+    def _parse_pipe_syntax_set_operator(
+        self, query: t.Optional[exp.Query]
+    ) -> t.Optional[exp.Query]:
         first_setop = self.parse_set_operation(this=query)
 
-        # If this condition is True a JOIN parser must be invoked
-        if not first_setop:
-            return query
+        if not first_setop or not query:
+            return None
 
-        first_setop.args.pop("this")
+        first_setop.this.pop()
         distinct = first_setop.args.pop("distinct")
 
-        setops = [first_setop.args.pop("expression"), *self._parse_expressions()]
+        setops = [first_setop.expression.pop(), *self._parse_expressions()]
 
         if isinstance(first_setop, exp.Union):
             return query.union(*setops, distinct=distinct, **first_setop.args)
@@ -7235,11 +7236,18 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_pipe_syntax_query(self, query: exp.Query) -> exp.Query:
+    def _parse_pipe_syntax_query(self, query: t.Optional[exp.Query]) -> t.Optional[exp.Query]:
         while self._match(TokenType.PIPE_GT):
+            start_token = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
                 query = self._parse_pipe_syntax_set_operator(query)
+                if not query:
+                    self._retreat(start_token)
+                    self.raise_error(
+                        f"Unsupported pipe syntax operator: '{start_token.text.upper()}'."
+                    )
+                    break
             else:
                 query = parser(self, query)
 

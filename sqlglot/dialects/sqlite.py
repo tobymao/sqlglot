@@ -309,3 +309,10 @@ class SQLite(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "'main'"
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            self.unsupported("SQLite does not support IGNORE NULLS.")
+            return self.sql(expression.this)
+
+        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+            return self.sql(expression.this)

@@ -1093,6 +1093,7 @@ class Snowflake(Dialect):
             ),
             exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
             exp.Stuff: rename_func("INSERT"),
+            exp.StPoint: rename_func("ST_MAKEPOINT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampAdd: date_delta_sql("TIMESTAMPADD"),

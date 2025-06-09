@@ -17,6 +17,19 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
+# https://docs.starrocks.io/docs/sql-reference/sql-functions/spatial-functions/st_distance_sphere/
+def st_distance_sphere(self, expression: exp.StDistance) -> str:
+    point1 = expression.this
+    point2 = expression.expression
+
+    point1_x = self.func("ST_X", point1)
+    point1_y = self.func("ST_Y", point1)
+    point2_x = self.func("ST_X", point2)
+    point2_y = self.func("ST_Y", point2)
+
+    return self.func("ST_Distance_Sphere", point1_x, point1_y, point2_x, point2_y)
+
+
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
 
@@ -133,6 +146,7 @@ class StarRocks(MySQL):
             **MySQL.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
+            exp.StDistance: st_distance_sphere,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression

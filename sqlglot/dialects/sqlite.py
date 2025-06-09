@@ -94,8 +94,12 @@ class SQLite(Dialect):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")
+
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE}
 
     class Parser(parser.Parser):
         FUNCTIONS = {
@@ -305,3 +309,12 @@ class SQLite(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return "'main'"
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            self.unsupported(
+                "SQLite does not support IGNORE NULLS in window functions."
+            )
+
+        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+            # simply compile the inner expression
+            return self.sql(expression.this)

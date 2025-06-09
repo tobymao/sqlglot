@@ -457,3 +457,15 @@ ON t.id = s.id
 WHEN MATCHED THEN UPDATE SET
   status = s.status,
   amount = s.amount;
+
+SELECT
+    id,
+    -- SUM(total) as all_that,
+    ARRAY_AGG(foo)[0][0] AS first_foo,
+FROM facts
+GROUP BY all;
+SELECT
+  id,
+  ARRAY_AGG(foo)[0][0] AS first_foo /* SUM(total) as all_that, */
+FROM facts
+GROUP BY ALL;

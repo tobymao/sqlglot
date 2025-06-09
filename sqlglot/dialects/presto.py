@@ -294,6 +294,8 @@ class Presto(Dialect):
             for prefix in ("U&", "u&")
         ]
 
+        NESTED_COMMENTS = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "DEALLOCATE PREPARE": TokenType.COMMAND,
@@ -461,7 +463,8 @@ class Presto(Dialect):
             exp.DiToDate: lambda self,
             e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
-            exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
+            exp.FileFormatProperty: lambda self,
+            e: f"format={self.sql(exp.Literal.string(e.name))}",
             exp.First: _first_last_sql,
             exp.FromTimeZone: lambda self,
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",

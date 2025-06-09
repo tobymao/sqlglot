@@ -693,14 +693,14 @@ PIVOT(MAX("SOURCE"."VALUE") FOR "SOURCE"."KEY" IN ('a', 'b', 'c')) AS "FINAL"("I
 # dialect: snowflake
 SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
 SELECT
-  "_Q_0"."EMPID" AS "EMPID",
-  "_Q_0"."DEPT" AS "DEPT",
-  "_Q_0"."MONTH" AS "MONTH",
-  "_Q_0"."SALES" AS "SALES"
+  "M_SALES"."EMPID" AS "EMPID",
+  "M_SALES"."DEPT" AS "DEPT",
+  "M_SALES"."MONTH" AS "MONTH",
+  "M_SALES"."SALES" AS "SALES"
 FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB")
-UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_Q_0"
+UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "M_SALES"
 ORDER BY
-  "_Q_0"."EMPID";
+  "M_SALES"."EMPID";
 
 # title: unpivoted table source, unpivot has column aliases
 # execute: false
@@ -747,28 +747,28 @@ ORDER BY
 # note: the named columns aren not supported by BQ but we add them here to avoid defining a schema
 SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT(sales FOR quarter IN (q1, q2, q3, q4));
 SELECT
-  `_q_0`.`product` AS `product`,
-  `_q_0`.`quarter` AS `quarter`,
-  `_q_0`.`sales` AS `sales`
+  `produce`.`product` AS `product`,
+  `produce`.`quarter` AS `quarter`,
+  `produce`.`sales` AS `sales`
 FROM `produce` AS `produce`
-UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `_q_0`;
+UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `produce`;
 
 # title: unpivoted table source with multiple value columns
 # execute: false
 # dialect: bigquery
 SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT((first_half_sales, second_half_sales) FOR semesters IN ((Q1, Q2) AS 'semester_1', (Q3, Q4) AS 'semester_2'));
 SELECT
-  `_q_0`.`product` AS `product`,
-  `_q_0`.`semesters` AS `semesters`,
-  `_q_0`.`first_half_sales` AS `first_half_sales`,
-  `_q_0`.`second_half_sales` AS `second_half_sales`
+  `produce`.`product` AS `product`,
+  `produce`.`semesters` AS `semesters`,
+  `produce`.`first_half_sales` AS `first_half_sales`,
+  `produce`.`second_half_sales` AS `second_half_sales`
 FROM `produce` AS `produce`
 UNPIVOT((`first_half_sales`, `second_half_sales`) FOR 
   `semesters` IN (
     (`produce`.`q1`, `produce`.`q2`) AS 'semester_1',
     (`produce`.`q3`, `produce`.`q4`) AS 'semester_2'
   )
-) AS `_q_0`;
+) AS `produce`;
 
 # title: quoting is preserved
 # dialect: snowflake

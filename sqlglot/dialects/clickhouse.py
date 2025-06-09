@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     build_json_extract_path,
     rename_func,
+    remove_from_array_using_filter,
     sha256_sql,
     strposition_sql,
     var_map_sql,
@@ -1061,6 +1062,7 @@ class ClickHouse(Dialect):
             exp.ApproxDistinct: rename_func("uniq"),
             exp.ArrayConcat: rename_func("arrayConcat"),
             exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
+            exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySum: rename_func("arraySum"),
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
             exp.ArgMin: arg_max_or_min_no_count("argMin"),
@@ -1094,6 +1096,7 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
+            exp.EndsWith: rename_func("endsWith"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self,
                 e,

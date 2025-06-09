@@ -1,0 +1,17 @@
+name: Benchmark Rust tokenizer changes
+
+on:
+  pull_request:
+    paths:
+      - 'sqlglotrs/**'
+
+jobs:
+  run-benchmark:
+    name: run benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: boa-dev/criterion-compare-action@v3
+        with:
+          branchName: ${{ github.base_ref }}
+          cwd: "sqlglotrs"

@@ -55,6 +55,10 @@ class TestBigQuery(Validator):
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
+        self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x) LIMIT 2)")
+        self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")
+        self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x))")
+        self.validate_identity("ARRAY_CONCAT_AGG(x)")
         self.validate_identity("PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)")
         self.validate_identity("SELECT ARRAY_CONCAT([1])")
         self.validate_identity("SELECT * FROM READ_CSV('bla.csv')")
@@ -1230,7 +1234,7 @@ LANGUAGE js AS
                 "bigquery": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b TEXT))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
-                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRING>)",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
             },
         )
@@ -1240,7 +1244,7 @@ LANGUAGE js AS
                 "bigquery": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a BIGINT, struct_col_b STRUCT(nested_col_a TEXT, nested_col_b TEXT)))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a BIGINT, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
-                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a BIGINT, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: BIGINT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: BIGINT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
             },
         )
@@ -1736,6 +1740,9 @@ WHERE
         )
 
     def test_errors(self):
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT * FROM a - b.c.d2")
+
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 
@@ -2557,3 +2564,66 @@ OPTIONS (
             self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    def test_array_agg(self):
+        for distinct in ("", "DISTINCT "):
+            self.validate_all(
+                f"SELECT ARRAY_AGG({distinct}x ORDER BY x)",
+                write={
+                    "bigquery": f"SELECT ARRAY_AGG({distinct}x ORDER BY x)",
+                    "snowflake": f"SELECT ARRAY_AGG({distinct}x) WITHIN GROUP (ORDER BY x NULLS FIRST)",
+                },
+            )
+
+        for nulls in ("", " IGNORE NULLS", " RESPECT NULLS"):
+            self.validate_all(
+                f"SELECT ARRAY_AGG(x{nulls} ORDER BY col1 ASC, col2 DESC)",
+                write={
+                    "bigquery": f"SELECT ARRAY_AGG(x{nulls} ORDER BY col1 ASC, col2 DESC)",
+                    "snowflake": "SELECT ARRAY_AGG(x) WITHIN GROUP (ORDER BY col1 ASC NULLS FIRST, col2 DESC NULLS LAST)",
+                },
+            )
+
+    def test_select_as_struct(self):
+        self.validate_all(
+            "SELECT ARRAY(SELECT AS STRUCT x1 AS x1, x2 AS x2 FROM t) AS array_col",
+            write={
+                "bigquery": "SELECT ARRAY(SELECT AS STRUCT x1 AS x1, x2 AS x2 FROM t) AS array_col",
+                "snowflake": "SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('x1', x1, 'x2', x2)) FROM t) AS array_col",
+            },
+        )
+
+        self.validate_all(
+            "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+            write={
+                "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+                "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('alias_x1', x1, 'x2', x2 /* test */)) FROM t2) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+            },
+        )
+
+        self.validate_all(
+            "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b) AS array_col) SELECT array_col[0].a, array_col[0].b FROM t1",
+            write={
+                "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b) AS array_col) SELECT array_col[0].a, array_col[0].b FROM t1",
+                "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('a', 1, 'b', 2))) AS array_col) SELECT array_col[0].a, array_col[0].b FROM t1",
+            },
+        )
+
+        self.validate_all(
+            "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2 WHERE x2 = 4) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+            write={
+                "bigquery": "WITH t1 AS (SELECT ARRAY(SELECT AS STRUCT x1 AS alias_x1, x2 /* test */ FROM t2 WHERE x2 = 4) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+                "snowflake": "WITH t1 AS (SELECT (SELECT ARRAY_AGG(OBJECT_CONSTRUCT('alias_x1', x1, 'x2', x2 /* test */)) FROM t2 WHERE x2 = 4) AS array_col) SELECT array_col[0].alias_x1, array_col[0].x2 FROM t1",
+            },
+        )
+
+    def test_avoid_generating_nested_comment(self):
+        sql = """
+        select
+            id,
+            foo,
+            -- bar, /* the thing */
+        from facts
+        """
+        expected = "SELECT\n  id,\n  foo\n/* bar, /* the thing * / */\nFROM facts"
+        self.assertEqual(self.parse_one(sql).sql("bigquery", pretty=True), expected)

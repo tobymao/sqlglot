@@ -499,6 +499,9 @@ class Dialect(metaclass=_Dialect):
     equivalent of CREATE SCHEMA is CREATE DATABASE.
     """
 
+    # Whether ADD is present for each column added by ALTER TABLE
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -1733,13 +1736,18 @@ def json_path_key_only_name(self: Generator, expression: exp.JSONPathKey) -> str
     return expression.name
 
 
-def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> str:
+def filter_array_using_unnest(
+    self: Generator, expression: exp.ArrayFilter | exp.ArrayRemove
+) -> str:
     cond = expression.expression
     if isinstance(cond, exp.Lambda) and len(cond.expressions) == 1:
         alias = cond.expressions[0]
         cond = cond.this
     elif isinstance(cond, exp.Predicate):
         alias = "_u"
+    elif isinstance(expression, exp.ArrayRemove):
+        alias = "_u"
+        cond = exp.NEQ(this=alias, expression=expression.expression)
     else:
         self.unsupported("Unsupported filter condition")
         return ""
@@ -1747,6 +1755,16 @@ def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> s
     unnest = exp.Unnest(expressions=[expression.this])
     filtered = exp.select(alias).from_(exp.alias_(unnest, None, table=[alias])).where(cond)
     return self.sql(exp.Array(expressions=[filtered]))
+
+
+def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
+    lambda_id = exp.to_identifier("_u")
+    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+    return self.sql(
+        exp.ArrayFilter(
+            this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
+        )
+    )
 
 
 def to_number_with_nls_param(self: Generator, expression: exp.ToNumber) -> str:

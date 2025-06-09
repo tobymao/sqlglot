@@ -1,3 +1,4 @@
+from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 from sqlglot.helper import logger as helper_logger
@@ -113,6 +114,7 @@ class TestSQLite(Validator):
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL, PRIMARY KEY ("foo t id"))',
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL PRIMARY KEY)',
         )
+        self.validate_identity("REPLACE INTO foo (x, y) VALUES (1, 2)", check_command_warning=True)
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
@@ -173,6 +175,25 @@ class TestSQLite(Validator):
             "CREATE TABLE foo (bar LONGVARCHAR)",
             write={"sqlite": "CREATE TABLE foo (bar TEXT)"},
         )
+
+    def test_respectnulls(self):
+        self.validate_all(
+            "SELECT FIRST_VALUE(val) OVER (PARTITION BY gb ORDER BY ob)",
+            read={
+                "duckdb": "SELECT FIRST_VALUE(val RESPECT NULLS) OVER (PARTITION BY gb ORDER BY ob IGNORE NULLS)",
+            },
+            write={
+                "duckdb": "SELECT FIRST_VALUE(val RESPECT NULLS) OVER (PARTITION BY gb ORDER BY ob IGNORE NULLS)",
+            },
+        )
+    def test_ignorenulls(self):
+        with self.assertRaises(UnsupportedError):
+            self.validate_all(
+                "SELECT FIRST_VALUE(val) OVER (PARTITION BY gb ORDER BY ob IGNORE NULLS)",
+                read={
+                    "sqlite": "SELECT FIRST_VALUE(va IGNORE NULLS) OVER (PARTITION BY gb ORDER BY ob)",
+                },
+            )
 
     def test_warnings(self):
         with self.assertLogs(helper_logger) as cm:

@@ -1,0 +1,150 @@
+name: Publish sqlglot and sqlglotrs to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  should-deploy-rs:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check_deploy.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - id: check_deploy
+        run: |
+          bash ./.github/workflows/should_deploy_sqlglotrs.sh \
+          && echo "deploy=true" >> $GITHUB_OUTPUT \
+          || echo "deploy=false" >> $GITHUB_OUTPUT
+
+  build-rs:
+    needs: should-deploy-rs
+    if: needs.should-deploy-rs.outputs.deploy == 'true'
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
+        target: [x86_64, aarch64]
+        include:
+        - os: linux
+          target: i686
+        - os: linux
+          target: armv7
+        - os: linux
+          target: s390x
+        - os: linux
+          target: ppc64le
+        - os: windows
+          target: i686
+          python-architecture: x86
+        exclude:
+        - os: windows
+          target: aarch64
+    runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+        architecture: ${{ matrix.python-architecture || 'x64' }}
+    - uses: actions/setup-python@v5
+      if: matrix.os == 'windows'
+      with:
+        python-version: '3.8'
+        architecture: ${{ matrix.python-architecture || 'x64' }}
+    - name: Build wheels
+      uses: PyO3/maturin-action@v1
+      with:
+        target: ${{ matrix.target }}
+        args: --release --out dist --interpreter 3.8 3.9 3.10 3.11 3.12 3.13
+        sccache: 'true'
+        manylinux: auto
+        working-directory: ./sqlglotrs
+    - name: Upload wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-${{ matrix.os }}-${{ matrix.target }}
+        path: sqlglotrs/dist
+
+  sdist-rs:
+    needs: should-deploy-rs
+    if: needs.should-deploy-rs.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build sdist
+      uses: PyO3/maturin-action@v1
+      with:
+        command: sdist
+        args: --out dist
+        working-directory: ./sqlglotrs
+    - name: Upload sdist
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-sdist
+        path: sqlglotrs/dist
+
+  deploy-rs:
+    needs: [should-deploy-rs, build-rs, sdist-rs]
+    if: needs.should-deploy-rs.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: wheels-*
+        path: sqlglotrs/dist
+    - name: Publish to PyPI
+      uses: PyO3/maturin-action@v1
+      env:
+        MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      with:
+        command: upload
+        args: --non-interactive --skip-existing dist/wheels-*/*
+        working-directory: ./sqlglotrs
+
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m venv .venv
+        source ./.venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install build twine
+        make install-dev
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        source ./.venv/bin/activate
+        python -m build
+        twine upload dist/*
+    - name: Update API docs
+      run: |
+        source ./.venv/bin/activate
+        make docs
+    - name: Update CHANGELOG
+      id: changelog
+      uses: requarks/changelog-action@v1
+      with:
+        token: ${{ github.token }}
+        tag: ${{ github.ref_name }}
+    - name: Commit API docs, CHANGELOG.md
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        branch: main
+        commit_message: 'docs: update API docs, CHANGELOG.md for ${{ github.ref_name }} [skip ci]'
+        file_pattern: 'docs CHANGELOG.md'

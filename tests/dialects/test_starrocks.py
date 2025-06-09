@@ -9,8 +9,12 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_', 'NULL')")
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
+
         self.validate_identity("SELECT ST_POINT(10, 20)")
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
+
+        self.validate_identity("SELECT ARRAY_INTERSECT([1, 2], [2, 3])")
+
 
     def test_ddl(self):
         ddl_sqls = [

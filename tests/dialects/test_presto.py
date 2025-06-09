@@ -465,7 +465,7 @@ class TestPresto(Validator):
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
@@ -474,7 +474,7 @@ class TestPresto(Validator):
             "CREATE TABLE test STORED AS 'PARQUET' AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
@@ -483,7 +483,7 @@ class TestPresto(Validator):
             "CREATE TABLE test WITH (FORMAT = 'PARQUET', X = '1', Z = '2') AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET', X='1', Z='2') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET', X='1', Z='2') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X'='1', 'Z'='2') AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET TBLPROPERTIES ('X'='1', 'Z'='2') AS SELECT 1",
             },
@@ -511,7 +511,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b TEXT))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
-                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRING>)",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
             },
         )
@@ -520,7 +520,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b STRUCT(nested_col_a TEXT, nested_col_b TEXT)))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
-                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
             },
         )
@@ -778,7 +778,7 @@ class TestPresto(Validator):
                 "hive": "FIRST(x)",
                 "mysql": "ANY_VALUE(x)",
                 "oracle": "ANY_VALUE(x)",
-                "postgres": "MAX(x)",
+                "postgres": "ANY_VALUE(x)",
                 "presto": "ARBITRARY(x)",
                 "redshift": "ANY_VALUE(x)",
                 "snowflake": "ANY_VALUE(x)",

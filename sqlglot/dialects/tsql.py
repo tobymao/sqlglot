@@ -102,6 +102,24 @@ OPTIONS: parser.OPTIONS_TYPE = {
     "USE": ("PLAN",),
 }
 
+
+XML_OPTIONS: parser.OPTIONS_TYPE = {
+    **dict.fromkeys(
+        (
+            "AUTO",
+            "EXPLICIT",
+            "TYPE",
+        ),
+        tuple(),
+    ),
+    "ELEMENTS": (
+        "XSINIL",
+        "ABSENT",
+    ),
+    "BINARY": ("BASE64",),
+}
+
+
 OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
 
 
@@ -390,6 +408,7 @@ class TSQL(Dialect):
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
@@ -474,6 +493,7 @@ class TSQL(Dialect):
         "114": "%H:%M:%S:%f",
         "120": "%Y-%m-%d %H:%M:%S",
         "121": "%Y-%m-%d %H:%M:%S.%f",
+        "126": "%Y-%m-%dT%H:%M:%S.%f",
     }
 
     FORMAT_TIME_MAPPING = {
@@ -540,13 +560,13 @@ class TSQL(Dialect):
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
         LOG_DEFAULTS_TO_LN = True
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         STRING_ALIASES = True
         NO_PAREN_IF_COMMANDS = False
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.OPTION: lambda self: ("options", self._parse_options()),
+            TokenType.FOR: lambda self: ("for", self._parse_for()),
         }
 
         # T-SQL does not allow BEGIN to be used as an identifier
@@ -637,6 +657,9 @@ class TSQL(Dialect):
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
 
+        def _parse_alter_table_set(self) -> exp.AlterSet:
+            return self._parse_wrapped(super()._parse_alter_table_set)
+
         def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
             if self._match(TokenType.MERGE):
                 comments = self._prev_comments
@@ -669,6 +692,28 @@ class TSQL(Dialect):
                 )
 
             return self._parse_wrapped_csv(_parse_option)
+
+        def _parse_xml_key_value_option(self) -> exp.XMLKeyValueOption:
+            this = self._parse_primary_or_var()
+            if self._match(TokenType.L_PAREN, advance=False):
+                expression = self._parse_wrapped(self._parse_string)
+            else:
+                expression = None
+
+            return exp.XMLKeyValueOption(this=this, expression=expression)
+
+        def _parse_for(self) -> t.Optional[t.List[exp.Expression]]:
+            if not self._match_pair(TokenType.FOR, TokenType.XML):
+                return None
+
+            def _parse_for_xml() -> t.Optional[exp.Expression]:
+                return self.expression(
+                    exp.QueryOption,
+                    this=self._parse_var_from_options(XML_OPTIONS, raise_unmatched=False)
+                    or self._parse_xml_key_value_option(),
+                )
+
+            return self._parse_csv(_parse_for_xml)
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -921,6 +966,7 @@ class TSQL(Dialect):
         COPY_PARAMS_EQ_REQUIRED = True
         PARSE_JSON_NAME = None
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        ALTER_SET_WRAPPED = True
         ALTER_SET_TYPE = ""
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {

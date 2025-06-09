@@ -69,7 +69,7 @@ def pushdown_projections(
                 # kind / side syntax (e.g INNER UNION ALL BY NAME) which changes the semantics of the operation
                 left, right = scope.union_scopes
                 if len(left.expression.selects) != len(right.expression.selects):
-                    scope_sql = scope.expression.sql()
+                    scope_sql = scope.expression.sql(dialect=dialect)
                     raise OptimizeError(
                         f"Invalid set operation due to column mismatch: {scope_sql}."
                     )

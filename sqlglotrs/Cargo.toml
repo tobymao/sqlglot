@@ -1,6 +1,6 @@
 [package]
 name = "sqlglotrs"
-version = "0.4.2"
+version = "0.6.1"
 edition = "2021"
 license = "MIT"
 
@@ -19,7 +19,7 @@ default = []
 profiling = ["serde", "serde_json"]
 
 [dependencies]
-pyo3 = {version ="0.22.6", features = ["auto-initialize"]}
+pyo3 = {version ="0.25"}
 rustc-hash = { version = "2.1" }
 
 # Optional dependencies used for profiling
@@ -31,3 +31,4 @@ criterion = "0.5"
 serde = { version = "1", features = ["derive"]  }
 serde_json = { version = "1" }
 sqlglotrs = { path = "." , features = ["profiling"] }
+pyo3 = { version = "0.25", features = ["auto-initialize"] }

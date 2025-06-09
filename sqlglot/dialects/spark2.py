@@ -347,14 +347,3 @@ class Spark2(Hive):
                 return self.func("TO_JSON", arg)
 
             return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)
-
-        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-            return super().columndef_sql(
-                expression,
-                sep=(
-                    ": "
-                    if isinstance(expression.parent, exp.DataType)
-                    and expression.parent.is_type("struct")
-                    else sep
-                ),
-            )

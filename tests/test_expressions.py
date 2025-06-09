@@ -712,6 +712,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ROUND(a)"), exp.Round)
         self.assertIsInstance(parse_one("ROUND(a, 2)"), exp.Round)
         self.assertIsInstance(parse_one("SPLIT(a, 'test')"), exp.Split)
+        self.assertIsInstance(parse_one("ST_POINT(10, 20)"), exp.StPoint)
+        self.assertIsInstance(parse_one("ST_DISTANCE(a, b)"), exp.StDistance)
         self.assertIsInstance(parse_one("STR_POSITION(a, 'test')"), exp.StrPosition)
         self.assertIsInstance(parse_one("STR_TO_UNIX(a, 'format')"), exp.StrToUnix)
         self.assertIsInstance(parse_one("STRUCT_EXTRACT(a, 'test')"), exp.StructExtract)

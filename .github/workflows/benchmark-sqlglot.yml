@@ -61,14 +61,27 @@ jobs:
       - name: Compare benchmarks and save results
         run: |
           source ./.venv/bin/activate
-          python -m pyperf compare_to bench_parse_pr.json bench_parse_main.json --table --table-format=md > bench_parse_comparison.txt
-          python -m pyperf compare_to bench_optimize_pr.json bench_optimize_main.json --table --table-format=md > bench_optimize_comparison.txt
+          python -m pyperf compare_to bench_parse_main.json bench_parse_pr.json --table --table-format=md > bench_parse_comparison_raw.txt
+          python -m pyperf compare_to bench_optimize_main.json bench_optimize_pr.json --table --table-format=md > bench_optimize_comparison_raw.txt
+
+          # Format with colors
+          python .github/scripts/format_benchmark.py bench_parse_comparison_raw.txt > bench_parse_comparison.txt
+          python .github/scripts/format_benchmark.py bench_optimize_comparison_raw.txt > bench_optimize_comparison.txt
       - name: Combine benchmark outputs
         run: |
-          echo "## Parsing Benchmark" > combined_benchmarks.md
+          echo "## Benchmark Results" > combined_benchmarks.md
+          echo "" >> combined_benchmarks.md
+          echo "**Legend:**" >> combined_benchmarks.md
+          echo "- 🟢🟢 = 2x+ faster" >> combined_benchmarks.md
+          echo "- 🟢 = 1.1x - 2x faster" >> combined_benchmarks.md
+          echo "- ⚪ = No significant change (< 1.1x)" >> combined_benchmarks.md
+          echo "- 🔴 = 1.1x - 2x slower" >> combined_benchmarks.md
+          echo "- 🔴🔴 = 2x+ slower" >> combined_benchmarks.md
+          echo "" >> combined_benchmarks.md
+          echo "### Parsing Benchmark" >> combined_benchmarks.md
           cat bench_parse_comparison.txt >> combined_benchmarks.md
           echo -e "\n---\n" >> combined_benchmarks.md
-          echo "## Optimization Benchmark" >> combined_benchmarks.md
+          echo "### Optimization Benchmark" >> combined_benchmarks.md
           cat bench_optimize_comparison.txt >> combined_benchmarks.md
       - name: Comment on PR for parse benchmark results
         uses: peter-evans/create-or-update-comment@v4

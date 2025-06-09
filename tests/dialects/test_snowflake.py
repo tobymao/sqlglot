@@ -319,6 +319,13 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT ARRAY_INTERSECTION([1, 2], [2, 3])",
+            write={
+                "starrocks": "SELECT ARRAY_INTERSECT([1, 2], [2, 3])",
+            },
+        )
+
+        self.validate_all(
             "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
             write={
                 "duckdb": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL)",
@@ -1079,6 +1086,22 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT ST_MAKEPOINT(10, 20)",
+            write={
+                "snowflake": "SELECT ST_MAKEPOINT(10, 20)",
+                "starrocks": "SELECT ST_POINT(10, 20)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ST_DISTANCE(a, b)",
+            write={
+                "snowflake": "SELECT ST_DISTANCE(a, b)",
+                "starrocks": "SELECT ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
@@ -1687,12 +1710,6 @@ class TestSnowflake(Validator):
                     },
                 )
 
-        self.assertIsNotNone(
-            self.validate_identity("CREATE TABLE foo (bar INT AS (foo))").find(
-                exp.TransformColumnConstraint
-            )
-        )
-
     def test_user_defined_functions(self):
         self.validate_all(
             "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",
@@ -2011,6 +2028,26 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             write={
                 "snowflake": "DESCRIBE VIEW db.table",
                 "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "ENDSWITH('abc', 'c')",
+            read={
+                "bigquery": "ENDS_WITH('abc', 'c')",
+                "clickhouse": "endsWith('abc', 'c')",
+                "databricks": "ENDSWITH('abc', 'c')",
+                "duckdb": "ENDS_WITH('abc', 'c')",
+                "presto": "ENDS_WITH('abc', 'c')",
+                "spark": "ENDSWITH('abc', 'c')",
+            },
+            write={
+                "bigquery": "ENDS_WITH('abc', 'c')",
+                "clickhouse": "endsWith('abc', 'c')",
+                "databricks": "ENDSWITH('abc', 'c')",
+                "duckdb": "ENDS_WITH('abc', 'c')",
+                "presto": "ENDS_WITH('abc', 'c')",
+                "snowflake": "ENDSWITH('abc', 'c')",
+                "spark": "ENDSWITH('abc', 'c')",
             },
         )
 

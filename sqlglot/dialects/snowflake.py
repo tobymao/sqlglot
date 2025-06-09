@@ -1019,6 +1019,7 @@ class Snowflake(Dialect):
             exp.ArgMin: rename_func("MIN_BY"),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
+            exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
@@ -1094,11 +1095,13 @@ class Snowflake(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
+            exp.EndsWith: rename_func("ENDSWITH"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self, e, func_name="CHARINDEX", supports_position=True
             ),
             exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
             exp.Stuff: rename_func("INSERT"),
+            exp.StPoint: rename_func("ST_MAKEPOINT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampAdd: date_delta_sql("TIMESTAMPADD"),

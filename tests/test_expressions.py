@@ -669,6 +669,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ARRAY_AGG(a)"), exp.ArrayAgg)
         self.assertIsInstance(parse_one("ARRAY_CONTAINS(a, 'a')"), exp.ArrayContains)
         self.assertIsInstance(parse_one("ARRAY_SIZE(a)"), exp.ArraySize)
+        self.assertIsInstance(parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])"), exp.ArrayIntersect)
+        self.assertIsInstance(parse_one("ARRAY_INTERSECT([1, 2], [2, 3])"), exp.ArrayIntersect)
         self.assertIsInstance(parse_one("AVG(a)"), exp.Avg)
         self.assertIsInstance(parse_one("BEGIN DEFERRED TRANSACTION"), exp.Transaction)
         self.assertIsInstance(parse_one("CEIL(a)"), exp.Ceil)
@@ -710,6 +712,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ROUND(a)"), exp.Round)
         self.assertIsInstance(parse_one("ROUND(a, 2)"), exp.Round)
         self.assertIsInstance(parse_one("SPLIT(a, 'test')"), exp.Split)
+        self.assertIsInstance(parse_one("ST_POINT(10, 20)"), exp.StPoint)
+        self.assertIsInstance(parse_one("ST_DISTANCE(a, b)"), exp.StDistance)
         self.assertIsInstance(parse_one("STR_POSITION(a, 'test')"), exp.StrPosition)
         self.assertIsInstance(parse_one("STR_TO_UNIX(a, 'format')"), exp.StrToUnix)
         self.assertIsInstance(parse_one("STRUCT_EXTRACT(a, 'test')"), exp.StructExtract)
@@ -752,6 +756,9 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ADD_MONTHS(a, b)"), exp.AddMonths)
 
     def test_column(self):
+        column = exp.column(exp.Star(), table="t")
+        self.assertEqual(column.sql(), "t.*")
+
         column = parse_one("a.b.c.d")
         self.assertEqual(column.catalog, "a")
         self.assertEqual(column.db, "b")
@@ -987,14 +994,19 @@ FROM foo""",
         self.assertEqual(table_only.name, "table_name")
         self.assertIsNone(table_only.args.get("db"))
         self.assertIsNone(table_only.args.get("catalog"))
+
         db_and_table = exp.to_table("db.table_name")
         self.assertEqual(db_and_table.name, "table_name")
         self.assertEqual(db_and_table.args.get("db"), exp.to_identifier("db"))
         self.assertIsNone(db_and_table.args.get("catalog"))
+
         catalog_db_and_table = exp.to_table("catalog.db.table_name")
         self.assertEqual(catalog_db_and_table.name, "table_name")
         self.assertEqual(catalog_db_and_table.args.get("db"), exp.to_identifier("db"))
         self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))
+
+        table_only_unsafe_identifier = exp.to_table("3e")
+        self.assertEqual(table_only_unsafe_identifier.sql(), '"3e"')
 
     def test_to_column(self):
         column_only = exp.to_column("column_name")

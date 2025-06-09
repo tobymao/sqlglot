@@ -1314,6 +1314,32 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "ARRAY_INTERSECT(x, y)",
+            read={
+                "hive": "ARRAY_INTERSECT(x, y)",
+                "spark2": "ARRAY_INTERSECT(x, y)",
+                "spark": "ARRAY_INTERSECT(x, y)",
+                "databricks": "ARRAY_INTERSECT(x, y)",
+                "presto": "ARRAY_INTERSECT(x, y)",
+                "trino": "ARRAY_INTERSECT(x, y)",
+                "snowflake": "ARRAY_INTERSECTION(x, y)",
+                "starrocks": "ARRAY_INTERSECT(x, y)",
+            },
+            write={
+                "hive": "ARRAY_INTERSECT(x, y)",
+                "spark2": "ARRAY_INTERSECT(x, y)",
+                "spark": "ARRAY_INTERSECT(x, y)",
+                "databricks": "ARRAY_INTERSECT(x, y)",
+                "presto": "ARRAY_INTERSECT(x, y)",
+                "trino": "ARRAY_INTERSECT(x, y)",
+                "snowflake": "ARRAY_INTERSECTION(x, y)",
+                "starrocks": "ARRAY_INTERSECT(x, y)",
+            },
+        )
+
+        self.validate_identity("SELECT ARRAY_INTERSECT(x, y, z)")
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

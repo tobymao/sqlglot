@@ -1228,20 +1228,3 @@ FROM foo""",
 
     def test_parse_identifier(self):
         self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))
-
-    def test_array_intersection(self):
-        expr = parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])")
-        self.assertIsInstance(expr, exp.ArrayIntersect)
-        self.assertEqual(expr.sql(dialect="snowflake"), "ARRAY_INTERSECTION([1, 2], [2, 3])")
-
-        expr2 = parse_one("ARRAY_INTERSECT([1, 2], [2, 3])")
-        self.assertIsInstance(expr2, exp.ArrayIntersect)
-        self.assertEqual(expr2.sql(dialect="snowflake"), "ARRAY_INTERSECTION([1, 2], [2, 3])")
-
-        expr = parse_one("ARRAY_INTERSECT([1, 2], [2, 3])")
-        self.assertIsInstance(expr, exp.ArrayIntersect)
-        self.assertEqual(expr.sql(dialect="starrocks"), "ARRAY_INTERSECT([1, 2], [2, 3])")
-
-        expr2 = parse_one("ARRAY_INTERSECTION([1, 2], [2, 3])")
-        self.assertIsInstance(expr2, exp.ArrayIntersect)
-        self.assertEqual(expr2.sql(dialect="starrocks"), "ARRAY_INTERSECT([1, 2], [2, 3])")

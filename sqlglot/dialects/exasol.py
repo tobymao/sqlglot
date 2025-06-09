@@ -109,6 +109,19 @@ def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) ->
     # Full INSTR
     return self.func("INSTR", this, substr, position, occurrence)
 
+def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff) -> str:
+    # TODO proper error handling
+    # expression.unit can be exp.IntervalSpan
+    # but exasol can only work with certain units
+    assert isinstance(expression.unit, exp.Var)
+    unit = expression.text("unit").upper() 
+    units = {"YEAR","MONTH","DAY","HOUR","MINUTE","SECOND"}
+    if unit not in units:
+        # exasol cannot work with other units
+        raise Exception()
+    return self.func(f"{unit}S_BETWEEN",expression.this,expression.expression)
+
+
 
 class Exasol(Dialect):
     ANNOTATORS = {
@@ -492,6 +505,8 @@ class Exasol(Dialect):
             # exp.ConnectByIsCycle: lambda self, e: "CONNECT_BY_ISCYCLE",
             # exp.ConnectByIsLeaf: lambda self, e: "CONNECT_BY_ISLEAF",
             # exp.SysConnectByPath: lambda self, e: f"SYS_CONNECT_BY_PATH({self.sql(e, 'this')}, {', '.join(self.sql(x) for x in e.expressions)})",
+            # exasol requires IS: https://docs.exasol.com/db/latest/sql/create_view.htm
+            exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
             exp.Command: lambda self, e: " ".join(self.sql(x) for x in e.expressions),
             # exp.Concat
             # exp.Convert
@@ -518,6 +533,7 @@ class Exasol(Dialect):
                 if e.args.get("this")
                 else "CURRENT_TIMESTAMP"
             ),
+            exp.DateDiff: _date_diff_sql,
             exp.DateTrunc: lambda self,
             e: f"DATE_TRUNC({self.sql(e, 'this')}, {self._timestamp_literal(e, 'expression')})",
             # exp.Day
@@ -708,6 +724,7 @@ class Exasol(Dialect):
                 f" WITHIN GROUP ({self.sql(e, 'order').strip()})"
                 f"{self.sql(e, 'over')}"
             ),
+            exp.Pivot: no_pivot_sql,
             exp.Pow: rename_func("POWER"),
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),

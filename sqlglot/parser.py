@@ -1596,6 +1596,9 @@ class Parser(metaclass=_Parser):
     # Whether the 'AS' keyword is optional in the CTE definition syntax
     OPTIONAL_ALIAS_TOKEN_CTE = True
 
+    # Whether renaming a column with an ALTER statement requires the presence of the COLUMN keyword
+    ALTER_RENAME_REQUIRES_COLUMN = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -7458,7 +7461,7 @@ class Parser(metaclass=_Parser):
         return self._parse_csv(self._parse_drop_column)
 
     def _parse_alter_table_rename(self) -> t.Optional[exp.AlterRename | exp.RenameColumn]:
-        if self._match(TokenType.COLUMN):
+        if self._match(TokenType.COLUMN) or not self.ALTER_RENAME_REQUIRES_COLUMN:
             exists = self._parse_exists()
             old_column = self._parse_column()
             to = self._match_text_seq("TO")

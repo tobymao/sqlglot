@@ -109,7 +109,9 @@ class SQLite(Dialect):
             "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
             "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
         }
+
         STRING_ALIASES = True
+        ALTER_RENAME_REQUIRES_COLUMN = False
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:

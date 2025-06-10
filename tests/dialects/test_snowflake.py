@@ -319,6 +319,13 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT ARRAY_INTERSECTION([1, 2], [2, 3])",
+            write={
+                "starrocks": "SELECT ARRAY_INTERSECT([1, 2], [2, 3])",
+            },
+        )
+
+        self.validate_all(
             "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
             write={
                 "duckdb": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL)",
@@ -1076,6 +1083,22 @@ class TestSnowflake(Validator):
             read={
                 "bigquery": "SELECT EXTRACT(ISOWEEK FROM CAST('2013-12-25' AS DATE))",
                 "snowflake": "SELECT DATE_PART(WEEKISO, CAST('2013-12-25' AS DATE))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ST_MAKEPOINT(10, 20)",
+            write={
+                "snowflake": "SELECT ST_MAKEPOINT(10, 20)",
+                "starrocks": "SELECT ST_POINT(10, 20)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ST_DISTANCE(a, b)",
+            write={
+                "snowflake": "SELECT ST_DISTANCE(a, b)",
+                "starrocks": "SELECT ST_DISTANCE_SPHERE(ST_X(a), ST_Y(a), ST_X(b), ST_Y(b))",
             },
         )
 

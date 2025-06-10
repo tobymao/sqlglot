@@ -9,13 +9,6 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
-        self.validate_identity("SELECT UUIDV7()")
-        self.validate_identity("SELECT TRY(LOG(0))")
-        self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
-        self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")
-        self.validate_identity("x::timestamp with time zone", "CAST(x AS TIMESTAMPTZ)")
-
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -36,6 +29,20 @@ class TestDuckDB(Validator):
             "STRUCT(k TEXT, v STRUCT(v_str TEXT, v_int INT, v_int_arr INT[]))[]",
         )
 
+        self.validate_all(
+            "SELECT FIRST_VALUE(c IGNORE NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
+            write={
+                "duckdb": "SELECT FIRST_VALUE(c IGNORE NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
+                "sqlite": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT FIRST_VALUE(c RESPECT NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
+            write={
+                "duckdb": "SELECT FIRST_VALUE(c RESPECT NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
+                "sqlite": "SELECT FIRST_VALUE(c) OVER (PARTITION BY gb ORDER BY ob NULLS LAST) FROM t",
+            },
+        )
         self.validate_all(
             "CAST(x AS UUID)",
             write={
@@ -264,6 +271,12 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
+        self.validate_identity("SELECT UUIDV7()")
+        self.validate_identity("SELECT TRY(LOG(0))")
+        self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("x::timestamp with time zone", "CAST(x AS TIMESTAMPTZ)")
         self.validate_identity("CAST(x AS FOO)")
         self.validate_identity("SELECT UNNEST([1, 2])").selects[0].assert_is(exp.UDTF)
         self.validate_identity("'red' IN flags").args["field"].assert_is(exp.Column)

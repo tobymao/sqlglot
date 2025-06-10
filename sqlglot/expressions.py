@@ -5566,6 +5566,21 @@ class ArrayToString(Func):
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
+class ArrayIntersect(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["ARRAY_INTERSECT", "ARRAY_INTERSECTION"]
+
+
+class StPoint(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
+    _sql_names = ["ST_POINT", "ST_MAKEPOINT"]
+
+
+class StDistance(Func):
+    arg_types = {"this": True, "expression": True, "use_spheroid": False}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string
 class String(Func):
     arg_types = {"this": True, "zone": False}
@@ -7367,7 +7382,7 @@ def _apply_set_operation(
     **opts,
 ) -> S:
     return reduce(
-        lambda x, y: set_operation(this=x, expression=y, distinct=distinct),
+        lambda x, y: set_operation(this=x, expression=y, distinct=distinct, **opts),
         (maybe_parse(e, dialect=dialect, copy=copy, **opts) for e in expressions),
     )
 

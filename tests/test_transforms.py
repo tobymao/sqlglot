@@ -290,6 +290,16 @@ class TestTransforms(unittest.TestCase):
                 dialect,
             )
 
+            # validate knockout
+            script = """
+                    SELECT c.customer_name,
+                            (SELECT MAX(o.order_date)
+                            FROM orders o
+                            WHERE o.customer_id(+) = c.customer_id) AS latest_order_date
+                    FROM customers c
+                    """
+            self.assertRaises(AssertionError, eliminate_join_marks, parse_one(script, dialect=dialect))
+
     def test_eliminate_window_clause(self):
         self.validate(
             eliminate_window_clause,

@@ -884,46 +884,47 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
 
     from sqlglot.optimizer.scope import traverse_scope
     from sqlglot.optimizer.simplify import simplify
-    from sqlglot import exp, optimizer
+    from sqlglot import optimizer
     from collections import defaultdict
 
-    for scope in traverse_scope(expression):
+    for scope in reversed(traverse_scope(expression)):  # reversed to check knockout
         query = scope.expression
 
         where = query.args.get("where")
         joins = query.args.get("joins", [])
 
-        # nothing to do
-        if not where or not any(c.args.get("join_mark") for c in where.find_all(exp.Column)):
-            continue
-
-        # see point 1: WHERE and JOIN in the same SELECT are incompatible for (+)
-        assert not (
-            where.this and any(j.args.get("on") for j in joins)
-        ), "Cannot combine WHERE and JOIN for (+) operator"
-
-        # see point 2: we do not support left correlation
+        # knockout: we do not support left correlation (see point 2)
         assert not any(
-            c.args.get("join_mark") for e in query.expressions for c in e.find_all(exp.Column)
+            c.args.get("join_mark")
+            for e in query.expressions
+            for c in e.find_all(exp.Column)
         ), "Correlated queries are not supported"
+
+        # nothing to do - we check it here afrer knockout above
+        if not where or not any(
+            c.args.get("join_mark") for c in where.find_all(exp.Column)
+        ):
+            continue
 
         # make sure we have AND of ORs to have clear join terms
         where = optimizer.normalize.normalize(where.this)
         assert optimizer.normalize.normalized(where), "Cannot normalize JOIN predicates"
 
-        query_from = query.args["from"]
-
         joins_ons = defaultdict(list)  # dict of {name: list of join AND conditions}
         for cond in [where] if not isinstance(where, exp.And) else where.flatten():
             left_join_table = list(
-                set(col.table for col in cond.find_all(exp.Column) if col.args.get("join_mark"))
+                set(
+                    col.table
+                    for col in cond.find_all(exp.Column)
+                    if col.args.get("join_mark")
+                )
             )
             if not left_join_table:
                 continue
 
-            assert not (
-                len(left_join_table) > 1
-            ), "Cannot combine JOIN predicates from different tables"
+            assert not (len(left_join_table) > 1), (
+                "Cannot combine JOIN predicates from different tables"
+            )
 
             for col in cond.find_all(exp.Column):
                 col.set("join_mark", False)
@@ -932,6 +933,7 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
 
         old_joins = {join.alias_or_name: join for join in joins}
         new_joins = {}
+        query_from = query.args["from"]
 
         for table, predicates in joins_ons.items():
             join_what = old_joins.get(table, query_from).this.copy()
@@ -940,13 +942,18 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             )
 
             for p in predicates:
-                p.replace(exp.true())
+                parent = p.parent
+                p.pop()
+                if isinstance(parent, exp.Binary):
+                    parent.replace(parent.right if parent.left is None else parent.left)
+                elif isinstance(parent, exp.Where):
+                    parent.pop()
 
         if query_from.alias_or_name in new_joins:
             only_old_joins = old_joins.keys() - new_joins.keys()
-            assert (
-                len(only_old_joins) >= 1
-            ), "Cannot determine which table to use in the new FROM clause"
+            assert len(only_old_joins) >= 1, (
+                "Cannot determine which table to use in the new FROM clause"
+            )
 
             new_from_name = list(only_old_joins)[0]
             query.set("from", exp.From(this=old_joins[new_from_name].this))
@@ -958,8 +965,6 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                         j.set("kind", "CROSS")
                     new_joins[n] = j
             query.set("joins", list(new_joins.values()))
-
-        simplify(expression)
 
     return expression
 

@@ -275,6 +275,14 @@ class TestTransforms(unittest.TestCase):
                 == "SELECT a.id FROM a LEFT JOIN b ON a.id = b.id AND b.d = const"
             )
 
+            # validate parens
+            self.validate(
+                eliminate_join_marks,
+                "select t1.a, t2.b from t1, t2 where (1 = 1) and (t1.id = t2.id1 (+))",
+                "SELECT t1.a, t2.b FROM t1 LEFT JOIN t2 ON t1.id = t2.id1 WHERE (1 = 1)",
+                dialect,
+            )
+
             # validate a CASE
             self.validate(
                 eliminate_join_marks,

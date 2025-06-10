@@ -933,6 +933,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             )
 
             for p in predicates:
+                while isinstance(p.parent, exp.Paren): 
+                    p.parent.replace(p)
+
                 parent = p.parent
                 p.pop()
                 if isinstance(parent, exp.Binary):

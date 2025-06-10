@@ -534,6 +534,7 @@ class Exasol(Dialect):
             ),
             exp.DateDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self._date_trunc_sql(e),
+            exp.Explode: lambda self, e: self._explode_split_sql(e),
             # exp.Day
             # exp.DaysBetween: lambda self, e: f"DAYS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.Date: lambda self, e: f"DATE {self.sql(e, 'this')}",
@@ -874,13 +875,55 @@ class Exasol(Dialect):
 
             return self.func(func_name, expression.this, expression.expression)
 
-        def transform_is(self, e):
-            type_str = e.args["type"].this.upper()
+        def transform_is(self, e: exp.Is) -> str:
             this_sql = self.sql(e, "this")
-            expr_sql = self.sql(e, "expression") if e.args.get("expression") else None
-            if expr_sql:
-                return f"IS_{type_str}({this_sql}, {expr_sql})"
-            return f"IS_{type_str}({this_sql})"
+            expression = e.args.get("expression")
+            type_expr = e.args.get("type")
+
+            if type_expr:
+                # Use raw identifier name to avoid quotes like IS_"BOOLEAN"
+                type_str = (
+                    type_expr.this.upper()
+                    if isinstance(type_expr, exp.Identifier)
+                    else self.sql(type_expr).upper()
+                )
+                expr_sql = self.sql(expression) if expression else ""
+                return f"IS_{type_str}({this_sql}{', ' + expr_sql if expr_sql else ''})"
+
+            if isinstance(expression, exp.Null):
+                return f"{this_sql} IS NULL"
+
+            if isinstance(expression, exp.Boolean):
+                return f"{this_sql} IS {self.sql(expression)}"
+
+            if expression:
+                return f"{this_sql} IS {self.sql(expression)}"
+
+            return f"{this_sql} IS UNKNOWN"
+
+        def _explode_split_sql(self, explode: exp.Explode) -> str:
+            """
+            Transforms EXPLODE(SPLIT/REGEXP_SPLIT(col, ',')) into Exasol-compatible SQL using REGEXP_SUBSTR + CONNECT BY.
+            """
+            split_expr = explode.this
+
+            # Accept both Split and RegexpSplit expressions
+            if not isinstance(split_expr, (exp.Split, exp.RegexpSplit)):
+                raise ValueError(
+                    "Only SPLIT or REGEXP_SPLIT supported inside EXPLODE for Exasol transformation."
+                )
+
+            column_sql = self.sql(split_expr.this)
+            delimiter = self.sql(split_expr.expression) if split_expr.expression else "','"
+            pattern = "[^" + delimiter.strip("'") + "]+"  # default regex pattern
+
+            alias = explode.alias_or_name or "col"
+
+            return f"""(
+                SELECT REGEXP_SUBSTR({column_sql}, '{pattern}', 1, n.n) AS {alias}
+                FROM (SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 100) n
+                WHERE REGEXP_SUBSTR({column_sql}, '{pattern}', 1, n.n) IS NOT NULL
+            )"""
 
         def _anonymous_func(self, e):
             func_name = e.this.upper()

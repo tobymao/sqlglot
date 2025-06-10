@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import apply_index_offset, ensure_list, seq_get
+from sqlglot.helper import apply_index_offset, ensure_list, seq_get, find_new_name
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
@@ -933,7 +933,9 @@ class Parser(metaclass=_Parser):
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
         "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
         "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
-        "ORDER BY": lambda self, query: query.order_by(self._parse_order(), copy=False),
+        "ORDER BY": lambda self, query: query.order_by(
+            self._parse_order(), append=False, copy=False
+        ),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "OFFSET": lambda self, query: query.offset(self._parse_offset(), copy=False),
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
@@ -1125,10 +1127,33 @@ class Parser(metaclass=_Parser):
         "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
 
+    def _generate_new_cte_name(self):
+        self._pipe_cte_counter += 1
+        return find_new_name(base=f"_pipe_cte_{self._pipe_cte_counter}", taken=[])
+
+    def _generate_pipe_cte(
+        self, query: exp.Query, expressions: t.List[exp.Expression]
+    ) -> exp.Query:
+        if query.selects:
+            new_cte = self._generate_new_cte_name()
+            ctes = (
+                query.args.pop("with", None)
+                if isinstance(query, exp.Select)
+                else query.this.args.pop("with", None)
+            )
+            new_select = exp.select(*expressions, copy=False).from_(new_cte, copy=False)
+            if ctes:
+                new_select.set("with", ctes)
+
+            return new_select.with_(new_cte, as_=query, copy=False)
+
+        return query.select(*expressions, copy=False)
+
     def _parse_pipe_syntax_select(self, query: exp.Query) -> exp.Query:
         select = self._parse_select()
         if isinstance(select, exp.Select):
-            return select.from_(query.subquery(copy=False), copy=False)
+            return self._generate_pipe_cte(query, select.expressions)
+
         return query
 
     def _parse_pipe_syntax_where(self, query: exp.Query) -> exp.Query:
@@ -1139,9 +1164,13 @@ class Parser(metaclass=_Parser):
         limit = self._parse_limit()
         offset = self._parse_offset()
         if limit:
-            query.limit(limit, copy=False)
+            curr_limit = query.args.get("limit", limit)
+            if curr_limit.expression.to_py() >= limit.expression.to_py():
+                query.limit(limit, copy=False)
         if offset:
-            query.offset(offset, copy=False)
+            curr_offset = query.args.get("offset")
+            curr_offset = curr_offset.expression.to_py() if curr_offset else 0
+            query.offset(exp.Literal.number(curr_offset + offset.expression.to_py()), copy=False)
         return query
 
     def _parse_pipe_syntax_aggregate_fields(self) -> t.Optional[exp.Expression]:
@@ -1177,12 +1206,10 @@ class Parser(metaclass=_Parser):
                 copy=False,
             )
         else:
-            query = exp.select(*aggregates_or_groups, copy=False).from_(
-                query.subquery(copy=False), copy=False
-            )
+            query = query.select(*aggregates_or_groups, append=False, copy=False)
 
         if orders:
-            return query.order_by(*orders, copy=False)
+            return query.order_by(*orders, append=False, copy=False)
 
         return query
 
@@ -1205,16 +1232,23 @@ class Parser(metaclass=_Parser):
         if not first_setop or not query:
             return None
 
-        first_setop.this.pop()
-        distinct = first_setop.args.pop("distinct")
+        if not query.selects:
+            query = query.select("*", copy=False)
 
+        this = first_setop.this.pop()
+        distinct = first_setop.args.pop("distinct")
         setops = [first_setop.expression.pop(), *self._parse_expressions()]
 
         if isinstance(first_setop, exp.Union):
-            return query.union(*setops, distinct=distinct, **first_setop.args)
-        if isinstance(first_setop, exp.Except):
-            return query.except_(*setops, distinct=distinct, **first_setop.args)
-        return query.intersect(*setops, distinct=distinct, **first_setop.args)
+            query = query.union(*setops, distinct=distinct, copy=False, **first_setop.args)
+        elif isinstance(first_setop, exp.Except):
+            query = query.except_(*setops, distinct=distinct, copy=False, **first_setop.args)
+        else:
+            query = query.intersect(*setops, distinct=distinct, copy=False, **first_setop.args)
+
+        return self._generate_pipe_cte(
+            query, [element.args.get("alias", element) for element in this.expressions]
+        )
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (
@@ -1609,6 +1643,7 @@ class Parser(metaclass=_Parser):
         "_next",
         "_prev",
         "_prev_comments",
+        "_pipe_cte_counter",
     )
 
     # Autofilled
@@ -1639,6 +1674,7 @@ class Parser(metaclass=_Parser):
         self._next = None
         self._prev = None
         self._prev_comments = None
+        self._pipe_cte_counter = 0
 
     def parse(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
@@ -3337,7 +3373,9 @@ class Parser(metaclass=_Parser):
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
             if self._match(TokenType.PIPE_GT, advance=False):
-                return self._parse_pipe_syntax_query(this)
+                return self._parse_pipe_syntax_query(
+                    exp.Select().from_(from_.this, append=False, copy=False)
+                )
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -7250,6 +7288,9 @@ class Parser(metaclass=_Parser):
                 query = set_op_query
             else:
                 query = parser(self, query)
+
+        if query and not query.selects:
+            return query.select("*", copy=False)
 
         return query
 

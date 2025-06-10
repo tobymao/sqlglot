@@ -40,6 +40,9 @@ def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
 
 
 class Db2(Dialect):
+    """
+    Only tested for DB2 LUW - other distributions might work though.
+    """
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = False
@@ -88,19 +91,10 @@ class Db2(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "(+)": TokenType.JOIN_MARKER,
-            "BINARY_DOUBLE": TokenType.DOUBLE,
-            "BINARY_FLOAT": TokenType.FLOAT,
-            "BULK COLLECT INTO": TokenType.BULK_COLLECT_INTO,
             "COLUMNS": TokenType.COLUMN,
-            "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
-            "MINUS": TokenType.EXCEPT,
-            "NVARCHAR2": TokenType.NVARCHAR,
-            "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
-            "SAMPLE": TokenType.TABLE_SAMPLE,
-            "START": TokenType.BEGIN,
+            "EXCEPT": TokenType.EXCEPT,
+            "TABLESAMPLE": TokenType.TABLE_SAMPLE,
             "TOP": TokenType.TOP,
-            "VARCHAR2": TokenType.VARCHAR,
         }
 
     class Parser(parser.Parser):
@@ -131,20 +125,6 @@ class Db2(Dialect):
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
-            "JSON_ARRAY": lambda args: exp.JSONArray(
-                expressions=[
-                    exp.Argument(this=arg) for arg in args
-                ]  # DB2 JSON_ARRAY arguments
-            ),
-            "JSON_ARRAYAGG": lambda self: self._parse_json_array(
-                exp.JSONArrayAgg,
-                this=self._parse_format_json(self._parse_bitwise()),
-                order=self._parse_order(),
-            ),
-            "JSON_EXISTS": lambda args: exp.JSONExists(
-                this=seq_get(args, 0), path=seq_get(args, 1)
-            ),
-
         }
         FUNCTION_PARSERS.pop("CONVERT")
 
@@ -154,7 +134,6 @@ class Db2(Dialect):
                                    and self.expression(exp.TemporaryProperty, this="GLOBAL"),
             "PRIVATE": lambda self: self._match_text_seq("TEMPORARY")
                                     and self.expression(exp.TemporaryProperty, this="PRIVATE"),
-            "FORCE": lambda self: self.expression(exp.ForceProperty),
         }
 
         QUERY_MODIFIER_PARSERS = {
@@ -183,17 +162,6 @@ class Db2(Dialect):
             ),
         }
 
-        def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
-            """
-               Parse JSON_ARRAY for DB2 compatibility. Based on DB2's JSON_ARRAY syntax.
-               """
-            return self.expression(
-                expr_type,
-                null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
-                # DB2 does not require RETURNING or STRICT handling for JSON arrays, remove details
-                **kwargs,
-            )
-
         def _parse_hint_function_call(self) -> t.Optional[exp.Expression]:
             if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
                 return None
@@ -217,9 +185,6 @@ class Db2(Dialect):
             return args
 
         def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
-            """
-            Parse query restrictions for DB2. WITH statements include isolation levels.
-            """
             kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)
 
             if not kind:
@@ -230,20 +195,6 @@ class Db2(Dialect):
                 exp.QueryOption,
                 this=kind,
                 expression=self._match(TokenType.CONSTRAINT) and self._parse_field(),
-            )
-
-        def _parse_json_exists(self) -> exp.JSONExists:
-            """
-            Parse JSON_EXISTS for DB2, using the JSON_VALUE function or JSON path operators.
-            """
-            this = self._parse_format_json(self._parse_bitwise())
-            self._match(TokenType.COMMA)
-
-            # Adjust based on DB2 handling of JSON paths
-            return self.expression(
-                exp.JSONExists,
-                this=this,
-                path=self.sql(self._parse_bitwise()),  # Use DB2 JSON path handling
             )
 
         def _parse_into(self) -> t.Optional[exp.Into]:
@@ -302,7 +253,6 @@ class Db2(Dialect):
             exp.DataType.Type.TIME: "TIME",
             exp.DataType.Type.XML: "XML",
         }
-        # TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -339,10 +289,7 @@ class Db2(Dialect):
             exp.Trim: _trim_sql,
             exp.Unicode: lambda self, e: f"ASCII(UNISTR({self.sql(e.this)}))",
             exp.UnixToTime: lambda self,
-                                   e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
-            exp.JSONExists: lambda self, e: f"JSON_VALUE({self.sql(e.this)}, '{e.args['path']}') IS NOT NULL",
-            exp.JSONArray: lambda self, e: f"JSON_ARRAY({', '.join(self.sql(a) for a in e.expressions)})",
-
+                                   e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)"
         }
 
         PROPERTIES_LOCATION = {

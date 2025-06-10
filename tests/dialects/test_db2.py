@@ -53,9 +53,6 @@ class TestDB2(Validator):
             "SELECT * FROM test UNPIVOT INCLUDE NULLS (value FOR Description IN (col AS 'PREFIX ' || CHR(38) || ' SUFFIX'))"
         )
         self.validate_identity(
-            "SELECT last_name, employee_id, manager_id, LEVEL FROM employees START WITH employee_id = 100 CONNECT BY PRIOR employee_id = manager_id ORDER SIBLINGS BY last_name"
-        )
-        self.validate_identity(
             "ALTER TABLE Payments ADD (Stock DECIMAL NOT NULL, dropid VARCHAR(500) NOT NULL)"
         )
         # @TODO
@@ -73,12 +70,6 @@ class TestDB2(Validator):
         )
         self.validate_identity(
             "SELECT department_id INTO v_department_id FROM departments LIMIT 1"
-        )
-        self.validate_identity(
-            "SELECT department_id BULK COLLECT INTO v_department_ids FROM departments"
-        )
-        self.validate_identity(
-            "SELECT department_id, department_name BULK COLLECT INTO v_department_ids, v_department_names FROM departments"
         )
         self.validate_identity(
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
@@ -248,14 +239,14 @@ class TestDB2(Validator):
         )
 
         self.validate_all(
-            "x::binary_double",
+            "x::double",
             write={
                 "db2": "CAST(x AS DOUBLE)",
                 "": "CAST(x AS DOUBLE)",
             },
         )
         self.validate_all(
-            "x::binary_float",
+            "x::float",
             write={
                 "db2": "CAST(x AS FLOAT)",
                 "": "CAST(x AS FLOAT)",
@@ -323,23 +314,9 @@ class TestDB2(Validator):
                 "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH FIRST 10 ROWS ONLY",
             },
         )
-        self.validate_identity("CREATE OR REPLACE FORCE VIEW foo1.foo2")
+        self.validate_identity("CREATE OR REPLACE VIEW foo1.foo2")
         self.validate_identity("TO_TIMESTAMP('foo')")
 
-    def test_join_marker(self):
-        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
-
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            write={"": UnsupportedError},
-        )
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            write={
-                "": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y",
-                "db2": "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            },
-        )
 
     def test_xml_table(self):
         self.validate_identity("XMLTABLE('x')")
@@ -350,7 +327,7 @@ class TestDB2(Validator):
             "XMLTABLE('x' RETURNING SEQUENCE BY REF COLUMNS a VARCHAR, b FLOAT)"
         )
         self.validate_identity(
-            "SELECT x.* FROM example t, XMLTABLE(XMLNAMESPACES(DEFAULT 'http://example.com/default', 'http://example.com/ns1' AS \"ns1\"), '/root/data' PASSING t.xml COLUMNS id NUMBER PATH '@id', value VARCHAR(100) PATH 'ns1:value/text()') x"
+            "SELECT x.* FROM example t, XMLTABLE(XMLNAMESPACES(DEFAULT 'http://example.com/default', 'http://example.com/ns1' AS \"ns1\"), '/root/data' PASSING t.xml COLUMNS id DECIMAL PATH '@id', value VARCHAR(100) PATH 'ns1:value/text()') x"
         )
 
         self.validate_all(
@@ -402,63 +379,6 @@ FROM XMLTABLE(
     data_default VARCHAR(2000) PATH '*[3]'
 )""",
             },
-            pretty=True,
-        )
-
-    def test_match_recognize(self):
-        self.validate_identity(
-            """SELECT
-  *
-FROM sales_history
-MATCH_RECOGNIZE (
-  PARTITION BY product
-  ORDER BY
-    tstamp
-  MEASURES
-    STRT.tstamp AS start_tstamp,
-    LAST(UP.tstamp) AS peak_tstamp,
-    LAST(DOWN.tstamp) AS end_tstamp,
-    MATCH_NUMBER() AS mno
-  ONE ROW PER MATCH
-  AFTER MATCH SKIP TO LAST DOWN
-  PATTERN (STRT UP+ FLAT* DOWN+)
-  DEFINE
-    UP AS UP.units_sold > PREV(UP.units_sold),
-    FLAT AS FLAT.units_sold = PREV(FLAT.units_sold),
-    DOWN AS DOWN.units_sold < PREV(DOWN.units_sold)
-) MR""",
-            pretty=True,
-        )
-
-    def test_json_table(self):
-        # Basic JSON_TABLE validation
-        self.validate_identity(
-            """SELECT
-      JT.foo
-    FROM JSON_TABLE(
-      foo,
-      'bla',
-      COLUMNS (
-        foo VARCHAR(255) PATH 'bar'
-      )
-    ) AS JT"""
-        )
-
-        # Nested JSON_TABLE validation
-        self.validate_identity(
-            """SELECT
-      SRC.tempid,
-      SRC.last_dt
-    FROM JSON_TABLE(
-      res,
-      '$.info[*]',
-      COLUMNS (
-        tempid INT PATH '$.tempid',
-        NESTED PATH '$.calid[*]' COLUMNS (
-          last_dt VARCHAR(255) PATH '$.last_dt'
-        )
-      )
-    ) AS SRC""",
             pretty=True,
         )
 
@@ -569,19 +489,6 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "SELECT salary FROM employees"
         )
 
-    def test_json_functions(self):
-        for format_json in ("", " FORMAT JSON"):
-            for on_cond in (
-                "",
-                " TRUE ON ERROR",
-                " NULL ON EMPTY",
-                " DEFAULT 1 ON ERROR TRUE ON EMPTY",
-            ):
-                for passing in ("", " PASSING 'name1' AS \"var1\", 'name2' AS \"var2\""):
-                    with self.subTest("Testing JSON_EXISTS()"):
-                        self.validate_identity(
-                            f"SELECT * FROM t WHERE JSON_EXISTS(name{format_json}, '$[1].middle'{passing}{on_cond})"
-                        )
 
     def test_grant(self):
         grant_cmds = [

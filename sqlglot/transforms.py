@@ -883,10 +883,11 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
     """
 
     from sqlglot.optimizer.scope import traverse_scope
-    from sqlglot import optimizer
+    from sqlglot.optimizer.normalize import normalize, normalized
     from collections import defaultdict
 
-    for scope in reversed(traverse_scope(expression)):  # reversed to check knockout
+    # we go in reverse to check the main query for left correlation
+    for scope in reversed(traverse_scope(expression)):
         query = scope.expression
 
         where = query.args.get("where")
@@ -897,19 +898,19 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             c.args.get("join_mark") for e in query.expressions for c in e.find_all(exp.Column)
         ), "Correlated queries are not supported"
 
-        # nothing to do - we check it here afrer knockout above
+        # nothing to do - we check it here after knockout above
         if not where or not any(c.args.get("join_mark") for c in where.find_all(exp.Column)):
             continue
 
         # make sure we have AND of ORs to have clear join terms
-        where = optimizer.normalize.normalize(where.this)
-        assert optimizer.normalize.normalized(where), "Cannot normalize JOIN predicates"
+        where = normalize(where.this)
+        assert normalized(where), "Cannot normalize JOIN predicates"
 
         joins_ons = defaultdict(list)  # dict of {name: list of join AND conditions}
         for cond in [where] if not isinstance(where, exp.And) else where.flatten():
-            left_join_table = list(
-                set(col.table for col in cond.find_all(exp.Column) if col.args.get("join_mark"))
-            )
+            join_cols = [col for col in cond.find_all(exp.Column) if col.args.get("join_mark")]
+
+            left_join_table = set(col.table for col in join_cols)
             if not left_join_table:
                 continue
 
@@ -917,10 +918,10 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 len(left_join_table) > 1
             ), "Cannot combine JOIN predicates from different tables"
 
-            for col in cond.find_all(exp.Column):
+            for col in join_cols:
                 col.set("join_mark", False)
 
-            joins_ons[left_join_table[0]].append(cond)
+            joins_ons[left_join_table.pop()].append(cond)
 
         old_joins = {join.alias_or_name: join for join in joins}
         new_joins = {}

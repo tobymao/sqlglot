@@ -557,6 +557,7 @@ class Hive(Dialect):
             exp.GenerateDateArray: sequence_sql,
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
+            exp.IntDiv: lambda self, e: self.binary(e, "DIV"),
             exp.IsNan: rename_func("ISNAN"),
             exp.JSONExtract: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
             exp.JSONExtractScalar: lambda self, e: self.func(

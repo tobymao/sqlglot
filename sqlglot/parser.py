@@ -1127,15 +1127,13 @@ class Parser(metaclass=_Parser):
         "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
 
-    def _generate_new_cte_name(self):
+    def _new_cte_name(self):
         self._pipe_cte_counter += 1
         return find_new_name(base=f"_pipe_cte_{self._pipe_cte_counter}", taken=[])
 
-    def _generate_pipe_cte(
-        self, query: exp.Query, expressions: t.List[exp.Expression]
-    ) -> exp.Query:
+    def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Query:
         if query.selects:
-            new_cte = self._generate_new_cte_name()
+            new_cte = self._new_cte_name()
             ctes = (
                 query.args.pop("with", None)
                 if isinstance(query, exp.Select)
@@ -1152,7 +1150,7 @@ class Parser(metaclass=_Parser):
     def _parse_pipe_syntax_select(self, query: exp.Query) -> exp.Query:
         select = self._parse_select()
         if isinstance(select, exp.Select):
-            return self._generate_pipe_cte(query, select.expressions)
+            return self._build_pipe_cte(query, select.expressions)
 
         return query
 
@@ -1246,7 +1244,7 @@ class Parser(metaclass=_Parser):
         else:
             query = query.intersect(*setops, distinct=distinct, copy=False, **first_setop.args)
 
-        return self._generate_pipe_cte(
+        return self._build_pipe_cte(
             query, [element.args.get("alias", element) for element in this.expressions]
         )
 

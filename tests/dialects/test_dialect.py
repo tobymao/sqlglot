@@ -3518,7 +3518,7 @@ FROM subquery2""",
         )
         self.validate_identity(
             "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1 |> SELECT x2_a",
-            "WITH _pipe_cte_1 AS (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM x WHERE x1_a > 1) SELECT x2_a FROM _pipe_cte_1",
+            "WITH __tmp1 AS (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM x WHERE x1_a > 1) SELECT x2_a FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> WHERE x1 > 0 OR x2 > 0 |> WHERE x3 > 1 AND x4 > 1 |> SELECT x1, x4",
@@ -3530,7 +3530,7 @@ FROM subquery2""",
         )
         self.validate_identity(
             "FROM x |> WHERE x1 > 1 AND x2 > 2 |> SELECT x1 as gt1, x2 as gt2 |> SELECT gt1 * 2 + gt2 * 2 AS gt2_2",
-            "WITH _pipe_cte_1 AS (SELECT x1 AS gt1, x2 AS gt2 FROM x WHERE x1 > 1 AND x2 > 2) SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM _pipe_cte_1",
+            "WITH __tmp1 AS (SELECT x1 AS gt1, x2 AS gt2 FROM x WHERE x1 > 1 AND x2 > 2) SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM __tmp1",
         )
         self.validate_identity("FROM x |> ORDER BY x1", "SELECT * FROM x ORDER BY x1")
         self.validate_identity(
@@ -3577,7 +3577,7 @@ FROM subquery2""",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) AS s_x1 |> SELECT s_x1",
-            "WITH _pipe_cte_1 AS (SELECT SUM(x1) AS s_x1 FROM x) SELECT s_x1 FROM _pipe_cte_1",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1 FROM x) SELECT s_x1 FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4, x5",
@@ -3589,7 +3589,7 @@ FROM subquery2""",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x1 |> SELECT s_x1, x1 as ss_x1",
-            "WITH _pipe_cte_1 AS (SELECT SUM(x1) AS s_x1, x1 FROM x GROUP BY x1) SELECT s_x1, x1 AS ss_x1 FROM _pipe_cte_1",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x1 FROM x GROUP BY x1) SELECT s_x1, x1 AS ss_x1 FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) GROUP", "SELECT SUM(x1) AS GROUP FROM x"
@@ -3612,7 +3612,7 @@ FROM subquery2""",
                 f"Testing pipe syntax AGGREGATE with GROUP AND ORDER BY for order option: {order_option}"
             ):
                 self.validate_all(
-                    f"WITH _pipe_cte_1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}) SELECT g_x1, x_s FROM _pipe_cte_1",
+                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}) SELECT g_x1, x_s FROM __tmp1",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
@@ -3628,7 +3628,7 @@ FROM subquery2""",
                     self.validate_all(
                         f"FROM x|> {op_operator} (SELECT y1 FROM y), (SELECT z1 FROM z)",
                         write={
-                            "bigquery": f"WITH _pipe_cte_1 AS (SELECT * FROM x {op_operator} (SELECT y1 FROM y) {op_operator} (SELECT z1 FROM z)) SELECT * FROM _pipe_cte_1",
+                            "bigquery": f"WITH __tmp1 AS (SELECT * FROM x {op_operator} (SELECT y1 FROM y) {op_operator} (SELECT z1 FROM z)) SELECT * FROM __tmp1",
                         },
                     )
 
@@ -3646,13 +3646,13 @@ FROM subquery2""",
                             self.validate_all(
                                 f"FROM x|> SELECT x1, x2 FROM x |> {op_prefix} {op_operator} {suffix_operator} (SELECT y1, y2 FROM y), (SELECT z1, z2 FROM z)",
                                 write={
-                                    "bigquery": f"WITH _pipe_cte_1 AS (SELECT x1, x2 FROM x {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y) {op_prefix} {op_operator} BY NAME (SELECT z1, z2 FROM z)) SELECT x1, x2 FROM _pipe_cte_1",
+                                    "bigquery": f"WITH __tmp1 AS (SELECT x1, x2 FROM x {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y) {op_prefix} {op_operator} BY NAME (SELECT z1, z2 FROM z)) SELECT x1, x2 FROM __tmp1",
                                 },
                             )
 
             self.validate_identity(
                 "FROM d.x |> SELECT x.x1 |> UNION (SELECT 2 AS a1) |> SELECT x1 |> UNION (SELECT 3 as a2) |> SELECT x1 |> WHERE x1 > 100",
-                """WITH _pipe_cte_1 AS (
+                """WITH __tmp1 AS (
   SELECT
     x.x1
   FROM d.x
@@ -3661,27 +3661,27 @@ FROM subquery2""",
     SELECT
       2 AS a1
   )
-), _pipe_cte_2 AS (
+), __tmp2 AS (
   SELECT
     x.x1
-  FROM _pipe_cte_1
-), _pipe_cte_3 AS (
+  FROM __tmp1
+), __tmp3 AS (
   SELECT
     x1
-  FROM _pipe_cte_2
+  FROM __tmp2
   UNION
   (
     SELECT
       3 AS a2
   )
-), _pipe_cte_4 AS (
+), __tmp4 AS (
   SELECT
     x1
-  FROM _pipe_cte_3
+  FROM __tmp3
 )
 SELECT
   x1
-FROM _pipe_cte_4
+FROM __tmp4
 WHERE
   x1 > 100""",
                 pretty=True,
@@ -3689,7 +3689,7 @@ WHERE
 
         self.validate_identity(
             "FROM c.x |> UNION ALL (SELECT 2 AS a1, '2' as a2) |> AGGREGATE AVG(x1) as m_x1 |> SELECT * |> UNION ALL (SELECT y1 FROM c.y) |> SELECT m_x1",
-            """WITH _pipe_cte_1 AS (
+            """WITH __tmp1 AS (
   SELECT
     *
   FROM c.x
@@ -3699,27 +3699,27 @@ WHERE
       2 AS a1,
       '2' AS a2
   )
-), _pipe_cte_2 AS (
+), __tmp2 AS (
   SELECT
     AVG(x1) AS m_x1
-  FROM _pipe_cte_1
-), _pipe_cte_3 AS (
+  FROM __tmp1
+), __tmp3 AS (
   SELECT
     *
-  FROM _pipe_cte_2
+  FROM __tmp2
   UNION ALL
   (
     SELECT
       y1
     FROM c.y
   )
-), _pipe_cte_4 AS (
+), __tmp4 AS (
   SELECT
     *
-  FROM _pipe_cte_3
+  FROM __tmp3
 )
 SELECT
   m_x1
-FROM _pipe_cte_4""",
+FROM __tmp4""",
             pretty=True,
         )

@@ -3248,11 +3248,11 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.VALUES, advance=False):
             this = self._parse_derived_table_values()
         elif from_:
-            this = exp.select("*").from_(from_.this, copy=False)
             if self._match(TokenType.PIPE_GT, advance=False):
                 return self._parse_pipe_syntax_query(
                     exp.Select().from_(from_.this, append=False, copy=False)
                 )
+            this = exp.select("*").from_(from_.this, copy=False)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -8310,12 +8310,17 @@ class Parser(metaclass=_Parser):
     def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Query:
         if query.selects:
             self._pipe_cte_counter += 1
-            new_cte = f"_pipe_cte_{self._pipe_cte_counter}"
-            ctes = (
-                query.args.pop("with", None)
+            new_cte = f"__tmp{self._pipe_cte_counter}"
+
+            # For `exp.Select`, generated CTEs are attached to its `with`
+            # For `exp.SetOperation`, generated CTEs are attached to the `with` of its LHS, accessed via `this`
+            with_ = (
+                query.args.get("with")
                 if isinstance(query, exp.Select)
-                else query.this.args.pop("with", None)
+                else query.this.args.get("with")
             )
+            ctes = with_.pop() if with_ else None
+
             new_select = exp.select(*expressions, copy=False).from_(new_cte, copy=False)
             if ctes:
                 new_select.set("with", ctes)

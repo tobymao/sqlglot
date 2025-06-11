@@ -1197,6 +1197,25 @@ class Parser(metaclass=_Parser):
 
         return query
 
+    def _parse_pipe_syntax_set_operator(
+        self, query: t.Optional[exp.Query]
+    ) -> t.Optional[exp.Query]:
+        first_setop = self.parse_set_operation(this=query)
+
+        if not first_setop or not query:
+            return None
+
+        first_setop.this.pop()
+        distinct = first_setop.args.pop("distinct")
+
+        setops = [first_setop.expression.pop(), *self._parse_expressions()]
+
+        if isinstance(first_setop, exp.Union):
+            return query.union(*setops, distinct=distinct, **first_setop.args)
+        if isinstance(first_setop, exp.Except):
+            return query.except_(*setops, distinct=distinct, **first_setop.args)
+        return query.intersect(*setops, distinct=distinct, **first_setop.args)
+
     def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
         klass = (
             exp.PartitionedByBucket
@@ -1576,6 +1595,9 @@ class Parser(metaclass=_Parser):
 
     # Whether the 'AS' keyword is optional in the CTE definition syntax
     OPTIONAL_ALIAS_TOKEN_CTE = True
+
+    # Whether renaming a column with an ALTER statement requires the presence of the COLUMN keyword
+    ALTER_RENAME_REQUIRES_COLUMN = True
 
     __slots__ = (
         "error_level",
@@ -7217,11 +7239,18 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_pipe_syntax_query(self, query: exp.Select) -> exp.Query:
+    def _parse_pipe_syntax_query(self, query: exp.Query) -> t.Optional[exp.Query]:
         while self._match(TokenType.PIPE_GT):
+            start = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
-                self.raise_error(f"Unsupported pipe syntax operator: '{self._curr.text.upper()}'.")
+                set_op_query = self._parse_pipe_syntax_set_operator(query)
+                if not set_op_query:
+                    self._retreat(start)
+                    self.raise_error(f"Unsupported pipe syntax operator: '{start.text.upper()}'.")
+                    break
+
+                query = set_op_query
             else:
                 query = parser(self, query)
 
@@ -7432,7 +7461,7 @@ class Parser(metaclass=_Parser):
         return self._parse_csv(self._parse_drop_column)
 
     def _parse_alter_table_rename(self) -> t.Optional[exp.AlterRename | exp.RenameColumn]:
-        if self._match(TokenType.COLUMN):
+        if self._match(TokenType.COLUMN) or not self.ALTER_RENAME_REQUIRES_COLUMN:
             exists = self._parse_exists()
             old_column = self._parse_column()
             to = self._match_text_seq("TO")

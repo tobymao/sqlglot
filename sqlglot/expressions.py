@@ -2033,7 +2033,7 @@ class ProjectionPolicyColumnConstraint(ColumnConstraintKind):
 # computed column expression
 # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql?view=sql-server-ver16
 class ComputedColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": True, "persisted": False, "not_null": False}
+    arg_types = {"this": True, "persisted": False, "not_null": False, "stored": False}
 
 
 class Constraint(Expression):

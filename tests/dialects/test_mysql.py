@@ -90,6 +90,20 @@ class TestMySQL(Validator):
             "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING HASH)"
         )
         self.validate_identity(
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) STORED)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) VIRTUAL)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT AS (a + a) STORED)",
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) STORED)",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT AS (a + a) VIRTUAL)",
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) VIRTUAL)",
+        )
+        self.validate_identity(
             "/*left*/ EXPLAIN SELECT /*hint*/ col FROM t1 /*right*/",
             "/* left */ DESCRIBE /* hint */ SELECT col FROM t1 /* right */",
         )

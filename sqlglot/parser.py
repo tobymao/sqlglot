@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import apply_index_offset, ensure_list, seq_get, find_new_name
+from sqlglot.helper import apply_index_offset, ensure_list, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
@@ -8310,7 +8310,7 @@ class Parser(metaclass=_Parser):
     def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Query:
         if query.selects:
             self._pipe_cte_counter += 1
-            new_cte = find_new_name(base=f"_pipe_cte_{self._pipe_cte_counter}", taken=[])
+            new_cte = f"_pipe_cte_{self._pipe_cte_counter}"
             ctes = (
                 query.args.pop("with", None)
                 if isinstance(query, exp.Select)

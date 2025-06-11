@@ -4927,7 +4927,7 @@ class AddConstraint(Expression):
 
 
 class AddPartition(Expression):
-    pass
+    arg_types = {"this": True, "exists": False}
 
 
 class AttachOption(Expression):

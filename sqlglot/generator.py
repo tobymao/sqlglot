@@ -3499,7 +3499,8 @@ class Generator(metaclass=_Generator):
         return f"ADD {self.expressions(expression)}"
 
     def addpartition_sql(self, expression: exp.AddPartition) -> str:
-        return f"ADD {self.sql(expression.this)}"
+        exists = "IF NOT EXISTS " if expression.args.get("exists") else ""
+        return f"ADD {exists}{self.sql(expression.this)}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)

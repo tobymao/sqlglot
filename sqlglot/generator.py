@@ -3498,6 +3498,9 @@ class Generator(metaclass=_Generator):
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
         return f"ADD {self.expressions(expression)}"
 
+    def addpartition_sql(self, expression: exp.AddPartition) -> str:
+        return f"ADD {self.sql(expression.this)}"
+
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)
 

@@ -7368,13 +7368,20 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_alter_table_add(self) -> t.List[exp.Expression]:
-        def _parse_add_column_or_constraint():
+        def _parse_add_alteration() -> t.Optional[exp.Expression]:
             self._match_text_seq("ADD")
             if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
                 return self.expression(
                     exp.AddConstraint, expressions=self._parse_csv(self._parse_constraint)
                 )
-            return self._parse_add_column()
+
+            is_partition = self._match(TokenType.PARTITION, advance=False)
+            field = self._parse_add_column()
+
+            if is_partition:
+                return self.expression(exp.AddPartition, this=field)
+
+            return field
 
         if not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN or self._match_text_seq(
             "COLUMNS"
@@ -7383,7 +7390,7 @@ class Parser(metaclass=_Parser):
 
             return ensure_list(schema) if schema else self._parse_csv(self._parse_field_def)
 
-        return self._parse_csv(_parse_add_column_or_constraint)
+        return self._parse_csv(_parse_add_alteration)
 
     def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
         if self._match_texts(self.ALTER_ALTER_PARSERS):

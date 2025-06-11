@@ -5893,7 +5893,7 @@ class Parser(metaclass=_Parser):
                     exp.ColumnConstraint,
                     kind=exp.ComputedColumnConstraint(
                         this=self._parse_disjunction(),
-                        stored=self._match_texts(("STORED", "VIRTUAL"))
+                        persisted=self._match_texts(("STORED", "VIRTUAL"))
                         and self._prev.text.upper() == "STORED",
                     ),
                 )

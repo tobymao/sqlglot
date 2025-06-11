@@ -499,12 +499,13 @@ class MySQL(Dialect):
             this = super()._parse_generated_as_identity()
 
             if self._match_texts(("STORED", "VIRTUAL")):
-                stored = self._prev.text.upper() == "STORED"
+                persisted = self._prev.text.upper() == "STORED"
+
                 if isinstance(this, exp.ComputedColumnConstraint):
-                    this.set("stored", stored)
+                    this.set("persisted", persisted)
                 elif isinstance(this, exp.GeneratedAsIdentityColumnConstraint):
                     this = self.expression(
-                        exp.ComputedColumnConstraint, this=this.expression, stored=stored
+                        exp.ComputedColumnConstraint, this=this.expression, persisted=persisted
                     )
 
             return this
@@ -1175,8 +1176,8 @@ class MySQL(Dialect):
         }
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
-            stored = "STORED" if expression.args.get("stored") else "VIRTUAL"
-            return f"GENERATED ALWAYS AS ({self.sql(expression.this.unnest())}) {stored}"
+            persisted = "STORED" if expression.args.get("persisted") else "VIRTUAL"
+            return f"GENERATED ALWAYS AS ({self.sql(expression.this.unnest())}) {persisted}"
 
         def array_sql(self, expression: exp.Array) -> str:
             self.unsupported("Arrays are not supported by MySQL")

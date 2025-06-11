@@ -5891,7 +5891,11 @@ class Parser(metaclass=_Parser):
             constraints.append(
                 self.expression(
                     exp.ColumnConstraint,
-                    kind=exp.ComputedColumnConstraint(this=self._parse_disjunction()),
+                    kind=exp.ComputedColumnConstraint(
+                        this=self._parse_disjunction(),
+                        persisted=self._match_texts(("STORED", "VIRTUAL"))
+                        and self._prev.text.upper() == "STORED",
+                    ),
                 )
             )
 

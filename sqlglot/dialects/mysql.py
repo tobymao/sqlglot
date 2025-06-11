@@ -489,6 +489,27 @@ class MySQL(Dialect):
         VALUES_FOLLOWED_BY_PAREN = False
         SUPPORTS_PARTITION_SELECTION = True
 
+        def _parse_generated_as_identity(
+            self,
+        ) -> (
+            exp.GeneratedAsIdentityColumnConstraint
+            | exp.ComputedColumnConstraint
+            | exp.GeneratedAsRowColumnConstraint
+        ):
+            this = super()._parse_generated_as_identity()
+
+            if self._match_texts(("STORED", "VIRTUAL")):
+                persisted = self._prev.text.upper() == "STORED"
+
+                if isinstance(this, exp.ComputedColumnConstraint):
+                    this.set("persisted", persisted)
+                elif isinstance(this, exp.GeneratedAsIdentityColumnConstraint):
+                    this = self.expression(
+                        exp.ComputedColumnConstraint, this=this.expression, persisted=persisted
+                    )
+
+            return this
+
         def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
             this = self._parse_id_var()
             if not self._match(TokenType.L_PAREN):
@@ -1153,6 +1174,10 @@ class MySQL(Dialect):
             "year_month",
             "zerofill",
         }
+
+        def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+            persisted = "STORED" if expression.args.get("persisted") else "VIRTUAL"
+            return f"GENERATED ALWAYS AS ({self.sql(expression.this.unnest())}) {persisted}"
 
         def array_sql(self, expression: exp.Array) -> str:
             self.unsupported("Arrays are not supported by MySQL")

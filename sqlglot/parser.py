@@ -5507,8 +5507,11 @@ class Parser(metaclass=_Parser):
 
             # Function calls can be qualified, e.g., x.y.FOO()
             # This converts the final AST to a series of Dots leading to the function call
-            if isinstance(field, (exp.Func, exp.Window)) and isinstance(this, exp.Column):
-                this = this.to_dot()
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
+            if isinstance(field, (exp.Func, exp.Window)) and this:
+                this = this.transform(
+                    lambda n: n.to_dot(include_dots=False) if isinstance(n, exp.Column) else n
+                )
 
             if op:
                 this = op(self, this, field)

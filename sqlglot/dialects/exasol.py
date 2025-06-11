@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 
 
 def _str_to_time_sql(self: Exasol.Generator, expression: exp.StrToTime) -> str:
-    # Safely get the main expression
     this_expr = expression.args.get("this") or (
         expression.expressions[0] if expression.expressions else None
     )
@@ -29,34 +28,30 @@ def _str_to_time_sql(self: Exasol.Generator, expression: exp.StrToTime) -> str:
 
     this = self.sql(this_expr)
 
-    # Handle optional format argument safely
     fmt_expr = expression.args.get("format")
     if fmt_expr and hasattr(fmt_expr, "this"):
         fmt_str = self._normalize_date_format(fmt_expr.this)
-        return f"TO_TIMESTAMP({this}, '{fmt_str}')"
+        result = f"TO_TIMESTAMP({this}, '{fmt_str}')"
+    else:
+        result = f"CAST({this} AS TIMESTAMP)"
 
-    return f"CAST({this} AS TIMESTAMP)"
+    # Only print when needed
+    if this_expr.name == "date":
+        print(f"[DEBUG] Generating StrToTime for {this_expr}: {result}")
+        return f"TO_DATE({this}, '{fmt_str}')"
+
+    return result
 
 
 def _str_to_date_sql(self: Exasol.Generator, expression: exp.StrToDate) -> str:
-    this_expr = expression.args.get("this") or (
-        expression.expressions[0] if expression.expressions else None
-    )
-    if not this_expr:
-        raise ValueError("Missing 'this' argument for StrToDate")
-
-    this = self.sql(this_expr)
-
-    format_arg = expression.args.get("format")
-
-    if not format_arg and len(expression.expressions) > 1:
-        format_arg = expression.expressions[1]
-
-    if format_arg:
-        fmt_str = self._normalize_date_format(format_arg.name)
-        return f"TO_DATE({this}, '{fmt_str}')"
-
-    return f"TO_DATE({this})"
+    """
+    Handles TO_DATE(expr) translation for Exasol.
+    Exasol does not support format strings in TO_DATE like Oracle or MySQL.
+    If format is provided, assume it's already in the correct format and ignore it.
+    """
+    value_expr = expression.this
+    value_sql = self.sql(value_expr)
+    return f"TO_DATE({value_sql})"
 
 
 class Tokenizer(tokens.Tokenizer):
@@ -213,7 +208,7 @@ class Exasol(Dialect):
             **NUMERIC_FUNCTIONS,
             **STRING_FUNCTIONS,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "exasol"),
-            "TO_DATE": build_formatted_time(exp.StrToDate, "exasol"),
+            "TO_DATE": exp.StrToDate,
         }
 
         CONSTRAINT_PARSERS = {
@@ -534,7 +529,7 @@ class Exasol(Dialect):
             ),
             exp.DateDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self._date_trunc_sql(e),
-            exp.Explode: lambda self, e: self._explode_split_sql(e),
+            # exp.Explode: lambda self, e: self._explode_split_sql(e),
             # exp.Day
             # exp.DaysBetween: lambda self, e: f"DAYS_BETWEEN({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.Date: lambda self, e: f"DATE {self.sql(e, 'this')}",
@@ -747,7 +742,7 @@ class Exasol(Dialect):
             exp.StrToTime: _str_to_time_sql,
             # exp.SysConnectByPath
             exp.ToChar: lambda self, e: self.to_char_sql(e),
-            exp.TimeStrToDate: rename_func("TO_DATE"),
+            exp.TimeStrToDate: _str_to_date_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func(
                 "TO_CHAR", e.this, self.format_time_to_string(e)
@@ -817,14 +812,16 @@ class Exasol(Dialect):
             return super().lte_sql(expression)
 
         def identifier_sql(self, expression: exp.Identifier) -> str:
-            name = expression.this
-            if (
-                name.upper() in self.RESERVED_KEYWORDS
-                or not name.isidentifier()
-                or name != name.lower()
+            parent = expression.parent
+
+            # Do NOT quote if it's the schema (db) or catalog
+            if isinstance(parent, exp.Table) and (
+                parent.args.get("db") is expression or parent.args.get("catalog") is expression
             ):
-                return f'"{name}"'
-            return name
+                return expression.this
+
+            # Quote everything else (columns, table names, etc.)
+            return f'"{expression.this}"'
 
         def _normalize_date_format(self, fmt: str) -> str:
             # If fmt contains Python style like '%Y%m%d', remove % and convert:
@@ -901,29 +898,64 @@ class Exasol(Dialect):
 
             return f"{this_sql} IS UNKNOWN"
 
-        def _explode_split_sql(self, explode: exp.Explode) -> str:
-            """
-            Transforms EXPLODE(SPLIT/REGEXP_SPLIT(col, ',')) into Exasol-compatible SQL using REGEXP_SUBSTR + CONNECT BY.
-            """
-            split_expr = explode.this
+        # def _explode_split_sql(self, explode: exp.Explode) -> str:
+        #     """
+        #     Transforms EXPLODE(SPLIT/REGEXP_SPLIT(col, ',')) into Exasol-compatible SQL using REGEXP_SUBSTR + CONNECT BY.
+        #     """
+        #     split_expr = explode.this
 
-            # Accept both Split and RegexpSplit expressions
-            if not isinstance(split_expr, (exp.Split, exp.RegexpSplit)):
-                raise ValueError(
-                    "Only SPLIT or REGEXP_SPLIT supported inside EXPLODE for Exasol transformation."
-                )
+        #     # Accept both Split and RegexpSplit expressions
+        #     if not isinstance(split_expr, (exp.Split, exp.RegexpSplit)):
+        #         raise ValueError(
+        #             "Only SPLIT or REGEXP_SPLIT supported inside EXPLODE for Exasol transformation."
+        #         )
 
-            column_sql = self.sql(split_expr.this)
-            delimiter = self.sql(split_expr.expression) if split_expr.expression else "','"
-            pattern = "[^" + delimiter.strip("'") + "]+"  # default regex pattern
+        #     column_sql = self.sql(split_expr.this)
+        #     delimiter = self.sql(split_expr.expression) if split_expr.expression else "','"
+        #     pattern = "[^" + delimiter.strip("'") + "]+"  # default regex pattern
 
-            alias = explode.alias_or_name or "col"
+        #     alias = explode.alias_or_name or "col"
 
-            return f"""(
-                SELECT REGEXP_SUBSTR({column_sql}, '{pattern}', 1, n.n) AS {alias}
-                FROM (SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 100) n
-                WHERE REGEXP_SUBSTR({column_sql}, '{pattern}', 1, n.n) IS NOT NULL
-            )"""
+        #     return f"""(
+        #         SELECT REGEXP_SUBSTR({column_sql}, '{pattern}', 1, n.n) AS {alias}
+        #         FROM (SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 100) n
+        #         WHERE REGEXP_SUBSTR({column_sql}, '{pattern}', 1, n.n) IS NOT NULL
+        #     )"""
+
+        # def lateral_sql(self, expression: exp.Lateral) -> str:
+        #     this = expression.this
+
+        #     # Only handle explode(split(...)) pattern
+        #     if isinstance(this, exp.Explode):
+        #         return self._explode_split_sql(this, expression.alias_or_name)
+
+        #     raise ValueError("Unsupported LATERAL construct for Exasol.")
+
+        # def _explode_split_sql(self, expression: exp.Explode, alias: str) -> str:
+        #     alias = alias or "col"
+        #     inner = expression.this
+
+        #     # Get the source column/expression SQL from SPLIT or REGEXP_SPLIT
+        #     if isinstance(inner, (exp.Split, exp.RegexpSplit)):
+        #         source_sql = self.sql(inner.this)
+        #     elif isinstance(inner, (exp.Anonymous, exp.Func)) and inner.name.upper() == "REGEXP_SPLIT":
+        #         source_sql = self.sql(inner.expressions[0])
+        #     else:
+        #         raise ValueError("Only SPLIT or REGEXP_SPLIT supported inside EXPLODE for Exasol transformation.")
+
+        #     # Prepare regexp extraction once
+        #     regexp_substr_expr = f"REGEXP_SUBSTR({source_sql}, '[^,]+', 1, n.n)"
+
+        #     # Generate the join SQL with sequence generator for exploding the string
+        #     return f"""
+        #     JOIN (
+        #         SELECT {regexp_substr_expr} AS {alias}
+        #         FROM (
+        #             SELECT LEVEL AS n FROM dual CONNECT BY LEVEL <= 100
+        #         ) n
+        #         WHERE {regexp_substr_expr} IS NOT NULL
+        #     ) {alias}
+        #     """
 
         def _anonymous_func(self, e):
             func_name = e.this.upper()
@@ -1433,39 +1465,6 @@ class Exasol(Dialect):
             # Manually add a flag to make the search case-insensitive
             regex = self.func("CONCAT", "'(?i)'", expression.expression)
             return self.func("match", expression.this, regex)
-
-        def datatype_sql(self, expression: exp.DataType) -> str:
-            # String is the standard ClickHouse type, every other variant is just an alias.
-            # Additionally, any supplied length parameter will be ignored.
-            #
-            # https://clickhouse.com/docs/en/sql-reference/data-types/string
-            if expression.this in self.STRING_TYPE_MAPPING:
-                dtype = self.STRING_TYPE_MAPPING[expression.this]
-            else:
-                dtype = super().datatype_sql(expression)
-
-            # This section changes the type to `Nullable(...)` if the following conditions hold:
-            # - It's marked as nullable - this ensures we won't wrap ClickHouse types with `Nullable`
-            #   and change their semantics
-            # - It's not the key type of a `Map`. This is because ClickHouse enforces the following
-            #   constraint: "Type of Map key must be a type, that can be represented by integer or
-            #   String or FixedString (possibly LowCardinality) or UUID or IPv6"
-            # - It's not a composite type, e.g. `Nullable(Array(...))` is not a valid type
-            # parent = expression.parent
-
-            # nullable = expression.args.get("nullable")
-            # if nullable is True or (
-            #     nullable is None
-            #     and not (
-            #         isinstance(parent, exp.DataType)
-            #         and parent.is_type(exp.DataType.Type.MAP, check_nullable=True)
-            #         and expression.index in (None, 0)
-            #     )
-            #     and not expression.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True)
-            # ):
-            #     dtype = f"Nullable({dtype})"
-
-            return dtype
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.args.get("scalar"):

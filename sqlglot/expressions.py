@@ -1724,15 +1724,15 @@ class Column(Condition):
             if self.args.get(part)
         ]
 
-    def to_dot(self) -> Dot | Identifier:
+    def to_dot(self, include_dots: bool = True) -> Dot | Identifier:
         """Converts the column into a dot expression."""
         parts = self.parts
         parent = self.parent
 
-        while parent:
-            if isinstance(parent, Dot):
+        if include_dots:
+            while isinstance(parent, Dot):
                 parts.append(parent.expression)
-            parent = parent.parent
+                parent = parent.parent
 
         return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 

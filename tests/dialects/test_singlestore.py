@@ -1513,7 +1513,7 @@ class TestSingleStore(Validator):
             exp_type=exp.TimeStrToDate)
         self.validate_generation(
             sql="SELECT TIME_STR_TO_TIME('2020-01-01 12:13:14')",
-            expected_sql="SELECT '2020-01-01 12:13:14' :> TIMESTAMP",
+            expected_sql="SELECT '2020-01-01 12:13:14' :> TIMESTAMP(6)",
             exp_type=exp.TimeStrToTime)
         self.validate_generation(
             sql="SELECT TIME_STR_TO_UNIX('2020-01-01 12:13:14')",

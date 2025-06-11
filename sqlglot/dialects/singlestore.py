@@ -1,12 +1,8 @@
-import this
 from collections import defaultdict
-from functools import reduce
-
-from setuptools.command.alias import alias
 
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
-    bool_xor_sql, rename_func, count_if_to_sum, unit_to_str, timestrtotime_sql, \
+    bool_xor_sql, rename_func, count_if_to_sum, \
     time_format
 import typing as t
 import re
@@ -189,7 +185,6 @@ class SingleStore(Dialect):
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToDate: lambda self, e: self.sql(
                 exp.cast(e.this, exp.DataType.Type.DATE)),
-            exp.TimeStrToTime: unsupported_args("zone")(timestrtotime_sql),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this,
                                                      e.expression),
@@ -3609,3 +3604,11 @@ class SingleStore(Dialect):
                 indexes = f"{self.sep(', ')}{indexes}" if indexes else ""
                 return f"({self.sep('')}{self.expressions(expression)}{indexes}{self.seg(')', sep='')}"
             return ""
+
+        @unsupported_args("zone")
+        def timestrtotime_sql(self, expression: exp.TimeStrToTime)  -> str:
+            datatype = exp.DataType.build(
+                exp.DataType.Type.TIMESTAMP, expressions=[exp.DataTypeParam(this=exp.Literal.number(6))]
+            )
+
+            return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))

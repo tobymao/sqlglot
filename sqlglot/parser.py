@@ -5505,18 +5505,12 @@ class Parser(metaclass=_Parser):
             else:
                 field = self._parse_field(any_token=True, anonymous_func=True)
 
+            # Function calls can be qualified, e.g., x.y.FOO()
+            # This converts the final AST to a series of Dots leading to the function call
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
             if isinstance(field, (exp.Func, exp.Window)) and this:
-                # BQ & snowflake allow function calls like x.y.count(...), SAFE.SUBSTR(...) etc
-                # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
-                this = exp.replace_tree(
-                    this,
-                    lambda n: (
-                        self.expression(exp.Dot, this=n.args.get("table"), expression=n.this)
-                        if n.table
-                        else n.this
-                    )
-                    if isinstance(n, exp.Column)
-                    else n,
+                this = this.transform(
+                    lambda n: n.to_dot(include_dots=False) if isinstance(n, exp.Column) else n
                 )
 
             if op:

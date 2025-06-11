@@ -1003,3 +1003,9 @@ class TestParser(unittest.TestCase):
 
         table_meta = ast.args["from"].this.this.meta
         self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], '"test_table_a"')
+
+    def test_qualified_function(self):
+        sql = "a.b.c.d.e.f.g.foo()"
+        ast = parse_one(sql)
+        assert not any(isinstance(n, exp.Column) for n in ast.walk())
+        assert len(list(ast.find_all(exp.Dot))) == 7

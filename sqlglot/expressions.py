@@ -51,8 +51,8 @@ class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        # When an Expression class is created, its key is automatically set to be
-        # the lowercase version of the class' name.
+        # When an Expression class is created, its key is automatically set
+        # to be the lowercase version of the class' name.
         klass.key = clsname.lower()
 
         # This is so that docstrings are not inherited in pdoc

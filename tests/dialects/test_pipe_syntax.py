@@ -2,7 +2,6 @@ from tests.dialects.test_dialect import Validator
 
 
 class TestPipeSyntax(Validator):
-
     def test_pipe_syntax_select(self):
         self.validate_identity("FROM x", "SELECT * FROM x")
         self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM x")
@@ -53,7 +52,7 @@ class TestPipeSyntax(Validator):
             "FROM x |> SELECT x1, x2, x3 |> ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
             "SELECT x1, x2, x3 FROM x ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
         )
-    
+
     def test_pipe_syntax_limit(self):
         for option in ("LIMIT 1", "OFFSET 2", "LIMIT 1 OFFSET 2"):
             with self.subTest(f"Testing pipe syntax LIMIT and OFFSET option: {option}"):
@@ -74,7 +73,7 @@ class TestPipeSyntax(Validator):
             "FROM x |> SELECT x1, x2 |> LIMIT 2 OFFSET 2 |> LIMIT 4 OFFSET 2",
             "SELECT x1, x2 FROM x LIMIT 2 OFFSET 4",
         )
-    
+
     def test_pipe_syntax_aggregate(self):
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3)",
@@ -122,9 +121,12 @@ class TestPipeSyntax(Validator):
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
                 )
-    
+
     def test_set_operators(self):
-        self.validate_identity("FROM x |> SELECT x.x1 |> UNION ALL (SELECT 1 AS c)", "WITH __tmp1 AS (SELECT x.x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1 UNION ALL (SELECT 1 AS c)) SELECT * FROM __tmp2")
+        self.validate_identity(
+            "FROM x |> SELECT x.x1 |> UNION ALL (SELECT 1 AS c)",
+            "WITH __tmp1 AS (SELECT x.x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1 UNION ALL (SELECT 1 AS c)) SELECT * FROM __tmp2",
+        )
 
         for op_operator in (
             "UNION ALL",
@@ -147,9 +149,7 @@ class TestPipeSyntax(Validator):
                 "INTERSECT DISTINCT",
                 "EXCEPT DISTINCT",
             ):
-                with self.subTest(
-                    f"Testing pipe syntax SET OPERATORS: {op_prefix} {op_operator}"
-                ):
+                with self.subTest(f"Testing pipe syntax SET OPERATORS: {op_prefix} {op_operator}"):
                     self.validate_all(
                         f"FROM x|> SELECT x1, x2 |> {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y), (SELECT z1, z2 FROM z)",
                         write={
@@ -158,8 +158,8 @@ class TestPipeSyntax(Validator):
                     )
 
         self.validate_identity(
-                "FROM d.x |> SELECT x.x1 |> UNION (SELECT 2 AS a1) |> SELECT x1 |> UNION (SELECT 3 as a2) |> SELECT x1 |> WHERE x1 > 100",
-                """WITH __tmp1 AS (
+            "FROM d.x |> SELECT x.x1 |> UNION (SELECT 2 AS a1) |> SELECT x1 |> UNION (SELECT 3 as a2) |> SELECT x1 |> WHERE x1 > 100",
+            """WITH __tmp1 AS (
   SELECT
     x.x1
   FROM d.x
@@ -199,8 +199,8 @@ SELECT
 FROM __tmp6
 WHERE
   x1 > 100""",
-                pretty=True,
-            )
+            pretty=True,
+        )
         self.validate_identity(
             "FROM c.x |> UNION ALL (SELECT 2 AS a1, '2' as a2) |> AGGREGATE AVG(x1) as m_x1 |> SELECT * |> UNION ALL (SELECT y1 FROM c.y) |> SELECT m_x1",
             """WITH __tmp1 AS (
@@ -289,7 +289,6 @@ WHERE
             pretty=True,
         )
 
-
     def test_pipe_syntax_join(self):
         self.validate_identity("FROM x |> CROSS JOIN y", "SELECT * FROM x CROSS JOIN y")
         for join_type in (
@@ -338,5 +337,6 @@ SELECT
   *
 FROM __tmp2
 WHERE
-  a_x1 > 0""", pretty=True
+  a_x1 > 0""",
+                    pretty=True,
                 )

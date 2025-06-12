@@ -2,7 +2,7 @@ from tests.dialects.test_dialect import Validator
 
 
 class TestPipeSyntax(Validator):
-    def test_pipe_syntax_select(self):
+    def test_select(self):
         self.validate_identity("FROM x", "SELECT * FROM x")
         self.validate_identity("FROM x |> SELECT x1, x2", "SELECT x1, x2 FROM x")
         self.validate_identity("FROM x |> SELECT x.x1, x.x2", "SELECT x.x1, x.x2 FROM x")
@@ -31,7 +31,7 @@ class TestPipeSyntax(Validator):
             "WITH __tmp1 AS (SELECT x1 AS gt1, x2 AS gt2 FROM x WHERE x1 > 1 AND x2 > 2) SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM __tmp1",
         )
 
-    def test_pipe_syntax_order_by(self):
+    def test_order_by(self):
         self.validate_identity("FROM x |> ORDER BY x1", "SELECT * FROM x ORDER BY x1")
         self.validate_identity(
             "FROM x |> ORDER BY x1 |> ORDER BY x2", "SELECT * FROM x ORDER BY x2"
@@ -53,7 +53,7 @@ class TestPipeSyntax(Validator):
             "SELECT x1, x2, x3 FROM x ORDER BY x1 DESC NULLS FIRST, x2 ASC NULLS LAST, x3",
         )
 
-    def test_pipe_syntax_limit(self):
+    def test_limit(self):
         for option in ("LIMIT 1", "OFFSET 2", "LIMIT 1 OFFSET 2"):
             with self.subTest(f"Testing pipe syntax LIMIT and OFFSET option: {option}"):
                 self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
@@ -74,7 +74,7 @@ class TestPipeSyntax(Validator):
             "SELECT x1, x2 FROM x LIMIT 2 OFFSET 4",
         )
 
-    def test_pipe_syntax_aggregate(self):
+    def test_aggregate(self):
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3)",
             "SELECT SUM(x1), MAX(x2), MIN(x3) FROM x",
@@ -289,7 +289,7 @@ WHERE
             pretty=True,
         )
 
-    def test_pipe_syntax_join(self):
+    def test_join(self):
         self.validate_identity("FROM x |> CROSS JOIN y", "SELECT * FROM x CROSS JOIN y")
         for join_type in (
             "JOIN",

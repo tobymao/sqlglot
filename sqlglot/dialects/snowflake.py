@@ -863,8 +863,14 @@ class Snowflake(Dialect):
                 properties=self._parse_properties(),
             )
 
-        def _parse_get(self) -> exp.Get | exp.Command:
+        def _parse_get(self) -> t.Optional[exp.Expression]:
             start = self._prev
+
+            # If we detect GET( then we need to parse a function, not a statement
+            if self._match(TokenType.L_PAREN):
+                self._retreat(self._index - 2)
+                return self._parse_expression()
+
             target = self._parse_location_path()
 
             # Parse as command if unquoted file path

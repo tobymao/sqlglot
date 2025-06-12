@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     trim_sql,
     timestrtotime_sql,
+    strposition_sql
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import TokenType
@@ -52,57 +53,6 @@ def _str_to_date_sql(self: Exasol.Generator, expression: exp.StrToDate) -> str:
     value_expr = expression.this
     value_sql = self.sql(value_expr)
     return f"TO_DATE({value_sql})"
-
-
-class Tokenizer(tokens.Tokenizer):
-    IDENTIFIER_ESCAPES = ['"']
-    STRING_ESCAPES = ["'"]
-
-    KEYWORDS = {
-        **tokens.Tokenizer.KEYWORDS,
-        "YEAR": TokenType.YEAR,
-        "WITH LOCAL TIME ZONE": TokenType.TIME,
-        "TO": TokenType.COMMAND,
-        "HASHTYPE": TokenType.UUID,
-    }
-
-
-def _string_position_sql(self: Exasol.Generator, expression: exp.StrPosition) -> str:
-    """
-    Generate Exasol SQL for string position expressions.
-
-    Exasol supports:
-    - POSITION(substr IN string)
-    - LOCATE(substr, string, position)
-    - INSTR(string, substr, position, occurrence)
-
-    sqlglot parses all into `exp.StrPosition`, and this method emits the correct SQL form
-    based on which arguments are present.
-    """
-    this = expression.args.get("this")
-    substr = expression.args.get("substr")
-    position = expression.args.get("position")
-    occurrence = expression.args.get("occurrence")
-    # POSITION format
-    if position is None and occurrence is None:
-        return f"POSITION({self.sql(substr)} IN {self.sql(this)})"
-
-    position_sql = self.sql(position)
-    occurrence_sql = self.sql(occurrence)
-
-    # LOCATE with optional position
-    if occurrence is None:
-        if position_sql == "1":
-            return self.func("LOCATE", substr, this)
-        return self.func("LOCATE", substr, this, position)
-
-    # INSTR default simplification
-    if position_sql == "1" and occurrence_sql == "1":
-        return self.func("INSTR", this, substr)
-
-    # Full INSTR
-    return self.func("INSTR", this, substr, position, occurrence)
-
 
 def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff) -> str:
     # TODO proper error handling
@@ -483,7 +433,11 @@ class Exasol(Dialect):
             exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
             exp.RegexpReplace: rename_func("REGEXP_REPLACE"),
             exp.Round: lambda self, e: self.round_sql(e),
-            exp.StrPosition: _string_position_sql,
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="INSTR",
+                supports_position=True if e.args.get("position") else False,
+                supports_occurrence=True if e.args.get("position") else False
+            ),
             exp.SessionParameter: lambda self, e: self.session_parameter_sql(e),
             exp.Substring: lambda self, e: self.substring_sql(e),
             exp.StrToDate: _str_to_date_sql,

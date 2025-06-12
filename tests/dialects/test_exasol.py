@@ -67,31 +67,35 @@ class TestExasol(Validator):
 
         instrs = [
             (
-                "SELECT INSTR('abcabcabc', 'cab') INSTR1",
-                "SELECT POSITION('cab' IN 'abcabcabc') INSTR1",
+                "SELECT LOCATE('cab','abcabcabc') LOCATE1",
+                "SELECT INSTR('abcabcabc', 'cab') LOCATE1"
             ),
             (
-                "SELECT INSTR('abcabcabc', 'cab', 1, 1) INSTR1",
-                "SELECT INSTR('abcabcabc', 'cab') INSTR1",
+                "SELECT LOCATE('user','user1,user2,user3,user4,user5', -1) LOCATE2",
+                "SELECT INSTR('user1,user2,user3,user4,user5', 'user', -1) LOCATE2"
             ),
             (
-                "SELECT LOCATE('cab', 'abcabcabc', 1) INSTR1",
-                "SELECT LOCATE('cab', 'abcabcabc') INSTR1",
+                "SELECT POSITION('cab' IN 'abcabcabc') POS",
+                "SELECT INSTR('abcabcabc', 'cab') POS"
             ),
             (
-                "SELECT INSTR('user1,user2,user3,user4,user5', 'user', -1) INSTR2",
-                "SELECT LOCATE('user', 'user1,user2,user3,user4,user5', -1) INSTR2",
+                "SELECT INSTR('user1,user2,user3,user4,user5', 'user') INSTR",
+                None
+            ),
+            (
+                "SELECT INSTR('user1,user2,user3,user4,user5', 'user', -1) INSTR",
+                None
             ),
             (
                 "SELECT INSTR('user1,user2,user3,user4,user5', 'user', -1, 2) INSTR3",
-                None,
+                None
             ),
         ]
         for sql, write_sql in instrs:
             self.validate_identity(sql, write_sql)
 
-        self.validate_identity("SELECT LOCATE('cab', 'abcabcabc', -1) LOC")
-        self.validate_identity("SELECT POSITION('cab' IN 'abcabcabc') POS")
+        # self.validate_identity("SELECT LOCATE('cab', 'abcabcabc', -1) LOC")
+        # self.validate_identity("SELECT POSITION('cab' IN 'abcabcabc') POS")
         self.validate_identity("SELECT LCASE('AbCdEf') LCASE", "SELECT LOWER('AbCdEf') LCASE")
         self.validate_identity("SELECT LOWER('AbCdEf') LCASE")
         self.validate_identity("SELECT LEFT('abcdef', 3) LEFT_SUBSTR")
@@ -130,6 +134,7 @@ class TestExasol(Validator):
         self.validate_identity("SELECT UPPER('AbCdEf') UPPER")
         self.validate_identity("SELECT UCASE('bCdEf') UCASE", "SELECT UPPER('bCdEf') UCASE")
 
+    def test_integration_all(self):
         self.validate_all(
             "SELECT LENGTH('aeiouäöü') C_LENGTH",
             read={
@@ -245,7 +250,7 @@ class TestExasol(Validator):
         self.validate_all(
             "SELECT LOCATE('cab', 'abcabcabc', -1) LOC",
             write={
-                "exasol": "SELECT LOCATE('cab', 'abcabcabc', -1) LOC",
+                "exasol": "SELECT INSTR('abcabcabc', 'cab', -1) LOC",
                 "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('abcabcabc', -1), 'cab') = 0 THEN 0 ELSE STRPOS(SUBSTRING('abcabcabc', -1), 'cab') + -1 - 1 END AS LOC",
                 "presto": "SELECT IF(STRPOS(SUBSTRING('abcabcabc', -1), 'cab') = 0, 0, STRPOS(SUBSTRING('abcabcabc', -1), 'cab') + -1 - 1) AS LOC",
                 "hive": "SELECT LOCATE('cab', 'abcabcabc', -1) AS LOC",

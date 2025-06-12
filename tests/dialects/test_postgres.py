@@ -1449,3 +1449,14 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                         "clickhouse": "SELECT JSONExtractString(foo, '12')",
                     },
                 )
+
+    def test_udt(self):
+        def _validate_udt(sql: str):
+            self.validate_identity(sql).to.assert_is(exp.DataType)
+
+        _validate_udt("CAST(5 AS MyType)")
+        _validate_udt('CAST(5 AS "MyType")')
+        _validate_udt("CAST(5 AS MySchema.MyType)")
+        _validate_udt('CAST(5 AS "MySchema"."MyType")')
+        _validate_udt('CAST(5 AS MySchema."MyType")')
+        _validate_udt('CAST(5 AS "MyCatalog"."MySchema"."MyType")')

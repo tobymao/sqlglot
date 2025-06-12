@@ -932,7 +932,7 @@ class Parser(metaclass=_Parser):
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
         "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
-        "WHERE": lambda self, query: self._parse_pipe_syntax_where(query),
+        "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
         "ORDER BY": lambda self, query: query.order_by(
             self._parse_order(), append=False, copy=False
         ),
@@ -8310,34 +8310,33 @@ class Parser(metaclass=_Parser):
         expression.update_positions(token)
         return expression
 
-    def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Query:
-        if query.selects:
-            self._pipe_cte_counter += 1
-            new_cte = f"__tmp{self._pipe_cte_counter}"
+    def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Select:
+        if not query.selects:
+            query.select("*", copy=False)
 
-            with_ = query.args.get("with")
-            ctes = with_.pop() if with_ else None
+        self._pipe_cte_counter += 1
+        new_cte = f"__tmp{self._pipe_cte_counter}"
 
-            new_select = exp.select(*expressions, copy=False).from_(new_cte, copy=False)
-            if ctes:
-                new_select.set("with", ctes)
+        with_ = query.args.get("with")
+        ctes = with_.pop() if with_ else None
 
-            return new_select.with_(new_cte, as_=query, copy=False)
+        new_select = exp.select(*expressions, copy=False).from_(new_cte, copy=False)
+        if ctes:
+            new_select.set("with", ctes)
 
-        return query.select(*expressions, copy=False)
+        return new_select.with_(new_cte, as_=query, copy=False)
 
-    def _parse_pipe_syntax_select(self, query: exp.Query) -> exp.Query:
+    def _parse_pipe_syntax_select(self, query: exp.Select) -> exp.Select:
         select = self._parse_select()
-        if isinstance(select, exp.Select):
+        if select:
+            if not query.selects:
+                query = query.select(*select.expressions)
+                return self._build_pipe_cte(query, [exp.Star()])
             return self._build_pipe_cte(query, select.expressions)
 
         return query
 
-    def _parse_pipe_syntax_where(self, query: exp.Query) -> exp.Query:
-        where = self._parse_where()
-        return query.where(where, copy=False)
-
-    def _parse_pipe_syntax_limit(self, query: exp.Query) -> exp.Query:
+    def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()
         offset = self._parse_offset()
         if limit:
@@ -8348,6 +8347,7 @@ class Parser(metaclass=_Parser):
             curr_offset = query.args.get("offset")
             curr_offset = curr_offset.expression.to_py() if curr_offset else 0
             query.offset(exp.Literal.number(curr_offset + offset.expression.to_py()), copy=False)
+
         return query
 
     def _parse_pipe_syntax_aggregate_fields(self) -> t.Optional[exp.Expression]:
@@ -8363,8 +8363,8 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_pipe_syntax_aggregate_group_order_by(
-        self, query: exp.Query, group_by_exists: bool = True
-    ) -> exp.Query:
+        self, query: exp.Select, group_by_exists: bool = True
+    ) -> exp.Select:
         expr = self._parse_csv(self._parse_pipe_syntax_aggregate_fields)
         aggregates_or_groups, orders = [], []
         for element in expr:
@@ -8377,7 +8377,7 @@ class Parser(metaclass=_Parser):
                 this = element
             aggregates_or_groups.append(this)
 
-        if group_by_exists and isinstance(query, exp.Select):
+        if group_by_exists:
             query = query.select(*aggregates_or_groups, copy=False).group_by(
                 *[projection.args.get("alias", projection) for projection in aggregates_or_groups],
                 copy=False,
@@ -8390,7 +8390,7 @@ class Parser(metaclass=_Parser):
 
         return query
 
-    def _parse_pipe_syntax_aggregate(self, query: exp.Query) -> exp.Query:
+    def _parse_pipe_syntax_aggregate(self, query: exp.Select) -> exp.Select:
         self._match_text_seq("AGGREGATE")
         query = self._parse_pipe_syntax_aggregate_group_order_by(query, group_by_exists=False)
 
@@ -8403,50 +8403,45 @@ class Parser(metaclass=_Parser):
 
     def _parse_pipe_syntax_set_operator(
         self, query: t.Optional[exp.Query]
-    ) -> t.Optional[exp.Query]:
+    ) -> t.Optional[exp.Select]:
         first_setop = self.parse_set_operation(this=query)
 
         if not first_setop or not query:
             return None
 
-        if not query.selects:
-            query.select("*", copy=False)
-
         first_setop.this.pop()
         distinct = first_setop.args.pop("distinct")
-
         setops = [first_setop.expression.pop(), *self._parse_expressions()]
 
         query = self._build_pipe_cte(query, [exp.Star()])
-
         with_ = query.args.get("with")
         ctes = with_.pop() if with_ else None
+
         if isinstance(first_setop, exp.Union):
             query = query.union(*setops, distinct=distinct, copy=False, **first_setop.args)
         elif isinstance(first_setop, exp.Except):
             query = query.except_(*setops, distinct=distinct, copy=False, **first_setop.args)
         else:
             query = query.intersect(*setops, distinct=distinct, copy=False, **first_setop.args)
+
         query.set("with", ctes)
+
         return self._build_pipe_cte(query, [exp.Star()])
 
-    def _parse_pipe_syntax_join(self, query: exp.Query) -> t.Optional[exp.Query]:
+    def _parse_pipe_syntax_join(self, query: exp.Select) -> t.Optional[exp.Select]:
         join = self._parse_join()
         if not join:
             return None
 
-        if isinstance(query, exp.Select):
-            return query.join(join, copy=False)
+        return query.join(join, copy=False)
 
-        return query
-
-    def _parse_pipe_syntax_query(self, query: exp.Query) -> t.Optional[exp.Query]:
+    def _parse_pipe_syntax_query(self, query: exp.Select) -> t.Optional[exp.Select]:
         while self._match(TokenType.PIPE_GT):
             start = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
                 parsed_query = self._parse_pipe_syntax_set_operator(query)
-                parsed_query = self._parse_pipe_syntax_join(query) or parsed_query
+                parsed_query = parsed_query or self._parse_pipe_syntax_join(query)
                 if not parsed_query:
                     self._retreat(start)
                     self.raise_error(f"Unsupported pipe syntax operator: '{start.text.upper()}'.")

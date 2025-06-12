@@ -1,6 +1,47 @@
 Changelog
 =========
 
+## [v26.27.0] - 2025-06-12
+### :boom: BREAKING CHANGES
+- due to [`ac6555b`](https://github.com/tobymao/sqlglot/commit/ac6555b4d6c162ef7b14b63307d01fd560138ea0) - preserve DIV binary operator, fixes [#5198](https://github.com/tobymao/sqlglot/pull/5198) *(PR [#5199](https://github.com/tobymao/sqlglot/pull/5199) by [@georgesittas](https://github.com/georgesittas))*:
+
+  preserve DIV binary operator, fixes #5198 (#5199)
+
+- due to [`dfdd84b`](https://github.com/tobymao/sqlglot/commit/dfdd84bbc50da70f40a17b39935f8171d961f7d2) - CTEs instead of subqueries for pipe syntax *(PR [#5205](https://github.com/tobymao/sqlglot/pull/5205) by [@geooo109](https://github.com/geooo109))*:
+
+  CTEs instead of subqueries for pipe syntax (#5205)
+
+- due to [`5f95299`](https://github.com/tobymao/sqlglot/commit/5f9529940d83e89704f7d25eda63cd73fdb503ae) - support multi-part (>3) dotted functions *(PR [#5211](https://github.com/tobymao/sqlglot/pull/5211) by [@georgesittas](https://github.com/georgesittas))*:
+
+  support multi-part (>3) dotted functions (#5211)
+
+- due to [`02afa2a`](https://github.com/tobymao/sqlglot/commit/02afa2a1941fc67086d50dffac2857262f1c3c4f) - Preserve quoting for UDT *(PR [#5216](https://github.com/tobymao/sqlglot/pull/5216) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Preserve quoting for UDT (#5216)
+
+
+### :sparkles: New Features
+- [`c20f85e`](https://github.com/tobymao/sqlglot/commit/c20f85e3e171e502fc51f74894d3313f0ad61535) - **spark**: support ALTER ADD PARTITION *(PR [#5208](https://github.com/tobymao/sqlglot/pull/5208) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#5204](https://github.com/tobymao/sqlglot/issues/5204) opened by [@cosinequanon](https://github.com/cosinequanon)*
+
+### :bug: Bug Fixes
+- [`99bbae3`](https://github.com/tobymao/sqlglot/commit/99bbae370329c5f5cd132b711c714359cf96ba58) - **sqlite**: allow ALTER RENAME without COLUMN keyword fixes [#5195](https://github.com/tobymao/sqlglot/pull/5195) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`ac6555b`](https://github.com/tobymao/sqlglot/commit/ac6555b4d6c162ef7b14b63307d01fd560138ea0) - **hive**: preserve DIV binary operator, fixes [#5198](https://github.com/tobymao/sqlglot/pull/5198) *(PR [#5199](https://github.com/tobymao/sqlglot/pull/5199) by [@georgesittas](https://github.com/georgesittas))*
+- [`d0eeb26`](https://github.com/tobymao/sqlglot/commit/d0eeb2639e771e8f8b6feabd41c65f16ed5a9829) - eliminate_join_marks has multiple issues fixes [#5188](https://github.com/tobymao/sqlglot/pull/5188) *(PR [#5189](https://github.com/tobymao/sqlglot/pull/5189) by [@snovik75](https://github.com/snovik75))*
+  - :arrow_lower_right: *fixes issue [#5188](https://github.com/tobymao/sqlglot/issues/5188) opened by [@snovik75](https://github.com/snovik75)*
+- [`dfdd84b`](https://github.com/tobymao/sqlglot/commit/dfdd84bbc50da70f40a17b39935f8171d961f7d2) - **parser**: CTEs instead of subqueries for pipe syntax *(PR [#5205](https://github.com/tobymao/sqlglot/pull/5205) by [@geooo109](https://github.com/geooo109))*
+- [`77e9d9a`](https://github.com/tobymao/sqlglot/commit/77e9d9a0269e2013379967cf2f46fbd79c036277) - **mysql**: properly parse STORED/VIRTUAL computed columns *(PR [#5210](https://github.com/tobymao/sqlglot/pull/5210) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5203](https://github.com/tobymao/sqlglot/issues/5203) opened by [@mdebski](https://github.com/mdebski)*
+- [`5f95299`](https://github.com/tobymao/sqlglot/commit/5f9529940d83e89704f7d25eda63cd73fdb503ae) - **parser**: support multi-part (>3) dotted functions *(PR [#5211](https://github.com/tobymao/sqlglot/pull/5211) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5200](https://github.com/tobymao/sqlglot/issues/5200) opened by [@mateuszpoleski](https://github.com/mateuszpoleski)*
+- [`02afa2a`](https://github.com/tobymao/sqlglot/commit/02afa2a1941fc67086d50dffac2857262f1c3c4f) - **postgres**: Preserve quoting for UDT *(PR [#5216](https://github.com/tobymao/sqlglot/pull/5216) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5212](https://github.com/tobymao/sqlglot/issues/5212) opened by [@NickCrews](https://github.com/NickCrews)*
+- [`f37c0b1`](https://github.com/tobymao/sqlglot/commit/f37c0b1197321dd610648ce652a171ab063deeeb) - **snowflake**: ensure a standalone GET() expression can be parsed *(PR [#5219](https://github.com/tobymao/sqlglot/pull/5219) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`ad8a4e7`](https://github.com/tobymao/sqlglot/commit/ad8a4e73e1a9e4234f0b711163fb49630acf736c) - refactor join mark elimination to use is_correlated_subquery *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v26.26.0] - 2025-06-09
 ### :boom: BREAKING CHANGES
 - due to [`434c45b`](https://github.com/tobymao/sqlglot/commit/434c45b547c3a5ea155dc8d7da2baab326eb6d4f) - improve support for ENDSWITH closes [#5170](https://github.com/tobymao/sqlglot/pull/5170) *(commit by [@georgesittas](https://github.com/georgesittas))*:
@@ -7007,3 +7048,4 @@ Changelog
 [v26.25.2]: https://github.com/tobymao/sqlglot/compare/v26.25.1...v26.25.2
 [v26.25.3]: https://github.com/tobymao/sqlglot/compare/v26.25.2...v26.25.3
 [v26.26.0]: https://github.com/tobymao/sqlglot/compare/v26.25.3...v26.26.0
+[v26.27.0]: https://github.com/tobymao/sqlglot/compare/v26.26.0...v26.27.0

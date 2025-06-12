@@ -8440,7 +8440,9 @@ class Parser(metaclass=_Parser):
             start = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
-                parsed_query = self._parse_pipe_syntax_set_operator(query) or self._parse_pipe_syntax_join(query)
+                parsed_query = self._parse_pipe_syntax_set_operator(
+                    query
+                ) or self._parse_pipe_syntax_join(query)
                 if not parsed_query:
                     self._retreat(start)
                     self.raise_error(f"Unsupported pipe syntax operator: '{start.text.upper()}'.")

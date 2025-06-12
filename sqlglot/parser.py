@@ -937,7 +937,6 @@ class Parser(metaclass=_Parser):
             self._parse_order(), append=False, copy=False
         ),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
-        "OFFSET": lambda self, query: query.offset(self._parse_offset(), copy=False),
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
     }
 

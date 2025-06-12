@@ -59,7 +59,7 @@ class TestPipeSyntax(Validator):
         )
 
     def test_limit(self):
-        for option in ("LIMIT 1", "OFFSET 2", "LIMIT 1 OFFSET 2"):
+        for option in ("LIMIT 1", "LIMIT 1 OFFSET 2"):
             with self.subTest(f"Testing pipe syntax LIMIT and OFFSET option: {option}"):
                 self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
                 self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")

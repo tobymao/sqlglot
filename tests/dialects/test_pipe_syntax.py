@@ -83,38 +83,42 @@ class TestPipeSyntax(Validator):
     def test_aggregate(self):
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3)",
-            "WITH __tmp1 AS (SELECT * FROM x) SELECT SUM(x1), MAX(x2), MIN(x3) FROM __tmp1",
+            "WITH __tmp1 AS (SELECT SUM(x1), MAX(x2), MIN(x3) FROM x) SELECT * FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) AS s_x1 |> SELECT s_x1",
-            "WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT SUM(x1) AS s_x1 FROM __tmp1) SELECT s_x1 FROM __tmp2",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1) SELECT s_x1 FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4, x5",
-            "WITH __tmp1 AS (SELECT * FROM x) SELECT SUM(x1), MAX(x2), MIN(x3), x4, x5 FROM __tmp1 GROUP BY x4, x5",
+            "WITH __tmp1 AS (SELECT SUM(x1), MAX(x2), MIN(x3), x4, x5 FROM x GROUP BY x4, x5) SELECT * FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4 AS a_x4, x5 AS a_x5",
-            "WITH __tmp1 AS (SELECT * FROM x) SELECT SUM(x1), MAX(x2), MIN(x3), x4 AS a_x4, x5 AS a_x5 FROM __tmp1 GROUP BY a_x4, a_x5",
+            "WITH __tmp1 AS (SELECT SUM(x1), MAX(x2), MIN(x3), x4 AS a_x4, x5 AS a_x5 FROM x GROUP BY a_x4, a_x5) SELECT * FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x1 |> SELECT s_x1, x1 as ss_x1",
-            "WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT SUM(x1) AS s_x1, x1 FROM __tmp1 GROUP BY x1) SELECT s_x1, x1 AS ss_x1 FROM __tmp2",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x1 FROM x GROUP BY x1), __tmp2 AS (SELECT * FROM __tmp1) SELECT s_x1, x1 AS ss_x1 FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) GROUP",
-            "WITH __tmp1 AS (SELECT * FROM x) SELECT SUM(x1) AS GROUP FROM __tmp1",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS GROUP FROM x) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x2 as g_x2 |> WHERE s_x1 > 0",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x2 AS g_x2 FROM x GROUP BY g_x2) SELECT * FROM __tmp1 WHERE s_x1 > 0",
         )
         for order_option in ("ASC", "DESC", "ASC NULLS LAST", "DESC NULLS FIRST"):
             with self.subTest(f"Testing pipe syntax AGGREGATE for order option: {order_option}"):
                 self.validate_all(
-                    f"WITH __tmp1 AS (SELECT * FROM x) SELECT SUM(x1) AS x_s FROM __tmp1 ORDER BY x_s {order_option}",
+                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s FROM x ORDER BY x_s {order_option}) SELECT * FROM __tmp1",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s {order_option}",
                     },
                 )
                 self.validate_all(
-                    f"WITH __tmp1 AS (SELECT * FROM x) SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM __tmp1 GROUP BY g_x1 ORDER BY x_s {order_option}",
+                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY x_s {order_option}) SELECT * FROM __tmp1",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s {order_option} GROUP BY x1 AS g_x1",
                     },
@@ -123,7 +127,7 @@ class TestPipeSyntax(Validator):
                 f"Testing pipe syntax AGGREGATE with GROUP AND ORDER BY for order option: {order_option}"
             ):
                 self.validate_all(
-                    f"WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM __tmp1 GROUP BY g_x1 ORDER BY g_x1 {order_option}) SELECT g_x1, x_s FROM __tmp2",
+                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}), __tmp2 AS (SELECT * FROM __tmp1) SELECT g_x1, x_s FROM __tmp2",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
@@ -230,11 +234,12 @@ WHERE
   )
 ), __tmp3 AS (
   SELECT
-    *
+    *,
+    AVG(x1) AS m_x1
   FROM __tmp2
 ), __tmp4 AS (
   SELECT
-    AVG(x1) AS m_x1
+    *
   FROM __tmp3
 ), __tmp5 AS (
   SELECT
@@ -322,7 +327,6 @@ WHERE
                     f"FROM x |> SELECT id |> {join_type} y ON x.id = y.id",
                     f"WITH __tmp1 AS (SELECT id FROM x) SELECT * FROM __tmp1 {join_type} y ON x.id = y.id",
                 )
-
             with self.subTest(f"Testing pipe syntax complex queries with JOIN: {join_type}"):
                 self.validate_identity(
                     f"FROM x |> {join_type} y ON x.id = y.id |> SELECT x1 as a_x1, x2 |> UNION ALL (SELECT 1, 2) |> WHERE a_x1 > 0",

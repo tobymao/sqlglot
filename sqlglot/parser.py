@@ -8312,7 +8312,7 @@ class Parser(metaclass=_Parser):
 
     def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Select:
         if not query.selects:
-            query.select("*", copy=False)
+            query = query.select("*", copy=False)
 
         self._pipe_cte_counter += 1
         new_cte = f"__tmp{self._pipe_cte_counter}"
@@ -8383,7 +8383,7 @@ class Parser(metaclass=_Parser):
                 copy=False,
             )
         else:
-            query = self._build_pipe_cte(query, aggregates_or_groups)
+            query = query.select(*aggregates_or_groups, copy=False)
 
         if orders:
             return query.order_by(*orders, append=False, copy=False)
@@ -8397,9 +8397,9 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.GROUP_BY) or (
             self._match_text_seq("GROUP", "AND") and self._match(TokenType.ORDER_BY)
         ):
-            return self._parse_pipe_syntax_aggregate_group_order_by(query)
+            query = self._parse_pipe_syntax_aggregate_group_order_by(query)
 
-        return query
+        return self._build_pipe_cte(query, [exp.Star()])
 
     def _parse_pipe_syntax_set_operator(
         self, query: t.Optional[exp.Query]
@@ -8440,8 +8440,7 @@ class Parser(metaclass=_Parser):
             start = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
-                parsed_query = self._parse_pipe_syntax_set_operator(query)
-                parsed_query = parsed_query or self._parse_pipe_syntax_join(query)
+                parsed_query = self._parse_pipe_syntax_set_operator(query) or self._parse_pipe_syntax_join(query)
                 if not parsed_query:
                     self._retreat(start)
                     self.raise_error(f"Unsupported pipe syntax operator: '{start.text.upper()}'.")

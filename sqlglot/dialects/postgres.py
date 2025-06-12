@@ -512,6 +512,18 @@ class Postgres(Dialect):
 
             return this
 
+        def _parse_user_defined_type(
+            self, identifier: exp.Identifier
+        ) -> t.Optional[exp.Expression]:
+            udt_type: exp.Identifier | exp.Dot = identifier
+
+            while self._match(TokenType.DOT):
+                part = self._parse_id_var()
+                if part:
+                    udt_type = exp.Dot(this=udt_type, expression=part)
+
+            return exp.DataType.build(udt_type, udt=True)
+
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
         RENAME_TABLE_WITH_DB = False

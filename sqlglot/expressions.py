@@ -4753,6 +4753,8 @@ class DataType(Expression):
                 if udt:
                     return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
                 raise
+        elif isinstance(dtype, (Identifier, Dot)) and udt:
+            return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):
@@ -4792,9 +4794,6 @@ class DataType(Expression):
             if matches:
                 return True
         return False
-
-
-DATA_TYPE = t.Union[str, DataType, DataType.Type]
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -5028,6 +5027,9 @@ class Dot(Binary):
 
         parts.reverse()
         return parts
+
+
+DATA_TYPE = t.Union[str, Identifier, Dot, DataType, DataType.Type]
 
 
 class DPipe(Binary):

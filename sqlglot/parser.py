@@ -8315,13 +8315,7 @@ class Parser(metaclass=_Parser):
             self._pipe_cte_counter += 1
             new_cte = f"__tmp{self._pipe_cte_counter}"
 
-            # For `exp.Select`, generated CTEs are attached to its `with`
-            # For `exp.SetOperation`, generated CTEs are attached to the `with` of its LHS, accessed via `this`
-            with_ = (
-                query.args.get("with")
-                if isinstance(query, exp.Select)
-                else query.this.args.get("with")
-            )
+            with_ = query.args.get("with")
             ctes = with_.pop() if with_ else None
 
             new_select = exp.select(*expressions, copy=False).from_(new_cte, copy=False)
@@ -8389,7 +8383,7 @@ class Parser(metaclass=_Parser):
                 copy=False,
             )
         else:
-            query = query.select(*aggregates_or_groups, append=False, copy=False)
+            query = self._build_pipe_cte(query, aggregates_or_groups)
 
         if orders:
             return query.order_by(*orders, append=False, copy=False)
@@ -8418,33 +8412,46 @@ class Parser(metaclass=_Parser):
         if not query.selects:
             query.select("*", copy=False)
 
-        this = first_setop.this.pop()
+        first_setop.this.pop()
         distinct = first_setop.args.pop("distinct")
+
         setops = [first_setop.expression.pop(), *self._parse_expressions()]
 
+        query = self._build_pipe_cte(query, [exp.Star()])
+
+        with_ = query.args.get("with")
+        ctes = with_.pop() if with_ else None
         if isinstance(first_setop, exp.Union):
             query = query.union(*setops, distinct=distinct, copy=False, **first_setop.args)
         elif isinstance(first_setop, exp.Except):
             query = query.except_(*setops, distinct=distinct, copy=False, **first_setop.args)
         else:
             query = query.intersect(*setops, distinct=distinct, copy=False, **first_setop.args)
+        query.set("with", ctes)
+        return self._build_pipe_cte(query, [exp.Star()])
 
-        return self._build_pipe_cte(
-            query, [projection.args.get("alias", projection) for projection in this.expressions]
-        )
+    def _parse_pipe_syntax_join(self, query: exp.Query) -> t.Optional[exp.Query]:
+        join = self._parse_join()
+        if not join:
+            return None
+
+        if isinstance(query, exp.Select):
+            return query.join(join, copy=False)
+
+        return query
 
     def _parse_pipe_syntax_query(self, query: exp.Query) -> t.Optional[exp.Query]:
         while self._match(TokenType.PIPE_GT):
             start = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
-                set_op_query = self._parse_pipe_syntax_set_operator(query)
-                if not set_op_query:
+                parsed_query = self._parse_pipe_syntax_set_operator(query)
+                parsed_query = self._parse_pipe_syntax_join(query) or parsed_query
+                if not parsed_query:
                     self._retreat(start)
                     self.raise_error(f"Unsupported pipe syntax operator: '{start.text.upper()}'.")
                     break
-
-                query = set_op_query
+                query = parsed_query
             else:
                 query = parser(self, query)
 

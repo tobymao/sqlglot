@@ -4,7 +4,10 @@ repos:
       - id: ruff
         name: ruff
         description: "Run 'ruff' for extremely fast Python linting"
-        entry: ruff check --force-exclude --fix  --ignore E721 --ignore E741
+        entry: ruff check
+          --force-exclude --fix
+          --ignore E721
+          --ignore E741
         language: python
         types_or: [python, pyi]
         require_serial: true

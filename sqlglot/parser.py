@@ -938,7 +938,9 @@ class Parser(metaclass=_Parser):
         ),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
-        "AS": lambda self, query: self._parse_pipe_syntax_as(query),
+        "AS": lambda self, query: self._build_pipe_cte(
+            query, [exp.Star()], self._parse_table_alias()
+        ),
         "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
         "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
     }
@@ -8458,9 +8460,6 @@ class Parser(metaclass=_Parser):
             return None
 
         return query.join(join, copy=False)
-
-    def _parse_pipe_syntax_as(self, query: exp.Select) -> exp.Select:
-        return self._build_pipe_cte(query, [exp.Star()], self._parse_table_alias())
 
     def _parse_pipe_syntax_pivot(self, query: exp.Select) -> exp.Select:
         pivots = self._parse_pivots()

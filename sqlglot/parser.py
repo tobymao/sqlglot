@@ -8344,12 +8344,13 @@ class Parser(metaclass=_Parser):
 
     def _parse_pipe_syntax_select(self, query: exp.Select) -> exp.Select:
         select = self._parse_select()
-        if select:
-            if not query.selects:
-                return self._build_pipe_cte(query.select(*select.expressions), [exp.Star()])
-            return self._build_pipe_cte(query, select.expressions)
+        if not select:
+            return query
 
-        return query
+        if not query.selects:
+            return self._build_pipe_cte(query.select(*select.expressions), [exp.Star()])
+
+        return self._build_pipe_cte(query, select.expressions)
 
     def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()

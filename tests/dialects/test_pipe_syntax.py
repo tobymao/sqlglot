@@ -21,7 +21,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM x |> SELECT x1 + 1 as x1_a, x2 - 1 as x2_a |> WHERE x1_a > 1 |> SELECT x2_a",
-            "WITH __tmp1 AS (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM x), __tmp2 AS (SELECT * FROM __tmp1 WHERE x1_a > 1) SELECT x2_a FROM __tmp2",
+            "WITH __tmp1 AS (SELECT x1 + 1 AS x1_a, x2 - 1 AS x2_a FROM x), __tmp2 AS (SELECT x2_a FROM __tmp1 WHERE x1_a > 1) SELECT * FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> WHERE x1 > 0 OR x2 > 0 |> WHERE x3 > 1 AND x4 > 1 |> SELECT x1, x4",
@@ -33,7 +33,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM x |> WHERE x1 > 1 AND x2 > 2 |> SELECT x1 as gt1, x2 as gt2 |> SELECT gt1 * 2 + gt2 * 2 AS gt2_2",
-            "WITH __tmp1 AS (SELECT x1 AS gt1, x2 AS gt2 FROM x WHERE x1 > 1 AND x2 > 2), __tmp2 AS (SELECT * FROM __tmp1) SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM __tmp2",
+            "WITH __tmp1 AS (SELECT x1 AS gt1, x2 AS gt2 FROM x WHERE x1 > 1 AND x2 > 2), __tmp2 AS (SELECT gt1 * 2 + gt2 * 2 AS gt2_2 FROM __tmp1) SELECT * FROM __tmp2",
         )
 
     def test_order_by(self):
@@ -87,7 +87,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) AS s_x1 |> SELECT s_x1",
-            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1) SELECT s_x1 FROM __tmp2",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1 FROM x), __tmp2 AS (SELECT s_x1 FROM __tmp1) SELECT * FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4, x5",
@@ -99,7 +99,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x1 |> SELECT s_x1, x1 as ss_x1",
-            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x1 FROM x GROUP BY x1), __tmp2 AS (SELECT * FROM __tmp1) SELECT s_x1, x1 AS ss_x1 FROM __tmp2",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x1 FROM x GROUP BY x1), __tmp2 AS (SELECT s_x1, x1 AS ss_x1 FROM __tmp1) SELECT * FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) GROUP",
@@ -127,7 +127,7 @@ class TestPipeSyntax(Validator):
                 f"Testing pipe syntax AGGREGATE with GROUP AND ORDER BY for order option: {order_option}"
             ):
                 self.validate_all(
-                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}), __tmp2 AS (SELECT * FROM __tmp1) SELECT g_x1, x_s FROM __tmp2",
+                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}), __tmp2 AS (SELECT g_x1, x_s FROM __tmp1) SELECT * FROM __tmp2",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
@@ -136,7 +136,7 @@ class TestPipeSyntax(Validator):
     def test_set_operators(self):
         self.validate_identity(
             "FROM x |> SELECT x.x1 |> UNION ALL (SELECT 1 AS c)",
-            "WITH __tmp1 AS (SELECT x.x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 UNION ALL (SELECT 1 AS c)) SELECT * FROM __tmp3",
+            "WITH __tmp1 AS (SELECT x.x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 UNION ALL SELECT 1 AS c) SELECT * FROM __tmp3",
         )
 
         for op_operator in (
@@ -149,7 +149,7 @@ class TestPipeSyntax(Validator):
                 self.validate_all(
                     f"FROM x|> {op_operator} (SELECT y1 FROM y), (SELECT z1 FROM z)",
                     write={
-                        "bigquery": f"WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT * FROM __tmp1 {op_operator} (SELECT y1 FROM y) {op_operator} (SELECT z1 FROM z)) SELECT * FROM __tmp2"
+                        "bigquery": f"WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT * FROM __tmp1 {op_operator} SELECT y1 FROM y {op_operator} SELECT z1 FROM z) SELECT * FROM __tmp2"
                     },
                 )
 
@@ -164,7 +164,7 @@ class TestPipeSyntax(Validator):
                     self.validate_all(
                         f"FROM x|> SELECT x1, x2 |> {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y), (SELECT z1, z2 FROM z)",
                         write={
-                            "bigquery": f"WITH __tmp1 AS (SELECT x1, x2 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y) {op_prefix} {op_operator} BY NAME (SELECT z1, z2 FROM z)) SELECT * FROM __tmp3",
+                            "bigquery": f"WITH __tmp1 AS (SELECT x1, x2 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 {op_prefix} {op_operator} BY NAME SELECT y1, y2 FROM y {op_prefix} {op_operator} BY NAME SELECT z1, z2 FROM z) SELECT * FROM __tmp3",
                         },
                     )
 
@@ -183,34 +183,30 @@ class TestPipeSyntax(Validator):
     *
   FROM __tmp2
   UNION
-  (
-    SELECT
-      2 AS a1
-  )
+  SELECT
+    2 AS a1
 ), __tmp4 AS (
   SELECT
-    *
+    x1
   FROM __tmp3
 ), __tmp5 AS (
   SELECT
-    x1
+    *
   FROM __tmp4
 ), __tmp6 AS (
   SELECT
     *
   FROM __tmp5
   UNION
-  (
-    SELECT
-      3 AS a2
-  )
+  SELECT
+    3 AS a2
 ), __tmp7 AS (
   SELECT
-    *
+    x1
   FROM __tmp6
 )
 SELECT
-  x1
+  *
 FROM __tmp7
 WHERE
   x1 > 100""",
@@ -227,14 +223,11 @@ WHERE
     *
   FROM __tmp1
   UNION ALL
-  (
-    SELECT
-      2 AS a1,
-      '2' AS a2
-  )
+  SELECT
+    2 AS a1,
+    '2' AS a2
 ), __tmp3 AS (
   SELECT
-    *,
     AVG(x1) AS m_x1
   FROM __tmp2
 ), __tmp4 AS (
@@ -250,18 +243,16 @@ WHERE
     *
   FROM __tmp5
   UNION ALL
-  (
-    SELECT
-      y1
-    FROM c.y
-  )
+  SELECT
+    y1
+  FROM c.y
 ), __tmp7 AS (
   SELECT
-    *
+    m_x1
   FROM __tmp6
 )
 SELECT
-  m_x1
+  *
 FROM __tmp7""",
             pretty=True,
         )
@@ -277,11 +268,9 @@ FROM __tmp7""",
     *
   FROM __tmp1
   UNION ALL
-  (
-    SELECT
-      2 AS a1,
-      '2' AS a2
-  )
+  SELECT
+    2 AS a1,
+    '2' AS a2
 ), __tmp3 AS (
   SELECT
     *
@@ -291,11 +280,9 @@ FROM __tmp7""",
     *
   FROM __tmp3
   UNION ALL
-  (
-    SELECT
-      y1
-    FROM c.y
-  )
+  SELECT
+    y1
+  FROM c.y
 )
 SELECT
   *
@@ -346,11 +333,9 @@ WHERE
     *
   FROM __tmp2
   UNION ALL
-  (
-    SELECT
-      1,
-      2
-  )
+  SELECT
+    1,
+    2
 )
 SELECT
   *
@@ -377,4 +362,18 @@ WHERE
         self.validate_identity(
             "FROM x |> JOIN y on x.id = y.id |> UNPIVOT(col FOR item IN (foo1, foo2))",
             "WITH __tmp1 AS (SELECT * FROM x UNPIVOT(col FOR item IN (foo1, foo2)) JOIN y ON x.id = y.id) SELECT * FROM __tmp1",
+        )
+
+    def test_as(self):
+        self.validate_identity(
+            "FROM x |> AS a_x |> WHERE a_x.x1 > 0",
+            "WITH a_x AS (SELECT * FROM x) SELECT * FROM a_x WHERE a_x.x1 > 0",
+        )
+        self.validate_identity(
+            "FROM x AS t |> AGGREGATE SUM(x1) AS s_x1 GROUP BY id, x2 |> AS t1 |> JOIN y AS t2 ON t1.id = t2.id |> SELECT t2.id, s_x1",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, id, x2 FROM x AS t GROUP BY id, x2), t1 AS (SELECT * FROM __tmp1), __tmp2 AS (SELECT t2.id, s_x1 FROM t1 JOIN y AS t2 ON t1.id = t2.id) SELECT * FROM __tmp2",
+        )
+        self.validate_identity(
+            "FROM x |> JOIN y ON x.x1 = y.y1 |> AS a |> WHERE a.x2 > 1",
+            "WITH a AS (SELECT * FROM x JOIN y ON x.x1 = y.y1) SELECT * FROM a WHERE a.x2 > 1",
         )

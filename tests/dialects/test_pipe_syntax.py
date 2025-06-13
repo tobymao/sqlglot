@@ -136,7 +136,7 @@ class TestPipeSyntax(Validator):
     def test_set_operators(self):
         self.validate_identity(
             "FROM x |> SELECT x.x1 |> UNION ALL (SELECT 1 AS c)",
-            "WITH __tmp1 AS (SELECT x.x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 UNION ALL (SELECT 1 AS c)) SELECT * FROM __tmp3",
+            "WITH __tmp1 AS (SELECT x.x1 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 UNION ALL SELECT 1 AS c) SELECT * FROM __tmp3",
         )
 
         for op_operator in (
@@ -149,7 +149,7 @@ class TestPipeSyntax(Validator):
                 self.validate_all(
                     f"FROM x|> {op_operator} (SELECT y1 FROM y), (SELECT z1 FROM z)",
                     write={
-                        "bigquery": f"WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT * FROM __tmp1 {op_operator} (SELECT y1 FROM y) {op_operator} (SELECT z1 FROM z)) SELECT * FROM __tmp2"
+                        "bigquery": f"WITH __tmp1 AS (SELECT * FROM x), __tmp2 AS (SELECT * FROM __tmp1 {op_operator} SELECT y1 FROM y {op_operator} SELECT z1 FROM z) SELECT * FROM __tmp2"
                     },
                 )
 
@@ -164,7 +164,7 @@ class TestPipeSyntax(Validator):
                     self.validate_all(
                         f"FROM x|> SELECT x1, x2 |> {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y), (SELECT z1, z2 FROM z)",
                         write={
-                            "bigquery": f"WITH __tmp1 AS (SELECT x1, x2 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y) {op_prefix} {op_operator} BY NAME (SELECT z1, z2 FROM z)) SELECT * FROM __tmp3",
+                            "bigquery": f"WITH __tmp1 AS (SELECT x1, x2 FROM x), __tmp2 AS (SELECT * FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2 {op_prefix} {op_operator} BY NAME SELECT y1, y2 FROM y {op_prefix} {op_operator} BY NAME SELECT z1, z2 FROM z) SELECT * FROM __tmp3",
                         },
                     )
 
@@ -183,10 +183,8 @@ class TestPipeSyntax(Validator):
     *
   FROM __tmp2
   UNION
-  (
-    SELECT
-      2 AS a1
-  )
+  SELECT
+    2 AS a1
 ), __tmp4 AS (
   SELECT
     x1
@@ -200,10 +198,8 @@ class TestPipeSyntax(Validator):
     *
   FROM __tmp5
   UNION
-  (
-    SELECT
-      3 AS a2
-  )
+  SELECT
+    3 AS a2
 ), __tmp7 AS (
   SELECT
     x1
@@ -227,11 +223,9 @@ WHERE
     *
   FROM __tmp1
   UNION ALL
-  (
-    SELECT
-      2 AS a1,
-      '2' AS a2
-  )
+  SELECT
+    2 AS a1,
+    '2' AS a2
 ), __tmp3 AS (
   SELECT
     AVG(x1) AS m_x1
@@ -249,11 +243,9 @@ WHERE
     *
   FROM __tmp5
   UNION ALL
-  (
-    SELECT
-      y1
-    FROM c.y
-  )
+  SELECT
+    y1
+  FROM c.y
 ), __tmp7 AS (
   SELECT
     m_x1
@@ -276,11 +268,9 @@ FROM __tmp7""",
     *
   FROM __tmp1
   UNION ALL
-  (
-    SELECT
-      2 AS a1,
-      '2' AS a2
-  )
+  SELECT
+    2 AS a1,
+    '2' AS a2
 ), __tmp3 AS (
   SELECT
     *
@@ -290,11 +280,9 @@ FROM __tmp7""",
     *
   FROM __tmp3
   UNION ALL
-  (
-    SELECT
-      y1
-    FROM c.y
-  )
+  SELECT
+    y1
+  FROM c.y
 )
 SELECT
   *
@@ -345,11 +333,9 @@ WHERE
     *
   FROM __tmp2
   UNION ALL
-  (
-    SELECT
-      1,
-      2
-  )
+  SELECT
+    1,
+    2
 )
 SELECT
   *
@@ -376,4 +362,13 @@ WHERE
         self.validate_identity(
             "FROM x |> JOIN y on x.id = y.id |> UNPIVOT(col FOR item IN (foo1, foo2))",
             "WITH __tmp1 AS (SELECT * FROM x UNPIVOT(col FOR item IN (foo1, foo2)) JOIN y ON x.id = y.id) SELECT * FROM __tmp1",
+        )
+
+    def test_as(self):
+        self.validate_identity(
+            "FROM x |> AS a_x |> WHERE a_x.x1 > 0", "SELECT * FROM x AS a_x WHERE a_x.x1 > 0"
+        )
+        self.validate_identity(
+            "FROM x AS t |> AGGREGATE SUM(x1) AS s_x1 GROUP BY id, x2 |> AS t1 |> JOIN y AS t2 ON t1.id = t2.id |> SELECT t2.id, s_x1",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, id, x2 FROM x AS t GROUP BY id, x2), __tmp2 AS (SELECT t2.id, s_x1 FROM __tmp1 AS t1 JOIN y AS t2 ON t1.id = t2.id) SELECT * FROM __tmp2",
         )

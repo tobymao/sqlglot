@@ -935,6 +935,7 @@ class Parser(metaclass=_Parser):
         "AS": lambda self, query: self._build_pipe_cte(
             query, [exp.Star()], self._parse_table_alias()
         ),
+        "EXTEND": lambda self, query: self._parse_pipe_syntax_extend(query),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "ORDER BY": lambda self, query: query.order_by(
             self._parse_order(), append=False, copy=False
@@ -8401,12 +8402,12 @@ class Parser(metaclass=_Parser):
             aggregates_or_groups.append(this)
 
         if group_by_exists:
-            query = query.select(*aggregates_or_groups, copy=False).group_by(
+            query.select(*aggregates_or_groups, copy=False).group_by(
                 *[projection.args.get("alias", projection) for projection in aggregates_or_groups],
                 copy=False,
             )
         else:
-            query = query.select(*aggregates_or_groups, append=False, copy=False)
+            query.select(*aggregates_or_groups, append=False, copy=False)
 
         if orders:
             return query.order_by(*orders, append=False, copy=False)
@@ -8471,6 +8472,11 @@ class Parser(metaclass=_Parser):
         if from_:
             from_.this.set("pivots", pivots)
 
+        return self._build_pipe_cte(query, [exp.Star()])
+
+    def _parse_pipe_syntax_extend(self, query: exp.Select) -> exp.Select:
+        self._match_text_seq("EXTEND")
+        query.select(*[exp.Star(), *self._parse_expressions()], append=False, copy=False)
         return self._build_pipe_cte(query, [exp.Star()])
 
     def _parse_pipe_syntax_query(self, query: exp.Select) -> t.Optional[exp.Select]:

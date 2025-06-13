@@ -931,18 +931,18 @@ class Parser(metaclass=_Parser):
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
-        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
-        "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
-        "ORDER BY": lambda self, query: query.order_by(
-            self._parse_order(), append=False, copy=False
-        ),
-        "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
         "AS": lambda self, query: self._build_pipe_cte(
             query, [exp.Star()], self._parse_table_alias()
         ),
+        "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
+        "ORDER BY": lambda self, query: query.order_by(
+            self._parse_order(), append=False, copy=False
+        ),
         "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
+        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
         "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
+        "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {

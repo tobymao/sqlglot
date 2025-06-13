@@ -1,6 +1,25 @@
 Changelog
 =========
 
+## [v26.28.1] - 2025-06-13
+### :boom: BREAKING CHANGES
+- due to [`44297f1`](https://github.com/tobymao/sqlglot/commit/44297f1c5c8c2cb16fe77c318312f417b4281708) - JOIN pipe syntax, Set Operators as CTEs *(PR [#5215](https://github.com/tobymao/sqlglot/pull/5215) by [@geooo109](https://github.com/geooo109))*:
+
+  JOIN pipe syntax, Set Operators as CTEs (#5215)
+
+
+### :sparkles: New Features
+- [`44297f1`](https://github.com/tobymao/sqlglot/commit/44297f1c5c8c2cb16fe77c318312f417b4281708) - **parser**: JOIN pipe syntax, Set Operators as CTEs *(PR [#5215](https://github.com/tobymao/sqlglot/pull/5215) by [@geooo109](https://github.com/geooo109))*
+- [`21cd3eb`](https://github.com/tobymao/sqlglot/commit/21cd3ebf5d0b57f5b102c5aadc3b24a598ebe918) - **parser**: PIVOT/UNPIVOT pipe syntax *(PR [#5222](https://github.com/tobymao/sqlglot/pull/5222) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`28fed58`](https://github.com/tobymao/sqlglot/commit/28fed586a39df83aade4792217743a1a859fd039) - **optimizer**: UnboundLocalError in scope module *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`809e05a`](https://github.com/tobymao/sqlglot/commit/809e05a743d5a2904a1d6f6813f24ca7549ac7ef) - **snowflake**: preserve STRTOK_TO_ARRAY roundtrip *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`aac70aa`](https://github.com/tobymao/sqlglot/commit/aac70aaaa8d840c267129e2307ccb65058cef0c9) - **parser**: simpler _parse_pipe_syntax_select *(commit by [@geooo109](https://github.com/geooo109))*
+
+
 ## [v26.27.0] - 2025-06-12
 ### :boom: BREAKING CHANGES
 - due to [`ac6555b`](https://github.com/tobymao/sqlglot/commit/ac6555b4d6c162ef7b14b63307d01fd560138ea0) - preserve DIV binary operator, fixes [#5198](https://github.com/tobymao/sqlglot/pull/5198) *(PR [#5199](https://github.com/tobymao/sqlglot/pull/5199) by [@georgesittas](https://github.com/georgesittas))*:
@@ -7049,3 +7068,4 @@ Changelog
 [v26.25.3]: https://github.com/tobymao/sqlglot/compare/v26.25.2...v26.25.3
 [v26.26.0]: https://github.com/tobymao/sqlglot/compare/v26.25.3...v26.26.0
 [v26.27.0]: https://github.com/tobymao/sqlglot/compare/v26.26.0...v26.27.0
+[v26.28.1]: https://github.com/tobymao/sqlglot/compare/v26.27.1...v26.28.1

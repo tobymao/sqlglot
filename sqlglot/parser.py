@@ -938,6 +938,7 @@ class Parser(metaclass=_Parser):
         ),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
+        "AS": lambda self, query: self._parse_pipe_syntax_as(query),
         "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
         "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
     }
@@ -3252,11 +3253,9 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.VALUES, advance=False):
             this = self._parse_derived_table_values()
         elif from_:
-            if self._match(TokenType.PIPE_GT, advance=False):
-                return self._parse_pipe_syntax_query(
-                    exp.Select().from_(from_.this, append=False, copy=False)
-                )
             this = exp.select("*").from_(from_.this, copy=False)
+            if self._match(TokenType.PIPE_GT, advance=False):
+                return self._parse_pipe_syntax_query(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -8329,9 +8328,6 @@ class Parser(metaclass=_Parser):
         return expression
 
     def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Select:
-        if not query.selects:
-            query = query.select("*", copy=False)
-
         self._pipe_cte_counter += 1
         new_cte = f"__tmp{self._pipe_cte_counter}"
 
@@ -8349,10 +8345,7 @@ class Parser(metaclass=_Parser):
         if not select:
             return query
 
-        if not query.selects:
-            return self._build_pipe_cte(query.select(*select.expressions), [exp.Star()])
-
-        return self._build_pipe_cte(query, select.expressions)
+        return self._build_pipe_cte(query.select(*select.expressions, append=False), [exp.Star()])
 
     def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()
@@ -8401,7 +8394,7 @@ class Parser(metaclass=_Parser):
                 copy=False,
             )
         else:
-            query = query.select(*aggregates_or_groups, copy=False)
+            query = query.select(*aggregates_or_groups, append=False, copy=False)
 
         if orders:
             return query.order_by(*orders, append=False, copy=False)
@@ -8453,6 +8446,13 @@ class Parser(metaclass=_Parser):
 
         return query.join(join, copy=False)
 
+    def _parse_pipe_syntax_as(self, query: exp.Select) -> exp.Select:
+        from_ = query.args.get("from")
+        if from_:
+            from_.this.set("alias", self._parse_table_alias())
+
+        return query
+
     def _parse_pipe_syntax_pivot(self, query: exp.Select) -> exp.Select:
         pivots = self._parse_pivots()
         if not pivots:
@@ -8479,8 +8479,5 @@ class Parser(metaclass=_Parser):
                 query = parsed_query
             else:
                 query = parser(self, query)
-
-        if query and not query.selects:
-            return query.select("*", copy=False)
 
         return query

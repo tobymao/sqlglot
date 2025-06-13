@@ -931,15 +931,18 @@ class Parser(metaclass=_Parser):
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
-        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
-        "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
+        "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
+        "AS": lambda self, query: self._build_pipe_cte(
+            query, [exp.Star()], self._parse_table_alias()
+        ),
+        "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "ORDER BY": lambda self, query: query.order_by(
             self._parse_order(), append=False, copy=False
         ),
-        "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
-        "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
         "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
+        "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
         "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
+        "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
@@ -3252,11 +3255,9 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.VALUES, advance=False):
             this = self._parse_derived_table_values()
         elif from_:
-            if self._match(TokenType.PIPE_GT, advance=False):
-                return self._parse_pipe_syntax_query(
-                    exp.Select().from_(from_.this, append=False, copy=False)
-                )
             this = exp.select("*").from_(from_.this, copy=False)
+            if self._match(TokenType.PIPE_GT, advance=False):
+                return self._parse_pipe_syntax_query(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -5543,6 +5544,37 @@ class Parser(metaclass=_Parser):
 
         return self._parse_colon_as_variant_extract(this) if self.COLON_IS_VARIANT_EXTRACT else this
 
+    def _parse_paren(self) -> t.Optional[exp.Expression]:
+        if not self._match(TokenType.L_PAREN):
+            return None
+
+        comments = self._prev_comments
+        query = self._parse_select()
+
+        if query:
+            expressions = [query]
+        else:
+            expressions = self._parse_expressions()
+
+        this = self._parse_query_modifiers(seq_get(expressions, 0))
+
+        if not this and self._match(TokenType.R_PAREN, advance=False):
+            this = self.expression(exp.Tuple)
+        elif isinstance(this, exp.UNWRAPPED_QUERIES):
+            this = self._parse_subquery(this=this, parse_alias=False)
+        elif isinstance(this, exp.Subquery):
+            this = self._parse_subquery(this=self._parse_set_operations(this), parse_alias=False)
+        elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
+            this = self.expression(exp.Tuple, expressions=expressions)
+        else:
+            this = self.expression(exp.Paren, this=this)
+
+        if this:
+            this.add_comments(comments)
+
+        self._match_r_paren(expression=this)
+        return this
+
     def _parse_primary(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.PRIMARY_PARSERS):
             token_type = self._prev.token_type
@@ -5561,37 +5593,7 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.DOT, TokenType.NUMBER):
             return exp.Literal.number(f"0.{self._prev.text}")
 
-        if self._match(TokenType.L_PAREN):
-            comments = self._prev_comments
-            query = self._parse_select()
-
-            if query:
-                expressions = [query]
-            else:
-                expressions = self._parse_expressions()
-
-            this = self._parse_query_modifiers(seq_get(expressions, 0))
-
-            if not this and self._match(TokenType.R_PAREN, advance=False):
-                this = self.expression(exp.Tuple)
-            elif isinstance(this, exp.UNWRAPPED_QUERIES):
-                this = self._parse_subquery(this=this, parse_alias=False)
-            elif isinstance(this, exp.Subquery):
-                this = self._parse_subquery(
-                    this=self._parse_set_operations(this), parse_alias=False
-                )
-            elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
-                this = self.expression(exp.Tuple, expressions=expressions)
-            else:
-                this = self.expression(exp.Paren, this=this)
-
-            if this:
-                this.add_comments(comments)
-
-            self._match_r_paren(expression=this)
-            return this
-
-        return None
+        return self._parse_paren()
 
     def _parse_field(
         self,
@@ -8328,12 +8330,18 @@ class Parser(metaclass=_Parser):
         expression.update_positions(token)
         return expression
 
-    def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Select:
-        if not query.selects:
-            query = query.select("*", copy=False)
-
-        self._pipe_cte_counter += 1
-        new_cte = f"__tmp{self._pipe_cte_counter}"
+    def _build_pipe_cte(
+        self,
+        query: exp.Query,
+        expressions: t.List[exp.Expression],
+        alias_cte: t.Optional[exp.TableAlias] = None,
+    ) -> exp.Select:
+        new_cte: t.Optional[t.Union[str, exp.TableAlias]]
+        if alias_cte:
+            new_cte = alias_cte
+        else:
+            self._pipe_cte_counter += 1
+            new_cte = f"__tmp{self._pipe_cte_counter}"
 
         with_ = query.args.get("with")
         ctes = with_.pop() if with_ else None
@@ -8349,10 +8357,7 @@ class Parser(metaclass=_Parser):
         if not select:
             return query
 
-        if not query.selects:
-            return self._build_pipe_cte(query.select(*select.expressions), [exp.Star()])
-
-        return self._build_pipe_cte(query, select.expressions)
+        return self._build_pipe_cte(query.select(*select.expressions, append=False), [exp.Star()])
 
     def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()
@@ -8401,7 +8406,7 @@ class Parser(metaclass=_Parser):
                 copy=False,
             )
         else:
-            query = query.select(*aggregates_or_groups, copy=False)
+            query = query.select(*aggregates_or_groups, append=False, copy=False)
 
         if orders:
             return query.order_by(*orders, append=False, copy=False)
@@ -8419,28 +8424,32 @@ class Parser(metaclass=_Parser):
 
         return self._build_pipe_cte(query, [exp.Star()])
 
-    def _parse_pipe_syntax_set_operator(
-        self, query: t.Optional[exp.Query]
-    ) -> t.Optional[exp.Select]:
+    def _parse_pipe_syntax_set_operator(self, query: exp.Query) -> t.Optional[exp.Select]:
         first_setop = self.parse_set_operation(this=query)
-
-        if not first_setop or not query:
+        if not first_setop:
             return None
 
+        def _parse_and_unwrap_query() -> t.Optional[exp.Select]:
+            expr = self._parse_paren()
+            return expr.assert_is(exp.Subquery).unnest() if expr else None
+
         first_setop.this.pop()
-        distinct = first_setop.args.pop("distinct")
-        setops = [first_setop.expression.pop(), *self._parse_expressions()]
+
+        setops = [
+            first_setop.expression.pop().assert_is(exp.Subquery).unnest(),
+            *self._parse_csv(_parse_and_unwrap_query),
+        ]
 
         query = self._build_pipe_cte(query, [exp.Star()])
         with_ = query.args.get("with")
         ctes = with_.pop() if with_ else None
 
         if isinstance(first_setop, exp.Union):
-            query = query.union(*setops, distinct=distinct, copy=False, **first_setop.args)
+            query = query.union(*setops, copy=False, **first_setop.args)
         elif isinstance(first_setop, exp.Except):
-            query = query.except_(*setops, distinct=distinct, copy=False, **first_setop.args)
+            query = query.except_(*setops, copy=False, **first_setop.args)
         else:
-            query = query.intersect(*setops, distinct=distinct, copy=False, **first_setop.args)
+            query = query.intersect(*setops, copy=False, **first_setop.args)
 
         query.set("with", ctes)
 
@@ -8469,9 +8478,12 @@ class Parser(metaclass=_Parser):
             start = self._curr
             parser = self.PIPE_SYNTAX_TRANSFORM_PARSERS.get(self._curr.text.upper())
             if not parser:
-                parsed_query = self._parse_pipe_syntax_set_operator(
-                    query
-                ) or self._parse_pipe_syntax_join(query)
+                # The set operators (UNION, etc) and the JOIN operator have a few common starting
+                # keywords, making it tricky to disambiguate them without lookahead. The approach
+                # here is to try and parse a set operation and if that fails, then try to parse a
+                # join operator. If that fails as well, then the operator is not supported.
+                parsed_query = self._parse_pipe_syntax_set_operator(query)
+                parsed_query = parsed_query or self._parse_pipe_syntax_join(query)
                 if not parsed_query:
                     self._retreat(start)
                     self.raise_error(f"Unsupported pipe syntax operator: '{start.text.upper()}'.")
@@ -8479,8 +8491,5 @@ class Parser(metaclass=_Parser):
                 query = parsed_query
             else:
                 query = parser(self, query)
-
-        if query and not query.selects:
-            return query.select("*", copy=False)
 
         return query

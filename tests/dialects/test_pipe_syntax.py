@@ -366,9 +366,14 @@ WHERE
 
     def test_as(self):
         self.validate_identity(
-            "FROM x |> AS a_x |> WHERE a_x.x1 > 0", "SELECT * FROM x AS a_x WHERE a_x.x1 > 0"
+            "FROM x |> AS a_x |> WHERE a_x.x1 > 0",
+            "WITH a_x AS (SELECT * FROM x) SELECT * FROM a_x WHERE a_x.x1 > 0",
         )
         self.validate_identity(
             "FROM x AS t |> AGGREGATE SUM(x1) AS s_x1 GROUP BY id, x2 |> AS t1 |> JOIN y AS t2 ON t1.id = t2.id |> SELECT t2.id, s_x1",
-            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, id, x2 FROM x AS t GROUP BY id, x2), __tmp2 AS (SELECT t2.id, s_x1 FROM __tmp1 AS t1 JOIN y AS t2 ON t1.id = t2.id) SELECT * FROM __tmp2",
+            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, id, x2 FROM x AS t GROUP BY id, x2), t1 AS (SELECT * FROM __tmp1), __tmp2 AS (SELECT t2.id, s_x1 FROM t1 JOIN y AS t2 ON t1.id = t2.id) SELECT * FROM __tmp2",
+        )
+        self.validate_identity(
+            "FROM x |> JOIN y ON x.x1 = y.y1 |> AS a |> WHERE a.x2 > 1",
+            "WITH a AS (SELECT * FROM x JOIN y ON x.x1 = y.y1) SELECT * FROM a WHERE a.x2 > 1",
         )

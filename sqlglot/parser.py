@@ -8328,9 +8328,17 @@ class Parser(metaclass=_Parser):
         expression.update_positions(token)
         return expression
 
-    def _build_pipe_cte(self, query: exp.Query, expressions: t.List[exp.Expression]) -> exp.Select:
-        self._pipe_cte_counter += 1
-        new_cte = f"__tmp{self._pipe_cte_counter}"
+    def _build_pipe_cte(
+        self,
+        query: exp.Query,
+        expressions: t.List[exp.Expression],
+        alias_cte: t.Optional[str | exp.Expression] = None,
+    ) -> exp.Select:
+        if alias_cte:
+            new_cte = alias_cte
+        else:
+            self._pipe_cte_counter += 1
+            new_cte = f"__tmp{self._pipe_cte_counter}"
 
         with_ = query.args.get("with")
         ctes = with_.pop() if with_ else None
@@ -8452,11 +8460,7 @@ class Parser(metaclass=_Parser):
         return query.join(join, copy=False)
 
     def _parse_pipe_syntax_as(self, query: exp.Select) -> exp.Select:
-        from_ = query.args.get("from")
-        if from_:
-            from_.this.set("alias", self._parse_table_alias())
-
-        return query
+        return self._build_pipe_cte(query, [exp.Star()], self._parse_table_alias())
 
     def _parse_pipe_syntax_pivot(self, query: exp.Select) -> exp.Select:
         pivots = self._parse_pivots()

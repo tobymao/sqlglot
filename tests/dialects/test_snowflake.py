@@ -286,11 +286,11 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "CREATE OR REPLACE TABLE x (y NUMBER(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 ORDER)",
-            "CREATE OR REPLACE TABLE x (y DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 ORDER)"
+            "CREATE OR REPLACE TABLE x (y DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 ORDER)",
         )
         self.validate_identity(
             "CREATE OR REPLACE TABLE x (y NUMBER(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 NOORDER)",
-            "CREATE OR REPLACE TABLE x (y DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 NOORDER)"
+            "CREATE OR REPLACE TABLE x (y DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 NOORDER)",
         )
         self.validate_identity(
             "CREATE TABLE x (y NUMBER IDENTITY START 0 INCREMENT 1)",
@@ -1572,7 +1572,7 @@ class TestSnowflake(Validator):
                     f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
                     "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
                 )
-                
+
         self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
         self.validate_identity("USE SECONDARY ROLES ALL")
         self.validate_identity("USE SECONDARY ROLES NONE")

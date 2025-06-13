@@ -1316,7 +1316,7 @@ class Snowflake(Dialect):
             if expression.args.get("show_order"):
                 order = " ORDER" if expression.args.get("order") else " NOORDER"
             else:
-                order=""
+                order = ""
             return f"AUTOINCREMENT{start}{increment}{order}"
 
         def cluster_sql(self, expression: exp.Cluster) -> str:

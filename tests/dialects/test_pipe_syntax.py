@@ -377,3 +377,17 @@ WHERE
             "FROM x |> JOIN y ON x.x1 = y.y1 |> AS a |> WHERE a.x2 > 1",
             "WITH a AS (SELECT * FROM x JOIN y ON x.x1 = y.y1) SELECT * FROM a WHERE a.x2 > 1",
         )
+
+    def test_extend(self):
+        self.validate_identity(
+            "FROM x |> EXTEND id IN (1, 2) AS is_1_2, id + 1 as a_id",
+            "WITH __tmp1 AS (SELECT *, id IN (1, 2) AS is_1_2, id + 1 AS a_id FROM x) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x.x1, x.x2 |> EXTEND x1 + 1 as x1_1, x2 + 1 as x2_1 |> WHERE x1_1 > 0 AND x2_1 > 0",
+            "WITH __tmp1 AS (SELECT x.x1, x.x2 FROM x), __tmp2 AS (SELECT *, x1 + 1 AS x1_1, x2 + 1 AS x2_1 FROM __tmp1) SELECT * FROM __tmp2 WHERE x1_1 > 0 AND x2_1 > 0",
+        )
+        self.validate_identity(
+            "FROM (SELECT 'foo1' AS item1, 2 AS item2 UNION ALL SELECT 'foo2' AS item1, 5 AS item2) |> EXTEND SUM(item2) OVER() AS item2_sum",
+            "WITH __tmp1 AS (SELECT *, SUM(item2) OVER () AS item2_sum FROM (SELECT 'foo1' AS item1, 2 AS item2 UNION ALL SELECT 'foo2' AS item1, 5 AS item2)) SELECT * FROM __tmp1",
+        )

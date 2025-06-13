@@ -758,6 +758,8 @@ def _traverse_tables(scope):
             expressions.extend(join.this for join in expression.args.get("joins") or [])
             continue
 
+        child_scope = None
+
         for child_scope in _traverse_scope(
             scope.branch(
                 expression,
@@ -775,8 +777,9 @@ def _traverse_tables(scope):
             sources[expression.alias] = child_scope
 
         # append the final child_scope yielded
-        scopes.append(child_scope)
-        scope.table_scopes.append(child_scope)
+        if child_scope:
+            scopes.append(child_scope)
+            scope.table_scopes.append(child_scope)
 
     scope.sources.update(sources)
 

@@ -22,6 +22,8 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
+        self.validate_identity("STRTOK_TO_ARRAY('a b c')")
+        self.validate_identity("STRTOK_TO_ARRAY('a.b.c', '.')")
         self.validate_identity("GET(a, b)")
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")

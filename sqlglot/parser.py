@@ -8329,8 +8329,7 @@ class Parser(metaclass=_Parser):
         select = self._parse_select()
         if select:
             if not query.selects:
-                query = query.select(*select.expressions)
-                return self._build_pipe_cte(query, [exp.Star()])
+                return self._build_pipe_cte(query.select(*select.expressions), [exp.Star()])
             return self._build_pipe_cte(query, select.expressions)
 
         return query

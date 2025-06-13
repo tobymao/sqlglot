@@ -1564,7 +1564,7 @@ class TestSnowflake(Validator):
                     f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
                     "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
                 )
-
+                
         self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
         self.validate_identity("USE SECONDARY ROLES ALL")
         self.validate_identity("USE SECONDARY ROLES NONE")
@@ -1624,6 +1624,30 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL, PRIMARY KEY (ID), FOREIGN KEY (CITY_CODE) REFERENCES EXAMPLE_DB.DEMO.CITIES (CITY_CODE))"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID NUMBER NOT NULL AUTOINCREMENT START 1 INCREMENT 1)",
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1)"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID NUMBER(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1)",
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1)"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID NUMBER(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 ORDER)",
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 ORDER)"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID NUMBER(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 NOORDER)",
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 NOORDER)"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID NUMBER(38, 0) NOT NULL autoincrement START 1 INCREMENT 1 NOORDER COMMENT 'MyComment')",
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 NOORDER COMMENT 'MyComment')"
+        )
+        self.validate_identity(
+            "CREATE TABLE table (surrogatekey_SK NUMBER(38,0) NOT NULL autoincrement start 1 increment 1 ORDER COMMENT 'Record Identification Number Ordered')",
+            "CREATE TABLE table (surrogatekey_SK DECIMAL(38, 0) NOT NULL AUTOINCREMENT START 1 INCREMENT 1 ORDER COMMENT 'Record Identification Number Ordered')",
         )
         self.validate_identity(
             "CREATE ICEBERG TABLE my_iceberg_table (amount ARRAY(INT)) CATALOG='SNOWFLAKE' EXTERNAL_VOLUME='my_external_volume' BASE_LOCATION='my/relative/path/from/extvol'"

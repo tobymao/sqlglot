@@ -935,6 +935,7 @@ class Parser(metaclass=_Parser):
         "AS": lambda self, query: self._build_pipe_cte(
             query, [exp.Star()], self._parse_table_alias()
         ),
+        "DROP": lambda self, query: self._parse_pipe_syntax_drop(query),
         "EXTEND": lambda self, query: self._parse_pipe_syntax_extend(query),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "ORDER BY": lambda self, query: query.order_by(
@@ -8484,6 +8485,14 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("EXTEND")
         query.select(*[exp.Star(), *self._parse_expressions()], append=False, copy=False)
         return self._build_pipe_cte(query, [exp.Star()])
+
+    def _parse_pipe_syntax_drop(self, query: exp.Select) -> exp.Select:
+        self._match_text_seq("DROP")
+
+        star = exp.Star()
+        star.set("except", self._parse_csv(self._parse_assignment))
+
+        return query.select(star, append=False, copy=False)
 
     def _parse_pipe_syntax_tablesample(self, query: exp.Select) -> exp.Select:
         sample = self._parse_table_sample()

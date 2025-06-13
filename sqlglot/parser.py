@@ -938,6 +938,8 @@ class Parser(metaclass=_Parser):
         ),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
+        "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
+        "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
@@ -8450,6 +8452,17 @@ class Parser(metaclass=_Parser):
             return None
 
         return query.join(join, copy=False)
+
+    def _parse_pipe_syntax_pivot(self, query: exp.Select) -> exp.Select:
+        pivots = self._parse_pivots()
+        if not pivots:
+            return query
+
+        from_ = query.args.get("from")
+        if from_:
+            from_.this.set("pivots", pivots)
+
+        return self._build_pipe_cte(query, [exp.Star()])
 
     def _parse_pipe_syntax_query(self, query: exp.Select) -> t.Optional[exp.Select]:
         while self._match(TokenType.PIPE_GT):

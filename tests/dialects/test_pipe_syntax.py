@@ -359,3 +359,22 @@ WHERE
   a_x1 > 0""",
                     pretty=True,
                 )
+
+    def test_pivot_unpivot(self):
+        self.validate_identity(
+            "FROM x |> PIVOT(SUM(x1) FOR quarter IN ('foo1', 'foo2'))",
+            "WITH __tmp1 AS (SELECT * FROM x PIVOT(SUM(x1) FOR quarter IN ('foo1', 'foo2'))) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> JOIN y on x.id = y.id |> PIVOT(SUM(x1) FOR quarter IN ('foo1', 'foo2'))",
+            "WITH __tmp1 AS (SELECT * FROM x PIVOT(SUM(x1) FOR quarter IN ('foo1', 'foo2')) JOIN y ON x.id = y.id) SELECT * FROM __tmp1",
+        )
+
+        self.validate_identity(
+            "FROM x |> UNPIVOT(col FOR item IN (foo1, foo2))",
+            "WITH __tmp1 AS (SELECT * FROM x UNPIVOT(col FOR item IN (foo1, foo2))) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> JOIN y on x.id = y.id |> UNPIVOT(col FOR item IN (foo1, foo2))",
+            "WITH __tmp1 AS (SELECT * FROM x UNPIVOT(col FOR item IN (foo1, foo2)) JOIN y ON x.id = y.id) SELECT * FROM __tmp1",
+        )

@@ -8334,8 +8334,9 @@ class Parser(metaclass=_Parser):
         self,
         query: exp.Query,
         expressions: t.List[exp.Expression],
-        alias_cte: t.Optional[str | exp.TableAlias] = None,
+        alias_cte: t.Optional[exp.TableAlias] = None,
     ) -> exp.Select:
+        new_cte: t.Optional[t.Union[str, exp.TableAlias]]
         if alias_cte:
             new_cte = alias_cte
         else:

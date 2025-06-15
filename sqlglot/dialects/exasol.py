@@ -55,59 +55,24 @@ def _str_to_date_sql(self: Exasol.Generator, expression: exp.StrToDate) -> str:
     return f"TO_DATE({value_sql})"
 
 def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff) -> str:
-    # TODO proper error handling
-    # expression.unit can be exp.IntervalSpan
-    # but exasol can only work with certain units
-    assert isinstance(expression.unit, exp.Var)
+    """
+    Exasol does not have datediff functions (https://docs.exasol.com/db/latest/sql_references/functions/scalarfunctions.htm#Datetimefunctions).
+    It only supports {unit}S_BETWEEN(date1, date2)
+    for unit in {"YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND"}.
+    """
+    if not isinstance(expression.unit, exp.Var):
+        raise ValueError("DateDiff requires a unit for Exasol {unit}S_BETWEEN functions.")
     unit = expression.text("unit").upper()
     units = {"YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND"}
     if unit not in units:
-        # exasol cannot work with other units
-        raise Exception()
+        raise ValueError("DateDiff requires a {YEAR, MONTH, DAY, HOUR, MINUTE, SECOND} unit for Exasol {unit}S_BETWEEN functions.")
     return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
 
 
 class Exasol(Dialect):
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-    }
-
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
-
-    TIME_MAPPING = {
-        "YYYY": "%Y",  # 4-digit year
-        "YY": "%y",  # 2-digit year
-        "MM": "%m",  # 2-digit month
-        "MON": "%b",  # Abbreviated month name (JAN)
-        "MONTH": "%B",  # Full month name (JANUARY)
-        "DD": "%d",  # 2-digit day of month
-        "D": "%-d",  # Day of month (single digit without leading zero)
-        "DY": "%a",  # Abbreviated day of week (MON)
-        "DAY": "%A",  # Full day of week (MONDAY)
-        "HH24": "%H",  # 24-hour clock (00-23)
-        "HH": "%I",  # 12-hour clock (01-12)
-        "HH12": "%I",  # Alias for HH
-        "MI": "%M",  # Minutes (00-59)
-        "SS": "%S",  # Seconds (00-59)
-        "FF": "%f",  # Fractional seconds (microseconds)
-        "AM": "%p",  # Meridian indicator (AM/PM)
-        "PM": "%p",  # Meridian indicator (AM/PM)
-        # Additional patterns if needed
-        "TZH:TZM": "%z",  # Time zone offset (not always supported)
-    }
-
-    class Tokenizer(tokens.Tokenizer):
-        SINGLE_TOKENS = {
-            **tokens.Tokenizer.SINGLE_TOKENS,
-        }
-        SINGLE_TOKENS.pop("%")  # "%": TokenType.MOD not supported in exasol
-
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-        }
-        KEYWORDS.pop("DIV")
 
     class Parser(parser.Parser):
         # ADD_(DAYS | HOURS | MINUTES | MONTHS | SECONDS | WEEKS | YEARS)
@@ -117,30 +82,28 @@ class Exasol(Dialect):
             for unit in ["DAY", "HOUR", "MINUTE", "MONTH", "SECOND", "WEEK", "YEAR"]
         }
 
-        NUMERIC_FUNCTIONS = {
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            **DATE_ADD_FUNCTIONS,
+            "TO_CHAR": build_formatted_time(exp.TimeToStr, "exasol"),
+            "TO_DATE": exp.StrToDate,
+
+            # NUMERIC FUNCTIONS
             "TRUNC": exp.DateTrunc.from_arg_list,
             "DIV": binary_from_function(exp.IntDiv),
             "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
-        }
-
-        STRING_FUNCTIONS = {
+            
+            # STRING FUNCTIONS
             "ASCII": exp.Unicode.from_arg_list,
-            "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
             "INITCAP": lambda args: exp.Initcap(this=seq_get(args, 0)),
         }
 
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            **DATE_ADD_FUNCTIONS,
-            **NUMERIC_FUNCTIONS,
-            **STRING_FUNCTIONS,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "exasol"),
-            "TO_DATE": exp.StrToDate,
-        }
-
         CONSTRAINT_PARSERS = {
             **parser.Parser.CONSTRAINT_PARSERS,
+            # exasol allows e.g.: CREATE TABLE t VALUES (a VARCHAR [CHARACTER SET]? UTF8)
+            # if CHARACTER SET is left out, sqlglot parser fails
+            # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
             "UTF8": lambda self: self.expression(
                 exp.CharacterSetColumnConstraint, this=exp.Var(this="UTF8")
             ),
@@ -149,56 +112,20 @@ class Exasol(Dialect):
             ),
         }
 
-        STRING_ALIASES = True
+        # Whether string aliases are supported `SELECT COUNT(*) 'count'`
+        # Exasol: supports this, tested with exasol db
+        STRING_ALIASES = True  # default False
 
-        MODIFIERS_ATTACHED_TO_SET_OP = False
+        # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
+        # Exasol: only possible to attach to righ subquery (operand)
+        MODIFIERS_ATTACHED_TO_SET_OP = False  # default True
         SET_OP_MODIFIERS = {"order", "limit", "offset"}
 
+        # Whether the 'AS' keyword is optional in the CTE definition syntax
+        # https://docs.exasol.com/db/latest/sql/select.htm
         OPTIONAL_ALIAS_TOKEN_CTE = False
 
-        VALUES_FOLLOWED_BY_PAREN = True
-
-        STRICT_CAST = True
-
-        LOG_DEFAULTS_TO_LN = False
-
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
-
-        TABLESAMPLE_CSV = False
-
-        DEFAULT_SAMPLING_METHOD: t.Optional[str] = None
-
-        TRIM_PATTERN_FIRST = False
-
-        NO_PAREN_IF_COMMANDS = True
-
-        INTERVAL_SPANS = True
-
-        SUPPORTS_IMPLICIT_UNNEST = False
-
-        SUPPORTS_PARTITION_SELECTION = False
-
-        SET_REQUIRES_ASSIGNMENT_DELIMITER = True
-
-        PARTITION_KEYWORDS = {"PARTITION", "SUBPARTITION"}
-
-        AMBIGUOUS_ALIAS_TOKENS = (TokenType.LIMIT, TokenType.OFFSET)
-
-        OPERATION_MODIFIERS: t.Set[str] = set()
-
-        RECURSIVE_CTE_SEARCH_KIND = {"BREADTH", "DEPTH", "CYCLE"}
-
-        MODIFIABLES = (exp.Query, exp.Table, exp.TableFromRows)
-
-        PREFIXED_PIVOT_COLUMNS = False
-        IDENTIFY_PIVOT_STRINGS = False
-
-        JSON_ARROWS_REQUIRE_JSON_TYPE = False
-
-        COLON_IS_VARIANT_EXTRACT = False
-
-        WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = True
-
+        # Not used anywhere atm
         def parse_function(self):
             token = self._prev
             func = super().parse_function()
@@ -216,6 +143,13 @@ class Exasol(Dialect):
             self, this: t.Optional[exp.Expression]
         ) -> t.Optional[exp.DataType]:
             """
+            Exasol allows optional arguments in interval type:
+            https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#Interval
+            If optionall arguments are used, the sqlglot parser fails.
+
+            This function just consumes `(lfp)` or `(fsp)` or `(p)`, if used.
+            This makes the sqlglot parser not fail.
+
             INTERVAL DAY(lfp) TO SECOND(fsp)
             lfp = leading field precision (optional) 1 <= lfp <= 9, default = 2
             fsp = fractional second precision (optional) 0 <= fsp <= 9, default = 3
@@ -260,9 +194,6 @@ class Exasol(Dialect):
             schema: bool = False,
             allow_identifiers: bool = True,
         ) -> t.Optional[exp.Expression]:
-            """
-            https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#Intervaldatatypes
-            """
             this = super()._parse_types(
                 check_func=check_func,
                 schema=schema,

@@ -1095,7 +1095,14 @@ class TSQL(Dialect):
                     # we replace here because otherwise TOP would be generated in select_sql
                     limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
 
-            return super().select_sql(expression)
+            expr = super().select_sql(expression)
+
+            if limit and expression.args.get("limit") is None:
+                # To prevent a limit clause being dropped from the expression
+                # Causing subsequent `select_sql` calls on same expression to lack this
+                expression.set("limit", limit)
+
+            return expr
 
         def convert_sql(self, expression: exp.Convert) -> str:
             name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"

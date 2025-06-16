@@ -8369,7 +8369,10 @@ class Parser(metaclass=_Parser):
         select = query.selects[0].assert_is(exp.Star)
         if select.args.get("except") or select.args.get("replace"):
             query = self._build_pipe_cte(
-                query=query.select(*[expr for expr in expressions if not expr.is_star], copy=False),
+                query=query.select(
+                    *[expr for expr in expressions if not expr.is_star and expr.args.get("alias")],
+                    copy=False,
+                ),
                 expressions=[
                     projection.args.get("alias", projection) for projection in expressions
                 ],

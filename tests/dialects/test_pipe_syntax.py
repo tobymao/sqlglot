@@ -408,7 +408,7 @@ WHERE
         )
         self.validate_identity(
             "FROM (SELECT 1 AS x, 2 AS y) AS t |> DROP x |> SELECT t.x AS original_x, y",
-            "WITH __tmp1 AS (SELECT * EXCEPT (x), t.x AS original_x, y FROM (SELECT 1 AS x, 2 AS y) AS t), __tmp2 AS (SELECT original_x, y FROM __tmp1) SELECT * FROM __tmp2",
+            "WITH __tmp1 AS (SELECT * EXCEPT (x), t.x AS original_x FROM (SELECT 1 AS x, 2 AS y) AS t), __tmp2 AS (SELECT original_x, y FROM __tmp1) SELECT * FROM __tmp2",
         )
 
         self.validate_identity(

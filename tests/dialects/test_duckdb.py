@@ -1652,3 +1652,20 @@ class TestDuckDB(Validator):
     def test_show_tables(self):
         self.validate_identity("SHOW TABLES").assert_is(exp.Show)
         self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)
+
+    def test_extract_date_parts(self):
+        for part in ("WEEK", "WEEKOFYEAR"):
+            # Both are synonyms for ISO week
+            self.validate_identity(f"EXTRACT({part} FROM foo)", "EXTRACT(WEEK FROM foo)")
+
+        for part in (
+            "WEEKDAY",
+            "ISOYEAR",
+            "ISODOW",
+            "YEARWEEK",
+            "TIMEZONE_HOUR",
+            "TIMEZONE_MINUTE",
+        ):
+            with self.subTest(f"Testing DuckDB EXTRACT({part} FROM foo)"):
+                # All of these should remain as is, they don't have synonyms
+                self.validate_identity(f"EXTRACT({part} FROM foo)")

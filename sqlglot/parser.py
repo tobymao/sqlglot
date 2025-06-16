@@ -5916,7 +5916,6 @@ class Parser(metaclass=_Parser):
     ) -> exp.GeneratedAsIdentityColumnConstraint | exp.AutoIncrementColumnConstraint:
         start = None
         increment = None
-        show_order = None
         order = None
 
         if self._match(TokenType.L_PAREN, advance=False):
@@ -5928,13 +5927,13 @@ class Parser(metaclass=_Parser):
             self._match_text_seq("INCREMENT")
             increment = self._parse_bitwise()
             if self._match_text_seq("ORDER"):
-                show_order, order = True, True
+                order = True
             elif self._match_text_seq("NOORDER"):
-                show_order = True
+                order = False
 
         if start and increment:
             return exp.GeneratedAsIdentityColumnConstraint(
-                start=start, increment=increment, this=False, show_order=show_order, order=order
+                start=start, increment=increment, this=False, order=order
             )
 
         return exp.AutoIncrementColumnConstraint()

@@ -1947,7 +1947,6 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
         "minvalue": False,
         "maxvalue": False,
         "cycle": False,
-        "show_order": False,
         "order": False,
     }
 

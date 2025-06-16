@@ -1314,11 +1314,14 @@ class Snowflake(Dialect):
             start = f" START {start}" if start else ""
             increment = expression.args.get("increment")
             increment = f" INCREMENT {increment}" if increment else ""
-            if expression.args.get("show_order"):
-                order = " ORDER" if expression.args.get("order") else " NOORDER"
+
+            order = expression.args.get("order")
+            if order is not None:
+                order_clause = " ORDER" if order else " NOORDER"
             else:
-                order = ""
-            return f"AUTOINCREMENT{start}{increment}{order}"
+                order_clause = ""
+
+            return f"AUTOINCREMENT{start}{increment}{order_clause}"
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"

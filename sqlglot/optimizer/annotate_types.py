@@ -12,7 +12,7 @@ from sqlglot.helper import (
     seq_get,
 )
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import Schema, ensure_schema
+from sqlglot.schema import MappingSchema, Schema, ensure_schema
 from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
@@ -290,8 +290,51 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 elif isinstance(source.expression, exp.Unnest):
                     self._set_type(col, source.expression.type)
 
+        if isinstance(self.schema, MappingSchema):
+            for table_column in scope.table_columns:
+                source = scope.sources.get(table_column.name)
+
+                if isinstance(source, exp.Table):
+                    schema = self.schema.find(
+                        source, raise_on_missing=False, ensure_data_types=True
+                    )
+                    if not isinstance(schema, dict):
+                        continue
+
+                    struct_type = exp.DataType(
+                        this=exp.DataType.Type.STRUCT,
+                        expressions=[
+                            exp.ColumnDef(this=exp.to_identifier(c), kind=kind)
+                            for c, kind in schema.items()
+                        ],
+                        nested=True,
+                    )
+                    self._set_type(table_column, struct_type)
+                elif (
+                    isinstance(source, Scope)
+                    and isinstance(source.expression, exp.Query)
+                    and source.expression.is_type(exp.DataType.Type.STRUCT)
+                ):
+                    self._set_type(table_column, source.expression.type)
+
         # Then (possibly) annotate the remaining expressions in the scope
         self._maybe_annotate(scope.expression)
+
+        if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
+            struct_type = exp.DataType(
+                this=exp.DataType.Type.STRUCT,
+                expressions=[
+                    exp.ColumnDef(this=exp.to_identifier(select.output_name), kind=select.type)
+                    for select in scope.expression.selects
+                ],
+                nested=True,
+            )
+            if not any(
+                cd.kind.is_type(exp.DataType.Type.UNKNOWN)
+                for cd in struct_type.expressions
+                if cd.kind
+            ):
+                self._set_type(scope.expression, struct_type)
 
     def _maybe_annotate(self, expression: E) -> E:
         if id(expression) in self._visited:

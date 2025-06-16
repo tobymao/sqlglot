@@ -529,6 +529,13 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
             column_table = resolver.get_table(column_name)
             if column_table:
                 column.set("table", column_table)
+            elif (
+                resolver.schema.dialect == "bigquery"
+                and len(column.parts) == 1
+                and column_name in scope.selected_sources
+            ):
+                # BigQuery allows tables to be referenced as columns, treating them as structs
+                scope.replace(column, exp.TableColumn(this=column.this))
 
     for pivot in scope.pivots:
         for column in pivot.find_all(exp.Column):

@@ -8367,7 +8367,7 @@ class Parser(metaclass=_Parser):
         alias_cte: t.Optional[exp.TableAlias] = None,
     ) -> exp.Select:
         select = query.selects[0].assert_is(exp.Star)
-        if select.args.get("except") or select.args.get("replace"):
+        if select.args.get("except"):
             query = self._build_pipe_cte(
                 query=query.select(
                     *[expr for expr in expressions if not expr.is_star and expr.args.get("alias")],

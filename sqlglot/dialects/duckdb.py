@@ -290,6 +290,12 @@ class DuckDB(Dialect):
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    DATE_PART_MAPPING = {
+        **Dialect.DATE_PART_MAPPING,
+        "DAYOFWEEKISO": "ISODOW",
+    }
+    DATE_PART_MAPPING.pop("WEEKDAY")
+
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
             # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.
@@ -620,6 +626,7 @@ class DuckDB(Dialect):
         PAD_FILL_PATTERN_IS_REQUIRED = True
         ARRAY_CONCAT_IS_VAR_LEN = False
         ARRAY_SIZE_DIM_REQUIRED = False
+        NORMALIZE_EXTRACT_DATE_PARTS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

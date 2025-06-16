@@ -1856,6 +1856,10 @@ WHERE
                 "spark": "SELECT * FROM A LIMIT 3",
             },
         )
+        self.validate_identity(
+            "CREATE TABLE schema.table AS SELECT a, id FROM (SELECT a, (SELECT id FROM tb ORDER BY t DESC LIMIT 1) as id FROM tbl) AS _subquery",
+            "SELECT * INTO schema.table FROM (SELECT a AS a, id AS id FROM (SELECT a AS a, (SELECT TOP 1 id FROM tb ORDER BY t DESC) AS id FROM tbl) AS _subquery) AS temp",
+        )
         self.validate_identity("SELECT TOP 10 PERCENT")
         self.validate_identity("SELECT TOP 10 PERCENT WITH TIES")
 

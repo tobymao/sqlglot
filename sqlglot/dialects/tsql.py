@@ -1224,8 +1224,6 @@ class TSQL(Dialect):
                     # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
                     ctas_expression.set("with", with_.pop())
 
-            sql = super().create_sql(expression)
-
             table = expression.find(exp.Table)
 
             # Convert CTAS statement to SELECT .. INTO ..
@@ -1243,6 +1241,8 @@ class TSQL(Dialect):
                     select_into.limit(0, copy=False)
 
                 sql = self.sql(select_into)
+            else:
+                sql = super().create_sql(expression)
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))

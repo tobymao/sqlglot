@@ -1095,14 +1095,7 @@ class TSQL(Dialect):
                     # we replace here because otherwise TOP would be generated in select_sql
                     limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
 
-            expr = super().select_sql(expression)
-
-            if limit and expression.args.get("limit") is None:
-                # To prevent a limit clause being dropped from the expression
-                # Causing subsequent `select_sql` calls on same expression to lack this
-                expression.set("limit", limit)
-
-            return expr
+            return super().select_sql(expression)
 
         def convert_sql(self, expression: exp.Convert) -> str:
             name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"
@@ -1231,8 +1224,6 @@ class TSQL(Dialect):
                     # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
                     ctas_expression.set("with", with_.pop())
 
-            sql = super().create_sql(expression)
-
             table = expression.find(exp.Table)
 
             # Convert CTAS statement to SELECT .. INTO ..
@@ -1250,6 +1241,8 @@ class TSQL(Dialect):
                     select_into.limit(0, copy=False)
 
                 sql = self.sql(select_into)
+            else:
+                sql = super().create_sql(expression)
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))

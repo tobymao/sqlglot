@@ -942,6 +942,7 @@ class Parser(metaclass=_Parser):
         ),
         "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
         "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
+        "TABLESAMPLE": lambda self, query: self._parse_pipe_syntax_tablesample(query),
         "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
         "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
     }
@@ -8483,6 +8484,17 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("EXTEND")
         query.select(*[exp.Star(), *self._parse_expressions()], append=False, copy=False)
         return self._build_pipe_cte(query, [exp.Star()])
+
+    def _parse_pipe_syntax_tablesample(self, query: exp.Select) -> exp.Select:
+        sample = self._parse_table_sample()
+
+        with_ = query.args.get("with")
+        if with_:
+            with_.expressions[-1].this.set("sample", sample)
+        else:
+            query.set("sample", sample)
+
+        return query
 
     def _parse_pipe_syntax_query(self, query: exp.Select) -> t.Optional[exp.Select]:
         while self._match(TokenType.PIPE_GT):

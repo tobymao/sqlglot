@@ -391,3 +391,17 @@ WHERE
             "FROM (SELECT 'foo1' AS item1, 2 AS item2 UNION ALL SELECT 'foo2' AS item1, 5 AS item2) |> EXTEND SUM(item2) OVER() AS item2_sum",
             "WITH __tmp1 AS (SELECT *, SUM(item2) OVER () AS item2_sum FROM (SELECT 'foo1' AS item1, 2 AS item2 UNION ALL SELECT 'foo2' AS item1, 5 AS item2)) SELECT * FROM __tmp1",
         )
+
+    def test_tablesample(self):
+        self.validate_identity(
+            "FROM x |> TABLESAMPLE SYSTEM (1 PERCENT)",
+            "SELECT * FROM x TABLESAMPLE SYSTEM (1 PERCENT)",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x.x1 |> TABLESAMPLE SYSTEM (1 PERCENT)",
+            "WITH __tmp1 AS (SELECT x.x1 FROM x TABLESAMPLE SYSTEM (1 PERCENT)) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> TABLESAMPLE SYSTEM (1 PERCENT) |> WHERE x.x1 > 0 |> SELECT x1, x2",
+            "WITH __tmp1 AS (SELECT x1, x2 FROM x WHERE x.x1 > 0 TABLESAMPLE SYSTEM (1 PERCENT)) SELECT * FROM __tmp1",
+        )

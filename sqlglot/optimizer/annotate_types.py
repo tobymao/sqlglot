@@ -292,31 +292,30 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
-                if isinstance(table_column, exp.TableColumn):
-                    source = scope.sources.get(table_column.name)
+                source = scope.sources.get(table_column.name)
 
-                    if isinstance(source, exp.Table):
-                        schema = self.schema.find(
-                            source, raise_on_missing=False, ensure_data_types=True
-                        )
-                        if not isinstance(schema, dict):
-                            continue
+                if isinstance(source, exp.Table):
+                    schema = self.schema.find(
+                        source, raise_on_missing=False, ensure_data_types=True
+                    )
+                    if not isinstance(schema, dict):
+                        continue
 
-                        struct_type = exp.DataType(
-                            this=exp.DataType.Type.STRUCT,
-                            expressions=[
-                                exp.ColumnDef(this=exp.to_identifier(c), kind=kind)
-                                for c, kind in schema.items()
-                            ],
-                            nested=True,
-                        )
-                        self._set_type(table_column, struct_type)
-                    elif (
-                        isinstance(source, Scope)
-                        and isinstance(source.expression, exp.Query)
-                        and source.expression.is_type(exp.DataType.Type.STRUCT)
-                    ):
-                        self._set_type(table_column, source.expression.type)
+                    struct_type = exp.DataType(
+                        this=exp.DataType.Type.STRUCT,
+                        expressions=[
+                            exp.ColumnDef(this=exp.to_identifier(c), kind=kind)
+                            for c, kind in schema.items()
+                        ],
+                        nested=True,
+                    )
+                    self._set_type(table_column, struct_type)
+                elif (
+                    isinstance(source, Scope)
+                    and isinstance(source.expression, exp.Query)
+                    and source.expression.is_type(exp.DataType.Type.STRUCT)
+                ):
+                    self._set_type(table_column, source.expression.type)
 
         # Then (possibly) annotate the remaining expressions in the scope
         self._maybe_annotate(scope.expression)

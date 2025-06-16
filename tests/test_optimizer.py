@@ -1593,6 +1593,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         example_query = "SELECT t FROM d.s.t"
         annotated = _annotate(example_query)
 
+        self.assertIsInstance(annotated.selects[0].this, exp.TableColumn)
+        self.assertEqual(
+            annotated.sql("bigquery"), "SELECT `t` AS `_col_0` FROM `d`.`s`.`t` AS `t`"
+        )
         self.assertTrue(
             annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
         )

@@ -31,6 +31,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import flatten, is_float, is_int, seq_get
+from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -331,6 +332,28 @@ def _json_extract_value_array_sql(
     transform_lambda = exp.Lambda(expressions=[ident], this=this)
 
     return self.func("TRANSFORM", json_extract, transform_lambda)
+
+
+def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        unnest_aliases = set()
+        for unnest in find_all_in_scope(expression, exp.Unnest):
+            unnest_alias = unnest.args.get("alias")
+            if (
+                isinstance(unnest_alias, exp.TableAlias)
+                and not unnest_alias.this
+                and len(unnest_alias.columns) == 1
+            ):
+                unnest_aliases.add(unnest_alias.columns[0].name)
+
+        if unnest_aliases:
+            for c in find_all_in_scope(expression, exp.Column):
+                if c.table in unnest_aliases:
+                    bracket_lhs = c.args["table"]
+                    bracket_rhs = exp.Literal.string(c.name)
+                    c.replace(exp.Bracket(this=bracket_lhs, expressions=[bracket_rhs]))
+
+    return expression
 
 
 class Snowflake(Dialect):
@@ -1096,6 +1119,7 @@ class Snowflake(Dialect):
                     transforms.explode_projection_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
                     _transform_generate_date_array,
+                    _eliminate_dot_variant_lookup,
                 ]
             ),
             exp.SHA: rename_func("SHA1"),

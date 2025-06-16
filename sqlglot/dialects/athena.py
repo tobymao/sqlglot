@@ -108,6 +108,7 @@ class Athena(Trino):
         """
 
         IDENTIFIERS = ['"', "`"]
+        STRING_ESCAPES = ["'", "\\"]
         KEYWORDS = {
             **Hive.Tokenizer.KEYWORDS,
             **Trino.Tokenizer.KEYWORDS,

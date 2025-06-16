@@ -1621,7 +1621,10 @@ def map_date_part(part, dialect: DialectType = Dialect):
     mapped = (
         Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper()) if part else None
     )
-    return exp.var(mapped) if mapped else part
+    if mapped:
+        return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)
+
+    return part
 
 
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:

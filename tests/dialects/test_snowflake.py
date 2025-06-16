@@ -1107,6 +1107,17 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT DATE_PART(DAYOFWEEKISO, foo)",
+            read={
+                "snowflake": "SELECT DATE_PART(WEEKDAY_ISO, foo)",
+            },
+            write={
+                "snowflake": "SELECT DATE_PART(DAYOFWEEKISO, foo)",
+                "duckdb": "SELECT EXTRACT(ISODOW FROM foo)",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

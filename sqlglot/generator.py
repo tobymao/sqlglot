@@ -2909,9 +2909,13 @@ class Generator(metaclass=_Generator):
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
     def extract_sql(self, expression: exp.Extract) -> str:
-        this = self.sql(expression, "this") if self.EXTRACT_ALLOWS_QUOTES else expression.this.name
+        from sqlglot.dialects.dialect import map_date_part
+
+        this = map_date_part(expression.this, self.dialect)
+        this_sql = self.sql(this) if self.EXTRACT_ALLOWS_QUOTES else this.name
         expression_sql = self.sql(expression, "expression")
-        return f"EXTRACT({this} FROM {expression_sql})"
+
+        return f"EXTRACT({this_sql} FROM {expression_sql})"
 
     def trim_sql(self, expression: exp.Trim) -> str:
         trim_type = self.sql(expression, "position")

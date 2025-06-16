@@ -1,14 +1,15 @@
 from collections import defaultdict
 
-from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens
+from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens, parser
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
     bool_xor_sql, rename_func, count_if_to_sum, \
     time_format
 import typing as t
 import re
 from sqlglot import exp
+from sqlglot.expressions import DataType
 from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
-from sqlglot.helper import csv
+from sqlglot.helper import csv, seq_get
 
 
 class SingleStore(Dialect):
@@ -62,7 +63,7 @@ class SingleStore(Dialect):
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
-        IDENTIFIERS = ['`', '"']
+        IDENTIFIERS = ['`']
         QUOTES = ["'", '"']
         STRING_ESCAPES = ["'", '"', "\\"]
         COMMENTS = ["--", "#", ("/*", "*/")]
@@ -81,8 +82,22 @@ class SingleStore(Dialect):
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {
             TokenType.SHOW}
 
-    # TODO: implement
-    # class Parser(parser.Parser):
+    class Parser(parser.Parser):
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "APPROX_COUNT_DISTINCT": lambda args, dialect: exp.Hll(
+                this=seq_get(args, 0)),
+            # TODO: add error_tolerance atribute to ApproxQuantile class
+            "APPROX_PERCENTILE": lambda args, dialect: exp.ApproxQuantile(
+                this=seq_get(args, 0),
+                quantile=seq_get(args, 1),
+            ),
+            "ASCII": exp.Unicode.from_arg_list,
+            "BINARY": lambda args, dialect: exp.cast(
+                seq_get(args, 0),
+                DataType.Type.BINARY
+            ),
+        }
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -137,7 +152,7 @@ class SingleStore(Dialect):
             exp.DatetimeDiff: rename_func("TIMESTAMPDIFF"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: lambda self,
-                                     e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
+                e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
@@ -147,27 +162,27 @@ class SingleStore(Dialect):
             exp.TimeSub: rename_func("DATE_SUB"),
             exp.TimeDiff: rename_func("TIMESTAMPDIFF"),
             exp.DateToDi: lambda self,
-                                 e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+                e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.DiToDate: lambda self,
-                                 e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})",
+                e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})",
             exp.LowerHex: lambda self, e: f"LOWER(HEX({self.sql(e, 'this')}))",
             exp.IsAscii: lambda self,
-                                e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7F]*$')",
+                e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7F]*$')",
             exp.Int64: lambda self, e: f"{self.sql(e, 'this')} :> BIGINT",
             exp.JSONFormat: rename_func("JSON_PRETTY"),
             exp.MD5Digest: lambda self, e: self.func("UNHEX",
                                                      self.func("MD5", e.this)),
             exp.AddMonths: lambda self,
-                                  e: f"TIMESTAMPADD(MONTH, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+                e: f"TIMESTAMPADD(MONTH, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
             exp.RegexpExtract: unsupported_args("group")(
                 rename_func("REGEXP_SUBSTR")),
             exp.RegexpExtractAll: unsupported_args("position", "occurrence",
                                                    "group")(
                 rename_func("REGEXP_MATCH")),
             exp.Repeat: lambda self,
-                               e: f"LPAD('', LENGTH({self.sql(e, 'this')}) * {self.sql(e, 'times')}, {self.sql(e, 'this')})",
+                e: f"LPAD('', LENGTH({self.sql(e, 'this')}) * {self.sql(e, 'times')}, {self.sql(e, 'this')})",
             exp.StartsWith: lambda self,
-                                   e: f"REGEXP_INSTR({self.sql(e, 'this')}, CONCAT('^', {self.sql(e, 'expression')}))",
+                e: f"REGEXP_INSTR({self.sql(e, 'this')}, CONCAT('^', {self.sql(e, 'expression')}))",
             exp.StrToDate: unsupported_args("safe")(rename_func("STR_TO_DATE")),
             exp.StrToTime: unsupported_args("safe", "zone")(
                 rename_func("STR_TO_DATE")),
@@ -181,7 +196,7 @@ class SingleStore(Dialect):
                 lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
             exp.TimeToStr: unsupported_args("zone", "culture")
             (lambda self,
-                    e: f"DATE_FORMAT({self.sql(e, 'this')} :> TIME, {self.sql(e, 'format')})"),
+                e: f"DATE_FORMAT({self.sql(e, 'this')} :> TIME, {self.sql(e, 'format')})"),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToDate: lambda self, e: self.sql(
                 exp.cast(e.this, exp.DataType.Type.DATE)),
@@ -200,7 +215,7 @@ class SingleStore(Dialect):
             exp.TsOrDsToTimestamp: lambda self, e: self.sql(
                 exp.cast(e.this, exp.DataType.Type.TIMESTAMP)),
             exp.TsOrDiToDi: lambda self,
-                                   e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+                e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, time_format("singlestore")(self, e)
             ),
@@ -208,7 +223,7 @@ class SingleStore(Dialect):
                                              "minutes", "format")(
                 rename_func("FROM_UNIXTIME")),
             exp.UnixToTimeStr: lambda self,
-                                      e: f"FROM_UNIXTIME({self.sql(e, 'this')}) :> TEXT",
+                e: f"FROM_UNIXTIME({self.sql(e, 'this')}) :> TEXT",
             exp.UnixSeconds: rename_func("UNIX_TIMESTAMP"),
             exp.FromTimeZone: lambda self, e: self.func(
                 "CONVERT_TZ", e.this, e.args.get("zone"), "'UTC'"
@@ -292,7 +307,8 @@ class SingleStore(Dialect):
             exp.DataType.Type.IPV6: "TEXT",
             exp.DataType.Type.LIST: "TEXT",
             exp.DataType.Type.MAP: "TEXT",
-            exp.DataType.Type.LOWCARDINALITY: "TEXT",  # TODO: replace LOWCARDINALITY with underlying data type
+            exp.DataType.Type.LOWCARDINALITY: "TEXT",
+            # TODO: replace LOWCARDINALITY with underlying data type
             exp.DataType.Type.MONEY: "DECIMAL(15,4)",
             exp.DataType.Type.NAME: "TEXT",
             exp.DataType.Type.NESTED: "TEXT",
@@ -1651,7 +1667,7 @@ class SingleStore(Dialect):
             return self.sql(exp.Literal.string(expression.this))
 
         def jsonpathsubscript_sql(self,
-                                  expression: exp.JSONPathSubscript) -> str:
+            expression: exp.JSONPathSubscript) -> str:
             return self.sql(exp.Literal.number(expression.this))
 
         def jsonpathfilter_sql(self, expression: exp.JSONPathFilter) -> str:
@@ -1659,7 +1675,7 @@ class SingleStore(Dialect):
             return f"?{expression.this}"
 
         def jsonpathrecursive_sql(self,
-                                  expression: exp.JSONPathRecursive) -> str:
+            expression: exp.JSONPathRecursive) -> str:
             self.unsupported(
                 "JSONPathRecursive is not supported in SingleStore")
             return f"..{expression.this or ''}"
@@ -1735,7 +1751,7 @@ class SingleStore(Dialect):
 
         # TODO: investigate which Clickhouse parametrized/combined functions can be translated to SingleStore
         def combinedparameterizedagg_sql(self,
-                                         expression: exp.CombinedParameterizedAgg) -> str:
+            expression: exp.CombinedParameterizedAgg) -> str:
             # https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantileGK
             # https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
             self.unsupported(
@@ -1871,7 +1887,7 @@ class SingleStore(Dialect):
             return self.function_fallback_sql(expression)
 
         def explodinggenerateseries_sql(self,
-                                        expression: exp.ExplodingGenerateSeries) -> str:
+            expression: exp.ExplodingGenerateSeries) -> str:
             self.unsupported(
                 "EXPLODING_GENERATE_SERIES function is not supported in SingleStore")
             return super().explodinggenerateseries_sql(expression)
@@ -1885,7 +1901,7 @@ class SingleStore(Dialect):
             return super().arrayany_sql(expression)
 
         def arrayconstructcompact_sql(self,
-                                      expression: exp.ArrayConstructCompact):
+            expression: exp.ArrayConstructCompact):
             self.unsupported("Arrays are not supported in SingleStore")
             return self.function_fallback_sql(expression)
 
@@ -2063,7 +2079,7 @@ class SingleStore(Dialect):
             return super().featuresattime_sql(expression)
 
         def fromiso8601timestamp_sql(self,
-                                     expression: exp.FromISO8601Timestamp):
+            expression: exp.FromISO8601Timestamp):
             self.unsupported(
                 "FROM_ISO8601_TIMESTAMP function is not supported in SingleStore")
             return self.function_fallback_sql(expression)
@@ -2074,12 +2090,12 @@ class SingleStore(Dialect):
             return super().gapfill_sql(expression)
 
         def generatedatearray_sql(self,
-                                  expression: exp.GenerateDateArray) -> str:
+            expression: exp.GenerateDateArray) -> str:
             self.unsupported("Arrays are not supported in SingleStore")
             return self.function_fallback_sql(expression)
 
         def generatetimestamparray_sql(self,
-                                       expression: exp.GenerateTimestampArray) -> str:
+            expression: exp.GenerateTimestampArray) -> str:
             self.unsupported("Arrays are not supported in SingleStore")
             return self.function_fallback_sql(expression)
 
@@ -2281,22 +2297,22 @@ class SingleStore(Dialect):
 
         def unicode_sql(self, expression: exp.Unicode) -> str:
             self.unsupported("UNICODE function is not supported in SingleStore")
-            return self.function_fallback_sql(expression)
+            return f"ASCII({expression.this})"
 
         def timestampfromparts_sql(self,
-                                   expression: exp.TimestampFromParts) -> str:
+            expression: exp.TimestampFromParts) -> str:
             self.unsupported(
                 "TIMESTAMP_FROM_PARTS function is not supported in SingleStore")
             return self.function_fallback_sql(expression)
 
         def xmlelement_sql(self,
-                           expression: exp.XMLElement) -> str:
+            expression: exp.XMLElement) -> str:
             self.unsupported(
                 "XMLELEMENT function is not supported in SingleStore")
             return super().xmlelement_sql(expression)
 
         def xmltable_sql(self,
-                         expression: exp.XMLTable) -> str:
+            expression: exp.XMLTable) -> str:
             self.unsupported(
                 "XMLTABLE function is not supported in SingleStore")
             return super().xmltable_sql(expression)
@@ -2326,7 +2342,7 @@ class SingleStore(Dialect):
             return super().refresh_sql(expression)
 
         def sequenceproperties_sql(self,
-                                   expression: exp.SequenceProperties) -> str:
+            expression: exp.SequenceProperties) -> str:
             self.unsupported(
                 "Sequences are not supported in SingleStore")
             return super().sequenceproperties_sql(expression)
@@ -2368,7 +2384,7 @@ class SingleStore(Dialect):
             return f"SHOW{full}{global_}{this}{target}{db}{like}{where}"
 
         def _prefixed_sql(self, prefix: str, expression: exp.Expression,
-                          arg: str) -> str:
+            arg: str) -> str:
             sql = self.sql(expression, arg)
             return f" {prefix} {sql}" if sql else ""
 
@@ -2440,14 +2456,14 @@ class SingleStore(Dialect):
             return f"{variable} {kind}{default}"
 
         def userdefinedfunction_sql(self,
-                                    expression: exp.UserDefinedFunction) -> str:
+            expression: exp.UserDefinedFunction) -> str:
             this = self.sql(expression, "this")
             expressions = self.no_identify(self.expressions, expression)
             expressions = self.wrap(expressions)
             return f"{this}{expressions}"
 
         def recursivewithsearch_sql(self,
-                                    expression: exp.RecursiveWithSearch) -> str:
+            expression: exp.RecursiveWithSearch) -> str:
             self.unsupported(
                 "RecursiveWithSearch expression is not supported in SingleStore")
             return ""
@@ -2459,7 +2475,7 @@ class SingleStore(Dialect):
 
         @unsupported_args("exists")
         def columndef_sql(self, expression: exp.ColumnDef,
-                          sep: str = " ") -> str:
+            sep: str = " ") -> str:
             return super().columndef_sql(expression, sep)
 
         @unsupported_args("drop", "comment", "allow_null", "visible", "using")
@@ -2506,7 +2522,7 @@ class SingleStore(Dialect):
             return super().comprehension_sql(expression)
 
         def mergetreettlaction_sql(self,
-                                   expression: exp.MergeTreeTTLAction) -> str:
+            expression: exp.MergeTreeTTLAction) -> str:
             self.unsupported("TTLs are not supported in SingleStore")
             return super().mergetreettlaction_sql(expression)
 
@@ -2517,7 +2533,7 @@ class SingleStore(Dialect):
         @unsupported_args("parser", "visible", "engine_attr",
                           "secondary_engine_attr")
         def indexconstraintoption_sql(self,
-                                      expression: exp.IndexConstraintOption) -> str:
+            expression: exp.IndexConstraintOption) -> str:
             key_block_size = self.sql(expression, "key_block_size")
             if key_block_size:
                 return f"KEY_BLOCK_SIZE = {key_block_size}"
@@ -2538,133 +2554,133 @@ class SingleStore(Dialect):
             return super().alterset_sql(expression)
 
         def periodforsystemtimeconstraint_sql(self,
-                                              expression: exp.PeriodForSystemTimeConstraint) -> str:
+            expression: exp.PeriodForSystemTimeConstraint) -> str:
             self.unsupported(
                 "PERIOD FOR SYSTEM TIME column constraint is not supported in SingleStore")
             return ""
 
         def casespecificcolumnconstraint_sql(self,
-                                             expression: exp.CaseSpecificColumnConstraint) -> str:
+            expression: exp.CaseSpecificColumnConstraint) -> str:
             self.unsupported(
                 "CASE SPECIFIC column constraint is not supported in SingleStore")
             return ""
 
         def checkcolumnconstraint_sql(self,
-                                      expression: exp.CheckColumnConstraint) -> str:
+            expression: exp.CheckColumnConstraint) -> str:
             self.unsupported(
                 "CHECK column constraint is not supported in SingleStore")
             return ""
 
         def clusteredcolumnconstraint_sql(self,
-                                          expression: exp.ClusteredColumnConstraint) -> str:
+            expression: exp.ClusteredColumnConstraint) -> str:
             self.unsupported(
                 "CLUSTERED column constraint is not supported in SingleStore")
             return ""
 
         def compresscolumnconstraint_sql(self,
-                                         expression: exp.CompressColumnConstraint) -> str:
+            expression: exp.CompressColumnConstraint) -> str:
             self.unsupported(
                 "COMPRESS column constraint is not supported in SingleStore")
             return ""
 
         def dateformatcolumnconstraint_sql(self,
-                                           expression: exp.DateFormatColumnConstraint) -> str:
+            expression: exp.DateFormatColumnConstraint) -> str:
             self.unsupported(
                 "FORMAT column constraint is not supported in SingleStore")
             return ""
 
         def encodecolumnconstraint_sql(self,
-                                       expression: exp.EncodeColumnConstraint) -> str:
+            expression: exp.EncodeColumnConstraint) -> str:
             self.unsupported(
                 "ENCODE column constraint is not supported in SingleStore")
             return ""
 
         def excludecolumnconstraint_sql(self,
-                                        expression: exp.ExcludeColumnConstraint) -> str:
+            expression: exp.ExcludeColumnConstraint) -> str:
             self.unsupported(
                 "EXCLUDE column constraint is not supported in SingleStore")
             return ""
 
         def ephemeralcolumnconstraint_sql(self,
-                                          expression: exp.EphemeralColumnConstraint) -> str:
+            expression: exp.EphemeralColumnConstraint) -> str:
             self.unsupported(
                 "EPHEMERAL column constraint is not supported in SingleStore")
             return ""
 
         def generatedasidentitycolumnconstraint_sql(self,
-                                                    expression: exp.GeneratedAsIdentityColumnConstraint) -> str:
+            expression: exp.GeneratedAsIdentityColumnConstraint) -> str:
             self.unsupported(
                 "GENERATED AS column constraint is not supported in SingleStore")
             return ""
 
         def generatedasrowcolumnconstraint_sql(self,
-                                               expression: exp.GeneratedAsRowColumnConstraint) -> str:
+            expression: exp.GeneratedAsRowColumnConstraint) -> str:
             self.unsupported(
                 "GENERATED AS column constraint is not supported in SingleStore")
             return ""
 
         def uppercasecolumnconstraint_sql(self,
-                                          expression: exp.UppercaseColumnConstraint) -> str:
+            expression: exp.UppercaseColumnConstraint) -> str:
             self.unsupported(
                 "UPPERCASE column constraint is not supported in SingleStore")
             return ""
 
         def pathcolumnconstraint_sql(self,
-                                     expression: exp.PathColumnConstraint) -> str:
+            expression: exp.PathColumnConstraint) -> str:
             self.unsupported(
                 "PATH column constraint is not supported in SingleStore")
             return ""
 
         def projectionpolicycolumnconstraint_sql(self,
-                                                 expression: exp.ProjectionPolicyColumnConstraint) -> str:
+            expression: exp.ProjectionPolicyColumnConstraint) -> str:
             self.unsupported(
                 "PROJECTION POLICY constraint is not supported in SingleStore")
             return ""
 
         def inlinelengthcolumnconstraint_sql(self,
-                                             expression: exp.InlineLengthColumnConstraint) -> str:
+            expression: exp.InlineLengthColumnConstraint) -> str:
             self.unsupported(
                 "INLINE LENGTH column constraint is not supported in SingleStore")
             return ""
 
         def nonclusteredcolumnconstraint_sql(self,
-                                             expression: exp.NonClusteredColumnConstraint) -> str:
+            expression: exp.NonClusteredColumnConstraint) -> str:
             self.unsupported(
                 "NONCLUSTERED column constraint is not supported in SingleStore")
             return ""
 
         def notforreplicationcolumnconstraint_sql(self,
-                                                  expression: exp.NotForReplicationColumnConstraint) -> str:
+            expression: exp.NotForReplicationColumnConstraint) -> str:
             self.unsupported(
                 "NOT FOR REPLICATION column constraint is not supported in SingleStore")
             return ""
 
         def maskingpolicycolumnconstraint_sql(self,
-                                              expression: exp.MaskingPolicyColumnConstraint) -> str:
+            expression: exp.MaskingPolicyColumnConstraint) -> str:
             self.unsupported(
                 "MASKING POLICY column constraint is not supported in SingleStore")
             return ""
 
         def onupdatecolumnconstraint_sql(self,
-                                         expression: exp.OnUpdateColumnConstraint) -> str:
+            expression: exp.OnUpdateColumnConstraint) -> str:
             self.unsupported(
                 "ON UPDATE column constraint is not supported in SingleStore")
             return ""
 
         def titlecolumnconstraint_sql(self,
-                                      expression: exp.TitleColumnConstraint) -> str:
+            expression: exp.TitleColumnConstraint) -> str:
             self.unsupported(
                 "TITLE column constraint is not supported in SingleStore")
             return ""
 
         def transformcolumnconstraint_sql(self,
-                                          expression: exp.TransformColumnConstraint) -> str:
+            expression: exp.TransformColumnConstraint) -> str:
             self.unsupported(
                 "TRANSFORM column constraint is not supported in SingleStore")
             return ""
 
         def computedcolumnconstraint_sql(self,
-                                         expression: exp.ComputedColumnConstraint) -> str:
+            expression: exp.ComputedColumnConstraint) -> str:
             this = self.sql(expression, "this")
             not_null = ""
             if expression.args.get("not_null"):
@@ -2673,13 +2689,13 @@ class SingleStore(Dialect):
 
         @unsupported_args("desc", "options")
         def primarykeycolumnconstraint_sql(self,
-                                           expression: exp.PrimaryKeyColumnConstraint) -> str:
+            expression: exp.PrimaryKeyColumnConstraint) -> str:
             return f"PRIMARY KEY"
 
         @unsupported_args("this", "nulls_sql", "on_conflict", "index_type",
                           "options")
         def uniquecolumnconstraint_sql(self,
-                                       expression: exp.UniqueColumnConstraint) -> str:
+            expression: exp.UniqueColumnConstraint) -> str:
             return f"UNIQUE"
 
         def tags_sql(self, expression: exp.Tags) -> str:
@@ -2688,7 +2704,7 @@ class SingleStore(Dialect):
             return ""
 
         def watermarkcolumnconstraint_sql(self,
-                                          expression: exp.WatermarkColumnConstraint) -> str:
+            expression: exp.WatermarkColumnConstraint) -> str:
             self.unsupported(
                 "WATERMARK column constraint is not supported in SingleStore")
             return ""
@@ -2799,13 +2815,13 @@ class SingleStore(Dialect):
             return f"{columns}{using}"
 
         def conditionalinsert_sql(self,
-                                  expression: exp.ConditionalInsert) -> str:
+            expression: exp.ConditionalInsert) -> str:
             self.unsupported(
                 "Conditional insert is not supported in SingleStore")
             return super().conditionalinsert_sql(expression)
 
         def multitableinserts_sql(self,
-                                  expression: exp.MultitableInserts) -> str:
+            expression: exp.MultitableInserts) -> str:
             self.unsupported(
                 "Multitable insert is not supported in SingleStore")
             return super().multitableinserts_sql(expression)
@@ -2838,7 +2854,7 @@ class SingleStore(Dialect):
             return f"{self.sql(expression, 'expression')}"
 
         def national_sql(self, expression: exp.National,
-                         prefix: str = "N") -> str:
+            prefix: str = "N") -> str:
             return self.sql(exp.Literal.string(expression.name))
 
         @unsupported_args("partition", "serde")
@@ -2919,7 +2935,7 @@ class SingleStore(Dialect):
             return f"{alias}{columns}"
 
         def subquery_sql(self, expression: exp.Subquery,
-                         sep: str = " AS ", wrap: bool = True) -> str:
+            sep: str = " AS ", wrap: bool = True) -> str:
             if expression.args.get("sample") is not None:
                 self.unsupported(
                     "Argument 'sample' is not supported for expression 'subquery' when targeting SingleStore.")
@@ -2929,7 +2945,8 @@ class SingleStore(Dialect):
 
             pivots = self.expressions(expression, key="pivots", sep="",
                                       flat=True)
-            sql = self.query_modifiers(expression, self.wrap(expression) if wrap else self.sql(expression, "this"),
+            sql = self.query_modifiers(expression, self.wrap(
+                expression) if wrap else self.sql(expression, "this"),
                                        alias, pivots)
             return self.prepend_ctes(expression, sql)
 
@@ -3038,7 +3055,7 @@ class SingleStore(Dialect):
             return super().groupingsets_sql(expression)
 
         def lambda_sql(self, expression: exp.Lambda,
-                       arrow_sep: str = "->") -> str:
+            arrow_sep: str = "->") -> str:
             self.unsupported(
                 "Lambda functions are not supported in SingleStore")
             return super().lambda_sql(expression, arrow_sep)
@@ -3068,7 +3085,7 @@ class SingleStore(Dialect):
             return super().matchrecognize_sql(expression)
 
         def matchrecognizemeasure_sql(self,
-                                      expression: exp.MatchRecognizeMeasure) -> str:
+            expression: exp.MatchRecognizeMeasure) -> str:
             self.unsupported("MATCH_RECOGNIZE is not supported in SingleStore")
             return super().matchrecognizemeasure_sql(expression)
 
@@ -3103,18 +3120,18 @@ class SingleStore(Dialect):
             return ""
 
         def allowedvaluesproperty_sql(self,
-                                      expression: exp.AllowedValuesProperty) -> str:
+            expression: exp.AllowedValuesProperty) -> str:
             self.unsupported("TAGs are not supported in SingleStore")
             return f"ALLOWED_VALUES {self.expressions(expression, flat=True)}"
 
         def partitionbyrangepropertydynamic_sql(self,
-                                                expression: exp.PartitionByRangePropertyDynamic) -> str:
+            expression: exp.PartitionByRangePropertyDynamic) -> str:
             self.unsupported(
                 "PARTITION BY RANGE clause is not supported in SingleStore")
             return ""
 
         def partitionboundspec_sql(self,
-                                   expression: exp.PartitionBoundSpec) -> str:
+            expression: exp.PartitionBoundSpec) -> str:
             self.unsupported(
                 "PARTITION OF clause is not supported in SingleStore")
             return super().partitionboundspec_sql(expression)
@@ -3128,7 +3145,7 @@ class SingleStore(Dialect):
             return super().qualify_sql(expression)
 
         def inputoutputformat_sql(self,
-                                  expression: exp.InputOutputFormat) -> str:
+            expression: exp.InputOutputFormat) -> str:
             self.unsupported(
                 "INPUTFORMAT and OUTPUTFORMAT clauses are not supported in SingleStore")
             return super().inputoutputformat_sql(expression)
@@ -3156,7 +3173,8 @@ class SingleStore(Dialect):
             self.unsupported("PUT query is not supported in SingleStore")
             return super().put_sql(expression)
 
-        @unsupported_args("only", "partition", "version", "sample", "ordinality", "format", "pattern", "rows_from",
+        @unsupported_args("only", "partition", "version", "sample",
+                          "ordinality", "format", "pattern", "rows_from",
                           "changes")
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             table = self.table_parts(expression)
@@ -3165,9 +3183,11 @@ class SingleStore(Dialect):
 
             hints = self.expressions(expression, key="hints", sep=" ")
             hints = f" {hints}" if hints and self.TABLE_HINTS else ""
-            pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+            pivots = self.expressions(expression, key="pivots", sep="",
+                                      flat=True)
             joins = self.indent(
-                self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
+                self.expressions(expression, key="joins", sep="", flat=True),
+                skip_first=True
             )
             laterals = self.expressions(expression, key="laterals", sep="")
 
@@ -3178,22 +3198,25 @@ class SingleStore(Dialect):
             return f"{table}{alias}{hints}{pivots}{joins}{laterals}"
 
         def version_sql(self, expression: exp.Version) -> str:
-            self.unsupported("Versioned tables are not supported in SingleStore")
+            self.unsupported(
+                "Versioned tables are not supported in SingleStore")
             return ""
 
         @unsupported_args("expressions", "wait")
         def lock_sql(self, expression: exp.Lock) -> str:
-            lock_type = "FOR UPDATE" if expression.args["update"] else "FOR SHARE"
+            lock_type = "FOR UPDATE" if expression.args[
+                "update"] else "FOR SHARE"
             if lock_type == "FOR SHARE":
-                self.unsupported("Locking reads using 'FOR SHARE' is not supported in SingleStore")
+                self.unsupported(
+                    "Locking reads using 'FOR SHARE' is not supported in SingleStore")
                 return ""
 
             return lock_type
 
         def tablesample_sql(
-                self,
-                expression: exp.TableSample,
-                tablesample_keyword: t.Optional[str] = None) -> str:
+            self,
+            expression: exp.TableSample,
+            tablesample_keyword: t.Optional[str] = None) -> str:
             self.unsupported("TABLESAMPLE is not supported in SingleStore")
             return ""
 
@@ -3204,12 +3227,14 @@ class SingleStore(Dialect):
 
             expressions = self.expressions(expression, flat=True)
             if len(expression.expressions) > 1:
-                self.unsupported("Multiple aggregations in PIVOT are not supported in SingleStore")
+                self.unsupported(
+                    "Multiple aggregations in PIVOT are not supported in SingleStore")
 
             group = self.sql(expression, "group")
 
             if expression.this:
-                self.unsupported("Simplified PIVOT is not supported in SingleStore")
+                self.unsupported(
+                    "Simplified PIVOT is not supported in SingleStore")
                 return super().pivot_sql(expression)
 
             # PIVOT alias is required in SingleStore
@@ -3241,16 +3266,17 @@ class SingleStore(Dialect):
             type_value = expression.this
 
             if type_value in self.UNSUPPORTED_TYPE_MAPPING:
-                self.unsupported(f"Data type {type_value.value} is not supported in SingleStore")
+                self.unsupported(
+                    f"Data type {type_value.value} is not supported in SingleStore")
                 return self.UNSUPPORTED_TYPE_MAPPING.get(type_value)
 
             if (expression.is_type(exp.DataType.Type.VARCHAR)
-                    and not expression.expressions
+                and not expression.expressions
             ):
                 # `VARCHAR` must always have a size - if it doesn't, we always generate `TEXT`
                 return "TEXT"
             if (expression.is_type(exp.DataType.Type.VARBINARY)
-                    and not expression.expressions
+                and not expression.expressions
             ):
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
                 return "BLOB"
@@ -3273,7 +3299,8 @@ class SingleStore(Dialect):
             return "TEXT"
 
         def objectidentifier_sql(self, expression: exp.ObjectIdentifier) -> str:
-            self.unsupported("Object Identifiers Types are not supported in SingleStore")
+            self.unsupported(
+                "Object Identifiers Types are not supported in SingleStore")
             return "INT"
 
         def intervalspan_sql(self, expression: exp.IntervalSpan) -> str:
@@ -3288,14 +3315,16 @@ class SingleStore(Dialect):
         def rollback_sql(self, expression: exp.Rollback) -> str:
             return f"ROLLBACK"
 
-        @unsupported_args("exists", "only", "on_cluster", "not_valid", "options")
+        @unsupported_args("exists", "only", "on_cluster", "not_valid",
+                          "options")
         def alter_sql(self, expression: exp.Alter) -> str:
             actions = expression.args["actions"]
 
             if isinstance(actions[0], exp.ColumnDef):
                 actions = self.add_column_sql(expression)
             elif isinstance(actions[0], exp.Schema):
-                actions = self.expressions(expression, key="actions", prefix="ADD COLUMN ")
+                actions = self.expressions(expression, key="actions",
+                                           prefix="ADD COLUMN ")
             else:
                 actions = self.expressions(expression, key="actions", flat=True)
 
@@ -3308,22 +3337,26 @@ class SingleStore(Dialect):
             return ""
 
         def droppartition_sql(self, expression: exp.DropPartition) -> str:
-            self.unsupported("ALTER TABLE DROP PARTITION is not supported in SingleStore")
+            self.unsupported(
+                "ALTER TABLE DROP PARTITION is not supported in SingleStore")
             return super().droppartition_sql(expression)
 
         def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
-            self.unsupported("ALTER TABLE REPLACE PARTITION is not supported in SingleStore")
+            self.unsupported(
+                "ALTER TABLE REPLACE PARTITION is not supported in SingleStore")
             return (
                 f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
             )
 
         def pivotany_sql(self, expression: exp.PivotAny) -> str:
-            self.unsupported("PIVOT ANY [ ORDER BY ... ] is not supported in SingleStore")
+            self.unsupported(
+                "PIVOT ANY [ ORDER BY ... ] is not supported in SingleStore")
             return f"ANY{self.sql(expression, 'this')}",
 
         # TODO: I didn't find this syntax in other databases. This should be investigated deeper
         def aliases_sql(self, expression: exp.Aliases) -> str:
-            self.unsupported("Specifying multiple aliases in parrents is not supported in SingleStore")
+            self.unsupported(
+                "Specifying multiple aliases in parrents is not supported in SingleStore")
             return super().aliases_sql(expression)
 
         def atindex_sql(self, expression: exp.AtIndex) -> str:
@@ -3347,45 +3380,56 @@ class SingleStore(Dialect):
             return f"FOR {this} LOOP {expression_sql}"
 
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
-            self.unsupported("IGNORE NULLS clause is not supported in SingleStore")
+            self.unsupported(
+                "IGNORE NULLS clause is not supported in SingleStore")
             return self.sql(expression, "this")
 
         def respectnulls_sql(self, expression: exp.IgnoreNulls) -> str:
-            self.unsupported("RESPECT NULLS clause is not supported in SingleStore")
+            self.unsupported(
+                "RESPECT NULLS clause is not supported in SingleStore")
             return self.sql(expression, "this")
 
         def havingmax_sql(self, expression: exp.HavingMax) -> str:
-            self.unsupported("HAVING NULL clause is not supported in SingleStore")
+            self.unsupported(
+                "HAVING NULL clause is not supported in SingleStore")
             return self.sql(expression, "this")
 
         @unsupported_args("kind")
         def use_sql(self, expression: exp.Use) -> str:
-            this = self.sql(expression, "this") or self.expressions(expression, flat=True)
+            this = self.sql(expression, "this") or self.expressions(expression,
+                                                                    flat=True)
             this = f" {this}" if this else ""
             return f"USE{this}"
 
         def json_sql(self, expression: exp.JSON) -> str:
-            self.unsupported("JSON testing functions are not supported in SingleStore")
+            self.unsupported(
+                "JSON testing functions are not supported in SingleStore")
             return super().json_sql(expression)
 
         def formatjson_sql(self, expression: exp.FormatJson) -> str:
-            self.unsupported("FORMAT JSON clause is not supported in SingleStore")
+            self.unsupported(
+                "FORMAT JSON clause is not supported in SingleStore")
             return self.sql(expression, "this")
 
         def jsoncolumndef_sql(self, expression: exp.JSONColumnDef) -> str:
-            self.unsupported("JSON_TABLE function is not supported in SingleStore")
+            self.unsupported(
+                "JSON_TABLE function is not supported in SingleStore")
             return super().jsoncolumndef_sql(expression)
 
         def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
-            self.unsupported("JSON_TABLE function is not supported in SingleStore")
+            self.unsupported(
+                "JSON_TABLE function is not supported in SingleStore")
             return super().jsonschema_sql(expression)
 
-        def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
-            self.unsupported("OPENJSON function is not supported in SingleStore")
+        def openjsoncolumndef_sql(self,
+            expression: exp.OpenJSONColumnDef) -> str:
+            self.unsupported(
+                "OPENJSON function is not supported in SingleStore")
             return super().openjsoncolumndef_sql(expression)
 
         def xmlnamespace_sql(self, expression: exp.XMLNamespace) -> str:
-            self.unsupported("XMLTABLE function is not supported in SingleStore")
+            self.unsupported(
+                "XMLTABLE function is not supported in SingleStore")
             return super().xmlnamespace_sql(expression)
 
         @unsupported_args("on_condition")
@@ -3413,7 +3457,8 @@ class SingleStore(Dialect):
             return f"STREAM {self.sql(expression, 'this')}"
 
         def whens_sql(self, expression: exp.Whens) -> str:
-            self.unsupported("WHEN MATCHED clause is not supported in SingleStore")
+            self.unsupported(
+                "WHEN MATCHED clause is not supported in SingleStore")
             return super().whens_sql(expression)
 
         @unsupported_args("options", "partition", "mode", "properties")
@@ -3426,7 +3471,8 @@ class SingleStore(Dialect):
             inner_expression = f" {inner_expression}" if inner_expression else ""
             return f"ANALYZE{kind}{this}{inner_expression}"
 
-        def analyzestatistics_sql(self, expression: exp.AnalyzeStatistics) -> str:
+        def analyzestatistics_sql(self,
+            expression: exp.AnalyzeStatistics) -> str:
             # SingleStore always updates statistic of all columns when running ANALYZE
             return ""
 
@@ -3434,15 +3480,18 @@ class SingleStore(Dialect):
             columns = self.expressions(expression)
             return f"COLUMNS {columns} ENABLE"
 
-        def analyzelistchainedrows_sql(self, expression: exp.AnalyzeListChainedRows) -> str:
-            self.unsupported("LIST CHAINED ROWS clause is not supported in SingleStore")
+        def analyzelistchainedrows_sql(self,
+            expression: exp.AnalyzeListChainedRows) -> str:
+            self.unsupported(
+                "LIST CHAINED ROWS clause is not supported in SingleStore")
             return ""
 
         def analyzedelete_sql(self, expression: exp.AnalyzeDelete) -> str:
             return "DROP"
 
         def analyzevalidate_sql(self, expression: exp.AnalyzeValidate) -> str:
-            self.unsupported("VALIDATE STRUCTURE clause is not supported in SingleStore")
+            self.unsupported(
+                "VALIDATE STRUCTURE clause is not supported in SingleStore")
             return ""
 
         def analyzecolumns_sql(self, expression: exp.AnalyzeColumns):
@@ -3481,7 +3530,8 @@ class SingleStore(Dialect):
                 else:
                     on_sql = f"{space}ON {on_sql}"
             elif not op_sql:
-                if isinstance(this, exp.Lateral) and this.args.get("cross_apply") is not None:
+                if isinstance(this, exp.Lateral) and this.args.get(
+                    "cross_apply") is not None:
                     return f" {this_sql}"
 
                 return f", {this_sql}"
@@ -3491,13 +3541,16 @@ class SingleStore(Dialect):
 
             return f"{self.seg(op_sql)} {this_sql}{on_sql}"
 
-        def withschemabindingproperty_sql(self, expression: exp.WithSchemaBindingProperty) -> str:
-            if isinstance(expression.this, exp.Var) and expression.this.this == "BINDING":
+        def withschemabindingproperty_sql(self,
+            expression: exp.WithSchemaBindingProperty) -> str:
+            if isinstance(expression.this,
+                          exp.Var) and expression.this.this == "BINDING":
                 return "SCHEMA_BINDING=ON"
             self.unsupported("Unsupported property withschemabinding")
             return ""
 
-        def viewattributeproperty_sql(self, expression: exp.ViewAttributeProperty) -> str:
+        def viewattributeproperty_sql(self,
+            expression: exp.ViewAttributeProperty) -> str:
             if expression.this == "SCHEMABINDING":
                 return "SCHEMA_BINDING=ON"
             self.unsupported("Unsupported property viewattribute")
@@ -3508,22 +3561,26 @@ class SingleStore(Dialect):
             kind = self.sql(expression, "kind")
             kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
             properties = expression.args.get("properties")
-            properties_locs = self.locate_properties(properties) if properties else defaultdict()
+            properties_locs = self.locate_properties(
+                properties) if properties else defaultdict()
 
             if isinstance(expression.this, exp.Schema):
-                indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
+                indexes = self.expressions(expression, key="indexes",
+                                           indent=False, sep=" ")
                 this = self.schema_sql(expression.this, indexes)
             else:
                 this = self.sql(expression, "this")
 
             properties_sql = ""
-            if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
-                    exp.Properties.Location.POST_WITH
+            if properties_locs.get(
+                exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
+                exp.Properties.Location.POST_WITH
             ):
                 properties_sql = self.sql(
                     exp.Properties(
                         expressions=[
-                            *properties_locs[exp.Properties.Location.POST_SCHEMA],
+                            *properties_locs[
+                                exp.Properties.Location.POST_SCHEMA],
                             *properties_locs[exp.Properties.Location.POST_WITH],
                         ]
                     )
@@ -3539,18 +3596,21 @@ class SingleStore(Dialect):
             end = " END" if expression.args.get("end") else ""
 
             if isinstance(expression.expression, exp.Subquery):
-                expression_sql = self.subquery_sql(expression.expression, " AS ", False)
+                expression_sql = self.subquery_sql(expression.expression,
+                                                   " AS ", False)
             else:
                 expression_sql = self.sql(expression, "expression")
             if expression_sql:
                 expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
 
-                if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
+                if self.CREATE_FUNCTION_RETURN_AS or not isinstance(
+                    expression.expression, exp.Return):
                     postalias_props_sql = ""
                     if properties_locs.get(exp.Properties.Location.POST_ALIAS):
                         postalias_props_sql = self.properties(
                             exp.Properties(
-                                expressions=properties_locs[exp.Properties.Location.POST_ALIAS]
+                                expressions=properties_locs[
+                                    exp.Properties.Location.POST_ALIAS]
                             ),
                             wrapped=False,
                         )
@@ -3562,7 +3622,8 @@ class SingleStore(Dialect):
             postcreate_props_sql = ""
             if properties_locs.get(exp.Properties.Location.POST_CREATE):
                 postcreate_props_sql = self.properties(
-                    exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_CREATE]),
+                    exp.Properties(expressions=properties_locs[
+                        exp.Properties.Location.POST_CREATE]),
                     sep=" ",
                     prefix=" ",
                     wrapped=False,
@@ -3574,16 +3635,19 @@ class SingleStore(Dialect):
             if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
                 postexpression_props_sql = self.properties(
                     exp.Properties(
-                        expressions=properties_locs[exp.Properties.Location.POST_EXPRESSION]
+                        expressions=properties_locs[
+                            exp.Properties.Location.POST_EXPRESSION]
                     ),
                     sep=" ",
                     prefix=" ",
                     wrapped=False,
                 )
 
-            exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+            exists_sql = " IF NOT EXISTS" if expression.args.get(
+                "exists") else ""
             no_schema_binding = (
-                " SCHEMA_BINDING=OFF" if expression.args.get("no_schema_binding") else ""
+                " SCHEMA_BINDING=OFF" if expression.args.get(
+                    "no_schema_binding") else ""
             )
 
             clone = self.sql(expression, "clone")
@@ -3594,21 +3658,25 @@ class SingleStore(Dialect):
             expression_sql = f"CREATE{modifiers}{no_schema_binding} {kind}{exists_sql} {this}{properties_expression}{postexpression_props_sql}{clone}"
             return self.prepend_ctes(expression, expression_sql)
 
-        def schema_sql(self, expression: exp.Schema, indexes: str = None) -> str:
+        def schema_sql(self, expression: exp.Schema,
+            indexes: str = None) -> str:
             this = self.sql(expression, "this")
             sql = self.schema_columns_sql(expression, indexes)
             return f"{this} {sql}" if this and sql else this or sql
 
-        def schema_columns_sql(self, expression: exp.Schema, indexes: str = None) -> str:
+        def schema_columns_sql(self, expression: exp.Schema,
+            indexes: str = None) -> str:
             if expression.expressions:
                 indexes = f"{self.sep(', ')}{indexes}" if indexes else ""
                 return f"({self.sep('')}{self.expressions(expression)}{indexes}{self.seg(')', sep='')}"
             return ""
 
         @unsupported_args("zone")
-        def timestrtotime_sql(self, expression: exp.TimeStrToTime)  -> str:
+        def timestrtotime_sql(self, expression: exp.TimeStrToTime) -> str:
             datatype = exp.DataType.build(
-                exp.DataType.Type.TIMESTAMP, expressions=[exp.DataTypeParam(this=exp.Literal.number(6))]
+                exp.DataType.Type.TIMESTAMP,
+                expressions=[exp.DataTypeParam(this=exp.Literal.number(6))]
             )
 
-            return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))
+            return self.sql(
+                exp.cast(expression.this, datatype, dialect=self.dialect))

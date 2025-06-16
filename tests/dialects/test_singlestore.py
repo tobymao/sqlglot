@@ -82,12 +82,13 @@ class TestSingleStore(Validator):
     RETURN TRUE;
   END
 """)
-            cur.execute("""CREATE OR REPLACE PROCEDURE proc() RETURNS void AS BEGIN ECHO SELECT 1; END""")
+            cur.execute(
+                """CREATE OR REPLACE PROCEDURE proc() RETURNS void AS BEGIN ECHO SELECT 1; END""")
 
     def validate_generation(self,
-                            sql: str, expected_sql: str = None, error_message: str = None,
-                            from_dialect="mysql", exp_type: t.Type[exp.Expression] = None,
-                            run: bool = True):
+        sql: str, expected_sql: str = None, error_message: str = None,
+        from_dialect="mysql", exp_type: t.Type[exp.Expression] = None,
+        run: bool = True):
         query = parse_one(sql, read=from_dialect)
 
         # check that expression which is validated is somewhere in the query
@@ -114,6 +115,21 @@ class TestSingleStore(Validator):
             self.assertEqual(expected_sql, generated)
         else:
             self.assertEqual(sql, generated)
+
+    def validate_parsing(self, sql: str,
+        expected_expr: exp.Expression):
+
+        query = parse_one(sql, read="singlestore")
+        expr = query.find(type(expected_expr))
+        self.assertIsNotNone(expr,
+                             f"Expected {expected_expr.type} in {query}")
+        self.assertEqual(expr, expected_expr)
+
+        # Check that the query can be executed
+        generated = query.sql(dialect="singlestore")
+        print(generated)
+        with conn.cursor() as cur:
+            cur.execute(generated)
 
     def test_predicate_generation(self):
         self.validate_generation(
@@ -3795,4 +3811,209 @@ class TestSingleStore(Validator):
             sql="CREATE TABLE syb_image_example (id INT, photo IMAGE)",
             expected_sql="CREATE TABLE syb_image_example (id INT, photo LONGBLOB)",
             from_dialect="tsql",
+        )
+
+    def test_functions_parsing(self):
+        self.validate_parsing(
+            "SELECT ABS(age) FROM users",
+            exp.Abs(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT ACOS(age) FROM users",
+            exp.func("ACOS",
+                     exp.Column(this=exp.Identifier(this="age", quoted=False))
+                     )
+        )
+        # TODO: convert ADDTIME to DATE_ADD
+        self.validate_parsing(
+            "SELECT ADDTIME(signup_date, \"02:45:07\") FROM users",
+            exp.func(
+                "ADDTIME",
+                exp.Column(
+                    this=exp.Identifier(this="signup_date", quoted=False)),
+                exp.Literal.string("02:45:07")
+            )
+        )
+        self.validate_parsing(
+            "SELECT AES_DECRYPT(email, 'key') FROM users",
+            exp.func("AES_DECRYPT",
+                     exp.Column(
+                         this=exp.Identifier(this="email", quoted=False)),
+                     exp.Literal.string("key")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT AES_ENCRYPT(email, 'key') FROM users",
+            exp.func("AES_ENCRYPT",
+                     exp.Column(
+                         this=exp.Identifier(this="email", quoted=False)),
+                     exp.Literal.string("key")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT AGGREGATOR_ID() FROM users",
+            exp.func("AGGREGATOR_ID")
+        )
+        self.validate_parsing(
+            "SELECT ANY_VALUE(age) FROM users",
+            exp.AnyValue(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT APPROX_COUNT_DISTINCT(email) FROM users",
+            exp.Hll(
+                this=exp.Column(this=exp.Identifier(this="email", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT APPROX_COUNT_DISTINCT_ACCUMULATE(email) FROM users",
+            exp.func("APPROX_COUNT_DISTINCT_ACCUMULATE",
+                     exp.Column(this=exp.Identifier(this="email", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT APPROX_COUNT_DISTINCT_COMBINE(email) FROM users",
+            exp.func("APPROX_COUNT_DISTINCT_COMBINE",
+                     exp.Column(this=exp.Identifier(this="email", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT APPROX_COUNT_DISTINCT_ESTIMATE(email) FROM users",
+            exp.func("APPROX_COUNT_DISTINCT_ESTIMATE",
+                     exp.Column(this=exp.Identifier(this="email", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT APPROX_GEOGRAPHY_INTERSECTS(id, age) FROM users",
+            exp.func("APPROX_GEOGRAPHY_INTERSECTS",
+                     exp.Column(this=exp.Identifier(this="id", quoted=False)),
+                     exp.Column(this=exp.Identifier(this="age", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT APPROX_PERCENTILE(age, 0.9) FROM users",
+            exp.ApproxQuantile(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                quantile=exp.Literal.number(0.9)
+            )
+        )
+        self.validate_parsing(
+            "SELECT ASCII(name) FROM users",
+            exp.Unicode(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT ASIN(age) FROM users",
+            exp.func("ASIN",
+                     exp.Column(this=exp.Identifier(this="age", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT ATAN(age) FROM users",
+            exp.func("ATAN",
+                     exp.Column(this=exp.Identifier(this="age", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT ATAN2(age, id) FROM users",
+            exp.func("ATAN2",
+                     exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                     exp.Column(this=exp.Identifier(this="id", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT AVG(age) FROM users",
+            exp.Avg(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT age BETWEEN 18 AND 30 FROM users",
+            exp.Between(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                low=exp.Literal.number(18),
+                high=exp.Literal.number(30)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age NOT BETWEEN 18 AND 30 FROM users",
+            exp.Not(
+                this=exp.Between(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                low=exp.Literal.number(18),
+                high=exp.Literal.number(30)
+            ))
+        )
+        self.validate_parsing(
+            "SELECT BIN(id) FROM users",
+            exp.func(
+                "BIN",
+                exp.Column(this=exp.Identifier(this="id", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT BIN_TO_UUID(id) FROM users",
+            exp.func("BIN_TO_UUID",
+                     exp.Column(this=exp.Identifier(this="id", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BINARY(name) FROM users",
+            exp.Cast(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                to=exp.DataType(this=exp.DataType.Type.BINARY)
+            )
+        )
+        self.validate_parsing(
+            "SELECT BIT_AND(age) FROM users",
+            exp.func(
+                "BIT_AND",
+                exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT BIT_COUNT(id) FROM users",
+            exp.func(
+                "BIT_COUNT",
+                exp.Column(this=exp.Identifier(this="id", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT BIT_OR(age) FROM users",
+            exp.func(
+                "BIT_OR",
+                exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT BIT_XOR(age) FROM users",
+            exp.func(
+                "BIT_XOR",
+                exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT id & age FROM users",
+            exp.BitwiseAnd(
+                this=exp.Column(this=exp.Identifier(this="id", quoted=False)),
+                expression=exp.Column(
+                    this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT id << 2 FROM users",
+            exp.BitwiseLeftShift(
+                this=exp.Column(this=exp.Identifier(this="id", quoted=False)),
+                expression=exp.Literal.number(2)
+            )
+        )
+        self.validate_parsing(
+            "SELECT ~age FROM users",
+            exp.BitwiseNot(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
         )

@@ -1580,3 +1580,40 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
         self.assertTrue(annotated.selects[0].is_type("INT"))
         self.assertTrue(annotated.selects[1].is_type("VARCHAR"))
+
+    def test_annotate_table_as_struct_bigquery(self):
+        dialect = "bigquery"
+        schema = {"d": {"s": {"t": {"c1": "int64", "c2": "struct<f1 int64, f2 string>"}}}}
+
+        def _annotate(query: str) -> exp.Expression:
+            expression = parse_one(example_query, dialect=dialect)
+            qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
+            return optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
+
+        example_query = "SELECT t FROM d.s.t"
+        annotated = _annotate(example_query)
+
+        self.assertIsInstance(annotated.selects[0].this, exp.TableColumn)
+        self.assertEqual(
+            annotated.sql("bigquery"), "SELECT `t` AS `_col_0` FROM `d`.`s`.`t` AS `t`"
+        )
+        self.assertTrue(
+            annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
+        )
+
+        example_query = "SELECT subq FROM (SELECT * from d.s.t) subq"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(
+            annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
+        )
+
+        example_query = "WITH t AS (SELECT 1 AS c) SELECT t FROM t"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(annotated.selects[0].is_type("STRUCT<c INT>"))
+
+        example_query = "WITH t AS (SELECT FOO() AS c) SELECT t FROM t"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(annotated.selects[0].is_type("UNKNOWN"))

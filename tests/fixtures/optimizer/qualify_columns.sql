@@ -273,6 +273,11 @@ SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUN
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) AS x FROM t;
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.x) AS x FROM t AS t;
 
+# execute: false
+# dialect: bigquery
+WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) FROM t;
+WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) AS _col_0 FROM t AS t;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

@@ -7045,6 +7045,12 @@ class Semicolon(Expression):
     arg_types = {}
 
 
+# BigQuery allows SELECT t FROM t and treats the projection as a struct value. This expression
+# type is intended to be constructed by qualify so that we can properly annotate its type later
+class TableAsStruct(Expression):
+    pass
+
+
 def _norm_arg(arg):
     return arg.lower() if type(arg) is str else arg
 

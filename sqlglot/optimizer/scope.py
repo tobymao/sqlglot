@@ -88,6 +88,7 @@ class Scope:
     def clear_cache(self):
         self._collected = False
         self._raw_columns = None
+        self._pseudocolumns = None
         self._stars = None
         self._derived_tables = None
         self._udtfs = None
@@ -125,6 +126,7 @@ class Scope:
         self._derived_tables = []
         self._udtfs = []
         self._raw_columns = []
+        self._pseudocolumns = []
         self._stars = []
         self._join_hints = []
         self._semi_anti_join_tables = set()
@@ -156,6 +158,8 @@ class Scope:
                 self._derived_tables.append(node)
             elif isinstance(node, exp.UNWRAPPED_QUERIES):
                 self._subqueries.append(node)
+            elif isinstance(node, exp.TableAsStruct):
+                self._pseudocolumns.append(node)
 
         self._collected = True
 
@@ -308,6 +312,13 @@ class Scope:
                     self._columns.append(column)
 
         return self._columns
+
+    @property
+    def pseudocolumns(self):
+        if self._columns is None:
+            self._ensure_collected()
+
+        return self._pseudocolumns
 
     @property
     def selected_sources(self):

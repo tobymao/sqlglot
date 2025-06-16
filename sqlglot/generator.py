@@ -201,7 +201,7 @@ class Generator(metaclass=_Generator):
         exp.StreamingTableProperty: lambda *_: "STREAMING",
         exp.StrictProperty: lambda *_: "STRICT",
         exp.SwapTable: lambda self, e: f"SWAP WITH {self.sql(e, 'this')}",
-        exp.TableAsStruct: lambda self, e: self.sql(e.this),
+        exp.TableColumn: lambda self, e: self.sql(e.this),
         exp.Tags: lambda self, e: f"TAG ({self.expressions(e, flat=True)})",
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",

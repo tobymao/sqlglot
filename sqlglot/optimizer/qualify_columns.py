@@ -535,7 +535,7 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
                 and column_name in scope.selected_sources
             ):
                 # BigQuery allows tables to be referenced as columns, treating them as structs
-                scope.replace(column, exp.TableAsStruct(this=column.this))
+                scope.replace(column, exp.TableColumn(this=column.this))
 
     for pivot in scope.pivots:
         for column in pivot.find_all(exp.Column):

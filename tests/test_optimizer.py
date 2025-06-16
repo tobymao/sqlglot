@@ -1607,4 +1607,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         example_query = "WITH t AS (SELECT 1 AS c) SELECT t FROM t"
         annotated = _annotate(example_query)
 
-        self.assertTrue(annotated.selects[0].is_type("STRUCT<c INt>"))
+        self.assertTrue(annotated.selects[0].is_type("STRUCT<c INT>"))
+
+        example_query = "WITH t AS (SELECT FOO() AS c) SELECT t FROM t"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(annotated.selects[0].is_type("UNKNOWN"))

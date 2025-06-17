@@ -1,6 +1,40 @@
 Changelog
 =========
 
+## [v26.29.0] - 2025-06-17
+### :boom: BREAKING CHANGES
+- due to [`4f42d95`](https://github.com/tobymao/sqlglot/commit/4f42d951363f8c43a4c414dc21d0505d9c8e48bf) - Normalize date parts in `exp.Extract` generation *(PR [#5229](https://github.com/tobymao/sqlglot/pull/5229) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Normalize date parts in `exp.Extract` generation (#5229)
+
+- due to [`e7e38fe`](https://github.com/tobymao/sqlglot/commit/e7e38fe0e09f9affbff4ffa7023d0161e3a1ee49) - resolve table "columns" in bigquery that produce structs *(PR [#5230](https://github.com/tobymao/sqlglot/pull/5230) by [@georgesittas](https://github.com/georgesittas))*:
+
+  resolve table "columns" in bigquery that produce structs (#5230)
+
+
+### :sparkles: New Features
+- [`97f5822`](https://github.com/tobymao/sqlglot/commit/97f58226fc8815b23787b7b8699ea71f58268560) - **parser**: AS pipe syntax *(PR [#5224](https://github.com/tobymao/sqlglot/pull/5224) by [@geooo109](https://github.com/geooo109))*
+- [`a7e7fee`](https://github.com/tobymao/sqlglot/commit/a7e7feef02a77fe8606f3f482bad91230fa637f4) - **parser**: EXTEND pipe syntax *(PR [#5225](https://github.com/tobymao/sqlglot/pull/5225) by [@geooo109](https://github.com/geooo109))*
+- [`c1cb9f8`](https://github.com/tobymao/sqlglot/commit/c1cb9f8f682080f7a06c387219d79c6d068b6dbe) - **snowflake**: add autoincrement order clause support *(PR [#5223](https://github.com/tobymao/sqlglot/pull/5223) by [@dmaresma](https://github.com/dmaresma))*
+- [`91afe4c`](https://github.com/tobymao/sqlglot/commit/91afe4cfd7b3f427e4c0b298075e867b8a1bbe55) - **parser**: TABLESAMPLE pipe syntax *(PR [#5231](https://github.com/tobymao/sqlglot/pull/5231) by [@geooo109](https://github.com/geooo109))*
+- [`62da84a`](https://github.com/tobymao/sqlglot/commit/62da84acce7f44802dca26a9357a16115e21fabf) - **snowflake**: improve transpilation of unnested object lookup *(PR [#5234](https://github.com/tobymao/sqlglot/pull/5234) by [@georgesittas](https://github.com/georgesittas))*
+- [`2c60453`](https://github.com/tobymao/sqlglot/commit/2c604537ba83dee74e9ced7e216673ecc70fe487) - **parser**: DROP pipe syntax *(PR [#5226](https://github.com/tobymao/sqlglot/pull/5226) by [@geooo109](https://github.com/geooo109))*
+- [`9885729`](https://github.com/tobymao/sqlglot/commit/988572954135c68dc021b992c815024ce3debaff) - **parser**: SET pipe syntax *(PR [#5236](https://github.com/tobymao/sqlglot/pull/5236) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`df73a79`](https://github.com/tobymao/sqlglot/commit/df73a79a2ca3ba859b8aba5e3d0f6ed269874a63) - **tsql**: Retain limit clause in subquery expression. *(PR [#5227](https://github.com/tobymao/sqlglot/pull/5227) by [@MarcusRisanger](https://github.com/MarcusRisanger))*
+- [`4f42d95`](https://github.com/tobymao/sqlglot/commit/4f42d951363f8c43a4c414dc21d0505d9c8e48bf) - **duckdb**: Normalize date parts in `exp.Extract` generation *(PR [#5229](https://github.com/tobymao/sqlglot/pull/5229) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5228](https://github.com/tobymao/sqlglot/issues/5228) opened by [@greybeam-bot](https://github.com/greybeam-bot)*
+- [`1b4c083`](https://github.com/tobymao/sqlglot/commit/1b4c083fff8d7c44bf1dbba28c1225fa1e28c4d2) - **athena**: include Hive string escapes in the tokenizer *(PR [#5233](https://github.com/tobymao/sqlglot/pull/5233) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5232](https://github.com/tobymao/sqlglot/issues/5232) opened by [@ligfx](https://github.com/ligfx)*
+- [`e7e38fe`](https://github.com/tobymao/sqlglot/commit/e7e38fe0e09f9affbff4ffa7023d0161e3a1ee49) - **optimizer**: resolve table "columns" in bigquery that produce structs *(PR [#5230](https://github.com/tobymao/sqlglot/pull/5230) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5207](https://github.com/tobymao/sqlglot/issues/5207) opened by [@Bladieblah](https://github.com/Bladieblah)*
+- [`781539d`](https://github.com/tobymao/sqlglot/commit/781539d5cbe58142ed6688f1522fc4ed31da0a56) - **duckdb**: Generate correct DETACH syntax if IF EXISTS is set *(PR [#5235](https://github.com/tobymao/sqlglot/pull/5235) by [@erindru](https://github.com/erindru))*
+
+### :wrench: Chores
+- [`7dfb578`](https://github.com/tobymao/sqlglot/commit/7dfb5780fb242c82744dc1538077776ac624081e) - Refactor DETACH generation *(PR [#5237](https://github.com/tobymao/sqlglot/pull/5237) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v26.28.1] - 2025-06-13
 ### :boom: BREAKING CHANGES
 - due to [`44297f1`](https://github.com/tobymao/sqlglot/commit/44297f1c5c8c2cb16fe77c318312f417b4281708) - JOIN pipe syntax, Set Operators as CTEs *(PR [#5215](https://github.com/tobymao/sqlglot/pull/5215) by [@geooo109](https://github.com/geooo109))*:
@@ -7069,3 +7103,4 @@ Changelog
 [v26.26.0]: https://github.com/tobymao/sqlglot/compare/v26.25.3...v26.26.0
 [v26.27.0]: https://github.com/tobymao/sqlglot/compare/v26.26.0...v26.27.0
 [v26.28.1]: https://github.com/tobymao/sqlglot/compare/v26.27.1...v26.28.1
+[v26.29.0]: https://github.com/tobymao/sqlglot/compare/v26.28.1...v26.29.0

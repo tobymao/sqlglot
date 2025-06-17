@@ -420,6 +420,23 @@ WHERE
             "WITH __tmp1 AS (SELECT * EXCEPT (x1, x2) FROM x), __tmp2 AS (SELECT * FROM __tmp1 UNION ALL SELECT 1 AS c) SELECT * FROM __tmp2",
         )
 
+    def test_set(self):
+        self.validate_identity(
+            "FROM x |> SET x1 = 8 * x1", "SELECT * REPLACE (8 * x1 AS x1) FROM x"
+        )
+        self.validate_identity(
+            "FROM x |> SET x1 = 8 * x1 |> SET x2 = 2",
+            "SELECT * REPLACE (8 * x1 AS x1, 2 AS x2) FROM x",
+        )
+        self.validate_identity(
+            "FROM (SELECT 2 AS x, 3 AS y) AS t |> SET x = t.x * t.x, y = 8 |> SELECT t.x AS original_x, x, y",
+            "WITH __tmp1 AS (SELECT * REPLACE (t.x * t.x AS x, 8 AS y), t.x AS original_x FROM (SELECT 2 AS x, 3 AS y) AS t), __tmp2 AS (SELECT original_x, x, y FROM __tmp1) SELECT * FROM __tmp2",
+        )
+        self.validate_identity(
+            "FROM x |> DROP x1 |> DROP x2 |> SET x3 = 2 * x3 |> UNION ALL (SELECT 1 AS c)",
+            "WITH __tmp1 AS (SELECT * EXCEPT (x1, x2) REPLACE (2 * x3 AS x3) FROM x), __tmp2 AS (SELECT * FROM __tmp1 UNION ALL SELECT 1 AS c) SELECT * FROM __tmp2",
+        )
+
     def test_tablesample(self):
         self.validate_identity(
             "FROM x |> TABLESAMPLE SYSTEM (1 PERCENT)",

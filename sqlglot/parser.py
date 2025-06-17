@@ -943,6 +943,7 @@ class Parser(metaclass=_Parser):
         ),
         "PIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
         "SELECT": lambda self, query: self._parse_pipe_syntax_select(query),
+        "SET": lambda self, query: self._parse_pipe_syntax_set(query),
         "TABLESAMPLE": lambda self, query: self._parse_pipe_syntax_tablesample(query),
         "UNPIVOT": lambda self, query: self._parse_pipe_syntax_pivot(query),
         "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
@@ -8367,7 +8368,7 @@ class Parser(metaclass=_Parser):
         alias_cte: t.Optional[exp.TableAlias] = None,
     ) -> exp.Select:
         select = query.selects[0].assert_is(exp.Star)
-        if select.args.get("except"):
+        if select.args.get("except") or select.args.get("replace"):
             query = self._build_pipe_cte(
                 query=query.select(
                     *[expr for expr in expressions if not expr.is_star and expr.args.get("alias")],
@@ -8519,6 +8520,19 @@ class Parser(metaclass=_Parser):
         select = query.selects[0].assert_is(exp.Star)
         except_ = select.args.get("except") or []
         select.set("except", [*except_, *dropped_columns])
+
+        return query
+
+    def _parse_pipe_syntax_set(self, query: exp.Select) -> exp.Select:
+        self._match_text_seq("SET")
+        replaced_columns = [
+            self.expression(exp.Alias, this=expr.expression, alias=expr.this)
+            for expr in self._parse_csv(self._parse_assignment)
+        ]
+
+        select = query.selects[0].assert_is(exp.Star)
+        replace_ = select.args.get("replace") or []
+        select.set("replace", [*replace_, *replaced_columns])
 
         return query
 

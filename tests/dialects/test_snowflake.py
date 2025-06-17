@@ -319,6 +319,24 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT _u['foo'], bar, baz FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bars', ['y', 'z'], 'bazs', ['w'])])) AS _t0(seq, key, path, index, _u, this), TABLE(FLATTEN(INPUT => _u['bars'])) AS _t1(seq, key, path, index, bar, this), TABLE(FLATTEN(INPUT => _u['bazs'])) AS _t2(seq, key, path, index, baz, this)",
+            read={
+                "bigquery": "SELECT _u.foo, bar, baz FROM UNNEST([struct('x' AS foo, ['y', 'z'] AS bars, ['w'] AS bazs)]) AS _u, UNNEST(_u.bars) AS bar, UNNEST(_u.bazs) AS baz",
+            },
+        )
+        self.validate_all(
+            "SELECT _u, _u['foo'], _u['bar'] FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bar', 'y')])) AS _t0(seq, key, path, index, _u, this)",
+            read={
+                "bigquery": "select _u, _u.foo, _u.bar from unnest([struct('x' as foo, 'y' AS bar)]) as _u",
+            },
+        )
+        self.validate_all(
+            "SELECT _u['foo'][0].bar FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', [OBJECT_CONSTRUCT('bar', 1)])])) AS _t0(seq, key, path, index, _u, this)",
+            read={
+                "bigquery": "select _u.foo[0].bar from unnest([struct([struct(1 as bar)] as foo)]) as _u",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE test_table (id NUMERIC NOT NULL AUTOINCREMENT)",
             write={
                 "duckdb": "CREATE TABLE test_table (id DECIMAL(38, 0) NOT NULL)",

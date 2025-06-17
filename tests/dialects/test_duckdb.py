@@ -1494,7 +1494,11 @@ class TestDuckDB(Validator):
 
         # DETACH
         self.validate_identity("DETACH new_database")
-        self.validate_identity("DETACH IF EXISTS file")
+
+        # when 'if exists' is set, the syntax is DETACH DATABASE, not DETACH
+        # ref: https://duckdb.org/docs/stable/sql/statements/attach.html#detach-syntax
+        self.validate_identity("DETACH IF EXISTS file", "DETACH DATABASE IF EXISTS file")
+        self.validate_identity("DETACH DATABASE IF EXISTS file", "DETACH DATABASE IF EXISTS file")
 
         self.validate_identity("DETACH DATABASE db", "DETACH db")
 

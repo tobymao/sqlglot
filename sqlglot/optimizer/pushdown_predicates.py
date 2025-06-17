@@ -3,6 +3,10 @@ from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import Dialect
+import typing as t
+
+if t.TYPE_CHECKING:
+    pass
 
 
 def pushdown_predicates(expression, dialect=None):
@@ -31,14 +35,28 @@ def pushdown_predicates(expression, dialect=None):
     if root:
         scope_ref_count = root.ref_count()
 
-        for scope in reversed(list(root.traverse())):
+        for scope in reversed(list(root.traverse())):  # reverse scopes to drill in
             select = scope.expression
+
+            # move predicates in the current scope
+            #   from WHERE to JOIN ON, e.g.
+            #     SELECT x.a AS a FROM x JOIN y WHERE y.a = 1;
+            #       -> SELECT x.a AS a FROM x JOIN y ON y.a = 1;
+            #
+            # push predicates down from the current scope into the source scope
+            #   from WHERE e.g.
+            #     SELECT x.a AS a FROM (SELECT x.a FROM x AS x) AS x WHERE x.a = 1;
+            #       -> SELECT x.a AS a FROM (SELECT x.a FROM x AS x WHERE x.a = 1) AS x;
+            #     WITH x AS (SELECT y.a FROM y) SELECT * FROM x WHERE x.a = 1;
+            #       -> WITH x AS (SELECT y.a FROM y WHERE y.a = 1) SELECT * FROM x;
+            #   from JOIN
+            #     SELECT x.a FROM x AS x JOIN (SELECT y.a FROM y AS y) AS y ON y.a = 1 AND x.a = y.a
+            #       -> SELECT x.a FROM x AS x JOIN (SELECT y.a FROM y AS y WHERE y.a = 1) AS y ON x.a = y.a
+
+            # we check for predicates in WHERE and later run all predicates in JOINs
             where = select.args.get("where")
             if where:
                 selected_sources = scope.selected_sources
-                join_index = {
-                    join.alias_or_name: i for i, join in enumerate(select.args.get("joins") or [])
-                }
 
                 # a right join can only push down to itself and not the source FROM table
                 # presto, trino and athena don't support inner joins where the RHS is an UNNEST expression
@@ -49,24 +67,26 @@ def pushdown_predicates(expression, dialect=None):
                         if parent.side == "RIGHT":
                             selected_sources = {k: (node, source)}
                             break
+
                         if isinstance(node, exp.Unnest) and unnest_requires_cross_join:
                             pushdown_allowed = False
                             break
 
+                join_index = {
+                    join.alias_or_name: i for i, join in enumerate(select.args.get("joins", []))
+                }
+
                 if pushdown_allowed:
                     pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
 
-            # joins should only pushdown into itself, not to other joins
+            # joins should only pushdown into itself, not to other joins, e.g.
+            # SELECT x.a FROM x AS x JOIN (SELECT y.a FROM y AS y) AS y ON y.a = 1 AND x.a = y.a;
             # so we limit the selected sources to only itself
             for join in select.args.get("joins") or []:
                 name = join.alias_or_name
                 if name in scope.selected_sources:
-                    pushdown(
-                        join.args.get("on"),
-                        {name: scope.selected_sources[name]},
-                        scope_ref_count,
-                        dialect,
-                    )
+                    selected_sources = {name: scope.selected_sources[name]}
+                    pushdown(join.args.get("on"), selected_sources, scope_ref_count, dialect)
 
     return expression
 
@@ -78,7 +98,7 @@ def pushdown(condition, sources, scope_ref_count, dialect, join_index=None):
     condition = condition.replace(simplify(condition, dialect=dialect))
     cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
-    predicates = list(
+    predicates = (
         condition.flatten()
         if isinstance(condition, exp.And if cnf_like else exp.Or)
         else [condition]
@@ -107,6 +127,7 @@ def pushdown_cnf(predicates, sources, scope_ref_count, join_index=None):
                     predicate.replace(exp.true())
                     node.on(predicate, copy=False)
                     break
+
             if isinstance(node, exp.Select):
                 predicate.replace(exp.true())
                 inner_predicate = replace_aliases(node, predicate)
@@ -165,17 +186,24 @@ def pushdown_dnf(predicates, sources, scope_ref_count):
                     node.where(inner_predicate, copy=False)
 
 
-def nodes_for_predicate(predicate, sources, scope_ref_count):
+def nodes_for_predicate(
+    predicate: exp.Predicate,
+    # sources: dict[str, tuple[exp.Table | exp.Select, exp.Table | Scope]],
+    sources,
+    scope_ref_count,
+) -> dict[str, exp.Table | exp.Select]:
     nodes = {}
-    tables = exp.column_table_names(predicate)
-    where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
 
+    # search parent WHERE or JOIN, and check if it is WHERE
+    is_where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
+
+    tables = exp.column_table_names(predicate)  # all sources used in the predicate
     for table in sorted(tables):
-        node, source = sources.get(table) or (None, None)
+        node, source = sources.get(table, (None, None))
 
         # if the predicate is in a where statement we can try to push it down
         # we want to find the root join or from statement
-        if node and where_condition:
+        if node and is_where_condition:
             node = node.find_ancestor(exp.Join, exp.From)
 
         # a node can reference a CTE which should be pushed down
@@ -186,22 +214,22 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
             node = source.expression
 
         if isinstance(node, exp.Join):
-            if node.side and node.side != "RIGHT":
+            if node.side and node.side != "RIGHT":  # if side and not RIGHT (?)
                 return {}
             nodes[table] = node
+
         elif isinstance(node, exp.Select) and len(tables) == 1:
             # We can't push down window expressions
-            has_window_expression = any(
-                select for select in node.selects if select.find(exp.Window)
-            )
-            # we can't push down predicates to select statements if they are referenced in
-            # multiple places.
+            has_window_expression = any(select.find(exp.Window) for select in node.selects)
+
+            # we can't push down predicates to select statements if they are referenced in multiple places.
             if (
                 not node.args.get("group")
                 and scope_ref_count[id(source)] < 2
                 and not has_window_expression
             ):
                 nodes[table] = node
+
     return nodes
 
 

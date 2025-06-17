@@ -310,12 +310,14 @@ class Scope:
         return self._columns
 
     @property
-    def selected_sources(self):
+    def selected_sources(
+        self,
+    ) -> dict[str, tuple[exp.Table | exp.Select, exp.Table | exp.Scope]]:
         """
-        Mapping of nodes and sources that are actually selected from in this scope.
+        Mapping of source name into a tuple of nodes and its source that are actually selected from in this scope.
 
-        That is, all tables in a schema are selectable at any point. But a
-        table only becomes a selected source if it's included in a FROM or JOIN clause.
+        That is, all tables in a schema are selectable at any point. But a table only becomes a selected source
+        if it's included in a FROM or JOIN clause.
 
         Returns:
             dict[str, (exp.Table|exp.Select, exp.Table|Scope)]: selected sources and nodes
@@ -324,13 +326,13 @@ class Scope:
             result = {}
 
             for name, node in self.references:
+                # The RHS table of SEMI/ANTI joins shouldn't be collected as a selected source
                 if name in self._semi_anti_join_tables:
-                    # The RHS table of SEMI/ANTI joins shouldn't be collected as a
-                    # selected source
                     continue
 
                 if name in result:
                     raise OptimizeError(f"Alias already used: {name}")
+
                 if name in self.sources:
                     result[name] = (node, self.sources[name])
 
@@ -338,12 +340,16 @@ class Scope:
         return self._selected_sources
 
     @property
-    def references(self) -> t.List[t.Tuple[str, exp.Expression]]:
+    def references(self) -> t.List[t.Tuple[str, exp.Table | exp.DerivedTable | exp.UDTF]]:
+        """
+        List of source name/alias and AST for tables, drerived tables and UDFs
+        """
         if self._references is None:
             self._references = []
 
             for table in self.tables:
                 self._references.append((table.alias_or_name, table))
+
             for expression in itertools.chain(self.derived_tables, self.udtfs):
                 self._references.append(
                     (
@@ -844,21 +850,30 @@ def walk_in_scope(expression, bfs=True, prune=None):
 
         yield node
 
-        if node is expression:
+        if node is expression:  # we always return our input
             continue
+
         if (
-            isinstance(node, exp.CTE)
+            isinstance(node, exp.CTE)  # if CTE
             or (
-                isinstance(node.parent, (exp.From, exp.Join, exp.Subquery))
-                and (_is_derived_table(node) or isinstance(node, exp.UDTF))
+                isinstance(
+                    node.parent, (exp.From, exp.Join, exp.Subquery)
+                )  # if parent is FROM, JOIN or SUBQUERY
+                and (
+                    _is_derived_table(node) or isinstance(node, exp.UDTF)
+                )  # and this is a derived table or UDF
             )
-            or isinstance(node, exp.UNWRAPPED_QUERIES)
+            or isinstance(node, exp.UNWRAPPED_QUERIES)  # Select or Union
         ):
             crossed_scope_boundary = True
 
             if isinstance(node, (exp.Subquery, exp.UDTF)):
                 # The following args are not actually in the inner scope, so we should visit them
-                for key in ("joins", "laterals", "pivots"):
+                for key in (
+                    "joins",
+                    "laterals",
+                    "pivots",
+                ):  # this is more about from_item, e.g. (select ... ) join ...
                     for arg in node.args.get(key) or []:
                         yield from walk_in_scope(arg, bfs=bfs)
 

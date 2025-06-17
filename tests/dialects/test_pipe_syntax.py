@@ -392,6 +392,34 @@ WHERE
             "WITH __tmp1 AS (SELECT *, SUM(item2) OVER () AS item2_sum FROM (SELECT 'foo1' AS item1, 2 AS item2 UNION ALL SELECT 'foo2' AS item1, 5 AS item2)) SELECT * FROM __tmp1",
         )
 
+    def test_drop(self):
+        self.validate_identity(
+            "FROM x |> DROP x1, x2",
+            "SELECT * EXCEPT (x1, x2) FROM x",
+        )
+        self.validate_identity("FROM x |> DROP x1 |> DROP x2", "SELECT * EXCEPT (x1, x2) FROM x")
+        self.validate_identity(
+            "FROM x |> SELECT x.x1, x.x2, x.x3 |> DROP x1, x2 |> WHERE x3 > 0",
+            "WITH __tmp1 AS (SELECT x.x1, x.x2, x.x3 FROM x) SELECT * EXCEPT (x1, x2) FROM __tmp1 WHERE x3 > 0",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x.x1, x.x2, x.x3 |> DROP x1, x2 |> WHERE x3 > 0",
+            "WITH __tmp1 AS (SELECT x.x1, x.x2, x.x3 FROM x) SELECT * EXCEPT (x1, x2) FROM __tmp1 WHERE x3 > 0",
+        )
+        self.validate_identity(
+            "FROM (SELECT 1 AS x, 2 AS y) AS t |> DROP x |> SELECT t.x AS original_x, y",
+            "WITH __tmp1 AS (SELECT * EXCEPT (x), t.x AS original_x FROM (SELECT 1 AS x, 2 AS y) AS t), __tmp2 AS (SELECT original_x, y FROM __tmp1) SELECT * FROM __tmp2",
+        )
+
+        self.validate_identity(
+            "FROM x |> PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2')) |> DROP Q1 |> SELECT *",
+            "WITH __tmp1 AS (SELECT * FROM x PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))), __tmp2 AS (SELECT * EXCEPT (Q1) FROM __tmp1), __tmp3 AS (SELECT * FROM __tmp2) SELECT * FROM __tmp3",
+        )
+        self.validate_identity(
+            "FROM x |> DROP x1 |> DROP x2 |> UNION ALL (SELECT 1 AS c)",
+            "WITH __tmp1 AS (SELECT * EXCEPT (x1, x2) FROM x), __tmp2 AS (SELECT * FROM __tmp1 UNION ALL SELECT 1 AS c) SELECT * FROM __tmp2",
+        )
+
     def test_tablesample(self):
         self.validate_identity(
             "FROM x |> TABLESAMPLE SYSTEM (1 PERCENT)",

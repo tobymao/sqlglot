@@ -935,6 +935,7 @@ class Parser(metaclass=_Parser):
         "AS": lambda self, query: self._build_pipe_cte(
             query, [exp.Star()], self._parse_table_alias()
         ),
+        "DROP": lambda self, query: self._parse_pipe_syntax_drop(query),
         "EXTEND": lambda self, query: self._parse_pipe_syntax_extend(query),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "ORDER BY": lambda self, query: query.order_by(
@@ -8359,12 +8360,34 @@ class Parser(metaclass=_Parser):
 
         return new_select.with_(new_cte, as_=query, copy=False)
 
+    def _build_pipe_ctes(
+        self,
+        query: exp.Select,
+        expressions: t.List[exp.Expression],
+        alias_cte: t.Optional[exp.TableAlias] = None,
+    ) -> exp.Select:
+        select = query.selects[0].assert_is(exp.Star)
+        if select.args.get("except"):
+            query = self._build_pipe_cte(
+                query=query.select(
+                    *[expr for expr in expressions if not expr.is_star and expr.args.get("alias")],
+                    copy=False,
+                ),
+                expressions=[
+                    projection.args.get("alias", projection) for projection in expressions
+                ],
+            )
+        else:
+            query.select(*expressions, append=False, copy=False)
+
+        return self._build_pipe_cte(query=query, expressions=[exp.Star()], alias_cte=alias_cte)
+
     def _parse_pipe_syntax_select(self, query: exp.Select) -> exp.Select:
         select = self._parse_select()
         if not select:
             return query
 
-        return self._build_pipe_cte(query.select(*select.expressions, append=False), [exp.Star()])
+        return self._build_pipe_ctes(query=query, expressions=select.expressions)
 
     def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()
@@ -8413,7 +8436,7 @@ class Parser(metaclass=_Parser):
                 copy=False,
             )
         else:
-            query.select(*aggregates_or_groups, append=False, copy=False)
+            query.select(*aggregates_or_groups, copy=False)
 
         if orders:
             return query.order_by(*orders, append=False, copy=False)
@@ -8429,7 +8452,9 @@ class Parser(metaclass=_Parser):
         ):
             query = self._parse_pipe_syntax_aggregate_group_order_by(query)
 
-        return self._build_pipe_cte(query, [exp.Star()])
+        return self._build_pipe_ctes(
+            query=query, expressions=[expr for expr in query.selects if not expr.is_star]
+        )
 
     def _parse_pipe_syntax_set_operator(self, query: exp.Query) -> t.Optional[exp.Select]:
         first_setop = self.parse_set_operation(this=query)
@@ -8447,7 +8472,7 @@ class Parser(metaclass=_Parser):
             *self._parse_csv(_parse_and_unwrap_query),
         ]
 
-        query = self._build_pipe_cte(query, [exp.Star()])
+        query = self._build_pipe_cte(query=query, expressions=[exp.Star()])
         with_ = query.args.get("with")
         ctes = with_.pop() if with_ else None
 
@@ -8460,7 +8485,7 @@ class Parser(metaclass=_Parser):
 
         query.set("with", ctes)
 
-        return self._build_pipe_cte(query, [exp.Star()])
+        return self._build_pipe_cte(query=query, expressions=[exp.Star()])
 
     def _parse_pipe_syntax_join(self, query: exp.Select) -> t.Optional[exp.Select]:
         join = self._parse_join()
@@ -8478,12 +8503,24 @@ class Parser(metaclass=_Parser):
         if from_:
             from_.this.set("pivots", pivots)
 
-        return self._build_pipe_cte(query, [exp.Star()])
+        return self._build_pipe_ctes(query=query, expressions=[exp.Star()])
 
     def _parse_pipe_syntax_extend(self, query: exp.Select) -> exp.Select:
         self._match_text_seq("EXTEND")
-        query.select(*[exp.Star(), *self._parse_expressions()], append=False, copy=False)
-        return self._build_pipe_cte(query, [exp.Star()])
+        return self._build_pipe_ctes(
+            query=query,
+            expressions=[query.selects[0].assert_is(exp.Star), *self._parse_expressions()],
+        )
+
+    def _parse_pipe_syntax_drop(self, query: exp.Select) -> exp.Select:
+        self._match_text_seq("DROP")
+        dropped_columns = self._parse_csv(self._parse_assignment)
+
+        select = query.selects[0].assert_is(exp.Star)
+        except_ = select.args.get("except") or []
+        select.set("except", [*except_, *dropped_columns])
+
+        return query
 
     def _parse_pipe_syntax_tablesample(self, query: exp.Select) -> exp.Select:
         sample = self._parse_table_sample()

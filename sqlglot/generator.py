@@ -4780,7 +4780,10 @@ class Generator(metaclass=_Generator):
 
     def detach_sql(self, expression: exp.Detach) -> str:
         this = self.sql(expression, "this")
-        exists_sql = " IF EXISTS" if expression.args.get("exists") else ""
+        # the DATABASE keyword is required if IF EXISTS is set
+        # without it, DuckDB throws an error: Parser Error: syntax error at or near "exists" (Line Number: 1)
+        # ref: https://duckdb.org/docs/stable/sql/statements/attach.html#detach-syntax
+        exists_sql = " DATABASE IF EXISTS" if expression.args.get("exists") else ""
 
         return f"DETACH{exists_sql} {this}"
 

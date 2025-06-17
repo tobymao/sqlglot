@@ -336,6 +336,12 @@ def _json_extract_value_array_sql(
 
 def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
+        # This transformation is used to facilitate transpilation of BigQuery `UNNEST` operations
+        # to Snowflake. It should not affect roundtrip because `Unnest` nodes cannot be produced
+        # by Snowflake's parser.
+        #
+        # Additionally, at the time of writing this, BigQuery is the only dialect that produces a
+        # `TableAlias` node that only fills `columns` and not `this`, due to `UNNEST_COLUMN_ONLY`.
         unnest_aliases = set()
         for unnest in find_all_in_scope(expression, exp.Unnest):
             unnest_alias = unnest.args.get("alias")

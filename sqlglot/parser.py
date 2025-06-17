@@ -8517,11 +8517,8 @@ class Parser(metaclass=_Parser):
         dropped_columns = self._parse_csv(self._parse_assignment)
 
         select = query.selects[0].assert_is(exp.Star)
-        except_ = select.args.get("except", None)
-        if except_:
-            select.set("except", [*except_, *dropped_columns])
-        else:
-            select.set("except", dropped_columns)
+        except_ = select.args.get("except") or []
+        select.set("except", [*except_, *dropped_columns])
 
         return query
 

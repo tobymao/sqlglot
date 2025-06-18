@@ -12,6 +12,34 @@ from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
 from sqlglot.helper import csv, seq_get
 
 
+def _build_json_extract(expr_type: t.Type[exp.Func]) -> t.Callable[
+    [t.List], t.Optional[exp.Func]]:
+    def _builder(args: t.List):
+        json_path_parts: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
+        if len(args) < 2:
+            return None
+
+        for i in range(1, len(args)):
+            arg = args[i]
+            if isinstance(arg, exp.Literal):
+                if arg.is_string:
+                    json_path_parts.append(exp.JSONPathKey(this=arg.this))
+                else:
+                    json_path_parts.append(exp.JSONPathSubscript(this=arg.this))
+            else:
+                return None
+
+        expr = expr_type(
+            this=args[0],
+            expression=exp.JSONPath(expressions=json_path_parts),
+        )
+
+        expr.is_var_len_args = True
+        return expr
+
+    return _builder
+
+
 class SingleStore(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -97,6 +125,10 @@ class SingleStore(Dialect):
                 seq_get(args, 0),
                 DataType.Type.BINARY
             ),
+            "BSON_EXTRACT_BSON": _build_json_extract(
+                exp.JSONBExtract),
+            "BSON_EXTRACT_STRING": _build_json_extract(
+                exp.JSONBExtractScalar)
         }
 
     class Generator(generator.Generator):
@@ -1729,7 +1761,8 @@ class SingleStore(Dialect):
             return self.func("BSON_EXTRACT_BSON", expression.this,
                              expression.expression)
 
-        def jsonbextractscalar_sql(self, expression: exp.JSONBExtract) -> str:
+        def jsonbextractscalar_sql(self,
+            expression: exp.JSONBExtractScalar) -> str:
             return self.func("BSON_EXTRACT_STRING", expression.this,
                              expression.expression)
 

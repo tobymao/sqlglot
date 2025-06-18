@@ -64,7 +64,8 @@ class TestSingleStore(Validator):
     event_type VARCHAR(50),
     metadata JSON,
     metadatab BSON,
-    occurred_at TIMESTAMP
+    occurred_at TIMESTAMP,
+    FULLTEXT USING VERSION 2 index (event_type)
 );
     """)
             cur.execute("""CREATE FUNCTION is_prime(n BIGINT NOT NULL) returns BIGINT AS
@@ -3943,10 +3944,11 @@ class TestSingleStore(Validator):
             "SELECT age NOT BETWEEN 18 AND 30 FROM users",
             exp.Not(
                 this=exp.Between(
-                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
-                low=exp.Literal.number(18),
-                high=exp.Literal.number(30)
-            ))
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    low=exp.Literal.number(18),
+                    high=exp.Literal.number(30)
+                ))
         )
         self.validate_parsing(
             "SELECT BIN(id) FROM users",
@@ -4016,4 +4018,293 @@ class TestSingleStore(Validator):
             exp.BitwiseNot(
                 this=exp.Column(this=exp.Identifier(this="age", quoted=False))
             )
+        )
+
+    def test_tutu2(self):
+        self.validate_parsing(
+            "SELECT id | age FROM users",
+            exp.BitwiseOr(
+                this=exp.Column(this=exp.Identifier(this="id", quoted=False)),
+                expression=exp.Column(
+                    this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT id >> 2 FROM users",
+            exp.BitwiseRightShift(
+                this=exp.Column(this=exp.Identifier(this="id", quoted=False)),
+                expression=exp.Literal.number(2)
+            )
+        )
+        self.validate_parsing(
+            "SELECT id ^ age FROM users",
+            exp.BitwiseXor(
+                this=exp.Column(this=exp.Identifier(this="id", quoted=False)),
+                expression=exp.Column(
+                    this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT BM25(events, 'body:database') FROM events",
+            exp.func("BM25",
+                     exp.Column(
+                         this=exp.Identifier(this="events", quoted=False)),
+                     exp.Literal.string('body:database')
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BM25_GLOBAL(events, 'body:database') FROM events",
+            exp.func("BM25_GLOBAL",
+                     exp.Column(
+                         this=exp.Identifier(this="events", quoted=False)),
+                     exp.Literal.string('body:database')
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_ARRAY_CONTAINS_BSON(metadatab, 'value') FROM events",
+            exp.func("BSON_ARRAY_CONTAINS_BSON",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("value")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_ARRAY_PUSH(metadatab, 'value') FROM events",
+            exp.func("BSON_ARRAY_PUSH",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("value")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_ARRAY_SLICE(metadatab, 1, 2) FROM events",
+            exp.func("BSON_ARRAY_SLICE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.number(1),
+                     exp.Literal.number(2)
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_BUILD_ARRAY('a', 'b') FROM events",
+            exp.func("BSON_BUILD_ARRAY",
+                     exp.Literal.string("a"),
+                     exp.Literal.string("b")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_BUILD_OBJECT('k', 'v') FROM events",
+            exp.func("BSON_BUILD_OBJECT",
+                     exp.Literal.string("k"),
+                     exp.Literal.string("v")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_COMPARE(metadatab, metadatab) FROM events",
+            exp.func("BSON_COMPARE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_BIGINT(metadatab, 'k') FROM events",
+            exp.func("BSON_EXTRACT_BIGINT",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("k")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_BOOL(metadatab, 'k') FROM events",
+            exp.func("BSON_EXTRACT_BOOL",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("k")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_BSON(metadatab, 'k') FROM events",
+            exp.JSONBExtract(
+                this=exp.Column(
+                    this=exp.Identifier(this="metadatab", quoted=False)),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="k")
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_BSON(metadatab, 'k', 1, 'a') FROM events",
+            exp.JSONBExtract(
+                this=exp.Column(
+                    this=exp.Identifier(this="metadatab", quoted=False)),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="k"),
+                        exp.JSONPathSubscript(this=str(1)),
+                        exp.JSONPathKey(this="a"),
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_STRING(metadatab, 'k') FROM events",
+            exp.JSONBExtractScalar(
+                this=exp.Column(
+                    this=exp.Identifier(this="metadatab", quoted=False)),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="k")
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_STRING(metadatab, 'k', 1, 'a') FROM events",
+            exp.JSONBExtractScalar(
+                this=exp.Column(
+                    this=exp.Identifier(this="metadatab", quoted=False)),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="k"),
+                        exp.JSONPathSubscript(this=str(1)),
+                        exp.JSONPathKey(this="a"),
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_DATETIME(metadatab, 'k') FROM events",
+            exp.func("BSON_EXTRACT_DATETIME",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("k")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXTRACT_DOUBLE(metadatab, 'k') FROM events",
+            exp.func("BSON_EXTRACT_DOUBLE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("k")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_GET_TYPE(metadatab) FROM events",
+            exp.func("BSON_GET_TYPE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_INCLUDE_MASK(metadatab, '{}') FROM events",
+            exp.func("BSON_INCLUDE_MASK",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("{}")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_EXCLUDE_MASK(metadatab, '{}') FROM events",
+            exp.func("BSON_EXCLUDE_MASK",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("{}")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_LENGTH(metadatab) FROM events",
+            exp.func("BSON_LENGTH",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_MATCH_ANY(metadatab, 'filter') FROM events",
+            exp.func("BSON_MATCH_ANY",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("filter")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_MATCH_ANY_EXISTS(metadatab, 'filter') FROM events",
+            exp.func("BSON_MATCH_ANY_EXISTS",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("filter")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_MERGE(metadatab, metadatab) FROM events",
+            exp.func("BSON_MERGE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_NORMALIZE(metadatab) FROM events",
+            exp.func("BSON_NORMALIZE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False))
+                     )
+        )
+        self.validate_parsing(
+            "SELECT BSON_SET_BSON(metadatab, 'k', 'v') FROM events",
+            exp.func("BSON_SET_BSON",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)),
+                     exp.Literal.string("k"),
+                     exp.Literal.string("v")
+                     )
+        )
+        self.validate_parsing(
+            "SELECT CASE WHEN age > 18 THEN 'adult' ELSE 'minor' END FROM users",
+            exp.Case(
+                ifs=[
+                    exp.If(
+                        this=exp.GT(
+                            this=exp.Column(
+                                this=exp.Identifier(this="age", quoted=False)),
+                            expression=exp.Literal.number(18)
+                        ),
+                        true=exp.Literal.string("adult"),
+                    ),
+                ],
+                default=exp.Literal.string("minor")
+            )
+        )
+        self.validate_parsing(
+            "SELECT CEIL(amount) FROM orders",
+            exp.Ceil(
+                this=exp.Column(
+                    this=exp.Identifier(this="amount", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT CHAR(65, 66) FROM users",
+            exp.func("CHAR",
+                     exp.Literal.number(65),
+                     exp.Literal.number(66)
+                     )
+        )
+        self.validate_parsing(
+            "SELECT CHARACTER_LENGTH(name) FROM users",
+            exp.Length(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT CHARSET(name) FROM users",
+            exp.func("CHARSET",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False))
+                     )
         )

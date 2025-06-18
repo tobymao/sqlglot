@@ -16,6 +16,9 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("DBMS_RANDOM.NORMAL")
+        self.validate_identity("DBMS_RANDOM.VALUE(low, high)").assert_is(exp.Rand)
+        self.validate_identity("DBMS_RANDOM.VALUE()").assert_is(exp.Rand)
         self.validate_identity("CAST(value AS NUMBER DEFAULT 0 ON CONVERSION ERROR)")
         self.validate_identity("SYSDATE")
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
@@ -120,6 +123,17 @@ class TestOracle(Validator):
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
 
+        self.validate_all(
+            "SELECT DBMS_RANDOM.VALUE()",
+            read={
+                "oracle": "SELECT DBMS_RANDOM.VALUE",
+                "postgres": "SELECT RANDOM()",
+            },
+            write={
+                "oracle": "SELECT DBMS_RANDOM.VALUE()",
+                "postgres": "SELECT RANDOM()",
+            },
+        )
         self.validate_all(
             "SELECT TRIM('|' FROM '||Hello ||| world||')",
             write={

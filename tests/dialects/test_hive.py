@@ -492,6 +492,10 @@ class TestHive(Validator):
         self.validate_identity(
             "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address = 'abc')"
         )
+        self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
 
         self.validate_all(
             "SELECT ${hiveconf:some_var}",

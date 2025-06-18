@@ -42,17 +42,17 @@ SELECT 1 FROM c.y.z AS z, z.a;
 # title: bigquery implicit unnest syntax, coordinates.position should be a column, not a table
 # dialect: bigquery
 SELECT results FROM Coordinates, coordinates.position AS results;
-SELECT results FROM c.db.Coordinates AS Coordinates, UNNEST(coordinates.position) AS results;
+SELECT results FROM c.db.Coordinates AS Coordinates CROSS JOIN UNNEST(coordinates.position) AS results;
 
 # title: bigquery implicit unnest syntax, table is already qualified
 # dialect: bigquery
 SELECT results FROM db.coordinates, Coordinates.position AS results;
-SELECT results FROM c.db.coordinates AS coordinates, UNNEST(Coordinates.position) AS results;
+SELECT results FROM c.db.coordinates AS coordinates CROSS JOIN UNNEST(Coordinates.position) AS results;
 
 # title: bigquery schema name clashes with CTE name - this is a join, not an implicit unnest
 # dialect: bigquery
 WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates, `Coordinates.position` AS results;
-WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates AS Coordinates, `c.Coordinates.position` AS results;
+WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates AS Coordinates CROSS JOIN `c.Coordinates.position` AS results;
 
 # title: single cte
 WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a;

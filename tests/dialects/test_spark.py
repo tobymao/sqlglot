@@ -273,6 +273,10 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
         self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
+        self.validate_identity(
             "SELECT 1 limit",
             "SELECT 1 AS limit",
         )

@@ -29,6 +29,10 @@ class TestSQLite(Validator):
             """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
         )
         self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
+        self.validate_identity(
             "ALTER TABLE t RENAME a TO b",
             "ALTER TABLE t RENAME COLUMN a TO b",
         )

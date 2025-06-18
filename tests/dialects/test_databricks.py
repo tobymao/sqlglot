@@ -58,6 +58,10 @@ class TestDatabricks(Validator):
             "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
         )
         self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
+        self.validate_identity(
             "SELECT TIMESTAMP '2025-04-29 18.47.18'::DATE",
             "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
         )

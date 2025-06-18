@@ -1518,6 +1518,12 @@ class Parser(metaclass=_Parser):
     # Whether renaming a column with an ALTER statement requires the presence of the COLUMN keyword
     ALTER_RENAME_REQUIRES_COLUMN = True
 
+    # Whether all join types have the same precedence, i.e., they "naturally" produce a left-deep tree.
+    # In standard SQL, joins that use the JOIN keyword take higher precedence than comma-joins. That is
+    # to say, JOIN operators happen before comma operators. This is not the case in some dialects, such
+    # as BigQuery, where all joins have the same precedence.
+    JOINS_HAVE_EQUAL_PRECEDENCE = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3702,9 +3708,12 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Join]:
         if self._match(TokenType.COMMA):
             table = self._try_parse(self._parse_table)
-            if table:
-                return self.expression(exp.Join, this=table)
-            return None
+            cross_join = self.expression(exp.Join, this=table) if table else None
+
+            if cross_join and self.JOINS_HAVE_EQUAL_PRECEDENCE:
+                cross_join.set("kind", "CROSS")
+
+            return cross_join
 
         index = self._index
         method, side, kind = self._parse_join_parts()

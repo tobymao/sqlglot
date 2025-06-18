@@ -297,6 +297,7 @@ class ClickHouse(Dialect):
         MODIFIERS_ATTACHED_TO_SET_OP = False
         INTERVAL_SPANS = False
         OPTIONAL_ALIAS_TOKEN_CTE = False
+        JOINS_HAVE_EQUAL_PRECEDENCE = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

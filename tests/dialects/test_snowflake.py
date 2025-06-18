@@ -334,7 +334,14 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
-            "SELECT _u['foo'], bar, baz FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bars', ['y', 'z'], 'bazs', ['w'])])) AS _t0(seq, key, path, index, _u, this), TABLE(FLATTEN(INPUT => _u['bars'])) AS _t1(seq, key, path, index, bar, this), TABLE(FLATTEN(INPUT => _u['bazs'])) AS _t2(seq, key, path, index, baz, this)",
+            "SELECT * FROM t1 AS t1 CROSS JOIN t2 AS t2 LEFT JOIN t3 AS t3 ON t1.a = t3.i",
+            read={
+                "bigquery": "SELECT * FROM t1 AS t1, t2 AS t2 LEFT JOIN t3 AS t3 ON t1.a = t3.i",
+                "snowflake": "SELECT * FROM t1 AS t1 CROSS JOIN t2 AS t2 LEFT JOIN t3 AS t3 ON t1.a = t3.i",
+            },
+        )
+        self.validate_all(
+            "SELECT _u['foo'], bar, baz FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bars', ['y', 'z'], 'bazs', ['w'])])) AS _t0(seq, key, path, index, _u, this) CROSS JOIN TABLE(FLATTEN(INPUT => _u['bars'])) AS _t1(seq, key, path, index, bar, this) CROSS JOIN TABLE(FLATTEN(INPUT => _u['bazs'])) AS _t2(seq, key, path, index, baz, this)",
             read={
                 "bigquery": "SELECT _u.foo, bar, baz FROM UNNEST([struct('x' AS foo, ['y', 'z'] AS bars, ['w'] AS bazs)]) AS _u, UNNEST(_u.bars) AS bar, UNNEST(_u.bazs) AS baz",
             },

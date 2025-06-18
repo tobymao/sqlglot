@@ -475,7 +475,7 @@ SELECT s.b AS b FROM (SELECT t1.b AS b FROM t1 AS t1 UNION ALL SELECT t2.b AS b 
 # dialect: bigquery
 # execute: false
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct("test" AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.*, tbl2.col.* FROM tbl1, tbl2;
-WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.col1 AS col1, tbl1.col.col2 AS col2, tbl1.col.lvl1 AS lvl1, tbl2.col.col1 AS col1, tbl2.col.col2 AS col2, tbl2.col.lvl1 AS lvl1 FROM tbl1 AS tbl1, tbl2 AS tbl2;
+WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col), tbl2 AS (SELECT STRUCT(1 AS col1, 2 AS col2, Struct('test' AS col1, Struct(3 AS col2) AS lvl2) AS lvl1) AS col) SELECT tbl1.col.col1 AS col1, tbl1.col.col2 AS col2, tbl1.col.lvl1 AS lvl1, tbl2.col.col1 AS col1, tbl2.col.col2 AS col2, tbl2.col.lvl1 AS lvl1 FROM tbl1 AS tbl1 CROSS JOIN tbl2 AS tbl2;
 
 # dialect: bigquery
 # execute: false
@@ -732,7 +732,7 @@ SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
 # dialect: bigquery
 # execute: false
 SELECT aa FROM x, UNNEST(a) AS aa;
-SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
+SELECT aa AS aa FROM x AS x CROSS JOIN UNNEST(x.a) AS aa;
 
 # dialect: bigquery
 # execute: false
@@ -752,7 +752,7 @@ SELECT x AS x, a AS a, x.a AS a FROM UNNEST([STRUCT(1 AS a)]) AS x CROSS JOIN m 
 # dialect: bigquery
 # execute: false
 WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) select a, x, m.a from cte, UNNEST(x) AS m CROSS JOIN n;
-WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) SELECT a AS a, cte.x AS x, m.a AS a FROM cte AS cte, UNNEST(cte.x) AS m CROSS JOIN n AS n;
+WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) SELECT a AS a, cte.x AS x, m.a AS a FROM cte AS cte CROSS JOIN UNNEST(cte.x) AS m CROSS JOIN n AS n;
 
 # dialect: presto
 SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(CAST(b AS VARCHAR), ',')) AS i(b);

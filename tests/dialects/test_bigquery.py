@@ -187,6 +187,10 @@ class TestBigQuery(Validator):
             "ARRAY_AGG(v IGNORE NULLS) /* c */",
         )
         self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
+        self.validate_identity(
             'SELECT r"\\t"',
             "SELECT '\\\\t'",
         )
@@ -400,8 +404,8 @@ LANGUAGE js AS
         self.validate_all(
             "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS h, UNNEST(h.t3) AS s",
             write={
-                "bigquery": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS h, UNNEST(h.t3) AS s",
-                "duckdb": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS _t0(h), UNNEST(h.t3) AS _t1(s)",
+                "bigquery": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t CROSS JOIN UNNEST(t.t2) AS h CROSS JOIN UNNEST(h.t3) AS s",
+                "duckdb": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t CROSS JOIN UNNEST(t.t2) AS _t0(h) CROSS JOIN UNNEST(h.t3) AS _t1(s)",
             },
         )
         self.validate_all(
@@ -414,15 +418,15 @@ LANGUAGE js AS
         self.validate_all(
             "SELECT results FROM Coordinates, Coordinates.position AS results",
             write={
-                "bigquery": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results",
-                "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t0(results)",
+                "bigquery": "SELECT results FROM Coordinates CROSS JOIN UNNEST(Coordinates.position) AS results",
+                "presto": "SELECT results FROM Coordinates CROSS JOIN UNNEST(Coordinates.position) AS _t0(results)",
             },
         )
         self.validate_all(
             "SELECT results FROM Coordinates, `Coordinates.position` AS results",
             write={
-                "bigquery": "SELECT results FROM Coordinates, `Coordinates.position` AS results",
-                "presto": 'SELECT results FROM Coordinates, "Coordinates"."position" AS results',
+                "bigquery": "SELECT results FROM Coordinates CROSS JOIN `Coordinates.position` AS results",
+                "presto": 'SELECT results FROM Coordinates CROSS JOIN "Coordinates"."position" AS results',
             },
         )
         self.validate_all(
@@ -432,9 +436,9 @@ LANGUAGE js AS
                 "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
             },
             write={
-                "bigquery": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS results",
-                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t0(results)",
-                "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
+                "bigquery": "SELECT results FROM Coordinates AS c CROSS JOIN UNNEST(c.position) AS results",
+                "presto": "SELECT results FROM Coordinates AS c CROSS JOIN UNNEST(c.position) AS _t0(results)",
+                "redshift": "SELECT results FROM Coordinates AS c CROSS JOIN c.position AS results",
             },
         )
         self.validate_all(
@@ -1713,8 +1717,8 @@ WHERE
                 "duckdb": 'SELECT * FROM t1, UNNEST("t1") "t1" ("col")',
             },
             write={
-                "bigquery": "SELECT * FROM t1, UNNEST(`t1`) AS `col`",
-                "redshift": 'SELECT * FROM t1, "t1" AS "col"',
+                "bigquery": "SELECT * FROM t1 CROSS JOIN UNNEST(`t1`) AS `col`",
+                "redshift": 'SELECT * FROM t1 CROSS JOIN "t1" AS "col"',
             },
         )
 
@@ -1724,8 +1728,8 @@ WHERE
                 "duckdb": 'SELECT * FROM t, UNNEST("t1"."t2"."t3") "t1" ("col")',
             },
             write={
-                "bigquery": "SELECT * FROM t, UNNEST(`t2`.`t3`) AS `col`",
-                "redshift": 'SELECT * FROM t, "t2"."t3" AS "col"',
+                "bigquery": "SELECT * FROM t CROSS JOIN UNNEST(`t2`.`t3`) AS `col`",
+                "redshift": 'SELECT * FROM t CROSS JOIN "t2"."t3" AS "col"',
             },
         )
 
@@ -1735,8 +1739,8 @@ WHERE
                 "duckdb": 'SELECT * FROM t1, UNNEST("t1"."t2"."t3"."t4") "t3" ("col")',
             },
             write={
-                "bigquery": "SELECT * FROM t1, UNNEST(`t1`.`t2`.`t3`.`t4`) AS `col`",
-                "redshift": 'SELECT * FROM t1, "t1"."t2"."t3"."t4" AS "col"',
+                "bigquery": "SELECT * FROM t1 CROSS JOIN UNNEST(`t1`.`t2`.`t3`.`t4`) AS `col`",
+                "redshift": 'SELECT * FROM t1 CROSS JOIN "t1"."t2"."t3"."t4" AS "col"',
             },
         )
 
@@ -2493,7 +2497,7 @@ OPTIONS (
             with self.subTest(f"Testing {join_ops} in test_with_offset"):
                 self.validate_identity(
                     f"SELECT * FROM t1, UNNEST([1, 2]) AS hit WITH OFFSET {join_ops} JOIN foo",
-                    f"SELECT * FROM t1, UNNEST([1, 2]) AS hit WITH OFFSET AS offset {join_ops} JOIN foo",
+                    f"SELECT * FROM t1 CROSS JOIN UNNEST([1, 2]) AS hit WITH OFFSET AS offset {join_ops} JOIN foo",
                 )
 
     def test_identifier_meta(self):

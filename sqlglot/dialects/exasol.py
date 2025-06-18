@@ -40,12 +40,11 @@ class Exasol(Dialect):
     }
 
     class Parser(parser.Parser):
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
             "MID": exp.Substring.from_arg_list,
-            "TO_CHAR": build_timetostr_or_tochar
+            "TO_CHAR": build_timetostr_or_tochar,  # TODO: handle nls_param (https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_char%20(datetime).htm)
         }
 
         CONSTRAINT_PARSERS = {
@@ -71,7 +70,6 @@ class Exasol(Dialect):
         # Whether the 'AS' keyword is optional in the CTE definition syntax
         # https://docs.exasol.com/db/latest/sql/select.htm
         OPTIONAL_ALIAS_TOKEN_CTE = False
-
 
     class Generator(generator.Generator):
         QUERY_HINTS = False
@@ -131,8 +129,6 @@ class Exasol(Dialect):
             exp.Levenshtein: unsupported_args(
                 "ins_cost", "del_cost", "sub_cost", "max_dist"
             )(rename_func("EDIT_DISTANCE")),
-            exp.Stuff: rename_func("INSERT"),
-            exp.Trim: trim_sql,
             exp.StrPosition: lambda self, e: strposition_sql(
                 self,
                 e,
@@ -140,10 +136,13 @@ class Exasol(Dialect):
                 supports_position=True if e.args.get("position") else False,
                 supports_occurrence=True if e.args.get("position") else False,
             ),
+            exp.Stuff: rename_func("INSERT"),
+            exp.Substring: rename_func("SUBSTR"),
             exp.TimeToStr: lambda self, e: self.func(
                 "TO_CHAR", e.this, self.format_time(e)
             ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.Trim: trim_sql,
         }
 
         RESERVED_KEYWORDS = {
@@ -161,7 +160,8 @@ class Exasol(Dialect):
         def alias_sql(self, expression):
             alias = expression.args.get("alias")
             if alias:
-                alias_str = alias.this if isinstance(alias, exp.Identifier) else self.sql(alias)
+                alias_str = (
+                    alias.this if isinstance(alias, exp.Identifier) else self.sql(alias)
+                )
                 return f"{self.sql(expression, 'this')} {alias_str}"
             return self.sql(expression, "this")
-

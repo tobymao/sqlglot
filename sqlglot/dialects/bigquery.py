@@ -524,6 +524,7 @@ class BigQuery(Dialect):
         PREFIXED_PIVOT_COLUMNS = True
         LOG_DEFAULTS_TO_LN = True
         SUPPORTS_IMPLICIT_UNNEST = True
+        JOINS_HAVE_EQUAL_PRECEDENCE = True
 
         # BigQuery does not allow ASC/DESC to be used as an identifier
         ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.ASC, TokenType.DESC}

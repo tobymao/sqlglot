@@ -102,6 +102,10 @@ class SQLite(Dialect):
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE}
 
     class Parser(parser.Parser):
+        STRING_ALIASES = True
+        ALTER_RENAME_REQUIRES_COLUMN = False
+        JOINS_HAVE_EQUAL_PRECEDENCE = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
@@ -109,9 +113,6 @@ class SQLite(Dialect):
             "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
             "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
         }
-
-        STRING_ALIASES = True
-        ALTER_RENAME_REQUIRES_COLUMN = False
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:

@@ -26,7 +26,7 @@ class Exasol(Dialect):
         "DY": "%a",  # abbreviated name of day
         "HH12": "%I",  # Hour of day (1-12)
         "HH24": "%H",  # Hour of day (0-23)
-        "HH": "%H", # alias for HH24          
+        "HH": "%H",  # alias for HH24
         "IW": "%V",  # Calendar week of year (1-52 or 1-53), as defined by the ISO 8601 standard
         "MI": "%M",  # Minute (0-59)
         "MM": "%m",  # Month (01-12; January = 01)
@@ -126,9 +126,9 @@ class Exasol(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.Levenshtein: unsupported_args(
-                "ins_cost", "del_cost", "sub_cost", "max_dist"
-            )(rename_func("EDIT_DISTANCE")),
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("EDIT_DISTANCE")
+            ),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self,
                 e,
@@ -138,9 +138,7 @@ class Exasol(Dialect):
             ),
             exp.Stuff: rename_func("INSERT"),
             exp.Substring: rename_func("SUBSTR"),
-            exp.TimeToStr: lambda self, e: self.func(
-                "TO_CHAR", e.this, self.format_time(e)
-            ),
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
         }
@@ -160,8 +158,6 @@ class Exasol(Dialect):
         def alias_sql(self, expression):
             alias = expression.args.get("alias")
             if alias:
-                alias_str = (
-                    alias.this if isinstance(alias, exp.Identifier) else self.sql(alias)
-                )
+                alias_str = alias.this if isinstance(alias, exp.Identifier) else self.sql(alias)
                 return f"{self.sql(expression, 'this')} {alias_str}"
             return self.sql(expression, "this")

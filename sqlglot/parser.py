@@ -3176,7 +3176,6 @@ class Parser(metaclass=_Parser):
         parse_subquery_alias: bool = True,
         parse_set_operation: bool = True,
         consume_pipe: bool = True,
-        wrap_pipe: bool = False,
     ) -> t.Optional[exp.Expression]:
         query = self._parse_select_query(
             nested=nested,
@@ -3191,7 +3190,7 @@ class Parser(metaclass=_Parser):
             and isinstance(query, exp.Query)
         ):
             query = self._parse_pipe_syntax_query(query)
-            query = query.subquery(copy=False) if query and wrap_pipe else query
+            query = query.subquery(copy=False) if query and table else query
 
         return query
 
@@ -4002,7 +4001,7 @@ class Parser(metaclass=_Parser):
         if values:
             return values
 
-        subquery = self._parse_select(table=True, consume_pipe=consume_pipe, wrap_pipe=True)
+        subquery = self._parse_select(table=True, consume_pipe=consume_pipe)
         if subquery:
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())

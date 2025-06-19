@@ -61,7 +61,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM (SELECT x1 FROM (SELECT 1 as x1) |> SELECT x1) |> SELECT x1",
-            "SELECT * FROM (WITH __tmp2 AS (SELECT x1 FROM ((WITH __tmp1 AS (SELECT x1 FROM (SELECT 1 AS x1)) SELECT * FROM __tmp1))) SELECT * FROM __tmp2)"
+            "SELECT * FROM (WITH __tmp2 AS (SELECT x1 FROM ((WITH __tmp1 AS (SELECT x1 FROM (SELECT 1 AS x1)) SELECT * FROM __tmp1))) SELECT * FROM __tmp2)",
         )
 
     def test_order_by(self):

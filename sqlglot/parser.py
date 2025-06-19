@@ -794,7 +794,7 @@ class Parser(metaclass=_Parser):
         exp.Condition: lambda self: self._parse_assignment(),
         exp.DataType: lambda self: self._parse_types(allow_identifiers=False, schema=True),
         exp.Expression: lambda self: self._parse_expression(),
-        exp.From: lambda self: self._parse_from(joins=True, consume_pipe=True),
+        exp.From: lambda self: self._parse_from(joins=True),
         exp.Group: lambda self: self._parse_group(),
         exp.Having: lambda self: self._parse_having(),
         exp.Hint: lambda self: self._parse_hint_body(),
@@ -1886,11 +1886,7 @@ class Parser(metaclass=_Parser):
             return self._parse_command()
 
         expression = self._parse_expression()
-        expression = (
-            self._parse_set_operations(expression)
-            if expression
-            else self._parse_select(consume_pipe=True)
-        )
+        expression = self._parse_set_operations(expression) if expression else self._parse_select()
         return self._parse_query_modifiers(expression)
 
     def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:

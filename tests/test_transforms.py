@@ -331,17 +331,17 @@ class TestTransforms(unittest.TestCase):
             "SELECT * FROM sales UNPIVOT(sales_amount FOR month IN (jan, feb, mar))",
             "SELECT *, 'jan' AS month, jan AS sales_amount FROM sales UNION ALL SELECT *, 'feb' AS month, feb AS sales_amount FROM sales UNION ALL SELECT *, 'mar' AS month, mar AS sales_amount FROM sales",
         )
-        
+
         # Test UNPIVOT with WHERE clause
         self.validate(
             unpivot_to_union_all,
             "SELECT * FROM sales UNPIVOT(sales_amount FOR month IN (jan, feb, mar)) WHERE sales_amount > 100",
             "SELECT *, 'jan' AS month, jan AS sales_amount FROM sales UNION ALL SELECT *, 'feb' AS month, feb AS sales_amount FROM sales UNION ALL SELECT *, 'mar' AS month, mar AS sales_amount FROM sales WHERE sales_amount > 100",
         )
-        
+
         # Test more complex UNPIVOT with column aliases
         self.validate(
             unpivot_to_union_all,
             "SELECT * FROM monthly_sales UNPIVOT(sales_amount FOR month IN (january AS 'JAN', february AS 'FEB', march AS 'MAR'))",
             "SELECT *, 'JAN' AS month, january AS sales_amount FROM monthly_sales UNION ALL SELECT *, 'FEB' AS month, february AS sales_amount FROM monthly_sales UNION ALL SELECT *, 'MAR' AS month, march AS sales_amount FROM monthly_sales",
-        )    
+        )

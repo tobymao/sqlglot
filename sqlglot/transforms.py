@@ -1019,6 +1019,7 @@ def eliminate_window_clause(expression: exp.Expression) -> exp.Expression:
 
     return expression
 
+
 def unpivot_to_union_all(expression: exp.Expression) -> exp.Expression:
     """
     Transforms UNPIVOT expressions into equivalent UNION ALL queries.
@@ -1041,45 +1042,49 @@ def unpivot_to_union_all(expression: exp.Expression) -> exp.Expression:
     """
     if isinstance(expression, exp.Select):
         from_table = expression.args.get("from")
-        
+
         # Check if there's a pivot with unpivot=True in the from_table.this.args['pivots']
         if from_table and hasattr(from_table.this, "args") and "pivots" in from_table.this.args:
             pivots = from_table.this.args.get("pivots", [])
             pivot = next((p for p in pivots if getattr(p, "unpivot", False)), None)
-            
+
             if pivot:
                 base_table = from_table.this.args.get("this")
-                
+
                 value_col = pivot.expressions[0] if pivot.expressions else None
                 if not value_col:
                     return expression
-                    
+
                 name_col = None
                 for field in pivot.args.get("fields", []):
                     if isinstance(field, exp.In) and field.this:
                         name_col = field.this
                         break
-                        
+
                 if not name_col:
                     return expression
-                    
+
                 in_columns = []
                 for field in pivot.args.get("fields", []):
                     if isinstance(field, exp.In) and field.expressions:
                         in_columns = field.expressions
                         break
-                        
+
                 if not in_columns:
                     return expression
-                
+
                 union_queries = []
-            
+
                 for col in in_columns:
                     select_expr = exp.Select()
-                    
+
                     select_expr.select(exp.Star(), copy=False)
-                    
-                    if isinstance(col, exp.PivotAlias) and "alias" in col.args and col.args["alias"]:
+
+                    if (
+                        isinstance(col, exp.PivotAlias)
+                        and "alias" in col.args
+                        and col.args["alias"]
+                    ):
                         alias_value = col.args["alias"]
                         if hasattr(alias_value, "this"):
                             col_name = alias_value.this
@@ -1087,34 +1092,36 @@ def unpivot_to_union_all(expression: exp.Expression) -> exp.Expression:
                             col_name = str(alias_value)
                     else:
                         col_name = col.name if hasattr(col, "name") else str(col)
-                        
+
                     name_col_name = name_col.name if hasattr(name_col, "name") else "month"
                     select_expr.select(exp.Literal.string(col_name).as_(name_col_name), copy=False)
-                    
-                    value_col_name = value_col.name if hasattr(value_col, "name") else "sales_amount"
-                    
+
+                    value_col_name = (
+                        value_col.name if hasattr(value_col, "name") else "sales_amount"
+                    )
+
                     if isinstance(col, exp.PivotAlias) and "this" in col.args:
                         col_value = col.args["this"]
                     else:
                         col_value = col
-                        
+
                     select_expr.select(col_value.as_(value_col_name), copy=False)
-                    
+
                     select_expr.from_(base_table.copy(), copy=False)
-                    
+
                     union_queries.append(select_expr)
-                
+
                 if not union_queries:
                     return expression
-                    
-                result = union_queries[0]
+
+                result: t.Union[exp.Select, exp.SetOperation] = union_queries[0]
                 for query in union_queries[1:]:
                     result = result.union(query, distinct=False)
-                
+
                 for clause in ["where", "group", "having", "order", "limit", "offset"]:
                     if expression.args.get(clause):
                         result.set(clause, expression.args[clause])
-                
+
                 return result
-            
+
     return expression

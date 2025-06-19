@@ -673,3 +673,17 @@ FROM (
         self.validate_identity("ANALYZE VERBOSE TBL")
         self.validate_identity("ANALYZE TBL PREDICATE COLUMNS")
         self.validate_identity("ANALYZE TBL ALL COLUMNS")
+        
+    def test_unpivot_to_union_all(self):
+        # Test Redshift's handling of UNPIVOT expressions
+        # For Redshift, we need to use validate_identity since it doesn't parse UNPIVOT directly
+        self.validate_identity(
+            "SELECT *, 'jan' AS month, jan AS sales_amount FROM sales UNION ALL SELECT *, 'feb' AS month, feb AS sales_amount FROM sales UNION ALL SELECT *, 'mar' AS month, mar AS sales_amount FROM sales"
+        )
+        
+        # Test Snowflake to Redshift transformation
+        expr = parse_one("SELECT * FROM sales UNPIVOT(sales_amount FOR month IN (jan, feb, mar))", "snowflake")
+        self.assertEqual(
+            expr.sql("redshift"),
+            "SELECT *, 'jan' AS month, jan AS sales_amount FROM sales UNION ALL SELECT *, 'feb' AS month, feb AS sales_amount FROM sales UNION ALL SELECT *, 'mar' AS month, mar AS sales_amount FROM sales"
+        )

@@ -202,6 +202,7 @@ class Redshift(Postgres):
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.unqualify_unnest,
                     transforms.unnest_generate_date_array_using_recursive_cte,
+                    transforms.unpivot_to_union_all,
                 ]
             ),
             exp.SortKeyProperty: lambda self,

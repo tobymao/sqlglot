@@ -6,6 +6,7 @@ from sqlglot.transforms import (
     eliminate_join_marks,
     eliminate_qualify,
     eliminate_window_clause,
+    unpivot_to_union_all,
     remove_precision_parameterized_types,
     unalias_group,
 )
@@ -322,3 +323,25 @@ class TestTransforms(unittest.TestCase):
             "SELECT LAST_VALUE(c) OVER (a) AS c2 FROM (SELECT LAST_VALUE(i) OVER (a) AS c FROM p WINDOW a AS (PARTITION BY x)) AS q(c) WINDOW a AS (PARTITION BY y)",
             "SELECT LAST_VALUE(c) OVER (PARTITION BY y) AS c2 FROM (SELECT LAST_VALUE(i) OVER (PARTITION BY x) AS c FROM p) AS q(c)",
         )
+
+    def test_unpivot_to_union_all(self):
+        # Test basic UNPIVOT transformation
+        self.validate(
+            unpivot_to_union_all,
+            "SELECT * FROM sales UNPIVOT(sales_amount FOR month IN (jan, feb, mar))",
+            "SELECT *, 'jan' AS month, jan AS sales_amount FROM sales UNION ALL SELECT *, 'feb' AS month, feb AS sales_amount FROM sales UNION ALL SELECT *, 'mar' AS month, mar AS sales_amount FROM sales",
+        )
+        
+        # Test UNPIVOT with WHERE clause
+        self.validate(
+            unpivot_to_union_all,
+            "SELECT * FROM sales UNPIVOT(sales_amount FOR month IN (jan, feb, mar)) WHERE sales_amount > 100",
+            "SELECT *, 'jan' AS month, jan AS sales_amount FROM sales UNION ALL SELECT *, 'feb' AS month, feb AS sales_amount FROM sales UNION ALL SELECT *, 'mar' AS month, mar AS sales_amount FROM sales WHERE sales_amount > 100",
+        )
+        
+        # Test more complex UNPIVOT with column aliases
+        self.validate(
+            unpivot_to_union_all,
+            "SELECT * FROM monthly_sales UNPIVOT(sales_amount FOR month IN (january AS 'JAN', february AS 'FEB', march AS 'MAR'))",
+            "SELECT *, 'JAN' AS month, january AS sales_amount FROM monthly_sales UNION ALL SELECT *, 'FEB' AS month, february AS sales_amount FROM monthly_sales UNION ALL SELECT *, 'MAR' AS month, march AS sales_amount FROM monthly_sales",
+        )    

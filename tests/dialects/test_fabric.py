@@ -1,9 +1,11 @@
-import unittest
+from tests.dialects.test_dialect import Validator
 from sqlglot import transpile
 from sqlglot.dialects.fabric import Fabric
 
 
-class TestFabric(unittest.TestCase):
+class TestFabric(Validator):
+    dialect = "fabric"
+
     def test_fabric_create_schema_with_exists(self):
         """Test that Fabric dialect uses uppercase INFORMATION_SCHEMA.SCHEMATA"""
         sql = "CREATE SCHEMA IF NOT EXISTS test_schema"
@@ -45,43 +47,13 @@ class TestFabric(unittest.TestCase):
         generator = dialect.Generator()
         self.assertTrue(hasattr(generator, "create_sql"))
 
-    def test_fabric_data_type_mappings(self):
-        """Test that Fabric maps unsupported data types to supported alternatives"""
-        test_cases = [
-            # money -> decimal
-            ("CREATE TABLE test (price MONEY)", "DECIMAL"),
-            ("CREATE TABLE test (price SMALLMONEY)", "DECIMAL"),
-            # datetime -> datetime2
-            ("CREATE TABLE test (created DATETIME)", "DATETIME2"),
-            ("CREATE TABLE test (created SMALLDATETIME)", "DATETIME2"),
-            # unicode types -> non-unicode equivalents
-            ("CREATE TABLE test (name NCHAR(10))", "CHAR(10)"),
-            ("CREATE TABLE test (name NVARCHAR(50))", "VARCHAR(50)"),
-            # text types -> varchar
-            ("CREATE TABLE test (content TEXT)", "VARCHAR"),
-            # binary types
-            ("CREATE TABLE test (image_data IMAGE)", "VARBINARY"),
-            # integer types - NOTE: T-SQL parses TINYINT as UTINYINT
-            ("CREATE TABLE test (tiny_val TINYINT)", "SMALLINT"),
-            # json -> varchar
-            ("CREATE TABLE test (data JSON)", "VARCHAR"),
-            # xml -> varchar
-            ("CREATE TABLE test (xml_data XML)", "VARCHAR"),
-        ]
-
-        for input_sql, expected_type in test_cases:
-            with self.subTest(input_sql=input_sql):
-                # Read as T-SQL, write as Fabric to get type conversions
-                result = transpile(input_sql, read="tsql", write="fabric")[0]
-                self.assertIn(expected_type, result.upper())
-
     def test_fabric_datetime2_precision_limit(self):
         """Test that Fabric limits DATETIME2 and TIME precision to 6 digits"""
         test_cases = [
             ("CREATE TABLE test (ts DATETIME2(7))", "DATETIME2(6)"),
             ("CREATE TABLE test (ts TIME(7))", "TIME(6)"),
             ("CREATE TABLE test (ts DATETIME2(9))", "DATETIME2(6)"),
-            ("CREATE TABLE test (ts TIME(3))", "TIME(3)"),  # Should remain unchanged
+            ("CREATE TABLE test (ts TIME(3))", "TIME(3)"),  # Should remain unchanged when <= 6
         ]
 
         for input_sql, expected in test_cases:
@@ -120,7 +92,7 @@ class TestFabric(unittest.TestCase):
             "CHAR",
             "VARCHAR",
             "VARBINARY",
-            "UNIQUEIDENTIFIER",
+            # UNIQUEIDENTIFIER is mapped to VARBINARY due to limitations
         ]
 
         for data_type in supported_types:
@@ -132,12 +104,13 @@ class TestFabric(unittest.TestCase):
                 self.assertTrue(len(result) > 0)  # Just check it doesn't fail
 
     def test_fabric_uniqueidentifier_handling(self):
-        """Test that UNIQUEIDENTIFIER is supported but has special behavior"""
+        """Test that UNIQUEIDENTIFIER maps to VARBINARY due to limitations in Fabric"""
         sql = "CREATE TABLE test (id UNIQUEIDENTIFIER)"
-        result = transpile(sql, read="fabric", write="fabric")[0]
+        result = transpile(sql, read="tsql", write="fabric")[0]
 
-        # Should preserve UNIQUEIDENTIFIER
-        self.assertIn("UNIQUEIDENTIFIER", result)
+        # Should map to VARBINARY due to limitations in Fabric
+        self.assertIn("VARBINARY", result)
+        self.assertNotIn("UNIQUEIDENTIFIER", result)
 
     def test_fabric_unsupported_type_combinations(self):
         """Test combinations of unsupported types in complex scenarios"""
@@ -257,6 +230,39 @@ class TestFabric(unittest.TestCase):
         self.assertIn("'1970-01-01'", result)
         self.assertIn("CAST('1970-01-01' AS DATETIME2(6))", result)
 
+    def test_type_mappings(self):
+        """Test unsupported types are correctly mapped to their alternatives using validate_all"""
+        # Test unsupported types are correctly mapped to their alternatives
+        self.validate_all("CAST(x AS TINYINT)", write={"fabric": "CAST(x AS SMALLINT)"})
+        self.validate_all("CAST(x AS DATETIME)", write={"fabric": "CAST(x AS DATETIME2(6))"})
+        self.validate_all("CAST(x AS SMALLDATETIME)", write={"fabric": "CAST(x AS DATETIME2(6))"})
+        self.validate_all("CAST(x AS NCHAR)", write={"fabric": "CAST(x AS CHAR)"})
+        self.validate_all("CAST(x AS NVARCHAR)", write={"fabric": "CAST(x AS VARCHAR)"})
+        self.validate_all("CAST(x AS TEXT)", write={"fabric": "CAST(x AS VARCHAR)"})
+        self.validate_all("CAST(x AS IMAGE)", write={"fabric": "CAST(x AS VARBINARY)"})
+        self.validate_all("CAST(x AS MONEY)", write={"fabric": "CAST(x AS DECIMAL)"})
+        self.validate_all("CAST(x AS SMALLMONEY)", write={"fabric": "CAST(x AS DECIMAL)"})
+        self.validate_all("CAST(x AS JSON)", write={"fabric": "CAST(x AS VARCHAR)"})
+        self.validate_all("CAST(x AS XML)", write={"fabric": "CAST(x AS VARCHAR)"})
 
-if __name__ == "__main__":
-    unittest.main()
+        # Test precision capping for temporal types
+        self.validate_all("CAST(x AS DATETIME2(7))", write={"fabric": "CAST(x AS DATETIME2(6))"})
+        self.validate_all("CAST(x AS TIME(7))", write={"fabric": "CAST(x AS TIME(6))"})
+        self.validate_all(
+            "CAST(x AS DATETIMEOFFSET(7))", write={"fabric": "CAST(x AS DATETIME2(6))"}
+        )
+
+        # Test that default precision is added for temporal types
+        self.validate_all("CAST(x AS DATETIME2)", write={"fabric": "CAST(x AS DATETIME2(6))"})
+        self.validate_all("CAST(x AS TIME)", write={"fabric": "CAST(x AS TIME(6))"})
+        self.validate_all("CAST(x AS DATETIMEOFFSET)", write={"fabric": "CAST(x AS DATETIME2(6))"})
+
+        # Test UNIQUEIDENTIFIER mapping to VARBINARY(MAX) (due to limitations in Fabric)
+        self.validate_all(
+            "CAST(x AS UNIQUEIDENTIFIER)", write={"fabric": "CAST(x AS VARBINARY(MAX))"}
+        )
+
+        # Test that supported types remain unchanged (except precision adjustments)
+        self.validate_all("CAST(x AS VARCHAR(50))", write={"fabric": "CAST(x AS VARCHAR(50))"})
+        self.validate_all("CAST(x AS INT)", write={"fabric": "CAST(x AS INT)"})
+        self.validate_all("CAST(x AS BIGINT)", write={"fabric": "CAST(x AS BIGINT)"})

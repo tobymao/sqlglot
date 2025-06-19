@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp
+from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
 
 
@@ -49,6 +50,9 @@ class Fabric(TSQL):
     - JSON/XML -> VARCHAR
     """
 
+    # Fabric is case-sensitive unlike T-SQL which is case-insensitive
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
+
     class Parser(TSQL.Parser):
         FUNCTIONS = {
             **TSQL.Parser.FUNCTIONS,
@@ -74,9 +78,11 @@ class Fabric(TSQL):
             exp.DataType.Type.UTINYINT: "SMALLINT",  # T-SQL parses TINYINT as UTINYINT
             exp.DataType.Type.JSON: "VARCHAR",
             exp.DataType.Type.XML: "VARCHAR",
+            exp.DataType.Type.UUID: "VARBINARY(MAX)",  # UNIQUEIDENTIFIER has limitations in Fabric
             # Override T-SQL mappings that use different names in Fabric
             exp.DataType.Type.DECIMAL: "DECIMAL",  # T-SQL uses NUMERIC
             exp.DataType.Type.DOUBLE: "FLOAT",
+            exp.DataType.Type.INT: "INT",  # T-SQL uses INTEGER
         }
 
         # Fabric-specific function transformations
@@ -86,25 +92,33 @@ class Fabric(TSQL):
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            # Handle precision limits for DATETIME2 and TIME in Fabric (max 6 digits)
-            if expression.is_type(exp.DataType.Type.DATETIME2, exp.DataType.Type.TIME):
-                expressions = expression.expressions
-                if expressions:
-                    # Handle both Literal and DataTypeParam
-                    param = expressions[0]
-                    if isinstance(param, exp.DataTypeParam):
-                        param = param.this
+            """
+            Caps precision at 6 for temporal types, as Fabric does not
+            support precision greater than 6 digits. Preserves lower precision.
+            """
+            type_sql = super().datatype_sql(expression)
 
-                    if isinstance(param, exp.Literal):
-                        prec_value = int(param.this)
-                        if prec_value > 6:
-                            # Create new expression with capped precision
-                            new_param = exp.DataTypeParam(this=exp.Literal.number("6"))
-                            expression = exp.DataType.build(
-                                expression.this, expressions=[new_param]
-                            )
+            # These temporal types are limited to 6 digits of precision in Fabric
+            type_upper = type_sql.upper()
+            if any(type_upper.startswith(t) for t in ("DATETIME2", "DATETIMEOFFSET", "TIME")):
+                if "(" in type_sql:
+                    # Extract existing precision and cap it at 6
+                    base_type, precision_part = type_sql.split("(", 1)
+                    precision_str = precision_part.rstrip(")")
+                    try:
+                        precision = int(precision_str)
+                        if precision > 6:
+                            return f"{base_type}(6)"
+                        # If precision <= 6, keep it as is
+                        return type_sql
+                    except ValueError:
+                        # If precision is not a number, default to 6
+                        return f"{base_type}(6)"
+                else:
+                    # No precision specified, add default of 6
+                    return f"{type_sql}(6)"
 
-            return super().datatype_sql(expression)
+            return type_sql
 
         def create_sql(self, expression: exp.Create) -> str:
             kind = expression.kind

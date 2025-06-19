@@ -692,7 +692,6 @@ class ClickHouse(Dialect):
             is_db_reference: bool = False,
             parse_partition: bool = False,
             consume_pipe: bool = False,
-            wrap_pipe: bool = False,
         ) -> t.Optional[exp.Expression]:
             this = super()._parse_table(
                 schema=schema,

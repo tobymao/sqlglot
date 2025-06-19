@@ -3144,7 +3144,7 @@ class Parser(metaclass=_Parser):
                 is_unpivot=self._prev.token_type == TokenType.UNPIVOT
             )
         elif self._match(TokenType.FROM):
-            from_ = self._parse_from(skip_from_token=True, consume_pipe=True, wrap_pipe=True)
+            from_ = self._parse_from(skip_from_token=True, consume_pipe=True)
             # Support parentheses for duckdb FROM-first syntax
             select = self._parse_select()
             if select:
@@ -3154,7 +3154,7 @@ class Parser(metaclass=_Parser):
                 this = exp.select("*").from_(t.cast(exp.From, from_))
         else:
             this = (
-                self._parse_table()
+                self._parse_table(consume_pipe=True)
                 if table
                 else self._parse_select(nested=True, parse_set_operation=False)
             )
@@ -3221,7 +3221,7 @@ class Parser(metaclass=_Parser):
 
         # duckdb supports leading with FROM x
         from_ = (
-            self._parse_from(consume_pipe=True, wrap_pipe=True)
+            self._parse_from(consume_pipe=True)
             if self._match(TokenType.FROM, advance=False)
             else None
         )
@@ -3275,7 +3275,7 @@ class Parser(metaclass=_Parser):
                 this.set("into", into)
 
             if not from_:
-                from_ = self._parse_from(wrap_pipe=True)
+                from_ = self._parse_from()
 
             if from_:
                 this.set("from", from_)
@@ -3555,7 +3555,6 @@ class Parser(metaclass=_Parser):
         joins: bool = False,
         skip_from_token: bool = False,
         consume_pipe: bool = False,
-        wrap_pipe: bool = False,
     ) -> t.Optional[exp.From]:
         if not skip_from_token and not self._match(TokenType.FROM):
             return None
@@ -3563,7 +3562,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.From,
             comments=self._prev_comments,
-            this=self._parse_table(joins=joins, consume_pipe=consume_pipe, wrap_pipe=wrap_pipe),
+            this=self._parse_table(joins=joins, consume_pipe=consume_pipe),
         )
 
     def _parse_match_recognize_measure(self) -> exp.MatchRecognizeMeasure:
@@ -3990,7 +3989,6 @@ class Parser(metaclass=_Parser):
         is_db_reference: bool = False,
         parse_partition: bool = False,
         consume_pipe: bool = False,
-        wrap_pipe: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -4004,7 +4002,7 @@ class Parser(metaclass=_Parser):
         if values:
             return values
 
-        subquery = self._parse_select(table=True, consume_pipe=consume_pipe, wrap_pipe=wrap_pipe)
+        subquery = self._parse_select(table=True, consume_pipe=consume_pipe, wrap_pipe=True)
         if subquery:
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())

@@ -190,7 +190,6 @@ class PRQL(Dialect):
             is_db_reference: bool = False,
             parse_partition: bool = False,
             consume_pipe: bool = False,
-            wrap_pipe: bool = False,
         ) -> t.Optional[exp.Expression]:
             return self._parse_table_parts()
 
@@ -199,7 +198,6 @@ class PRQL(Dialect):
             joins: bool = False,
             skip_from_token: bool = False,
             consume_pipe: bool = False,
-            wrap_pipe: bool = False,
         ) -> t.Optional[exp.From]:
             if not skip_from_token and not self._match(TokenType.FROM):
                 return None

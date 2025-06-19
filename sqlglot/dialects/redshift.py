@@ -91,7 +91,6 @@ class Redshift(Postgres):
             is_db_reference: bool = False,
             parse_partition: bool = False,
             consume_pipe: bool = False,
-            wrap_pipe: bool = False,
         ) -> t.Optional[exp.Expression]:
             # Redshift supports UNPIVOTing SUPER objects, e.g. `UNPIVOT foo.obj[0] AS val AT attr`
             unpivot = self._match(TokenType.UNPIVOT)

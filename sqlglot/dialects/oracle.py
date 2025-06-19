@@ -128,6 +128,7 @@ class Oracle(Dialect):
             "NEXT": lambda self: self._parse_next_value_for(),
             "PRIOR": lambda self: self.expression(exp.Prior, this=self._parse_bitwise()),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
+            "DBMS_RANDOM": lambda self: self._parse_dbms_random(),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -176,6 +177,19 @@ class Oracle(Dialect):
                 ("CHECK", "OPTION"),
             ),
         }
+
+        def _parse_dbms_random(self) -> t.Optional[exp.Expression]:
+            if self._match_text_seq(".", "VALUE"):
+                lower, upper = None, None
+                if self._match(TokenType.L_PAREN, advance=False):
+                    lower_upper = self._parse_wrapped_csv(self._parse_bitwise)
+                    if len(lower_upper) == 2:
+                        lower, upper = lower_upper
+
+                return exp.Rand(lower=lower, upper=upper)
+
+            self._retreat(self._index - 1)
+            return None
 
         def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
             return self.expression(
@@ -299,6 +313,7 @@ class Oracle(Dialect):
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Mod: rename_func("MOD"),
+            exp.Rand: rename_func("DBMS_RANDOM.VALUE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

@@ -1,7 +1,32 @@
 from __future__ import annotations
 
+
 from sqlglot import exp
 from sqlglot.dialects.tsql import TSQL
+
+
+def _to_timestamp_sql(self: "Fabric.Generator", expression: exp.UnixToTime) -> str:
+    """
+    Convert UnixToTime to DATEADD expression for Fabric using microseconds.
+
+    Uses the logic: DATEADD(microsecond, CAST(@ts*1e6 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))
+    """
+    timestamp = expression.this
+
+    # Convert to microseconds by multiplying by 1e6
+    microseconds = exp.Cast(
+        this=exp.Mul(this=timestamp, expression=exp.Literal.number("1000000")),
+        to=exp.DataType(this=exp.DataType.Type.BIGINT),
+    )
+
+    # Use DATETIME2(6) for the epoch to support microsecond precision
+    datetime2_type = exp.DataType(
+        this=exp.DataType.Type.DATETIME2,
+        expressions=[exp.DataTypeParam(this=exp.Literal.number("6"))],
+    )
+    unix_epoch = exp.Cast(this=exp.Literal.string("1970-01-01"), to=datetime2_type)
+
+    return self.func("DATEADD", exp.var("MICROSECOND"), microseconds, unix_epoch)
 
 
 class Fabric(TSQL):
@@ -23,6 +48,12 @@ class Fabric(TSQL):
     - TINYINT -> SMALLINT
     - JSON/XML -> VARCHAR
     """
+
+    class Parser(TSQL.Parser):
+        FUNCTIONS = {
+            **TSQL.Parser.FUNCTIONS,
+            "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
+        }
 
     class Generator(TSQL.Generator):
         # Fabric-specific type mappings - override T-SQL types that aren't supported
@@ -46,6 +77,12 @@ class Fabric(TSQL):
             # Override T-SQL mappings that use different names in Fabric
             exp.DataType.Type.DECIMAL: "DECIMAL",  # T-SQL uses NUMERIC
             exp.DataType.Type.DOUBLE: "FLOAT",
+        }
+
+        # Fabric-specific function transformations
+        TRANSFORMS = {
+            **TSQL.Generator.TRANSFORMS,
+            exp.UnixToTime: _to_timestamp_sql,
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

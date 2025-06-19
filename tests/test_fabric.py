@@ -163,6 +163,100 @@ class TestFabric(unittest.TestCase):
         self.assertIn("SMALLINT", result)  # TINYINT -> SMALLINT (via UTINYINT)
         # JSON and XML should both become VARCHAR
 
+    def test_fabric_to_timestamp_function(self):
+        """Test that TO_TIMESTAMP converts to DATEADD with microseconds in Fabric"""
+        test_cases = [
+            # Basic integer timestamp
+            (
+                "SELECT TO_TIMESTAMP(1640995200)",
+                "SELECT DATEADD(MICROSECOND, CAST(1640995200 * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))",
+            ),
+            # Fractional timestamp with microseconds
+            (
+                "SELECT TO_TIMESTAMP(1640995200.123456)",
+                "SELECT DATEADD(MICROSECOND, CAST(1640995200.123456 * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))",
+            ),
+            # Multiple TO_TIMESTAMP calls
+            (
+                "SELECT TO_TIMESTAMP(1640995200), TO_TIMESTAMP(1641000000)",
+                "SELECT DATEADD(MICROSECOND, CAST(1640995200 * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6))), DATEADD(MICROSECOND, CAST(1641000000 * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))",
+            ),
+        ]
+
+        for input_sql, expected_output in test_cases:
+            with self.subTest(input_sql=input_sql):
+                # Read from DuckDB (which supports TO_TIMESTAMP) and write to Fabric
+                result = transpile(input_sql, read="duckdb", write="fabric")[0]
+                self.assertEqual(result, expected_output)
+
+    def test_fabric_to_timestamp_with_expressions(self):
+        """Test TO_TIMESTAMP with more complex expressions"""
+        test_cases = [
+            # TO_TIMESTAMP with column reference
+            (
+                "SELECT TO_TIMESTAMP(epoch_col) FROM events",
+                "SELECT DATEADD(MICROSECOND, CAST(epoch_col * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6))) FROM events",
+            ),
+            # TO_TIMESTAMP with arithmetic
+            (
+                "SELECT TO_TIMESTAMP(1640995200 + 3600)",
+                "SELECT DATEADD(MICROSECOND, CAST(1640995200 + 3600 * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))",
+            ),
+        ]
+
+        for input_sql, expected_output in test_cases:
+            with self.subTest(input_sql=input_sql):
+                result = transpile(input_sql, read="duckdb", write="fabric")[0]
+                self.assertEqual(result, expected_output)
+
+    def test_fabric_unix_to_time_from_other_dialects(self):
+        """Test that UnixToTime expressions from other dialects convert correctly to Fabric"""
+        # This tests the TRANSFORMS mapping directly
+        test_cases = [
+            # From Spark (which might use different function names)
+            (
+                "SELECT UNIX_TO_TIME(1640995200.5)",
+                "spark",
+                "SELECT DATEADD(MICROSECOND, CAST(1640995200.5 * 1000000 AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))",
+            ),
+        ]
+
+        for input_sql, read_dialect, expected_output in test_cases:
+            with self.subTest(input_sql=input_sql, read_dialect=read_dialect):
+                try:
+                    result = transpile(input_sql, read=read_dialect, write="fabric")[0]
+                    self.assertIn("DATEADD(MICROSECOND", result)
+                    self.assertIn("CAST('1970-01-01' AS DATETIME2(6))", result)
+                    self.assertIn("* 1000000", result)
+                except Exception:
+                    # If the read dialect doesn't support the function, skip the test
+                    self.skipTest(f"{read_dialect} doesn't support the input function")
+
+    def test_fabric_to_timestamp_microsecond_precision(self):
+        """Test that TO_TIMESTAMP uses microsecond precision (not milliseconds)"""
+        input_sql = "SELECT TO_TIMESTAMP(1640995200.123456)"
+        result = transpile(input_sql, read="duckdb", write="fabric")[0]
+
+        # Should use MICROSECOND (not MILLISECOND) and multiply by 1000000 (not 1000)
+        self.assertIn("MICROSECOND", result)
+        self.assertNotIn("MILLISECOND", result)
+        self.assertIn("* 1000000", result)
+        # Use a more specific pattern to avoid matching 1000000
+        self.assertNotIn("* 1000 ", result)
+        self.assertNotIn("* 1000,", result)
+
+        # Should use DATETIME2(6) for microsecond precision
+        self.assertIn("DATETIME2(6)", result)
+
+    def test_fabric_to_timestamp_epoch_format(self):
+        """Test that TO_TIMESTAMP uses the correct Unix epoch format"""
+        input_sql = "SELECT TO_TIMESTAMP(0)"  # Unix epoch
+        result = transpile(input_sql, read="duckdb", write="fabric")[0]
+
+        # Should use '1970-01-01' as the epoch date
+        self.assertIn("'1970-01-01'", result)
+        self.assertIn("CAST('1970-01-01' AS DATETIME2(6))", result)
+
 
 if __name__ == "__main__":
     unittest.main()

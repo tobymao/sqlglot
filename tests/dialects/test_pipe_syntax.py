@@ -57,7 +57,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM (SELECT 1 as x1) AS x |> SELECT x.x1 |> UNION ALL (FROM (SELECT 1 AS c) |> SELECT c) |> SELECT x1",
-            "SELECT * FROM (WITH __tmp1 AS (SELECT x.x1 FROM (SELECT 1 AS x1) AS x), __tmp3 AS (SELECT * FROM __tmp1), __tmp4 AS (SELECT * FROM __tmp3 UNION ALL SELECT * FROM (WITH __tmp2 AS (SELECT c FROM (SELECT 1 AS c)) SELECT * FROM __tmp2)), __tmp5 AS (SELECT x1 FROM __tmp4) SELECT * FROM __tmp5)"
+            "SELECT * FROM (WITH __tmp1 AS (SELECT x.x1 FROM (SELECT 1 AS x1) AS x), __tmp3 AS (SELECT * FROM __tmp1), __tmp4 AS (SELECT * FROM __tmp3 UNION ALL SELECT * FROM (WITH __tmp2 AS (SELECT c FROM (SELECT 1 AS c)) SELECT * FROM __tmp2)), __tmp5 AS (SELECT x1 FROM __tmp4) SELECT * FROM __tmp5)",
         )
 
     def test_order_by(self):

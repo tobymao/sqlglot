@@ -4746,7 +4746,9 @@ class Parser(metaclass=_Parser):
 
         return locks
 
-    def parse_set_operation(self, this: t.Optional[exp.Expression], consume_pipe: bool = False) -> t.Optional[exp.Expression]:
+    def parse_set_operation(
+        self, this: t.Optional[exp.Expression], consume_pipe: bool = False
+    ) -> t.Optional[exp.Expression]:
         start = self._index
         _, side_token, kind_token = self._parse_join_parts()
 
@@ -4789,7 +4791,9 @@ class Parser(metaclass=_Parser):
         if by_name and self._match_texts(("ON", "BY")):
             on_column_list = self._parse_wrapped_csv(self._parse_column)
 
-        expression = self._parse_select(nested=True, parse_set_operation=False, consume_pipe=consume_pipe)
+        expression = self._parse_select(
+            nested=True, parse_set_operation=False, consume_pipe=consume_pipe
+        )
 
         return self.expression(
             operation,

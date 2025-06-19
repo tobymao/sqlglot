@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from sqlglot import exp
 from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
@@ -37,9 +36,8 @@ class Fabric(TSQL):
             # Fabric doesn't support these types, map to alternatives
             exp.DataType.Type.MONEY: "DECIMAL",
             exp.DataType.Type.SMALLMONEY: "DECIMAL",
-            exp.DataType.Type.DATETIME: "DATETIME2",
-            exp.DataType.Type.SMALLDATETIME: "DATETIME2",
-            exp.DataType.Type.TIMESTAMPTZ: "DATETIME2",
+            exp.DataType.Type.DATETIME: "DATETIME2(6)",
+            exp.DataType.Type.SMALLDATETIME: "DATETIME2(6)",
             exp.DataType.Type.NCHAR: "CHAR",
             exp.DataType.Type.NVARCHAR: "VARCHAR",
             exp.DataType.Type.TEXT: "VARCHAR",
@@ -54,3 +52,46 @@ class Fabric(TSQL):
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.INT: "INT",  # T-SQL uses INTEGER
         }
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            """
+            Override datatype generation to handle Fabric-specific precision limitations.
+
+            Fabric limits temporal types (TIME, DATETIME2, DATETIMEOFFSET) to max 6 digits precision.
+            When no precision is specified, we default to 6 digits.
+            """
+            if expression.is_type(
+                exp.DataType.Type.TIME,
+                exp.DataType.Type.DATETIME2,
+                exp.DataType.Type.TIMESTAMPTZ,  # DATETIMEOFFSET in Fabric
+            ):
+                # Get the current precision (first expression if it exists)
+                precision = None
+                if expression.expressions:
+                    precision = expression.expressions[0]
+
+                # Determine the target precision
+                if precision is None:
+                    # No precision specified, default to 6
+                    target_precision = 6
+                elif (
+                    isinstance(precision, exp.DataTypeParam)
+                    and isinstance(precision.this, exp.Literal)
+                    and precision.this.is_int
+                ):
+                    # Cap precision at 6
+                    current_precision = int(precision.this.this)
+                    target_precision = min(current_precision, 6)
+                else:
+                    # Non-literal precision, leave as-is
+                    return super().datatype_sql(expression)
+
+                # Create a new expression with the target precision
+                new_expression = exp.DataType(
+                    this=expression.this,
+                    expressions=[exp.DataTypeParam(this=exp.Literal.number(str(target_precision)))],
+                )
+
+                return super().datatype_sql(new_expression)
+
+            return super().datatype_sql(expression)

@@ -74,11 +74,7 @@ class Fabric(TSQL):
                 if precision is None:
                     # No precision specified, default to 6
                     target_precision = 6
-                elif (
-                    isinstance(precision, exp.DataTypeParam)
-                    and isinstance(precision.this, exp.Literal)
-                    and precision.this.is_int
-                ):
+                elif isinstance(precision, exp.DataTypeParam) and precision.this.is_int:
                     # Cap precision at 6
                     current_precision = int(precision.this.this)
                     target_precision = min(current_precision, 6)

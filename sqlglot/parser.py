@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import typing as t
 import itertools
 from collections import defaultdict
@@ -22,6 +23,9 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
+
+# Used to detect alphabetical characters and +/- in timestamp literals
+TIME_ZONE_RE: t.Pattern[str] = re.compile(r":.*?[a-zA-Z\+\-]")
 
 
 def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
@@ -1522,9 +1526,8 @@ class Parser(metaclass=_Parser):
     # as BigQuery, where all joins have the same precedence.
     JOINS_HAVE_EQUAL_PRECEDENCE = False
 
-    # Whether the semantics of <type> <literal> are equivalent to CAST(<literal> AS <type).
-    # In Presto, TIMESTAMP ts is not the same as CAST(ts AS TIMESTAMP) if time zone is included.
-    LITERAL_TYPE_CONSTRUCTOR_IS_CAST = True
+    # Whether TIMESTAMP <literal> can produce a zone-aware timestamp
+    ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = False
 
     __slots__ = (
         "error_level",
@@ -5130,18 +5133,21 @@ class Parser(metaclass=_Parser):
             this = self._parse_primary()
 
             if isinstance(this, exp.Literal):
+                literal = this.name
                 this = self._parse_column_ops(this)
 
                 parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
                 if parser:
                     return parser(self, this, data_type)
 
-                return self.expression(
-                    exp.Cast,
-                    this=this,
-                    to=data_type,
-                    constructor=not self.LITERAL_TYPE_CONSTRUCTOR_IS_CAST,
-                )
+                if (
+                    self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
+                    and data_type.is_type(exp.DataType.Type.TIMESTAMP)
+                    and TIME_ZONE_RE.search(literal)
+                ):
+                    data_type = exp.DataType.build("TIMESTAMPTZ")
+
+                return self.expression(exp.Cast, this=this, to=data_type)
 
             # The expressions arg gets set by the parser when we have something like DECIMAL(38, 0)
             # in the input SQL. In that case, we'll produce these tokens: DECIMAL ( 38 , 0 )

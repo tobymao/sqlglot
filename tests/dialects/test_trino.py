@@ -5,7 +5,6 @@ class TestTrino(Validator):
     dialect = "trino"
 
     def test_trino(self):
-        self.validate_identity("TIMESTAMP '2025-06-20 11:22:29 Europe/Prague'")
         self.validate_identity("JSON_QUERY(m.properties, 'lax $.area' OMIT QUOTES NULL ON ERROR)")
         self.validate_identity("JSON_EXTRACT(content, json_path)")
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
@@ -19,6 +18,22 @@ class TestTrino(Validator):
         )
         self.validate_identity(
             "JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER KEEP QUOTES)"
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2012-10-31 01:00 -2'",
+            "SELECT CAST('2012-10-31 01:00 -2' AS TIMESTAMP WITH TIME ZONE)",
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2012-10-31 01:00 +2'",
+            "SELECT CAST('2012-10-31 01:00 +2' AS TIMESTAMP WITH TIME ZONE)",
+        )
+
+        self.validate_all(
+            "SELECT TIMESTAMP '2012-10-31 01:00:00 +02:00'",
+            write={
+                "duckdb": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMPTZ)",
+                "trino": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMP WITH TIME ZONE)",
+            },
         )
 
     def test_listagg(self):

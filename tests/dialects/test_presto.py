@@ -7,18 +7,21 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
-        self.validate_identity("TIMESTAMP '2025-06-20 11:22:29 Europe/Prague'")
         self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
         self.validate_identity("DESCRIBE INPUT x", check_command_warning=True)
         self.validate_identity("DESCRIBE OUTPUT x", check_command_warning=True)
-        self.validate_identity(
-            "RESET SESSION hive.optimized_reader_enabled", check_command_warning=True
-        )
         self.validate_identity("SELECT * FROM x qualify", "SELECT * FROM x AS qualify")
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
         self.validate_identity("CAST(TDIGEST_AGG(1) AS TDIGEST)")
         self.validate_identity("CAST(x AS HYPERLOGLOG)")
+        self.validate_identity(
+            "RESET SESSION hive.optimized_reader_enabled", check_command_warning=True
+        )
+        self.validate_identity(
+            "TIMESTAMP '2025-06-20 11:22:29 Europe/Prague'",
+            "CAST('2025-06-20 11:22:29 Europe/Prague' AS TIMESTAMP WITH TIME ZONE)",
+        )
 
         self.validate_all(
             "CAST(x AS BOOLEAN)",
@@ -376,7 +379,7 @@ class TestPresto(Validator):
             "DAY_OF_MONTH(timestamp '2012-08-08 01:00:00')",
             write={
                 "spark": "DAYOFMONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_MONTH(TIMESTAMP '2012-08-08 01:00:00')",
+                "presto": "DAY_OF_MONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
                 "duckdb": "DAYOFMONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
@@ -385,7 +388,7 @@ class TestPresto(Validator):
             "DAY_OF_YEAR(timestamp '2012-08-08 01:00:00')",
             write={
                 "spark": "DAYOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_YEAR(TIMESTAMP '2012-08-08 01:00:00')",
+                "presto": "DAY_OF_YEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
                 "duckdb": "DAYOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
@@ -394,7 +397,7 @@ class TestPresto(Validator):
             "WEEK_OF_YEAR(timestamp '2012-08-08 01:00:00')",
             write={
                 "spark": "WEEKOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "presto": "WEEK_OF_YEAR(TIMESTAMP '2012-08-08 01:00:00')",
+                "presto": "WEEK_OF_YEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
                 "duckdb": "WEEKOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )

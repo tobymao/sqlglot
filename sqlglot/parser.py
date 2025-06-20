@@ -1522,6 +1522,10 @@ class Parser(metaclass=_Parser):
     # as BigQuery, where all joins have the same precedence.
     JOINS_HAVE_EQUAL_PRECEDENCE = False
 
+    # Whether the semantics of <type> <literal> are equivalent to CAST(<literal> AS <type).
+    # In Presto, TIMESTAMP ts is not the same as CAST(ts AS TIMESTAMP) if time zone is included.
+    LITERAL_TYPE_CONSTRUCTOR_IS_CAST = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -5132,7 +5136,12 @@ class Parser(metaclass=_Parser):
                 if parser:
                     return parser(self, this, data_type)
 
-                return self.expression(exp.Cast, this=this, to=data_type)
+                return self.expression(
+                    exp.Cast,
+                    this=this,
+                    to=data_type,
+                    constructor=not self.LITERAL_TYPE_CONSTRUCTOR_IS_CAST,
+                )
 
             # The expressions arg gets set by the parser when we have something like DECIMAL(38, 0)
             # in the input SQL. In that case, we'll produce these tokens: DECIMAL ( 38 , 0 )

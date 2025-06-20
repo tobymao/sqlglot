@@ -7,6 +7,7 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
+        self.validate_identity("TIMESTAMP '2025-06-20 11:22:29 Europe/Prague'")
         self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
         self.validate_identity("DESCRIBE INPUT x", check_command_warning=True)
         self.validate_identity("DESCRIBE OUTPUT x", check_command_warning=True)
@@ -375,7 +376,7 @@ class TestPresto(Validator):
             "DAY_OF_MONTH(timestamp '2012-08-08 01:00:00')",
             write={
                 "spark": "DAYOFMONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_MONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_MONTH(TIMESTAMP '2012-08-08 01:00:00')",
                 "duckdb": "DAYOFMONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
@@ -384,7 +385,7 @@ class TestPresto(Validator):
             "DAY_OF_YEAR(timestamp '2012-08-08 01:00:00')",
             write={
                 "spark": "DAYOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_YEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_YEAR(TIMESTAMP '2012-08-08 01:00:00')",
                 "duckdb": "DAYOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
@@ -393,7 +394,7 @@ class TestPresto(Validator):
             "WEEK_OF_YEAR(timestamp '2012-08-08 01:00:00')",
             write={
                 "spark": "WEEKOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
-                "presto": "WEEK_OF_YEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "WEEK_OF_YEAR(TIMESTAMP '2012-08-08 01:00:00')",
                 "duckdb": "WEEKOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )

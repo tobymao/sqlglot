@@ -5,6 +5,7 @@ class TestTrino(Validator):
     dialect = "trino"
 
     def test_trino(self):
+        self.validate_identity("TIMESTAMP '2025-06-20 11:22:29 Europe/Prague'")
         self.validate_identity("JSON_QUERY(m.properties, 'lax $.area' OMIT QUOTES NULL ON ERROR)")
         self.validate_identity("JSON_EXTRACT(content, json_path)")
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")

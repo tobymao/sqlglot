@@ -5685,6 +5685,7 @@ class Cast(Func):
         "safe": False,
         "action": False,
         "default": False,
+        "constructor": False,
     }
 
     @property

@@ -315,6 +315,7 @@ class Presto(Dialect):
 
     class Parser(parser.Parser):
         VALUES_FOLLOWED_BY_PAREN = False
+        LITERAL_TYPE_CONSTRUCTOR_IS_CAST = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -601,6 +602,14 @@ class Presto(Dialect):
             "where",
             "with",
         }
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.args.get("constructor"):
+                this = self.sql(expression, "this")
+                dtype = self.sql(expression, "to")
+                return f"{dtype} {this}"
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def jsonformat_sql(self, expression: exp.JSONFormat) -> str:
             this = expression.this

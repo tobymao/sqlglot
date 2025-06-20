@@ -11,7 +11,7 @@ class TestFabric(Validator):
         self.validate_all("CAST(x AS SMALLDATETIME)", write={"fabric": "CAST(x AS DATETIME2(6))"})
         self.validate_all("CAST(x AS NCHAR)", write={"fabric": "CAST(x AS CHAR)"})
         self.validate_all("CAST(x AS NVARCHAR)", write={"fabric": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS TEXT)", write={"fabric": "CAST(x AS VARCHAR)"})
+        self.validate_all("CAST(x AS TEXT)", write={"fabric": "CAST(x AS VARCHAR(MAX))"})
         self.validate_all("CAST(x AS IMAGE)", write={"fabric": "CAST(x AS VARBINARY)"})
         self.validate_all("CAST(x AS MONEY)", write={"fabric": "CAST(x AS DECIMAL)"})
         self.validate_all("CAST(x AS SMALLMONEY)", write={"fabric": "CAST(x AS DECIMAL)"})

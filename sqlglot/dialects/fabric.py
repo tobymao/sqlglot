@@ -40,7 +40,7 @@ class Fabric(TSQL):
             exp.DataType.Type.SMALLDATETIME: "DATETIME2(6)",
             exp.DataType.Type.NCHAR: "CHAR",
             exp.DataType.Type.NVARCHAR: "VARCHAR",
-            exp.DataType.Type.TEXT: "VARCHAR",
+            exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.IMAGE: "VARBINARY",
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "SMALLINT",  # T-SQL parses TINYINT as UTINYINT

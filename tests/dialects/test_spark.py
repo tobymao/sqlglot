@@ -818,6 +818,26 @@ TBLPROPERTIES (
                 "duckdb": "SELECT TRY_CAST(col AS TIMESTAMPTZ)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM {df}",
+            read={
+                "databricks": "SELECT * FROM {df}",
+            },
+            write={
+                "spark":  "SELECT * FROM {df}",
+                "databricks":  "SELECT * FROM {df}",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM {df} WHERE id > :foo",
+            read={
+                "databricks": "SELECT * FROM {df} WHERE id > :foo",
+            },
+            write={
+                "spark":  "SELECT * FROM {df} WHERE id > :foo",
+                "databricks":  "SELECT * FROM {df} WHERE id > :foo",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(

@@ -824,8 +824,8 @@ TBLPROPERTIES (
                 "databricks": "SELECT * FROM {df}",
             },
             write={
-                "spark":  "SELECT * FROM {df}",
-                "databricks":  "SELECT * FROM {df}",
+                "spark": "SELECT * FROM {df}",
+                "databricks": "SELECT * FROM {df}",
             },
         )
         self.validate_all(
@@ -834,8 +834,8 @@ TBLPROPERTIES (
                 "databricks": "SELECT * FROM {df} WHERE id > :foo",
             },
             write={
-                "spark":  "SELECT * FROM {df} WHERE id > :foo",
-                "databricks":  "SELECT * FROM {df} WHERE id > :foo",
+                "spark": "SELECT * FROM {df} WHERE id > :foo",
+                "databricks": "SELECT * FROM {df} WHERE id > :foo",
             },
         )
 

@@ -215,5 +215,5 @@ class Spark(Spark2):
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             if not expression.args.get("kind"):
                 return super().placeholder_sql(expression)
-            
+
             return f"{{{expression.name}}}"

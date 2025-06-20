@@ -4454,7 +4454,7 @@ class SessionParameter(Condition):
 
 
 class Placeholder(Condition):
-    arg_types = {"this": False, "kind": False}
+    arg_types = {"this": False, "kind": False, "dataframe": False}
 
     @property
     def name(self) -> str:

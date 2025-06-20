@@ -78,9 +78,6 @@ class Fabric(TSQL):
                     # Cap precision at 6
                     current_precision = int(precision.this.this)
                     target_precision = min(current_precision, 6)
-                else:
-                    # Non-literal precision, leave as-is
-                    return super().datatype_sql(expression)
 
                 # Create a new expression with the target precision
                 new_expression = exp.DataType(

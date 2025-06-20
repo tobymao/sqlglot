@@ -130,7 +130,7 @@ class Spark(Spark2):
         def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
             this = self._parse_id_var()
             self._match(TokenType.R_BRACE)
-            return self.expression(exp.Placeholder, this=this, dataframe=True)
+            return self.expression(exp.Placeholder, this=this, widget=True)
 
         def _parse_generated_as_identity(
             self,
@@ -213,7 +213,7 @@ class Spark(Spark2):
             return self.func("DATEDIFF", end, start)
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
-            if not expression.args.get("dataframe"):
+            if not expression.args.get("widget"):
                 return super().placeholder_sql(expression)
 
             return f"{{{expression.name}}}"

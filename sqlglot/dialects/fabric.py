@@ -82,7 +82,7 @@ class Fabric(TSQL):
                 # Create a new expression with the target precision
                 new_expression = exp.DataType(
                     this=expression.this,
-                    expressions=[exp.DataTypeParam(this=exp.Literal.number(str(target_precision)))],
+                    expressions=[exp.DataTypeParam(this=exp.Literal.number(target_precision))],
                 )
 
                 return super().datatype_sql(new_expression)

@@ -66,9 +66,7 @@ class Fabric(TSQL):
                 exp.DataType.Type.TIMESTAMPTZ,  # DATETIMEOFFSET in Fabric
             ):
                 # Get the current precision (first expression if it exists)
-                precision = None
-                if expression.expressions:
-                    precision = expression.expressions[0]
+                precision = expression.find(exp.DataTypeParam)
 
                 # Determine the target precision
                 if precision is None:

@@ -4453,8 +4453,9 @@ class SessionParameter(Condition):
     arg_types = {"this": True, "kind": False}
 
 
+# https://www.databricks.com/blog/parameterized-queries-pyspark
 class Placeholder(Condition):
-    arg_types = {"this": False, "kind": False}
+    arg_types = {"this": False, "kind": False, "widget": False}
 
     @property
     def name(self) -> str:

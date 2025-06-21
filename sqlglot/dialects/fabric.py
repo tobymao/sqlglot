@@ -86,3 +86,48 @@ class Fabric(TSQL):
                 return super().datatype_sql(new_expression)
 
             return super().datatype_sql(expression)
+
+        def create_sql(self, expression: exp.Create) -> str:
+            """
+            Override create_sql to handle Fabric-specific differences:
+            1. Convert REPLACE to EXISTS since Fabric doesn't support CREATE OR REPLACE/ALTER
+            2. Ensure information_schema references are uppercase (case-sensitive identifiers)
+            """
+            kind = expression.kind
+
+            # Fabric doesn't support CREATE OR REPLACE/ALTER, so convert replace=True to exists=True
+            replace = expression.args.get("replace")
+            exists = expression.args.get("exists")
+
+            if replace and not exists:
+                # Set exists=True and remove replace=True to use IF NOT EXISTS logic
+                expression.set("exists", True)
+                expression.args.pop("replace", None)
+                exists = True
+
+            if exists and kind in ("SCHEMA", "TABLE"):
+                # Handle the case where we need to generate IF NOT EXISTS with information_schema
+                # Call the parent method but intercept the specific parts we need to uppercase
+                table = expression.find(exp.Table)
+                identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
+
+                # Get the base SQL without the IF NOT EXISTS wrapper
+                expression_copy = expression.copy()
+                expression_copy.args.pop("exists", None)
+                sql = super().create_sql(expression_copy)
+                sql_with_ctes = self.prepend_ctes(expression, sql)
+                sql_literal = self.sql(exp.Literal.string(sql_with_ctes))
+
+                if kind == "SCHEMA":
+                    return f"""IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = {identifier}) EXEC({sql_literal})"""
+                elif kind == "TABLE":
+                    assert table
+                    where = exp.and_(
+                        exp.column("TABLE_NAME").eq(table.name),
+                        exp.column("TABLE_SCHEMA").eq(table.db) if table.db else None,
+                        exp.column("TABLE_CATALOG").eq(table.catalog) if table.catalog else None,
+                    )
+                    return f"""IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE {self.sql(where)}) EXEC({sql_literal})"""
+
+            # For all other cases, use the parent implementation
+            return super().create_sql(expression)

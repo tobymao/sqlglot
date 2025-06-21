@@ -62,3 +62,45 @@ class TestFabric(Validator):
         self.validate_all(
             "CAST(x AS DATETIMEOFFSET(9))", write={"fabric": "CAST(x AS DATETIMEOFFSET(6))"}
         )
+
+    def test_information_schema_case_sensitivity(self):
+        """Test that information_schema references are properly uppercased in Fabric"""
+        # Test CREATE SCHEMA IF NOT EXISTS
+        self.validate_all(
+            "CREATE SCHEMA IF NOT EXISTS myschema",
+            write={
+                "fabric": """IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'myschema') EXEC('CREATE SCHEMA myschema')"""
+            },
+        )
+
+        # Test CREATE TABLE IF NOT EXISTS
+        self.validate_all(
+            "CREATE TABLE IF NOT EXISTS mytable (id INT)",
+            write={
+                "fabric": """IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'mytable') EXEC('CREATE TABLE mytable (id INT)')"""
+            },
+        )
+
+        # Test CREATE TABLE IF NOT EXISTS with schema
+        self.validate_all(
+            "CREATE TABLE IF NOT EXISTS mydb.mytable (id INT)",
+            write={
+                "fabric": """IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'mytable' AND TABLE_SCHEMA = 'mydb') EXEC('CREATE TABLE mydb.mytable (id INT)')"""
+            },
+        )
+
+        # Test CREATE TABLE IF NOT EXISTS with database and schema
+        self.validate_all(
+            "CREATE TABLE IF NOT EXISTS mydb.myschema.mytable (id INT)",
+            write={
+                "fabric": """IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'mytable' AND TABLE_SCHEMA = 'myschema' AND TABLE_CATALOG = 'mydb') EXEC('CREATE TABLE mydb.myschema.mytable (id INT)')"""
+            },
+        )
+
+        # Test CREATE OR REPLACE TABLE IF NOT EXISTS
+        self.validate_all(
+            "CREATE OR REPLACE TABLE mytable (id INT)",
+            write={
+                "fabric": """IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'mytable') EXEC('CREATE TABLE mytable (id INT)')"""
+            },
+        )

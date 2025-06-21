@@ -315,6 +315,7 @@ class Presto(Dialect):
 
     class Parser(parser.Parser):
         VALUES_FOLLOWED_BY_PAREN = False
+        ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

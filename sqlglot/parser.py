@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import typing as t
 import itertools
 from collections import defaultdict
@@ -22,6 +23,9 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
+
+# Used to detect alphabetical characters and +/- in timestamp literals
+TIME_ZONE_RE: t.Pattern[str] = re.compile(r":.*?[a-zA-Z\+\-]")
 
 
 def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
@@ -1521,6 +1525,9 @@ class Parser(metaclass=_Parser):
     # to say, JOIN operators happen before comma operators. This is not the case in some dialects, such
     # as BigQuery, where all joins have the same precedence.
     JOINS_HAVE_EQUAL_PRECEDENCE = False
+
+    # Whether TIMESTAMP <literal> can produce a zone-aware timestamp
+    ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = False
 
     __slots__ = (
         "error_level",
@@ -5126,11 +5133,19 @@ class Parser(metaclass=_Parser):
             this = self._parse_primary()
 
             if isinstance(this, exp.Literal):
+                literal = this.name
                 this = self._parse_column_ops(this)
 
                 parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
                 if parser:
                     return parser(self, this, data_type)
+
+                if (
+                    self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
+                    and data_type.is_type(exp.DataType.Type.TIMESTAMP)
+                    and TIME_ZONE_RE.search(literal)
+                ):
+                    data_type = exp.DataType.build("TIMESTAMPTZ")
 
                 return self.expression(exp.Cast, this=this, to=data_type)
 

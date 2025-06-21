@@ -10,14 +10,18 @@ class TestPresto(Validator):
         self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
         self.validate_identity("DESCRIBE INPUT x", check_command_warning=True)
         self.validate_identity("DESCRIBE OUTPUT x", check_command_warning=True)
-        self.validate_identity(
-            "RESET SESSION hive.optimized_reader_enabled", check_command_warning=True
-        )
         self.validate_identity("SELECT * FROM x qualify", "SELECT * FROM x AS qualify")
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
         self.validate_identity("CAST(TDIGEST_AGG(1) AS TDIGEST)")
         self.validate_identity("CAST(x AS HYPERLOGLOG)")
+        self.validate_identity(
+            "RESET SESSION hive.optimized_reader_enabled", check_command_warning=True
+        )
+        self.validate_identity(
+            "TIMESTAMP '2025-06-20 11:22:29 Europe/Prague'",
+            "CAST('2025-06-20 11:22:29 Europe/Prague' AS TIMESTAMP WITH TIME ZONE)",
+        )
 
         self.validate_all(
             "CAST(x AS BOOLEAN)",

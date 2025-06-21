@@ -19,6 +19,22 @@ class TestTrino(Validator):
         self.validate_identity(
             "JSON_QUERY(content, 'strict $.HY.*' WITH UNCONDITIONAL WRAPPER KEEP QUOTES)"
         )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2012-10-31 01:00 -2'",
+            "SELECT CAST('2012-10-31 01:00 -2' AS TIMESTAMP WITH TIME ZONE)",
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2012-10-31 01:00 +2'",
+            "SELECT CAST('2012-10-31 01:00 +2' AS TIMESTAMP WITH TIME ZONE)",
+        )
+
+        self.validate_all(
+            "SELECT TIMESTAMP '2012-10-31 01:00:00 +02:00'",
+            write={
+                "duckdb": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMPTZ)",
+                "trino": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMP WITH TIME ZONE)",
+            },
+        )
 
     def test_listagg(self):
         self.validate_identity(

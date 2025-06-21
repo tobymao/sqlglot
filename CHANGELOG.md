@@ -1,6 +1,39 @@
 Changelog
 =========
 
+## [v26.30.0] - 2025-06-21
+### :boom: BREAKING CHANGES
+- due to [`d3dc761`](https://github.com/tobymao/sqlglot/commit/d3dc761393146357a5d20c4d7992fd2a1ae5e6e2) - change comma to cross join when precedence is the same for all join types *(PR [#5240](https://github.com/tobymao/sqlglot/pull/5240) by [@georgesittas](https://github.com/georgesittas))*:
+
+  change comma to cross join when precedence is the same for all join types (#5240)
+
+- due to [`e7c217e`](https://github.com/tobymao/sqlglot/commit/e7c217ef08e5811e7dad2b3d26dbaa9f02114e38) - transpile from/to dbms_random.value *(PR [#5242](https://github.com/tobymao/sqlglot/pull/5242) by [@georgesittas](https://github.com/georgesittas))*:
+
+  transpile from/to dbms_random.value (#5242)
+
+- due to [`31814cd`](https://github.com/tobymao/sqlglot/commit/31814cddb0cf65caf29fbc45a31a9c865b7991c7) - cast constructed timestamp literal to zone-aware type if needed *(PR [#5253](https://github.com/tobymao/sqlglot/pull/5253) by [@georgesittas](https://github.com/georgesittas))*:
+
+  cast constructed timestamp literal to zone-aware type if needed (#5253)
+
+
+### :sparkles: New Features
+- [`e7c217e`](https://github.com/tobymao/sqlglot/commit/e7c217ef08e5811e7dad2b3d26dbaa9f02114e38) - **oracle**: transpile from/to dbms_random.value *(PR [#5242](https://github.com/tobymao/sqlglot/pull/5242) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#5241](https://github.com/tobymao/sqlglot/issues/5241) opened by [@Akshat-2512](https://github.com/Akshat-2512)*
+- [`0d19544`](https://github.com/tobymao/sqlglot/commit/0d19544317c1056b17fb089d4be9b5bddfe6feb3) - add Microsoft Fabric dialect, a case sensitive version of TSQL *(PR [#5247](https://github.com/tobymao/sqlglot/pull/5247) by [@mattiasthalen](https://github.com/mattiasthalen))*
+- [`249dbc9`](https://github.com/tobymao/sqlglot/commit/249dbc906adc6b20932dc8efe83f6f4d23ef8c1e) - **parser**: start with SELECT and nested pipe syntax *(PR [#5248](https://github.com/tobymao/sqlglot/pull/5248) by [@geooo109](https://github.com/geooo109))*
+- [`f5b5b93`](https://github.com/tobymao/sqlglot/commit/f5b5b9338eb92b7aa2c9b4c92c6138c2c05e1c40) - **fabric**: implement type mappings for unsupported Fabric types *(PR [#5249](https://github.com/tobymao/sqlglot/pull/5249) by [@mattiasthalen](https://github.com/mattiasthalen))*
+- [`78fcea1`](https://github.com/tobymao/sqlglot/commit/78fcea13b5eb1734a15a254875bc80ad8063b0b0) - **spark, databricks**: parse brackets as placeholder *(PR [#5256](https://github.com/tobymao/sqlglot/pull/5256) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#5251](https://github.com/tobymao/sqlglot/issues/5251) opened by [@aersam](https://github.com/aersam)*
+- [`7d71387`](https://github.com/tobymao/sqlglot/commit/7d7138780db82e7a75949d29282b944e739ad99d) - **fabric**: Add precision cap to temporal data types *(PR [#5250](https://github.com/tobymao/sqlglot/pull/5250) by [@mattiasthalen](https://github.com/mattiasthalen))*
+- [`e8cf793`](https://github.com/tobymao/sqlglot/commit/e8cf79305d398f25640ef3c07dd8b32997cb0167) - **duckdb**: Transpile Snowflake's TO_CHAR if format is in Snowflake.TIME_MAPPING *(PR [#5257](https://github.com/tobymao/sqlglot/pull/5257) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#5255](https://github.com/tobymao/sqlglot/issues/5255) opened by [@kyle-cheung](https://github.com/kyle-cheung)*
+
+### :bug: Bug Fixes
+- [`d3dc761`](https://github.com/tobymao/sqlglot/commit/d3dc761393146357a5d20c4d7992fd2a1ae5e6e2) - change comma to cross join when precedence is the same for all join types *(PR [#5240](https://github.com/tobymao/sqlglot/pull/5240) by [@georgesittas](https://github.com/georgesittas))*
+- [`31814cd`](https://github.com/tobymao/sqlglot/commit/31814cddb0cf65caf29fbc45a31a9c865b7991c7) - **presto**: cast constructed timestamp literal to zone-aware type if needed *(PR [#5253](https://github.com/tobymao/sqlglot/pull/5253) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5252](https://github.com/tobymao/sqlglot/issues/5252) opened by [@agni-sairent](https://github.com/agni-sairent)*
+
+
 ## [v26.29.0] - 2025-06-17
 ### :boom: BREAKING CHANGES
 - due to [`4f42d95`](https://github.com/tobymao/sqlglot/commit/4f42d951363f8c43a4c414dc21d0505d9c8e48bf) - Normalize date parts in `exp.Extract` generation *(PR [#5229](https://github.com/tobymao/sqlglot/pull/5229) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -7104,3 +7137,4 @@ Changelog
 [v26.27.0]: https://github.com/tobymao/sqlglot/compare/v26.26.0...v26.27.0
 [v26.28.1]: https://github.com/tobymao/sqlglot/compare/v26.27.1...v26.28.1
 [v26.29.0]: https://github.com/tobymao/sqlglot/compare/v26.28.1...v26.29.0
+[v26.30.0]: https://github.com/tobymao/sqlglot/compare/v26.29.0...v26.30.0

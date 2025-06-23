@@ -165,3 +165,6 @@ class Athena(Trino):
                 return self._hive_generator.generate(expression, copy)
 
             return super().generate(expression, copy)
+
+
+del Athena.UNESCAPED_SEQUENCES["\\\\"], Athena.ESCAPED_SEQUENCES["\\"]

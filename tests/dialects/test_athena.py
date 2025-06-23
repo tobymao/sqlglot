@@ -36,6 +36,7 @@ class TestAthena(Validator):
             write_sql='/* leading comment */ SELECT * FROM "foo"',
             identify=True,
         )
+        self.validate_identity(r"SELECT '\d+'")
 
     def test_ddl(self):
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html

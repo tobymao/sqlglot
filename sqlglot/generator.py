@@ -3480,7 +3480,7 @@ class Generator(metaclass=_Generator):
 
                 actions_list.append(action_sql)
 
-            actions_sql = self.format_args(*actions_list)
+            actions_sql = self.format_args(*actions_list).lstrip("\n")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         on_cluster = self.sql(expression, "cluster")
@@ -3491,7 +3491,7 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
 
-        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions_sql}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{self.sep()}{actions_sql}{not_valid}{options}"
 
     def add_column_sql(self, expression: exp.Expression) -> str:
         sql = self.sql(expression)
@@ -3510,7 +3510,7 @@ class Generator(metaclass=_Generator):
         return f"DROP{exists}{expressions}"
 
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
-        return f"ADD {self.expressions(expression)}"
+        return f"ADD {self.expressions(expression, indent=False)}"
 
     def addpartition_sql(self, expression: exp.AddPartition) -> str:
         exists = "IF NOT EXISTS " if expression.args.get("exists") else ""

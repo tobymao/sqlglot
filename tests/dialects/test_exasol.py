@@ -2,15 +2,18 @@ from tests.dialects.test_dialect import Validator
 
 
 class TestExasol(Validator):
+    dialect = "exasol"
+    maxDiff = None
+
     def test_type_mappings(self):
-        self.validate_all("CAST(x AS BLOB)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS LONGBLOB)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS LONGTEXT)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS MEDIUMBLOB)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS MEDIUMTEXT)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS TINYBLOB)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS TINYTEXT)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS TEXT)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS VARBINARY)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS VARCHAR)", write={"exasol": "CAST(x AS VARCHAR)"})
-        self.validate_all("CAST(x AS CHAR)", write={"exasol": "CAST(x AS CHAR)"})
+        self.validate_identity("CAST(x AS BLOB)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS LONGBLOB)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS LONGTEXT)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS MEDIUMBLOB)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS MEDIUMTEXT)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS TINYBLOB)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS TINYTEXT)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS TEXT)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS CHAR)", "CAST(x AS CHAR)")

@@ -449,12 +449,9 @@ class Redshift(Postgres):
 
         def _unix_to_time_sql(self, expression: exp.UnixToTime) -> str:
             scale = expression.args.get("scale")
+            this = self.sql(expression.this)
 
-            if (
-                scale not in (None, exp.UnixToTime.SECONDS)
-                and isinstance(scale, exp.Literal)
-                and scale.is_int
-            ):
-                return f"(TIMESTAMP 'epoch' + ({self.sql(expression.this)} / POWER(10, {scale.to_py()})) * INTERVAL '1 SECOND')"
+            if scale is not None and scale != exp.UnixToTime.SECONDS and scale.is_int:
+                this = f"({this} / POWER(10, {scale.to_py()}))"
 
-            return f"(TIMESTAMP 'epoch' + {self.sql(expression.this)} * INTERVAL '1 SECOND')"
+            return f"(TIMESTAMP 'epoch' + {this} * INTERVAL '1 SECOND')"

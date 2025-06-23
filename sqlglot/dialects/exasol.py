@@ -33,8 +33,8 @@ class Exasol(Dialect):
         SET_OP_MODIFIERS = False
         VALUES_AS_TABLE = False
         ARRAY_SIZE_NAME = "LENGTH"
-        
-    #https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
+
+        # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.BLOB: "VARCHAR",
             exp.DataType.Type.CHAR: "CHAR",

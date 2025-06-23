@@ -3,7 +3,6 @@ from tests.dialects.test_dialect import Validator
 
 class TestExasol(Validator):
     def test_type_mappings(self):
-
         self.validate_all("CAST(x AS BLOB)", write={"exasol": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS LONGBLOB)", write={"exasol": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS LONGTEXT)", write={"exasol": "CAST(x AS VARCHAR)"})

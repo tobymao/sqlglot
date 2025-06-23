@@ -5,6 +5,40 @@ from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
 
 
+def _unix_to_time_sql(self: "Fabric.Generator", expression: exp.UnixToTime) -> str:
+    """
+    Transform UnixToTime to Fabric-specific DATEADD syntax.
+
+    Fabric uses: DATEADD(MICROSECONDS, CAST(ROUND(column*1e6, 0) AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))
+    """
+    timestamp = expression.this
+
+    # Convert unix timestamp (seconds) to microseconds and round to avoid decimals
+    microseconds = exp.Cast(
+        this=exp.Round(
+            this=exp.Mul(this=timestamp, expression=exp.Literal.number("1e6")),
+            decimals=exp.Literal.number("0"),
+        ),
+        to=exp.DataType(this=exp.DataType.Type.BIGINT),
+    )
+
+    # Create the base datetime as '1970-01-01' cast to DATETIME2(6)
+    epoch_start = exp.Cast(
+        this=exp.Literal.string("1970-01-01"),
+        to=exp.DataType(
+            this=exp.DataType.Type.DATETIME2,
+            expressions=[exp.DataTypeParam(this=exp.Literal.number("6"))],
+        ),
+    )
+
+    # Create DATEADD expression
+    dateadd = exp.DateAdd(
+        this=epoch_start, expression=microseconds, unit=exp.Literal.string("MICROSECONDS")
+    )
+
+    return self.sql(dateadd)
+
+
 class Fabric(TSQL):
     """
     Microsoft Fabric Data Warehouse dialect that inherits from T-SQL.
@@ -76,6 +110,9 @@ class Fabric(TSQL):
                     # Cap precision at 6
                     current_precision = precision.this.to_py()
                     target_precision = min(current_precision, 6)
+                else:
+                    # If precision exists but is not an integer, default to 6
+                    target_precision = 6
 
                 # Create a new expression with the target precision
                 new_expression = exp.DataType(
@@ -86,3 +123,8 @@ class Fabric(TSQL):
                 return super().datatype_sql(new_expression)
 
             return super().datatype_sql(expression)
+
+        TRANSFORMS = {
+            **TSQL.Generator.TRANSFORMS,
+            exp.UnixToTime: _unix_to_time_sql,
+        }

@@ -746,6 +746,7 @@ class TestSnowflake(Validator):
                 "bigquery": "SELECT TIMESTAMP_SECONDS(1659981729)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729)",
                 "spark": "SELECT CAST(FROM_UNIXTIME(1659981729) AS TIMESTAMP)",
+                "redshift": "SELECT (TIMESTAMP 'epoch' + 1659981729 * INTERVAL '1 SECOND')",
             },
         )
         self.validate_all(
@@ -754,6 +755,7 @@ class TestSnowflake(Validator):
                 "bigquery": "SELECT TIMESTAMP_MILLIS(1659981729000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000, 3)",
                 "spark": "SELECT TIMESTAMP_MILLIS(1659981729000)",
+                "redshift": "SELECT (TIMESTAMP 'epoch' + (1659981729000 / POWER(10, 3)) * INTERVAL '1 SECOND')",
             },
         )
         self.validate_all(
@@ -762,6 +764,7 @@ class TestSnowflake(Validator):
                 "bigquery": "SELECT TIMESTAMP_SECONDS(CAST(16599817290000 / POWER(10, 4) AS INT64))",
                 "snowflake": "SELECT TO_TIMESTAMP(16599817290000, 4)",
                 "spark": "SELECT TIMESTAMP_SECONDS(16599817290000 / POWER(10, 4))",
+                "redshift": "SELECT (TIMESTAMP 'epoch' + (16599817290000 / POWER(10, 4)) * INTERVAL '1 SECOND')",
             },
         )
         self.validate_all(
@@ -779,6 +782,7 @@ class TestSnowflake(Validator):
                 "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / POW(10, 9))",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
                 "spark": "SELECT TIMESTAMP_SECONDS(1659981729000000000 / POWER(10, 9))",
+                "redshift": "SELECT (TIMESTAMP 'epoch' + (1659981729000000000 / POWER(10, 9)) * INTERVAL '1 SECOND')",
             },
         )
         self.validate_all(

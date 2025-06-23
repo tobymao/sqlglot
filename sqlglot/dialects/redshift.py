@@ -214,7 +214,7 @@ class Redshift(Postgres):
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.UnixToTime: lambda self,
-            e: f"(TIMESTAMP 'epoch' + {self.sql(e.this)} * INTERVAL '1 SECOND')",
+            e: self._unix_to_time_sql(e),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots
@@ -447,3 +447,11 @@ class Redshift(Postgres):
         def explode_sql(self, expression: exp.Explode) -> str:
             self.unsupported("Unsupported EXPLODE() function")
             return ""
+
+        def _unix_to_time_sql(self, expression: exp.UnixToTime) -> str:
+            scale = expression.args.get("scale")
+
+            if scale not in (None, exp.UnixToTime.SECONDS) and isinstance(scale, exp.Literal) and scale.is_int:
+                return f"(TIMESTAMP 'epoch' + ({self.sql(expression.this)} / POWER(10, {scale.to_py()})) * INTERVAL '1 SECOND')"
+        
+            return f"(TIMESTAMP 'epoch' + {self.sql(expression.this)} * INTERVAL '1 SECOND')"

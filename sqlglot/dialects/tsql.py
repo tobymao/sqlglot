@@ -1249,15 +1249,15 @@ class TSQL(Dialect):
                 sql_with_ctes = self.prepend_ctes(expression, sql)
                 sql_literal = self.sql(exp.Literal.string(sql_with_ctes))
                 if kind == "SCHEMA":
-                    return f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql_literal})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = {identifier}) EXEC({sql_literal})"""
                 elif kind == "TABLE":
                     assert table
                     where = exp.and_(
-                        exp.column("table_name").eq(table.name),
-                        exp.column("table_schema").eq(table.db) if table.db else None,
-                        exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
+                        exp.column("TABLE_NAME").eq(table.name),
+                        exp.column("TABLE_SCHEMA").eq(table.db) if table.db else None,
+                        exp.column("TABLE_CATALOG").eq(table.catalog) if table.catalog else None,
                     )
-                    return f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql_literal})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE {where}) EXEC({sql_literal})"""
                 elif kind == "INDEX":
                     index = self.sql(exp.Literal.string(expression.this.text("this")))
                     return f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC({sql_literal})"""

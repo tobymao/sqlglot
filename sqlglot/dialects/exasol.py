@@ -8,7 +8,6 @@ class Exasol(Dialect):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.BLOB: "VARCHAR",
-            exp.DataType.Type.CHAR: "CHAR",
             exp.DataType.Type.LONGBLOB: "VARCHAR",
             exp.DataType.Type.LONGTEXT: "VARCHAR",
             exp.DataType.Type.MEDIUMBLOB: "VARCHAR",
@@ -17,7 +16,6 @@ class Exasol(Dialect):
             exp.DataType.Type.TINYTEXT: "VARCHAR",
             exp.DataType.Type.TEXT: "VARCHAR",
             exp.DataType.Type.VARBINARY: "VARCHAR",
-            exp.DataType.Type.VARCHAR: "VARCHAR",
         }
 
         TYPE_MAPPING = {

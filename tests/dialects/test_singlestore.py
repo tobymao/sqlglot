@@ -1,3 +1,5 @@
+import math
+
 from tests.dialects.test_dialect import Validator
 from sqlglot import exp, parse_one, ErrorLevel, UnsupportedError
 import typing as t
@@ -4019,8 +4021,6 @@ class TestSingleStore(Validator):
                 this=exp.Column(this=exp.Identifier(this="age", quoted=False))
             )
         )
-
-    def test_tutu2(self):
         self.validate_parsing(
             "SELECT id | age FROM users",
             exp.BitwiseOr(
@@ -4307,4 +4307,217 @@ class TestSingleStore(Validator):
             exp.func("CHARSET",
                      exp.Column(this=exp.Identifier(this="name", quoted=False))
                      )
+        )
+        self.validate_parsing(
+            "SELECT COALESCE(email, 'no_email@example.com') FROM users",
+            exp.Coalesce(
+                this=exp.Column(this=exp.Identifier(this="email", quoted=False)),
+                expressions=[exp.Literal.string("no_email@example.com")]
+            )
+        )
+        self.validate_parsing(
+            "SELECT CONCAT(name, email) FROM users",
+            exp.Concat(
+                expressions=[exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                             exp.Column(this=exp.Identifier(this="email", quoted=False))],
+                safe=True,
+                coalesce=False
+            )
+        )
+        self.validate_parsing(
+            "SELECT CONCAT_WS('-', name, email) FROM users",
+            exp.ConcatWs(
+                expressions=[exp.Literal.string("-"),
+                             exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                             exp.Column(this=exp.Identifier(this="email", quoted=False))],
+                safe=True,
+                coalesce=False
+            )
+        )
+        self.validate_parsing(
+            "SELECT CONNECTION_ID() FROM users",
+            exp.func("CONNECTION_ID")
+        )
+        self.validate_parsing(
+            "SELECT CONV(age, 10, 16) FROM users",
+            exp.func("CONV",
+                     exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                     exp.Literal.number(10),
+                     exp.Literal.number(16))
+        )
+        self.validate_parsing(
+            "SELECT CAST(age AS CHAR) FROM users",
+            exp.Cast(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                to=exp.DataType(this=exp.DataType.Type.CHAR)
+            )
+        )
+        self.validate_parsing(
+            "SELECT CONVERT(age, CHAR) FROM users",
+            exp.Cast(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                to=exp.DataType(this=exp.DataType.Type.CHAR)
+            )
+        )
+        self.validate_parsing(
+            "SELECT CONVERT_TZ(signup_date, 'UTC', 'America/New_York') FROM users",
+            exp.ConvertTimezone(
+                timestamp=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                source_tz=exp.Literal.string("UTC"),
+                target_tz=exp.Literal.string("America/New_York"))
+        )
+        self.validate_parsing(
+            "SELECT COS(age) FROM users",
+            exp.func(
+                "COS",
+                exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT COT(age) FROM users",
+            exp.func(
+                "COT",
+                exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT COUNT(*) FROM users",
+            exp.Count(this=exp.Star(), big_int=True)
+        )
+        self.validate_parsing(
+            "SELECT CRC32(email) FROM users",
+            exp.func("CRC32",
+                     exp.Column(this=exp.Identifier(this="email", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT CURRENT_DATE FROM users",
+            exp.CurrentDate()
+        )
+        self.validate_parsing(
+            "SELECT CURRENT_TIME FROM users",
+            exp.CurrentTime()
+        )
+        self.validate_parsing(
+            "SELECT CURRENT_TIMESTAMP FROM users",
+            exp.CurrentTimestamp()
+        )
+        self.validate_parsing(
+            "SELECT DATABASE()",
+            exp.CurrentSchema()
+        )
+        self.validate_parsing(
+            "SELECT DATE(signup_date) FROM users",
+            exp.cast(exp.Column(this=exp.Identifier(this="signup_date", quoted=False)), exp.DataType.Type.DATE)
+        )
+        self.validate_parsing(
+            "SELECT DATE_ADD(signup_date, INTERVAL 1 DAY) FROM users",
+            exp.DateAdd(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                expression=exp.Interval(
+                    this=exp.Literal.string('1'),
+                    unit=exp.Var(this="DAY")
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT DATE_FORMAT(signup_date, '%Y-%m-%d') FROM users",
+            exp.TimeToStr(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%Y-%m-%d")
+            )
+        )
+        self.validate_parsing(
+            "SELECT DATE_SUB(signup_date, INTERVAL 7 DAY) FROM users",
+            exp.DateSub(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                expression=exp.Interval(
+                    this=exp.Literal.string('7'),
+                    unit=exp.Var(this="DAY")
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT DATE_TRUNC('month', signup_date) FROM users",
+            exp.DateTrunc(
+                unit=exp.Literal.string("MONTH"),
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT DATEDIFF(CURRENT_DATE, signup_date) FROM users",
+            exp.DateDiff(
+                this=exp.CurrentDate(),
+                expression=exp.Column(this=exp.Identifier(this="signup_date", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT DAY(signup_date) FROM users",
+            exp.Day(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT DAYNAME(signup_date) FROM users",
+            exp.TimeToStr(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%A")
+            )
+        )
+        self.validate_parsing(
+            "SELECT DAYOFWEEK(signup_date) FROM users",
+            exp.Add(
+                this=exp.cast(exp.TimeToStr(
+                    this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                    format=exp.Literal.string("%w")
+                ), exp.DataType.Type.INT),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT DAYOFYEAR(signup_date) FROM users",
+            exp.cast(exp.TimeToStr(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%j")
+            ), exp.DataType.Type.INT),
+        )
+        self.validate_parsing(
+            "SELECT DECODE(age, 18, 'minor', 21, 'young adult', 'adult') FROM users",
+            exp.Case(
+                ifs=[
+                    exp.If(
+                        this=exp.EQ(this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                                    expression=exp.Literal.number(18)),
+                        true=exp.Literal.string("minor")),
+                    exp.If(
+                        this=exp.EQ(this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                                    expression=exp.Literal.number(21)),
+                        true=exp.Literal.string("young adult")),
+                ],
+                default=exp.Literal.string("adult")
+            )
+        )
+        self.validate_parsing(
+            "SELECT DEGREES(age) FROM users",
+            exp.Mul(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(180 / math.pi)
+            )
+        )
+        self.validate_parsing(
+            "SELECT DENSE_RANK() OVER (ORDER BY age) FROM users",
+            exp.func("DENSE_RANK")
+        )
+        self.validate_parsing(
+            "SELECT DOT_PRODUCT(name, name) FROM users",
+            exp.func("DOT_PRODUCT",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT ELT(2, 'a', 'b', 'c') FROM users",
+            exp.func("ELT",
+                     exp.Literal.number(2),
+                     exp.Literal.string("a"),
+                     exp.Literal.string("b"),
+                     exp.Literal.string("c"))
         )

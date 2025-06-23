@@ -1,9 +1,11 @@
 from collections import defaultdict
 
+import math
+
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens, parser
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
     bool_xor_sql, rename_func, count_if_to_sum, \
-    time_format
+    time_format, build_formatted_time
 import typing as t
 import re
 from sqlglot import exp
@@ -111,6 +113,11 @@ class SingleStore(Dialect):
             TokenType.SHOW}
 
     class Parser(parser.Parser):
+        FUNC_TOKENS = {
+            *parser.Parser.FUNC_TOKENS,
+            TokenType.DATABASE,
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_COUNT_DISTINCT": lambda args, dialect: exp.Hll(
@@ -128,7 +135,33 @@ class SingleStore(Dialect):
             "BSON_EXTRACT_BSON": _build_json_extract(
                 exp.JSONBExtract),
             "BSON_EXTRACT_STRING": _build_json_extract(
-                exp.JSONBExtractScalar)
+                exp.JSONBExtractScalar),
+            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
+                source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
+            ),
+            "DATABASE": exp.CurrentSchema.from_arg_list,
+            "DATE": lambda args: exp.cast(
+                seq_get(args, 0),
+                DataType.Type.DATE
+            ),
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "singlestore"),
+            "DAYNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(exp.Literal.string("%W")),
+            ),
+            "DAYOFWEEK": lambda args: exp.Add(
+                this=exp.cast(exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=Dialect["singlestore"].format_time(exp.Literal.string("%w")),
+                ), DataType.Type.INT),
+                expression=exp.Literal.number(1)),
+            "DAYOFYEAR": lambda args: exp.cast(exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(exp.Literal.string("%j")),
+            ), DataType.Type.INT),
+            "DEGREES": lambda args: exp.Mul(
+                this=seq_get(args, 0),
+                expression=exp.Literal.number(180 / math.pi))
         }
 
     class Generator(generator.Generator):
@@ -228,7 +261,7 @@ class SingleStore(Dialect):
                 lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
             exp.TimeToStr: unsupported_args("zone", "culture")
             (lambda self,
-                e: f"DATE_FORMAT({self.sql(e, 'this')} :> TIME, {self.sql(e, 'format')})"),
+                e: f"DATE_FORMAT({self.sql(e, 'this')} :> TIME, {self.format_time(self.sql(e, 'format'))})"),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToDate: lambda self, e: self.sql(
                 exp.cast(e.this, exp.DataType.Type.DATE)),
@@ -2003,22 +2036,32 @@ class SingleStore(Dialect):
 
         def dateadd_sql(self, expression: exp.DateAdd) -> str:
             date = self.sql(expression, "this")
-            interval = self.sql(
-                exp.Interval(this=expression.expression, unit=expression.unit))
+            if not isinstance(expression.expression, exp.Interval):
+                interval = self.sql(
+                    exp.Interval(this=expression.expression, unit=expression.unit))
+            else:
+                interval = self.sql(expression.expression)
 
             return f"DATE_ADD({date}, {interval})"
 
         def datesub_sql(self, expression: exp.DateSub) -> str:
             date = self.sql(expression, "this")
-            interval = self.sql(
-                exp.Interval(this=expression.expression, unit=expression.unit))
+            if not isinstance(expression.expression, exp.Interval):
+                interval = self.sql(
+                    exp.Interval(this=expression.expression, unit=expression.unit))
+            else:
+                interval = self.sql(expression.expression)
 
             return f"DATE_SUB({date}, {interval})"
 
         @unsupported_args("zone")
         def datediff_sql(self, expression: exp.DateDiff) -> str:
-            return self.func("TIMESTAMPDIFF", expression.unit, expression.this,
-                             expression.expression)
+            if expression.unit is not None:
+                return self.func("TIMESTAMPDIFF", expression.unit, expression.this,
+                                 expression.expression)
+            else:
+                return self.func("DATEDIFF", expression.this,
+                                 expression.expression)
 
         @unsupported_args("zone")
         def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
@@ -2623,7 +2666,7 @@ class SingleStore(Dialect):
             return ""
 
         def encodecolumnconstraint_sql(self,
-            expression: exp.EncodeColumnConstraint) -> str:
+                                       expression: exp.EncodeColumnConstraint) -> str:
             self.unsupported(
                 "ENCODE column constraint is not supported in SingleStore")
             return ""
@@ -3637,7 +3680,7 @@ class SingleStore(Dialect):
                 expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
 
                 if self.CREATE_FUNCTION_RETURN_AS or not isinstance(
-                    expression.expression, exp.Return):
+                        expression.expression, exp.Return):
                     postalias_props_sql = ""
                     if properties_locs.get(exp.Properties.Location.POST_ALIAS):
                         postalias_props_sql = self.properties(

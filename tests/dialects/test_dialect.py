@@ -1564,7 +1564,9 @@ class TestDialect(Validator):
             "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
             write={
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
-                "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
+                "spark2": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a, pos",
+                "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a, pos",
+                "databricks": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a, pos",
             },
         )
 

@@ -73,6 +73,7 @@ class Dialects(str, Enum):
     CLICKHOUSE = "clickhouse"
     DATABRICKS = "databricks"
     DORIS = "doris"
+    DREMIO = "dremio"
     DRILL = "drill"
     DRUID = "druid"
     DUCKDB = "duckdb"

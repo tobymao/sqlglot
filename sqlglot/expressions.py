@@ -5806,6 +5806,10 @@ class CurrentTimestamp(Func):
     arg_types = {"this": False, "sysdate": False}
 
 
+class CurrentTimestampLTZ(Func):
+    arg_types = {}
+
+
 class CurrentSchema(Func):
     arg_types = {"this": False}
 

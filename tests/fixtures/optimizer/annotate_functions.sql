@@ -463,5 +463,14 @@ STRING;
 -- Snowflake
 --------------------------------------
 
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
+
+--------------------------------------
+-- T-SQL
+--------------------------------------
+
+# dialect: tsql
+SYSDATETIMEOFFSET();
+TIMESTAMPTZ;

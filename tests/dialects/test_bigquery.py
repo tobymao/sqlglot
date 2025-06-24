@@ -2632,3 +2632,16 @@ OPTIONS (
         """
         expected = "SELECT\n  id,\n  foo\n/* bar, /* the thing * / */\nFROM facts"
         self.assertEqual(self.parse_one(sql).sql("bigquery", pretty=True), expected)
+
+    def test_unnest_with_offset(self):
+        for offset, alias in (("", "offset"), ("AS pos", "pos")):
+            self.validate_all(
+                f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET {offset}",
+                write={
+                    "bigquery": f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET AS {alias}",
+                    "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
+                    "spark2": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
+                    "spark": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
+                    "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
+                },
+            )

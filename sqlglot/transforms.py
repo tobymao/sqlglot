@@ -352,13 +352,20 @@ def unnest_to_explode(
             has_multi_expr = len(exprs) > 1
             this, *expressions = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
+            columns = alias.columns if alias else []
+            offset = unnest.args.get("offset")
+            if offset:
+                columns.append(
+                    offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                )
+
             unnest.replace(
                 exp.Table(
                     this=_udtf_type(unnest, has_multi_expr)(
                         this=this,
                         expressions=expressions,
                     ),
-                    alias=exp.TableAlias(this=alias.this, columns=alias.columns) if alias else None,
+                    alias=exp.TableAlias(this=alias.this, columns=columns) if alias else None,
                 )
             )
 
@@ -391,6 +398,12 @@ def unnest_to_explode(
                 if not has_multi_expr and len(alias_cols) not in (1, 2):
                     raise UnsupportedError(
                         "CROSS JOIN UNNEST to LATERAL VIEW EXPLODE transformation requires explicit column aliases"
+                    )
+
+                offset = unnest.args.get("offset")
+                if offset:
+                    alias_cols.append(
+                        offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
                     )
 
                 for e, column in zip(exprs, alias_cols):

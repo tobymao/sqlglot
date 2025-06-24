@@ -37,3 +37,7 @@ class TestExasol(Validator):
         self.validate_identity(
             "CAST(x AS TIMESTAMPLTZ)", "CAST(x AS TIMESTAMP WITH LOCAL TIME ZONE)"
         )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMP(3) WITH LOCAL TIME ZONE)",
+            "CAST(x AS TIMESTAMP WITH LOCAL TIME ZONE)",
+        )

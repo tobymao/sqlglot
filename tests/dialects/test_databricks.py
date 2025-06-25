@@ -173,7 +173,6 @@ class TestDatabricks(Validator):
                 )
         self.validate_identity(
             "SELECT test, LISTAGG(email, '') AS Email FROM organizations GROUP BY test",
-            "SELECT test, LISTAGG(email, '') AS Email FROM organizations GROUP BY test",
         )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html

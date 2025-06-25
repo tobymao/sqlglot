@@ -2639,9 +2639,9 @@ OPTIONS (
                 f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET {offset}",
                 write={
                     "bigquery": f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET AS {alias}",
-                    "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
-                    "spark2": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
-                    "spark": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
-                    "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
+                    "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "spark2": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "spark": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
                 },
             )

@@ -1911,19 +1911,12 @@ def groupconcat_sql(
 
 def build_timetostr_or_tochar(args: t.List, dialect: Dialect) -> exp.TimeToStr | exp.ToChar:
     this = seq_get(args, 0)
-    format = seq_get(args, 1)
 
-    if this:
-        if not this.type:
-            from sqlglot.optimizer.annotate_types import annotate_types
+    if this and not this.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
 
-            annotate_types(this, dialect=dialect)
-
-        from sqlglot.dialects import Snowflake
-
-        if this.is_type(*exp.DataType.TEMPORAL_TYPES) or (
-            isinstance(format, exp.Literal) and format.name in Snowflake.TIME_MAPPING
-        ):
+        annotate_types(this, dialect=dialect)
+        if this.is_type(*exp.DataType.TEMPORAL_TYPES):
             dialect_name = dialect.__class__.__name__.lower()
             return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
 

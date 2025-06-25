@@ -625,6 +625,32 @@ class TestSnowflake(Validator):
                     },
                 )
         self.validate_all(
+            "TO_CHAR(x, y)",
+            read={
+                "": "TO_CHAR(x, y)",
+                "snowflake": "TO_VARCHAR(x, y)",
+            },
+            write={
+                "": "CAST(x AS TEXT)",
+                "databricks": "TO_CHAR(x, y)",
+                "drill": "TO_CHAR(x, y)",
+                "oracle": "TO_CHAR(x, y)",
+                "postgres": "TO_CHAR(x, y)",
+                "snowflake": "TO_CHAR(x, y)",
+                "teradata": "TO_CHAR(x, y)",
+            },
+        )
+        self.validate_identity(
+            "TO_CHAR(foo::DATE, 'yyyy')", "TO_CHAR(CAST(CAST(foo AS DATE) AS TIMESTAMP), 'yyyy')"
+        )
+        self.validate_all(
+            "TO_CHAR(foo::TIMESTAMP, 'YYYY-MM')",
+            write={
+                "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
+                "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
+            },
+        )
+        self.validate_all(
             "SQUARE(x)",
             write={
                 "bigquery": "POWER(x, 2)",
@@ -2772,43 +2798,3 @@ SINGLE = TRUE""",
         self.validate_identity(
             "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
         )
-
-    def test_tochar(self):
-        self.validate_all(
-            "TO_CHAR(x, y)",
-            read={
-                "": "TO_CHAR(x, y)",
-                "snowflake": "TO_VARCHAR(x, y)",
-            },
-            write={
-                "": "CAST(x AS TEXT)",
-                "databricks": "TO_CHAR(x, y)",
-                "drill": "TO_CHAR(x, y)",
-                "oracle": "TO_CHAR(x, y)",
-                "postgres": "TO_CHAR(x, y)",
-                "snowflake": "TO_CHAR(x, y)",
-                "teradata": "TO_CHAR(x, y)",
-            },
-        )
-        self.validate_identity(
-            "TO_CHAR(foo::DATE, 'yyyy')", "TO_CHAR(CAST(CAST(foo AS DATE) AS TIMESTAMP), 'yyyy')"
-        )
-        self.validate_all(
-            "TO_CHAR(foo::TIMESTAMP, 'YYYY-MM')",
-            write={
-                "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
-                "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
-            },
-        )
-
-        for snowflake_fmt, python_fmt in (("DY", "%a"), ("mmmm", "%B")):
-            with self.subTest(
-                f"Testing Snowflake TO_CHAR({snowflake_fmt}) -> DuckDB STRFTIME({python_fmt})"
-            ):
-                self.validate_all(
-                    f"SELECT TO_CHAR(foo, '{snowflake_fmt}')",
-                    write={
-                        "snowflake": f"SELECT TO_CHAR(CAST(foo AS TIMESTAMP), '{snowflake_fmt}')",
-                        "duckdb": f"SELECT STRFTIME(foo, '{python_fmt}')",
-                    },
-                )

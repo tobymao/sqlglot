@@ -44,10 +44,8 @@ class Fabric(TSQL):
         # Reference: https://learn.microsoft.com/en-us/fabric/data-warehouse/data-types
         TYPE_MAPPING = {
             **TSQL.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DECIMAL: "DECIMAL",
-            exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.IMAGE: "VARBINARY",
             exp.DataType.Type.INT: "INT",
             exp.DataType.Type.JSON: "VARCHAR",
@@ -57,14 +55,12 @@ class Fabric(TSQL):
             exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.SMALLDATETIME: "DATETIME2",
             exp.DataType.Type.SMALLMONEY: "DECIMAL",
-            exp.DataType.Type.TEXT: "VARCHAR(MAX)",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.UUID: "VARBINARY(MAX)",
-            exp.DataType.Type.VARIANT: "SQL_VARIANT",
             exp.DataType.Type.XML: "VARCHAR",
         }
 

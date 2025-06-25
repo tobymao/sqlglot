@@ -356,7 +356,9 @@ def unnest_to_explode(
             offset = unnest.args.get("offset")
             if offset:
                 # For posexplode, offset should come first, then the value column
-                offset_col = offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                offset_col = (
+                    offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                )
                 columns = [offset_col] + columns
 
             unnest.replace(
@@ -403,7 +405,9 @@ def unnest_to_explode(
                 offset = unnest.args.get("offset")
                 if offset:
                     # For posexplode, offset should come first, then the value column
-                    offset_col = offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                    offset_col = (
+                        offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                    )
                     alias_cols = [offset_col] + alias_cols
 
                 for e, column in zip(exprs, alias_cols):
@@ -925,9 +929,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             if not left_join_table:
                 continue
 
-            assert not (
-                len(left_join_table) > 1
-            ), "Cannot combine JOIN predicates from different tables"
+            assert not (len(left_join_table) > 1), (
+                "Cannot combine JOIN predicates from different tables"
+            )
 
             for col in join_cols:
                 col.set("join_mark", False)
@@ -957,9 +961,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
 
         if query_from.alias_or_name in new_joins:
             only_old_joins = old_joins.keys() - new_joins.keys()
-            assert (
-                len(only_old_joins) >= 1
-            ), "Cannot determine which table to use in the new FROM clause"
+            assert len(only_old_joins) >= 1, (
+                "Cannot determine which table to use in the new FROM clause"
+            )
 
             new_from_name = list(only_old_joins)[0]
             query.set("from", exp.From(this=old_joins[new_from_name].this))

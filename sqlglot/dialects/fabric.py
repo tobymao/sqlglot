@@ -45,7 +45,7 @@ class Fabric(TSQL):
         TYPE_MAPPING = {
             **TSQL.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "BIT",
-            exp.DataType.Type.DATETIME: "DATETIME2(6)",
+            exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.DECIMAL: "DECIMAL",
             exp.DataType.Type.DOUBLE: "FLOAT",
             exp.DataType.Type.IMAGE: "VARBINARY",
@@ -55,12 +55,12 @@ class Fabric(TSQL):
             exp.DataType.Type.NCHAR: "CHAR",
             exp.DataType.Type.NVARCHAR: "VARCHAR",
             exp.DataType.Type.ROWVERSION: "ROWVERSION",
-            exp.DataType.Type.SMALLDATETIME: "DATETIME2(6)",
+            exp.DataType.Type.SMALLDATETIME: "DATETIME2",
             exp.DataType.Type.SMALLMONEY: "DECIMAL",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
-            exp.DataType.Type.TIMESTAMP: "DATETIME2(6)",
-            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2(6)",
-            exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET(6)",
+            exp.DataType.Type.TIMESTAMP: "DATETIME2",
+            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2",
+            exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.UUID: "VARBINARY(MAX)",
@@ -75,19 +75,8 @@ class Fabric(TSQL):
             Fabric limits temporal types (TIME, DATETIME2, DATETIMEOFFSET) to max 6 digits precision.
             When no precision is specified, we default to 6 digits.
             """
-            # First apply the parent type mapping to get the correct base type
-            result = super().datatype_sql(expression)
-
             # Check if this is a temporal type that needs precision handling
-            if expression.is_type(
-                exp.DataType.Type.TIME,
-                exp.DataType.Type.DATETIME2,
-                exp.DataType.Type.TIMESTAMPTZ,  # Maps to DATETIMEOFFSET in Fabric
-                exp.DataType.Type.TIMESTAMP,  # Maps to DATETIME2 in Fabric
-                exp.DataType.Type.TIMESTAMPNTZ,  # Maps to DATETIME2 in Fabric
-                exp.DataType.Type.DATETIME,  # Maps to DATETIME2 in Fabric
-                exp.DataType.Type.SMALLDATETIME,  # Maps to DATETIME2 in Fabric
-            ):
+            if expression.is_type(*exp.DataType.TEMPORAL_TYPES):
                 # Get the current precision (first expression if it exists)
                 precision_param = expression.find(exp.DataTypeParam)
                 target_precision = 6  # Default precision
@@ -97,13 +86,12 @@ class Fabric(TSQL):
                     current_precision = precision_param.this.to_py()
                     target_precision = min(current_precision, 6)
 
-                # Extract the base type from the result and add precision
-                if "(" in result:
-                    # Type already has parameters, extract just the type name
-                    base_type = result.split("(")[0]
-                else:
-                    base_type = result
+                # Create a new expression with the target precision
+                new_expression = exp.DataType(
+                    this=expression.this,
+                    expressions=[exp.DataTypeParam(this=exp.Literal.number(target_precision))],
+                )
 
-                return f"{base_type}({target_precision})"
+                return super().datatype_sql(new_expression)
 
-            return result
+            return super().datatype_sql(expression)

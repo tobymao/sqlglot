@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
+from sqlglot.tokens import TokenType
 
 
 class Fabric(TSQL):
@@ -28,29 +29,43 @@ class Fabric(TSQL):
     # Fabric is case-sensitive unlike T-SQL which is case-insensitive
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
 
+    class Tokenizer(TSQL.Tokenizer):
+        # Override T-SQL tokenizer to handle TIMESTAMP differently
+        # In T-SQL, TIMESTAMP is a synonym for ROWVERSION, but in Fabric we want it to be a datetime type
+        # Also add UTINYINT keyword mapping since T-SQL doesn't have it
+        KEYWORDS = {
+            **TSQL.Tokenizer.KEYWORDS,
+            "TIMESTAMP": TokenType.TIMESTAMP,  # Override T-SQL's mapping of TIMESTAMP to ROWVERSION
+            "UTINYINT": TokenType.UTINYINT,  # Add UTINYINT keyword that T-SQL is missing
+        }
+
     class Generator(TSQL.Generator):
         # Fabric-specific type mappings - override T-SQL types that aren't supported
         # Reference: https://learn.microsoft.com/en-us/fabric/data-warehouse/data-types
         TYPE_MAPPING = {
             **TSQL.Generator.TYPE_MAPPING,
-            # Fabric doesn't support these types, map to alternatives
+            exp.DataType.Type.BOOLEAN: "BIT",
+            exp.DataType.Type.DATETIME: "DATETIME2",
+            exp.DataType.Type.DECIMAL: "DECIMAL",
+            exp.DataType.Type.DOUBLE: "FLOAT",
+            exp.DataType.Type.IMAGE: "VARBINARY",
+            exp.DataType.Type.INT: "INT",
+            exp.DataType.Type.JSON: "VARCHAR",
             exp.DataType.Type.MONEY: "DECIMAL",
-            exp.DataType.Type.SMALLMONEY: "DECIMAL",
-            exp.DataType.Type.DATETIME: "DATETIME2(6)",
-            exp.DataType.Type.SMALLDATETIME: "DATETIME2(6)",
             exp.DataType.Type.NCHAR: "CHAR",
             exp.DataType.Type.NVARCHAR: "VARCHAR",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
+            exp.DataType.Type.SMALLDATETIME: "DATETIME2",
+            exp.DataType.Type.SMALLMONEY: "DECIMAL",
             exp.DataType.Type.TEXT: "VARCHAR(MAX)",
-            exp.DataType.Type.IMAGE: "VARBINARY",
+            exp.DataType.Type.TIMESTAMP: "DATETIME2",
+            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2",
+            exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.TINYINT: "SMALLINT",
-            exp.DataType.Type.UTINYINT: "SMALLINT",  # T-SQL parses TINYINT as UTINYINT
-            exp.DataType.Type.JSON: "VARCHAR",
+            exp.DataType.Type.UTINYINT: "SMALLINT",
+            exp.DataType.Type.UUID: "VARBINARY(MAX)",
+            exp.DataType.Type.VARIANT: "SQL_VARIANT",
             exp.DataType.Type.XML: "VARCHAR",
-            exp.DataType.Type.UUID: "VARBINARY(MAX)",  # UNIQUEIDENTIFIER has limitations in Fabric
-            # Override T-SQL mappings that use different names in Fabric
-            exp.DataType.Type.DECIMAL: "DECIMAL",  # T-SQL uses NUMERIC
-            exp.DataType.Type.DOUBLE: "FLOAT",
-            exp.DataType.Type.INT: "INT",  # T-SQL uses INTEGER
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
@@ -60,21 +75,15 @@ class Fabric(TSQL):
             Fabric limits temporal types (TIME, DATETIME2, DATETIMEOFFSET) to max 6 digits precision.
             When no precision is specified, we default to 6 digits.
             """
-            if expression.is_type(
-                exp.DataType.Type.TIME,
-                exp.DataType.Type.DATETIME2,
-                exp.DataType.Type.TIMESTAMPTZ,  # DATETIMEOFFSET in Fabric
-            ):
+            # Check if this is a temporal type that needs precision handling
+            if expression.is_type(*exp.DataType.TEMPORAL_TYPES):
                 # Get the current precision (first expression if it exists)
-                precision = expression.find(exp.DataTypeParam)
+                precision_param = expression.find(exp.DataTypeParam)
+                target_precision = 6  # Default precision
 
-                # Determine the target precision
-                if precision is None:
-                    # No precision specified, default to 6
-                    target_precision = 6
-                elif precision.this.is_int:
+                if precision_param and precision_param.this.is_int:
                     # Cap precision at 6
-                    current_precision = precision.this.to_py()
+                    current_precision = precision_param.this.to_py()
                     target_precision = min(current_precision, 6)
 
                 # Create a new expression with the target precision

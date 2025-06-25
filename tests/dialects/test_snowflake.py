@@ -80,6 +80,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t")
         self.validate_identity("1 /* /* */")
         self.validate_identity("TO_TIMESTAMP(col, fmt)")
+        self.validate_identity("SELECT TO_CHAR(CAST('12:05:05' AS TIME))")
+        self.validate_identity("SELECT TRIM(COALESCE(TO_CHAR(CAST(c AS TIME)), '')) FROM t")
         self.validate_identity(
             "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )
@@ -641,7 +643,8 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity(
-            "TO_CHAR(foo::DATE, 'yyyy')", "TO_CHAR(CAST(CAST(foo AS DATE) AS TIMESTAMP), 'yyyy')"
+            "TO_CHAR(foo::DATE, 'yyyy')",
+            "TO_CHAR(CAST(foo AS DATE), 'yyyy')",
         )
         self.validate_all(
             "TO_CHAR(foo::TIMESTAMP, 'YYYY-MM')",

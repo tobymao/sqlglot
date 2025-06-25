@@ -1,7 +1,6 @@
 from __future__ import annotations
-from sqlglot import exp, generator, tokens
+from sqlglot import exp, generator
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.tokens import TokenType
 
 
 class Exasol(Dialect):

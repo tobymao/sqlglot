@@ -355,8 +355,8 @@ def unnest_to_explode(
             columns = alias.columns if alias else []
             offset = unnest.args.get("offset")
             if offset:
-                columns.append(
-                    offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                columns.insert(
+                    0, offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
                 )
 
             unnest.replace(
@@ -402,8 +402,9 @@ def unnest_to_explode(
 
                 offset = unnest.args.get("offset")
                 if offset:
-                    alias_cols.append(
-                        offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos")
+                    alias_cols.insert(
+                        0,
+                        offset if isinstance(offset, exp.Identifier) else exp.to_identifier("pos"),
                     )
 
                 for e, column in zip(exprs, alias_cols):

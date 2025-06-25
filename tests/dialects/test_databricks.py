@@ -171,6 +171,9 @@ class TestDatabricks(Validator):
                 self.validate_identity(
                     f"CREATE TABLE t1 (foo BIGINT NOT NULL CONSTRAINT foo_c FOREIGN KEY REFERENCES t2{option})"
                 )
+        self.validate_identity(
+            "SELECT test, LISTAGG(email, '') AS Email FROM organizations GROUP BY test",
+        )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

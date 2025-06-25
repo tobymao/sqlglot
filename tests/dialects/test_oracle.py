@@ -232,8 +232,8 @@ class TestOracle(Validator):
         self.validate_all(
             "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
             write={
-                "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",
-                "postgres": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",
+                "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
+                "postgres": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(

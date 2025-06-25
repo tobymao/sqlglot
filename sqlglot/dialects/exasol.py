@@ -40,11 +40,6 @@ class Exasol(Dialect):
             This method strips any precision argument from TIMESTAMPLTZ types to ensure compatibility with Exasol's syntax.
             """
             if expression.is_type(exp.DataType.Type.TIMESTAMPLTZ):
-                return super().datatype_sql(
-                    exp.DataType(
-                        this=expression.this,
-                        expressions=[],
-                    )
-                )
+                return "TIMESTAMP WITH LOCAL TIME ZONE"
 
             return super().datatype_sql(expression)

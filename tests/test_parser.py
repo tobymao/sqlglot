@@ -1009,3 +1009,8 @@ class TestParser(unittest.TestCase):
         ast = parse_one(sql)
         assert not any(isinstance(n, exp.Column) for n in ast.walk())
         assert len(list(ast.find_all(exp.Dot))) == 7
+
+    def test_dot_comment(self):
+        sql = 'a.b."c"."d"."E" /* sqlglot.meta case_sensitive */'
+        ast = parse_one(sql)
+        self.assertEqual(ast.expression.comments, [" sqlglot.meta case_sensitive "])

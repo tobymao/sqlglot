@@ -5600,7 +5600,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
 
-            if field and field.comments:
+            if field and field.comments and isinstance(this, exp.Column):
                 t.cast(exp.Expression, this).add_comments(field.pop_comments())
 
             this = self._parse_bracket(this)

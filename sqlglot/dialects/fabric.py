@@ -43,6 +43,7 @@ class Fabric(TSQL):
         # Fabric-specific type mappings - override T-SQL types that aren't supported
         # Reference: https://learn.microsoft.com/en-us/fabric/data-warehouse/data-types
         TYPE_MAPPING = {
+            **TSQL.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.DATETIME: "DATETIME2(6)",
             exp.DataType.Type.DECIMAL: "DECIMAL",

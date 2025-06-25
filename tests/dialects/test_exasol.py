@@ -31,8 +31,24 @@ class TestExasol(Validator):
         self.validate_identity("CAST(x AS DATE)")
         self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS TIMESTAMP)")
         self.validate_identity("CAST(x AS TIMESTAMP)")
-        self.validate_identity("CAST(x AS DATETIME2)", "CAST(x AS TIMESTAMP)")
-        self.validate_identity("CAST(x AS SMALLDATETIME)", "CAST(x AS TIMESTAMP)")
+        self.validate_all(
+            "CAST(x AS TIMESTAMP)",
+            read={
+                "tsql": "CAST(x AS DATETIME2)",
+            },
+            write={
+                "exasol": "CAST(x AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS TIMESTAMP)",
+            read={
+                "tsql": "CAST(x AS SMALLDATETIME)",
+            },
+            write={
+                "exasol": "CAST(x AS TIMESTAMP)",
+            },
+        )
         self.validate_identity("CAST(x AS BOOLEAN)")
         self.validate_identity(
             "CAST(x AS TIMESTAMPLTZ)", "CAST(x AS TIMESTAMP WITH LOCAL TIME ZONE)"

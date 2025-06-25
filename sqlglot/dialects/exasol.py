@@ -5,13 +5,6 @@ from sqlglot.tokens import TokenType
 
 
 class Exasol(Dialect):
-    class Tokenizer(tokens.Tokenizer):
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            "DATETIME2": TokenType.TIMESTAMP,
-            "SMALLDATETIME": TokenType.TIMESTAMP,
-        }
-
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {

@@ -88,7 +88,7 @@ class Databricks(Spark):
                 e.this,
             ),
             exp.DatetimeTrunc: timestamptrunc_sql(),
-            exp.GroupConcat: lambda self, e: groupconcat_sql(self, e),
+            exp.GroupConcat: groupconcat_sql,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

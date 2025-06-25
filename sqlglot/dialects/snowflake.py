@@ -1416,7 +1416,7 @@ class Snowflake(Dialect):
 
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
             this = expression.this
-            if not isinstance(this, exp.TsOrDsToTimestamp):
+            if this.is_string:
                 this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
 
             return self.func("TO_CHAR", this, self.format_time(expression))

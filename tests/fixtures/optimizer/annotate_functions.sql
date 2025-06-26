@@ -459,6 +459,10 @@ STRING;
 STRING(timestamp_expr, timezone);
 STRING;
 
+# dialect: bigquery
+ARRAY_CONCAT(['a'], ['b']);
+ARRAY<VARCHAR>;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

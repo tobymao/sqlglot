@@ -42,6 +42,30 @@ def _build_json_extract(expr_type: t.Type[exp.Func]) -> t.Callable[
     return _builder
 
 
+def _column_to_var(expression: exp.Column):
+    return exp.Var(this=expression.this.this)
+
+
+def _build_field(args: t.List[exp.Expression]):
+    if len(args) < 2:
+        return None
+
+    ifs = []
+    for i in range(1, len(args)):
+        ifs.append(
+            exp.If(
+                this=args[i],
+                true=exp.Literal.number(i)
+            )
+        )
+
+    return exp.Case(
+        this=args[0],
+        ifs=ifs,
+        default=exp.Literal.number(0)
+    )
+
+
 class SingleStore(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -137,7 +161,8 @@ class SingleStore(Dialect):
             "BSON_EXTRACT_STRING": _build_json_extract(
                 exp.JSONBExtractScalar),
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
-                source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
+                source_tz=seq_get(args, 1), target_tz=seq_get(args, 2),
+                timestamp=seq_get(args, 0)
             ),
             "DATABASE": exp.CurrentSchema.from_arg_list,
             "DATE": lambda args: exp.cast(
@@ -147,21 +172,38 @@ class SingleStore(Dialect):
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "singlestore"),
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
-                format=Dialect["singlestore"].format_time(exp.Literal.string("%W")),
+                format=Dialect["singlestore"].format_time(
+                    exp.Literal.string("%W")),
             ),
             "DAYOFWEEK": lambda args: exp.Add(
                 this=exp.cast(exp.TimeToStr(
                     this=seq_get(args, 0),
-                    format=Dialect["singlestore"].format_time(exp.Literal.string("%w")),
+                    format=Dialect["singlestore"].format_time(
+                        exp.Literal.string("%w")),
                 ), DataType.Type.INT),
                 expression=exp.Literal.number(1)),
             "DAYOFYEAR": lambda args: exp.cast(exp.TimeToStr(
                 this=seq_get(args, 0),
-                format=Dialect["singlestore"].format_time(exp.Literal.string("%j")),
+                format=Dialect["singlestore"].format_time(
+                    exp.Literal.string("%j")),
             ), DataType.Type.INT),
             "DEGREES": lambda args: exp.Mul(
                 this=seq_get(args, 0),
-                expression=exp.Literal.number(180 / math.pi))
+                expression=exp.Literal.number(180 / math.pi)),
+            "EUCLIDEAN_DISTANCE": lambda args: exp.Distance(
+                this=seq_get(args, 0), expression=seq_get(args, 1)),
+            "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime,
+                                                  "singlestore"),
+            "HOUR": lambda args: exp.Add(
+                this=exp.cast(exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=Dialect["singlestore"].format_time(
+                        exp.Literal.string("%k")),
+                ), DataType.Type.INT),
+                expression=exp.Literal.number(1)),
+            "GET_FORMAT": lambda args: exp.func("GET_FORMAT", _column_to_var(
+                seq_get(args, 0)), seq_get(args, 1)),
+            "FIELD": lambda args: _build_field(args)
         }
 
     class Generator(generator.Generator):
@@ -2038,7 +2080,8 @@ class SingleStore(Dialect):
             date = self.sql(expression, "this")
             if not isinstance(expression.expression, exp.Interval):
                 interval = self.sql(
-                    exp.Interval(this=expression.expression, unit=expression.unit))
+                    exp.Interval(this=expression.expression,
+                                 unit=expression.unit))
             else:
                 interval = self.sql(expression.expression)
 
@@ -2048,7 +2091,8 @@ class SingleStore(Dialect):
             date = self.sql(expression, "this")
             if not isinstance(expression.expression, exp.Interval):
                 interval = self.sql(
-                    exp.Interval(this=expression.expression, unit=expression.unit))
+                    exp.Interval(this=expression.expression,
+                                 unit=expression.unit))
             else:
                 interval = self.sql(expression.expression)
 
@@ -2057,7 +2101,8 @@ class SingleStore(Dialect):
         @unsupported_args("zone")
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             if expression.unit is not None:
-                return self.func("TIMESTAMPDIFF", expression.unit, expression.this,
+                return self.func("TIMESTAMPDIFF", expression.unit,
+                                 expression.this,
                                  expression.expression)
             else:
                 return self.func("DATEDIFF", expression.this,
@@ -2271,10 +2316,9 @@ class SingleStore(Dialect):
             return self.func("MAP", expression.args["keys"],
                              expression.args["values"])
 
+        @unsupported_args("modifier")
         def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
-            self.unsupported(
-                "MATCH_AGAINST function is not supported in SingleStore")
-            return super().matchagainst_sql(expression)
+            return f"{self.func('MATCH', *expression.expressions)} AGAINST({self.sql(expression, 'this')})"
 
         def normalize_sql(self, expression: exp.Normalize) -> str:
             self.unsupported(
@@ -2666,7 +2710,7 @@ class SingleStore(Dialect):
             return ""
 
         def encodecolumnconstraint_sql(self,
-                                       expression: exp.EncodeColumnConstraint) -> str:
+            expression: exp.EncodeColumnConstraint) -> str:
             self.unsupported(
                 "ENCODE column constraint is not supported in SingleStore")
             return ""
@@ -3680,7 +3724,7 @@ class SingleStore(Dialect):
                 expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
 
                 if self.CREATE_FUNCTION_RETURN_AS or not isinstance(
-                        expression.expression, exp.Return):
+                    expression.expression, exp.Return):
                     postalias_props_sql = ""
                     if properties_locs.get(exp.Properties.Location.POST_ALIAS):
                         postalias_props_sql = self.properties(

@@ -35,8 +35,8 @@ class Fabric(TSQL):
         # Also add UTINYINT keyword mapping since T-SQL doesn't have it
         KEYWORDS = {
             **TSQL.Tokenizer.KEYWORDS,
-            "TIMESTAMP": TokenType.TIMESTAMP,  # Override T-SQL's mapping of TIMESTAMP to ROWVERSION
-            "UTINYINT": TokenType.UTINYINT,  # Add UTINYINT keyword that T-SQL is missing
+            "TIMESTAMP": TokenType.TIMESTAMP,
+            "UTINYINT": TokenType.UTINYINT,
         }
 
     class Generator(TSQL.Generator):
@@ -65,32 +65,51 @@ class Fabric(TSQL):
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            """
-            Override datatype generation to handle Fabric-specific precision limitations.
-
-            Fabric limits temporal types (TIME, DATETIME2, DATETIMEOFFSET) to max 6 digits precision.
-            When no precision is specified, we default to 6 digits.
-            """
-            # Check if this is a temporal type that needs precision handling
+            # Check if this is a temporal type that needs precision handling. Fabric limits temporal
+            # types to max 6 digits precision. When no precision is specified, we default to 6 digits.
             if (
                 expression.is_type(*exp.DataType.TEMPORAL_TYPES)
                 and expression.this != exp.DataType.Type.DATE
             ):
                 # Get the current precision (first expression if it exists)
                 precision_param = expression.find(exp.DataTypeParam)
-                target_precision = 6  # Default precision
+                target_precision = 6
 
                 if precision_param and precision_param.this.is_int:
                     # Cap precision at 6
                     current_precision = precision_param.this.to_py()
                     target_precision = min(current_precision, 6)
+                else:
+                    # If precision exists but is not an integer, default to 6
+                    target_precision = 6
 
                 # Create a new expression with the target precision
-                new_expression = exp.DataType(
+                expression = exp.DataType(
                     this=expression.this,
                     expressions=[exp.DataTypeParam(this=exp.Literal.number(target_precision))],
                 )
 
-                return super().datatype_sql(new_expression)
-
             return super().datatype_sql(expression)
+
+        def unixtotime_sql(self, expression: exp.UnixToTime) -> str:
+            scale = expression.args.get("scale")
+            timestamp = expression.this
+
+            if scale not in (None, exp.UnixToTime.SECONDS):
+                self.unsupported(f"UnixToTime scale {scale} is not supported by Fabric")
+                return ""
+
+            # Convert unix timestamp (seconds) to microseconds and round to avoid decimals
+            microseconds = timestamp * exp.Literal.number("1e6")
+            rounded = exp.func("round", microseconds, 0)
+            rounded_ms_as_bigint = exp.cast(rounded, exp.DataType.Type.BIGINT)
+
+            # Create the base datetime as '1970-01-01' cast to DATETIME2(6)
+            epoch_start = exp.cast("'1970-01-01'", "datetime2(6)", dialect="fabric")
+
+            dateadd = exp.DateAdd(
+                this=epoch_start,
+                expression=rounded_ms_as_bigint,
+                unit=exp.Literal.string("MICROSECONDS"),
+            )
+            return self.sql(dateadd)

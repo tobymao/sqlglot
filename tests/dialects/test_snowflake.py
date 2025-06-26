@@ -2223,6 +2223,34 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
+    def test_replace(self):
+        self.validate_all(
+            "REPLACE(subject, pattern)",
+            write={
+                "bigquery": "REPLACE(subject, pattern, '')",
+                "duckdb": "REPLACE(subject, pattern, '')",
+                "hive": "REPLACE(subject, pattern, '')",
+                "snowflake": "REPLACE(subject, pattern, '')",
+                "spark": "REPLACE(subject, pattern, '')",
+            },
+        )
+        self.validate_all(
+            "REPLACE(subject, pattern, replacement)",
+            read={
+                "bigquery": "REPLACE(subject, pattern, replacement)",
+                "duckdb": "REPLACE(subject, pattern, replacement)",
+                "hive": "REPLACE(subject, pattern, replacement)",
+                "spark": "REPLACE(subject, pattern, replacement)",
+            },
+            write={
+                "bigquery": "REPLACE(subject, pattern, replacement)",
+                "duckdb": "REPLACE(subject, pattern, replacement)",
+                "hive": "REPLACE(subject, pattern, replacement)",
+                "snowflake": "REPLACE(subject, pattern, replacement)",
+                "spark": "REPLACE(subject, pattern, replacement)",
+            },
+        )
+
     def test_match_recognize(self):
         for window_frame in ("", "FINAL ", "RUNNING "):
             for row in (

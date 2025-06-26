@@ -55,3 +55,11 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS TIME(9))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(9))", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS DATETIMEOFFSET(9))", "CAST(x AS DATETIMEOFFSET(6))")
+
+    def test_unix_to_time(self):
+        """Test UnixToTime transformation to DATEADD with microseconds"""
+
+        self.validate_identity(
+            "UNIX_TO_TIME(column)",
+            "DATEADD(MICROSECONDS, CAST(ROUND(column * 1e6, 0) AS BIGINT), CAST('1970-01-01' AS DATETIME2(6)))",
+        )

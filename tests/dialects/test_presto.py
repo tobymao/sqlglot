@@ -156,6 +156,37 @@ class TestPresto(Validator):
             },
         )
 
+    def test_replace(self):
+        self.validate_all(
+            "REPLACE(subject, pattern)",
+            write={
+                "bigquery": "REPLACE(subject, pattern, '')",
+                "duckdb": "REPLACE(subject, pattern, '')",
+                "hive": "REPLACE(subject, pattern, '')",
+                "snowflake": "REPLACE(subject, pattern, '')",
+                "spark": "REPLACE(subject, pattern, '')",
+                "presto": "REPLACE(subject, pattern, '')",
+            },
+        )
+        self.validate_all(
+            "REPLACE(subject, pattern, replacement)",
+            read={
+                "bigquery": "REPLACE(subject, pattern, replacement)",
+                "duckdb": "REPLACE(subject, pattern, replacement)",
+                "hive": "REPLACE(subject, pattern, replacement)",
+                "spark": "REPLACE(subject, pattern, replacement)",
+                "presto": "REPLACE(subject, pattern, replacement)",
+            },
+            write={
+                "bigquery": "REPLACE(subject, pattern, replacement)",
+                "duckdb": "REPLACE(subject, pattern, replacement)",
+                "hive": "REPLACE(subject, pattern, replacement)",
+                "snowflake": "REPLACE(subject, pattern, replacement)",
+                "spark": "REPLACE(subject, pattern, replacement)",
+                "presto": "REPLACE(subject, pattern, replacement)",
+            },
+        )
+
     def test_regex(self):
         self.validate_all(
             "REGEXP_REPLACE('abcd', '[ab]')",

@@ -2223,8 +2223,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
-    @mock.patch("sqlglot.generator.logger")
-    def test_replace(self, logger):
+    def test_replace(self):
         self.validate_all(
             "REPLACE(subject, pattern)",
             write={

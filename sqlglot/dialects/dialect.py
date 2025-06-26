@@ -1922,3 +1922,11 @@ def build_timetostr_or_tochar(args: t.List, dialect: Dialect) -> exp.TimeToStr |
             return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
 
     return exp.ToChar.from_arg_list(args)
+
+
+def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
+    return exp.Replace(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        replacement=seq_get(args, 2) or exp.Literal.string(""),
+    )

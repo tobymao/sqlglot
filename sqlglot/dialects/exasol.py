@@ -1,9 +1,15 @@
 from __future__ import annotations
-from sqlglot import exp, generator
-from sqlglot.dialects.dialect import Dialect, rename_func
+from sqlglot import exp, generator, parser
+from sqlglot.dialects.dialect import Dialect, rename_func, binary_from_function
 
 
 class Exasol(Dialect):
+    class Parser(parser.Parser):
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "BIT_AND": binary_from_function(exp.BitwiseAnd),
+        }
+
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {
@@ -41,6 +47,8 @@ class Exasol(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_and.htm
+            exp.BitwiseAnd: rename_func("BIT_AND"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
         }

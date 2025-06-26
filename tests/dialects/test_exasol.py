@@ -68,3 +68,21 @@ class TestExasol(Validator):
                 "exasol": "SELECT MOD(x, 10)",
             },
         )
+
+    def test_bits(self):
+        self.validate_all(
+            "SELECT BIT_AND(x, 1)",
+            read={
+                "exasol": "SELECT BIT_AND(x, 1)",
+                "duckdb": "SELECT x & 1",
+                "presto": "SELECT BITWISE_AND(x, 1)",
+                "spark": "SELECT x & 1",
+            },
+            write={
+                "exasol": "SELECT BIT_AND(x, 1)",
+                "duckdb": "SELECT x & 1",
+                "hive": "SELECT x & 1",
+                "presto": "SELECT BITWISE_AND(x, 1)",
+                "spark": "SELECT x & 1",
+            },
+        )

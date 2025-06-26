@@ -7362,8 +7362,9 @@ class Parser(metaclass=_Parser):
 
             return None
 
-        if not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN or self._match_text_seq(
-            "COLUMNS"
+        if not self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False) and (
+            not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN
+            or self._match_text_seq("COLUMNS")
         ):
             schema = self._parse_schema()
 

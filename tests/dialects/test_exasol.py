@@ -57,3 +57,14 @@ class TestExasol(Validator):
             "CAST(x AS TIMESTAMP(3) WITH LOCAL TIME ZONE)",
             "CAST(x AS TIMESTAMP WITH LOCAL TIME ZONE)",
         )
+
+    def test_mod(self):
+        self.validate_all(
+            "SELECT MOD(x, 10)",
+            read={"exasol": "SELECT MOD(x, 10)"},
+            write={
+                "teradata": "SELECT x MOD 10",
+                "mysql": "SELECT x % 10",
+                "exasol": "SELECT MOD(x, 10)",
+            },
+        )

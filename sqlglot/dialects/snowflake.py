@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     build_timetostr_or_tochar,
     binary_from_function,
     build_default_decimal_type,
+    build_replace_with_optional_replacement,
     build_timestamp_from_parts,
     date_delta_sql,
     date_trunc_to_time,
@@ -164,15 +165,6 @@ def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
         regexp_replace.set("replacement", exp.Literal.string(""))
 
     return regexp_replace
-
-
-def _build_replace(args: t.List) -> exp.Replace:
-    replace = exp.Replace.from_arg_list(args)
-
-    if not replace.args.get("replacement"):
-        replace.set("replacement", exp.Literal.string(""))
-
-    return replace
 
 
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser], exp.Show]:
@@ -493,7 +485,7 @@ class Snowflake(Dialect):
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
-            "REPLACE": _build_replace,
+            "REPLACE": build_replace_with_optional_replacement,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),

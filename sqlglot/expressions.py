@@ -5850,8 +5850,6 @@ class DateTrunc(Func):
                 unit_name = TimeUnit.UNABBREVIATED_UNIT_NAME[unit_name]
 
             args["unit"] = Literal.string(unit_name)
-        elif isinstance(unit, Week):
-            unit.set("this", Literal.string(unit.this.name.upper()))
 
         super().__init__(**args)
 

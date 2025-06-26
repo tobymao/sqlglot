@@ -8,6 +8,7 @@ class TestFabric(Validator):
     def test_type_mappings(self):
         """Test that types are correctly mapped to their alternatives"""
         self.validate_identity("CAST(x AS BOOLEAN)", "CAST(x AS BIT)")
+        self.validate_identity("CAST(x AS DATE)", "CAST(x AS DATE)")
         self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS DECIMAL)", "CAST(x AS DECIMAL)")
         self.validate_identity("CAST(x AS DOUBLE)", "CAST(x AS FLOAT)")

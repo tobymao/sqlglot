@@ -67,7 +67,10 @@ class Fabric(TSQL):
         def datatype_sql(self, expression: exp.DataType) -> str:
             # Check if this is a temporal type that needs precision handling. Fabric limits temporal
             # types to max 6 digits precision. When no precision is specified, we default to 6 digits.
-            if expression.is_type(*exp.DataType.TEMPORAL_TYPES):
+            if (
+                expression.is_type(*exp.DataType.TEMPORAL_TYPES)
+                and expression.this != exp.DataType.Type.DATE
+            ):
                 # Get the current precision (first expression if it exists)
                 precision_param = expression.find(exp.DataTypeParam)
                 target_precision = 6

@@ -57,3 +57,32 @@ class TestExasol(Validator):
             "CAST(x AS TIMESTAMP(3) WITH LOCAL TIME ZONE)",
             "CAST(x AS TIMESTAMP WITH LOCAL TIME ZONE)",
         )
+
+    def test_mod(self):
+        self.validate_all(
+            "SELECT MOD(x, 10)",
+            read={"exasol": "SELECT MOD(x, 10)"},
+            write={
+                "teradata": "SELECT x MOD 10",
+                "mysql": "SELECT x % 10",
+                "exasol": "SELECT MOD(x, 10)",
+            },
+        )
+
+    def test_bits(self):
+        self.validate_all(
+            "SELECT BIT_AND(x, 1)",
+            read={
+                "exasol": "SELECT BIT_AND(x, 1)",
+                "duckdb": "SELECT x & 1",
+                "presto": "SELECT BITWISE_AND(x, 1)",
+                "spark": "SELECT x & 1",
+            },
+            write={
+                "exasol": "SELECT BIT_AND(x, 1)",
+                "duckdb": "SELECT x & 1",
+                "hive": "SELECT x & 1",
+                "presto": "SELECT BITWISE_AND(x, 1)",
+                "spark": "SELECT x & 1",
+            },
+        )

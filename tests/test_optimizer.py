@@ -871,6 +871,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         sql = "UPDATE tbl1 SET col = 0"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
 
+        sql = "SELECT * FROM t LEFT JOIN UNNEST(a) AS a1 LEFT JOIN UNNEST(a1.a) AS a2"
+        scope = build_scope(parse_one(sql, read="bigquery"))
+        self.assertEqual(set(scope.selected_sources), {"t", "a1", "a2"})
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from sqlglot import exp, generator
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, rename_func
 
 
 class Exasol(Dialect):
@@ -38,3 +38,9 @@ class Exasol(Dialect):
                 return "TIMESTAMP WITH LOCAL TIME ZONE"
 
             return super().datatype_sql(expression)
+
+        TRANSFORMS = {
+            **generator.Generator.TRANSFORMS,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
+            exp.Mod: rename_func("MOD"),
+        }

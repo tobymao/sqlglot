@@ -72,7 +72,10 @@ class Fabric(TSQL):
             When no precision is specified, we default to 6 digits.
             """
             # Check if this is a temporal type that needs precision handling
-            if expression.is_type(*exp.DataType.TEMPORAL_TYPES):
+            if (
+                expression.is_type(*exp.DataType.TEMPORAL_TYPES)
+                and expression.this != exp.DataType.Type.DATE
+            ):
                 # Get the current precision (first expression if it exists)
                 precision_param = expression.find(exp.DataTypeParam)
                 target_precision = 6  # Default precision

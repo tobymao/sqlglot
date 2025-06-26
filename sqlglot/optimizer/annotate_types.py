@@ -329,6 +329,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 ],
                 nested=True,
             )
+
             if not any(
                 cd.kind.is_type(exp.DataType.Type.UNKNOWN)
                 for cd in struct_type.expressions

@@ -58,6 +58,11 @@ class TestTSQL(Validator):
             'SELECT 1 AS "[x]"',
             "SELECT 1 AS [[x]]]",
         )
+        self.validate_identity(
+            "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",
+            "WITH cte AS (SELECT 1 AS one) INSERT INTO foo.bar SELECT * FROM cte",
+        )
+
         self.assertEqual(
             annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
             "SELECT 1 WHERE EXISTS(SELECT 1)",
@@ -1162,11 +1167,11 @@ WHERE
             },
         )
 
-    def test_insert_cte(self):
-        self.validate_all(
-            "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",
-            write={"tsql": "WITH cte AS (SELECT 1 AS one) INSERT INTO foo.bar SELECT * FROM cte"},
-        )
+        constraint = self.validate_identity(
+            "ALTER TABLE tbl ADD CONSTRAINT cnstr PRIMARY KEY CLUSTERED (ID), CONSTRAINT cnstr2 UNIQUE CLUSTERED (ID)"
+        ).find(exp.AddConstraint)
+        assert constraint
+        assert len(list(constraint.find_all(exp.Constraint))) == 2
 
     def test_transaction(self):
         self.validate_identity("BEGIN TRANSACTION")

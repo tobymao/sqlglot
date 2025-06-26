@@ -360,6 +360,11 @@ class Presto(Dialect):
                 expression=seq_get(args, 1),
                 replacement=seq_get(args, 2) or exp.Literal.string(""),
             ),
+            "REPLACE": lambda args: exp.Replace(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                replacement=seq_get(args, 2) or exp.Literal.string(""),
+            ),
             "ROW": exp.Struct.from_arg_list,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SET_AGG": exp.ArrayUniqueAgg.from_arg_list,

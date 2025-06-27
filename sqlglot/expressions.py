@@ -6723,6 +6723,17 @@ class Substring(Func):
     arg_types = {"this": True, "start": False, "length": False}
 
 
+class SubstringIndex(Func):
+    """
+    SUBSTRING_INDEX(str, delim, count)
+
+    *count* > 0  → left slice before the *count*-th delimiter
+    *count* < 0  → right slice after the |count|-th delimiter
+    """
+
+    arg_types = {"this": True, "delimiter": True, "count": True}
+
+
 class StandardHash(Func):
     arg_types = {"this": True, "expression": False}
 

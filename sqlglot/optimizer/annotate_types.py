@@ -637,7 +637,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         array_arg = expression.this
         if array_arg.type.is_type(exp.DataType.Type.ARRAY):
-            element_type = seq_get(array_arg.type.expressions, 0)
+            element_type = seq_get(array_arg.type.expressions, 0) or exp.DataType.Type.UNKNOWN
             self._set_type(expression, element_type)
         else:
             self._set_type(expression, exp.DataType.Type.UNKNOWN)

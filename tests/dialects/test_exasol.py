@@ -102,3 +102,22 @@ class TestExasol(Validator):
                 "spark": "SELECT x | 1",
             },
         )
+
+        self.validate_all(
+            "SELECT BIT_XOR(x, 1)",
+            read={
+                "": "SELECT x ^ 1",
+                "exasol": "SELECT BIT_XOR(x, 1)",
+                "bigquery": "SELECT x ^ 1",
+                "presto": "SELECT BITWISE_XOR(x, 1)",
+                "postgres": "SELECT x # 1",
+            },
+            write={
+                "": "SELECT x ^ 1",
+                "exasol": "SELECT BIT_XOR(x, 1)",
+                "bigquery": "SELECT x ^ 1",
+                "duckdb": "SELECT XOR(x, 1)",
+                "presto": "SELECT BITWISE_XOR(x, 1)",
+                "postgres": "SELECT x # 1",
+            },
+        )

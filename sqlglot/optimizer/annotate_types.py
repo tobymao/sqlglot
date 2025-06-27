@@ -631,3 +631,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, exp.DataType.Type.INT)
         return expression
+
+    def _annotate_by_array_element(self, expression: exp.Expression) -> exp.Expression:
+        self._annotate_args(expression)
+
+        array_arg = expression.this
+        if array_arg.type.is_type(exp.DataType.Type.ARRAY):
+            element_type = seq_get(array_arg.type.expressions, 0)
+            self._set_type(expression, element_type)
+        else:
+            self._set_type(expression, exp.DataType.Type.UNKNOWN)
+
+        return expression

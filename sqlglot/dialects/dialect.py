@@ -761,6 +761,8 @@ class Dialect(metaclass=_Dialect):
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.ArrayConcatAgg: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArrayToString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TEXT),
+        exp.ArrayFirst: lambda self, e: self._annotate_by_array_element(e),
+        exp.ArrayLast: lambda self, e: self._annotate_by_array_element(e),
         exp.Bracket: lambda self, e: self._annotate_bracket(e),
         exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),

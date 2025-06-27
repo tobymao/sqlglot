@@ -5569,6 +5569,14 @@ class ArrayFilter(Func):
     _sql_names = ["FILTER", "ARRAY_FILTER"]
 
 
+class ArrayFirst(Func):
+    pass
+
+
+class ArrayLast(Func):
+    pass
+
+
 class ArrayToString(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]

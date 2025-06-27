@@ -467,6 +467,10 @@ ARRAY<VARCHAR>;
 ARRAY_CONCAT_AGG(tbl.array_col);
 ARRAY<STRING>;
 
+# dialect: bigquery
+ARRAY_TO_STRING(['a'], ['b'], ',');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -330,6 +330,8 @@ class ClickHouse(Dialect):
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "SUBSTRING_INDEX": exp.SubstringIndex.from_arg_list,
+            "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,  # alias for camel-case substringIndex
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
         }
@@ -1105,6 +1107,9 @@ class ClickHouse(Dialect):
                 func_name="POSITION",
                 supports_position=True,
                 use_ansi_position=False,
+            ),
+            exp.SubstringIndex: lambda self, e: self.func(
+                "SUBSTRING_INDEX", e.this, e.args["delimiter"], e.args["count"]
             ),
             exp.TimeToStr: lambda self, e: self.func(
                 "formatDateTime", e.this, self.format_time(e), e.args.get("zone")

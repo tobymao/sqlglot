@@ -221,6 +221,29 @@ class TestClickhouse(Validator):
             "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
         )
 
+        self.validate_identity("SELECT SUBSTRING_INDEX(str, delim, count)")
+        self.validate_identity("SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)")
+        self.validate_identity("SELECT SUBSTRING_INDEX('a.b.c.d', '.', -2)")
+
+        self.validate_all(
+            "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            write={
+                "databricks": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "spark": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT substringIndex('a.b.c.d', '.', 2)",
+            write={
+                "databricks": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "spark": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "clickhouse": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            },
+        )
+
         self.validate_all(
             "SELECT CAST(STR_TO_DATE(SUBSTRING(a.eta, 1, 10), '%Y-%m-%d') AS Nullable(DATE))",
             read={
@@ -228,6 +251,7 @@ class TestClickhouse(Validator):
                 "oracle": "SELECT to_date(substr(a.eta, 1,10), 'YYYY-MM-DD')",
             },
         )
+
         self.validate_all(
             "CHAR(67) || CHAR(65) || CHAR(84)",
             read={

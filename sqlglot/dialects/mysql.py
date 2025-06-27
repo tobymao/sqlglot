@@ -325,6 +325,7 @@ class MySQL(Dialect):
             "SCHEMA": exp.CurrentSchema.from_arg_list,
             "DATABASE": exp.CurrentSchema.from_arg_list,
             "STR_TO_DATE": _str_to_date,
+            "SUBSTRING_INDEX": exp.SubstringIndex.from_arg_list,
             "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
             "TO_DAYS": lambda args: exp.paren(
                 exp.DateDiff(

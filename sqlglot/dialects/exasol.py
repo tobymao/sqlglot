@@ -12,6 +12,7 @@ class Exasol(Dialect):
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
+            "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
         }
 
     class Generator(generator.Generator):
@@ -57,6 +58,8 @@ class Exasol(Dialect):
             exp.BitwiseOr: rename_func("BIT_OR"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_not.htm
             exp.BitwiseNot: rename_func("BIT_NOT"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_lshift.htm
+            exp.BitwiseLeftShift: rename_func("BIT_LSHIFT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm

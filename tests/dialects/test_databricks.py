@@ -82,6 +82,17 @@ class TestDatabricks(Validator):
             "FROM_UTC_TIMESTAMP(CAST(x AS TIMESTAMP), tz)",
         )
 
+        self.validate_identity("SELECT SUBSTRING_INDEX(str, delim, count)")
+
+        self.validate_all(
+            "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            write={
+                "databricks": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "spark": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            },
+        )
+
         self.validate_all(
             "SELECT c1:item[1].price",
             read={

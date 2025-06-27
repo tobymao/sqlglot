@@ -155,6 +155,7 @@ class TestPresto(Validator):
                 "spark": "CAST(x AS TIMESTAMP)",
             },
         )
+        self.validate_identity("REVERSE(x)")
 
     def test_replace(self):
         self.validate_all(

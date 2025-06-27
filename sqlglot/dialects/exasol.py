@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqlglot import exp, generator, parser
 from sqlglot.dialects.dialect import Dialect, rename_func, binary_from_function
+from sqlglot.helper import seq_get
 
 
 class Exasol(Dialect):
@@ -10,6 +11,7 @@ class Exasol(Dialect):
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
+            "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
         }
 
     class Generator(generator.Generator):
@@ -53,6 +55,8 @@ class Exasol(Dialect):
             exp.BitwiseAnd: rename_func("BIT_AND"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_or.htm
             exp.BitwiseOr: rename_func("BIT_OR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_not.htm
+            exp.BitwiseNot: rename_func("BIT_NOT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm

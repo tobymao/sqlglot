@@ -121,3 +121,19 @@ class TestExasol(Validator):
                 "postgres": "SELECT x # 1",
             },
         )
+        self.validate_all(
+            "SELECT BIT_NOT(x)",
+            read={
+                "exasol": "SELECT BIT_NOT(x)",
+                "duckdb": "SELECT ~x",
+                "presto": "SELECT BITWISE_NOT(x)",
+                "spark": "SELECT ~x",
+            },
+            write={
+                "exasol": "SELECT BIT_NOT(x)",
+                "duckdb": "SELECT ~x",
+                "hive": "SELECT ~x",
+                "presto": "SELECT BITWISE_NOT(x)",
+                "spark": "SELECT ~x",
+            },
+        )

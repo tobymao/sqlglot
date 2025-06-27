@@ -8,6 +8,7 @@ class Exasol(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
+            "BIT_OR": binary_from_function(exp.BitwiseOr),
         }
 
     class Generator(generator.Generator):
@@ -49,6 +50,8 @@ class Exasol(Dialect):
             **generator.Generator.TRANSFORMS,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_and.htm
             exp.BitwiseAnd: rename_func("BIT_AND"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_or.htm
+            exp.BitwiseOr: rename_func("BIT_OR"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
         }

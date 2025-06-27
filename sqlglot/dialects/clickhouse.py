@@ -1107,9 +1107,6 @@ class ClickHouse(Dialect):
                 supports_position=True,
                 use_ansi_position=False,
             ),
-            exp.SubstringIndex: lambda self, e: self.func(
-                "SUBSTRING_INDEX", e.this, e.args["delimiter"], e.args["count"]
-            ),
             exp.TimeToStr: lambda self, e: self.func(
                 "formatDateTime", e.this, self.format_time(e), e.args.get("zone")
             ),

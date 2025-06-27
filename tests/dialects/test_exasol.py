@@ -169,3 +169,8 @@ class TestExasol(Validator):
                 "spark": "SELECT SHIFTRIGHT(x, 1)",
             },
         )
+
+    def test_aggregateFunctions(self):
+        self.validate_identity(
+            "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department"
+        )

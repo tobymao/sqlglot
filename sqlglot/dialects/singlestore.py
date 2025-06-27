@@ -5,7 +5,7 @@ import math
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens, parser
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
     bool_xor_sql, rename_func, count_if_to_sum, \
-    time_format, build_formatted_time
+    time_format, build_formatted_time, isnull_to_is_null
 import typing as t
 import re
 from sqlglot import exp
@@ -130,7 +130,8 @@ class SingleStore(Dialect):
             "GEOGRAPHYPOINT": TokenType.GEOGRAPHY,
             "IGNORE": TokenType.IGNORE,
             "KEY": TokenType.KEY,
-            "START": TokenType.BEGIN
+            "START": TokenType.BEGIN,
+            ":>": TokenType.COLON_GT
         }
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {
@@ -203,7 +204,30 @@ class SingleStore(Dialect):
                 expression=exp.Literal.number(1)),
             "GET_FORMAT": lambda args: exp.func("GET_FORMAT", _column_to_var(
                 seq_get(args, 0)), seq_get(args, 1)),
-            "FIELD": lambda args: _build_field(args)
+            "FIELD": lambda args: _build_field(args),
+            "ISNULL": isnull_to_is_null,
+            "IS_UUID": lambda args: exp.RegexpILike(this=seq_get(args, 0),
+                                                    expression=exp.Literal.string(
+                                                        "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")),
+            "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
+            "JSON_EXTRACT_JSON": _build_json_extract(
+                exp.JSONExtract),
+            "JSON_EXTRACT_STRING": _build_json_extract(
+                exp.JSONExtractScalar),
+        }
+
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "JSON_AGG": lambda self: exp.JSONArrayAgg(
+                this=self._parse_term(),
+                order=self._parse_order(),
+            ),
+            "JSON_BUILD_OBJECT": lambda
+                self: self._parse_json_object(),
+        }
+
+        FACTOR = {
+            TokenType.COLON_GT: exp.Cast
         }
 
     class Generator(generator.Generator):

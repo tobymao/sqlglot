@@ -121,7 +121,7 @@ class TestSingleStore(Validator):
             self.assertEqual(sql, generated)
 
     def validate_parsing(self, sql: str,
-        expected_expr: exp.Expression):
+        expected_expr: exp.Expression, run: bool = True):
 
         query = parse_one(sql, read="singlestore")
         expr = query.find(type(expected_expr))
@@ -132,8 +132,9 @@ class TestSingleStore(Validator):
         # Check that the query can be executed
         generated = query.sql(dialect="singlestore")
         print(generated)
-        with conn.cursor() as cur:
-            cur.execute(generated)
+        if run:
+            with conn.cursor() as cur:
+                cur.execute(generated)
 
     def test_predicate_generation(self):
         self.validate_generation(
@@ -4730,5 +4731,277 @@ class TestSingleStore(Validator):
                 ),
                 true=exp.Literal.string("adult"),
                 false=exp.Literal.string("minor")
+            )
+        )
+
+    def test_tutu(self):
+        self.validate_parsing(
+            "SELECT age IN (20, 30) FROM users",
+            exp.In(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expressions=[exp.Literal.number(20), exp.Literal.number(30)]
+            )
+        )
+        self.validate_parsing(
+            "SELECT age NOT IN (20, 30) FROM users",
+            exp.Not(
+                this=exp.In(
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    expressions=[exp.Literal.number(20), exp.Literal.number(30)]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT INET_ATON('192.168.0.1') FROM users",
+            exp.func("INET_ATON",
+                     exp.Literal.string("192.168.0.1"))
+        )
+        self.validate_parsing(
+            "SELECT INET_NTOA(3232235521) FROM users",
+            exp.func("INET_NTOA",
+                     exp.Literal.number(3232235521))
+        )
+        self.validate_parsing(
+            "SELECT INET6_ATON('2001:db8::1') FROM users",
+            exp.func("INET6_ATON",
+                     exp.Literal.string("2001:db8::1"))
+        )
+        self.validate_parsing(
+            "SELECT INET6_NTOA(x'20010DB8000000000000000000000001') FROM users",
+            exp.func("INET6_NTOA",
+                     exp.HexString(this="20010DB8000000000000000000000001"))
+        )
+        self.validate_parsing(
+            "SELECT INITCAP(name) FROM users",
+            exp.Initcap(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT INSTR(name, 'a') FROM users",
+            exp.StrPosition(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                substr=exp.Literal.string("a"))
+        )
+        self.validate_parsing(
+            "SELECT IS_BSON_NULL(metadatab) FROM events",
+            exp.func("IS_BSON_NULL",
+                     exp.Column(
+                         this=exp.Identifier(this="metadatab", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT IS_UUID(name) FROM users",
+            exp.RegexpILike(
+                this=exp.Column(
+                    this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string(
+                    "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+            )
+        )
+        self.validate_parsing(
+            "SELECT ISNULL(email) FROM users",
+            exp.Is(
+                this=exp.Column(
+                    this=exp.Identifier(this="email", quoted=False)),
+                expression=exp.Null()
+            )
+        )
+        self.validate_parsing(
+            "SELECT ISNUMERIC(age) FROM users",
+            exp.func("ISNUMERIC",
+                     exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_AGG(name) FROM users",
+            exp.JSONArrayAgg(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        # TODO: add support of the struct type
+        # self.validate_parsing(
+        #     "SELECT JSON_AGG(ROW(name, id):>RECORD(name TEXT, id INT)) FROM users",
+        #     exp.JSONArrayAgg(
+        #         this=exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        # )
+        self.validate_parsing(
+            "SELECT JSON_AGG(users.*) FROM users",
+            exp.JSONArrayAgg(
+                this=exp.Column(
+                    this=exp.Star(),
+                    table=exp.Identifier(this="users", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_AGG(name ORDER BY id) FROM users",
+            exp.JSONArrayAgg(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                order=exp.Order(
+                    expressions=[
+                        exp.Ordered(
+                            this=exp.Column(
+                                this=exp.Identifier(this="id", quoted=False)),
+                            nulls_first=True
+                        )
+                    ])
+            )
+        )
+        self.validate_parsing(
+            "SELECT JSON_ARRAY_CONTAINS_STRING(name, 'value') FROM users",
+            exp.func("JSON_ARRAY_CONTAINS_STRING",
+                     exp.Column(
+                         this=exp.Identifier(this="name", quoted=False)),
+                     exp.Literal.string("value"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_ARRAY_PACK('[1.0, 2.0]') FROM users",
+            exp.func("JSON_ARRAY_PACK",
+                     exp.Literal.string("[1.0, 2.0]"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_ARRAY_PUSH_STRING(metadata, 'new') FROM events",
+            exp.func("JSON_ARRAY_PUSH_STRING",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("new"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_ARRAY_UNPACK(name) FROM users",
+            exp.func("JSON_ARRAY_UNPACK",
+                     exp.Column(
+                         this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_BUILD_ARRAY(1, 'a', TRUE) FROM users",
+            exp.JSONArray(
+                expressions=[
+                    exp.Literal.number(1),
+                    exp.Literal.string("a"),
+                    exp.Boolean(this=True)
+                ])
+        )
+        self.validate_parsing(
+            "SELECT JSON_BUILD_OBJECT('name', name, 'age', age) FROM users",
+            exp.JSONObject(
+                expressions=[
+                    exp.JSONKeyValue(
+                        this=exp.Literal(this='name', is_string=True),
+                        expression=exp.Column(
+                            this=exp.Identifier(this='name', quoted=False))),
+                    exp.JSONKeyValue(
+                        this=exp.Literal(this='age', is_string=True),
+                        expression=exp.Column(
+                            this=exp.Identifier(this='age', quoted=False)))
+                ]
+            )
+        )
+        self.validate_parsing(
+            "SELECT JSON_DELETE_KEY(metadata, 'key') FROM events",
+            exp.func("JSON_DELETE_KEY",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("key"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_EXTRACT_DOUBLE(metadata, '$.name') FROM events",
+            exp.func("JSON_EXTRACT_DOUBLE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("$.name"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_EXTRACT_STRING(metadata, 'name') FROM events",
+            exp.JSONExtractScalar(this=exp.Column(
+                this=exp.Identifier(this="metadata", quoted=False)),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="name")
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT JSON_EXTRACT_JSON(metadata, 'name') FROM events",
+            exp.JSONExtract(this=exp.Column(
+                this=exp.Identifier(this="metadata", quoted=False)),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="name")
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT JSON_EXTRACT_BIGINT(metadata, '$.name') FROM events",
+            exp.func("JSON_EXTRACT_BIGINT",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("$.name"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_GET_TYPE(metadata) FROM events",
+            exp.func("JSON_GET_TYPE",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_KEYS(metadata) FROM events",
+            exp.func("JSON_KEYS",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_LENGTH(metadata) FROM events",
+            exp.func("JSON_LENGTH",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_MATCH_ANY(metadata, '{\"key\": \"value\"}') FROM events",
+            exp.func("JSON_MATCH_ANY",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("{\"key\": \"value\"}"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_MERGE_PATCH(metadata, '{\"key\": \"value\"}') FROM events",
+            exp.func("JSON_MERGE_PATCH",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("{\"key\": \"value\"}"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_PRETTY(metadata) FROM events",
+            exp.func("JSON_PRETTY",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT JSON_SET_STRING(metadata, '$.key', 'value') FROM events",
+            exp.func("JSON_SET_STRING",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.string("$.key"),
+                     exp.Literal.string("value"))
+        )
+        self.validate_parsing(
+            "SELECT JSON_SPLICE_STRING(metadata, 1, 2, 'new') FROM events",
+            exp.func("JSON_SPLICE_STRING",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False)),
+                     exp.Literal.number(1),
+                     exp.Literal.number(2),
+                     exp.Literal.string("new"))
+        )
+        self.validate_parsing(
+            "JSON_TO_ARRAY(metadata)",
+            exp.func("JSON_TO_ARRAY",
+                     exp.Column(
+                         this=exp.Identifier(this="metadata", quoted=False))),
+            run=False
+        )
+        self.validate_parsing(
+            "SELECT LAG(age) OVER (ORDER BY signup_date) FROM users",
+            exp.Lag(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
             )
         )

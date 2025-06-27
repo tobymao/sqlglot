@@ -53,6 +53,7 @@ class TokenType(AutoName):
     NEQ = auto()
     NULLSAFE_EQ = auto()
     COLON_EQ = auto()
+    COLON_GT = auto()
     AND = auto()
     OR = auto()
     AMP = auto()

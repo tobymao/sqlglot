@@ -240,7 +240,7 @@ class TestClickhouse(Validator):
                 "databricks": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
                 "spark": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
                 "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
-                "clickhouse": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "clickhouse": "SELECT substringIndex('a.b.c.d', '.', 2)",
             },
         )
 

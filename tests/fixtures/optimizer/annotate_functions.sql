@@ -49,6 +49,9 @@ ARRAY<VARCHAR>;
 ARRAY_REVERSE([1, 1.5]);
 ARRAY<DOUBLE>;
 
+ARRAY_REVERSE('ab');
+VARCHAR;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

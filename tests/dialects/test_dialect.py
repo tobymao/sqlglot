@@ -1349,6 +1349,10 @@ class TestDialect(Validator):
                 "postgres": "ARRAY_REVERSE(x)",
                 "presto": "REVERSE(x)",
                 "trino": "REVERSE(x)",
+                "hive": "REVERSE(x)",
+                "spark2": "REVERSE(x)",
+                "spark": "REVERSE(x)",
+                "databricks": "REVERSE(x)",
             },
             write={
                 "bigquery": "ARRAY_REVERSE(x)",
@@ -1357,6 +1361,10 @@ class TestDialect(Validator):
                 "postgres": "ARRAY_REVERSE(x)",
                 "presto": "REVERSE(x)",
                 "trino": "REVERSE(x)",
+                "hive": "REVERSE(x)",
+                "spark2": "REVERSE(x)",
+                "spark": "REVERSE(x)",
+                "databricks": "REVERSE(x)",
             },
         )
 

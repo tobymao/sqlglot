@@ -463,6 +463,10 @@ STRING;
 ARRAY_CONCAT(['a'], ['b']);
 ARRAY<VARCHAR>;
 
+# dialect: bigquery
+ARRAY_CONCAT_AGG(tbl.array_col);
+ARRAY<STRING>;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -354,7 +354,6 @@ class Hive(Dialect):
                 pair_delim=seq_get(args, 1) or exp.Literal.string(","),
                 key_value_delim=seq_get(args, 2) or exp.Literal.string(":"),
             ),
-            "SUBSTRING_INDEX": exp.SubstringIndex.from_arg_list,
             "TO_DATE": _build_to_date,
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "TRUNC": exp.TimestampTrunc.from_arg_list,

@@ -5,17 +5,16 @@ from sqlglot.dialects.dialect import Dialect
 
 class Dremio(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
-    CONCAT_COALESCE = True  # CONCAT('a', NULL) = 'a', not NULL
+    CONCAT_COALESCE = True
     NORMALIZE_FUNCTIONS = False
     PRESERVE_ORIGINAL_NAMES = True
-    TYPED_DIVISION = True  # Type of division result is determined by the types of the operands
+    TYPED_DIVISION = True
     SUPPORTS_SEMI_ANTI_JOIN = False
     NULL_ORDERING = "nulls_are_last"
-    TABLESAMPLE_SIZE_IS_PERCENT = True
-    SUPPORTS_VALUES_DEFAULT = False  # Dremio uses NULL instead
+    SUPPORTS_VALUES_DEFAULT = False
 
     class Parser(parser.Parser):
-        LOG_DEFAULTS_TO_LN = True  # LOG(x) with no base defaults to natural log
+        LOG_DEFAULTS_TO_LN = True
 
     class Generator(generator.Generator):
         NVL2_SUPPORTED = False
@@ -23,7 +22,6 @@ class Dremio(Dialect):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
         LIMIT_ONLY_LITERALS = True
-        SUPPORTS_SINGLE_ARG_CONCAT = False
         MULTI_ARG_DISTINCT = False
 
         # https://docs.dremio.com/current/reference/sql/data-types/
@@ -35,12 +33,23 @@ class Dremio(Dialect):
             exp.DataType.Type.TEXT: "VARCHAR",
             exp.DataType.Type.NCHAR: "VARCHAR",
             exp.DataType.Type.CHAR: "VARCHAR",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.ARRAY: "LIST",
             exp.DataType.Type.BIT: "BOOLEAN",
         }
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            """
+            Reject time-zone–aware TIMESTAMPs, which Dremio does not accept
+            """
+            if expression.is_type(
+                exp.DataType.Type.TIMESTAMPTZ,
+                exp.DataType.Type.TIMESTAMPLTZ,
+            ):
+                self.unsupported("Dremio does not support time-zone-aware TIMESTAMP")
+
+            return super().datatype_sql(expression)
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "//", ("/*", "*/")]

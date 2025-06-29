@@ -627,6 +627,7 @@ class TestDialect(Validator):
                 "clickhouse": "SELECT CASE WHEN NOT (a IS NULL) THEN b ELSE c END",
                 "databricks": "SELECT NVL2(a, b, c)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "dremio": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "duckdb": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "hive": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
@@ -653,6 +654,7 @@ class TestDialect(Validator):
                 "clickhouse": "SELECT CASE WHEN NOT (a IS NULL) THEN b END",
                 "databricks": "SELECT NVL2(a, b)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "dremio": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "duckdb": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "hive": "SELECT CASE WHEN NOT a IS NULL THEN b END",
@@ -2663,6 +2665,7 @@ SELECT
                         "bigquery": f"LOG{base}(a)",
                         "clickhouse": f"LOG{base}(a)",
                         "databricks": f"LOG{base}(a)",
+                        "dremio": f"LOG{base}(a)",
                         "duckdb": f"LOG{base}(a)",
                         "mysql": f"LOG{base}(a)",
                         "postgres": f"LOG{base}(a)",
@@ -2675,6 +2678,7 @@ SELECT
                     write={
                         "bigquery": f"LOG(a, {base})",
                         "clickhouse": f"LOG{base}(a)",
+                        "dremio": f"LOG({base}, a)",
                         "duckdb": f"LOG({base}, a)",
                         "mysql": f"LOG({base}, a)",
                         "oracle": f"LOG({base}, a)",
@@ -2705,6 +2709,7 @@ SELECT
         self.validate_all(
             "LN(x)",
             read={
+                "dremio": "LOG(x)",
                 "bigquery": "LOG(x)",
                 "clickhouse": "LOG(x)",
                 "databricks": "LOG(x)",

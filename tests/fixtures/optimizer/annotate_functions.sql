@@ -461,7 +461,31 @@ STRING;
 
 # dialect: bigquery
 ARRAY_CONCAT(['a'], ['b']);
-ARRAY<VARCHAR>;
+ARRAY<STRING>;
+
+# dialect: bigquery
+ARRAY_CONCAT_AGG(tbl.array_col);
+ARRAY<STRING>;
+
+# dialect: bigquery
+ARRAY_TO_STRING(['a'], ['b'], ',');
+STRING;
+
+# dialect: bigquery
+ARRAY_FIRST(['a', 'b']);
+STRING;
+
+# dialect: bigquery
+ARRAY_LAST(['a', 'b']);
+STRING;
+
+# dialect: bigquery
+ARRAY_FIRST([1, 1.5]);
+DOUBLE;
+
+# dialect: bigquery
+ARRAY_LAST([1, 1.5]);
+DOUBLE;
 
 --------------------------------------
 -- Snowflake

@@ -86,3 +86,86 @@ class TestExasol(Validator):
                 "spark": "SELECT x & 1",
             },
         )
+        self.validate_all(
+            "SELECT BIT_OR(x, 1)",
+            read={
+                "exasol": "SELECT BIT_OR(x, 1)",
+                "duckdb": "SELECT x | 1",
+                "presto": "SELECT BITWISE_OR(x, 1)",
+                "spark": "SELECT x | 1",
+            },
+            write={
+                "exasol": "SELECT BIT_OR(x, 1)",
+                "duckdb": "SELECT x | 1",
+                "hive": "SELECT x | 1",
+                "presto": "SELECT BITWISE_OR(x, 1)",
+                "spark": "SELECT x | 1",
+            },
+        )
+
+        self.validate_all(
+            "SELECT BIT_XOR(x, 1)",
+            read={
+                "": "SELECT x ^ 1",
+                "exasol": "SELECT BIT_XOR(x, 1)",
+                "bigquery": "SELECT x ^ 1",
+                "presto": "SELECT BITWISE_XOR(x, 1)",
+                "postgres": "SELECT x # 1",
+            },
+            write={
+                "": "SELECT x ^ 1",
+                "exasol": "SELECT BIT_XOR(x, 1)",
+                "bigquery": "SELECT x ^ 1",
+                "duckdb": "SELECT XOR(x, 1)",
+                "presto": "SELECT BITWISE_XOR(x, 1)",
+                "postgres": "SELECT x # 1",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_NOT(x)",
+            read={
+                "exasol": "SELECT BIT_NOT(x)",
+                "duckdb": "SELECT ~x",
+                "presto": "SELECT BITWISE_NOT(x)",
+                "spark": "SELECT ~x",
+            },
+            write={
+                "exasol": "SELECT BIT_NOT(x)",
+                "duckdb": "SELECT ~x",
+                "hive": "SELECT ~x",
+                "presto": "SELECT BITWISE_NOT(x)",
+                "spark": "SELECT ~x",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_LSHIFT(x, 1)",
+            read={
+                "exasol": "SELECT BIT_LSHIFT(x, 1)",
+                "spark": "SELECT SHIFTLEFT(x, 1)",
+                "duckdb": "SELECT x << 1",
+                "hive": "SELECT x << 1",
+            },
+            write={
+                "exasol": "SELECT BIT_LSHIFT(x, 1)",
+                "duckdb": "SELECT x << 1",
+                "presto": "SELECT BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)",
+                "hive": "SELECT x << 1",
+                "spark": "SELECT SHIFTLEFT(x, 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_RSHIFT(x, 1)",
+            read={
+                "exasol": "SELECT BIT_RSHIFT(x, 1)",
+                "spark": "SELECT SHIFTRIGHT(x, 1)",
+                "duckdb": "SELECT x >> 1",
+                "hive": "SELECT x >> 1",
+            },
+            write={
+                "exasol": "SELECT BIT_RSHIFT(x, 1)",
+                "duckdb": "SELECT x >> 1",
+                "presto": "SELECT BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
+                "hive": "SELECT x >> 1",
+                "spark": "SELECT SHIFTRIGHT(x, 1)",
+            },
+        )

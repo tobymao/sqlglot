@@ -1755,6 +1755,9 @@ WHERE
             },
         )
 
+        self.validate_identity("ARRAY_FIRST(['a', 'b'])")
+        self.validate_identity("ARRAY_LAST(['a', 'b'])")
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

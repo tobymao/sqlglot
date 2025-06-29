@@ -907,6 +907,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 "bigint_col": "BIGINT",
                 "bool_col": "BOOLEAN",
                 "interval_col": "INTERVAL",
+                "array_col": "ARRAY<STRING>",
             }
         }
 

@@ -503,6 +503,12 @@ class Presto(Dialect):
                     amend_exploded_column_table,
                 ]
             ),
+            exp.Space: lambda self, e: self.sql(
+                exp.Repeat(
+                    this=exp.Literal.string(" "),  # first arg  -> ' '
+                    times=e.this,  # second arg -> n
+                )
+            ),
             exp.SortArray: _no_sort_array,
             exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",

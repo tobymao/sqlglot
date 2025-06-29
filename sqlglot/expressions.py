@@ -2762,8 +2762,14 @@ class AutoIncrementProperty(Property):
 
 
 # https://docs.aws.amazon.com/prescriptive-guidance/latest/materialized-views-redshift/refreshing-materialized-views.html
+# https://clickhouse.com/docs/sql-reference/statements/create/view#refreshable-materialized-view
 class AutoRefreshProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {
+        "this": True,
+        "append": False,
+        "offset": False,
+        "depend": False,
+    }
 
 
 class BackupProperty(Property):

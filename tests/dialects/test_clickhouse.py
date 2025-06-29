@@ -1394,3 +1394,14 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
         )
+
+    def test_refreshable_view(self):
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_db.rmv ON CLUSTER '{cluster}' REFRESH EVERY 5 MINUTE AS SELECT * FROM test_db.test_src_table"
+        )
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_db.rmv ON CLUSTER '{cluster}' REFRESH EVERY 5 MINUTE DEPENDS ON test_db.src_rmv TO test_db.dest_table AS SELECT * FROM test_db.test_src_table"
+        )
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW test_db.rmv ON CLUSTER '{cluster}' REFRESH EVERY 5 MINUTE DEPENDS ON test_db.src_rmv APPEND TO test_db.dest_table AS SELECT * FROM test_db.test_src_table"
+        )

@@ -504,6 +504,7 @@ class ClickHouse(Dialect):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "ENGINE": lambda self: self._parse_engine_property(),
+            "REFRESH": lambda self: self._parse_auto_refresh(),
         }
         PROPERTY_PARSERS.pop("DYNAMIC")
 
@@ -966,6 +967,22 @@ class ClickHouse(Dialect):
 
             return value
 
+        def _parse_auto_refresh(self) -> t.Optional[exp.AutoRefreshProperty]:
+            kwargs = {}
+
+            if not self._match_texts("EVERY"):
+                self._retreat(self._index - 1)
+                return None
+            kwargs["this"] = self._parse_interval(match_interval=False)
+
+            if self._match_text_seq("DEPENDS", "ON"):
+                kwargs["depend"] = self._parse_table_parts()  # type: ignore
+
+            if self._match_texts("APPEND"):
+                kwargs["append"] = True  # type: ignore
+
+            return self.expression(exp.AutoRefreshProperty, **kwargs)  # type: ignore
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
@@ -1069,6 +1086,7 @@ class ClickHouse(Dialect):
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
             exp.ArgMin: arg_max_or_min_no_count("argMin"),
             exp.Array: inline_array_sql,
+            exp.AutoRefreshProperty: lambda self, e: self.flatten_auto_refresh_prop(e),
             exp.CastToStrType: rename_func("CAST"),
             exp.CountIf: rename_func("countIf"),
             exp.CompressColumnConstraint: lambda self,
@@ -1138,6 +1156,7 @@ class ClickHouse(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
+            exp.AutoRefreshProperty: exp.Properties.Location.POST_NAME,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.ToTableProperty: exp.Properties.Location.POST_NAME,
@@ -1393,3 +1412,20 @@ class ClickHouse(Dialect):
                 values_as_table = True
 
             return super().values_sql(expression, values_as_table=values_as_table)
+
+        def flatten_auto_refresh_prop(self, expression: exp.AutoRefreshProperty) -> str:
+            interval_str = self.flatten_interval(expression.this)
+
+            depends_on_clause = ""
+            if expression.args.get("depend"):
+                depends_on_table = expression.args.get("depend")
+                depends_on_clause = f" DEPENDS ON {depends_on_table}"
+
+            append_clause = ""
+            if expression.args.get("append"):
+                append_clause = " APPEND"
+
+            return f"REFRESH EVERY {interval_str}{depends_on_clause}{append_clause}"
+
+        def flatten_interval(self, expression: exp.Interval) -> str:
+            return f"{expression.this.this} {expression.unit}"

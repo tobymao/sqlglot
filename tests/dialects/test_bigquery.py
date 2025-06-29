@@ -2646,3 +2646,14 @@ OPTIONS (
                     "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
                 },
             )
+
+    def test_space(self):
+        self.validate_all(
+            "SELECT REPEAT(' ', 2)",
+            read={
+                "hive": "SELECT SPACE(2)",
+                "spark": "SELECT SPACE(2)",
+                "databricks": "SELECT SPACE(2)",
+                "trino": "SELECT REPEAT(' ', 2)",
+            },
+        )

@@ -1012,6 +1012,12 @@ class BigQuery(Dialect):
             ),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.Space: lambda self, e: self.sql(
+                exp.Repeat(
+                    this=exp.Literal.string(" "),  # first arg  -> ' '
+                    times=e.this,  # second arg -> n
+                )
+            ),
             exp.StabilityProperty: lambda self, e: (
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),

@@ -304,6 +304,16 @@ LANGUAGE js AS
         )
 
         self.validate_all(
+            "SELECT REPEAT(' ', 2)",
+            read={
+                "hive": "SELECT SPACE(2)",
+                "spark": "SELECT SPACE(2)",
+                "databricks": "SELECT SPACE(2)",
+                "trino": "SELECT REPEAT(' ', 2)",
+            },
+        )
+
+        self.validate_all(
             "SELECT purchases, LAST_VALUE(item) OVER item_window AS most_popular FROM Produce WINDOW item_window AS (PARTITION BY purchases ORDER BY purchases ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)",
             write={
                 "bigquery": "SELECT purchases, LAST_VALUE(item) OVER item_window AS most_popular FROM Produce WINDOW item_window AS (PARTITION BY purchases ORDER BY purchases ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)",

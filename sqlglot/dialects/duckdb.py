@@ -1187,14 +1187,23 @@ class DuckDB(Dialect):
                 # Table case: SELECT * FROM POSEXPLODE(col) [AS (a, b)]
                 alias = parent.args.get("alias")
                 if alias:
-                    pos, col = alias.args.get("columns")
+                    pos, col = alias.columns or [pos, col]
                     alias.pop()
 
             # Translate POSEXPLODE to UNNEST + GENERATE_SUBSCRIPTS
+            # Note: In Spark pos is 0-indexed, but in DuckDB it's 1-indexed, so we subtract 1 from GENERATE_SUBSCRIPTS
             unnest_sql = self.sql(exp.Unnest(expressions=[this], alias=col))
-            gen_subscripts = self.func("GENERATE_SUBSCRIPTS", this, exp.Literal.number(1))
+            gen_subscripts = self.sql(
+                exp.Alias(
+                    this=exp.Anonymous(
+                        this="GENERATE_SUBSCRIPTS", expressions=[this, exp.Literal.number(1)]
+                    )
+                    - exp.Literal.number(1),
+                    alias=pos,
+                )
+            )
 
-            posexplode_sql = f"{gen_subscripts} - 1 AS {pos}, {unnest_sql}"
+            posexplode_sql = self.format_args(gen_subscripts, unnest_sql)
 
             if isinstance(parent, exp.From) or (parent and isinstance(parent.parent, exp.From)):
                 # SELECT * FROM POSEXPLODE(col) -> SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(...), UNNEST(...))

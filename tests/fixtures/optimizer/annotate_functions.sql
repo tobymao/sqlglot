@@ -43,6 +43,12 @@ VARCHAR;
 tbl.str_col || tbl.bigint;
 VARCHAR;
 
+ARRAY_REVERSE(['a', 'b']);
+ARRAY<VARCHAR>;
+
+ARRAY_REVERSE([1, 1.5]);
+ARRAY<DOUBLE>;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

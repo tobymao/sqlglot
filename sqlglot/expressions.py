@@ -5577,6 +5577,10 @@ class ArrayLast(Func):
     pass
 
 
+class ArrayReverse(Func):
+    pass
+
+
 class ArrayToString(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]

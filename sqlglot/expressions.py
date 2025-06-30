@@ -6802,6 +6802,14 @@ class FromBase(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Space(Func):
+    """
+    SPACE(n) → string consisting of n blank characters
+    """
+
+    pass
+
+
 class Struct(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True

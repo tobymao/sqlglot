@@ -1936,3 +1936,12 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
     )
+
+
+def _space_sql(self: Generator, expression: exp.Space) -> str:
+    return self.sql(
+        exp.Repeat(
+            this=exp.Literal.string(" "),
+            times=expression.this,
+        )
+    )

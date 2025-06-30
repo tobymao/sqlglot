@@ -6795,7 +6795,7 @@ class Space(Func):
     SPACE(n) → string consisting of n blank characters
     """
 
-    arg_types = {"this": True}
+    pass
 
 
 class Struct(Func):

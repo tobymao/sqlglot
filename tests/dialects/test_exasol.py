@@ -181,3 +181,24 @@ class TestExasol(Validator):
                 "duckdb": "SELECT department, ALL (age >= 30) AS EVERY FROM employee_table GROUP BY department",
             },
         )
+
+    def test_stringFunctions(self):
+        self.validate_all(
+            "EDIT_DISTANCE(col1, col2)",
+            read={
+                "exasol": "EDIT_DISTANCE(col1, col2)",
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
+                "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "hive": "LEVENSHTEIN(col1, col2)",
+            },
+            write={
+                "exasol": "EDIT_DISTANCE(col1, col2)",
+                "bigquery": "EDIT_DISTANCE(col1, col2)",
+                "clickhouse": "editDistance(col1, col2)",
+                "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "hive": "LEVENSHTEIN(col1, col2)",
+            },
+        )

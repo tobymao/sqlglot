@@ -541,7 +541,6 @@ class Hive(Dialect):
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayToString: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
             exp.ArraySort: _array_sort_sql,
-            exp.ArrayReverse: rename_func("REVERSE"),
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date_sql,
             exp.DateDiff: _date_diff_sql,

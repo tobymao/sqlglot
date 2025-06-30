@@ -5578,7 +5578,7 @@ class ArrayLast(Func):
 
 
 class ArrayReverse(Func):
-    _sql_names = ["ARRAY_REVERSE", "REVERSE"]
+    pass
 
 
 class ArrayToString(Func):

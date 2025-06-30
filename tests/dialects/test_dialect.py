@@ -1342,6 +1342,22 @@ class TestDialect(Validator):
 
         self.validate_identity("SELECT ARRAY_INTERSECT(x, y, z)")
 
+        self.validate_all(
+            "ARRAY_REVERSE(x)",
+            read={
+                "clickhouse": "arrayReverse(x)",
+                "bigquery": "ARRAY_REVERSE(x)",
+                "snowflake": "ARRAY_REVERSE(x)",
+                "duckdb": "ARRAY_REVERSE(x)",
+            },
+            write={
+                "clickhouse": "arrayReverse(x)",
+                "bigquery": "ARRAY_REVERSE(x)",
+                "snowflake": "ARRAY_REVERSE(x)",
+                "duckdb": "ARRAY_REVERSE(x)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

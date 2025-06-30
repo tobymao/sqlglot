@@ -764,6 +764,7 @@ class Dialect(metaclass=_Dialect):
         exp.ArrayToString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TEXT),
         exp.ArrayFirst: lambda self, e: self._annotate_by_array_element(e),
         exp.ArrayLast: lambda self, e: self._annotate_by_array_element(e),
+        exp.ArrayReverse: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Bracket: lambda self, e: self._annotate_bracket(e),
         exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),

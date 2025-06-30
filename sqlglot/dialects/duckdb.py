@@ -1207,6 +1207,6 @@ class DuckDB(Dialect):
 
             if isinstance(parent, exp.From) or (parent and isinstance(parent.parent, exp.From)):
                 # SELECT * FROM POSEXPLODE(col) -> SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(...), UNNEST(...))
-                return f"(SELECT {posexplode_sql})"
+                return self.sql(exp.Subquery(this=exp.Select(expressions=[posexplode_sql])))
 
             return posexplode_sql

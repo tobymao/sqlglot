@@ -1938,7 +1938,7 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
     )
 
 
-def _space_sql(self: Generator, expression: exp.Space) -> str:
+def space_sql(self: Generator, expression: exp.Space) -> str:
     return self.sql(
         exp.Repeat(
             this=exp.Literal.string(" "),

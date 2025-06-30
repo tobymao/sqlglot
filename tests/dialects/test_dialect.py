@@ -1364,13 +1364,13 @@ class TestDialect(Validator):
                 "clickhouse": "arraySlice(x, 1, 3)",
                 "bigquery": "ARRAY_SLICE(x, 1, 3)",
                 "snowflake": "ARRAY_SLICE(x, 1, 3)",
-                "duckdb": "ARRAY_SLICE(x, 1, 3)"
+                "duckdb": "ARRAY_SLICE(x, 1, 3)",
             },
             write={
                 "clickhouse": "arraySlice(x, 1, 3)",
                 "bigquery": "ARRAY_SLICE(x, 1, 3)",
                 "snowflake": "ARRAY_SLICE(x, 1, 3)",
-                "duckdb": "ARRAY_SLICE(x, 1, 3)"
+                "duckdb": "ARRAY_SLICE(x, 1, 3)",
             },
         )
 

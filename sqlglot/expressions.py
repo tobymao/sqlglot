@@ -5582,7 +5582,7 @@ class ArrayReverse(Func):
 
 
 class ArraySlice(Func):
-    arg_types = {"this": True, "start": True, "end": False}
+    arg_types = {"this": True, "start": True, "end": False, "step": False}
 
 
 class ArrayToString(Func):

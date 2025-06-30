@@ -169,3 +169,15 @@ class TestExasol(Validator):
                 "spark": "SELECT SHIFTRIGHT(x, 1)",
             },
         )
+
+    def test_aggregateFunctions(self):
+        self.validate_all(
+            "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department",
+            read={
+                "exasol": "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department",
+            },
+            write={
+                "exasol": "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department",
+                "duckdb": "SELECT department, ALL (age >= 30) AS EVERY FROM employee_table GROUP BY department",
+            },
+        )

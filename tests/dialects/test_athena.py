@@ -7,6 +7,7 @@ class TestAthena(Validator):
     maxDiff = None
 
     def test_athena(self):
+        self.validate_identity(r"SELECT '\d+'")
         self.validate_identity("SELECT 'foo''bar'")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS t (name STRING) LOCATION 's3://bucket/tmp/mytable/' TBLPROPERTIES ('table_type'='iceberg', 'FORMAT'='parquet')"
@@ -28,12 +29,12 @@ class TestAthena(Validator):
 
         self.validate_identity(
             "/* leading comment */CREATE SCHEMA foo",
-            write_sql="/* leading comment */ CREATE SCHEMA `foo`",
+            "/* leading comment */ CREATE SCHEMA `foo`",
             identify=True,
         )
         self.validate_identity(
             "/* leading comment */SELECT * FROM foo",
-            write_sql='/* leading comment */ SELECT * FROM "foo"',
+            '/* leading comment */ SELECT * FROM "foo"',
             identify=True,
         )
 
@@ -41,7 +42,10 @@ class TestAthena(Validator):
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")
         self.validate_identity(
-            "CREATE EXTERNAL TABLE my_table (id BIGINT COMMENT 'this is the row\\'s id') LOCATION 's3://my-s3-bucket'"
+            r"CREATE EXTERNAL TABLE george.t (id INT COMMENT 'foo \\ bar') LOCATION 's3://my-bucket/'"
+        )
+        self.validate_identity(
+            r"CREATE EXTERNAL TABLE my_table (id BIGINT COMMENT 'this is the row\'s id') LOCATION 's3://my-s3-bucket'"
         )
         self.validate_identity(
             "CREATE EXTERNAL TABLE foo (id INT, val STRING) CLUSTERED BY (id, val) INTO 10 BUCKETS"
@@ -63,6 +67,9 @@ class TestAthena(Validator):
         self.validate_identity(
             "CREATE TABLE iceberg_table (`id` BIGINT, `data` STRING, category STRING) PARTITIONED BY (category, BUCKET(16, id)) LOCATION 's3://amzn-s3-demo-bucket/your-folder/' TBLPROPERTIES ('table_type'='ICEBERG', 'write_compression'='snappy')"
         )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE iceberg_table (`id` BIGINT, `data` STRING, category STRING) PARTITIONED BY (category, BUCKET(16, id)) LOCATION 's3://amzn-s3-demo-bucket/your-folder/' TBLPROPERTIES ('table_type'='ICEBERG', 'write_compression'='snappy')"
+        )
 
         # CTAS goes to the Trino engine, where the table properties cant be encased in single quotes like they can for Hive
         # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties
@@ -80,8 +87,9 @@ class TestAthena(Validator):
         # ALTER TABLE ADD COLUMN not supported, it needs to be generated as ALTER TABLE ADD COLUMNS
         self.validate_identity(
             "ALTER TABLE `foo`.`bar` ADD COLUMN `end_ts` BIGINT",
-            write_sql="ALTER TABLE `foo`.`bar` ADD COLUMNS (`end_ts` BIGINT)",
+            "ALTER TABLE `foo`.`bar` ADD COLUMNS (`end_ts` BIGINT)",
         )
+        self.validate_identity("ALTER TABLE `foo` DROP COLUMN `id`")
 
     def test_dml(self):
         self.validate_all(
@@ -102,107 +110,66 @@ class TestAthena(Validator):
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'")
         self.validate_identity(
             "CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'",
-            write_sql="CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
+            "CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
             identify=True,
         )
 
         self.validate_identity("CREATE TABLE foo AS SELECT * FROM a")
         self.validate_identity('CREATE TABLE "foo" AS SELECT * FROM "a"')
+
+        self.validate_identity('DROP VIEW IF EXISTS "foo"."bar"')
+        self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
         self.validate_identity(
-            "CREATE TABLE `foo` AS SELECT * FROM `a`",
-            write_sql='CREATE TABLE "foo" AS SELECT * FROM "a"',
+            "CREATE VIEW foo AS SELECT id FROM tbl",
+            'CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
             identify=True,
         )
 
         self.validate_identity("DROP TABLE `foo`")
         self.validate_identity("DROP TABLE foo")
-        self.validate_identity("DROP TABLE foo", write_sql="DROP TABLE `foo`", identify=True)
+        self.validate_identity(
+            "DROP TABLE foo",
+            "DROP TABLE `foo`",
+            identify=True,
+        )
 
         self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
         self.validate_identity("CREATE VIEW foo AS SELECT id FROM tbl")
         self.validate_identity(
             "CREATE VIEW foo AS SELECT id FROM tbl",
-            write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
+            'CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
             identify=True,
         )
 
         # As a side effect of being able to parse both quote types, we can also fix the quoting on incorrectly quoted source queries
-        self.validate_identity('CREATE SCHEMA "foo"', write_sql="CREATE SCHEMA `foo`")
+        self.validate_identity('CREATE SCHEMA "foo"', "CREATE SCHEMA `foo`")
+        self.validate_identity('DROP TABLE "foo"', "DROP TABLE `foo`")
         self.validate_identity(
-            'CREATE EXTERNAL TABLE "foo" ("id" INT) LOCATION \'s3://foo/\'',
-            write_sql="CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
+            "DESCRIBE foo.bar",
+            "DESCRIBE `foo`.`bar`",
+            identify=True,
         )
-        self.validate_identity('DROP TABLE "foo"', write_sql="DROP TABLE `foo`")
-        self.validate_identity(
-            'CREATE VIEW `foo` AS SELECT "id" FROM `tbl`',
-            write_sql='CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
-        )
-        self.validate_identity(
-            "DROP VIEW IF EXISTS `foo`.`bar`",
-            write_sql='DROP VIEW IF EXISTS "foo"."bar"',
-        )
-
-        self.validate_identity(
-            'ALTER TABLE "foo" ADD COLUMNS ("id" STRING)',
-            write_sql="ALTER TABLE `foo` ADD COLUMNS (`id` STRING)",
-        )
-        self.validate_identity(
-            'ALTER TABLE "foo" DROP COLUMN "id"', write_sql="ALTER TABLE `foo` DROP COLUMN `id`"
-        )
-
         self.validate_identity(
             'CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"'
         )
-        self.validate_identity(
-            'CREATE TABLE `foo` AS WITH `foo` AS (SELECT "a", `b` FROM "bar") SELECT * FROM "foo"',
-            write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
-        )
-
-        # CTAS with Union should still hit the Trino engine and not Hive
-        self.validate_identity(
-            'CREATE TABLE `foo` AS WITH `foo` AS (SELECT "a", `b` FROM "bar") SELECT * FROM "foo" UNION SELECT * FROM "foo"',
-            write_sql='CREATE TABLE "foo" AS WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo" UNION SELECT * FROM "foo"',
-        )
-
-        self.validate_identity("DESCRIBE foo.bar", write_sql="DESCRIBE `foo`.`bar`", identify=True)
 
     def test_dml_quoting(self):
         self.validate_identity("SELECT a AS foo FROM tbl")
         self.validate_identity('SELECT "a" AS "foo" FROM "tbl"')
-        self.validate_identity(
-            'SELECT `a` AS `foo` FROM "tbl"',
-            write_sql='SELECT "a" AS "foo" FROM "tbl"',
-            identify=True,
-        )
 
         self.validate_identity("INSERT INTO foo (id) VALUES (1)")
         self.validate_identity('INSERT INTO "foo" ("id") VALUES (1)')
-        self.validate_identity(
-            'INSERT INTO `foo` ("id") VALUES (1)',
-            write_sql='INSERT INTO "foo" ("id") VALUES (1)',
-            identify=True,
-        )
 
         self.validate_identity("UPDATE foo SET id = 3 WHERE id = 7")
         self.validate_identity('UPDATE "foo" SET "id" = 3 WHERE "id" = 7')
-        self.validate_identity(
-            'UPDATE `foo` SET "id" = 3 WHERE `id` = 7',
-            write_sql='UPDATE "foo" SET "id" = 3 WHERE "id" = 7',
-            identify=True,
-        )
 
         self.validate_identity("DELETE FROM foo WHERE id > 10")
         self.validate_identity('DELETE FROM "foo" WHERE "id" > 10')
-        self.validate_identity(
-            "DELETE FROM `foo` WHERE `id` > 10",
-            write_sql='DELETE FROM "foo" WHERE "id" > 10',
-            identify=True,
-        )
 
         self.validate_identity("WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo")
         self.validate_identity(
             "WITH foo AS (SELECT a, b FROM bar) SELECT * FROM foo",
-            write_sql='WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
+            'WITH "foo" AS (SELECT "a", "b" FROM "bar") SELECT * FROM "foo"',
             identify=True,
         )
 

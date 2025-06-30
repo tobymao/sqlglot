@@ -427,6 +427,9 @@ class TokenType(AutoName):
     NAMESPACE = auto()
     EXPORT = auto()
 
+    # sentinel
+    HIVE_TOKEN_STREAM = auto()
+
 
 _ALL_TOKEN_TYPES = list(TokenType)
 _TOKEN_TYPE_TO_INDEX = {token_type: i for i, token_type in enumerate(_ALL_TOKEN_TYPES)}
@@ -1014,7 +1017,10 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(
-        self, dialect: DialectType = None, use_rs_tokenizer: t.Optional[bool] = None
+        self,
+        dialect: DialectType = None,
+        use_rs_tokenizer: t.Optional[bool] = None,
+        **opts: t.Any,
     ) -> None:
         from sqlglot.dialects import Dialect
 

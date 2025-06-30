@@ -1034,22 +1034,20 @@ class Dialect(metaclass=_Dialect):
             for expression in self.parse(sql)
         ]
 
-    def tokenize(self, sql: str) -> t.List[Token]:
-        return self.tokenizer.tokenize(sql)
+    def tokenize(self, sql: str, **opts) -> t.List[Token]:
+        return self.tokenizer(**opts).tokenize(sql)
 
-    @property
-    def tokenizer(self) -> Tokenizer:
-        return self.tokenizer_class(dialect=self)
+    def tokenizer(self, **opts) -> Tokenizer:
+        return self.tokenizer_class(**{"dialect": self, **opts})
 
-    @property
-    def jsonpath_tokenizer(self) -> JSONPathTokenizer:
-        return self.jsonpath_tokenizer_class(dialect=self)
+    def jsonpath_tokenizer(self, **opts) -> JSONPathTokenizer:
+        return self.jsonpath_tokenizer_class(**{"dialect": self, **opts})
 
     def parser(self, **opts) -> Parser:
-        return self.parser_class(dialect=self, **opts)
+        return self.parser_class(**{"dialect": self, **opts})
 
     def generator(self, **opts) -> Generator:
-        return self.generator_class(dialect=self, **opts)
+        return self.generator_class(**{"dialect": self, **opts})
 
     def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
         return [

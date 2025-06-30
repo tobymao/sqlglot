@@ -5370,6 +5370,11 @@ class Func(Condition):
         return {name: cls.from_arg_list for name in cls.sql_names()}
 
 
+class TypeOf(Func):
+    _sql_names = ["TYPEOF"]
+    arg_types = {"this": True}
+
+
 class AggFunc(Func):
     pass
 

@@ -6,8 +6,6 @@ from sqlglot.dialects.dialect import Dialect
 class Dremio(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     CONCAT_COALESCE = True
-    NORMALIZE_FUNCTIONS = False
-    PRESERVE_ORIGINAL_NAMES = True
     TYPED_DIVISION = True
     SUPPORTS_SEMI_ANTI_JOIN = False
     NULL_ORDERING = "nulls_are_last"

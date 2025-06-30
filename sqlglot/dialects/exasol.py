@@ -2,6 +2,7 @@ from __future__ import annotations
 from sqlglot import exp, generator, parser
 from sqlglot.dialects.dialect import Dialect, rename_func, binary_from_function
 from sqlglot.helper import seq_get
+from sqlglot.generator import unsupported_args
 
 
 class Exasol(Dialect):
@@ -14,6 +15,8 @@ class Exasol(Dialect):
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
+            "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
         }
 
     class Generator(generator.Generator):
@@ -53,6 +56,8 @@ class Exasol(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
+            exp.All: rename_func("EVERY"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_and.htm
             exp.BitwiseAnd: rename_func("BIT_AND"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_or.htm
@@ -65,6 +70,10 @@ class Exasol(Dialect):
             exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
+            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
+                rename_func("EDIT_DISTANCE")
+            ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
         }

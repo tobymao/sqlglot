@@ -1365,12 +1365,22 @@ class TestDialect(Validator):
                 "bigquery": "ARRAY_SLICE(x, 1, 3)",
                 "snowflake": "ARRAY_SLICE(x, 1, 3)",
                 "duckdb": "ARRAY_SLICE(x, 1, 3)",
+                "spark2": "SLICE(x, 1, 3)",
+                "spark": "SLICE(x, 1, 3)",
+                "databricks": "SLICE(x, 1, 3)",
+                "presto": "SLICE(x, 1, 3)",
+                "trino": "SLICE(x, 1, 3)",
             },
             write={
                 "clickhouse": "arraySlice(x, 1, 3)",
                 "bigquery": "ARRAY_SLICE(x, 1, 3)",
                 "snowflake": "ARRAY_SLICE(x, 1, 3)",
                 "duckdb": "ARRAY_SLICE(x, 1, 3)",
+                "spark2": "SLICE(x, 1, 3)",
+                "spark": "SLICE(x, 1, 3)",
+                "databricks": "SLICE(x, 1, 3)",
+                "presto": "SLICE(x, 1, 3)",
+                "trino": "SLICE(x, 1, 3)",
             },
         )
 

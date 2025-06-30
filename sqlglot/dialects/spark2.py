@@ -201,6 +201,7 @@ class Spark2(Hive):
             "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
             "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _build_as_cast("string"),
+            "SLICE": exp.ArraySlice.from_arg_list,
             "TIMESTAMP": _build_as_cast("timestamp"),
             "TO_TIMESTAMP": lambda args: (
                 _build_as_cast("timestamp")(args)
@@ -261,6 +262,7 @@ class Spark2(Hive):
             exp.ArraySum: lambda self,
             e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
+            exp.ArraySlice: rename_func("SLICE"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "FROM_UTC_TIMESTAMP", e.this, e.args.get("zone")
             ),

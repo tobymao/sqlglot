@@ -1165,3 +1165,39 @@ class DuckDB(Dialect):
         def autoincrementcolumnconstraint_sql(self, _) -> str:
             self.unsupported("The AUTOINCREMENT column constraint is not supported by DuckDB")
             return ""
+
+        def aliases_sql(self, expression: exp.Aliases) -> str:
+            this = expression.this
+            if isinstance(this, exp.Posexplode):
+                return self.posexplode_sql(this)
+
+            return super().aliases_sql(expression)
+
+        def posexplode_sql(self, expression: exp.Posexplode) -> str:
+            this = expression.this
+            parent = expression.parent
+
+            # The default Spark aliases are "pos" and "col", unless specified otherwise
+            pos, col = exp.to_identifier("pos"), exp.to_identifier("col")
+
+            if isinstance(parent, exp.Aliases):
+                # Column case: SELECT POSEXPLODE(col) [AS (a, b)]
+                pos, col = parent.expressions
+            elif isinstance(parent, exp.Table):
+                # Table case: SELECT * FROM POSEXPLODE(col) [AS (a, b)]
+                alias = parent.args.get("alias")
+                if alias:
+                    pos, col = alias.args.get("columns")
+                    alias.pop()
+
+            # Translate POSEXPLODE to UNNEST + GENERATE_SUBSCRIPTS
+            unnest_sql = self.sql(exp.Unnest(expressions=[this], alias=col))
+            gen_subscripts = self.func("GENERATE_SUBSCRIPTS", this, exp.Literal.number(1))
+
+            posexplode_sql = f"{gen_subscripts} - 1 AS {pos}, {unnest_sql}"
+
+            if isinstance(parent, exp.From) or (parent and isinstance(parent.parent, exp.From)):
+                # SELECT * FROM POSEXPLODE(col) -> SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(...), UNNEST(...))
+                return f"(SELECT {posexplode_sql})"
+
+            return posexplode_sql

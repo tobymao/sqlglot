@@ -926,9 +926,28 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT POSEXPLODE(x)",
+            write={
+                "duckdb": "SELECT GENERATE_SUBSCRIPTS(x, 1) - 1 AS pos, UNNEST(x) AS col",
+            },
+        )
+        self.validate_all(
             "SELECT POSEXPLODE(x) AS (a, b)",
             write={
                 "presto": "SELECT IF(_u.pos = _u_2.a, _u_2.b) AS b, IF(_u.pos = _u_2.a, _u_2.a) AS a FROM UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(x)))) AS _u(pos) CROSS JOIN UNNEST(x) WITH ORDINALITY AS _u_2(b, a) WHERE _u.pos = _u_2.a OR (_u.pos > CARDINALITY(x) AND _u_2.a = CARDINALITY(x))",
+                "duckdb": "SELECT GENERATE_SUBSCRIPTS(x, 1) - 1 AS a, UNNEST(x) AS b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM POSEXPLODE(x)",
+            write={
+                "duckdb": "SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(x, 1) - 1 AS pos, UNNEST(x) AS col)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM POSEXPLODE(x) AS (a, b)",
+            write={
+                "duckdb": "SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(x, 1) - 1 AS a, UNNEST(x) AS b)",
             },
         )
         self.validate_all(

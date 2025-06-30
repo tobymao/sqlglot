@@ -17,6 +17,13 @@ class Exasol(Dialect):
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
+            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                replacement=seq_get(args, 2),
+                position=seq_get(args, 3),
+                occurrence=seq_get(args, 4),
+            ),
         }
 
     class Generator(generator.Generator):
@@ -70,10 +77,13 @@ class Exasol(Dialect):
             exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
+            exp.All: rename_func("EVERY"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
+            exp.RegexpReplace: unsupported_args("modifiers")(rename_func("REGEXP_REPLACE")),
         }

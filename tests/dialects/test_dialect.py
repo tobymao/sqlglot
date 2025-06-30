@@ -1358,6 +1358,22 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "ARRAY_SLICE(x, 1, 3)",
+            read={
+                "clickhouse": "arraySlice(x, 1, 3)",
+                "bigquery": "ARRAY_SLICE(x, 1, 3)",
+                "snowflake": "ARRAY_SLICE(x, 1, 3)",
+                "duckdb": "ARRAY_SLICE(x, 1, 3)"
+            },
+            write={
+                "clickhouse": "arraySlice(x, 1, 3)",
+                "bigquery": "ARRAY_SLICE(x, 1, 3)",
+                "snowflake": "ARRAY_SLICE(x, 1, 3)",
+                "duckdb": "ARRAY_SLICE(x, 1, 3)"
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

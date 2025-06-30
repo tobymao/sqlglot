@@ -691,6 +691,8 @@ class TestClickhouse(Validator):
                 query,
             )
 
+        self.validate_identity("arraySlice(x, 1)")
+
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
         self.validate_all(

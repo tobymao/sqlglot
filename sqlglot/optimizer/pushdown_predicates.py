@@ -21,12 +21,13 @@ def pushdown_predicates(expression, dialect=None):
     Returns:
         sqlglot.Expression: optimized expression
     """
+    from sqlglot.dialects.athena import Athena
     from sqlglot.dialects.presto import Presto
 
     root = build_scope(expression)
 
     dialect = Dialect.get_or_raise(dialect)
-    unnest_requires_cross_join = isinstance(dialect, Presto)
+    unnest_requires_cross_join = isinstance(dialect, (Athena, Presto))
 
     if root:
         scope_ref_count = root.ref_count()

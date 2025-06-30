@@ -1346,13 +1346,11 @@ class TestDialect(Validator):
                 "bigquery": "ARRAY_REVERSE(x)",
                 "snowflake": "ARRAY_REVERSE(x)",
                 "duckdb": "ARRAY_REVERSE(x)",
-                "postgres": "ARRAY_REVERSE(x)",
             },
             write={
                 "bigquery": "ARRAY_REVERSE(x)",
                 "snowflake": "ARRAY_REVERSE(x)",
                 "duckdb": "ARRAY_REVERSE(x)",
-                "postgres": "ARRAY_REVERSE(x)",
             },
         )
 

@@ -963,6 +963,8 @@ class TestDuckDB(Validator):
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '1' DAY",
         )
 
+        self.validate_identity("ARRAY_SLICE(x, 1, 3, 2)")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

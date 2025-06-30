@@ -14,6 +14,7 @@ class Exasol(Dialect):
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
         }
 
     class Generator(generator.Generator):

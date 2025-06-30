@@ -171,6 +171,13 @@ class TestExasol(Validator):
         )
 
     def test_aggregateFunctions(self):
-        self.validate_identity(
-            "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department"
+        self.validate_all(
+            "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department",
+            read={
+                "exasol": "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department",
+            },
+            write={
+                "exasol": "SELECT department, EVERY(age >= 30) AS EVERY FROM employee_table GROUP BY department",
+                "duckdb": "SELECT department, ALL (age >= 30) AS EVERY FROM employee_table GROUP BY department",
+            },
         )

@@ -1343,11 +1343,13 @@ class TestDialect(Validator):
         self.validate_all(
             "ARRAY_REVERSE(x)",
             read={
+                "clickhouse": "arrayReverse(x)",
                 "bigquery": "ARRAY_REVERSE(x)",
                 "snowflake": "ARRAY_REVERSE(x)",
                 "duckdb": "ARRAY_REVERSE(x)",
             },
             write={
+                "clickhouse": "arrayReverse(x)",
                 "bigquery": "ARRAY_REVERSE(x)",
                 "snowflake": "ARRAY_REVERSE(x)",
                 "duckdb": "ARRAY_REVERSE(x)",

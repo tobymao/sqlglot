@@ -39,6 +39,7 @@
                     <li><a href="dialects/clickhouse.html">clickhouse</a></li>
                     <li><a href="dialects/databricks.html">databricks</a></li>
                     <li><a href="dialects/doris.html">doris</a></li>
+                    <li><a href="dialects/dremio.html">dremio</a></li>
                     <li><a href="dialects/drill.html">drill</a></li>
                     <li><a href="dialects/druid.html">druid</a></li>
                     <li><a href="dialects/duckdb.html">duckdb</a></li>
@@ -81,6 +82,9 @@
             </li>
             <li>
                     <a class="variable" href="#Doris">Doris</a>
+            </li>
+            <li>
+                    <a class="variable" href="#Dremio">Dremio</a>
             </li>
             <li>
                     <a class="variable" href="#Drill">Drill</a>
@@ -314,54 +318,58 @@ dialect implementations in order to understand how their various components can 
 </span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>    <span class="s2">&quot;ClickHouse&quot;</span><span class="p">,</span>
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>    <span class="s2">&quot;Databricks&quot;</span><span class="p">,</span>
 </span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>    <span class="s2">&quot;Doris&quot;</span><span class="p">,</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>    <span class="s2">&quot;Drill&quot;</span><span class="p">,</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="s2">&quot;Druid&quot;</span><span class="p">,</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>    <span class="s2">&quot;DuckDB&quot;</span><span class="p">,</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>    <span class="s2">&quot;Dune&quot;</span><span class="p">,</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>    <span class="s2">&quot;Fabric&quot;</span><span class="p">,</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>    <span class="s2">&quot;Hive&quot;</span><span class="p">,</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>    <span class="s2">&quot;Materialize&quot;</span><span class="p">,</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="s2">&quot;MySQL&quot;</span><span class="p">,</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>    <span class="s2">&quot;Oracle&quot;</span><span class="p">,</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="s2">&quot;Postgres&quot;</span><span class="p">,</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>    <span class="s2">&quot;Presto&quot;</span><span class="p">,</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>    <span class="s2">&quot;PRQL&quot;</span><span class="p">,</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>    <span class="s2">&quot;Redshift&quot;</span><span class="p">,</span>
-</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>    <span class="s2">&quot;RisingWave&quot;</span><span class="p">,</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>    <span class="s2">&quot;Snowflake&quot;</span><span class="p">,</span>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>    <span class="s2">&quot;Spark&quot;</span><span class="p">,</span>
-</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>    <span class="s2">&quot;Spark2&quot;</span><span class="p">,</span>
-</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>    <span class="s2">&quot;SQLite&quot;</span><span class="p">,</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>    <span class="s2">&quot;StarRocks&quot;</span><span class="p">,</span>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>    <span class="s2">&quot;Tableau&quot;</span><span class="p">,</span>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>    <span class="s2">&quot;Teradata&quot;</span><span class="p">,</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>    <span class="s2">&quot;Trino&quot;</span><span class="p">,</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>    <span class="s2">&quot;TSQL&quot;</span><span class="p">,</span>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>    <span class="s2">&quot;Exasol&quot;</span><span class="p">,</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="p">]</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="n">MODULE_BY_DIALECT</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">DIALECTS</span><span class="p">}</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="n">DIALECT_MODULE_NAMES</span> <span class="o">=</span> <span class="n">MODULE_BY_DIALECT</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="n">MODULE_BY_ATTRIBUTE</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>    <span class="o">**</span><span class="n">MODULE_BY_DIALECT</span><span class="p">,</span>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>    <span class="s2">&quot;Dialect&quot;</span><span class="p">:</span> <span class="s2">&quot;dialect&quot;</span><span class="p">,</span>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>    <span class="s2">&quot;Dialects&quot;</span><span class="p">:</span> <span class="s2">&quot;dialect&quot;</span><span class="p">,</span>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="p">}</span>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">MODULE_BY_ATTRIBUTE</span><span class="p">)</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="n">_import_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>    <span class="n">module_name</span> <span class="o">=</span> <span class="n">MODULE_BY_ATTRIBUTE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>    <span class="k">if</span> <span class="n">module_name</span><span class="p">:</span>
-</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>        <span class="k">with</span> <span class="n">_import_lock</span><span class="p">:</span>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sqlglot.dialects.</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;module </span><span class="si">{</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no attribute </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>    <span class="s2">&quot;Dremio&quot;</span><span class="p">,</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="s2">&quot;Drill&quot;</span><span class="p">,</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>    <span class="s2">&quot;Druid&quot;</span><span class="p">,</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>    <span class="s2">&quot;DuckDB&quot;</span><span class="p">,</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>    <span class="s2">&quot;Dune&quot;</span><span class="p">,</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>    <span class="s2">&quot;Fabric&quot;</span><span class="p">,</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>    <span class="s2">&quot;Hive&quot;</span><span class="p">,</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="s2">&quot;Materialize&quot;</span><span class="p">,</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>    <span class="s2">&quot;MySQL&quot;</span><span class="p">,</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="s2">&quot;Oracle&quot;</span><span class="p">,</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>    <span class="s2">&quot;Postgres&quot;</span><span class="p">,</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>    <span class="s2">&quot;Presto&quot;</span><span class="p">,</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>    <span class="s2">&quot;PRQL&quot;</span><span class="p">,</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>    <span class="s2">&quot;Redshift&quot;</span><span class="p">,</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>    <span class="s2">&quot;RisingWave&quot;</span><span class="p">,</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>    <span class="s2">&quot;Snowflake&quot;</span><span class="p">,</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>    <span class="s2">&quot;Spark&quot;</span><span class="p">,</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>    <span class="s2">&quot;Spark2&quot;</span><span class="p">,</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>    <span class="s2">&quot;SQLite&quot;</span><span class="p">,</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>    <span class="s2">&quot;StarRocks&quot;</span><span class="p">,</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>    <span class="s2">&quot;Tableau&quot;</span><span class="p">,</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>    <span class="s2">&quot;Teradata&quot;</span><span class="p">,</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>    <span class="s2">&quot;Trino&quot;</span><span class="p">,</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>    <span class="s2">&quot;TSQL&quot;</span><span class="p">,</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>    <span class="s2">&quot;Exasol&quot;</span><span class="p">,</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="p">]</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="n">MODULE_BY_DIALECT</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">DIALECTS</span><span class="p">}</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="n">DIALECT_MODULE_NAMES</span> <span class="o">=</span> <span class="n">MODULE_BY_DIALECT</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="n">MODULE_BY_ATTRIBUTE</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>    <span class="o">**</span><span class="n">MODULE_BY_DIALECT</span><span class="p">,</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>    <span class="s2">&quot;Dialect&quot;</span><span class="p">:</span> <span class="s2">&quot;dialect&quot;</span><span class="p">,</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>    <span class="s2">&quot;Dialects&quot;</span><span class="p">:</span> <span class="s2">&quot;dialect&quot;</span><span class="p">,</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="p">}</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">MODULE_BY_ATTRIBUTE</span><span class="p">)</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a><span class="c1"># We use a reentrant lock because a dialect may depend on (i.e., import) other dialects.</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="c1"># Without it, the first dialect import would never be completed, because subsequent</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="c1"># imports would be blocked on the lock held by the first import.</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="n">_import_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>    <span class="n">module_name</span> <span class="o">=</span> <span class="n">MODULE_BY_ATTRIBUTE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>    <span class="k">if</span> <span class="n">module_name</span><span class="p">:</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>        <span class="k">with</span> <span class="n">_import_lock</span><span class="p">:</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sqlglot.dialects.</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;module </span><span class="si">{</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no attribute </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -369,7 +377,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Athena">
                     <div class="attr variable">
             <span class="name">Athena</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369971676304&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680721978080&#39;&gt;</span>
 
         
     </div>
@@ -381,7 +389,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="BigQuery">
                     <div class="attr variable">
             <span class="name">BigQuery</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369974544080&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680721982976&#39;&gt;</span>
 
         
     </div>
@@ -393,7 +401,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="ClickHouse">
                     <div class="attr variable">
             <span class="name">ClickHouse</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369982009552&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680720582112&#39;&gt;</span>
 
         
     </div>
@@ -405,7 +413,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Databricks">
                     <div class="attr variable">
             <span class="name">Databricks</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369982009072&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680707258224&#39;&gt;</span>
 
         
     </div>
@@ -417,7 +425,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Doris">
                     <div class="attr variable">
             <span class="name">Doris</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369982603664&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680707252080&#39;&gt;</span>
 
         
     </div>
@@ -426,10 +434,22 @@ dialect implementations in order to understand how their various components can 
     
 
                 </section>
+                <section id="Dremio">
+                    <div class="attr variable">
+            <span class="name">Dremio</span>        =
+<span class="default_value">&lt;MagicMock id=&#39;139680716951936&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dremio"></a>
+    
+    
+
+                </section>
                 <section id="Drill">
                     <div class="attr variable">
             <span class="name">Drill</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369981267664&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680716949728&#39;&gt;</span>
 
         
     </div>
@@ -441,7 +461,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Druid">
                     <div class="attr variable">
             <span class="name">Druid</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369972078016&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680718254144&#39;&gt;</span>
 
         
     </div>
@@ -453,7 +473,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="DuckDB">
                     <div class="attr variable">
             <span class="name">DuckDB</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369982392496&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680718250736&#39;&gt;</span>
 
         
     </div>
@@ -465,7 +485,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Dune">
                     <div class="attr variable">
             <span class="name">Dune</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979768992&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680714461040&#39;&gt;</span>
 
         
     </div>
@@ -477,7 +497,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Fabric">
                     <div class="attr variable">
             <span class="name">Fabric</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979772160&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680714471504&#39;&gt;</span>
 
         
     </div>
@@ -489,7 +509,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Hive">
                     <div class="attr variable">
             <span class="name">Hive</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369978942144&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680713609456&#39;&gt;</span>
 
         
     </div>
@@ -501,7 +521,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Materialize">
                     <div class="attr variable">
             <span class="name">Materialize</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369984658288&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680718392192&#39;&gt;</span>
 
         
     </div>
@@ -513,7 +533,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="MySQL">
                     <div class="attr variable">
             <span class="name">MySQL</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369977941232&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680713212544&#39;&gt;</span>
 
         
     </div>
@@ -525,7 +545,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Oracle">
                     <div class="attr variable">
             <span class="name">Oracle</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369977939456&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680707907344&#39;&gt;</span>
 
         
     </div>
@@ -537,7 +557,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Postgres">
                     <div class="attr variable">
             <span class="name">Postgres</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979283712&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680718268320&#39;&gt;</span>
 
         
     </div>
@@ -549,7 +569,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Presto">
                     <div class="attr variable">
             <span class="name">Presto</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369971536288&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680722152480&#39;&gt;</span>
 
         
     </div>
@@ -561,7 +581,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="PRQL">
                     <div class="attr variable">
             <span class="name">PRQL</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369971535520&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680722152048&#39;&gt;</span>
 
         
     </div>
@@ -573,7 +593,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Redshift">
                     <div class="attr variable">
             <span class="name">Redshift</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369974160560&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680712692480&#39;&gt;</span>
 
         
     </div>
@@ -585,7 +605,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="RisingWave">
                     <div class="attr variable">
             <span class="name">RisingWave</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369982083600&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680716783824&#39;&gt;</span>
 
         
     </div>
@@ -597,7 +617,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Snowflake">
                     <div class="attr variable">
             <span class="name">Snowflake</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369982086720&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680716791792&#39;&gt;</span>
 
         
     </div>
@@ -609,7 +629,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Spark">
                     <div class="attr variable">
             <span class="name">Spark</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979379184&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680714541616&#39;&gt;</span>
 
         
     </div>
@@ -621,7 +641,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Spark2">
                     <div class="attr variable">
             <span class="name">Spark2</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979389072&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680720491408&#39;&gt;</span>
 
         
     </div>
@@ -633,7 +653,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="SQLite">
                     <div class="attr variable">
             <span class="name">SQLite</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369969498768&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680712063104&#39;&gt;</span>
 
         
     </div>
@@ -645,7 +665,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="StarRocks">
                     <div class="attr variable">
             <span class="name">StarRocks</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369969574576&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680709348608&#39;&gt;</span>
 
         
     </div>
@@ -657,7 +677,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Tableau">
                     <div class="attr variable">
             <span class="name">Tableau</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369969573376&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680709350432&#39;&gt;</span>
 
         
     </div>
@@ -669,7 +689,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Teradata">
                     <div class="attr variable">
             <span class="name">Teradata</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369977810928&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680720058784&#39;&gt;</span>
 
         
     </div>
@@ -681,7 +701,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Trino">
                     <div class="attr variable">
             <span class="name">Trino</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369977809152&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680721298448&#39;&gt;</span>
 
         
     </div>
@@ -693,7 +713,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="TSQL">
                     <div class="attr variable">
             <span class="name">TSQL</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369977776480&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680711995072&#39;&gt;</span>
 
         
     </div>
@@ -705,7 +725,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Exasol">
                     <div class="attr variable">
             <span class="name">Exasol</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979309984&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680717963216&#39;&gt;</span>
 
         
     </div>
@@ -717,7 +737,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Dialect">
                     <div class="attr variable">
             <span class="name">Dialect</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369979306528&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680717957216&#39;&gt;</span>
 
         
     </div>
@@ -729,7 +749,7 @@ dialect implementations in order to understand how their various components can 
                 <section id="Dialects">
                     <div class="attr variable">
             <span class="name">Dialects</span>        =
-<span class="default_value">&lt;MagicMock id=&#39;140369969984080&#39;&gt;</span>
+<span class="default_value">&lt;MagicMock id=&#39;139680717658896&#39;&gt;</span>
 
         
     </div>

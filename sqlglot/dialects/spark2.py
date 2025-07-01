@@ -284,7 +284,6 @@ class Spark2(Hive):
             # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfYear: rename_func("DAYOFYEAR"),
-            exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
             exp.FromTimeZone: lambda self, e: self.func(
                 "TO_UTC_TIMESTAMP", e.this, e.args.get("zone")
@@ -349,3 +348,9 @@ class Spark2(Hive):
                 return self.func("TO_JSON", arg)
 
             return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)
+
+        def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
+            if expression.args.get("hive_format"):
+                return super().fileformatproperty_sql(expression)
+
+            return f"USING {expression.name.upper()}"

@@ -550,8 +550,6 @@ class Hive(Dialect):
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.DATEINT_FORMAT}) AS INT)",
             exp.DiToDate: lambda self,
             e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.DATEINT_FORMAT})",
-            exp.FileFormatProperty: lambda self,
-            e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.StorageHandlerProperty: lambda self, e: f"STORED BY {self.sql(e, 'this')}",
             exp.FromBase64: rename_func("UNBASE64"),
             exp.GenerateSeries: sequence_sql,
@@ -786,3 +784,11 @@ class Hive(Dialect):
                 this = this.this
 
             return self.func("DATE_FORMAT", this, self.format_time(expression))
+
+        def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
+            if isinstance(expression.this, exp.InputOutputFormat):
+                this = self.sql(expression, "this")
+            else:
+                this = expression.name.upper()
+
+            return f"STORED AS {this}"

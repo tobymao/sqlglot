@@ -3395,8 +3395,11 @@ class Parser(metaclass=_Parser):
         )
 
         values = cte.this
-        if isinstance(values, exp.Values) and not values.alias:
-            cte.set("this", exp.select("*").from_(exp.alias_(values, "_values", table=True)))
+        if isinstance(values, exp.Values):
+            if values.alias:
+                cte.set("this", exp.select("*").from_(values))
+            else:
+                cte.set("this", exp.select("*").from_(exp.alias_(values, "_values", table=True)))
 
         return cte
 

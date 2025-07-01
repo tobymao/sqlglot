@@ -186,7 +186,10 @@ class TestDatabricks(Validator):
             "SELECT test, LISTAGG(email, '') AS Email FROM organizations GROUP BY test",
         )
 
-        self.validate_identity("WITH t AS (VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t")
+        self.validate_identity(
+            "WITH t AS (VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t",
+            "WITH t AS (SELECT * FROM VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t",
+        )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

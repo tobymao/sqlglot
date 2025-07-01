@@ -49,6 +49,9 @@ ARRAY<VARCHAR>;
 ARRAY_REVERSE([1, 1.5]);
 ARRAY<DOUBLE>;
 
+ARRAY_SLICE([1, 1.5], 1, 2);
+ARRAY<DOUBLE>;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

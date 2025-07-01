@@ -202,3 +202,21 @@ class TestExasol(Validator):
                 "hive": "LEVENSHTEIN(col1, col2)",
             },
         )
+        (
+            self.validate_all(
+                "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                write={
+                    "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
+                    "exasol": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                    "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                    "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
+                    "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                    "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
+                },
+                read={
+                    "exasol": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                    "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                    "spark": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                },
+            ),
+        )

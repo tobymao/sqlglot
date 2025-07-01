@@ -5585,6 +5585,10 @@ class ArrayReverse(Func):
     pass
 
 
+class ArraySlice(Func):
+    arg_types = {"this": True, "start": True, "end": False, "step": False}
+
+
 class ArrayToString(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]

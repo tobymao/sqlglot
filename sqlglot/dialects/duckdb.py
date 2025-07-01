@@ -1165,3 +1165,48 @@ class DuckDB(Dialect):
         def autoincrementcolumnconstraint_sql(self, _) -> str:
             self.unsupported("The AUTOINCREMENT column constraint is not supported by DuckDB")
             return ""
+
+        def aliases_sql(self, expression: exp.Aliases) -> str:
+            this = expression.this
+            if isinstance(this, exp.Posexplode):
+                return self.posexplode_sql(this)
+
+            return super().aliases_sql(expression)
+
+        def posexplode_sql(self, expression: exp.Posexplode) -> str:
+            this = expression.this
+            parent = expression.parent
+
+            # The default Spark aliases are "pos" and "col", unless specified otherwise
+            pos, col = exp.to_identifier("pos"), exp.to_identifier("col")
+
+            if isinstance(parent, exp.Aliases):
+                # Column case: SELECT POSEXPLODE(col) [AS (a, b)]
+                pos, col = parent.expressions
+            elif isinstance(parent, exp.Table):
+                # Table case: SELECT * FROM POSEXPLODE(col) [AS (a, b)]
+                alias = parent.args.get("alias")
+                if alias:
+                    pos, col = alias.columns or [pos, col]
+                    alias.pop()
+
+            # Translate POSEXPLODE to UNNEST + GENERATE_SUBSCRIPTS
+            # Note: In Spark pos is 0-indexed, but in DuckDB it's 1-indexed, so we subtract 1 from GENERATE_SUBSCRIPTS
+            unnest_sql = self.sql(exp.Unnest(expressions=[this], alias=col))
+            gen_subscripts = self.sql(
+                exp.Alias(
+                    this=exp.Anonymous(
+                        this="GENERATE_SUBSCRIPTS", expressions=[this, exp.Literal.number(1)]
+                    )
+                    - exp.Literal.number(1),
+                    alias=pos,
+                )
+            )
+
+            posexplode_sql = self.format_args(gen_subscripts, unnest_sql)
+
+            if isinstance(parent, exp.From) or (parent and isinstance(parent.parent, exp.From)):
+                # SELECT * FROM POSEXPLODE(col) -> SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(...), UNNEST(...))
+                return self.sql(exp.Subquery(this=exp.Select(expressions=[posexplode_sql])))
+
+            return posexplode_sql

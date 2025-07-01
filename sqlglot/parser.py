@@ -1895,7 +1895,7 @@ class Parser(metaclass=_Parser):
             stmt.add_comments(comments, prepend=True)
             return stmt
 
-        if self._match_set(self.dialect.tokenizer.COMMANDS):
+        if self._match_set(self.dialect.tokenizer_class.COMMANDS):
             return self._parse_command()
 
         expression = self._parse_expression()

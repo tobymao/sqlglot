@@ -69,11 +69,11 @@ class TestSpark(Validator):
                 "trino": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
                 "athena": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",  # note: lowercase format property is important for Athena
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
+                "spark": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             },
         )
         self.validate_all(
-            """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG TBLPROPERTIES('x' = '1')""",
+            """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) USING ICEBERG TBLPROPERTIES('x' = '1')""",
             write={
                 "duckdb": """CREATE TABLE blah (
   col_a INT

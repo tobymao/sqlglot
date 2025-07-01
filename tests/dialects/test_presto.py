@@ -511,7 +511,7 @@ class TestPresto(Validator):
                 "duckdb": "CREATE TABLE test AS SELECT 1",
                 "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
+                "spark": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             },
         )
         self.validate_all(

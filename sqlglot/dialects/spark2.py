@@ -284,7 +284,9 @@ class Spark2(Hive):
             # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfYear: rename_func("DAYOFYEAR"),
-            exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
+            exp.FileFormatProperty: lambda _, e: f"STORED AS {e.name.upper()}"
+            if e.args.get("hive_format")
+            else f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
             exp.FromTimeZone: lambda self, e: self.func(
                 "TO_UTC_TIMESTAMP", e.this, e.args.get("zone")

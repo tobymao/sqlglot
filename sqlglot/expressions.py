@@ -2856,8 +2856,9 @@ class FallbackProperty(Property):
     arg_types = {"no": True, "protection": False}
 
 
+# https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-hiveformat
 class FileFormatProperty(Property):
-    arg_types = {"this": False, "expressions": False}
+    arg_types = {"this": False, "expressions": False, "hive_format": False}
 
 
 class CredentialsProperty(Property):

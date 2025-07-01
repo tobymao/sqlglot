@@ -1118,7 +1118,7 @@ class ClickHouse(Dialect):
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
             exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
-            exp.Typeof: lambda self, e: self.func("toTypeName", e.this),
+            exp.Typeof: rename_func("toTypeName"),
             exp.VarMap: _map_sql,
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
             exp.MD5Digest: rename_func("MD5"),

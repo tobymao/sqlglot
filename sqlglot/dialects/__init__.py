@@ -108,7 +108,10 @@ MODULE_BY_ATTRIBUTE = {
 
 __all__ = list(MODULE_BY_ATTRIBUTE)
 
-_import_lock = threading.Lock()
+# We use a reentrant lock because a dialect may depend on (i.e., import) other dialects.
+# Without it, the first dialect import would never be completed, because subsequent
+# imports would be blocked on the lock held by the first import.
+_import_lock = threading.RLock()
 
 
 def __getattr__(name):

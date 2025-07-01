@@ -5370,6 +5370,10 @@ class Func(Condition):
         return {name: cls.from_arg_list for name in cls.sql_names()}
 
 
+class Typeof(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

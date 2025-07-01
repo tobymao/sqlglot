@@ -94,6 +94,19 @@ class TestDatabricks(Validator):
         )
 
         self.validate_all(
+            "SELECT TYPEOF(1)",
+            read={
+                "databricks": "SELECT TYPEOF(1)",
+                "snowflake": "SELECT TYPEOF(1)",
+                "hive": "SELECT TYPEOF(1)",
+                "clickhouse": "SELECT toTypeName(1)",
+            },
+            write={
+                "clickhouse": "SELECT toTypeName(1)",
+            },
+        )
+
+        self.validate_all(
             "SELECT c1:item[1].price",
             read={
                 "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",

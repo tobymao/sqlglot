@@ -2237,6 +2237,7 @@ class Parser(metaclass=_Parser):
                 if input_format or output_format
                 else self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
             ),
+            hive_format=True,
         )
 
     def _parse_unquoted_field(self) -> t.Optional[exp.Expression]:

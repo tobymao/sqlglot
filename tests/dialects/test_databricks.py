@@ -99,10 +99,10 @@ class TestDatabricks(Validator):
                 "databricks": "SELECT TYPEOF(1)",
                 "snowflake": "SELECT TYPEOF(1)",
                 "hive": "SELECT TYPEOF(1)",
-                "clickhouse": "SELECT TOTYPENAME(1)",
+                "clickhouse": "SELECT toTypeName(1)",
             },
             write={
-                "clickhouse": "SELECT TOTYPENAME(1)",
+                "clickhouse": "SELECT toTypeName(1)",
             },
         )
 

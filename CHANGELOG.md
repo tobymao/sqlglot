@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v26.33.0] - 2025-07-01
+### :boom: BREAKING CHANGES
+- due to [`d2f7c41`](https://github.com/tobymao/sqlglot/commit/d2f7c41f9f30f4cf0c74782be9be0cc6e75565f3) - add TypeOf / toTypeName support *(PR [#5315](https://github.com/tobymao/sqlglot/pull/5315) by [@ankur334](https://github.com/ankur334))*:
+
+  add TypeOf / toTypeName support (#5315)
+
+
+### :sparkles: New Features
+- [`d2f7c41`](https://github.com/tobymao/sqlglot/commit/d2f7c41f9f30f4cf0c74782be9be0cc6e75565f3) - add TypeOf / toTypeName support *(PR [#5315](https://github.com/tobymao/sqlglot/pull/5315) by [@ankur334](https://github.com/ankur334))*
+
+### :bug: Bug Fixes
+- [`0a6afcd`](https://github.com/tobymao/sqlglot/commit/0a6afcd90c663aaef9b385fc12ccd19dbf6388cc) - use re-entrant lock in dialects/__init__ to avoid deadlocks *(PR [#5322](https://github.com/tobymao/sqlglot/pull/5322) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5321](https://github.com/tobymao/sqlglot/issues/5321) opened by [@jc-5s](https://github.com/jc-5s)*
+- [`599ca81`](https://github.com/tobymao/sqlglot/commit/599ca8101f48805098cbdf808ac2923a8246066b) - **parser**: avoid CTE values ALIAS gen, when ALIAS exists *(PR [#5323](https://github.com/tobymao/sqlglot/pull/5323) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5318](https://github.com/tobymao/sqlglot/issues/5318) opened by [@ankur334](https://github.com/ankur334)*
+
+
 ## [v26.31.0] - 2025-06-26
 ### :boom: BREAKING CHANGES
 - due to [`f2bf000`](https://github.com/tobymao/sqlglot/commit/f2bf000a410fb18531bb90ef1d767baf0e8bce7a) - avoid creating new alias for qualifying unpivot *(PR [#5121](https://github.com/tobymao/sqlglot/pull/5121) by [@geooo109](https://github.com/geooo109))*:
@@ -7412,3 +7429,4 @@ Changelog
 [v26.29.0]: https://github.com/tobymao/sqlglot/compare/v26.28.1...v26.29.0
 [v26.30.0]: https://github.com/tobymao/sqlglot/compare/v26.29.0...v26.30.0
 [v26.31.0]: https://github.com/tobymao/sqlglot/compare/v26.21.2...v26.31.0
+[v26.33.0]: https://github.com/tobymao/sqlglot/compare/v26.32.0...v26.33.0

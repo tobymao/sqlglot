@@ -790,5 +790,5 @@ class Hive(Dialect):
                 this = self.sql(expression, "this")
             else:
                 this = expression.name.upper()
-            
+
             return f"STORED AS {this}"

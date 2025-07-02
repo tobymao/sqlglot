@@ -52,8 +52,14 @@ ARRAY<DOUBLE>;
 ARRAY_SLICE([1, 1.5], 1, 2);
 ARRAY<DOUBLE>;
 
-FROM_BASE64(str_col);
+FROM_BASE64(tbl.str_col);
 BINARY;
+
+ANY_VALUE(tbl.str_col);
+STRING;
+
+ANY_VALUE(tbl.array_col);
+ARRAY<STRING>;
 
 --------------------------------------
 -- Spark2 / Spark3 / Databricks

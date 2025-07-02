@@ -758,7 +758,7 @@ class Dialect(metaclass=_Dialect):
         exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Anonymous: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Array: lambda self, e: self._annotate_by_args(e, "expressions", array=True),
-        exp.AnyValue:  lambda self, e: self._annotate_by_args(e, "this"),
+        exp.AnyValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.ArrayConcatAgg: lambda self, e: self._annotate_by_args(e, "this"),

@@ -783,6 +783,7 @@ class Dialect(metaclass=_Dialect):
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Extract: lambda self, e: self._annotate_extract(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.FromBase64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<DATE>")
         ),

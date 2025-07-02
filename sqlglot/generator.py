@@ -3038,6 +3038,13 @@ class Generator(metaclass=_Generator):
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
 
+    def formatcolumn_sql(self, expression: exp.FormatColumn) -> str:
+        # Output the Teradata column FORMAT override.
+        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+        this = self.sql(expression, "this")
+        fmt = self.sql(expression, "format")
+        return f"{this} (FORMAT {fmt})"
+
     def jsonobject_sql(self, expression: exp.JSONObject | exp.JSONObjectAgg) -> str:
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""

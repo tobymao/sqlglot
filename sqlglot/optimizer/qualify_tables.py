@@ -60,8 +60,11 @@ def qualify_tables(
                 table.set("catalog", catalog.copy())
 
     if (db or catalog) and not isinstance(expression, exp.Query):
+        with_ = expression.args.get("with") or exp.With()
+        cte_names = {cte.alias_or_name for cte in with_.expressions}
+
         for node in expression.walk(prune=lambda n: isinstance(n, exp.Query)):
-            if isinstance(node, exp.Table):
+            if isinstance(node, exp.Table) and node.name not in cte_names:
                 _qualify(node)
 
     for scope in traverse_scope(expression):

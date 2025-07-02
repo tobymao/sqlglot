@@ -61,6 +61,9 @@ STRING;
 ANY_VALUE(tbl.array_col);
 ARRAY<STRING>;
 
+CHR(65);
+STRING;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

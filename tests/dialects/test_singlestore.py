@@ -53,6 +53,15 @@ class TestSingleStore(Validator):
     FULLTEXT USING VERSION 1 ind (name)
 );
 """)
+            cur.execute("""CREATE TABLE products2 (
+                id INT PRIMARY KEY,
+                name VARCHAR(100),
+                price DECIMAL(10, 2),
+                category VARCHAR(50),
+                stock_quantity INT,
+                FULLTEXT USING VERSION 2 ind (name)
+            );
+            """)
             cur.execute("""CREATE TABLE order_items (
     id INT PRIMARY KEY,
     order_id INT,
@@ -4480,22 +4489,13 @@ class TestSingleStore(Validator):
         )
         self.validate_parsing(
             "SELECT DAYOFWEEK(signup_date) FROM users",
-            exp.Add(
-                this=exp.cast(exp.TimeToStr(
-                    this=exp.Column(
-                        this=exp.Identifier(this="signup_date", quoted=False)),
-                    format=exp.Literal.string("%w")
-                ), exp.DataType.Type.INT),
-                expression=exp.Literal.number(1)
-            )
+            exp.DayOfWeek(this=exp.Column(
+                        this=exp.Identifier(this="signup_date", quoted=False)))
         )
         self.validate_parsing(
             "SELECT DAYOFYEAR(signup_date) FROM users",
-            exp.cast(exp.TimeToStr(
-                this=exp.Column(
-                    this=exp.Identifier(this="signup_date", quoted=False)),
-                format=exp.Literal.string("%j")
-            ), exp.DataType.Type.INT),
+            exp.DayOfYear(this=exp.Column(
+                        this=exp.Identifier(this="signup_date", quoted=False)))
         )
         self.validate_parsing(
             "SELECT DECODE(age, 18, 'minor', 21, 'young adult', 'adult') FROM users",
@@ -4733,8 +4733,6 @@ class TestSingleStore(Validator):
                 false=exp.Literal.string("minor")
             )
         )
-
-    def test_tutu(self):
         self.validate_parsing(
             "SELECT age IN (20, 30) FROM users",
             exp.In(
@@ -5003,5 +5001,216 @@ class TestSingleStore(Validator):
             "SELECT LAG(age) OVER (ORDER BY signup_date) FROM users",
             exp.Lag(
                 this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LAST(id) FROM orders",
+            exp.Last(this=exp.Column(this=exp.Identifier(this="id", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT LAST(age, signup_date) FROM users",
+            exp.Last(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Column(this=exp.Identifier(this="signup_date", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LAST_DAY(signup_date) FROM users",
+            exp.LastDay(this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT LAST_INSERT_ID() FROM users",
+            exp.func("LAST_INSERT_ID")
+        )
+        self.validate_parsing(
+            "SELECT LAST_VALUE(age) OVER (ORDER BY signup_date) FROM users",
+            exp.LastValue(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LCASE(name) FROM users",
+            exp.Lower(this=exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT LEAD(age) OVER (ORDER BY signup_date) FROM users",
+            exp.Lead(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LEAST(age, 18, 30) FROM users",
+            exp.Least(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expressions=[
+                    exp.Literal.number(18),
+                    exp.Literal.number(30)
+                ]
+            )
+        )
+        self.validate_parsing(
+            "SELECT LEFT(name, 3) FROM users",
+            exp.Left(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.number(3)
+            )
+        )
+        self.validate_parsing(
+            "SELECT LENGTH(name) FROM users",
+            exp.Length(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT name LIKE 'A%' FROM users",
+            exp.Like(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("A%")
+            )
+        )
+        self.validate_parsing(
+            "SELECT name NOT LIKE 'B%' FROM users",
+            exp.Not(
+                this=exp.Like(
+                    this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                    expression=exp.Literal.string("B%")
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT LN(age) FROM users",
+            exp.Ln(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LOCALTIMESTAMP() FROM users",
+            exp.func("LOCALTIMESTAMP")
+        )
+        self.validate_parsing(
+            "SELECT LOCATE('a', name, 1) FROM users",
+            exp.StrPosition(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                substr=exp.Literal.string("a"),
+                position=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT LOG(10, age) FROM users",
+            exp.Log(
+                this=exp.Literal.number(10),
+                expression=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LOG10(age) FROM users",
+            exp.Log(
+                this=exp.Literal.number(10),
+                expression=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LOG2(age) FROM users",
+            exp.Log(
+                this=exp.Literal.number(2),
+                expression=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT LPAD(name, 10, '*') FROM users",
+            exp.Pad(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.number(10),
+                fill_pattern=exp.Literal.string("*"),
+                is_left=True
+            )
+        )
+        self.validate_parsing(
+            "SELECT LTRIM(name) FROM users",
+            exp.Trim(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                position="LEADING"
+            )
+        )
+        self.validate_parsing(
+            "SELECT MATCH(name) AGAINST ('search term') FROM products",
+            exp.MatchAgainst(
+                this=exp.Literal.string("search term"),
+                expressions=[exp.Column(this=exp.Identifier(this="name", quoted=False))],
+            )
+        )
+        self.validate_parsing(
+            "SELECT MAX(age) FROM users",
+            exp.Max(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT MD5(email) FROM users",
+            exp.MD5(this=exp.Column(this=exp.Identifier(this="email", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT MEDIAN(age) FROM users",
+            exp.Median(this=exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT MIN(age) FROM users",
+            exp.Min(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT MOD(age, 5) FROM users",
+            exp.Mod(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(5)
+            )
+        )
+        self.validate_parsing(
+            "SELECT MONTHS_BETWEEN(CURRENT_DATE, signup_date) FROM users",
+            exp.MonthsBetween(
+                this=exp.CurrentDate(),
+                expression=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT NOPARAM('SELECT * FROM users WHERE age = 25') FROM users",
+            exp.func("NOPARAM",
+                     exp.Literal.string("SELECT * FROM users WHERE age = 25"))
+        )
+        self.validate_parsing(
+            "SELECT MICROSECOND(signup_date) FROM users",
+            exp.cast(exp.TimeToStr(
+                this=exp.Column(
+                    this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%f")
+            ), exp.DataType.Type.INT),
+        )
+        self.validate_parsing(
+            "SELECT MINUTE(signup_date) FROM users",
+            exp.cast(exp.TimeToStr(
+                this=exp.Column(
+                    this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%M")
+            ), exp.DataType.Type.INT),
+        )
+        self.validate_parsing(
+            "SELECT MONTH(signup_date) FROM users",
+            exp.Month(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT MONTHNAME(signup_date) FROM users",
+            exp.TimeToStr(
+                this=exp.Column(
+                    this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%B")
+            )
+        )
+        self.validate_parsing(
+            "SELECT MATCH(TABLE products2) AGAINST ('search term') FROM products2",
+            exp.MatchAgainst(
+                this=exp.Literal.string("search term"),
+                expressions=[exp.Table(this=exp.Identifier(this="products2", quoted=False))],
             )
         )

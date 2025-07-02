@@ -176,18 +176,6 @@ class SingleStore(Dialect):
                 format=Dialect["singlestore"].format_time(
                     exp.Literal.string("%W")),
             ),
-            "DAYOFWEEK": lambda args: exp.Add(
-                this=exp.cast(exp.TimeToStr(
-                    this=seq_get(args, 0),
-                    format=Dialect["singlestore"].format_time(
-                        exp.Literal.string("%w")),
-                ), DataType.Type.INT),
-                expression=exp.Literal.number(1)),
-            "DAYOFYEAR": lambda args: exp.cast(exp.TimeToStr(
-                this=seq_get(args, 0),
-                format=Dialect["singlestore"].format_time(
-                    exp.Literal.string("%j")),
-            ), DataType.Type.INT),
             "DEGREES": lambda args: exp.Mul(
                 this=seq_get(args, 0),
                 expression=exp.Literal.number(180 / math.pi)),
@@ -214,6 +202,21 @@ class SingleStore(Dialect):
                 exp.JSONExtract),
             "JSON_EXTRACT_STRING": _build_json_extract(
                 exp.JSONExtractScalar),
+            "MICROSECOND": lambda args: exp.cast(exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(
+                    exp.Literal.string("%f")),
+            ), DataType.Type.INT),
+            "MINUTE": lambda args: exp.cast(exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(
+                    exp.Literal.string("%i")),
+            ), DataType.Type.INT),
+            "MONTHNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(
+                    exp.Literal.string("%M")),
+            ),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -229,6 +232,23 @@ class SingleStore(Dialect):
         FACTOR = {
             TokenType.COLON_GT: exp.Cast
         }
+
+        def _parse_match_against(self) -> exp.MatchAgainst:
+            if self._match_text_seq("TABLE"):
+                expressions = []
+                table = self._parse_table()
+                if table:
+                    expressions = [table]
+            else:
+                expressions = self._parse_csv(self._parse_column)
+
+            self._match_text_seq(")", "AGAINST", "(")
+
+            this = self._parse_string()
+
+            return self.expression(
+                exp.MatchAgainst, this=this, expressions=expressions
+            )
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -2342,7 +2362,14 @@ class SingleStore(Dialect):
 
         @unsupported_args("modifier")
         def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
-            return f"{self.func('MATCH', *expression.expressions)} AGAINST({self.sql(expression, 'this')})"
+            expressions_sqls = []
+            for expr in expression.expressions:
+                if isinstance(expr, exp.Table):
+                    expressions_sqls.append(f"TABLE {self.sql(expr)}")
+                else:
+                    expressions_sqls.append(self.sql(expr))
+
+            return f"{self.func('MATCH', *expressions_sqls)} AGAINST({self.sql(expression, 'this')})"
 
         def normalize_sql(self, expression: exp.Normalize) -> str:
             self.unsupported(

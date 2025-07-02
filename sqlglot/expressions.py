@@ -5575,7 +5575,7 @@ class First(AggFunc):
 
 
 class Last(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class FirstValue(AggFunc):

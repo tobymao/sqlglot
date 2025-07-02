@@ -4588,6 +4588,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Order,
+            comments=self._prev_comments,
             this=this,
             expressions=self._parse_csv(self._parse_ordered),
             siblings=siblings,

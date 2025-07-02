@@ -62,7 +62,10 @@ ANY_VALUE(tbl.array_col);
 ARRAY<STRING>;
 
 CHR(65);
-STRING;
+VARCHAR;
+
+COUNTIF(tbl.bigint_col > 1);
+BIGINT;
 
 --------------------------------------
 -- Spark2 / Spark3 / Databricks

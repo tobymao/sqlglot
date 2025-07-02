@@ -475,3 +475,22 @@ ALTER TABLE ct
   ADD CONSTRAINT ct_id_fk FOREIGN KEY (id) REFERENCES et (
     fid
   ) DEFERRABLE INITIALLY DEFERRED;
+
+SELECT
+    *
+FROM
+    a
+WHERE
+    /*111*/
+    b = 1
+    /*222*/
+ORDER BY
+    c;
+SELECT
+  *
+FROM a
+WHERE
+  b /* 111 */ = 1
+/* 222 */
+ORDER BY
+  c;

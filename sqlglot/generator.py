@@ -645,6 +645,7 @@ class Generator(metaclass=_Generator):
         exp.Insert,
         exp.Join,
         exp.MultitableInserts,
+        exp.Order,
         exp.Select,
         exp.SetOperation,
         exp.Update,

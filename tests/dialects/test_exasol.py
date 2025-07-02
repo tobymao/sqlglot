@@ -181,6 +181,21 @@ class TestExasol(Validator):
                 "duckdb": "SELECT department, ALL (age >= 30) AS EVERY FROM employee_table GROUP BY department",
             },
         )
+        (
+            self.validate_all(
+                "SELECT VAR_POP(current_salary)",
+                write={
+                    "exasol": "SELECT VAR_POP(current_salary)",
+                    "duckdb": "SELECT VAR_POP(current_salary)",
+                    "presto": "SELECT VAR_POP(current_salary)",
+                },
+                read={
+                    "exasol": "SELECT VAR_POP(current_salary)",
+                    "duckdb": "SELECT VAR_POP(current_salary)",
+                    "presto": "SELECT VAR_POP(current_salary)",
+                },
+            ),
+        )
 
     def test_stringFunctions(self):
         self.validate_all(

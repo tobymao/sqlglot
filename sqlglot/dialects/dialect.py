@@ -774,6 +774,7 @@ class Dialect(metaclass=_Dialect):
         exp.Count: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
         ),
+        exp.Chr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TEXT),
         exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
         exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
         exp.DateSub: lambda self, e: self._annotate_timeunit(e),

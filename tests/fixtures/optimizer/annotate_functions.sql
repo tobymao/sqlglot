@@ -508,6 +508,18 @@ DOUBLE;
 ARRAY_LAST([1, 1.5]);
 DOUBLE;
 
+# dialect: bigquery
+GENERATE_ARRAY(1, 5, 0.3);
+DOUBLE;
+
+# dialect: bigquery
+GENERATE_ARRAY(1, 5);
+BIGINT;
+
+# dialect: bigquery
+GENERATE_ARRAY(1, 2.5);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

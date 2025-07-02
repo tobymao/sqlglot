@@ -767,7 +767,6 @@ class Dialect(metaclass=_Dialect):
         exp.ArrayReverse: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArraySlice: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Bracket: lambda self, e: self._annotate_bracket(e),
-        exp.FromBase64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
         exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
@@ -784,6 +783,7 @@ class Dialect(metaclass=_Dialect):
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Extract: lambda self, e: self._annotate_extract(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.FromBase64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<DATE>")
         ),

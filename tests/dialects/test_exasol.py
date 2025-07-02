@@ -220,3 +220,18 @@ class TestExasol(Validator):
                 },
             ),
         )
+        (
+            self.validate_all(
+                "SELECT VAR_POP(current_salary)",
+                write={
+                    "exasol": "SELECT VAR_POP(current_salary)",
+                    "duckdb": "SELECT VAR_POP(current_salary)",
+                    "presto": "SELECT VAR_POP(current_salary)",
+                },
+                read={
+                    "exasol": "SELECT VAR_POP(current_salary)",
+                    "duckdb": "SELECT VAR_POP(current_salary)",
+                    "presto": "SELECT VAR_POP(current_salary)",
+                },
+            ),
+        )

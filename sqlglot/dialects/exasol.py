@@ -24,6 +24,7 @@ class Exasol(Dialect):
                 position=seq_get(args, 3),
                 occurrence=seq_get(args, 4),
             ),
+            "VAR_POP": exp.VariancePop.from_arg_list,
         }
 
     class Generator(generator.Generator):
@@ -85,5 +86,8 @@ class Exasol(Dialect):
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/regexp_replace.htm
             exp.RegexpReplace: unsupported_args("modifiers")(rename_func("REGEXP_REPLACE")),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/var_pop.htm
+            exp.VariancePop: rename_func("VAR_POP"),
         }

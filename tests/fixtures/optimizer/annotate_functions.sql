@@ -510,15 +510,15 @@ DOUBLE;
 
 # dialect: bigquery
 GENERATE_ARRAY(1, 5, 0.3);
-DOUBLE;
+ARRAY<DOUBLE>;
 
 # dialect: bigquery
 GENERATE_ARRAY(1, 5);
-BIGINT;
+ARRAY<BIGINT>;
 
 # dialect: bigquery
 GENERATE_ARRAY(1, 2.5);
-DOUBLE;
+ARRAY<DOUBLE>;
 
 --------------------------------------
 -- Snowflake

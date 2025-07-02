@@ -207,3 +207,11 @@ SELECT 1 FROM c.db.x AS x TABLESAMPLE SYSTEM (10 PERCENT) CROSS JOIN c.db.y AS y
 
 WITH cte_tbl AS (SELECT 1 AS col2) UPDATE y SET col1 = (SELECT * FROM x) WHERE EXISTS(SELECT 1 FROM cte_tbl);
 WITH cte_tbl AS (SELECT 1 AS col2) UPDATE c.db.y SET col1 = (SELECT * FROM c.db.x AS x) WHERE EXISTS(SELECT 1 FROM cte_tbl AS cte_tbl);
+
+# title: avoid qualifying CTE with UPDATE
+WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE t SET name = cte.name FROM cte WHERE cte.c = 1;
+WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE c.db.t SET name = cte.name FROM cte WHERE cte.c = 1;
+
+# title: avoid qualifying CTE with DELETE
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c

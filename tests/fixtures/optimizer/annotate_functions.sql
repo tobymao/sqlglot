@@ -64,6 +64,9 @@ ARRAY<STRING>;
 CHR(65);
 STRING;
 
+LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

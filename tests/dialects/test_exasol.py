@@ -196,6 +196,18 @@ class TestExasol(Validator):
                 },
             ),
         )
+        self.validate_all(
+            "SELECT APPROXIMATE_COUNT_DISTINCT(y)",
+            read={
+                "spark": "SELECT APPROX_COUNT_DISTINCT(y)",
+                "exasol": "SELECT APPROXIMATE_COUNT_DISTINCT(y)",
+            },
+            write={
+                "redshift": "SELECT APPROXIMATE COUNT(DISTINCT y)",
+                "spark": "SELECT APPROX_COUNT_DISTINCT(y)",
+                "exasol": "SELECT APPROXIMATE_COUNT_DISTINCT(y)",
+            },
+        )
 
     def test_stringFunctions(self):
         self.validate_all(

@@ -527,6 +527,12 @@ ARRAY<DOUBLE>;
 INT64(JSON '999');
 BIGINT;
 
+LOGICAL_AND(tbl.bool_col);
+BOOLEAN;
+
+LOGICAL_OR(tbl.bool_col);
+BOOLEAN;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

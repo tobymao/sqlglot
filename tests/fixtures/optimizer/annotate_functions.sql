@@ -82,12 +82,6 @@ BIGINT;
 STARTS_WITH(tbl.str_col, prefix);
 BOOLEAN;
 
-SHA(str_col);
-BINARY;
-
-SHA2(str_col);
-BINARY;
-
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------
@@ -557,6 +551,18 @@ BOOLEAN;
 # dialect: bigquery
 MAKE_INTERVAL(1, 6, 15);
 INTERVAL;
+
+# dialect: bigquery
+SHA1(str_col);
+BINARY;
+
+# dialect: bigquery
+SHA256(str_col);
+BINARY;
+
+# dialect: bigquery
+SHA512(str_col);
+BINARY;
 
 --------------------------------------
 -- Snowflake

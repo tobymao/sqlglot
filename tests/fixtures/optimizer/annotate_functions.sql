@@ -70,6 +70,10 @@ BIGINT;
 LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
 
+
+UNIX_DATE(tbl.date_col);
+BIGINT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

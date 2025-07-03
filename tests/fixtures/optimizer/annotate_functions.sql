@@ -73,6 +73,9 @@ BIGINT;
 TO_BASE64(bytes_col);
 VARCHAR;
 
+UNIX_DATE(tbl.date_col);
+BIGINT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

@@ -67,6 +67,9 @@ VARCHAR;
 COUNTIF(tbl.bigint_col > 1);
 BIGINT;
 
+LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

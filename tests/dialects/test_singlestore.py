@@ -1,6 +1,5 @@
 import math
 
-from sqlglot.optimizer.simplify import is_null
 from tests.dialects.test_dialect import Validator
 from sqlglot import exp, parse_one, ErrorLevel, UnsupportedError
 import typing as t
@@ -1030,7 +1029,7 @@ class TestSingleStore(Validator):
             expected_sql="SELECT DATE_SUB('12:00:00' :> TIME, INTERVAL '30' MINUTE)",
             exp_type=exp.TimeSub)
         self.validate_generation(
-            sql="SELECT TIME_DIFF(MINUTE, TIME '10:00:00', TIME '11:00:00')",
+            sql="SELECT TIME_DIFF(TIME '10:00:00', TIME '11:00:00', MINUTE)",
             expected_sql="SELECT TIMESTAMPDIFF(MINUTE, '10:00:00' :> TIME, '11:00:00' :> TIME)",
             exp_type=exp.TimeDiff)
         self.validate_generation(
@@ -5418,4 +5417,213 @@ class TestSingleStore(Validator):
                          "JSON_ARRAY_PACK",
                          exp.Literal.string("[0.1, 0.8, 0.2, 0.555]")
                      ))
+        )
+        self.validate_parsing(
+            "SELECT SEC_TO_TIME(3600) FROM users",
+            exp.func("SEC_TO_TIME", exp.Literal.number(3600))
+        )
+        self.validate_parsing(
+            "SELECT MONTHNAME(signup_date) FROM users",
+            exp.TimeToStr(
+                this=exp.Column(
+                    this=exp.Identifier(this="signup_date", quoted=False)),
+                format=exp.Literal.string("%B")
+            )
+        )
+        self.validate_parsing(
+            "SELECT SECOND(signup_date) FROM users",
+            exp.cast(
+                exp.TimeToStr(
+                    this=exp.Column(
+                        this=exp.Identifier(this="signup_date", quoted=False)),
+                    format=exp.Literal.string("%S")
+                ),
+                exp.DataType.Type.INT
+            )
+        )
+        self.validate_parsing(
+            "SELECT SECRET('password') FROM users",
+            exp.func("SECRET", exp.Literal.string("password"))
+        )
+        self.validate_parsing(
+            "SELECT SHA1(email) FROM users",
+            exp.SHA(this=exp.Column(this=exp.Identifier(this="email", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT SHA2(email, 256) FROM users",
+            exp.SHA2(this=exp.Column(this=exp.Identifier(this="email", quoted=False)),
+                     length=exp.Literal.number(256))
+        )
+        self.validate_parsing(
+            "SELECT SIGMOID(age) FROM users",
+            exp.Div(
+                this=exp.Literal.number(1),
+                expression=exp.Paren( this=exp.Add(
+                    this=exp.Literal.number(1),
+                    expression=exp.Exp(
+                        this=exp.Neg(
+                            this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+                        )
+                    )
+                ))
+            )
+        )
+        self.validate_parsing(
+            "SELECT SIGN(age) FROM users",
+            exp.Sign(this=exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT SIN(age) FROM users",
+            exp.func("SIN", exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT SLEEP(2) FROM users",
+            exp.func("SLEEP", exp.Literal.number(2))
+        )
+        self.validate_parsing(
+            "SPLIT(name, '-')",
+            exp.Split(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("-")),
+            run=False
+        )
+        self.validate_parsing(
+            "SELECT SQRT(age) FROM users",
+            exp.Sqrt(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT STD(age) FROM users",
+            exp.Stddev(this=exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT STDDEV(age) FROM users",
+            exp.Stddev(this=exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT STDDEV_POP(age) FROM users",
+            exp.StddevPop(this=exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT STDDEV_SAMP(age) FROM users",
+            exp.StddevSamp(this=exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT STR_TO_DATE('2024-12-31', '%Y-%m-%d') FROM users",
+            exp.StrToDate(
+                     this=exp.Literal.string("2024-12-31"),
+                     format=exp.Literal.string("%Y-%m-%d"))
+        )
+        # TODO: think about rewriting this using CASE
+        self.validate_parsing(
+            "SELECT STRCMP(name, 'Alice') FROM users",
+            exp.func("STRCMP",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                     exp.Literal.string("Alice"))
+        )
+        self.validate_parsing(
+            "STRING_BYTES(name)",
+            exp.func("STRING_BYTES",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False))),
+            run=False
+        )
+        self.validate_parsing(
+            "SELECT SUBSTRING(name, 1, 3) FROM users",
+            exp.Substring(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                start=exp.Literal.number(1),
+                length=exp.Literal.number(3)
+            )
+        )
+        self.validate_parsing(
+            "SELECT SUBSTRING(name, 1) FROM users",
+            exp.Substring(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                start=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT SUBSTRING(name FROM 1 FOR 3) FROM users",
+            exp.Substring(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                start=exp.Literal.number(1),
+                length=exp.Literal.number(3)
+            )
+        )
+        self.validate_parsing(
+            "SELECT SUBSTRING(name FROM 1) FROM users",
+            exp.Substring(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                start=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT SUBSTRING_INDEX(name, '-', 2) FROM users",
+            exp.func("SUBSTRING_INDEX",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                     exp.Literal.string("-"),
+                     exp.Literal.number(2))
+        )
+        self.validate_parsing(
+            "SELECT SUM(age) FROM users",
+            exp.Sum(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT UUID() FROM users",
+            exp.Uuid()
+        )
+        self.validate_parsing(
+            "SELECT TAN(age) FROM users",
+            exp.func("TAN", exp.Column(this=exp.Identifier(this="age", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT TIME(signup_date) FROM users",
+            exp.cast(
+                exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                exp.DataType.Type.TIME
+            )
+        )
+        self.validate_parsing(
+            "SELECT TIME_BUCKET('1d') FROM orders",
+            exp.DateBin(
+                     this=exp.Literal.string("1d"))
+        )
+        self.validate_parsing(
+            "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12')",
+            exp.DateBin(
+                this=exp.Literal.string("1d"),
+                expression=exp.Literal.string("2019-03-14 06:04:12")
+            )
+        )
+        self.validate_parsing(
+            "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12', '2019-03-13 03:00:00')",
+            exp.DateBin(
+                this=exp.Literal.string("1d"),
+                expression=exp.Literal.string("2019-03-14 06:04:12"),
+                offset=exp.Literal.string("2019-03-13 03:00:00")
+            )
+        )
+        self.validate_parsing(
+            "SELECT TIME_FORMAT(signup_date, '%H:%i:%s') FROM users",
+            exp.TimeToStr(this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                     format=exp.Literal.string("%H:%M:%S"))
+        )
+        self.validate_parsing(
+            "SELECT TIME_TO_SEC(signup_date) FROM users",
+            exp.func("TIME_TO_SEC",
+                     exp.Column(this=exp.Identifier(this="signup_date", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT TIMEDIFF(signup_date, CURRENT_TIMESTAMP) FROM users",
+            exp.TimeDiff(
+                this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)),
+                expression=exp.CurrentTimestamp()
+            )
+        )
+        self.validate_parsing(
+            "SELECT TIMESTAMP('2024-01-01 10:00:00') FROM users",
+            exp.Timestamp(this=exp.Literal.string("2024-01-01 10:00:00"))
         )

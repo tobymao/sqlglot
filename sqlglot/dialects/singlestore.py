@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
 import typing as t
 import re
 from sqlglot import exp
+from sqlglot.dialects.mysql import _str_to_date
 from sqlglot.expressions import DataType
 from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
 from sqlglot.helper import csv, seq_get
@@ -236,6 +237,34 @@ class SingleStore(Dialect):
                                                                position=seq_get(args, 2),
                                                                occurrence=seq_get(args, 3),
                                                                parameters=seq_get(args, 4)),
+            "SECOND": lambda args: exp.cast(exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(
+                    exp.Literal.string("%s")),
+            ), DataType.Type.INT),
+            "SIGMOID": lambda args: exp.Div(
+                this = exp.Literal.number(1),
+                expression = exp.Paren( this=exp.Add(
+                    this = exp.Literal.number(1),
+                    expression = exp.Exp(
+                        this = exp.Neg(
+                            this = seq_get(args, 0)))
+                    ))
+                ),
+            "STD": exp.Stddev.from_arg_list,
+            "STR_TO_DATE": _str_to_date,
+            "TIME": lambda args: exp.cast(seq_get(args, 0),
+                                          exp.DataType.Type.TIME),
+            "TIME_BUCKET": lambda args: exp.DateBin(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                offset=seq_get(args, 2)
+            ),
+            "TIME_FORMAT": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["singlestore"].format_time(seq_get(args, 1))
+            ),
+            "TIMEDIFF": exp.TimeDiff.from_arg_list
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -330,7 +359,6 @@ class SingleStore(Dialect):
             exp.TimestampSub: rename_func("DATE_SUB"),
             exp.TimeAdd: rename_func("DATE_ADD"),
             exp.TimeSub: rename_func("DATE_SUB"),
-            exp.TimeDiff: rename_func("TIMESTAMPDIFF"),
             exp.DateToDi: lambda self,
                 e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.DiToDate: lambda self,
@@ -3867,3 +3895,9 @@ class SingleStore(Dialect):
 
             return self.sql(
                 exp.cast(expression.this, datatype, dialect=self.dialect))
+
+        def timediff_sql(self, expression: exp.TimeDiff):
+            if expression.args.get("unit") is not None:
+                return self.func("TIMESTAMPDIFF", expression.args.get("unit"), expression.this, expression.expression)
+            else:
+                return self.func("TIMEDIFF", expression.this, expression.expression)

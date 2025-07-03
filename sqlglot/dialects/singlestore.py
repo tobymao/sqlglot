@@ -12,6 +12,7 @@ from sqlglot import exp
 from sqlglot.expressions import DataType
 from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
 from sqlglot.helper import csv, seq_get
+from sqlglot.parser import build_coalesce
 
 
 def _build_json_extract(expr_type: t.Type[exp.Func]) -> t.Callable[
@@ -217,6 +218,24 @@ class SingleStore(Dialect):
                 format=Dialect["singlestore"].format_time(
                     exp.Literal.string("%M")),
             ),
+            "NOW": exp.CurrentTimestamp.from_arg_list,
+            "NVL": lambda args: build_coalesce(args, is_nvl=True),
+            "IFNULL": lambda args: build_coalesce(args, is_nvl=True),
+            "RADIANS": lambda args: exp.Mul(
+                this=seq_get(args, 0),
+                expression=exp.Literal.number(math.pi / 180.0)),
+            "REGEXP_MATCH": lambda args: exp.RegexpExtractAll(this=seq_get(args, 0),
+                                                              expression=seq_get(args, 1),
+                                                              parameters=seq_get(args, 2)),
+            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(this=seq_get(args, 0),
+                                                             expression=seq_get(args, 1),
+                                                             replacement=seq_get(args, 2),
+                                                             modifiers=seq_get(args, 3)),
+            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(this=seq_get(args, 0),
+                                                               expression=seq_get(args, 1),
+                                                               position=seq_get(args, 2),
+                                                               occurrence=seq_get(args, 3),
+                                                               parameters=seq_get(args, 4)),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -379,6 +398,7 @@ class SingleStore(Dialect):
             exp.FromTimeZone: lambda self, e: self.func(
                 "CONVERT_TZ", e.this, e.args.get("zone"), "'UTC'"
             ),
+            exp.Reduce: unsupported_args("finish")(rename_func("REDUCE"))
         }
 
         TRANSFORMS.pop(exp.Operator)
@@ -2399,10 +2419,6 @@ class SingleStore(Dialect):
         def readcsv_sql(self, expression: exp.ReadCSV) -> str:
             self.unsupported(
                 "READ_CSV function is not supported in SingleStore")
-            return self.function_fallback_sql(expression)
-
-        def reduce_sql(self, expression: exp.Reduce) -> str:
-            self.unsupported("REDUCE function is not supported in SingleStore")
             return self.function_fallback_sql(expression)
 
         def regexpsplit_sql(self, expression: exp.RegexpSplit) -> str:

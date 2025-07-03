@@ -1,5 +1,6 @@
 import math
 
+from sqlglot.optimizer.simplify import is_null
 from tests.dialects.test_dialect import Validator
 from sqlglot import exp, parse_one, ErrorLevel, UnsupportedError
 import typing as t
@@ -1391,10 +1392,8 @@ class TestSingleStore(Validator):
             run=False
         )
         self.validate_generation(
-            sql="SELECT REDUCE(ARRAY(1, 2, 3), 0, (acc, x) -> acc + x, acc -> acc * 2)",
-            error_message="REDUCE function is not supported in SingleStore",
+            sql="SELECT REDUCE(0, JSON_TO_ARRAY('[1,2,3,4]'), REDUCE_ACC() + REDUCE_VALUE()) AS Result",
             exp_type=exp.Reduce,
-            run=False
         )
         self.validate_generation(
             sql="SELECT REGEXP_EXTRACT(name, '[a-z]+') FROM users",
@@ -5213,4 +5212,210 @@ class TestSingleStore(Validator):
                 this=exp.Literal.string("search term"),
                 expressions=[exp.Table(this=exp.Identifier(this="products2", quoted=False))],
             )
+        )
+        self.validate_parsing(
+            "SELECT NOW() FROM users",
+            exp.CurrentTimestamp()
+        )
+        self.validate_parsing(
+            "SELECT NOW(6) FROM users",
+            exp.CurrentTimestamp(
+                this=exp.Literal.number(6)
+            )
+        )
+        self.validate_parsing(
+            "SELECT NTH_VALUE(age, 2) OVER (ORDER BY signup_date) FROM users",
+            exp.NthValue(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                offset=exp.Literal.number(2)
+            )
+        )
+        self.validate_parsing(
+            "SELECT NTILE(4) OVER (ORDER BY age) FROM users",
+            exp.func(
+                "NTILE",
+                exp.Literal.number(4)
+            )
+        )
+        self.validate_parsing(
+            "SELECT NULLIF(age, 0) FROM users",
+            exp.Nullif(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(0)
+            )
+        )
+        self.validate_parsing(
+            "SELECT IFNULL(age, 18) FROM users",
+            exp.Coalesce(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expressions=[exp.Literal.number(18)],
+                is_nvl=True
+            )
+        )
+        self.validate_parsing(
+            "SELECT NVL(age, 18) FROM users",
+            exp.Coalesce(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expressions=[exp.Literal.number(18)],
+                is_nvl=True
+            )
+        )
+        self.validate_parsing(
+            "SELECT PERCENT_RANK() OVER (ORDER BY age) FROM users",
+            exp.func("PERCENT_RANK")
+        )
+        self.validate_parsing(
+            "SELECT PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY age) FROM users",
+            exp.PercentileCont(this=exp.Literal.number(0.75))
+        )
+        self.validate_parsing(
+            "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY age) FROM users",
+            exp.PercentileDisc(this=exp.Literal.number(0.9))
+        )
+        self.validate_parsing(
+            "SELECT PI() FROM users",
+            exp.func("PI")
+        )
+        self.validate_parsing(
+            "SELECT POW(age, 2) FROM users",
+            exp.Pow(this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(2))
+        )
+        self.validate_parsing(
+            "SELECT QUARTER(signup_date) FROM users",
+            exp.Quarter(this=exp.Column(this=exp.Identifier(this="signup_date", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT QUOTE(name) FROM users",
+            exp.func("QUOTE",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT RADIANS(age) FROM users",
+            exp.Mul(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(0.017453292519943295)
+            )
+        )
+        self.validate_parsing(
+            "SELECT RAND() FROM users",
+            exp.Rand()
+        )
+        self.validate_parsing(
+            "SELECT RAND(1) FROM users",
+            exp.Rand(this=exp.Literal.number(1))
+        )
+        self.validate_parsing(
+            "SELECT RANK() OVER (ORDER BY age) FROM users",
+            exp.func("RANK")
+        )
+        # TODO: make reduce supported
+        self.validate_parsing(
+            "SELECT REDUCE( 0, JSON_TO_ARRAY('[1,2,3,4]'), REDUCE_ACC() + REDUCE_VALUE() ) AS Result",
+            exp.Reduce(
+                this=exp.Literal.number(0),
+                initial=exp.func("JSON_TO_ARRAY",
+                        exp.Literal(this='[1,2,3,4]', is_string=True)),
+                merge=exp.Add(
+                    this=exp.func("REDUCE_ACC"),
+                    expression=exp.func("REDUCE_VALUE")))
+        )
+        self.validate_parsing(
+            "SELECT REGEXP_INSTR(name, '^A') FROM users",
+            exp.func("REGEXP_INSTR",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                     exp.Literal.string("^A"))
+        )
+        self.validate_parsing(
+            "SELECT REGEXP_MATCH(name, '[A-Za-z]+', 'c') FROM users",
+            exp.RegexpExtractAll(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("[A-Za-z]+"),
+                parameters=exp.Literal.string("c"),
+            )
+        )
+        self.validate_parsing(
+            "SELECT REGEXP_REPLACE(name, 'a', 'x', 'c') FROM users",
+            exp.RegexpReplace(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("a"),
+                replacement=exp.Literal.string("x"),
+                modifiers=exp.Literal.string("c"),
+            )
+        )
+        self.validate_parsing(
+            "SELECT REGEXP_SUBSTR(name, '[A-Z][a-z]+', 1, 2, 'c') FROM users",
+            exp.RegexpExtract(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("[A-Z][a-z]+"),
+                position=exp.Literal.number(1),
+                occurrence=exp.Literal.number(2),
+                parameters=exp.Literal.string("c"),
+            )
+        )
+        self.validate_parsing(
+            "SELECT REPLACE(name, 'a', 'o') FROM users",
+            exp.func("REPLACE",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                     exp.Literal.string("a"),
+                     exp.Literal.string("o"))
+        )
+        self.validate_parsing(
+            "SELECT REVERSE(name) FROM users",
+            exp.func("REVERSE",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)))
+        )
+        self.validate_parsing(
+            "SELECT RIGHT(name, 3) FROM users",
+            exp.Right(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.number(3)
+            )
+        )
+        self.validate_parsing(
+            "SELECT name RLIKE '^[A-Z]' FROM users",
+            exp.RegexpLike(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("^[A-Z]")
+            )
+        )
+        self.validate_parsing(
+            "SELECT ROUND(age, 0) FROM users",
+            exp.Round(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                decimals=exp.Literal.number(0)
+            )
+        )
+        self.validate_parsing(
+            "SELECT ROW_COUNT() FROM users",
+            exp.func("ROW_COUNT")
+        )
+        self.validate_parsing(
+            "SELECT ROW_NUMBER() OVER (ORDER BY age) FROM users",
+            exp.RowNumber()
+        )
+        self.validate_parsing(
+            "SELECT RPAD(name, 10, '*') FROM users",
+            exp.Pad(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.number(10),
+                fill_pattern=exp.Literal.string("*"),
+                is_left=False
+            )
+        )
+        self.validate_parsing(
+            "SELECT RTRIM(name) FROM users",
+            exp.Trim(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                position="TRAILING"
+            )
+        )
+        self.validate_parsing(
+            "SELECT SCALAR_VECTOR_MUL(2, JSON_ARRAY_PACK('[0.1, 0.8, 0.2, 0.555]')) FROM users",
+            exp.func("SCALAR_VECTOR_MUL",
+                     exp.Literal.number(2),
+                     exp.func(
+                         "JSON_ARRAY_PACK",
+                         exp.Literal.string("[0.1, 0.8, 0.2, 0.555]")
+                     ))
         )

@@ -647,6 +647,8 @@ class Dialect(metaclass=_Dialect):
             exp.Between,
             exp.Boolean,
             exp.In,
+            exp.LogicalAnd,
+            exp.LogicalOr,
             exp.RegexpLike,
         },
         exp.DataType.Type.DATE: {

@@ -76,6 +76,9 @@ VARCHAR;
 UNIX_DATE(tbl.date_col);
 BIGINT;
 
+UNIX_SECONDS(timestamp_col);
+BIGINT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

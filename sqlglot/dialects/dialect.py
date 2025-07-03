@@ -639,6 +639,7 @@ class Dialect(metaclass=_Dialect):
         exp.DataType.Type.BIGINT: {
             exp.ApproxDistinct,
             exp.ArraySize,
+            exp.CountIf,
             exp.Length,
             exp.Int64,
         },
@@ -723,8 +724,10 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.VARCHAR: {
             exp.ArrayConcat,
+            exp.ArrayToString,
             exp.Concat,
             exp.ConcatWs,
+            exp.Chr,
             exp.DateToDateStr,
             exp.DPipe,
             exp.GroupConcat,
@@ -763,7 +766,6 @@ class Dialect(metaclass=_Dialect):
         exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.ArrayConcatAgg: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArrayToString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TEXT),
         exp.ArrayFirst: lambda self, e: self._annotate_by_array_element(e),
         exp.ArrayLast: lambda self, e: self._annotate_by_array_element(e),
         exp.ArrayReverse: lambda self, e: self._annotate_by_args(e, "this"),
@@ -775,7 +777,6 @@ class Dialect(metaclass=_Dialect):
         exp.Count: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
         ),
-        exp.Chr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TEXT),
         exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
         exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
         exp.DateSub: lambda self, e: self._annotate_timeunit(e),
@@ -787,6 +788,9 @@ class Dialect(metaclass=_Dialect):
         exp.Extract: lambda self, e: self._annotate_extract(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.FromBase64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
+        exp.GenerateSeries: lambda self, e: self._annotate_by_args(
+            e, "start", "end", "step", array=True
+        ),
         exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<DATE>")
         ),

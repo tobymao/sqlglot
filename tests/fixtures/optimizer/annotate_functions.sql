@@ -62,7 +62,10 @@ ANY_VALUE(tbl.array_col);
 ARRAY<STRING>;
 
 CHR(65);
-STRING;
+VARCHAR;
+
+COUNTIF(tbl.bigint_col > 1);
+BIGINT;
 
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
@@ -507,6 +510,18 @@ DOUBLE;
 # dialect: bigquery
 ARRAY_LAST([1, 1.5]);
 DOUBLE;
+
+# dialect: bigquery
+GENERATE_ARRAY(1, 5, 0.3);
+ARRAY<DOUBLE>;
+
+# dialect: bigquery
+GENERATE_ARRAY(1, 5);
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+GENERATE_ARRAY(1, 2.5);
+ARRAY<DOUBLE>;
 
 # dialect: bigquery
 INT64(JSON '999');

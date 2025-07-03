@@ -647,8 +647,6 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.BINARY: {
             exp.FromBase64,
-            exp.SHA,
-            exp.SHA2,
         },
         exp.DataType.Type.BOOLEAN: {
             exp.Between,

@@ -641,6 +641,7 @@ class Dialect(metaclass=_Dialect):
             exp.ArraySize,
             exp.CountIf,
             exp.Length,
+            exp.Int64,
         },
         exp.DataType.Type.BOOLEAN: {
             exp.Between,

@@ -652,6 +652,7 @@ class Dialect(metaclass=_Dialect):
             exp.LogicalAnd,
             exp.LogicalOr,
             exp.RegexpLike,
+            exp.StartsWith,
         },
         exp.DataType.Type.DATE: {
             exp.CurrentDate,

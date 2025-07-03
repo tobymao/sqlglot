@@ -79,6 +79,9 @@ BIGINT;
 UNIX_SECONDS(timestamp_col);
 BIGINT;
 
+STARTS_WITH(tbl.str_col, prefix);
+BOOLEAN;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

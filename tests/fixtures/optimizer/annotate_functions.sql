@@ -82,6 +82,12 @@ BIGINT;
 STARTS_WITH(tbl.str_col, prefix);
 BOOLEAN;
 
+SHA(str_col);
+BINARY;
+
+SHA2(str_col);
+BINARY;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

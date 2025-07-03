@@ -552,6 +552,18 @@ BOOLEAN;
 MAKE_INTERVAL(1, 6, 15);
 INTERVAL;
 
+# dialect: bigquery
+SHA1(str_col);
+BINARY;
+
+# dialect: bigquery
+SHA256(str_col);
+BINARY;
+
+# dialect: bigquery
+SHA512(str_col);
+BINARY;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

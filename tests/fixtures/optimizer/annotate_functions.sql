@@ -67,6 +67,9 @@ VARCHAR;
 COUNTIF(tbl.bigint_col > 1);
 BIGINT;
 
+TO_BASE64(bytes_col);
+VARCHAR;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

@@ -640,6 +640,7 @@ class Dialect(metaclass=_Dialect):
             exp.ApproxDistinct,
             exp.ArraySize,
             exp.Length,
+            exp.Int64,
         },
         exp.DataType.Type.BOOLEAN: {
             exp.Between,

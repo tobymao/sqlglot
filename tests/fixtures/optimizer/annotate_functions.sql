@@ -508,6 +508,10 @@ DOUBLE;
 ARRAY_LAST([1, 1.5]);
 DOUBLE;
 
+# dialect: bigquery
+INT64(JSON '999');
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

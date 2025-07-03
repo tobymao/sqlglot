@@ -745,6 +745,7 @@ class Dialect(metaclass=_Dialect):
             exp.TimeToStr,
             exp.TimeToTimeStr,
             exp.Trim,
+            exp.ToBase64,
             exp.TsOrDsToDateStr,
             exp.UnixToStr,
             exp.UnixToTimeStr,

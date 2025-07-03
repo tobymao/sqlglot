@@ -67,6 +67,9 @@ VARCHAR;
 COUNTIF(tbl.bigint_col > 1);
 BIGINT;
 
+LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
+BIGINT;
+
 TO_BASE64(bytes_col);
 VARCHAR;
 

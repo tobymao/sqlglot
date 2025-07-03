@@ -808,6 +808,7 @@ class Dialect(metaclass=_Dialect):
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
         exp.Least: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Literal: lambda self, e: self._annotate_literal(e),
+        exp.LastValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Map: lambda self, e: self._annotate_map(e),
         exp.Max: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
@@ -826,6 +827,7 @@ class Dialect(metaclass=_Dialect):
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Unnest: lambda self, e: self._annotate_unnest(e),
         exp.VarMap: lambda self, e: self._annotate_map(e),
+        exp.Window: lambda self, e: self._annotate_by_args(e, "this"),
     }
 
     # Specifies what types a given type can be coerced into

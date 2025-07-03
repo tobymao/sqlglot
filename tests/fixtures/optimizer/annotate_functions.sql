@@ -523,6 +523,10 @@ ARRAY<BIGINT>;
 GENERATE_ARRAY(1, 2.5);
 ARRAY<DOUBLE>;
 
+# dialect: bigquery
+INT64(JSON '999');
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

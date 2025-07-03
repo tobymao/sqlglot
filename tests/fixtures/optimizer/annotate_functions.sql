@@ -70,6 +70,9 @@ BIGINT;
 LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
 
+TO_BASE64(bytes_col);
+VARCHAR;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

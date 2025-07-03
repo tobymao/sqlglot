@@ -494,3 +494,31 @@ WHERE
 /* 222 */
 ORDER BY
   c;
+
+SELECT
+    COUNT(*)
+FROM
+    table_a
+/* join comment */
+JOIN
+    table_b
+ON
+    table_a.id = table_b.id
+/* group by comment */
+GROUP BY
+    table_a.id
+/* having comment */
+HAVING
+    table_a.id = 1;
+SELECT
+  COUNT(*)
+FROM table_a
+/* join comment */
+JOIN table_b
+  ON table_a.id = table_b.id
+/* group by comment */
+GROUP BY
+  table_a.id
+/* having comment */
+HAVING
+  table_a.id = 1;

@@ -533,6 +533,10 @@ BOOLEAN;
 LOGICAL_OR(tbl.bool_col);
 BOOLEAN;
 
+# dialect: bigquery
+MAKE_INTERVAL(1, 6, 15);
+INTERVAL;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

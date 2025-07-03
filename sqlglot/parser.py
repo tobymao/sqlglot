@@ -3761,6 +3761,7 @@ class Parser(metaclass=_Parser):
         method, side, kind = self._parse_join_parts()
         hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
         join = self._match(TokenType.JOIN) or (kind and kind.token_type == TokenType.STRAIGHT_JOIN)
+        join_comments = self._prev_comments
 
         if not skip_join_token and not join:
             self._retreat(index)
@@ -3817,6 +3818,7 @@ class Parser(metaclass=_Parser):
         kwargs["pivots"] = self._parse_pivots()
 
         comments = [c for token in (method, side, kind) if token for c in token.comments]
+        comments = (join_comments or []) + comments
         return self.expression(exp.Join, comments=comments, **kwargs)
 
     def _parse_opclass(self) -> t.Optional[exp.Expression]:
@@ -4468,6 +4470,7 @@ class Parser(metaclass=_Parser):
     def _parse_group(self, skip_group_by_token: bool = False) -> t.Optional[exp.Group]:
         if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
             return None
+        comments = self._prev_comments
 
         elements: t.Dict[str, t.Any] = defaultdict(list)
 
@@ -4515,7 +4518,7 @@ class Parser(metaclass=_Parser):
             if index == self._index:
                 break
 
-        return self.expression(exp.Group, **elements)  # type: ignore
+        return self.expression(exp.Group, comments=comments, **elements)  # type: ignore
 
     def _parse_cube_or_rollup(self, kind: t.Type[E], with_prefix: bool = False) -> E:
         return self.expression(
@@ -4533,7 +4536,9 @@ class Parser(metaclass=_Parser):
     def _parse_having(self, skip_having_token: bool = False) -> t.Optional[exp.Having]:
         if not skip_having_token and not self._match(TokenType.HAVING):
             return None
-        return self.expression(exp.Having, this=self._parse_assignment())
+        return self.expression(
+            exp.Having, comments=self._prev_comments, this=self._parse_assignment()
+        )
 
     def _parse_qualify(self) -> t.Optional[exp.Qualify]:
         if not self._match(TokenType.QUALIFY):

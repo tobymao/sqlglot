@@ -643,6 +643,7 @@ class Dialect(metaclass=_Dialect):
             exp.Int64,
             exp.Length,
             exp.UnixDate,
+            exp.UnixSeconds,
         },
         exp.DataType.Type.BOOLEAN: {
             exp.Between,

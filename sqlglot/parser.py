@@ -3818,8 +3818,7 @@ class Parser(metaclass=_Parser):
         kwargs["pivots"] = self._parse_pivots()
 
         comments = [c for token in (method, side, kind) if token for c in token.comments]
-        if len(comments) == 0:
-            comments = join_comments
+        comments = (join_comments or []) + comments
         return self.expression(exp.Join, comments=comments, **kwargs)
 
     def _parse_opclass(self) -> t.Optional[exp.Expression]:

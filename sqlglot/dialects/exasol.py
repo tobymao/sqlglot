@@ -26,9 +26,7 @@ class Exasol(Dialect):
             ),
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
-            "TO_CHAR": lambda args: exp.ToChar(
-                this=seq_get(args, 0), format=seq_get(args, 1), nlsparam=seq_get(args, 2)
-            ),
+            "TO_CHAR": exp.ToChar.from_arg_list,
         }
 
     class Generator(generator.Generator):

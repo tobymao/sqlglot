@@ -26,6 +26,9 @@ class Exasol(Dialect):
             ),
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+            "TO_CHAR": lambda args: exp.ToChar(
+                this=seq_get(args, 0), format=seq_get(args, 1), nlsparam=seq_get(args, 2)
+            ),
         }
 
     class Generator(generator.Generator):
@@ -95,4 +98,6 @@ class Exasol(Dialect):
             exp.ApproxDistinct: unsupported_args("accuracy")(
                 rename_func("APPROXIMATE_COUNT_DISTINCT")
             ),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_char%20(datetime).htm
+            exp.ToChar: rename_func("TO_CHAR"),
         }

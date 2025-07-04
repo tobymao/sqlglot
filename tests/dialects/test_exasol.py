@@ -210,6 +210,20 @@ class TestExasol(Validator):
         )
 
     def test_stringFunctions(self):
+        self.validate_identity(
+            "TO_CHAR(CAST(TO_DATE(date, 'YYYYMMDD') AS TIMESTAMP), 'DY') AS day_of_week"
+        )
+        self.validate_identity("SELECT TO_CHAR(12345.67890, '9999999.999999999') AS TO_CHAR")
+        self.validate_identity(
+            "SELECT TO_CHAR(DATE '1999-12-31') AS TO_CHAR",
+            "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(TIMESTAMP '1999-12-31 23:59:00', 'HH24:MI:SS DD-MM-YYYY') AS TO_CHAR",
+            "SELECT TO_CHAR(CAST('1999-12-31 23:59:00' AS TIMESTAMP), 'HH24:MI:SS DD-MM-YYYY') AS TO_CHAR",
+        )
+        self.validate_identity("SELECT TO_CHAR(12345.6789) AS TO_CHAR")
+        self.validate_identity("SELECT TO_CHAR(-12345.67890, '000G000G000D000000MI') AS TO_CHAR")
         self.validate_all(
             "EDIT_DISTANCE(col1, col2)",
             read={
@@ -244,6 +258,21 @@ class TestExasol(Validator):
                     "exasol": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
                     "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
                     "spark": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                },
+            ),
+        )
+        (
+            self.validate_all(
+                "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                write={
+                    "exasol": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                    "redshift": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                    "presto": "SELECT DATE_FORMAT(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                    "oracle": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                    "postgres": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                },
+                read={
+                    "exasol": "SELECT TO_CHAR(DATE '1999-12-31') AS TO_CHAR",
                 },
             ),
         )

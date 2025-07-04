@@ -941,8 +941,15 @@ class TestSnowflake(Validator):
         self.validate_all(
             "DECODE(x, a, b, c, d, e)",
             write={
-                "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
-                "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
+                "duckdb": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
+                "snowflake": "DECODE(x, a, b, c, d, e)",
+            },
+        )
+        self.validate_all(
+            "DECODE(TRUE, a.b = 'value', 'value')",
+            write={
+                "duckdb": "CASE WHEN TRUE = (a.b = 'value') OR (TRUE IS NULL AND (a.b = 'value') IS NULL) THEN 'value' END",
+                "snowflake": "DECODE(TRUE, a.b = 'value', 'value')",
             },
         )
         self.validate_all(

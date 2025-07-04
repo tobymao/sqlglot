@@ -73,3 +73,7 @@ SELECT COALESCE(json_val.a /* sqlglot.meta case_sensitive */, json_val.A /* sqlg
 
 SELECT @X;
 SELECT @X;
+
+# dialect: bigquery,normalization_strategy=case_insensitive_uppercase
+SELECT `foo`, `BaR` FROM baz CROSS JOIN `bla` CROSS JOIN bloo;
+SELECT `FOO`, `BAR` FROM BAZ CROSS JOIN `BLA` CROSS JOIN BLOO;

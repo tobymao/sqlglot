@@ -110,7 +110,10 @@ class NormalizationStrategy(str, AutoName):
     """Always case-sensitive, regardless of quotes."""
 
     CASE_INSENSITIVE = auto()
-    """Always case-insensitive, regardless of quotes."""
+    """Always case-insensitive (lowercase), regardless of quotes."""
+
+    CASE_INSENSITIVE_UPPERCASE = auto()
+    """Always case-insensitive (uppercase), regardless of quotes."""
 
 
 class Version(int):
@@ -926,17 +929,23 @@ class Dialect(metaclass=_Dialect):
             and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
             and (
                 not expression.quoted
-                or self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE
+                or self.normalization_strategy
+                in (
+                    NormalizationStrategy.CASE_INSENSITIVE,
+                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+                )
             )
         ):
-            expression.set(
-                "this",
-                (
-                    expression.this.upper()
-                    if self.normalization_strategy is NormalizationStrategy.UPPERCASE
-                    else expression.this.lower()
-                ),
+            normalized = (
+                expression.this.upper()
+                if self.normalization_strategy
+                in (
+                    NormalizationStrategy.UPPERCASE,
+                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+                )
+                else expression.this.lower()
             )
+            expression.set("this", normalized)
 
         return expression
 

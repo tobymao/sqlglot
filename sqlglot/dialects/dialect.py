@@ -272,6 +272,9 @@ class _Dialect(type):
                 TokenType.STRAIGHT_JOIN,
             }
 
+        if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
+            klass.generator_class.SUPPORTS_DECODE_CASE = False
+
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
             klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,

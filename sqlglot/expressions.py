@@ -6035,6 +6035,12 @@ class Decode(Func):
     arg_types = {"this": True, "charset": True, "replace": False}
 
 
+class DecodeCase(Func):
+    _sql_names: t.List[str] = []
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class DiToDate(Func):
     pass
 

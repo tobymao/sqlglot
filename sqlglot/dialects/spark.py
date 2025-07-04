@@ -150,6 +150,7 @@ class Spark(Spark2):
         SUPPORTS_CONVERT_TIMEZONE = True
         SUPPORTS_MEDIAN = True
         SUPPORTS_UNIX_SECONDS = True
+        SUPPORTS_DECODE_CASE = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,

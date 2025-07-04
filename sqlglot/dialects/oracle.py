@@ -280,6 +280,7 @@ class Oracle(Dialect):
         TZ_TO_WITH_TIME_ZONE = True
         SUPPORTS_WINDOW_EXCLUDE = True
         QUERY_HINT_SEP = " "
+        SUPPORTS_DECODE_CASE = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

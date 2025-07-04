@@ -1049,6 +1049,7 @@ class Snowflake(Dialect):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = True
         ARRAY_SIZE_NAME = "ARRAY_SIZE"
+        SUPPORTS_DECODE_CASE = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

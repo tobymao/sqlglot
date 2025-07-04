@@ -484,6 +484,9 @@ class Generator(metaclass=_Generator):
     # True (Postgres) -> Explicitly requires it
     ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
 
+    # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
+    SUPPORTS_DECODE_CASE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -5011,3 +5014,29 @@ class Generator(metaclass=_Generator):
         expr = self.sql(expression, "expression")
         with_error = " WITH ERROR" if expression.args.get("with_error") else ""
         return f"TRANSLATE({this} USING {expr}{with_error})"
+
+    def decodecase_sql(self, expression: exp.DecodeCase) -> str:
+        if self.SUPPORTS_DECODE_CASE:
+            return self.func("DECODE", *expression.expressions)
+
+        expression, *expressions = expression.expressions
+
+        ifs = []
+        for search, result in zip(expressions[::2], expressions[1::2]):
+            if isinstance(search, exp.Literal):
+                ifs.append(exp.If(this=expression.eq(search), true=result))
+            elif isinstance(search, exp.Null):
+                ifs.append(exp.If(this=expression.is_(exp.Null()), true=result))
+            else:
+                if isinstance(search, exp.Binary):
+                    search = exp.paren(search)
+
+                cond = exp.or_(
+                    expression.eq(search),
+                    exp.and_(expression.is_(exp.Null()), search.is_(exp.Null()), copy=False),
+                    copy=False,
+                )
+                ifs.append(exp.If(this=cond, true=result))
+
+        case = exp.Case(ifs=ifs, default=expressions[-1] if len(expressions) % 2 == 1 else None)
+        return self.sql(case)

@@ -3041,7 +3041,7 @@ class Generator(metaclass=_Generator):
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
 
-    def formatcolumn_sql(self, expression: exp.FormatColumn) -> str:
+    def formatphrase_sql(self, expression: exp.FormatPhrase) -> str:
         # Output the Teradata column FORMAT override.
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
         this = self.sql(expression, "this")

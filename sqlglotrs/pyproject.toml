@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "sqlglotrs"
 description = "An easily customizable SQL parser and transpiler"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",

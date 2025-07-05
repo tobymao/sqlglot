@@ -5209,6 +5209,16 @@ class FromTimeZone(Expression):
     arg_types = {"this": True, "zone": True}
 
 
+class FormatColumn(Expression):
+    """Format override for a column in Teradata.
+    Can be expanded to additional dialects as needed
+
+    https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+    """
+
+    arg_types = {"this": True, "format": True}
+
+
 class Between(Predicate):
     arg_types = {"this": True, "low": True, "high": True}
 

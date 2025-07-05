@@ -247,24 +247,13 @@ class Teradata(Dialect):
         def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             this = super()._parse_column_ops(this)
 
-            if self._match(TokenType.L_PAREN, advance=False):
-                index = self._index
-                self._match(TokenType.L_PAREN)
-                if self._match(TokenType.FORMAT):
-                    # `(FORMAT <format_string>)` after a column specifies a Teradata format
-                    # override. See
-                    # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
-                    fmt_string = self._parse_string()
-                    fmt = self._parse_at_time_zone(fmt_string)
-                    if not self._match(TokenType.R_PAREN):
-                        self.raise_error("Expecting )")
-                    this = self.expression(
-                        exp.FormatColumn,
-                        this=this,
-                        format=fmt,
-                    )
-                else:
-                    self._retreat(index)
+            if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):
+                # `(FORMAT <format_string>)` after a column specifies a Teradata format override.
+                # See https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+                fmt_string = self._parse_string()
+                self._match_r_paren()
+
+                this = self.expression(exp.FormatPhrase, this=this, format=fmt_string)
 
             return this
 

@@ -5209,7 +5209,7 @@ class FromTimeZone(Expression):
     arg_types = {"this": True, "zone": True}
 
 
-class FormatColumn(Expression):
+class FormatPhrase(Expression):
     """Format override for a column in Teradata.
     Can be expanded to additional dialects as needed
 

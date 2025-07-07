@@ -585,6 +585,14 @@ DOUBLE;
 DATETIME(2025, 1, 1, 12, 0, 0);
 DATETIME;
 
+# dialect: bigquery
+LAG(tbl.bigint_col, 1 , 2.5) OVER (ORDER BY tbl.bigint_col);
+DOUBLE;
+
+# dialect: bigquery
+LAG(tbl.bigint_col, 1 , 2) OVER (ORDER BY tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

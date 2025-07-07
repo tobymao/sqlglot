@@ -1686,3 +1686,12 @@ class TestDuckDB(Validator):
             with self.subTest(f"Testing DuckDB EXTRACT({part} FROM foo)"):
                 # All of these should remain as is, they don't have synonyms
                 self.validate_identity(f"EXTRACT({part} FROM foo)")
+
+    def test_set_item(self):
+        self.validate_identity("SET memory_limit = '10GB'")
+        self.validate_identity("SET SESSION default_collation = 'nocase'")
+        self.validate_identity("SET GLOBAL sort_order = 'desc'")
+        self.validate_identity("SET VARIABLE my_var = 30")
+        self.validate_identity("SET VARIABLE location_map = (SELECT foo FROM bar)")
+
+        self.validate_identity("SET VARIABLE my_var TO 30", "SET VARIABLE my_var = 30")

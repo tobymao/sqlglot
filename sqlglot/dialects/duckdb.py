@@ -484,6 +484,11 @@ class DuckDB(Dialect):
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
+        SET_PARSERS = {
+            **parser.Parser.SET_PARSERS,
+            "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
+        }
+
         def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expression]:
             index = self._index
             if not self._match_text_seq("LAMBDA"):

@@ -68,14 +68,11 @@ class Fabric(TSQL):
             # DATETIMEOFFSET is only supported when used with AT TIME ZONE:
             # https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
             if expression.is_type(exp.DataType.Type.TIMESTAMPTZ):
-                parent = getattr(expression, "parent", None)
-                grandparent = getattr(parent, "parent", None) if parent else None
+                attimezone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
 
-                if not (grandparent and isinstance(grandparent, exp.AtTimeZone)):
-                    # Not used with AT TIME ZONE: treat as TIMESTAMP (DATETIME2)
+                if not attimezone:
                     expression = exp.DataType(
-                        this=exp.DataType.Type.TIMESTAMP,
-                        expressions=expression.expressions,
+                        this=exp.DataType.Type.TIMESTAMP, expressions=expression.expressions
                     )
 
             # Check if this is a temporal type that needs precision handling. Fabric limits temporal

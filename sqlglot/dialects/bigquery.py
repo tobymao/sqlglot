@@ -454,6 +454,9 @@ class BigQuery(Dialect):
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
+        exp.TimestampFromParts: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.DATETIME
+        ),
     }
 
     def normalize_identifier(self, expression: E) -> E:

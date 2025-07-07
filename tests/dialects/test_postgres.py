@@ -1466,6 +1466,10 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity("ROUND(CAST(x AS DOUBLE PRECISION))")
         self.validate_identity("ROUND(CAST(x AS DECIMAL), 4)")
         self.validate_identity("ROUND(CAST(x AS INT), 4)")
+        self.validate_identity(
+            "ROUND(x, y)",
+            "ROUND(CAST(x AS DECIMAL), y)",
+        )
         self.validate_all(
             "ROUND(CAST(CAST(x AS DOUBLE PRECISION) AS DECIMAL), 4)",
             read={

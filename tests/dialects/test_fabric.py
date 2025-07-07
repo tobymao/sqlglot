@@ -24,7 +24,6 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS TEXT)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS TIMESTAMP)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS TIMESTAMPNTZ)", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS DATETIMEOFFSET(6))")
         self.validate_identity("CAST(x AS TINYINT)", "CAST(x AS SMALLINT)")
         self.validate_identity("CAST(x AS UTINYINT)", "CAST(x AS SMALLINT)")
         self.validate_identity("CAST(x AS UUID)", "CAST(x AS VARBINARY(MAX))")
@@ -36,25 +35,50 @@ class TestFabric(Validator):
         # Default precision should be 6
         self.validate_identity("CAST(x AS TIME)", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2)", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET)", "CAST(x AS DATETIMEOFFSET(6))")
+        self.validate_identity(
+            "CAST(x AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
+            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+        )
 
         # Precision <= 6 should be preserved
         self.validate_identity("CAST(x AS TIME(3))", "CAST(x AS TIME(3))")
         self.validate_identity("CAST(x AS DATETIME2(3))", "CAST(x AS DATETIME2(3))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET(3))", "CAST(x AS DATETIMEOFFSET(3))")
+        self.validate_identity(
+            "CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC'",
+            "CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC'",
+        )
 
         self.validate_identity("CAST(x AS TIME(6))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(6))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET(6))", "CAST(x AS DATETIMEOFFSET(6))")
+        self.validate_identity(
+            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+        )
 
         # Precision > 6 should be capped at 6
         self.validate_identity("CAST(x AS TIME(7))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(7))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET(7))", "CAST(x AS DATETIMEOFFSET(6))")
+        self.validate_identity(
+            "CAST(x AS DATETIMEOFFSET(7)) AT TIME ZONE 'UTC'",
+            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+        )
 
         self.validate_identity("CAST(x AS TIME(9))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(9))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET(9))", "CAST(x AS DATETIMEOFFSET(6))")
+        self.validate_identity(
+            "CAST(x AS DATETIMEOFFSET(9)) AT TIME ZONE 'UTC'",
+            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+        )
+
+    def test_timestamptz_handling(self):
+        # TIMESTAMPTZ should be DATETIME2 when not in an AT TIME ZONE expression
+        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS DATETIME2(6))")
+
+        # TIMESTAMPTZ should be DATETIMEOFFSET when in an AT TIME ZONE expression
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ) AT TIME ZONE 'UTC'",
+            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+        )
 
     def test_unix_to_time(self):
         """Test UnixToTime transformation to DATEADD with microseconds"""

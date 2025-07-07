@@ -657,6 +657,7 @@ class Dialect(metaclass=_Dialect):
         exp.DataType.Type.BOOLEAN: {
             exp.Between,
             exp.Boolean,
+            exp.EndsWith,
             exp.In,
             exp.LogicalAnd,
             exp.LogicalOr,

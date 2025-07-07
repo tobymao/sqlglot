@@ -70,13 +70,13 @@ BIGINT;
 LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
 
-TO_BASE64(bytes_col);
+TO_BASE64(tbl.bytes_col);
 VARCHAR;
 
 UNIX_DATE(tbl.date_col);
 BIGINT;
 
-UNIX_SECONDS(timestamp_col);
+UNIX_SECONDS(tbl.timestamp_col);
 BIGINT;
 
 STARTS_WITH(tbl.str_col, prefix);
@@ -542,9 +542,11 @@ ARRAY<DOUBLE>;
 INT64(JSON '999');
 BIGINT;
 
+# dialect: bigquery
 LOGICAL_AND(tbl.bool_col);
 BOOLEAN;
 
+# dialect: bigquery
 LOGICAL_OR(tbl.bool_col);
 BOOLEAN;
 
@@ -553,16 +555,24 @@ MAKE_INTERVAL(1, 6, 15);
 INTERVAL;
 
 # dialect: bigquery
-SHA1(str_col);
+SHA1(tbl.str_col);
 BINARY;
 
 # dialect: bigquery
-SHA256(str_col);
+SHA256(tbl.str_col);
 BINARY;
 
 # dialect: bigquery
-SHA512(str_col);
+SHA512(tbl.str_col);
 BINARY;
+
+# dialect: bigquery
+CORR(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: bigquery
+COVAR_POP(tbl.double_col, tbl.double_col);
+DOUBLE;
 
 --------------------------------------
 -- Snowflake

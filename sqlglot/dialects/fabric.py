@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
@@ -90,6 +92,17 @@ class Fabric(TSQL):
                 )
 
             return super().datatype_sql(expression)
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            # Special handling for TIMESTAMPTZ casts in Fabric
+            if expression.to and expression.to.is_type(exp.DataType.Type.TIMESTAMPTZ):
+                attimezone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
+                if not isinstance(attimezone, exp.AtTimeZone):
+                    # We're not inside an AT TIME ZONE, so wrap the cast in AT TIME ZONE 'UTC'
+                    at_time_zone = exp.AtTimeZone(this=expression, zone=exp.Literal.string("UTC"))
+                    return self.sql(at_time_zone)
+
+            return super().cast_sql(expression, safe_prefix)
 
         def unixtotime_sql(self, expression: exp.UnixToTime) -> str:
             scale = expression.args.get("scale")

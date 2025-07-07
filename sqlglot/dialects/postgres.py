@@ -40,6 +40,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -263,6 +264,29 @@ def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) 
         return any_value_to_max_sql(self, expression)
 
     return rename_func("ANY_VALUE")(self, expression)
+
+
+def _to_decimal(self: Postgres.Generator, expression: exp.Expression) -> exp.Expression:
+    if not expression.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+        annotate_types(expression, dialect=self.dialect)
+
+    if expression.type and expression.type==exp.DataType.build("DOUBLE"):
+        return exp.cast(expression, to=exp.DataType.build("DECIMAL"))
+    return expression
+
+
+def _round(self: Postgres.Generator, expression: exp.Round) -> str:
+    # ROUND(double precision, integer) is not permitted in Postgres
+    # so it's necessary to cast double precision to decimal before rounding.
+
+    this = self.sql(expression, "this")
+    decimals = self.sql(expression, "decimals")
+
+    if not decimals:
+        return self.func("ROUND", this)
+
+    return self.func("ROUND", _to_decimal(self, expression.this), decimals)
 
 
 class Postgres(Dialect):
@@ -613,6 +637,7 @@ class Postgres(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
+            exp.Round: _round,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_semi_and_anti_joins,

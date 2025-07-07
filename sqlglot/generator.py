@@ -2319,9 +2319,9 @@ class Generator(metaclass=_Generator):
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         return f"{self.seg(op_sql)} {this_sql}{match_cond}{on_sql}{pivots}"
 
-    def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
+    def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True) -> str:
         args = self.expressions(expression, flat=True)
-        args = f"({args})" if len(args.split(",")) > 1 else args
+        args = f"({args})" if wrap and len(args.split(",")) > 1 else args
         return f"{args} {arrow_sep} {self.sql(expression, 'this')}"
 
     def lateral_op(self, expression: exp.Lateral) -> str:

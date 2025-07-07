@@ -82,6 +82,9 @@ BIGINT;
 STARTS_WITH(tbl.str_col, prefix);
 BOOLEAN;
 
+ENDS_WITH(tbl.str_col, str);
+BOOLEAN;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

@@ -578,6 +578,10 @@ DOUBLE;
 COVAR_SAMP(tbl.double_col, tbl.double_col);
 DOUBLE;
 
+# dialect: bigquery
+DATETIME(2025, 1, 1, 12, 0, 0);
+DATETIME;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

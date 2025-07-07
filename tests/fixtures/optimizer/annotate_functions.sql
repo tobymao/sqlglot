@@ -574,6 +574,10 @@ DOUBLE;
 COVAR_POP(tbl.double_col, tbl.double_col);
 DOUBLE;
 
+# dialect: bigquery
+COVAR_SAMP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -265,30 +265,6 @@ def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) 
     return rename_func("ANY_VALUE")(self, expression)
 
 
-def _to_decimal(self: Postgres.Generator, expression: exp.Expression) -> exp.Expression:
-    if not expression.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
-        annotate_types(expression, dialect=self.dialect)
-
-    if expression.type and expression.type == exp.DataType.build("DOUBLE"):
-        return exp.cast(expression, to=exp.DataType.build("DECIMAL"))
-    return expression
-
-
-def _round(self: Postgres.Generator, expression: exp.Round) -> str:
-    # ROUND(double precision, integer) is not permitted in Postgres
-    # so it's necessary to cast double precision to decimal before rounding.
-
-    this = self.sql(expression, "this")
-    decimals = self.sql(expression, "decimals")
-
-    if not decimals:
-        return self.func("ROUND", this)
-
-    return self.func("ROUND", _to_decimal(self, expression.this), decimals)
-
-
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
@@ -637,7 +613,6 @@ class Postgres(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
-            exp.Round: _round,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_semi_and_anti_joins,
@@ -684,6 +659,28 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def round_sql(self, expression: exp.Round) -> str:
+            this = self.sql(expression, "this")
+            decimals = self.sql(expression, "decimals")
+
+            if not decimals:
+                return self.func("ROUND", this)
+
+            if not expression.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                expression = annotate_types(expression, dialect=self.dialect)
+
+            # ROUND(double precision, integer) is not permitted in Postgres
+            # so it's necessary to cast to decimal before rounding.
+            if expression.this.is_type(exp.DataType.Type.DOUBLE):
+                decimal_type = exp.DataType.build(
+                    exp.DataType.Type.DECIMAL, expressions=expression.expressions
+                )
+                this = self.sql(exp.Cast(this=this, to=decimal_type))
+
+            return self.func("ROUND", this, decimals)
 
         def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
             self.unsupported("Table comments are not supported in the CREATE statement")

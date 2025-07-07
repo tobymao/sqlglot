@@ -40,7 +40,6 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
-from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -269,9 +268,10 @@ def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) 
 def _to_decimal(self: Postgres.Generator, expression: exp.Expression) -> exp.Expression:
     if not expression.type:
         from sqlglot.optimizer.annotate_types import annotate_types
+
         annotate_types(expression, dialect=self.dialect)
 
-    if expression.type and expression.type==exp.DataType.build("DOUBLE"):
+    if expression.type and expression.type == exp.DataType.build("DOUBLE"):
         return exp.cast(expression, to=exp.DataType.build("DECIMAL"))
     return expression
 

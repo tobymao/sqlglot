@@ -1472,11 +1472,8 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "postgres": "ROUND(x::DOUBLE, 4)",
                 "hive": "ROUND(x::DOUBLE, 4)",
                 "bigquery": "ROUND(x::DOUBLE, 4)",
-            }
+            },
         )
         self.validate_all(
-            "ROUND(CAST(x AS DECIMAL(18, 3)), 4)",
-            read={
-                "duckdb": "ROUND(x::DECIMAL, 4)"
-            }
+            "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
         )

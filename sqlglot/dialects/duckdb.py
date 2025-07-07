@@ -904,14 +904,17 @@ class DuckDB(Dialect):
             exp.NthValue,
         )
 
-        def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
+        def lambda_sql(
+            self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True
+        ) -> str:
             if expression.args.get("colon"):
                 prefix = "LAMBDA "
                 arrow_sep = ":"
+                wrap = False
             else:
                 prefix = ""
 
-            lambda_sql = super().lambda_sql(expression, arrow_sep=arrow_sep)
+            lambda_sql = super().lambda_sql(expression, arrow_sep=arrow_sep, wrap=wrap)
             return f"{prefix}{lambda_sql}"
 
         def show_sql(self, expression: exp.Show) -> str:

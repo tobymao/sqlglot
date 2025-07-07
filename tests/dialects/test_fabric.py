@@ -65,9 +65,10 @@ class TestFabric(Validator):
         )
 
     def test_timestamptz_handling(self):
-        # TIMESTAMPTZ should be converted to UTC when not in an AT TIME ZONE expression
+        # TIMESTAMPTZ should be converted to UTC and cast to DATETIME2 when not in an AT TIME ZONE expression
         self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ)", "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'"
+            "CAST(x AS TIMESTAMPTZ)",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6))",
         )
 
         # TIMESTAMPTZ should be DATETIMEOFFSET when in an AT TIME ZONE expression

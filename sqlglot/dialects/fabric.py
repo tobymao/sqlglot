@@ -98,9 +98,10 @@ class Fabric(TSQL):
             if expression.to and expression.to.is_type(exp.DataType.Type.TIMESTAMPTZ):
                 attimezone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
                 if not isinstance(attimezone, exp.AtTimeZone):
-                    # We're not inside an AT TIME ZONE, so wrap the cast in AT TIME ZONE 'UTC'
+                    # We're not inside an AT TIME ZONE, so wrap the cast in AT TIME ZONE 'UTC' and cast it to TIMESTAMP
                     at_time_zone = exp.AtTimeZone(this=expression, zone=exp.Literal.string("UTC"))
-                    return self.sql(at_time_zone)
+                    cast = exp.cast(at_time_zone, exp.DataType.Type.TIMESTAMP)
+                    return self.sql(cast)
 
             return super().cast_sql(expression, safe_prefix)
 

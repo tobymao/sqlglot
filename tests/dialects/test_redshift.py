@@ -249,11 +249,12 @@ class TestRedshift(Validator):
         self.validate_all(
             "DECODE(x, a, b, c, d)",
             write={
-                "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
-                "oracle": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
-                "redshift": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
-                "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
-                "spark": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
+                "": "DECODE(x, a, b, c, d)",
+                "duckdb": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
+                "oracle": "DECODE(x, a, b, c, d)",
+                "redshift": "DECODE(x, a, b, c, d)",
+                "snowflake": "DECODE(x, a, b, c, d)",
+                "spark": "DECODE(x, a, b, c, d)",
             },
         )
         self.validate_all(

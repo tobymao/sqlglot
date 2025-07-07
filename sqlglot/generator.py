@@ -484,6 +484,9 @@ class Generator(metaclass=_Generator):
     # True (Postgres) -> Explicitly requires it
     ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
 
+    # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
+    SUPPORTS_DECODE_CASE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2316,9 +2319,9 @@ class Generator(metaclass=_Generator):
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         return f"{self.seg(op_sql)} {this_sql}{match_cond}{on_sql}{pivots}"
 
-    def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
+    def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True) -> str:
         args = self.expressions(expression, flat=True)
-        args = f"({args})" if len(args.split(",")) > 1 else args
+        args = f"({args})" if wrap and len(args.split(",")) > 1 else args
         return f"{args} {arrow_sep} {self.sql(expression, 'this')}"
 
     def lateral_op(self, expression: exp.Lateral) -> str:
@@ -3037,6 +3040,13 @@ class Generator(metaclass=_Generator):
 
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
+
+    def formatphrase_sql(self, expression: exp.FormatPhrase) -> str:
+        # Output the Teradata column FORMAT override.
+        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+        this = self.sql(expression, "this")
+        fmt = self.sql(expression, "format")
+        return f"{this} (FORMAT {fmt})"
 
     def jsonobject_sql(self, expression: exp.JSONObject | exp.JSONObjectAgg) -> str:
         null_handling = expression.args.get("null_handling")
@@ -5011,3 +5021,29 @@ class Generator(metaclass=_Generator):
         expr = self.sql(expression, "expression")
         with_error = " WITH ERROR" if expression.args.get("with_error") else ""
         return f"TRANSLATE({this} USING {expr}{with_error})"
+
+    def decodecase_sql(self, expression: exp.DecodeCase) -> str:
+        if self.SUPPORTS_DECODE_CASE:
+            return self.func("DECODE", *expression.expressions)
+
+        expression, *expressions = expression.expressions
+
+        ifs = []
+        for search, result in zip(expressions[::2], expressions[1::2]):
+            if isinstance(search, exp.Literal):
+                ifs.append(exp.If(this=expression.eq(search), true=result))
+            elif isinstance(search, exp.Null):
+                ifs.append(exp.If(this=expression.is_(exp.Null()), true=result))
+            else:
+                if isinstance(search, exp.Binary):
+                    search = exp.paren(search)
+
+                cond = exp.or_(
+                    expression.eq(search),
+                    exp.and_(expression.is_(exp.Null()), search.is_(exp.Null()), copy=False),
+                    copy=False,
+                )
+                ifs.append(exp.If(this=cond, true=result))
+
+        case = exp.Case(ifs=ifs, default=expressions[-1] if len(expressions) % 2 == 1 else None)
+        return self.sql(case)

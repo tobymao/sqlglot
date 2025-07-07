@@ -621,3 +621,39 @@ class TestLineage(unittest.TestCase):
             table_node.source.sql("snowflake"),
             "DATABASE_NAME.SCHEMA_NAME.TABLE_NAME AS RAW",
         )
+
+    def test_pivot_with_subquery(self) -> None:
+        schema = {
+            "loan_ledger": {
+                "product_type": "varchar",
+                "month": "date",
+                "loan_id": "int",
+            }
+        }
+
+        sql = """
+        WITH cte AS (
+            SELECT * FROM (
+                SELECT product_type, month, loan_id 
+                FROM loan_ledger
+            ) PIVOT (
+                COUNT(loan_id) FOR month IN ('2024-10', '2024-11')
+            )
+        )
+        SELECT 
+            cte.product_type AS product_type,
+            cte."2024-10" AS "2024-10"
+        FROM cte
+        """
+
+        node = lineage("product_type", sql, dialect="duckdb", schema=schema)
+        self.assertEqual(node.downstream[0].name, "cte.product_type")
+        self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.product_type")
+        self.assertEqual(
+            node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.product_type"
+        )
+
+        node = lineage('"2024-10"', sql, dialect="duckdb", schema=schema)
+        self.assertEqual(node.downstream[0].name, "cte.2024-10")
+        self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.loan_id")
+        self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.loan_id")

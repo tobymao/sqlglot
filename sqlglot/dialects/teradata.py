@@ -218,6 +218,45 @@ class Teradata(Dialect):
                 self._retreat(self._index - 2)
             return this
 
+        def _parse_function(
+            self,
+            functions: t.Optional[t.Dict[str, t.Callable]] = None,
+            anonymous: bool = False,
+            optional_parens: bool = True,
+            any_token: bool = False,
+        ) -> t.Optional[exp.Expression]:
+            # Teradata uses a `(FORMAT <format_string>)` clause after column references to
+            # override the output format. When we see this pattern we do not
+            # parse it as a function call.  The syntax is documented at
+            # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+            if (
+                self._next
+                and self._next.token_type == TokenType.L_PAREN
+                and self._index + 2 < len(self._tokens)
+                and self._tokens[self._index + 2].token_type == TokenType.FORMAT
+            ):
+                return None
+
+            return super()._parse_function(
+                functions=functions,
+                anonymous=anonymous,
+                optional_parens=optional_parens,
+                any_token=any_token,
+            )
+
+        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_ops(this)
+
+            if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):
+                # `(FORMAT <format_string>)` after a column specifies a Teradata format override.
+                # See https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+                fmt_string = self._parse_string()
+                self._match_r_paren()
+
+                this = self.expression(exp.FormatPhrase, this=this, format=fmt_string)
+
+            return this
+
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
         JOIN_HINTS = False

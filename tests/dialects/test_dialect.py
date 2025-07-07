@@ -542,51 +542,56 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT DECODE(a, 1, 'one')",
             write={
-                "": "SELECT CASE WHEN a = 1 THEN 'one' END",
-                "oracle": "SELECT CASE WHEN a = 1 THEN 'one' END",
-                "redshift": "SELECT CASE WHEN a = 1 THEN 'one' END",
-                "snowflake": "SELECT CASE WHEN a = 1 THEN 'one' END",
-                "spark": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "": "SELECT DECODE(a, 1, 'one')",
+                "duckdb": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "oracle": "SELECT DECODE(a, 1, 'one')",
+                "redshift": "SELECT DECODE(a, 1, 'one')",
+                "snowflake": "SELECT DECODE(a, 1, 'one')",
+                "spark": "SELECT DECODE(a, 1, 'one')",
             },
         )
         self.validate_all(
             "SELECT DECODE(a, 1, 'one', 'default')",
             write={
-                "": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
-                "oracle": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
-                "redshift": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
-                "snowflake": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
-                "spark": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "": "SELECT DECODE(a, 1, 'one', 'default')",
+                "duckdb": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "oracle": "SELECT DECODE(a, 1, 'one', 'default')",
+                "redshift": "SELECT DECODE(a, 1, 'one', 'default')",
+                "snowflake": "SELECT DECODE(a, 1, 'one', 'default')",
+                "spark": "SELECT DECODE(a, 1, 'one', 'default')",
             },
         )
         self.validate_all(
             "SELECT DECODE(a, NULL, 'null')",
             write={
-                "": "SELECT CASE WHEN a IS NULL THEN 'null' END",
-                "oracle": "SELECT CASE WHEN a IS NULL THEN 'null' END",
-                "redshift": "SELECT CASE WHEN a IS NULL THEN 'null' END",
-                "snowflake": "SELECT CASE WHEN a IS NULL THEN 'null' END",
-                "spark": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "": "SELECT DECODE(a, NULL, 'null')",
+                "duckdb": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "oracle": "SELECT DECODE(a, NULL, 'null')",
+                "redshift": "SELECT DECODE(a, NULL, 'null')",
+                "snowflake": "SELECT DECODE(a, NULL, 'null')",
+                "spark": "SELECT DECODE(a, NULL, 'null')",
             },
         )
         self.validate_all(
             "SELECT DECODE(a, b, c)",
             write={
-                "": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
-                "oracle": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
-                "redshift": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
-                "snowflake": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
-                "spark": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "": "SELECT DECODE(a, b, c)",
+                "duckdb": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "oracle": "SELECT DECODE(a, b, c)",
+                "redshift": "SELECT DECODE(a, b, c)",
+                "snowflake": "SELECT DECODE(a, b, c)",
+                "spark": "SELECT DECODE(a, b, c)",
             },
         )
         self.validate_all(
             "SELECT DECODE(tbl.col, 'some_string', 'foo')",
             write={
-                "": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
-                "oracle": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
-                "redshift": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
-                "snowflake": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
-                "spark": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "": "SELECT DECODE(tbl.col, 'some_string', 'foo')",
+                "duckdb": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "oracle": "SELECT DECODE(tbl.col, 'some_string', 'foo')",
+                "redshift": "SELECT DECODE(tbl.col, 'some_string', 'foo')",
+                "snowflake": "SELECT DECODE(tbl.col, 'some_string', 'foo')",
+                "spark": "SELECT DECODE(tbl.col, 'some_string', 'foo')",
             },
         )
 

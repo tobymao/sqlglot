@@ -2472,7 +2472,7 @@ class GroupingSets(Expression):
 
 
 class Lambda(Expression):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": True, "colon": False}
 
 
 class Limit(Expression):
@@ -5209,6 +5209,16 @@ class FromTimeZone(Expression):
     arg_types = {"this": True, "zone": True}
 
 
+class FormatPhrase(Expression):
+    """Format override for a column in Teradata.
+    Can be expanded to additional dialects as needed
+
+    https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+    """
+
+    arg_types = {"this": True, "format": True}
+
+
 class Between(Predicate):
     arg_types = {"this": True, "low": True, "high": True}
 
@@ -6033,6 +6043,12 @@ class Day(Func):
 
 class Decode(Func):
     arg_types = {"this": True, "charset": True, "replace": False}
+
+
+class DecodeCase(Func):
+    _sql_names: t.List[str] = []
+    arg_types = {"expressions": True}
+    is_var_len_args = True
 
 
 class DiToDate(Func):

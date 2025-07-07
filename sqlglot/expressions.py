@@ -2472,7 +2472,7 @@ class GroupingSets(Expression):
 
 
 class Lambda(Expression):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": True, "colon": False}
 
 
 class Limit(Expression):

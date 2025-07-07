@@ -43,17 +43,11 @@ class TestFabric(Validator):
         # Precision <= 6 should be preserved
         self.validate_identity("CAST(x AS TIME(3))", "CAST(x AS TIME(3))")
         self.validate_identity("CAST(x AS DATETIME2(3))", "CAST(x AS DATETIME2(3))")
-        self.validate_identity(
-            "CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC'",
-            "CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC'",
-        )
+        self.validate_identity("CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC'")
 
         self.validate_identity("CAST(x AS TIME(6))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(6))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
-            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
-        )
+        self.validate_identity("CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'")
 
         # Precision > 6 should be capped at 6
         self.validate_identity("CAST(x AS TIME(7))", "CAST(x AS TIME(6))")

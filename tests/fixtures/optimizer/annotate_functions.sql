@@ -570,6 +570,10 @@ BINARY;
 CORR(tbl.double_col, tbl.double_col);
 DOUBLE;
 
+# dialect: bigquery
+COVAR_POP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

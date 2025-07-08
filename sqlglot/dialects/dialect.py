@@ -705,6 +705,7 @@ class Dialect(metaclass=_Dialect):
             exp.DateDiff,
             exp.TimestampDiff,
             exp.TimeDiff,
+            exp.Unicode,
             exp.DateToDi,
             exp.Levenshtein,
             exp.Sign,

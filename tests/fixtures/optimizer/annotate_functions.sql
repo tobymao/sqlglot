@@ -88,6 +88,9 @@ BOOLEAN;
 ASCII('A');
 INT;
 
+UNICODE('bcd');
+INT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------
@@ -598,6 +601,10 @@ BIGINT;
 
 # dialect: bigquery
 ASCII('A');
+BIGINT;
+
+# dialect: bigquery
+UNICODE('bcd');
 BIGINT;
 
 --------------------------------------

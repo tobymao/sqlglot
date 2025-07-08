@@ -459,6 +459,7 @@ class BigQuery(Dialect):
         exp.TimestampFromParts: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.DATETIME
         ),
+        exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }
 
     def normalize_identifier(self, expression: E) -> E:

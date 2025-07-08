@@ -276,3 +276,68 @@ class TestExasol(Validator):
                 },
             ),
         )
+
+    def test_dateAndTimeFunctions(self):
+        self.validate_identity(
+            "SELECT TO_DATE('31-12-1999', 'dd-mm-yyyy') AS TO_DATE",
+            "SELECT TO_DATE('31-12-1999', 'DD-MM-YYYY') AS TO_DATE",
+        )
+        self.validate_identity(
+            "SELECT TO_DATE('31-12-1999', 'dd-mm-YY') AS TO_DATE",
+            "SELECT TO_DATE('31-12-1999', 'DD-MM-YY') AS TO_DATE",
+        )
+        self.validate_identity("SELECT TO_DATE('31-DECEMBER-1999', 'DD-MONTH-YYYY') AS TO_DATE")
+        self.validate_identity("SELECT TO_DATE('31-DEC-1999', 'DD-MON-YYYY') AS TO_DATE")
+        self.validate_identity("SELECT TO_CHAR(CAST('2025-07-08' AS DATE), 'D') AS day_of_week")
+        self.validate_identity("SELECT TO_CHAR(CAST('2025-07-08' AS DATE), 'DAY') AS day_of_week")
+        self.validate_identity("SELECT TO_CHAR(CAST('2025-07-08' AS DATE), 'DY') AS day_of_week")
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'HH12') AS hour_12"
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'HH24') AS hour_24"
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'ID') AS iso_weekday"
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'IW') AS iso_week_number"
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'IYYY') AS iso_year"
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'MI') AS minutes"
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'SS') AS seconds"
+        )
+
+        self.validate_all(
+            "TO_DATE(x, 'YYYY-MM-DD')",
+            write={
+                "exasol": "TO_DATE(x, 'YYYY-MM-DD')",
+                "duckdb": "CAST(x AS DATE)",
+                "hive": "TO_DATE(x)",
+                "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
+                "spark": "TO_DATE(x)",
+                "snowflake": "TO_DATE(x, 'yyyy-mm-DD')",
+                "databricks": "TO_DATE(x)",
+            },
+            read={"exasol": "TO_DATE(x, 'yyyy-MM-dd')"},
+        )
+        self.validate_all(
+            "TO_DATE(x, 'YYYY')",
+            write={
+                "exasol": "TO_DATE(x, 'YYYY')",
+                "duckdb": "CAST(STRPTIME(x, '%Y') AS DATE)",
+                "hive": "TO_DATE(x, 'yyyy')",
+                "presto": "CAST(DATE_PARSE(x, '%Y') AS DATE)",
+                "spark": "TO_DATE(x, 'yyyy')",
+                "snowflake": "TO_DATE(x, 'yyyy')",
+                "databricks": "TO_DATE(x, 'yyyy')",
+            },
+            read={
+                "exasol": "TO_DATE(x, 'yyyy')",
+            },
+        )

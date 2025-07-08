@@ -699,6 +699,7 @@ class Dialect(metaclass=_Dialect):
             exp.VariancePop,
         },
         exp.DataType.Type.INT: {
+            exp.Ascii,
             exp.Ceil,
             exp.DatetimeDiff,
             exp.DateDiff,

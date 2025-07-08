@@ -85,6 +85,9 @@ BOOLEAN;
 ENDS_WITH(tbl.str_col, suffix);
 BOOLEAN;
 
+ASCII('A');
+INT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

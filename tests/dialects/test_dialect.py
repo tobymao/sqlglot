@@ -3558,3 +3558,26 @@ FROM subquery2""",
                     parse_one("SELECT 0xCC", read=read_dialect).sql(other_integer_dialects),
                     "SELECT 0xCC",
                 )
+
+    def test_ascii(self):
+        self.validate_all(
+            "ASCII('A')",
+            read={
+                "bigquery": "ASCII('A')",
+                "mysql": "ASCII('A')",
+                "tsql": "ASCII('A')",
+                "databricks": "ASCII('A')",
+                "snowflake": "ASCII('A')",
+                "clickhouse": "ASCII('A')",
+                "redshift": "ASCII('A')",
+            },
+            write={
+                "bigquery": "ASCII('A')",
+                "mysql": "ASCII('A')",
+                "tsql": "ASCII('A')",
+                "databricks": "ASCII('A')",
+                "snowflake": "ASCII('A')",
+                "clickhouse": "ASCII('A')",
+                "redshift": "ASCII('A')",
+            },
+        )

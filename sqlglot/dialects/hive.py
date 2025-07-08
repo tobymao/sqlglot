@@ -309,7 +309,6 @@ class Hive(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ASCII": exp.Unicode.from_arg_list,
             "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,

@@ -5468,6 +5468,10 @@ class Array(Func):
     is_var_len_args = True
 
 
+class Ascii(Func):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_array
 class ToArray(Func):
     pass

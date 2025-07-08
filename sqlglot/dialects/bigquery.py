@@ -446,6 +446,7 @@ class BigQuery(Dialect):
             )
         },
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.Concat: _annotate_concat,
         exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),

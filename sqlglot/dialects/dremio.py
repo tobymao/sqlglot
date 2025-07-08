@@ -13,24 +13,29 @@ class Dremio(Dialect):
 
     TIME_MAPPING = {
         # year
-        "YYYY": "%Y", "YY": "%y",
-
+        "YYYY": "%Y",
+        "YY": "%y",
         # month / day
-        "MM": "%m", "MON": "%b", "MONTH": "%B",
-        "DDD": "%j", "DD": "%d", "DY": "%a", "DAY": "%A",
-
+        "MM": "%m",
+        "MON": "%b",
+        "MONTH": "%B",
+        "DDD": "%j",
+        "DD": "%d",
+        "DY": "%a",
+        "DAY": "%A",
         # hours / minutes / seconds
-        "HH24": "%H", "HH": "%I",  # 24- / 12-hour
+        "HH24": "%H",
+        "HH": "%I",  # 24- / 12-hour
         "MI": "%M",
         "SS": "%S",
         "FFF": "%f",
-
         # ISO week / century etc.
-        "WW": "%W", "D": "%w", "CC": "%C",
-
+        "WW": "%W",
+        "D": "%w",
+        "CC": "%C",
         # timezone
         "TZD": "%Z",  # abbreviation  (UTC, PST, ...)
-        "TZO": "%z",   # numeric offset (+0200)
+        "TZO": "%z",  # numeric offset (+0200)
     }
 
     class Parser(parser.Parser):

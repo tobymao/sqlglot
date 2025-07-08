@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+
 from sqlglot.expressions import DATA_TYPE
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -990,20 +991,6 @@ class DuckDB(Dialect):
                     expression.set("method", exp.var("RESERVOIR"))
 
             return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
-
-        def interval_sql(self, expression: exp.Interval) -> str:
-            multiplier: t.Optional[int] = None
-            unit = expression.text("unit").lower()
-
-            if unit.startswith("week"):
-                multiplier = 7
-            if unit.startswith("quarter"):
-                multiplier = 90
-
-            if multiplier:
-                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
-
-            return super().interval_sql(expression)
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             if isinstance(expression.parent, exp.UserDefinedFunction):

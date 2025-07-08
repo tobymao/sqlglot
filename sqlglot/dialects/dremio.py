@@ -1,6 +1,6 @@
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, build_formatted_time
 
 
 class Dremio(Dialect):
@@ -11,8 +11,35 @@ class Dremio(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_VALUES_DEFAULT = False
 
+    TIME_MAPPING = {
+        # year
+        "YYYY": "%Y", "YY": "%y",
+
+        # month / day
+        "MM": "%m", "MON": "%b", "MONTH": "%B",
+        "DDD": "%j", "DD": "%d", "DY": "%a", "DAY": "%A",
+
+        # hours / minutes / seconds
+        "HH24": "%H", "HH": "%I",  # 24- / 12-hour
+        "MI": "%M",
+        "SS": "%S",
+        "FFF": "%f",
+
+        # ISO week / century etc.
+        "WW": "%W", "D": "%w", "CC": "%C",
+
+        # timezone
+        "TZD": "%Z",  # abbreviation  (UTC, PST, ...)
+        "TZO": "%z",   # numeric offset (+0200)
+    }
+
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
+
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "TO_CHAR": build_formatted_time(exp.TimeToStr, "dremio"),
+        }
 
     class Generator(generator.Generator):
         NVL2_SUPPORTED = False
@@ -35,6 +62,12 @@ class Dremio(Dialect):
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.ARRAY: "LIST",
             exp.DataType.Type.BIT: "BOOLEAN",
+        }
+
+        TRANSFORMS = {
+            **generator.Generator.TRANSFORMS,
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

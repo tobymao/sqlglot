@@ -729,7 +729,7 @@ def _simplify_binary(expression, a, b):
     return None
 
 
-def simplify_parens(expression: exp.Expression, dialect: DialectType) -> exp.Expression:
+def simplify_parens(expression: exp.Expression, dialect: DialectType = None) -> exp.Expression:
     if not isinstance(expression, exp.Paren):
         return expression
 

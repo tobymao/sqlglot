@@ -1757,6 +1757,7 @@ WHERE
 
         self.validate_identity("ARRAY_FIRST(['a', 'b'])")
         self.validate_identity("ARRAY_LAST(['a', 'b'])")
+        self.validate_identity("ASCII('A')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

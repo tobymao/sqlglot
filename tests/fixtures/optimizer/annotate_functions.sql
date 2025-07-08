@@ -593,6 +593,10 @@ DOUBLE;
 LAG(tbl.bigint_col, 1 , 2) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
 
+# dialect: bigquery
+ASCII('A');
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

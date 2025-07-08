@@ -327,7 +327,7 @@ def _expand_alias_refs(
                         column.replace(exp.Literal.number(i))
                 else:
                     column = column.replace(exp.paren(alias_expr))
-                    simplified = simplify_parens(column)
+                    simplified = simplify_parens(column, dialect)
                     if simplified is not column:
                         column.replace(simplified)
 

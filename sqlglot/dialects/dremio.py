@@ -25,10 +25,12 @@ class Dremio(Dialect):
         "DAY": "%A",
         # hours / minutes / seconds
         "HH24": "%H",
+        "HH12": "%I",
         "HH": "%I",  # 24- / 12-hour
         "MI": "%M",
         "SS": "%S",
         "FFF": "%f",
+        "AMPM": "%p",
         # ISO week / century etc.
         "WW": "%W",
         "D": "%w",

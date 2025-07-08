@@ -729,7 +729,7 @@ def _simplify_binary(expression, a, b):
     return None
 
 
-def simplify_parens(expression: exp.Exp, dialect: DialectType) -> exp.Exp:
+def simplify_parens(expression: exp.Expression, dialect: DialectType) -> exp.Expression:
     if not isinstance(expression, exp.Paren):
         return expression
 
@@ -746,7 +746,7 @@ def simplify_parens(expression: exp.Exp, dialect: DialectType) -> exp.Exp:
     # Handle risingwave struct columns
     # see https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
     if (
-        dialect == "risingwave" 
+        dialect == "risingwave"
         and isinstance(parent, exp.Dot)
         and isinstance(parent.right, exp.Identifier)
     ):

@@ -123,7 +123,7 @@ class TestOptimizer(unittest.TestCase):
                 "d": "DATE",
                 "t": "DATETIME",
             },
-       }
+        }
 
     def check_file(
         self,
@@ -414,9 +414,9 @@ class TestOptimizer(unittest.TestCase):
         )
 
         structs_schema = {
-            "structs" : {
-                "one" : "STRUCT<nested_int INT, nested_vchar VARCHAR>",
-                "deep" : "STRUCT<nested_one STRUCT<nested_two STRUCT<nested_three STRUCT<nested_int INT, nested_vchar VARCHAR>>>>",
+            "structs": {
+                "one": "STRUCT<nested_int INT, nested_vchar VARCHAR>",
+                "deep": "STRUCT<nested_one STRUCT<nested_two STRUCT<nested_three STRUCT<nested_int INT, nested_vchar VARCHAR>>>>",
             }
         }
 
@@ -425,58 +425,55 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    'SELECT one.* FROM structs',
-                    dialect = 'bigquery',
+                    "SELECT one.* FROM structs",
+                    dialect="bigquery",
                 ),
                 schema=MappingSchema(
-                    schema = structs_schema,
-                    dialect='bigquery',
-                )
-            ).sql(dialect='bigquery'),
-            'SELECT structs.one.nested_int AS nested_int, structs.one.nested_vchar AS nested_vchar FROM structs'
+                    schema=structs_schema,
+                    dialect="bigquery",
+                ),
+            ).sql(dialect="bigquery"),
+            "SELECT structs.one.nested_int AS nested_int, structs.one.nested_vchar AS nested_vchar FROM structs",
         )
 
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
-                parse_one(
-                    'SELECT (one).* FROM structs',
-                    dialect = 'risingwave'
-                ),
+                parse_one("SELECT (one).* FROM structs", dialect="risingwave"),
                 schema=MappingSchema(
-                    schema = structs_schema,
-                    dialect = 'risingwave',
-                )
-            ).sql(dialect='risingwave'),
-            'SELECT (structs.one).nested_int AS nested_int, (structs.one).nested_vchar AS nested_vchar FROM structs'
+                    schema=structs_schema,
+                    dialect="risingwave",
+                ),
+            ).sql(dialect="risingwave"),
+            "SELECT (structs.one).nested_int AS nested_int, (structs.one).nested_vchar AS nested_vchar FROM structs",
         )
 
         # deep nested
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    'SELECT deep.nested_one.nested_two.nested_three.* FROM structs',
-                    dialect = 'bigquery',
-                ),                
+                    "SELECT deep.nested_one.nested_two.nested_three.* FROM structs",
+                    dialect="bigquery",
+                ),
                 schema=MappingSchema(
-                    schema = structs_schema,
-                    dialect = 'bigquery',
-                )
-            ).sql(dialect='bigquery'),
-            'SELECT structs.deep.nested_one.nested_two.nested_three.nested_int AS nested_int, structs.deep.nested_one.nested_two.nested_three.nested_vchar AS nested_vchar FROM structs'
+                    schema=structs_schema,
+                    dialect="bigquery",
+                ),
+            ).sql(dialect="bigquery"),
+            "SELECT structs.deep.nested_one.nested_two.nested_three.nested_int AS nested_int, structs.deep.nested_one.nested_two.nested_three.nested_vchar AS nested_vchar FROM structs",
         )
 
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    'SELECT ((((deep).nested_one).nested_two).nested_three).* FROM structs',
-                    dialect = 'risingwave',
+                    "SELECT ((((deep).nested_one).nested_two).nested_three).* FROM structs",
+                    dialect="risingwave",
                 ),
-                schema = MappingSchema(
-                    schema = structs_schema,
-                    dialect = 'risingwave',
-                )
-            ).sql(dialect='risingwave'),
-            'SELECT ((((structs.deep).nested_one).nested_two).nested_three).nested_int AS nested_int, ((((structs.deep).nested_one).nested_two).nested_three).nested_vchar AS nested_vchar FROM structs' 
+                schema=MappingSchema(
+                    schema=structs_schema,
+                    dialect="risingwave",
+                ),
+            ).sql(dialect="risingwave"),
+            "SELECT ((((structs.deep).nested_one).nested_two).nested_three).nested_int AS nested_int, ((((structs.deep).nested_one).nested_two).nested_three).nested_vchar AS nested_vchar FROM structs",
         )
 
         # can't coalesce USING columns because they don't exist in every already-joined table

@@ -598,34 +598,32 @@ def _expand_struct_stars_bigquery(
 
     return new_selections
 
-def _expand_struct_stars_risingwave(
-    expression: exp.Dot
-) -> t.List[exp.Alias]:
 
+def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
     parens = t.cast(exp.Paren, expression.find(exp.Paren))
-    
+
     # check that last selected identifier is struct for nested structs
     if not parens.this.is_type(exp.DataType.Type.STRUCT):
         return []
 
-    struct_to_expand = exp.ColumnDef(this=parens.this,kind=parens.this.type)
+    struct_to_expand = exp.ColumnDef(this=parens.this, kind=parens.this.type)
 
     new_selections = []
 
     for nested_field in t.cast(exp.DataType, struct_to_expand.kind).expressions:
-        name = nested_field.name
-       
         if not isinstance(nested_field.this, exp.Identifier):
             return []
 
         this = nested_field.this.copy()
-        
+
         new_identifier = t.cast(exp.Identifier, this)
-        new_dot = exp.Dot.build(expressions = [parens,new_identifier])
-        new_alias = alias(new_dot,this,copy=False)
+        # build new dot expression to end with (a).b AS b
+        new_dot = exp.Dot.build(expressions=[parens, new_identifier])
+        new_alias = alias(new_dot, this, copy=False)
         new_selections.append(new_alias)
-        
+
     return new_selections
+
 
 def _expand_stars(
     scope: Scope,

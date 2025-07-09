@@ -600,6 +600,7 @@ def _expand_struct_stars_bigquery(
 
 
 def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
+    """[RisingWave] Expand/Flatten (foo.bar).*, where bar is a struct column"""
     parens = t.cast(exp.Paren, expression.find(exp.Paren))
 
     # check that last selected identifier is struct for nested structs

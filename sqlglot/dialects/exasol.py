@@ -37,6 +37,9 @@ class Exasol(Dialect):
         "IYYY": "%G",
         "MI": "%M",
         "SS": "%S",
+        "uW": "%W",
+        "UW": "%U",
+        "VW": "%U",
         "Z": "%z",
     }
 
@@ -60,12 +63,8 @@ class Exasol(Dialect):
             ),
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
-            "TO_CHAR": lambda args: build_formatted_time(exp.ToChar, "exasol")(
-                [seq_get(args, 0), seq_get(args, 1)]
-            ),
-            "TO_DATE": lambda args: build_formatted_time(exp.TsOrDsToDate, "exasol")(
-                [seq_get(args, 0), seq_get(args, 1)]
-            ),
+            "TO_CHAR": build_formatted_time(exp.ToChar, "exasol"),
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "exasol"),
         }
 
     class Generator(generator.Generator):

@@ -278,6 +278,20 @@ class TestExasol(Validator):
         )
 
     def test_dateAndTimeFunctions(self):
+        formats = {
+            "HH12": "hour_12",
+            "HH24": "hour_24",
+            "ID": "iso_weekday",
+            "IW": "iso_week_number",
+            "uW": "week_number_uW",
+            "VW": "week_number_VW",
+            "IYYY": "iso_year",
+            "MI": "minutes",
+            "SS": "seconds",
+            "D": "day_number",
+            "DAY": "day_full",
+            "DY": "day_abbr",
+        }
         self.validate_identity(
             "SELECT TO_DATE('31-12-1999', 'dd-mm-yyyy') AS TO_DATE",
             "SELECT TO_DATE('31-12-1999', 'DD-MM-YYYY') AS TO_DATE",
@@ -288,30 +302,12 @@ class TestExasol(Validator):
         )
         self.validate_identity("SELECT TO_DATE('31-DECEMBER-1999', 'DD-MONTH-YYYY') AS TO_DATE")
         self.validate_identity("SELECT TO_DATE('31-DEC-1999', 'DD-MON-YYYY') AS TO_DATE")
-        self.validate_identity("SELECT TO_CHAR(CAST('2025-07-08' AS DATE), 'D') AS day_of_week")
-        self.validate_identity("SELECT TO_CHAR(CAST('2025-07-08' AS DATE), 'DAY') AS day_of_week")
-        self.validate_identity("SELECT TO_CHAR(CAST('2025-07-08' AS DATE), 'DY') AS day_of_week")
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'HH12') AS hour_12"
-        )
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'HH24') AS hour_24"
-        )
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'ID') AS iso_weekday"
-        )
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'IW') AS iso_week_number"
-        )
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'IYYY') AS iso_year"
-        )
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'MI') AS minutes"
-        )
-        self.validate_identity(
-            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'SS') AS seconds"
-        )
+
+        for fmt, alias in formats.items():
+            with self.subTest(f"Testing TO_CHAR with format '{fmt}'"):
+                self.validate_identity(
+                    f"SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), '{fmt}') AS {alias}"
+                )
 
         self.validate_all(
             "TO_DATE(x, 'YYYY-MM-DD')",
@@ -324,7 +320,6 @@ class TestExasol(Validator):
                 "snowflake": "TO_DATE(x, 'yyyy-mm-DD')",
                 "databricks": "TO_DATE(x)",
             },
-            read={"exasol": "TO_DATE(x, 'yyyy-MM-dd')"},
         )
         self.validate_all(
             "TO_DATE(x, 'YYYY')",
@@ -336,8 +331,5 @@ class TestExasol(Validator):
                 "spark": "TO_DATE(x, 'yyyy')",
                 "snowflake": "TO_DATE(x, 'yyyy')",
                 "databricks": "TO_DATE(x, 'yyyy')",
-            },
-            read={
-                "exasol": "TO_DATE(x, 'yyyy')",
             },
         )

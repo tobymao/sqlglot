@@ -4347,6 +4347,13 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return self.expression(exp.In, this=value, expressions=exprs)
 
+    def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
+        func = self._parse_function()
+        if not func:
+            self.raise_error("Expecting an aggregation function in PIVOT")
+
+        return self._parse_alias(func)
+
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index
         include_nulls = None
@@ -4373,7 +4380,7 @@ class Parser(metaclass=_Parser):
         if unpivot:
             expressions = self._parse_csv(self._parse_column)
         else:
-            expressions = self._parse_csv(lambda: self._parse_alias(self._parse_function()))
+            expressions = self._parse_csv(self._parse_pivot_aggregation)
 
         if not expressions:
             self.raise_error("Failed to parse PIVOT's aggregation list")

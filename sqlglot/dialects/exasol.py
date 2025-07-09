@@ -12,8 +12,6 @@ from sqlglot.generator import unsupported_args
 
 class Exasol(Dialect):
     TIME_MAPPING = {
-        "y": "%Y",
-        "Y": "%Y",
         "yyyy": "%Y",
         "YYYY": "%Y",
         "yy": "%y",
@@ -24,12 +22,11 @@ class Exasol(Dialect):
         "MON": "%b",
         "dd": "%d",
         "DD": "%d",
-        "D": "%w",
         "DAY": "%A",
         "DY": "%a",
         "H12": "%I",
-        "H24": "%-I",
-        "HH": "%-I",
+        "H24": "%H",
+        "HH": "%H",
         "ID": "%u",
         "vW": "%V",
         "IW": "%V",
@@ -39,7 +36,6 @@ class Exasol(Dialect):
         "SS": "%S",
         "uW": "%W",
         "UW": "%U",
-        "VW": "%U",
         "Z": "%z",
     }
 

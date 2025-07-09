@@ -277,7 +277,7 @@ class TestExasol(Validator):
             ),
         )
 
-    def test_dateAndTimeFunctions(self):
+    def test_datetime_functions(self):
         formats = {
             "HH12": "hour_12",
             "HH24": "hour_24",
@@ -288,7 +288,6 @@ class TestExasol(Validator):
             "IYYY": "iso_year",
             "MI": "minutes",
             "SS": "seconds",
-            "D": "day_number",
             "DAY": "day_full",
             "DY": "day_abbr",
         }

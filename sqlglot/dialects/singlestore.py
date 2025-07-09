@@ -14,6 +14,8 @@ from sqlglot.expressions import DataType
 from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
 from sqlglot.helper import csv, seq_get
 from sqlglot.parser import build_coalesce
+from sqlglot.time import format_time
+from sqlglot.trie import new_trie
 
 
 def _build_json_extract(expr_type: t.Type[exp.Func]) -> t.Callable[
@@ -104,8 +106,32 @@ class SingleStore(Dialect):
         "%W": "%A",
         "%w": "%w",
         "%a": "%a",
-        "%%": "%%"
+        "%%": "%%",
     }
+
+    TIME_MAPPING_HR: t.Dict[str, str] = {
+        "AM": "%p",  # Meridian indicator with or without periods
+        "A.M.": "%p",  # Meridian indicator with or without periods
+        "PM": "%p",  # Meridian indicator with or without periods
+        "P.M.": "%p",  # Meridian indicator with or without periods
+        "D": "%u",  # Day of week (1-7)
+        "DD": "%d",  # day of month (1-31)
+        "DY": "%a",  # abbreviated name of day
+        "HH": "%I",  # Hour of day (1-12)
+        "HH12": "%I",  # alias for HH
+        "HH24": "%H",  # Hour of day (0-23)
+        "MI": "%M",  # Minute (0-59)
+        "MM": "%m",  # Month (01-12; January = 01)
+        "MON": "%b",  # Abbreviated name of month
+        "MONTH": "%B",  # Name of month
+        "SS": "%S",  # Second (0-59)
+        "RR": "%y",  # 15
+        "YY": "%y",  # 15
+        "YYYY": "%Y",  # 2015
+        "FF6": "%f",  # only 6 digits are supported in python formats
+    }
+
+    TIME_TRIE_HR = new_trie(TIME_MAPPING_HR)
 
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     SUPPORTS_ORDER_BY_ALL = True
@@ -114,6 +140,24 @@ class SingleStore(Dialect):
     CREATABLE_KIND_MAPPING: dict[str, str] = {
         "DATABASE": "SCHEMA"
     }
+
+    @classmethod
+    def _format_time_hr(cls, expression: t.Optional[str | exp.Expression]) -> \
+        t.Optional[exp.Expression]:
+        """Converts a time format in this dialect to its equivalent Python `strftime` format."""
+        if isinstance(expression, str):
+            return exp.Literal.string(
+                # the time formats are quoted
+                format_time(expression[1:-1], cls.TIME_MAPPING_HR,
+                            cls.TIME_TRIE_HR)
+            )
+
+        if expression and expression.is_string:
+            return exp.Literal.string(
+                format_time(expression.this, cls.TIME_MAPPING_HR,
+                            cls.TIME_TRIE_HR))
+
+        return expression
 
     class Tokenizer(tokens.Tokenizer):
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
@@ -225,32 +269,35 @@ class SingleStore(Dialect):
             "RADIANS": lambda args: exp.Mul(
                 this=seq_get(args, 0),
                 expression=exp.Literal.number(math.pi / 180.0)),
-            "REGEXP_MATCH": lambda args: exp.RegexpExtractAll(this=seq_get(args, 0),
-                                                              expression=seq_get(args, 1),
-                                                              parameters=seq_get(args, 2)),
-            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(this=seq_get(args, 0),
-                                                             expression=seq_get(args, 1),
-                                                             replacement=seq_get(args, 2),
-                                                             modifiers=seq_get(args, 3)),
-            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(this=seq_get(args, 0),
-                                                               expression=seq_get(args, 1),
-                                                               position=seq_get(args, 2),
-                                                               occurrence=seq_get(args, 3),
-                                                               parameters=seq_get(args, 4)),
+            "REGEXP_MATCH": lambda args: exp.RegexpExtractAll(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                parameters=seq_get(args, 2)),
+            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                replacement=seq_get(args, 2),
+                modifiers=seq_get(args, 3)),
+            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                position=seq_get(args, 2),
+                occurrence=seq_get(args, 3),
+                parameters=seq_get(args, 4)),
             "SECOND": lambda args: exp.cast(exp.TimeToStr(
                 this=seq_get(args, 0),
                 format=Dialect["singlestore"].format_time(
                     exp.Literal.string("%s")),
             ), DataType.Type.INT),
             "SIGMOID": lambda args: exp.Div(
-                this = exp.Literal.number(1),
-                expression = exp.Paren( this=exp.Add(
-                    this = exp.Literal.number(1),
-                    expression = exp.Exp(
-                        this = exp.Neg(
-                            this = seq_get(args, 0)))
-                    ))
-                ),
+                this=exp.Literal.number(1),
+                expression=exp.Paren(this=exp.Add(
+                    this=exp.Literal.number(1),
+                    expression=exp.Exp(
+                        this=exp.Neg(
+                            this=seq_get(args, 0)))
+                ))
+            ),
             "STD": exp.Stddev.from_arg_list,
             "STR_TO_DATE": _str_to_date,
             "TIME": lambda args: exp.cast(seq_get(args, 0),
@@ -264,7 +311,47 @@ class SingleStore(Dialect):
                 this=seq_get(args, 0),
                 format=Dialect["singlestore"].format_time(seq_get(args, 1))
             ),
-            "TIMEDIFF": exp.TimeDiff.from_arg_list
+            "TIMEDIFF": exp.TimeDiff.from_arg_list,
+            "TIMESTAMPADD": lambda args: exp.TimestampAdd(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0)
+            ),
+            "TIMESTAMPDIFF": lambda args: exp.TimestampDiff(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0)
+            ),
+            "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
+            "USER": exp.CurrentUser.from_arg_list,
+            "UTC_DATE": lambda args: exp.CurrentDate(
+                this=exp.Literal.string("UTC")
+            ),
+            "UTC_TIME": lambda args: exp.CurrentTime(
+                this=exp.Literal.string("UTC")
+            ),
+            "UTC_TIMESTAMP": lambda args: exp.CurrentTimestamp(
+                this=exp.Literal.string("UTC")
+            ),
+            "VARIANCE": exp.VariancePop.from_arg_list,
+            "VAR_SAMP": exp.Variance.from_arg_list,
+            "WEEKDAY": exp.DayOfWeek.from_arg_list,
+            # TO_TIMESTAMP uses time format similar to Oracle
+            "TO_TIMESTAMP": lambda args: exp.StrToTime(
+                this=seq_get(args, 0),
+                format=Dialect["oracle"].format_time(
+                    seq_get(args, 1))
+            ),
+            "TO_CHAR": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=Dialect["oracle"].format_time(
+                    seq_get(args, 1))
+            ),
+            "TO_DATE": lambda args: exp.StrToDate(
+                this=seq_get(args, 0),
+                format=Dialect["oracle"].format_time(
+                    seq_get(args, 1))
+            )
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -355,7 +442,6 @@ class SingleStore(Dialect):
             exp.DayOfMonth: rename_func("DAY"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
-            exp.TimestampAdd: rename_func("DATE_ADD"),
             exp.TimestampSub: rename_func("DATE_SUB"),
             exp.TimeAdd: rename_func("DATE_ADD"),
             exp.TimeSub: rename_func("DATE_SUB"),
@@ -394,7 +480,7 @@ class SingleStore(Dialect):
                 lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
             exp.TimeToStr: unsupported_args("zone", "culture")
             (lambda self,
-                e: f"DATE_FORMAT({self.sql(e, 'this')} :> TIME, {self.format_time(self.sql(e, 'format'))})"),
+                e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(self.sql(e, 'format'))})"),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToDate: lambda self, e: self.sql(
                 exp.cast(e.this, exp.DataType.Type.DATE)),
@@ -2164,6 +2250,39 @@ class SingleStore(Dialect):
             return self.sql(exp.Pow(this=expression.this,
                                     expression=exp.Literal.number(1 / 3)))
 
+        def currentdate_sql(self, expression: exp.CurrentDate) -> str:
+            timezone = expression.this
+            if timezone:
+                if isinstance(timezone,
+                              exp.Literal) and timezone.this.lower() == "utc":
+                    return self.func("UTC_DATE")
+                self.unsupported(
+                    "CurrentDate with timezone is not supported in SingleStore")
+
+            return self.func("CURRENT_DATE")
+
+        def currenttime_sql(self, expression: exp.CurrentTime) -> str:
+            timezone = expression.this
+            if timezone:
+                if isinstance(timezone,
+                              exp.Literal) and timezone.this.lower() == "utc":
+                    return self.func("UTC_TIME")
+                self.unsupported(
+                    "CurrentTime with timezone is not supported in SingleStore")
+
+            return self.func("CURRENT_TIME")
+
+        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            timezone = expression.this
+            if timezone:
+                if isinstance(timezone,
+                              exp.Literal) and timezone.this.lower() == "utc":
+                    return self.func("UTC_TIMESTAMP")
+                self.unsupported(
+                    "CurrentTimestamp with timezone is not supported in SingleStore")
+
+            return self.func("CURRENT_TIMESTAMP")
+
         def currentdatetime_sql(self, expression: exp.CurrentDatetime) -> str:
             return self.sql(exp.cast(exp.CurrentTimestamp(),
                                      exp.DataType.Type.DATETIME))
@@ -3898,6 +4017,24 @@ class SingleStore(Dialect):
 
         def timediff_sql(self, expression: exp.TimeDiff):
             if expression.args.get("unit") is not None:
-                return self.func("TIMESTAMPDIFF", expression.args.get("unit"), expression.this, expression.expression)
+                return self.func("TIMESTAMPDIFF", expression.args.get("unit"),
+                                 expression.this, expression.expression)
             else:
-                return self.func("TIMEDIFF", expression.this, expression.expression)
+                return self.func("TIMEDIFF", expression.this,
+                                 expression.expression)
+
+        def timestampadd_sql(self, expression: exp.TimestampAdd) -> str:
+            if expression.args.get("unit") is not None:
+                return self.func("TIMESTAMPADD", expression.args.get("unit"),
+                                 expression.expression, expression.this)
+            else:
+                return self.func("DATE_ADD", expression.this,
+                                 expression.expression)
+
+        def timestampdiff_sql(self, expression: exp.TimestampDiff) -> str:
+            if expression.args.get("unit") is not None:
+                return self.func("TIMESTAMPDIFF", expression.args.get("unit"),
+                                 expression.expression, expression.this)
+            else:
+                return self.func("DATEDIFF", expression.this,
+                                 expression.expression)

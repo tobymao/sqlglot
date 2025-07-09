@@ -1009,3 +1009,9 @@ class TestParser(unittest.TestCase):
         ast = parse_one(sql)
         assert not any(isinstance(n, exp.Column) for n in ast.walk())
         assert len(list(ast.find_all(exp.Dot))) == 7
+
+    def test_pivot_missing_agg_func(self):
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("select * from tbl pivot(col1 for col2 in (val1, val1))")
+
+        self.assertIn("Expecting an aggregation function in PIVOT", str(ctx.exception))

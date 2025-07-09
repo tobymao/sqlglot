@@ -21,6 +21,3 @@ class TestRisingWave(Validator):
         self.validate_identity(
             "WITH t1 AS MATERIALIZED (SELECT 1), t2 AS NOT MATERIALIZED (SELECT 2) SELECT * FROM t1, t2"
         )
-
-    def test_optimizer(self):
-        pass

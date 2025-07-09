@@ -748,7 +748,10 @@ def simplify_parens(expression: exp.Expression, dialect: DialectType = None) -> 
     if (
         dialect == "risingwave"
         and isinstance(parent, exp.Dot)
-        and isinstance(parent.right, exp.Identifier)
+        and (
+            isinstance(parent.right, exp.Identifier) # (struct_col).nested_col
+            or parent.right.is_star # (struct_col).* for expansion
+        )
     ):
         return expression
 

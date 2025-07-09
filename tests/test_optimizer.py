@@ -123,6 +123,10 @@ class TestOptimizer(unittest.TestCase):
                 "d": "DATE",
                 "t": "DATETIME",
             },
+            "structs" : {
+                "one" : "STRUCT<nested_int INT, nested_vchar VARCHAR>",
+                "two" : "STRUCT<nested_struct_one STRUCT<nested_int INT, nested_vchar VARCHAR>",
+            }
         }
 
     def check_file(
@@ -399,6 +403,8 @@ class TestOptimizer(unittest.TestCase):
             'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
         )
 
+        # Struct expansion tests
+
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
@@ -409,6 +415,28 @@ class TestOptimizer(unittest.TestCase):
                 infer_schema=False,
             ).sql(dialect="bigquery"),
             "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
+        )
+
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    'SELECT one.* FROM structs',
+                    dialect = 'bigquery'
+                ),
+                schema=MappingSchema(schema=self.schema, dialect='bigquery')
+            ).sql(dialect='bigquery'),
+            'SELECT structs.one.nested_int AS nested_int, structs.one.nested_vchar AS nested_vchar FROM structs'
+        )
+
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    'SELECT (one).* FROM structs',
+                    dialect = 'risingwave'
+                ),
+                schema = MappingSchema(schema=self.schema,dialect='risingwave')
+            ).sql(dialect='risingwave'),
+            'SELECT (structs.one).nested_int AS nested_int, (structs.one).nested_vchar AS nested_vchar FROM structs'
         )
 
         # can't coalesce USING columns because they don't exist in every already-joined table

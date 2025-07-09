@@ -545,7 +545,7 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
                     column.set("table", column_table)
 
 
-def _expand_struct_stars(
+def _expand_struct_stars_bigquery(
     expression: exp.Dot,
 ) -> t.List[exp.Alias]:
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
@@ -598,6 +598,34 @@ def _expand_struct_stars(
 
     return new_selections
 
+def _expand_struct_stars_risingwave(
+    expression: exp.Dot
+) -> t.List[exp.Alias]:
+
+    parens = t.cast(exp.Paren, expression.find(exp.Paren))
+    
+    # check that last selected identifier is struct for nested structs
+    if not parens.this.is_type(exp.DataType.Type.STRUCT):
+        return []
+
+    struct_to_expand = exp.ColumnDef(this=parens.this,kind=parens.this.type)
+
+    new_selections = []
+
+    for nested_field in t.cast(exp.DataType, struct_to_expand.kind).expressions:
+        name = nested_field.name
+       
+        if not isinstance(nested_field.this, exp.Identifier):
+            return []
+
+        this = nested_field.this.copy()
+        
+        new_identifier = t.cast(exp.Identifier, this)
+        new_dot = exp.Dot.build(expressions = [parens,new_identifier])
+        new_alias = alias(new_dot,this,copy=False)
+        new_selections.append(new_alias)
+        
+    return new_selections
 
 def _expand_stars(
     scope: Scope,
@@ -638,7 +666,8 @@ def _expand_stars(
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
     is_bigquery = dialect == "bigquery"
-    if is_bigquery and any(isinstance(col, exp.Dot) for col in scope.stars):
+    is_risingwave = dialect == "risingwave"
+    if (is_bigquery or is_risingwave) and any(isinstance(col, exp.Dot) for col in scope.stars):
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 
@@ -656,7 +685,12 @@ def _expand_stars(
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
             elif is_bigquery:
-                struct_fields = _expand_struct_stars(expression)
+                struct_fields = _expand_struct_stars_bigquery(expression)
+                if struct_fields:
+                    new_selections.extend(struct_fields)
+                    continue
+            elif is_risingwave:
+                struct_fields = _expand_struct_stars_risingwave(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue

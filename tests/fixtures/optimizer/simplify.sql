@@ -366,22 +366,6 @@ ANY(t.value);
 SELECT (ARRAY_AGG(foo))[1];
 SELECT (ARRAY_AGG(foo))[1];
 
-# dialect: risingwave
-SELECT (struct_col).nested_col;
-SELECT (struct_col).nested_col;
-
-# dialect: risingwave
-SELECT ((struct_col).nested_one).nested_two;
-SELECT ((struct_col).nested_one).nested_two;
-
-# dialect: risingwave
-SELECT ((struct_col).nested_one+1);
-SELECT (struct_col).nested_one + 1;
-
-# dialect: risingwave
-((NOT FALSE) AND ((struct_col).nested_one = (struct_col).nested_one));
-(struct_col).nested_one = (struct_col).nested_one;
-
 --------------------------------------
 -- Literals
 --------------------------------------

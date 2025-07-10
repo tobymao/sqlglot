@@ -32,12 +32,15 @@ class TestFabric(Validator):
 
     def test_varchar_precision_capping(self):
         """Test that VARCHAR precision is capped at MAX"""
-        # Default precision should be MAX
+        # No precision specified should default to MAX
         self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS VARCHAR(MAX))")
 
+        # MAX precision should be preserved
+        self.validate_identity("CAST(x AS VARCHAR(MAX))")
+
         # Precision <= 8000 should be preserved
-        self.validate_identity("CAST(x AS VARCHAR(4000))", "CAST(x AS VARCHAR(4000))")
-        self.validate_identity("CAST(x AS VARCHAR(8000))", "CAST(x AS VARCHAR(8000))")
+        self.validate_identity("CAST(x AS VARCHAR(4000))")
+        self.validate_identity("CAST(x AS VARCHAR(8000))")
 
         # Precision > 8000 should be capped at MAX
         self.validate_identity("CAST(x AS VARCHAR(9000))", "CAST(x AS VARCHAR(MAX))")

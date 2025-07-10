@@ -1632,3 +1632,14 @@ class Snowflake(Dialect):
                     return self.sql(first_expr.subquery())
 
             return inline_array_sql(self, expression)
+
+        def currentdate_sql(self, expression: exp.CurrentDate) -> str:
+            zone = self.sql(expression, "this")
+            if not zone:
+                return super().currentdate_sql(expression)
+
+            expr = exp.Cast(
+                this=exp.ConvertTimezone(target_tz=zone, timestamp=exp.CurrentTimestamp()),
+                to=exp.DataType(this=exp.DataType.Type.DATE),
+            )
+            return self.sql(expr)

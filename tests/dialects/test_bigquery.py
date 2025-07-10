@@ -1383,8 +1383,10 @@ LANGUAGE js AS
         self.validate_all(
             "CURRENT_DATE('UTC')",
             write={
+                "bigquery": "CURRENT_DATE('UTC')",
                 "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",
                 "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
+                "snowflake": "CAST(CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP()) AS DATE)",
             },
         )
         self.validate_all(

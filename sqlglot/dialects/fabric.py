@@ -7,20 +7,44 @@ from sqlglot.dialects.tsql import TSQL
 from sqlglot.tokens import TokenType
 
 
-def _cap_data_type_precision(expression: exp.DataType, max_precision: int = 6) -> exp.DataType:
+def _cap_data_type_precision(
+    expression: exp.DataType, max_precision: int | tuple[int, str] = 6
+) -> exp.DataType:
     """
     Cap the precision of to a maximum of `max_precision` digits.
     If no precision is specified, default to `max_precision`.
+    For VARCHAR types, max_precision can be a tuple of (threshold, 'MAX') to handle VARCHAR(MAX).
     """
 
     precision_param = expression.find(exp.DataTypeParam)
 
-    if precision_param and precision_param.this.is_int:
-        current_precision = precision_param.this.to_py()
-        target_precision = min(current_precision, max_precision)
+    if isinstance(max_precision, tuple):
+        # Handle VARCHAR(MAX) case
+        threshold, max_value = max_precision
 
+        default_precision = exp.DataType(
+            this=expression.this,
+            expressions=[exp.DataTypeParam(this=exp.Var(this=max_value))],
+        )
+
+        if precision_param and precision_param.this.is_int:
+            current_precision = precision_param.this.to_py()
+            if current_precision > threshold:
+                # Use MAX for precision > threshold
+                return default_precision
+            else:
+                # Keep current precision if <= threshold
+                target_precision = current_precision
+        else:
+            # No precision specified, use MAX
+            return default_precision
     else:
-        target_precision = max_precision
+        # Handle regular numeric precision capping
+        if precision_param and precision_param.this.is_int:
+            current_precision = precision_param.this.to_py()
+            target_precision = min(current_precision, max_precision)
+        else:
+            target_precision = max_precision
 
     return exp.DataType(
         this=expression.this,
@@ -70,10 +94,10 @@ class Fabric(TSQL):
             exp.DataType.Type.DECIMAL: "DECIMAL",
             exp.DataType.Type.IMAGE: "VARBINARY",
             exp.DataType.Type.INT: "INT",
-            exp.DataType.Type.JSON: "VARCHAR",
+            exp.DataType.Type.JSON: "VARCHAR(MAX)",
             exp.DataType.Type.MONEY: "DECIMAL",
             exp.DataType.Type.NCHAR: "CHAR",
-            exp.DataType.Type.NVARCHAR: "VARCHAR",
+            exp.DataType.Type.NVARCHAR: "VARCHAR(MAX)",
             exp.DataType.Type.ROWVERSION: "ROWVERSION",
             exp.DataType.Type.SMALLDATETIME: "DATETIME2",
             exp.DataType.Type.SMALLMONEY: "DECIMAL",
@@ -83,7 +107,7 @@ class Fabric(TSQL):
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.UUID: "VARBINARY(MAX)",
-            exp.DataType.Type.XML: "VARCHAR",
+            exp.DataType.Type.XML: "VARCHAR(MAX)",
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
@@ -95,6 +119,11 @@ class Fabric(TSQL):
             ):
                 # Create a new expression with the capped precision
                 expression = _cap_data_type_precision(expression)
+
+            # Cap precision for VARCHAR types
+            elif expression.is_type(exp.DataType.Type.VARCHAR):
+                # Use MAX for precision > 8000 or no precision specified
+                expression = _cap_data_type_precision(expression, (8000, "MAX"))
 
             return super().datatype_sql(expression)
 

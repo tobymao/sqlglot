@@ -14,10 +14,10 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS DOUBLE)", "CAST(x AS FLOAT)")
         self.validate_identity("CAST(x AS IMAGE)", "CAST(x AS VARBINARY)")
         self.validate_identity("CAST(x AS INT)", "CAST(x AS INT)")
-        self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS MONEY)", "CAST(x AS DECIMAL)")
         self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS CHAR)")
-        self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS ROWVERSION)", "CAST(x AS ROWVERSION)")
         self.validate_identity("CAST(x AS SMALLDATETIME)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS SMALLMONEY)", "CAST(x AS DECIMAL)")
@@ -28,7 +28,20 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS UTINYINT)", "CAST(x AS SMALLINT)")
         self.validate_identity("CAST(x AS UUID)", "CAST(x AS VARBINARY(MAX))")
         self.validate_identity("CAST(x AS VARIANT)", "CAST(x AS SQL_VARIANT)")
-        self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR(MAX))")
+
+    def test_varchar_precision_capping(self):
+        """Test that VARCHAR precision is capped at MAX"""
+        # Default precision should be MAX
+        self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS VARCHAR(MAX))")
+
+        # Precision <= 8000 should be preserved
+        self.validate_identity("CAST(x AS VARCHAR(4000))", "CAST(x AS VARCHAR(4000))")
+        self.validate_identity("CAST(x AS VARCHAR(8000))", "CAST(x AS VARCHAR(8000))")
+
+        # Precision > 8000 should be capped at MAX
+        self.validate_identity("CAST(x AS VARCHAR(9000))", "CAST(x AS VARCHAR(MAX))")
+        self.validate_identity("CAST(x AS VARCHAR(10000))", "CAST(x AS VARCHAR(MAX))")
 
     def test_precision_capping(self):
         """Test that TIME, DATETIME2 & DATETIMEOFFSET precision is capped at 6 digits"""

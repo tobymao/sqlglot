@@ -494,6 +494,36 @@ WITH tbl1 AS (SELECT STRUCT(1 AS col1, Struct(5 AS col1)) AS col) SELECT tbl1.co
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1;
 WITH tbl1 AS (SELECT STRUCT(1 AS col1, 2 AS col1) AS col) SELECT tbl1.col.* FROM tbl1 AS tbl1;
 
+# dialect: bigquery
+# execute: false
+# title: BigQuery - Expand struct literal
+WITH tbl1 AS (SELECT STRUCT(1 AS f0, 2 as f1) AS col) SELECT tbl1.col.* from tbl1;
+WITH tbl1 AS (SELECT STRUCT(1 AS f0, 2 AS f1) AS col) SELECT tbl1.col.f0 AS f0, tbl1.col.f1 AS f1 FROM tbl1 AS tbl1;
+
+# dialect: bigquery
+# execute: false
+# title: BigQuery - Expand top level nested struct
+SELECT one.* FROM structs;
+SELECT structs.one.a_1 AS a_1, structs.one.b_1 AS b_1 FROM structs AS structs;
+
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Expand top level nested struct
+SELECT (one).* FROM structs;
+SELECT (structs.one).a_1 AS a_1, (structs.one).b_1 AS b_1 FROM structs AS structs;
+
+# dialect: bigquery
+# execute: false
+# title: BigQuery - Expand midlevel struct
+SELECT nested_0.nested_1.* FROM structs;
+SELECT structs.nested_0.nested_1.a_2 AS a_2, structs.nested_0.nested_1.nested_2 AS nested_2 FROM structs AS structs;
+
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Expand midlevel struct
+SELECT ((nested_0).nested_1).* FROM structs;
+SELECT ((structs.nested_0).nested_1).a_2 AS a_2, ((structs.nested_0).nested_1).nested_2 AS nested_2 FROM structs AS structs;
+
 # title: CSV files are not scanned by default
 # execute: false
 SELECT * FROM READ_CSV('file.csv');

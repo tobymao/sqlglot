@@ -1509,4 +1509,8 @@ class Snowflake(Dialect):
             if not zone:
                 return super().currentdate_sql(expression)
 
-            return f"TO_DATE(CONVERT_TIMEZONE({zone}, CURRENT_TIMESTAMP()))"
+            expr = exp.Cast(
+                this=exp.ConvertTimezone(target_tz=zone, timestamp=exp.CurrentTimestamp()),
+                to=exp.DataType(this=exp.DataType.Type.DATE),
+            )
+            return self.sql(expr)

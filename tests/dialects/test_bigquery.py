@@ -1392,9 +1392,14 @@ LANGUAGE js AS
         )
         self.validate_all(
             "CURRENT_DATE('UTC')",
+            read={
+                "bigquery": "CURRENT_DATE('UTC')",
+            },
             write={
+                "bigquery": "CURRENT_DATE('UTC')",
                 "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",
                 "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
+                "snowflake": "CAST(CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP()) AS DATE)",
             },
         )
         self.validate_all(
@@ -1757,13 +1762,6 @@ WHERE
 
         self.validate_identity("ARRAY_FIRST(['a', 'b'])")
         self.validate_identity("ARRAY_LAST(['a', 'b'])")
-
-        self.validate_all(
-            "CURRENT_DATE('timezone')",
-            write={
-                "snowflake": "TO_DATE(CONVERT_TIMEZONE('timezone', CURRENT_TIMESTAMP()))",
-            },
-        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import NormalizationStrategy
@@ -80,7 +79,7 @@ class Fabric(TSQL):
             exp.DataType.Type.SMALLMONEY: "DECIMAL",
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2",
-            exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DataType.Type.TIMESTAMPTZ: "DATETIME2",
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.UUID: "VARBINARY(MAX)",
@@ -88,25 +87,41 @@ class Fabric(TSQL):
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            # Check if this is a temporal type that needs precision handling. Fabric limits temporal
-            # types to max 6 digits precision. When no precision is specified, we default to 6 digits.
+            # Cap precision for temporal types
             if (
                 expression.is_type(*exp.DataType.TEMPORAL_TYPES)
                 and expression.this != exp.DataType.Type.DATE
             ):
-                # Create a new expression with the target precision
-                expression = _cap_data_type_precision(expression)
+                # Create a new expression with the capped precision
+                expression = _cap_data_type_precision(expression, 6)
 
             return super().datatype_sql(expression)
 
-        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            # Special handling for TIMESTAMPTZ casts in Fabric
-            if expression.to and expression.to.is_type(exp.DataType.Type.TIMESTAMPTZ):
-                attimezone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
-                if not isinstance(attimezone, exp.AtTimeZone):
-                    # We're not inside an AT TIME ZONE, so wrap the cast in AT TIME ZONE 'UTC'
-                    at_time_zone = exp.AtTimeZone(this=expression, zone=exp.Literal.string("UTC"))
-                    return self.sql(at_time_zone)
+        def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
+            # Handle TIMESTAMPTZ transformation
+            # Explicitly CAST(CAST(x, AS DATETIMEOFFSET) AT TIME ZONE 'UTC' AS DATETIME2)
+            if expression.is_type(exp.DataType.Type.TIMESTAMPTZ):
+                capped_expression = _cap_data_type_precision(expression.to)
+                precision = 6
+
+                capped_precision = capped_expression.find(exp.DataTypeParam)
+                if capped_precision:
+                    precision = capped_precision.this.to_py()
+
+                # Hard coded cast to bypass SQLGlot's default handling of TIMESTAMPTZ
+                inner_cast = f"CAST({expression.this} AS DATETIMEOFFSET({precision}))"
+
+                at_time_zone = exp.AtTimeZone(this=inner_cast, zone=exp.Literal.string("UTC"))
+
+                outer_cast = exp.Cast(
+                    this=at_time_zone,
+                    to=exp.DataType(
+                        this=exp.DataType.Type.TIMESTAMP,
+                        expressions=[exp.DataTypeParam(this=exp.Literal.number(precision))],
+                    ),
+                )
+
+                return self.sql(outer_cast)
 
             return super().cast_sql(expression, safe_prefix)
 

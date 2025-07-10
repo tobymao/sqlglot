@@ -1167,6 +1167,9 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity("CURRENT_DATE")
+        self.validate_identity("TO_DATE(CONVERT_TIMEZONE('timezone', CURRENT_TIMESTAMP()))")
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

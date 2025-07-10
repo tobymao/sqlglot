@@ -1758,6 +1758,13 @@ WHERE
         self.validate_identity("ARRAY_FIRST(['a', 'b'])")
         self.validate_identity("ARRAY_LAST(['a', 'b'])")
 
+        self.validate_all(
+            "CURRENT_DATE('timezone')",
+            write={
+                "snowflake": "TO_DATE(CONVERT_TIMEZONE('timezone', CURRENT_TIMESTAMP()))",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

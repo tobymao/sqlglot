@@ -600,27 +600,67 @@ def _expand_struct_stars_bigquery(
 
 
 def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
-    """[RisingWave] Expand/Flatten (foo.bar).*, where bar is a struct column"""
-    parens = t.cast(exp.Paren, expression.find(exp.Paren))
+    """[RisingWave] Expand/Flatten (<exp>.bar).*, where bar is a struct column"""
 
-    # check that last selected identifier is struct for nested structs
-    if not parens.this.is_type(exp.DataType.Type.STRUCT):
+    # it is not (<sub_exp>).* pattern, which means we can't expand
+    if not isinstance(expression.this, exp.Paren):
         return []
 
-    struct_to_expand = exp.ColumnDef(this=parens.this, kind=parens.this.type)
+    # find column definition to get data-type
+    dot_column = t.cast(exp.Column, expression.find(exp.Column))
 
-    new_selections = []
+    if not dot_column.is_type(exp.DataType.Type.STRUCT):
+        return []
 
-    for nested_field in t.cast(exp.DataType, struct_to_expand.kind).expressions:
-        if not isinstance(nested_field.this, exp.Identifier):
+    current_expr: t.Union[exp.Dot, exp.Paren, exp.Column] = dot_column
+    current_struct = dot_column.type
+
+    # walk up AST and down into struct definition in sync
+    while current_expr.parent is not None:
+        # skip parentheses nodes
+        if isinstance(current_expr.parent, exp.Paren):
+            current_expr = current_expr.parent
+            continue
+
+        # if parent is not a dot, then something is wrong
+        if not isinstance(current_expr.parent, exp.Dot):
             return []
 
-        this = nested_field.this.copy()
+        # get right hand side of dot
+        rhs = current_expr.parent.right
 
-        new_identifier = t.cast(exp.Identifier, this)
-        # build new dot expression to end with (a).b AS b
-        new_dot = exp.Dot.build(expressions=[parens, new_identifier])
-        new_alias = alias(new_dot, this, copy=False)
+        # if it is star we are done
+        if isinstance(rhs, exp.Star):
+            break
+
+        # if RHS is not identifier, something is wrong
+        if not isinstance(rhs, exp.Identifier):
+            return []
+
+        # Check if current RHS identifier is in struct
+        matched = False
+        for struct_field_def in t.cast(exp.DataType, current_struct).expressions:
+            if struct_field_def.name == rhs.name:
+                matched = True
+                current_struct = struct_field_def.kind  # update struct
+                break
+
+        if not matched:
+            return []
+
+        # update parent
+        current_expr = current_expr.parent
+
+    # build new aliases to expand star
+    new_selections = []
+
+    # fetch the outermost parentheses for new aliaes
+    outer_paren = expression.this
+
+    for struct_field_def in t.cast(exp.DataType, current_struct).expressions:
+        new_identifier = exp.Identifier(this=struct_field_def.name)
+        new_dot = exp.Dot.build([outer_paren.copy(), new_identifier])
+        new_alias = alias(new_dot, new_identifier, copy=False)
         new_selections.append(new_alias)
 
     return new_selections

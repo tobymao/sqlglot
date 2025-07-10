@@ -8,6 +8,27 @@ from sqlglot.dialects.tsql import TSQL
 from sqlglot.tokens import TokenType
 
 
+def _cap_data_type_precision(expression: exp.DataType, max_precision: int = 6) -> exp.DataType:
+    """
+    Cap the precision of to a maximum of `max_precision` digits.
+    If no precision is specified, default to `max_precision`.
+    """
+
+    precision_param = expression.find(exp.DataTypeParam)
+
+    if precision_param and precision_param.this.is_int:
+        current_precision = precision_param.this.to_py()
+        target_precision = min(current_precision, max_precision)
+
+    else:
+        target_precision = max_precision
+
+    return exp.DataType(
+        this=expression.this,
+        expressions=[exp.DataTypeParam(this=exp.Literal.number(target_precision))],
+    )
+
+
 class Fabric(TSQL):
     """
     Microsoft Fabric Data Warehouse dialect that inherits from T-SQL.
@@ -73,23 +94,8 @@ class Fabric(TSQL):
                 expression.is_type(*exp.DataType.TEMPORAL_TYPES)
                 and expression.this != exp.DataType.Type.DATE
             ):
-                # Get the current precision (first expression if it exists)
-                precision_param = expression.find(exp.DataTypeParam)
-                target_precision = 6
-
-                if precision_param and precision_param.this.is_int:
-                    # Cap precision at 6
-                    current_precision = precision_param.this.to_py()
-                    target_precision = min(current_precision, 6)
-                else:
-                    # If precision exists but is not an integer, default to 6
-                    target_precision = 6
-
                 # Create a new expression with the target precision
-                expression = exp.DataType(
-                    this=expression.this,
-                    expressions=[exp.DataTypeParam(this=exp.Literal.number(target_precision))],
-                )
+                expression = _cap_data_type_precision(expression)
 
             return super().datatype_sql(expression)
 

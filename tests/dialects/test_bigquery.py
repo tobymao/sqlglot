@@ -1392,9 +1392,6 @@ LANGUAGE js AS
         )
         self.validate_all(
             "CURRENT_DATE('UTC')",
-            read={
-                "bigquery": "CURRENT_DATE('UTC')",
-            },
             write={
                 "bigquery": "CURRENT_DATE('UTC')",
                 "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",

@@ -87,19 +87,21 @@ class Fabric(TSQL):
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            # Cap precision for temporal types
+            # Check if this is a temporal type that needs precision handling. Fabric limits temporal
+            # types to max 6 digits precision. When no precision is specified, we default to 6 digits.
             if (
                 expression.is_type(*exp.DataType.TEMPORAL_TYPES)
                 and expression.this != exp.DataType.Type.DATE
             ):
                 # Create a new expression with the capped precision
-                expression = _cap_data_type_precision(expression, 6)
+                expression = _cap_data_type_precision(expression)
 
             return super().datatype_sql(expression)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
             # Handle TIMESTAMPTZ transformation
             # Explicitly CAST(CAST(x, AS DATETIMEOFFSET) AT TIME ZONE 'UTC' AS DATETIME2)
+            # https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
             if expression.is_type(exp.DataType.Type.TIMESTAMPTZ):
                 capped_expression = _cap_data_type_precision(expression.to)
                 precision = 6

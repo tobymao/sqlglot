@@ -35,53 +35,57 @@ class TestFabric(Validator):
         # Default precision should be 6
         self.validate_identity("CAST(x AS TIME)", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2)", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ)",
-            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6))",
-        )
 
         # Precision <= 6 should be preserved
         self.validate_identity("CAST(x AS TIME(3))", "CAST(x AS TIME(3))")
         self.validate_identity("CAST(x AS DATETIME2(3))", "CAST(x AS DATETIME2(3))")
-        self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ(3))",
-            "CAST(CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC' AS DATETIME2(3))",
-        )
 
         self.validate_identity("CAST(x AS TIME(6))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(6))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ(6))",
-            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6))",
-        )
 
         # Precision > 6 should be capped at 6
         self.validate_identity("CAST(x AS TIME(7))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(7))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ(7))",
-            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6))",
-        )
 
         self.validate_identity("CAST(x AS TIME(9))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(9))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ(9))",
-            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6))",
-        )
 
     def test_timestamptz_without_at_time_zone(self):
-        # TIMESTAMPTZ should be converted to UTC when not in an AT TIME ZONE expression and then cast to TIMESTAMP
+        # TIMESTAMPTZ should be cast to TIMESTAMP when not in an AT TIME ZONE
         self.validate_identity(
             "CAST(x AS TIMESTAMPTZ)",
-            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6))",
+            "CAST(x AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(3))",
+            "CAST(x AS DATETIME2(3))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(6))",
+            "CAST(x AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(9))",
+            "CAST(x AS DATETIME2(6))",
         )
 
     def test_timestamptz_with_at_time_zone(self):
-        # TIMESTAMPTZ should be DATETIMEOFFSET when in an AT TIME ZONE expression
+        # TIMESTAMPTZ should be DATETIMEOFFSET when in an AT TIME ZONE expression and then cast to TIMESTAMP
         self.validate_identity(
             "CAST(x AS TIMESTAMPTZ) AT TIME ZONE 'Pacific Standard Time'",
-            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC' AS DATETIME2(6)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(3)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(3))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(6)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(9)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
         )
 
     def test_unix_to_time(self):

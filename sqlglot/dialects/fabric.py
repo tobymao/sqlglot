@@ -99,33 +99,47 @@ class Fabric(TSQL):
             return super().datatype_sql(expression)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
-            # Handle TIMESTAMPTZ transformation
-            # Explicitly CAST(CAST(x, AS DATETIMEOFFSET) AT TIME ZONE 'UTC' AS DATETIME2)
+            # Cast to DATETIMEOFFSET if inside an AT TIME ZONE expression
             # https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
             if expression.is_type(exp.DataType.Type.TIMESTAMPTZ):
-                capped_expression = _cap_data_type_precision(expression.to)
-                precision = 6
+                at_time_zone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
 
-                capped_precision = capped_expression.find(exp.DataTypeParam)
-                if capped_precision:
-                    precision = capped_precision.this.to_py()
+                # Return normal cast, ff the expression is not in an AT TIME ZONE context
+                if not isinstance(at_time_zone, exp.AtTimeZone):
+                    return super().cast_sql(expression, safe_prefix)
 
-                # Hard coded cast to bypass SQLGlot's default handling of TIMESTAMPTZ
-                inner_cast = f"CAST({expression.this} AS DATETIMEOFFSET({precision}))"
-
-                at_time_zone = exp.AtTimeZone(this=inner_cast, zone=exp.Literal.string("UTC"))
-
-                outer_cast = exp.Cast(
-                    this=at_time_zone,
-                    to=exp.DataType(
-                        this=exp.DataType.Type.TIMESTAMP,
-                        expressions=[exp.DataTypeParam(this=exp.Literal.number(precision))],
-                    ),
+                # Get the precision from the original TIMESTAMPTZ cast and cap it to 6
+                capped_data_type = _cap_data_type_precision(expression.to, max_precision=6)
+                precision = capped_data_type.find(exp.DataTypeParam)
+                precision_value = (
+                    precision.this.to_py() if precision and precision.this.is_int else 6
                 )
 
-                return self.sql(outer_cast)
+                # Do the cast explicitly to bypass sqlglot's default handling
+                datetimeoffset = f"CAST({expression.this} AS DATETIMEOFFSET({precision_value}))"
+
+                return self.sql(datetimeoffset)
 
             return super().cast_sql(expression, safe_prefix)
+
+        def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+            # Wrap the AT TIME ZONE expression in a cast to DATETIME2 if it contains a TIMESTAMPTZ
+            ## https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
+            timestamptz_cast = expression.find(exp.Cast)
+            if timestamptz_cast and timestamptz_cast.to.is_type(exp.DataType.Type.TIMESTAMPTZ):
+                # Get the precision from the original TIMESTAMPTZ cast and cap it to 6
+                data_type = timestamptz_cast.to
+                capped_data_type = _cap_data_type_precision(data_type, max_precision=6)
+                precision_param = capped_data_type.find(exp.DataTypeParam)
+                precision = precision_param.this.to_py() if precision_param else 6
+
+                # Generate the AT TIME ZONE expression (which will handle the inner cast conversion)
+                at_time_zone_sql = super().attimezone_sql(expression)
+
+                # Wrap it in an outer cast to DATETIME2
+                return f"CAST({at_time_zone_sql} AS DATETIME2({precision}))"
+
+            return super().attimezone_sql(expression)
 
         def unixtotime_sql(self, expression: exp.UnixToTime) -> str:
             scale = expression.args.get("scale")

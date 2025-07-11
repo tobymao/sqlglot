@@ -3,6 +3,7 @@ from collections import defaultdict
 import math
 
 from sqlglot import Dialect, generator, Tokenizer, TokenType, tokens, parser
+from sqlglot._typing import F
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, \
     bool_xor_sql, rename_func, count_if_to_sum, \
     time_format, build_formatted_time, isnull_to_is_null
@@ -12,10 +13,45 @@ from sqlglot import exp
 from sqlglot.dialects.mysql import _str_to_date
 from sqlglot.expressions import DataType
 from sqlglot.generator import ESCAPED_UNICODE_RE, unsupported_args
-from sqlglot.helper import csv, seq_get
+from sqlglot.helper import csv, seq_get, is_int
 from sqlglot.parser import build_coalesce
 from sqlglot.time import format_time
 from sqlglot.trie import new_trie
+
+
+def build_json_extract_path(
+    expr_type: t.Type[F], zero_based_indexing: bool = True,
+    arrow_req_json_type: bool = False
+) -> t.Callable[[t.List], F]:
+    def _builder(args: t.List) -> F:
+        segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
+        for arg in args[1:]:
+            if isinstance(arg, exp.Column):
+                segments.append(exp.JSONPathKey(this=arg.this.this))
+            elif isinstance(arg, exp.Literal):
+                text = arg.name
+                if is_int(text) and (
+                    not arrow_req_json_type or not arg.is_string):
+                    index = int(text)
+                    segments.append(
+                        exp.JSONPathSubscript(
+                            this=index if zero_based_indexing else index - 1)
+                    )
+                else:
+                    segments.append(exp.JSONPathKey(this=text))
+            else:
+                # We use the fallback parser because we can't really transpile non-literals safely
+                return expr_type.from_arg_list(args)
+
+        # This is done to avoid failing in the expression validator due to the arg count
+        del args[2:]
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=exp.JSONPath(expressions=segments),
+            only_json_types=arrow_req_json_type,
+        )
+
+    return _builder
 
 
 def _build_json_extract(expr_type: t.Type[exp.Func]) -> t.Callable[
@@ -177,7 +213,10 @@ class SingleStore(Dialect):
             "IGNORE": TokenType.IGNORE,
             "KEY": TokenType.KEY,
             "START": TokenType.BEGIN,
-            ":>": TokenType.COLON_GT
+            ":>": TokenType.COLON_GT,
+            "!:>": TokenType.NCOLON_GT,
+            "::$": TokenType.DCOLONDOLLAR,
+            "::%": TokenType.DCOLONPERCENT,
         }
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {
@@ -364,8 +403,45 @@ class SingleStore(Dialect):
                 self: self._parse_json_object(),
         }
 
-        FACTOR = {
-            TokenType.COLON_GT: exp.Cast
+        CAST_COLUMN_OPERATORS = {
+            TokenType.COLON_GT,
+            TokenType.NCOLON_GT
+        }
+
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.COLON_GT: lambda self, this, to: self.expression(
+                exp.Cast,
+                this=this,
+                to=to,
+            ),
+            TokenType.NCOLON_GT: lambda self, this, to: self.expression(
+                exp.TryCast,
+                this=this,
+                to=to,
+            ),
+            TokenType.DCOLON: lambda self, this, path:
+            build_json_extract_path(
+                exp.JSONExtract,
+            )([this, path]),
+            TokenType.DCOLONDOLLAR: lambda self, this, path:
+            build_json_extract_path(
+                exp.JSONExtractScalar,
+            )([this, path]),
+            TokenType.DCOLONPERCENT: lambda self, this, path:
+            build_json_extract_path(
+                exp.JSONExtractScalar,
+            )([this, path])
+        }
+
+        CONJUNCTION = {
+            **parser.Parser.CONJUNCTION,
+            TokenType.DAMP: exp.And,
+        }
+
+        DISJUNCTION = {
+            **parser.Parser.DISJUNCTION,
+            TokenType.DPIPE: exp.Or,
         }
 
         def _parse_match_against(self) -> exp.MatchAgainst:

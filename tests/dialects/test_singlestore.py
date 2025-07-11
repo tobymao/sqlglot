@@ -5472,7 +5472,7 @@ class TestSingleStore(Validator):
             "SELECT SHA2(email, 256) FROM users",
             exp.SHA2(this=exp.Column(
                 this=exp.Identifier(this="email", quoted=False)),
-                     length=exp.Literal.number(256))
+                length=exp.Literal.number(256))
         )
         self.validate_parsing(
             "SELECT SIGMOID(age) FROM users",
@@ -5640,7 +5640,7 @@ class TestSingleStore(Validator):
             "SELECT TIME_FORMAT(signup_date, '%H:%i:%s') FROM users",
             exp.TimeToStr(this=exp.Column(
                 this=exp.Identifier(this="signup_date", quoted=False)),
-                          format=exp.Literal.string("%H:%M:%S"))
+                format=exp.Literal.string("%H:%M:%S"))
         )
         self.validate_parsing(
             "SELECT TIME_TO_SEC(signup_date) FROM users",
@@ -5764,8 +5764,8 @@ class TestSingleStore(Validator):
         self.validate_parsing(
             "SELECT UCASE(name) FROM users",
             exp.Upper(this=
-                      exp.Column(
-                          this=exp.Identifier(this="name", quoted=False)))
+            exp.Column(
+                this=exp.Identifier(this="name", quoted=False)))
         )
         self.validate_parsing(
             "SELECT UNHEX('4D2') FROM users",
@@ -5881,4 +5881,404 @@ class TestSingleStore(Validator):
                 this=exp.Column(
                     this=exp.Identifier(this="signup_date", quoted=False))
             )
+        )
+
+    def test_operators_parsing(self):
+        self.validate_parsing(
+            "SELECT age BETWEEN 18 AND 30 FROM users",
+            exp.Between(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                low=exp.Literal.number(18),
+                high=exp.Literal.number(30)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age NOT BETWEEN 18 AND 30 FROM users",
+            exp.Not(
+                this=exp.Between(
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    low=exp.Literal.number(18),
+                    high=exp.Literal.number(30)
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT age = 25 FROM users",
+            exp.EQ(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(25)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age <=> 25 FROM users",
+            exp.NullSafeEQ(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(25)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age > 25 FROM users",
+            exp.GT(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(25)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age >= 25 FROM users",
+            exp.GTE(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(25)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age < 25 FROM users",
+            exp.LT(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(25)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age <= 25 FROM users",
+            exp.LTE(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(25)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age IN (20, 25, 30) FROM users",
+            exp.In(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expressions=[
+                    exp.Literal.number(20),
+                    exp.Literal.number(25),
+                    exp.Literal.number(30)
+                ]
+            )
+        )
+        self.validate_parsing(
+            "SELECT age NOT IN (20, 25, 30) FROM users",
+            exp.Not(
+                this=exp.In(
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    expressions=[
+                        exp.Literal.number(20),
+                        exp.Literal.number(25),
+                        exp.Literal.number(30)
+                    ]
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT is_active IS TRUE FROM users",
+            exp.Is(
+                this=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False)),
+                expression=exp.Boolean(this=True)
+            )
+        )
+        self.validate_parsing(
+            "SELECT is_active IS NOT TRUE FROM users",
+            exp.Not(
+                this=exp.Is(
+                    this=exp.Column(
+                        this=exp.Identifier(this="is_active", quoted=False)),
+                    expression=exp.Boolean(this=True)
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT age IS NULL FROM users",
+            exp.Is(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Null()
+            )
+        )
+        self.validate_parsing(
+            "SELECT age IS NOT NULL FROM users",
+            exp.Not(
+                this=exp.Is(
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    expression=exp.Null()
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT ISNULL(email) FROM users",
+            exp.Is(
+                this=exp.Column(
+                    this=exp.Identifier(this="email", quoted=False)),
+                expression=exp.Null()
+            )
+        )
+        self.validate_parsing(
+            "SELECT name LIKE 'A%' FROM users",
+            exp.Like(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("A%")
+            )
+        )
+        self.validate_parsing(
+            "SELECT name NOT LIKE 'A%' FROM users",
+            exp.Not(
+                this=exp.Like(
+                    this=exp.Column(
+                        this=exp.Identifier(this="name", quoted=False)),
+                    expression=exp.Literal.string("A%")
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT name != 'John' FROM users",
+            exp.NEQ(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("John")
+            )
+        )
+        self.validate_parsing(
+            "SELECT name <> 'John' FROM users",
+            exp.NEQ(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                expression=exp.Literal.string("John")
+            )
+        )
+        self.validate_parsing(
+            "SELECT STRCMP(name, 'Alice') FROM users",
+            exp.func("STRCMP",
+                     exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                     exp.Literal.string("Alice"))
+        )
+        self.validate_parsing(
+            "SELECT age + 1 FROM users",
+            exp.Add(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age - 1 FROM users",
+            exp.Sub(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age * 2 FROM users",
+            exp.Mul(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(2)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age / 2 FROM users",
+            exp.Div(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(2),
+                typed=False,
+                safe=True
+            )
+        )
+        self.validate_parsing(
+            "SELECT age % 2 FROM users",
+            exp.Mod(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(2)
+            )
+        )
+        self.validate_parsing(
+            "SET @x = 5",
+            exp.EQ(
+                this=exp.Parameter(this=exp.Var(this="x")),
+                expression=exp.Literal.number(5)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age & 1 FROM users",
+            exp.BitwiseAnd(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age | 1 FROM users",
+            exp.BitwiseOr(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age ^ 1 FROM users",
+            exp.BitwiseXor(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT ~age FROM users",
+            exp.BitwiseNot(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT age << 2 FROM users",
+            exp.BitwiseLeftShift(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(2)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age >> 1 FROM users",
+            exp.BitwiseRightShift(
+                this=exp.Column(this=exp.Identifier(this="age", quoted=False)),
+                expression=exp.Literal.number(1)
+            )
+        )
+        self.validate_parsing(
+            "SELECT age > 18 AND is_active FROM users",
+            exp.And(
+                this=exp.GT(
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    expression=exp.Literal.number(18)
+                ),
+                expression=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT is_active OR age > 65 FROM users",
+            exp.Or(
+                this=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False)),
+                expression=exp.GT(
+                    this=exp.Column(
+                        this=exp.Identifier(this="age", quoted=False)),
+                    expression=exp.Literal.number(65)
+                )
+            )
+        )
+        self.validate_parsing(
+            "SELECT NOT is_active FROM users",
+            exp.Not(
+                this=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT is_active && TRUE FROM users",
+            exp.And(
+                this=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False)),
+                expression=exp.Boolean(this=True)
+            )
+        )
+        self.validate_parsing(
+            "SELECT is_active || FALSE FROM users",
+            exp.Or(
+                this=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False)),
+                expression=exp.Boolean(this=False)
+            )
+        )
+        self.validate_parsing(
+            "SELECT !is_active FROM users",
+            exp.Not(
+                this=exp.Column(
+                    this=exp.Identifier(this="is_active", quoted=False))
+            )
+        )
+        self.validate_parsing(
+            "SELECT log(age):>TEXT FROM users",
+            exp.Cast(
+                this=exp.Log(this=exp.Column(
+                    this=exp.Identifier(this="age", quoted=False))),
+                to=exp.DataType(this=exp.DataType.Type.TEXT, nested=False)
+            )
+        )
+        self.validate_parsing(
+            "SELECT name!:>TEXT FROM users",
+            exp.TryCast(
+                this=exp.Column(this=exp.Identifier(this="name", quoted=False)),
+                to=exp.DataType(this=exp.DataType.Type.TEXT, nested=False)
+            )
+        )
+        self.validate_parsing(
+            "SELECT metadata::data::data1 FROM events",
+            exp.JSONExtract(
+                this=exp.JSONExtract(
+                    this=exp.Column(
+                        this=exp.Identifier(this="metadata", quoted=False)),
+                    expression=exp.JSONPath(
+                        expressions=[
+                            exp.JSONPathRoot(),
+                            exp.JSONPathKey(this="data")]),
+                    only_json_types=False),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="data1")]),
+                only_json_types=False)
+        )
+        self.validate_parsing(
+            "SELECT metadata::data::`1` FROM events",
+            exp.JSONExtract(
+                this=exp.JSONExtract(
+                    this=exp.Column(
+                        this=exp.Identifier(this="metadata", quoted=False)),
+                    expression=exp.JSONPath(
+                        expressions=[
+                            exp.JSONPathRoot(),
+                            exp.JSONPathKey(this="data")]),
+                    only_json_types=False),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="1")]),
+                only_json_types=False)
+        )
+        # TODO: Distinguishing between extracting numeric and string values
+        self.validate_parsing(
+            "SELECT metadata::data::$`1` FROM events",
+            exp.JSONExtractScalar(
+                this=exp.JSONExtract(
+                    this=exp.Column(
+                        this=exp.Identifier(this="metadata", quoted=False)),
+                    expression=exp.JSONPath(
+                        expressions=[
+                            exp.JSONPathRoot(),
+                            exp.JSONPathKey(this="data")]),
+                    only_json_types=False),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="1")]),
+                only_json_types=False)
+        )
+        self.validate_parsing(
+            "SELECT metadata::data::%`1` FROM events",
+            exp.JSONExtractScalar(
+                this=exp.JSONExtract(
+                    this=exp.Column(
+                        this=exp.Identifier(this="metadata", quoted=False)),
+                    expression=exp.JSONPath(
+                        expressions=[
+                            exp.JSONPathRoot(),
+                            exp.JSONPathKey(this="data")]),
+                    only_json_types=False),
+                expression=exp.JSONPath(
+                    expressions=[
+                        exp.JSONPathRoot(),
+                        exp.JSONPathKey(this="1")]),
+                only_json_types=False)
+        )
+        # TODO: Handle assignment in SET command "SET @x := 5"
+        self.validate_parsing(
+            "@x := 5",
+            exp.PropertyEQ(
+                this=exp.Parameter(this=exp.Var(this="x")),
+                expression=exp.Literal.number(5)
+            ),
+            run=False
         )

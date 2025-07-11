@@ -783,6 +783,11 @@ class Parser(metaclass=_Parser):
         ),
     }
 
+    CAST_COLUMN_OPERATORS = {
+        TokenType.DOTCOLON,
+        TokenType.DCOLON,
+    }
+
     EXPRESSION_PARSERS = {
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         exp.Column: lambda self: self._parse_column(),
@@ -5447,7 +5452,7 @@ class Parser(metaclass=_Parser):
             op_token = self._prev.token_type
             op = self.COLUMN_OPERATORS.get(op_token)
 
-            if op_token in (TokenType.DCOLON, TokenType.DOTCOLON):
+            if op_token in self.CAST_COLUMN_OPERATORS:
                 field = self._parse_dcolon()
                 if not field:
                     self.raise_error("Expected type")

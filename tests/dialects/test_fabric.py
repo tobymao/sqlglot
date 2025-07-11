@@ -14,10 +14,10 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS DOUBLE)", "CAST(x AS FLOAT)")
         self.validate_identity("CAST(x AS IMAGE)", "CAST(x AS VARBINARY)")
         self.validate_identity("CAST(x AS INT)", "CAST(x AS INT)")
-        self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS MONEY)", "CAST(x AS DECIMAL)")
         self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS CHAR)")
-        self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS ROWVERSION)", "CAST(x AS ROWVERSION)")
         self.validate_identity("CAST(x AS SMALLDATETIME)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS SMALLMONEY)", "CAST(x AS DECIMAL)")
@@ -28,52 +28,80 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS UTINYINT)", "CAST(x AS SMALLINT)")
         self.validate_identity("CAST(x AS UUID)", "CAST(x AS VARBINARY(MAX))")
         self.validate_identity("CAST(x AS VARIANT)", "CAST(x AS SQL_VARIANT)")
-        self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR(MAX))")
+
+    def test_varchar_precision_capping(self):
+        """Test that VARCHAR precision is capped at MAX"""
+        # No precision specified should default to MAX
+        self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS VARCHAR(MAX))")
+
+        # MAX precision should be preserved
+        self.validate_identity("CAST(x AS VARCHAR(MAX))")
+
+        # Precision <= 8000 should be preserved
+        self.validate_identity("CAST(x AS VARCHAR(4000))")
+        self.validate_identity("CAST(x AS VARCHAR(8000))")
+
+        # Precision > 8000 should be capped at MAX
+        self.validate_identity("CAST(x AS VARCHAR(9000))", "CAST(x AS VARCHAR(MAX))")
+        self.validate_identity("CAST(x AS VARCHAR(10000))", "CAST(x AS VARCHAR(MAX))")
 
     def test_precision_capping(self):
         """Test that TIME, DATETIME2 & DATETIMEOFFSET precision is capped at 6 digits"""
         # Default precision should be 6
         self.validate_identity("CAST(x AS TIME)", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2)", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS DATETIMEOFFSET) AT TIME ZONE 'UTC'",
-            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
-        )
 
         # Precision <= 6 should be preserved
         self.validate_identity("CAST(x AS TIME(3))", "CAST(x AS TIME(3))")
         self.validate_identity("CAST(x AS DATETIME2(3))", "CAST(x AS DATETIME2(3))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'UTC'")
 
         self.validate_identity("CAST(x AS TIME(6))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(6))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'")
 
         # Precision > 6 should be capped at 6
         self.validate_identity("CAST(x AS TIME(7))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(7))", "CAST(x AS DATETIME2(6))")
-        self.validate_identity(
-            "CAST(x AS DATETIMEOFFSET(7)) AT TIME ZONE 'UTC'",
-            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
-        )
 
         self.validate_identity("CAST(x AS TIME(9))", "CAST(x AS TIME(6))")
         self.validate_identity("CAST(x AS DATETIME2(9))", "CAST(x AS DATETIME2(6))")
+
+    def test_timestamptz_without_at_time_zone(self):
+        # TIMESTAMPTZ should be cast to TIMESTAMP when not in an AT TIME ZONE
         self.validate_identity(
-            "CAST(x AS DATETIMEOFFSET(9)) AT TIME ZONE 'UTC'",
-            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+            "CAST(x AS TIMESTAMPTZ)",
+            "CAST(x AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(3))",
+            "CAST(x AS DATETIME2(3))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(6))",
+            "CAST(x AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(9))",
+            "CAST(x AS DATETIME2(6))",
         )
 
-    def test_timestamptz_handling(self):
-        # TIMESTAMPTZ should be converted to UTC when not in an AT TIME ZONE expression
+    def test_timestamptz_with_at_time_zone(self):
+        # TIMESTAMPTZ should be DATETIMEOFFSET when in an AT TIME ZONE expression and then cast to TIMESTAMP
         self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ)", "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'"
+            "CAST(x AS TIMESTAMPTZ) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
         )
-
-        # TIMESTAMPTZ should be DATETIMEOFFSET when in an AT TIME ZONE expression
         self.validate_identity(
-            "CAST(x AS TIMESTAMPTZ) AT TIME ZONE 'UTC'",
-            "CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'UTC'",
+            "CAST(x AS TIMESTAMPTZ(3)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(3))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(6)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ(9)) AT TIME ZONE 'Pacific Standard Time'",
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
         )
 
     def test_unix_to_time(self):

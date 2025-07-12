@@ -72,6 +72,7 @@ class Doris(MySQL):
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
+            exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.StringToArray: rename_func("SPLIT_BY_STRING"),
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),

@@ -156,6 +156,7 @@ class StarRocks(MySQL):
             exp.JSONExtract: arrow_json_extract_sql,
             exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
+            exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.StDistance: st_distance_sphere,
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),

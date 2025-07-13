@@ -41,6 +41,7 @@ class Doris(MySQL):
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
         VARCHAR_REQUIRES_SIZE = False
+        WITH_PROPERTIES_PREFIX = "PROPERTIES"
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
@@ -48,7 +49,7 @@ class Doris(MySQL):
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
         }
-        
+
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,

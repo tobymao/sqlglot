@@ -48,6 +48,12 @@ class Doris(MySQL):
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
         }
+        
+        PROPERTIES_LOCATION = {
+            **MySQL.Generator.PROPERTIES_LOCATION,
+            exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+        }
 
         CAST_MAPPING = {}
         TIMESTAMP_FUNC_TYPES = set()

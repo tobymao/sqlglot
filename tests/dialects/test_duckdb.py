@@ -975,6 +975,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("ARRAY_SLICE(x, 1, 3, 2)")
+        self.validate_identity("SELECT #2, #1 FROM (VALUES (1, 'foo'))")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

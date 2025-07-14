@@ -1478,3 +1478,7 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_all(
             "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
         )
+
+    def test_datatype(self):
+        self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")
+        self.validate_identity("CREATE TABLE foo (data XML)")

@@ -620,7 +620,7 @@ class DuckDB(Dialect):
             return self.expression(exp.Show, this=this)
 
         def _parse_primary(self) -> t.Optional[exp.Expression]:
-            if self._match(TokenType.HASH) and self._match(TokenType.NUMBER):
+            if self._match_pair(TokenType.HASH, TokenType.NUMBER):
                 return exp.PositionalColumn(this=exp.Literal.number(self._prev.text))
 
             return super()._parse_primary()

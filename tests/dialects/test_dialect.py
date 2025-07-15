@@ -978,6 +978,7 @@ class TestDialect(Validator):
             "DATE_ADD(x, 1, 'DAY')",
             read={
                 "snowflake": "DATEADD('DAY', 1, x)",
+                "dremio": "DATE_ADD(x, 1)",
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -994,6 +995,7 @@ class TestDialect(Validator):
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "tsql": "DATEADD(DAY, 1, x)",
                 "doris": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "dremio": "DATE_ADD(x, 1)",
             },
         )
         self.validate_all(
@@ -1008,6 +1010,7 @@ class TestDialect(Validator):
                 "spark": "DATE_ADD(x, 1)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "doris": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "dremio": "DATE_ADD(x, 1)",
             },
         )
         self.validate_all(
@@ -1196,6 +1199,7 @@ class TestDialect(Validator):
                 "hive": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
                 "presto": "DATE_ADD('DAY', 1, CAST('2020-01-01' AS DATE))",
                 "spark": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
+                "dremio": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             },
         )
         self.validate_all(

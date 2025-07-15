@@ -86,6 +86,7 @@ class TestDoris(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
         self.validate_identity("COALECSE(a, b, c, d)")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")

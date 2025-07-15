@@ -14,6 +14,8 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
 
     def test_ddl(self):
+        self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
+
         ddl_sqls = [
             "DISTRIBUTED BY HASH (col1) BUCKETS 1",
             "DISTRIBUTED BY HASH (col1)",

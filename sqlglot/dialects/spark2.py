@@ -256,6 +256,14 @@ class Spark2(Hive):
             exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        TS_OR_DS_EXPRESSIONS = (
+            *Hive.Generator.TS_OR_DS_EXPRESSIONS,
+            exp.DayOfMonth,
+            exp.DayOfWeek,
+            exp.DayOfYear,
+            exp.WeekOfYear,
+        )
+
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),

@@ -2661,3 +2661,9 @@ OPTIONS (
                     "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
                 },
             )
+
+    def test_bit_aggs(self):
+        self.validate_identity("BIT_AND(x)")
+        self.validate_identity("BIT_OR(x)")
+        self.validate_identity("BIT_XOR(x)")
+        self.validate_identity("BIT_COUNT(x)")

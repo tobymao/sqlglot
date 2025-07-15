@@ -54,9 +54,9 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
-            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
-            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
+            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:

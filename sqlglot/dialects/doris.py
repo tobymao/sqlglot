@@ -4,6 +4,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     build_timestamp_trunc,
+    property_sql,
     rename_func,
     time_format,
     unit_to_str,
@@ -37,6 +38,12 @@ class Doris(MySQL):
 
         FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
+
+        PROPERTY_PARSERS = {
+            **MySQL.Parser.PROPERTY_PARSERS,
+            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+        }
 
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
@@ -77,6 +84,7 @@ class Doris(MySQL):
             exp.Lag: _lag_lead_sql,
             exp.Lead: _lag_lead_sql,
             exp.Map: rename_func("ARRAY_MAP"),
+            exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),

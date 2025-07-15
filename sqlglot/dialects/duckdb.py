@@ -619,6 +619,12 @@ class DuckDB(Dialect):
         def _parse_show_duckdb(self, this: str) -> exp.Show:
             return self.expression(exp.Show, this=this)
 
+        def _parse_primary(self) -> t.Optional[exp.Expression]:
+            if self._match_pair(TokenType.HASH, TokenType.NUMBER):
+                return exp.PositionalColumn(this=exp.Literal.number(self._prev.text))
+
+            return super()._parse_primary()
+
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         NAMED_PLACEHOLDER_TOKEN = "$"

@@ -4746,12 +4746,17 @@ class Parser(metaclass=_Parser):
     def _parse_locks(self) -> t.List[exp.Lock]:
         locks = []
         while True:
+            update, key = None, None
             if self._match_text_seq("FOR", "UPDATE"):
                 update = True
             elif self._match_text_seq("FOR", "SHARE") or self._match_text_seq(
                 "LOCK", "IN", "SHARE", "MODE"
             ):
                 update = False
+            elif self._match_text_seq("FOR", "KEY", "SHARE"):
+                update, key = False, True
+            elif self._match_text_seq("FOR", "NO", "KEY", "UPDATE"):
+                update, key = True, True
             else:
                 break
 
@@ -4768,7 +4773,9 @@ class Parser(metaclass=_Parser):
                 wait = False
 
             locks.append(
-                self.expression(exp.Lock, update=update, expressions=expressions, wait=wait)
+                self.expression(
+                    exp.Lock, update=update, expressions=expressions, wait=wait, key=key
+                )
             )
 
         return locks

@@ -607,6 +607,22 @@ BIGINT;
 UNICODE('bcd');
 BIGINT;
 
+# dialect: bigquery
+BIT_AND(tbl.bin_col);
+BIGINT;
+
+# dialect: bigquery
+BIT_OR(tbl.bin_col);
+BIGINT;
+
+# dialect: bigquery
+BIT_XOR(tbl.bin_col);
+BIGINT;
+
+# dialect: bigquery
+BIT_COUNT(tbl.bin_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -494,7 +494,7 @@ class TestTSQL(Validator):
         self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
         self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'")
 
-        for output in ("OUT", "OUTPUT", "READ_ONLY"):
+        for output in ("OUT", "OUTPUT", "READONLY"):
             self.validate_identity(
                 f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output})"
             )

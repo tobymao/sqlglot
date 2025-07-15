@@ -61,6 +61,12 @@ class Exasol(Dialect):
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.ToChar, "exasol"),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "exasol"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/convert_tz.htm
+            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
+                source_tz=seq_get(args, 1),
+                target_tz=seq_get(args, 2),
+                timestamp=seq_get(args, 0),
+            ),
         }
 
     class Generator(generator.Generator):
@@ -135,3 +141,10 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
         }
+
+        def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+            from_tz = expression.args.get("source_tz")
+            to_tz = expression.args.get("target_tz")
+            datetime = expression.args.get("timestamp")
+
+            return self.func("CONVERT_TZ", datetime, from_tz, to_tz)

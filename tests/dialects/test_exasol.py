@@ -352,3 +352,7 @@ class TestExasol(Validator):
                 "duckdb": "SELECT CAST('2012-05-10 12:00:00' AS TIMESTAMP) AT TIME ZONE 'Europe/Berlin' AT TIME ZONE 'America/New_York'",
             },
         )
+        self.validate_identity(
+            "TIME_TO_STR(b, '%Y-%m-%d %H:%M:%S')",
+            "TO_CHAR(b, 'YYYY-MM-DD HH:MI:SS')",
+        )

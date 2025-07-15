@@ -141,6 +141,7 @@ class Exasol(Dialect):
             exp.ToChar: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

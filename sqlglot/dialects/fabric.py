@@ -18,7 +18,6 @@ def _cap_data_type_precision(expression: exp.DataType, max_precision: int = 6) -
     if precision_param and precision_param.this.is_int:
         current_precision = precision_param.this.to_py()
         target_precision = min(current_precision, max_precision)
-
     else:
         target_precision = max_precision
 

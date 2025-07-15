@@ -4,6 +4,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     build_timestamp_trunc,
+    property_sql,
     rename_func,
     time_format,
     unit_to_str,
@@ -38,15 +39,28 @@ class Doris(MySQL):
         FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
 
+        PROPERTY_PARSERS = {
+            **MySQL.Parser.PROPERTY_PARSERS,
+            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+        }
+
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
         VARCHAR_REQUIRES_SIZE = False
+        WITH_PROPERTIES_PREFIX = "PROPERTIES"
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
+        }
+
+        PROPERTIES_LOCATION = {
+            **MySQL.Generator.PROPERTIES_LOCATION,
+            exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -70,8 +84,10 @@ class Doris(MySQL):
             exp.Lag: _lag_lead_sql,
             exp.Lead: _lag_lead_sql,
             exp.Map: rename_func("ARRAY_MAP"),
+            exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
+            exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.StringToArray: rename_func("SPLIT_BY_STRING"),
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),

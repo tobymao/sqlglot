@@ -3763,7 +3763,7 @@ class Schema(Expression):
 # https://dev.mysql.com/doc/refman/8.0/en/select.html
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 class Lock(Expression):
-    arg_types = {"update": True, "expressions": False, "wait": False}
+    arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
 class Select(Query):
@@ -5529,7 +5529,12 @@ class ConvertToCharset(Func):
 
 
 class ConvertTimezone(Func):
-    arg_types = {"source_tz": False, "target_tz": True, "timestamp": True}
+    arg_types = {
+        "source_tz": False,
+        "target_tz": True,
+        "timestamp": True,
+        "options": False,
+    }
 
 
 class GenerateSeries(Func):
@@ -6087,6 +6092,10 @@ class Posexplode(Explode):
 
 
 class PosexplodeOuter(Posexplode, ExplodeOuter):
+    pass
+
+
+class PositionalColumn(Expression):
     pass
 
 

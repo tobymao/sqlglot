@@ -178,6 +178,7 @@ class Generator(metaclass=_Generator):
         exp.PartitionedByBucket: lambda self, e: self.func("BUCKET", e.this, e.expression),
         exp.PartitionByTruncate: lambda self, e: self.func("TRUNCATE", e.this, e.expression),
         exp.PivotAny: lambda self, e: f"ANY{self.sql(e, 'this')}",
+        exp.PositionalColumn: lambda self, e: f"#{self.sql(e, 'this')}",
         exp.ProjectionPolicyColumnConstraint: lambda self,
         e: f"PROJECTION POLICY {self.sql(e, 'this')}",
         exp.Put: lambda self, e: self.get_put_sql(e),
@@ -2406,7 +2407,12 @@ class Generator(metaclass=_Generator):
             self.unsupported("Locking reads using 'FOR UPDATE/SHARE' are not supported")
             return ""
 
-        lock_type = "FOR UPDATE" if expression.args["update"] else "FOR SHARE"
+        update = expression.args["update"]
+        key = expression.args.get("key")
+        if update:
+            lock_type = "FOR NO KEY UPDATE" if key else "FOR UPDATE"
+        else:
+            lock_type = "FOR KEY SHARE" if key else "FOR SHARE"
         expressions = self.expressions(expression, flat=True)
         expressions = f" OF {expressions}" if expressions else ""
         wait = expression.args.get("wait")

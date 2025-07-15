@@ -86,9 +86,14 @@ class TestDoris(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")
+        self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
         self.validate_identity("COALECSE(a, b, c, d)")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS example_tbl_unique (user_id BIGINT NOT NULL, user_name VARCHAR(50) NOT NULL, city VARCHAR(20), age SMALLINT, sex TINYINT) UNIQUE KEY (user_id, user_name) DISTRIBUTED BY HASH (user_id) BUCKETS 10 PROPERTIES ('enable_unique_key_merge_on_write'='true')"
+        )
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")

@@ -264,7 +264,7 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
                 else sequence_value_name.name
             )
             for column in select.selects:
-                if column.this.name == replace_column_name:
+                if column.this.name.lower() == replace_column_name.lower():
                     column.replace(date_add.as_(column.alias_or_name))
             lateral = exp.Lateral(this=unnest_parent.this.pop())
             unnest_parent.replace(exp.Join(this=lateral))

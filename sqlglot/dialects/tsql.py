@@ -624,7 +624,7 @@ class TSQL(Dialect):
             ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
         )
 
-        COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READ_ONLY"}
+        COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READONLY"}
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,

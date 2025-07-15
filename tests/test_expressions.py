@@ -1236,30 +1236,30 @@ FROM foo""",
         # Test converting datetime.time objects to DateStrToTime expressions
         time_obj = datetime.time(14, 30, 45)
         result = exp.convert(time_obj)
-        
+
         self.assertIsInstance(result, exp.DateStrToTime)
         self.assertIsInstance(result.this, exp.Literal)
         self.assertEqual(result.this.this, "14:30:45")
         self.assertTrue(result.this.is_string)
-        
+
         # Test with microseconds
         time_with_microseconds = datetime.time(9, 15, 30, 123456)
         result = exp.convert(time_with_microseconds)
-        
+
         self.assertIsInstance(result, exp.DateStrToTime)
         self.assertEqual(result.this.this, "09:15:30.123456")
-        
+
         # Test midnight
         midnight = datetime.time(0, 0, 0)
         result = exp.convert(midnight)
-        
+
         self.assertIsInstance(result, exp.DateStrToTime)
         self.assertEqual(result.this.this, "00:00:00")
-        
+
         # Test noon
         noon = datetime.time(12, 0, 0)
         result = exp.convert(noon)
-        
+
         self.assertIsInstance(result, exp.DateStrToTime)
         self.assertEqual(result.this.this, "12:00:00")
 

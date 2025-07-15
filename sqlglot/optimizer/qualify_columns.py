@@ -550,8 +550,8 @@ def _expand_struct_stars_bigquery(
 ) -> t.List[exp.Alias]:
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
-    dot_column = t.cast(exp.Column, expression.find(exp.Column))
-    if not dot_column.is_type(exp.DataType.Type.STRUCT):
+    dot_column = expression.find(exp.Column)
+    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DataType.Type.STRUCT):
         return []
 
     # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
@@ -607,49 +607,44 @@ def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
         return []
 
     # find column definition to get data-type
-    dot_column = t.cast(exp.Column, expression.find(exp.Column))
-
-    if not dot_column.is_type(exp.DataType.Type.STRUCT):
+    dot_column = expression.find(exp.Column)
+    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DataType.Type.STRUCT):
         return []
 
-    current_expr: t.Union[exp.Dot, exp.Paren, exp.Column] = dot_column
-    current_struct = dot_column.type
+    parent = dot_column.parent
+    starting_struct = dot_column.type
 
     # walk up AST and down into struct definition in sync
-    while current_expr.parent is not None:
-        # skip parentheses nodes
-        if isinstance(current_expr.parent, exp.Paren):
-            current_expr = current_expr.parent
+    while parent is not None:
+        if isinstance(parent, exp.Paren):
+            parent = parent.parent
             continue
 
         # if parent is not a dot, then something is wrong
-        if not isinstance(current_expr.parent, exp.Dot):
+        if not isinstance(parent, exp.Dot):
             return []
 
-        # get right hand side of dot
-        rhs = current_expr.parent.right
-
-        # if it is star we are done
+        # if the rhs of the dot is star we are done
+        rhs = parent.right
         if isinstance(rhs, exp.Star):
             break
 
-        # if RHS is not identifier, something is wrong
+        # if it is not identifier, then something is wrong
         if not isinstance(rhs, exp.Identifier):
             return []
 
-        # Check if current RHS identifier is in struct
+        # Check if current rhs identifier is in struct
         matched = False
-        for struct_field_def in t.cast(exp.DataType, current_struct).expressions:
+        for struct_field_def in t.cast(exp.DataType, starting_struct).expressions:
             if struct_field_def.name == rhs.name:
                 matched = True
-                current_struct = struct_field_def.kind  # update struct
+                starting_struct = struct_field_def.kind  # update struct
                 break
 
         if not matched:
             return []
 
-        # update parent
-        current_expr = current_expr.parent
+        parent = parent.parent
 
     # build new aliases to expand star
     new_selections = []
@@ -657,8 +652,8 @@ def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
     # fetch the outermost parentheses for new aliaes
     outer_paren = expression.this
 
-    for struct_field_def in t.cast(exp.DataType, current_struct).expressions:
-        new_identifier = exp.Identifier(this=struct_field_def.name)
+    for struct_field_def in t.cast(exp.DataType, starting_struct).expressions:
+        new_identifier = struct_field_def.this.copy()
         new_dot = exp.Dot.build([outer_paren.copy(), new_identifier])
         new_alias = alias(new_dot, new_identifier, copy=False)
         new_selections.append(new_alias)
@@ -706,6 +701,7 @@ def _expand_stars(
 
     is_bigquery = dialect == "bigquery"
     is_risingwave = dialect == "risingwave"
+
     if (is_bigquery or is_risingwave) and any(isinstance(col, exp.Dot) for col in scope.stars):
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)

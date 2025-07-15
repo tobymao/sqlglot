@@ -126,6 +126,7 @@ class TestOptimizer(unittest.TestCase):
             "structs": {
                 "one": "STRUCT<a_1 INT, b_1 VARCHAR>",
                 "nested_0": "STRUCT<a_1 INT, nested_1 STRUCT<a_2 INT, nested_2 STRUCT<a_3 INT>>>",
+                "quoted": 'STRUCT<"foo bar" INT>',
             },
         }
 

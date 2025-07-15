@@ -512,6 +512,12 @@ SELECT structs.one.a_1 AS a_1, structs.one.b_1 AS b_1 FROM structs AS structs;
 SELECT (one).* FROM structs;
 SELECT (structs.one).a_1 AS a_1, (structs.one).b_1 AS b_1 FROM structs AS structs;
 
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Preserve struct field identifier quotes
+SELECT (quoted).* FROM structs;
+SELECT (structs.quoted)."foo bar" AS "foo bar" FROM structs AS structs;
+
 # dialect: bigquery
 # execute: false
 # title: BigQuery - Expand midlevel struct

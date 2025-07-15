@@ -5,6 +5,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     binary_from_function,
     build_formatted_time,
+    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
@@ -142,6 +143,8 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
+            exp.TimeStrToTime: timestrtotime_sql,
+            exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

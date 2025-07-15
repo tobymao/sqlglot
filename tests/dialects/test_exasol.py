@@ -356,3 +356,7 @@ class TestExasol(Validator):
             "TIME_TO_STR(b, '%Y-%m-%d %H:%M:%S')",
             "TO_CHAR(b, 'YYYY-MM-DD HH:MI:SS')",
         )
+        self.validate_identity(
+            "SELECT TIME_TO_STR(CAST(STR_TO_TIME(date, '%Y%m%d') AS DATE), '%a') AS day_of_week",
+            "SELECT TO_CHAR(CAST(TO_DATE(date, 'YYYYMMDD') AS DATE), 'DY') AS day_of_week",
+        )

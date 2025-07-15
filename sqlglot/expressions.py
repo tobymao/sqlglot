@@ -5529,7 +5529,12 @@ class ConvertToCharset(Func):
 
 
 class ConvertTimezone(Func):
-    arg_types = {"source_tz": False, "target_tz": True, "timestamp": True}
+    arg_types = {
+        "source_tz": False,
+        "target_tz": True,
+        "timestamp": True,
+        "options": False,
+    }
 
 
 class GenerateSeries(Func):

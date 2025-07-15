@@ -5990,10 +5990,6 @@ class DateStrToDate(Func):
     pass
 
 
-class DateStrToTime(Func):
-    pass
-
-
 class DateToDateStr(Func):
     pass
 
@@ -8438,7 +8434,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return DateStrToDate(this=date_literal)
     if isinstance(value, datetime.time):
         time_literal = Literal.string(value.isoformat())
-        return DateStrToTime(this=time_literal)
+        return TsOrDsToTime(this=time_literal)
     if isinstance(value, tuple):
         if hasattr(value, "_fields"):
             return Struct(

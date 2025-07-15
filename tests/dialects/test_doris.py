@@ -110,3 +110,27 @@ class TestDoris(Validator):
         self.validate_identity("ANALYZE TABLE tbl")
         self.validate_identity("ANALYZE DATABASE db")
         self.validate_identity("ANALYZE TABLE TBL(c1, c2)")
+
+    def test_key(self):
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) UNIQUE KEY (c1)")
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) DUPLICATE KEY (c1)")
+
+    def test_distributed(self):
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 INT) UNIQUE KEY (c1) DISTRIBUTED BY HASH (c1)"
+        )
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) DISTRIBUTED BY RANDOM")
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 INT) DISTRIBUTED BY RANDOM BUCKETS 1"
+        )
+
+    def test_partitionbyrange(self):
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (PARTITION `p201701` VALUES LESS THAN ('2017-02-01'), PARTITION `p201702` VALUES LESS THAN ('2017-03-01'))"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (PARTITION `p201701` VALUES [('2017-01-01'), ('2017-02-01')), PARTITION `other` VALUES LESS THAN (MAXVALUE))"
+        )
+        self.validate_identity(
+            'CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (FROM ("2000-11-14") TO ("2021-11-14") INTERVAL 2 YEAR)'
+        )

@@ -682,6 +682,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("DATE_ADD(a, 1)"), exp.DateAdd)
         self.assertIsInstance(parse_one("DATE_DIFF(a, 2)"), exp.DateDiff)
         self.assertIsInstance(parse_one("DATE_STR_TO_DATE(a)"), exp.DateStrToDate)
+        self.assertIsInstance(parse_one("DATE_STR_TO_TIME(a)"), exp.DateStrToTime)
         self.assertIsInstance(parse_one("DAY(a)"), exp.Day)
         self.assertIsInstance(parse_one("EXP(a)"), exp.Exp)
         self.assertIsInstance(parse_one("FLOOR(a)"), exp.Floor)
@@ -1230,3 +1231,38 @@ FROM foo""",
 
     def test_parse_identifier(self):
         self.assertEqual(exp.parse_identifier("a ' b"), exp.to_identifier("a ' b"))
+
+    def test_convert_datetime_time(self):
+        # Test converting datetime.time objects to DateStrToTime expressions
+        time_obj = datetime.time(14, 30, 45)
+        result = exp.convert(time_obj)
+        
+        self.assertIsInstance(result, exp.DateStrToTime)
+        self.assertIsInstance(result.this, exp.Literal)
+        self.assertEqual(result.this.this, "14:30:45")
+        self.assertTrue(result.this.is_string)
+        
+        # Test with microseconds
+        time_with_microseconds = datetime.time(9, 15, 30, 123456)
+        result = exp.convert(time_with_microseconds)
+        
+        self.assertIsInstance(result, exp.DateStrToTime)
+        self.assertEqual(result.this.this, "09:15:30.123456")
+        
+        # Test midnight
+        midnight = datetime.time(0, 0, 0)
+        result = exp.convert(midnight)
+        
+        self.assertIsInstance(result, exp.DateStrToTime)
+        self.assertEqual(result.this.this, "00:00:00")
+        
+        # Test noon
+        noon = datetime.time(12, 0, 0)
+        result = exp.convert(noon)
+        
+        self.assertIsInstance(result, exp.DateStrToTime)
+        self.assertEqual(result.this.this, "12:00:00")
+
+    def test_datestrtotime_function(self):
+        # Test parsing DateStrToTime function
+        self.assertIsInstance(parse_one("DATE_STR_TO_TIME('14:30:45')"), exp.DateStrToTime)

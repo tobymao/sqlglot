@@ -276,3 +276,59 @@ class TestExasol(Validator):
                 },
             ),
         )
+
+    def test_datetime_functions(self):
+        formats = {
+            "HH12": "hour_12",
+            "HH24": "hour_24",
+            "ID": "iso_weekday",
+            "IW": "iso_week_number",
+            "uW": "week_number_uW",
+            "VW": "week_number_VW",
+            "IYYY": "iso_year",
+            "MI": "minutes",
+            "SS": "seconds",
+            "DAY": "day_full",
+            "DY": "day_abbr",
+        }
+        self.validate_identity(
+            "SELECT TO_DATE('31-12-1999', 'dd-mm-yyyy') AS TO_DATE",
+            "SELECT TO_DATE('31-12-1999', 'DD-MM-YYYY') AS TO_DATE",
+        )
+        self.validate_identity(
+            "SELECT TO_DATE('31-12-1999', 'dd-mm-YY') AS TO_DATE",
+            "SELECT TO_DATE('31-12-1999', 'DD-MM-YY') AS TO_DATE",
+        )
+        self.validate_identity("SELECT TO_DATE('31-DECEMBER-1999', 'DD-MONTH-YYYY') AS TO_DATE")
+        self.validate_identity("SELECT TO_DATE('31-DEC-1999', 'DD-MON-YYYY') AS TO_DATE")
+
+        for fmt, alias in formats.items():
+            with self.subTest(f"Testing TO_CHAR with format '{fmt}'"):
+                self.validate_identity(
+                    f"SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), '{fmt}') AS {alias}"
+                )
+
+        self.validate_all(
+            "TO_DATE(x, 'YYYY-MM-DD')",
+            write={
+                "exasol": "TO_DATE(x, 'YYYY-MM-DD')",
+                "duckdb": "CAST(x AS DATE)",
+                "hive": "TO_DATE(x)",
+                "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
+                "spark": "TO_DATE(x)",
+                "snowflake": "TO_DATE(x, 'yyyy-mm-DD')",
+                "databricks": "TO_DATE(x)",
+            },
+        )
+        self.validate_all(
+            "TO_DATE(x, 'YYYY')",
+            write={
+                "exasol": "TO_DATE(x, 'YYYY')",
+                "duckdb": "CAST(STRPTIME(x, '%Y') AS DATE)",
+                "hive": "TO_DATE(x, 'yyyy')",
+                "presto": "CAST(DATE_PARSE(x, '%Y') AS DATE)",
+                "spark": "TO_DATE(x, 'yyyy')",
+                "snowflake": "TO_DATE(x, 'yyyy')",
+                "databricks": "TO_DATE(x, 'yyyy')",
+            },
+        )

@@ -3763,7 +3763,7 @@ class Schema(Expression):
 # https://dev.mysql.com/doc/refman/8.0/en/select.html
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 class Lock(Expression):
-    arg_types = {"update": True, "expressions": False, "wait": False}
+    arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
 class Select(Query):

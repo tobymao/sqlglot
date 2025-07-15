@@ -1482,3 +1482,8 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
     def test_datatype(self):
         self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")
         self.validate_identity("CREATE TABLE foo (data XML)")
+
+    def test_locks(self):
+        for key_type in ("FOR SHARE", "FOR UPDATE", "FOR NO KEY UPDATE", "FOR KEY SHARE"):
+            with self.subTest(f"Test lock type {key_type}"):
+                self.validate_identity(f"SELECT 1 FROM foo AS x {key_type} OF x")

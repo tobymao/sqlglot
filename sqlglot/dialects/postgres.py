@@ -363,6 +363,7 @@ class Postgres(Dialect):
             "REGROLE": TokenType.OBJECT_IDENTIFIER,
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
+            "XML": TokenType.XML,
         }
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("DIV")

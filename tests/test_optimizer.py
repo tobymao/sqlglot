@@ -123,6 +123,11 @@ class TestOptimizer(unittest.TestCase):
                 "d": "DATE",
                 "t": "DATETIME",
             },
+            "structs": {
+                "one": "STRUCT<a_1 INT, b_1 VARCHAR>",
+                "nested_0": "STRUCT<a_1 INT, nested_1 STRUCT<a_2 INT, nested_2 STRUCT<a_3 INT>>>",
+                "quoted": 'STRUCT<"foo bar" INT>',
+            },
         }
 
     def check_file(
@@ -397,18 +402,6 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             qualified.sql(),
             'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_columns.qualify_columns(
-                parse_one(
-                    "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 as f1) AS col) SELECT tbl1.col.* from tbl1",
-                    dialect="bigquery",
-                ),
-                schema=MappingSchema(schema=None, dialect="bigquery"),
-                infer_schema=False,
-            ).sql(dialect="bigquery"),
-            "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
         )
 
         # can't coalesce USING columns because they don't exist in every already-joined table

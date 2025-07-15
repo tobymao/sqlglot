@@ -133,7 +133,7 @@ class Fabric(TSQL):
             if expression.is_type(exp.DataType.Type.TIMESTAMPTZ):
                 at_time_zone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
 
-                # Return normal cast, ff the expression is not in an AT TIME ZONE context
+                # Return normal cast, if the expression is not in an AT TIME ZONE context
                 if not isinstance(at_time_zone, exp.AtTimeZone):
                     return super().cast_sql(expression, safe_prefix)
 

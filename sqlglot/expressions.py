@@ -6091,7 +6091,7 @@ class PosexplodeOuter(Posexplode, ExplodeOuter):
 
 
 class PositionalColumn(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 class Unnest(Func, UDTF):

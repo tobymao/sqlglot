@@ -227,8 +227,8 @@ class TestSnowflake(Validator):
             """SELECT CAST(GET_PATH(PARSE_JSON('{"food":{"fruit":"banana"}}'), 'food.fruit') AS VARCHAR)""",
         )
         self.validate_identity(
-            "SELECT * FROM unnest(x) with ordinality",
-            "SELECT * FROM TABLE(FLATTEN(INPUT => x)) AS _u(seq, key, path, index, value, this)",
+            "SELECT * FROM t, UNNEST(x) WITH ORDINALITY",
+            "SELECT * FROM t, TABLE(FLATTEN(INPUT => x)) AS _t0(seq, key, path, index, value, this)",
         )
         self.validate_identity(
             "CREATE TABLE foo (ID INT COMMENT $$some comment$$)",
@@ -337,6 +337,62 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT value['x'] AS x FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'x')])) AS _t0(seq, key, path, index, value, this)",
+            read={
+                "bigquery": "SELECT x FROM UNNEST([STRUCT('x' AS x)])",
+                "snowflake": "SELECT value['x'] AS x FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'x')])) AS _t0(seq, key, path, index, value, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT value['x'] AS x, value['y'] AS y, value['z'] AS z FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1, 'y', 2, 'z', 3)])) AS _t0(seq, key, path, index, value, this)",
+            read={
+                "bigquery": "SELECT x, y, z FROM UNNEST([STRUCT(1 AS x, 2 AS y, 3 AS z)])",
+                "snowflake": "SELECT value['x'] AS x, value['y'] AS y, value['z'] AS z FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1, 'y', 2, 'z', 3)])) AS _t0(seq, key, path, index, value, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT u1['x'] AS x, u2['y'] AS y FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1)])) AS _t0(seq, key, path, index, u1, this) CROSS JOIN TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('y', 2)])) AS _t1(seq, key, path, index, u2, this)",
+            read={
+                "bigquery": "SELECT u1.x, u2.y FROM UNNEST([STRUCT(1 AS x)]) AS u1, UNNEST([STRUCT(2 AS y)]) AS u2",
+                "snowflake": "SELECT u1['x'] AS x, u2['y'] AS y FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1)])) AS _t0(seq, key, path, index, u1, this) CROSS JOIN TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('y', 2)])) AS _t1(seq, key, path, index, u2, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT t.id, value['name'] AS name, value['age'] AS age FROM t CROSS JOIN TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('name', 'John', 'age', 30)])) AS _t0(seq, key, path, index, value, this)",
+            read={
+                "bigquery": "SELECT t.id, name, age FROM t, UNNEST([STRUCT('John' AS name, 30 AS age)])",
+                "snowflake": "SELECT t.id, value['name'] AS name, value['age'] AS age FROM t CROSS JOIN TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('name', 'John', 'age', 30)])) AS _t0(seq, key, path, index, value, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT value FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1)])) AS _t0(seq, key, path, index, value, this)",
+            read={
+                "bigquery": "SELECT value FROM UNNEST([STRUCT(1 AS x)]) AS value",
+                "snowflake": "SELECT value FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1)])) AS _t0(seq, key, path, index, value, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT t.col1, value['field1'] AS field1, other_col, value['field2'] AS field2 FROM t CROSS JOIN TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('field1', 'a', 'field2', 'b')])) AS _t0(seq, key, path, index, value, this)",
+            read={
+                "bigquery": "SELECT t.col1, field1, other_col, field2 FROM t, UNNEST([STRUCT('a' AS field1, 'b' AS field2)])",
+                "snowflake": "SELECT t.col1, value['field1'] AS field1, other_col, value['field2'] AS field2 FROM t CROSS JOIN TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('field1', 'a', 'field2', 'b')])) AS _t0(seq, key, path, index, value, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT value['x'] AS x FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'value')])) AS _t0(seq, key, path, index, value, this))",
+            read={
+                "bigquery": "SELECT * FROM (SELECT x FROM UNNEST([STRUCT('value' AS x)]))",
+                "snowflake": "SELECT * FROM (SELECT value['x'] AS x FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'value')])) AS _t0(seq, key, path, index, value, this))",
+            },
+        )
+        self.validate_all(
+            "SELECT value FROM TABLE(FLATTEN(INPUT => [1, 2, 3])) AS _t0(seq, key, path, index, value, this)",
+            read={
+                "bigquery": "SELECT value FROM UNNEST([1, 2, 3]) AS value",
+                "snowflake": "SELECT value FROM TABLE(FLATTEN(INPUT => [1, 2, 3])) AS _t0(seq, key, path, index, value, this)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM t1 AS t1 CROSS JOIN t2 AS t2 LEFT JOIN t3 AS t3 ON t1.a = t3.i",
             read={
                 "bigquery": "SELECT * FROM t1 AS t1, t2 AS t2 LEFT JOIN t3 AS t3 ON t1.a = t3.i",
@@ -344,13 +400,20 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT _u['foo'], bar, baz FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bars', ['y', 'z'], 'bazs', ['w'])])) AS _t0(seq, key, path, index, _u, this) CROSS JOIN TABLE(FLATTEN(INPUT => _u['bars'])) AS _t1(seq, key, path, index, bar, this) CROSS JOIN TABLE(FLATTEN(INPUT => _u['bazs'])) AS _t2(seq, key, path, index, baz, this)",
+            "SELECT value['x'] AS x, yval, zval FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'x', 'y', ['y1', 'y2', 'y3'], 'z', ['z1', 'z2', 'z3'])])) AS _t0(seq, key, path, index, value, this) CROSS JOIN TABLE(FLATTEN(INPUT => value['y'])) AS _t1(seq, key, path, index, yval, this) CROSS JOIN TABLE(FLATTEN(INPUT => value['z'])) AS _t2(seq, key, path, index, zval, this)",
+            read={
+                "bigquery": "SELECT x, yval, zval FROM UNNEST([STRUCT('x' AS x, ['y1', 'y2', 'y3'] AS y, ['z1', 'z2', 'z3'] AS z)]), UNNEST(y) AS yval, UNNEST(z) AS zval",
+                "snowflake": "SELECT value['x'] AS x, yval, zval FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'x', 'y', ['y1', 'y2', 'y3'], 'z', ['z1', 'z2', 'z3'])])) AS _t0(seq, key, path, index, value, this) CROSS JOIN TABLE(FLATTEN(INPUT => value['y'])) AS _t1(seq, key, path, index, yval, this) CROSS JOIN TABLE(FLATTEN(INPUT => value['z'])) AS _t2(seq, key, path, index, zval, this)",
+            },
+        )
+        self.validate_all(
+            "SELECT _u['foo'] AS foo, bar, baz FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bars', ['y', 'z'], 'bazs', ['w'])])) AS _t0(seq, key, path, index, _u, this) CROSS JOIN TABLE(FLATTEN(INPUT => _u['bars'])) AS _t1(seq, key, path, index, bar, this) CROSS JOIN TABLE(FLATTEN(INPUT => _u['bazs'])) AS _t2(seq, key, path, index, baz, this)",
             read={
                 "bigquery": "SELECT _u.foo, bar, baz FROM UNNEST([struct('x' AS foo, ['y', 'z'] AS bars, ['w'] AS bazs)]) AS _u, UNNEST(_u.bars) AS bar, UNNEST(_u.bazs) AS baz",
             },
         )
         self.validate_all(
-            "SELECT _u, _u['foo'], _u['bar'] FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bar', 'y')])) AS _t0(seq, key, path, index, _u, this)",
+            "SELECT _u, _u['foo'] AS foo, _u['bar'] AS bar FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', 'x', 'bar', 'y')])) AS _t0(seq, key, path, index, _u, this)",
             read={
                 "bigquery": "select _u, _u.foo, _u.bar from unnest([struct('x' as foo, 'y' AS bar)]) as _u",
             },

@@ -66,6 +66,7 @@ class Exasol(Dialect):
                 source_tz=seq_get(args, 1),
                 target_tz=seq_get(args, 2),
                 timestamp=seq_get(args, 0),
+                options=seq_get(args, 3),
             ),
         }
 
@@ -146,5 +147,6 @@ class Exasol(Dialect):
             from_tz = expression.args.get("source_tz")
             to_tz = expression.args.get("target_tz")
             datetime = expression.args.get("timestamp")
+            options = expression.args.get("options")
 
-            return self.func("CONVERT_TZ", datetime, from_tz, to_tz)
+            return self.func("CONVERT_TZ", datetime, from_tz, to_tz, options)

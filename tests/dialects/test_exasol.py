@@ -332,6 +332,9 @@ class TestExasol(Validator):
                 "databricks": "TO_DATE(x, 'yyyy')",
             },
         )
+        self.validate_identity(
+            "SELECT CONVERT_TZ(CAST('2012-03-25 02:30:00' AS TIMESTAMP), 'Europe/Berlin', 'UTC', 'INVALID REJECT AMBIGUOUS REJECT') AS CONVERT_TZ"
+        )
         self.validate_all(
             "SELECT CONVERT_TZ('2012-05-10 12:00:00', 'Europe/Berlin', 'America/New_York')",
             read={

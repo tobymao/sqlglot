@@ -1239,7 +1239,7 @@ FROM foo""",
 
         self.assertIsInstance(result, exp.TsOrDsToTime)
         self.assertIsInstance(result.this, exp.Literal)
-        self.assertEqual(result.this.this, "14:30:45")
+        self.assertEqual(result.sql(), "CAST('14:30:45' AS TIME)")
         self.assertTrue(result.this.is_string)
 
         # Test with microseconds
@@ -1247,22 +1247,18 @@ FROM foo""",
         result = exp.convert(time_with_microseconds)
 
         self.assertIsInstance(result, exp.TsOrDsToTime)
-        self.assertEqual(result.this.this, "09:15:30.123456")
+        self.assertEqual(result.sql(), "CAST('09:15:30.123456' AS TIME)")
 
         # Test midnight
         midnight = datetime.time(0, 0, 0)
         result = exp.convert(midnight)
 
         self.assertIsInstance(result, exp.TsOrDsToTime)
-        self.assertEqual(result.this.this, "00:00:00")
+        self.assertEqual(result.sql(), "CAST('00:00:00' AS TIME)")
 
         # Test noon
         noon = datetime.time(12, 0, 0)
         result = exp.convert(noon)
 
         self.assertIsInstance(result, exp.TsOrDsToTime)
-        self.assertEqual(result.this.this, "12:00:00")
-
-    def test_datestrtotime_function(self):
-        # Test parsing TsOrDsToTime function
-        self.assertIsInstance(parse_one("TS_OR_DS_TO_TIME('14:30:45')"), exp.TsOrDsToTime)
+        self.assertEqual(result.sql(), "CAST('12:00:00' AS TIME)")

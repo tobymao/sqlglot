@@ -5389,6 +5389,22 @@ class AggFunc(Func):
     pass
 
 
+class BitwiseAndAgg(AggFunc):
+    _sql_names = ["BIT_AND"]
+
+
+class BitwiseOrAgg(AggFunc):
+    _sql_names = ["BIT_OR"]
+
+
+class BitwiseXorAgg(AggFunc):
+    _sql_names = ["BIT_XOR"]
+
+
+class BitwiseCountAgg(AggFunc):
+    _sql_names = ["BIT_COUNT"]
+
+
 class ArrayRemove(Func):
     arg_types = {"this": True, "expression": True}
 

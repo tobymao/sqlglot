@@ -3585,3 +3585,69 @@ FROM subquery2""",
                 "tsql": "ASCII('A')",
             },
         )
+
+    def test_bit_aggs(self):
+        self.validate_all(
+            "BIT_AND(x)",
+            read={
+                "bigquery": "BIT_AND(x)",
+                "spark": "BIT_AND(x)",
+                "databricks": "BIT_AND(x)",
+                "mysql": "BIT_AND(x)",
+                "dremio": "BIT_AND(x)",
+            },
+            write={
+                "bigquery": "BIT_AND(x)",
+                "spark": "BIT_AND(x)",
+                "databricks": "BIT_AND(x)",
+                "mysql": "BIT_AND(x)",
+                "dremio": "BIT_AND(x)",
+            },
+        )
+        self.validate_all(
+            "BIT_OR(x)",
+            read={
+                "bigquery": "BIT_OR(x)",
+                "spark": "BIT_OR(x)",
+                "databricks": "BIT_OR(x)",
+                "mysql": "BIT_OR(x)",
+                "dremio": "BIT_OR(x)",
+            },
+            write={
+                "bigquery": "BIT_OR(x)",
+                "spark": "BIT_OR(x)",
+                "databricks": "BIT_OR(x)",
+                "mysql": "BIT_OR(x)",
+                "dremio": "BIT_OR(x)",
+            },
+        )
+        self.validate_all(
+            "BIT_XOR(x)",
+            read={
+                "bigquery": "BIT_XOR(x)",
+                "spark": "BIT_XOR(x)",
+                "databricks": "BIT_XOR(x)",
+                "mysql": "BIT_XOR(x)",
+            },
+            write={
+                "bigquery": "BIT_XOR(x)",
+                "spark": "BIT_XOR(x)",
+                "databricks": "BIT_XOR(x)",
+                "mysql": "BIT_XOR(x)",
+            },
+        )
+        self.validate_all(
+            "BIT_COUNT(x)",
+            read={
+                "bigquery": "BIT_COUNT(x)",
+                "spark": "BIT_COUNT(x)",
+                "databricks": "BIT_COUNT(x)",
+                "mysql": "BIT_COUNT(x)",
+            },
+            write={
+                "bigquery": "BIT_COUNT(x)",
+                "spark": "BIT_COUNT(x)",
+                "databricks": "BIT_COUNT(x)",
+                "mysql": "BIT_COUNT(x)",
+            },
+        )

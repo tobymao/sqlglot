@@ -653,7 +653,7 @@ class Doris(MySQL):
         def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
             # Doris expects: PARTITION <name> VALUES LESS THAN (<value>) or VALUES [(<tuple>), ...)
             name = self.sql(expression, "this")
-            value = expression.args.get("expression")
+            value = expression.expression
             if isinstance(value, list):
                 # Output as VALUES [(item1), (item2))
                 value_sql = ", ".join(f"({self.sql(v)})" for v in value)

@@ -8,6 +8,8 @@ from sqlglot.dialects.dialect import (
     rename_func,
     time_format,
     unit_to_str,
+    parse_partitioning_granularity_dynamic,
+    parse_partition_by_opt_range,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.tokens import TokenType
@@ -48,16 +50,14 @@ class Doris(MySQL):
         }
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
-            self._match_text_seq("FROM")
-            start = self._parse_wrapped(self._parse_string)
-            self._match_text_seq("TO")
-            end = self._parse_wrapped(self._parse_string)
-            self._match_text_seq("INTERVAL")
-            number = self._parse_number()
-            unit = self._parse_var()
-            every = self.expression(exp.Interval, this=number, unit=unit)
-            return self.expression(
-                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
+            return parse_partitioning_granularity_dynamic(
+                self,
+                "FROM",
+                "TO",
+                "INTERVAL",
+                lambda self: self.expression(
+                    exp.Interval, this=self._parse_number(), unit=self._parse_var()
+                ),
             )
 
         def _parse_partition_definition(self):
@@ -92,9 +92,8 @@ class Doris(MySQL):
                             self.expression(
                                 exp.PartitionRange,
                                 this=name,
-                                expression=val,
+                                expression=values,
                             )
-                            for val in values
                         ],
                     )
                 else:
@@ -105,27 +104,14 @@ class Doris(MySQL):
         def _parse_partition_by_opt_range(
             self,
         ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
-            create_expressions = None
-            if self._match_text_seq("RANGE"):
-                partition_expressions = self._parse_wrapped_id_vars()
-                if self._match(TokenType.L_PAREN):
-                    if self._match_text_seq("FROM", advance=False):
-                        create_expressions = self._parse_csv(
-                            self._parse_partitioning_granularity_dynamic
-                        )
-                    elif self._match_text_seq("PARTITION", advance=False):
-                        create_expressions = self._parse_csv(self._parse_partition_definition)
-                    else:
-                        self.raise_error("Expecting FROM or PARTITION in Doris PARTITION BY RANGE")
-                    self._match(TokenType.R_PAREN)
-                else:
-                    self.raise_error("Expecting ( after PARTITION BY RANGE ...")
-                return self.expression(
-                    exp.PartitionByRangeProperty,
-                    partition_expressions=partition_expressions,
-                    create_expressions=create_expressions,
-                )
-            return super()._parse_partitioned_by()
+            return parse_partition_by_opt_range(
+                self,
+                range_kw="RANGE",
+                dynamic_kw="FROM",
+                dynamic_parser=lambda: self._parse_partitioning_granularity_dynamic(),
+                static_kw="PARTITION",
+                static_parser=lambda: self._parse_partition_definition(),
+            )
 
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
@@ -658,15 +644,13 @@ class Doris(MySQL):
             "year",
         }
 
-        def partition_sql(self, expression):
-            # Doris expects: PARTITION <name> VALUES LESS THAN (<value>)
-            # Each expression is a PartitionRange
-            parts = []
-            for e in expression.expressions:
-                parts.append(self.sql(e))
-            return ", ".join(parts)
+        def partition_sql(self, expression: exp.Partition) -> str:
+            parent = expression.parent
+            if isinstance(parent, exp.PartitionByRangeProperty):
+                return ", ".join(self.sql(e) for e in expression.expressions)
+            return super().partition_sql(expression)
 
-        def partitionrange_sql(self, expression):
+        def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
             # Doris expects: PARTITION <name> VALUES LESS THAN (<value>) or VALUES [(<tuple>), ...)
             name = self.sql(expression, "this")
             value = expression.args.get("expression")
@@ -674,6 +658,5 @@ class Doris(MySQL):
                 # Output as VALUES [(item1), (item2))
                 value_sql = ", ".join(f"({self.sql(v)})" for v in value)
                 return f"PARTITION {name} VALUES [{value_sql})"
-            else:
-                value_sql = self.sql(value)
-                return f"PARTITION {name} VALUES LESS THAN ({value_sql})"
+            value_sql = self.sql(value)
+            return f"PARTITION {name} VALUES LESS THAN ({value_sql})"

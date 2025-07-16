@@ -360,3 +360,7 @@ class TestExasol(Validator):
             "SELECT TIME_TO_STR(CAST(STR_TO_TIME(date, '%Y%m%d') AS DATE), '%a') AS day_of_week",
             "SELECT TO_CHAR(CAST(TO_DATE(date, 'YYYYMMDD') AS DATE), 'DY') AS day_of_week",
         )
+        self.validate_identity(
+            "SELECT CAST(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP) AT TIME ZONE 'CET' AS DATE) - 1",
+            "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
+        )

@@ -5053,3 +5053,18 @@ class Generator(metaclass=_Generator):
 
         case = exp.Case(ifs=ifs, default=expressions[-1] if len(expressions) % 2 == 1 else None)
         return self.sql(case)
+
+    def semanticview_sql(self, expression: exp.SemanticView) -> str:
+        this = self.sql(expression, "this")
+        this = self.seg(this, sep="")
+        dimensions = self.expressions(
+            expression, "dimensions", dynamic=True, skip_first=True, skip_last=True
+        )
+        dimensions = self.seg(f"DIMENSIONS {dimensions}") if dimensions else ""
+        metrics = self.expressions(
+            expression, "metrics", dynamic=True, skip_first=True, skip_last=True
+        )
+        metrics = self.seg(f"METRICS {metrics}") if metrics else ""
+        where = self.sql(expression, "where")
+        where = self.seg(f"WHERE {where}") if where else ""
+        return f"SEMANTIC_VIEW({self.indent(this + metrics + dimensions + where)}{self.seg(')', sep='')}"

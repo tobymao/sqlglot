@@ -4486,6 +4486,9 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.DISTINCT):
             elements["all"] = False
 
+        if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
+            return self.expression(exp.Group, comments=comments, **elements)  # type: ignore
+
         while True:
             index = self._index
 

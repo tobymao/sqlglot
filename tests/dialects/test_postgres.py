@@ -921,6 +921,9 @@ FROM json_data, field_ids""",
             },
         )
 
+        self.validate_identity("SELECT * FROM foo WHERE id = %s")
+        self.validate_identity("SELECT * FROM foo WHERE id = %(id_param)s")
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

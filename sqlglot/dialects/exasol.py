@@ -145,6 +145,12 @@ class Exasol(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+            exp.AtTimeZone: lambda self, e: self.func(
+                "CONVERT_TZ",
+                e.this,
+                "'UTC'",
+                e.args.get("zone"),
+            ),
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

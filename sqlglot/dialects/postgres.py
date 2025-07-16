@@ -382,6 +382,11 @@ class Postgres(Dialect):
         }
         PROPERTY_PARSERS.pop("INPUT")
 
+        PLACEHOLDER_PARSERS = {
+            **parser.Parser.PLACEHOLDER_PARSERS,
+            TokenType.MOD: lambda self: self._parse_query_parameter(),
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": build_timestamp_trunc,
@@ -453,6 +458,16 @@ class Postgres(Dialect):
                 exp.JSONExtractScalar, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
             )([this, path]),
         }
+
+        def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
+            self._match(TokenType.MOD)
+            this = (
+                self._parse_wrapped(self._parse_id_var)
+                if self._match(TokenType.L_PAREN, advance=False)
+                else None
+            )
+            self._match(TokenType.VAR)
+            return self.expression(exp.Placeholder, this=this)
 
         def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             while True:
@@ -533,6 +548,7 @@ class Postgres(Dialect):
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
         PARAMETER_TOKEN = "$"
+        NAMED_PLACEHOLDER_TOKEN = "%"
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         SUPPORTS_SELECT_INTO = True
@@ -798,3 +814,7 @@ class Postgres(Dialect):
                 expression.args["unit"].replace(exp.var("MONTH"))
 
             return super().interval_sql(expression)
+
+        def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            this = f"({expression.name})" if expression.this else ""
+            return f"{self.NAMED_PLACEHOLDER_TOKEN}{this}s"

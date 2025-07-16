@@ -31,8 +31,8 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import flatten, is_float, is_int, seq_get
-from sqlglot.optimizer.scope import find_all_in_scope
+from sqlglot.helper import find_new_name, flatten, is_float, is_int, seq_get
+from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -363,6 +363,91 @@ def _json_extract_value_array_sql(
     return self.func("TRANSFORM", json_extract, transform_lambda)
 
 
+def _qualify_unnested_columns(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        scope = build_scope(expression)
+        if not scope:
+            return expression
+
+        unnests = list(scope.find_all(exp.Unnest))
+
+        if not unnests:
+            return expression
+
+        taken_source_names = set(scope.sources)
+        column_source: t.Dict[str, exp.Identifier] = {}
+
+        unnest_identifier: t.Optional[exp.Identifier] = None
+        orig_expression = expression.copy()
+
+        for unnest in unnests:
+            if not isinstance(unnest.parent, (exp.From, exp.Join)):
+                continue
+
+            # Try to infer column names produced by an unnest operator. This is only possible
+            # when we can peek into the (statically known) contents of the unnested value.
+            unnest_columns: t.Set[str] = set()
+            for unnest_expr in unnest.expressions:
+                if not isinstance(unnest_expr, exp.Array):
+                    continue
+
+                for array_expr in unnest_expr.expressions:
+                    if not (
+                        isinstance(array_expr, exp.Struct)
+                        and array_expr.expressions
+                        and all(
+                            isinstance(struct_expr, exp.PropertyEQ)
+                            for struct_expr in array_expr.expressions
+                        )
+                    ):
+                        continue
+
+                    unnest_columns.update(
+                        struct_expr.this.name.lower() for struct_expr in array_expr.expressions
+                    )
+                    break
+
+                if unnest_columns:
+                    break
+
+            unnest_alias = unnest.args.get("alias")
+            if not unnest_alias:
+                alias_name = find_new_name(taken_source_names, "value")
+                taken_source_names.add(alias_name)
+
+                # Produce a `TableAlias` AST similar to what is produced for BigQuery. This
+                # will be corrected later, when we generate SQL for the `Unnest` AST node.
+                aliased_unnest = exp.alias_(unnest, None, table=[alias_name])
+                scope.replace(unnest, aliased_unnest)
+
+                unnest_identifier = aliased_unnest.args["alias"].columns[0]
+            else:
+                alias_columns = getattr(unnest_alias, "columns", [])
+                unnest_identifier = unnest_alias.this or seq_get(alias_columns, 0)
+
+            if not isinstance(unnest_identifier, exp.Identifier):
+                return orig_expression
+
+            column_source.update({c.lower(): unnest_identifier for c in unnest_columns})
+
+        for column in scope.columns:
+            if column.table:
+                continue
+
+            table = column_source.get(column.name.lower())
+            if (
+                unnest_identifier
+                and not table
+                and len(scope.sources) == 1
+                and column.name.lower() != unnest_identifier.name.lower()
+            ):
+                table = unnest_identifier
+
+            column.set("table", table and table.copy())
+
+    return expression
+
+
 def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
         # This transformation is used to facilitate transpilation of BigQuery `UNNEST` operations
@@ -386,7 +471,13 @@ def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
                 if c.table in unnest_aliases:
                     bracket_lhs = c.args["table"]
                     bracket_rhs = exp.Literal.string(c.name)
-                    c.replace(exp.Bracket(this=bracket_lhs, expressions=[bracket_rhs]))
+                    bracket = exp.Bracket(this=bracket_lhs, expressions=[bracket_rhs])
+
+                    if c.parent is expression:
+                        # Retain column projection names by using aliases
+                        c.replace(exp.alias_(bracket, c.this.copy()))
+                    else:
+                        c.replace(bracket)
 
     return expression
 
@@ -1156,6 +1247,7 @@ class Snowflake(Dialect):
                     transforms.explode_projection_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
                     _transform_generate_date_array,
+                    _qualify_unnested_columns,
                     _eliminate_dot_variant_lookup,
                 ]
             ),

@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.tokens import TokenType
 
 
 def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
@@ -43,7 +44,88 @@ class Doris(MySQL):
             **MySQL.Parser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+            "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
         }
+
+        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
+            self._match_text_seq("FROM")
+            start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("TO")
+            end = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("INTERVAL")
+            number = self._parse_number()
+            unit = self._parse_var()
+            every = self.expression(exp.Interval, this=number, unit=unit)
+            return self.expression(
+                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
+            )
+
+        def _parse_partition_definition(self):
+            # Handles: PARTITION `p2018` VALUES [(...), (...)), PARTITION `other` VALUES LESS THAN (MAXVALUE)
+            self._match_text_seq("PARTITION")
+            name = self._parse_id_var()
+            if self._match_text_seq("VALUES"):
+                if self._match_text_seq("LESS", "THAN"):
+                    # VALUES LESS THAN (...)
+                    value = self._parse_wrapped_csv(self._parse_expression)
+                    if isinstance(value, list) and len(value) == 1:
+                        value = value[0]
+                    return self.expression(
+                        exp.Partition,
+                        expressions=[
+                            self.expression(
+                                exp.PartitionRange,
+                                this=name,
+                                expression=value,
+                            )
+                        ],
+                    )
+                elif self._match(TokenType.L_BRACKET):
+                    # VALUES [(...), (...))
+                    values = self._parse_csv(
+                        lambda: self._parse_wrapped_csv(self._parse_expression)
+                    )
+                    self._match(TokenType.R_BRACKET)
+                    return self.expression(
+                        exp.Partition,
+                        expressions=[
+                            self.expression(
+                                exp.PartitionRange,
+                                this=name,
+                                expression=val,
+                            )
+                            for val in values
+                        ],
+                    )
+                else:
+                    self.raise_error("Unsupported VALUES syntax in PARTITION definition")
+            else:
+                self.raise_error("Expecting VALUES in PARTITION definition")
+
+        def _parse_partition_by_opt_range(
+            self,
+        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
+            create_expressions = None
+            if self._match_text_seq("RANGE"):
+                partition_expressions = self._parse_wrapped_id_vars()
+                if self._match(TokenType.L_PAREN):
+                    if self._match_text_seq("FROM", advance=False):
+                        create_expressions = self._parse_csv(
+                            self._parse_partitioning_granularity_dynamic
+                        )
+                    elif self._match_text_seq("PARTITION", advance=False):
+                        create_expressions = self._parse_csv(self._parse_partition_definition)
+                    else:
+                        self.raise_error("Expecting FROM or PARTITION in Doris PARTITION BY RANGE")
+                    self._match(TokenType.R_PAREN)
+                else:
+                    self.raise_error("Expecting ( after PARTITION BY RANGE ...")
+                return self.expression(
+                    exp.PartitionByRangeProperty,
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                )
+            return super()._parse_partitioned_by()
 
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
@@ -575,3 +657,20 @@ class Doris(MySQL):
             "xor",
             "year",
         }
+
+        def partition_sql(self, expression: exp.Partition) -> str:
+            parent = expression.parent
+            if isinstance(parent, exp.PartitionByRangeProperty):
+                return ", ".join(self.sql(e) for e in expression.expressions)
+            return super().partition_sql(expression)
+
+        def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
+            # Doris expects: PARTITION <name> VALUES LESS THAN (<value>) or VALUES [(<tuple>), ...)
+            name = self.sql(expression, "this")
+            value = expression.expression
+            if isinstance(value, list):
+                # Output as VALUES [(item1), (item2))
+                value_sql = ", ".join(f"({self.sql(v)})" for v in value)
+                return f"PARTITION {name} VALUES [{value_sql})"
+            value_sql = self.sql(value)
+            return f"PARTITION {name} VALUES LESS THAN ({value_sql})"

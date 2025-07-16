@@ -616,6 +616,7 @@ class Snowflake(Dialect):
             "DATE_PART": lambda self: self._parse_date_part(),
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
             "LISTAGG": lambda self: self._parse_string_agg(),
+            "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -1071,6 +1072,19 @@ class Snowflake(Dialect):
                 exp.CredentialsProperty,
                 expressions=self._parse_wrapped_options(),
             )
+
+        def _parse_semantic_view(self) -> exp.SemanticView:
+            kwargs: t.Dict[str, t.Any] = {"this": self._parse_table_parts()}
+
+            while self._curr and not self._match(TokenType.R_PAREN, advance=False):
+                if self._match_text_seq("DIMENSIONS"):
+                    kwargs["dimensions"] = self._parse_csv(self._parse_disjunction)
+                if self._match_text_seq("METRICS"):
+                    kwargs["metrics"] = self._parse_csv(self._parse_disjunction)
+                if self._match_text_seq("WHERE"):
+                    kwargs["where"] = self._parse_expression()
+
+            return self.expression(exp.SemanticView, **kwargs)
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]

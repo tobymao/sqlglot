@@ -2900,3 +2900,39 @@ SINGLE = TRUE""",
         self.validate_identity(
             "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
         )
+
+    def test_semantic_view(self):
+        for dimensions, metrics, where in [
+            (None, None, None),
+            ("DATE_PART('year', a.b)", None, None),
+            (None, "a.b, a.c", None),
+            ("a.b, a.c", "a.b, a.c", None),
+            ("a.b", "a.b, a.c", "a.c > 5"),
+        ]:
+            with self.subTest(
+                f"Testing Snowflake's SEMANTIC_VIEW command statement: {dimensions}, {metrics}, {where}"
+            ):
+                dimensions_str = f" DIMENSIONS {dimensions}" if dimensions else ""
+                metrics_str = f" METRICS {metrics}" if metrics else ""
+                where_str = f" WHERE {where}" if where else ""
+
+                self.validate_identity(
+                    f"SELECT * FROM SEMANTIC_VIEW(tbl{metrics_str}{dimensions_str}{where_str}) ORDER BY foo"
+                )
+                self.validate_identity(
+                    f"SELECT * FROM SEMANTIC_VIEW(tbl{dimensions_str}{metrics_str}{where_str})",
+                    f"SELECT * FROM SEMANTIC_VIEW(tbl{metrics_str}{dimensions_str}{where_str})",
+                )
+
+        self.validate_identity(
+            "SELECT * FROM SEMANTIC_VIEW(foo METRICS a.b, a.c DIMENSIONS a.b, a.c WHERE a.b > '1995-01-01')",
+            """SELECT
+  *
+FROM SEMANTIC_VIEW(  
+  foo
+  METRICS a.b, a.c
+  DIMENSIONS a.b, a.c
+  WHERE a.b > '1995-01-01'
+)""",
+            pretty=True,
+        )

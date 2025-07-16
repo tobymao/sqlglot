@@ -69,6 +69,7 @@ class Exasol(Dialect):
                 timestamp=seq_get(args, 0),
                 options=seq_get(args, 3),
             ),
+            "NVL": lambda args: exp.Coalesce(this=seq_get(args, 0), expressions=seq_get(args, 1)),
         }
 
     class Generator(generator.Generator):
@@ -124,6 +125,8 @@ class Exasol(Dialect):
             exp.BitwiseXor: rename_func("BIT_XOR"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
             exp.All: rename_func("EVERY"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/nvl.htm
+            exp.Coalesce: unsupported_args("is_nvl", "is_null")(rename_func("NVL")),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")

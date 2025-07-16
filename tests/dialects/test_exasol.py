@@ -184,12 +184,12 @@ class TestExasol(Validator):
         (
             self.validate_all(
                 "SELECT VAR_POP(current_salary)",
-                write={
+                read={
                     "exasol": "SELECT VAR_POP(current_salary)",
                     "duckdb": "SELECT VAR_POP(current_salary)",
                     "presto": "SELECT VAR_POP(current_salary)",
                 },
-                read={
+                write={
                     "exasol": "SELECT VAR_POP(current_salary)",
                     "duckdb": "SELECT VAR_POP(current_salary)",
                     "presto": "SELECT VAR_POP(current_salary)",
@@ -246,6 +246,11 @@ class TestExasol(Validator):
         (
             self.validate_all(
                 "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                read={
+                    "exasol": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                    "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                    "spark": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
+                },
                 write={
                     "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
                     "exasol": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
@@ -254,25 +259,20 @@ class TestExasol(Validator):
                     "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
                     "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
                 },
-                read={
-                    "exasol": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
-                    "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
-                    "spark": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence)",
-                },
             ),
         )
         (
             self.validate_all(
                 "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
+                read={
+                    "exasol": "SELECT TO_CHAR(DATE '1999-12-31') AS TO_CHAR",
+                },
                 write={
                     "exasol": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                     "redshift": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                     "presto": "SELECT DATE_FORMAT(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                     "oracle": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                     "postgres": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
-                },
-                read={
-                    "exasol": "SELECT TO_CHAR(DATE '1999-12-31') AS TO_CHAR",
                 },
             ),
         )
@@ -363,4 +363,20 @@ class TestExasol(Validator):
         self.validate_identity(
             "SELECT CAST(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP) AT TIME ZONE 'CET' AS DATE) - 1",
             "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
+        )
+
+    def test_scalar_functions(self):
+        self.validate_all(
+            "NVL(a, b)",
+            read={
+                "exasol": "NVL(a, b)",
+                "redshift": "COALESCE(a, b)",
+                "oracle": "NVL(a, b)",
+            },
+            write={
+                "exasol": "NVL(a, b)",
+                "redshift": "COALESCE(a, b)",
+                "mysql": "COALESCE(a, b)",
+                "postgres": "COALESCE(a, b)",
+            },
         )

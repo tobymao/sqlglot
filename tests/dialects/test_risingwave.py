@@ -29,3 +29,12 @@ class TestRisingWave(Validator):
             "SELECT NULL::MAP<VARCHAR, INT> AS map_column",
             "SELECT CAST(NULL AS MAP(VARCHAR, INT)) AS map_column"
         )
+
+        self.validate_identity(
+            "CREATE TABLE t (map_col MAP(VARCHAR, INT))"
+        )
+
+        self.validate_identity(
+            "CREATE TABLE t (map_col MAP<VARCHAR, INT>)",
+            "CREATE TABLE t (map_col MAP(VARCHAR, INT))"
+        )

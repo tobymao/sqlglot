@@ -460,13 +460,12 @@ class Postgres(Dialect):
         }
 
         def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
-            self._match(TokenType.MOD)
             this = (
                 self._parse_wrapped(self._parse_id_var)
                 if self._match(TokenType.L_PAREN, advance=False)
                 else None
             )
-            self._match(TokenType.VAR)
+            self._match_text_seq("S")
             return self.expression(exp.Placeholder, this=this)
 
         def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

@@ -26,8 +26,6 @@ from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
-from typing import Callable
-from sqlglot.expressions import Expression, PartitionByRangePropertyDynamic
 
 DATE_ADD_OR_DIFF = t.Union[
     exp.DateAdd,
@@ -1982,50 +1980,3 @@ def space_sql(self: Generator, expression: exp.Space) -> str:
             times=expression.this,
         )
     )
-
-
-def parse_partitioning_granularity_dynamic(
-    self: Parser,
-    start_kw: str,
-    end_kw: str,
-    interval_kw: str,
-    parse_every: Callable[[Parser], Expression],
-) -> PartitionByRangePropertyDynamic:
-    self._match_text_seq(start_kw)
-    start = self._parse_wrapped(self._parse_string)
-    self._match_text_seq(end_kw)
-    end = self._parse_wrapped(self._parse_string)
-    self._match_text_seq(interval_kw)
-    every = parse_every(self)
-    return self.expression(PartitionByRangePropertyDynamic, start=start, end=end, every=every)
-
-
-def parse_partition_by_opt_range(
-    self,
-    range_kw: str,
-    dynamic_kw: str,
-    dynamic_parser: Callable[[], Expression],
-    static_kw: str,
-    static_parser: Callable[[], Expression],
-) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
-    if self._match_text_seq(range_kw):
-        partition_expressions = self._parse_wrapped_id_vars()
-        create_expressions = None
-        if self._match(TokenType.L_PAREN):
-            if self._match_text_seq(dynamic_kw, advance=False):
-                create_expressions = self._parse_csv(dynamic_parser)
-            elif self._match_text_seq(static_kw, advance=False):
-                create_expressions = self._parse_csv(static_parser)
-            else:
-                self.raise_error(
-                    f"Expecting {dynamic_kw} or {static_kw} in {range_kw} partitioning"
-                )
-            self._match(TokenType.R_PAREN)
-        else:
-            self.raise_error(f"Expecting ( after {range_kw} ...")
-        return self.expression(
-            exp.PartitionByRangeProperty,
-            partition_expressions=partition_expressions,
-            create_expressions=create_expressions,
-        )
-    return super(self.__class__, self)._parse_partitioned_by()

@@ -11,8 +11,6 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     inline_array_sql,
     property_sql,
-    parse_partitioning_granularity_dynamic,
-    parse_partition_by_opt_range,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
@@ -95,29 +93,30 @@ class StarRocks(MySQL):
             return unnest
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
-            return parse_partitioning_granularity_dynamic(
-                self,
-                "START",
-                "END",
-                "EVERY",
-                lambda self: self._parse_wrapped(
-                    lambda: self._parse_interval() or self._parse_number()
-                ),
+            self._match_text_seq("START")
+            start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            end = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("EVERY")
+            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
+            return self.expression(
+                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
         def _parse_partition_by_opt_range(
             self,
         ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
-            return parse_partition_by_opt_range(
-                self,
-                range_kw="RANGE",
-                dynamic_kw="START",
-                dynamic_parser=lambda: self._parse_partitioning_granularity_dynamic(),
-                static_kw="PARTITION",
-                static_parser=lambda: (_ for _ in ()).throw(
-                    NotImplementedError("Static partitioning not implemented for StarRocks")
-                ),
-            )
+            if self._match_text_seq("RANGE"):
+                partition_expressions = self._parse_wrapped_id_vars()
+                create_expressions = self._parse_wrapped_csv(
+                    self._parse_partitioning_granularity_dynamic
+                )
+                return self.expression(
+                    exp.PartitionByRangeProperty,
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                )
+            return super()._parse_partitioned_by()
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False

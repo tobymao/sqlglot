@@ -21,3 +21,18 @@ class TestRisingWave(Validator):
         self.validate_identity(
             "WITH t1 AS MATERIALIZED (SELECT 1), t2 AS NOT MATERIALIZED (SELECT 2) SELECT * FROM t1, t2"
         )
+
+    def test_datatypes(self):
+        self.validate_identity("SELECT CAST(NULL AS MAP(VARCHAR, INT)) AS map_column")
+
+        self.validate_identity(
+            "SELECT NULL::MAP<VARCHAR, INT> AS map_column",
+            "SELECT CAST(NULL AS MAP(VARCHAR, INT)) AS map_column",
+        )
+
+        self.validate_identity("CREATE TABLE t (map_col MAP(VARCHAR, INT))")
+
+        self.validate_identity(
+            "CREATE TABLE t (map_col MAP<VARCHAR, INT>)",
+            "CREATE TABLE t (map_col MAP(VARCHAR, INT))",
+        )

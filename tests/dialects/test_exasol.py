@@ -367,14 +367,14 @@ class TestExasol(Validator):
 
     def test_scalar_functions(self):
         self.validate_all(
-            "NVL(a, b)",
+            "COALESCE(a, b)",
             read={
                 "exasol": "NVL(a, b)",
                 "redshift": "COALESCE(a, b)",
                 "oracle": "NVL(a, b)",
             },
             write={
-                "exasol": "NVL(a, b)",
+                "exasol": "COALESCE(a, b)",
                 "redshift": "COALESCE(a, b)",
                 "mysql": "COALESCE(a, b)",
                 "postgres": "COALESCE(a, b)",

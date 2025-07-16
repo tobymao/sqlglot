@@ -245,7 +245,7 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
     # We'll add the next sequence value to the starting date and project the result
     date_add = _build_date_time_add(exp.DateAdd)(
         [unit, exp.cast(sequence_value_name, "int"), exp.cast(start, "date")]
-    ).as_(sequence_value_name)
+    )
 
     # We use DATEDIFF to compute the number of sequence values needed
     number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
@@ -253,7 +253,35 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
     )
 
     unnest.set("expressions", [number_sequence])
-    unnest.replace(exp.select(date_add).from_(unnest.copy()).subquery(unnest_alias))
+
+    unnest_parent = unnest.parent
+    if isinstance(unnest_parent, exp.Join):
+        select = unnest_parent.parent
+        if isinstance(select, exp.Select):
+            replace_column_name = (
+                sequence_value_name
+                if isinstance(sequence_value_name, str)
+                else sequence_value_name.name
+            )
+
+            scope = build_scope(select)
+            if scope:
+                for column in scope.columns:
+                    if column.name.lower() == replace_column_name.lower():
+                        column.replace(
+                            date_add.as_(replace_column_name)
+                            if isinstance(column.parent, exp.Select)
+                            else date_add
+                        )
+
+            lateral = exp.Lateral(this=unnest_parent.this.pop())
+            unnest_parent.replace(exp.Join(this=lateral))
+    else:
+        unnest.replace(
+            exp.select(date_add.as_(sequence_value_name))
+            .from_(unnest.copy())
+            .subquery(unnest_alias)
+        )
 
 
 def _transform_generate_date_array(expression: exp.Expression) -> exp.Expression:
@@ -1403,10 +1431,20 @@ class Snowflake(Dialect):
             if not table_input.startswith("INPUT =>"):
                 table_input = f"INPUT => {table_input}"
 
-            explode = f"TABLE(FLATTEN({table_input}))"
+            expression_parent = expression.parent
+
+            explode = (
+                f"FLATTEN({table_input})"
+                if isinstance(expression_parent, exp.Lateral)
+                else f"TABLE(FLATTEN({table_input}))"
+            )
             alias = self.sql(unnest_alias)
             alias = f" AS {alias}" if alias else ""
-            value = "" if isinstance(expression.parent, (exp.From, exp.Join)) else f"{value} FROM "
+            value = (
+                ""
+                if isinstance(expression_parent, (exp.From, exp.Join, exp.Lateral))
+                else f"{value} FROM "
+            )
 
             return f"{value}{explode}{alias}"
 

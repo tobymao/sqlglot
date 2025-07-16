@@ -3095,6 +3095,10 @@ class SchemaCommentProperty(Property):
     arg_types = {"this": True}
 
 
+class SemanticView(Expression):
+    arg_types = {"this": True, "metrics": False, "dimensions": False, "where": False}
+
+
 class SerdeProperties(Property):
     arg_types = {"expressions": True, "with": False}
 

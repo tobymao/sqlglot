@@ -985,11 +985,11 @@ class Snowflake(Dialect):
         def _parse_semantic_view(self) -> exp.SemanticView:
             kwargs: t.Dict[str, t.Any] = {"this": self._parse_table_parts()}
 
-            while not self._match(TokenType.R_PAREN, advance=False):
+            while self._curr and not self._match(TokenType.R_PAREN, advance=False):
                 if self._match_text_seq("DIMENSIONS"):
-                    kwargs["dimensions"] = self._parse_csv(self._parse_column)
+                    kwargs["dimensions"] = self._parse_csv(self._parse_disjunction)
                 if self._match_text_seq("METRICS"):
-                    kwargs["metrics"] = self._parse_csv(self._parse_column)
+                    kwargs["metrics"] = self._parse_csv(self._parse_disjunction)
                 if self._match_text_seq("WHERE"):
                     kwargs["where"] = self._parse_expression()
 

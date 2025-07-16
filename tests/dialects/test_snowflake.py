@@ -2841,7 +2841,7 @@ SINGLE = TRUE""",
     def test_semantic_view(self):
         for dimensions, metrics, where in [
             (None, None, None),
-            ("a.b", None, None),
+            ("DATE_PART('year', a.b)", None, None),
             (None, "a.b, a.c", None),
             ("a.b, a.c", "a.b, a.c", None),
             ("a.b", "a.b, a.c", "a.c > 5"),

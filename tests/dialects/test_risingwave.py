@@ -24,7 +24,8 @@ class TestRisingWave(Validator):
 
     def test_datatypes(self):
         self.validate_identity("SELECT CAST(NULL AS MAP(VARCHAR, INT)) AS map_column")
+
         self.validate_identity(
-                "SELECT NULL::MAP<VARCHAR, INT> AS map_column",
-                "SELECT CAST(NULL AS MAP(VARCHAR, INT) AS map_column"
+            "SELECT NULL::MAP<VARCHAR, INT> AS map_column",
+            "SELECT CAST(NULL AS MAP(VARCHAR, INT)) AS map_column"
         )

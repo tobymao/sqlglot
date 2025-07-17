@@ -623,6 +623,14 @@ BIGINT;
 BIT_COUNT(tbl.bin_col);
 BIGINT;
 
+# dialect: bigquery
+JSON_ARRAY(10);
+JSON;
+
+# dialect: bigquery
+JSON_ARRAY(10, [1, 2]);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

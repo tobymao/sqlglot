@@ -514,7 +514,7 @@ class Dialect(metaclass=_Dialect):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = False
     """
     Whether map literals support arbitrary expressions as keys.
-    When True, allows complex keys like arrays or literals: {[1, 2]: 1, 3: 2} (e.g. DuckDB).
+    When True, allows complex keys like arrays or literals: {[1, 2]: 3}, {1: 2} (e.g. DuckDB).
     When False, keys are typically restricted to identifiers.
     """
 

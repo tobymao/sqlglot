@@ -2422,7 +2422,7 @@ class Partition(Expression):
 
 
 class PartitionRange(Expression):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False, "expressions": False}
 
 
 # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression

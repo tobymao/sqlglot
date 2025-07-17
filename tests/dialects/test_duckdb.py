@@ -1697,3 +1697,8 @@ class TestDuckDB(Validator):
         self.validate_identity("SET VARIABLE location_map = (SELECT foo FROM bar)")
 
         self.validate_identity("SET VARIABLE my_var TO 30", "SET VARIABLE my_var = 30")
+
+    def test_map_struct(self):
+        self.validate_identity("MAP {1: 'a', 2: 'b'}")
+        self.validate_identity("MAP {'1': 'a', '2': 'b'}")
+        self.validate_identity("MAP {[1, 2]: 'a', [3, 4]: 'b'}")

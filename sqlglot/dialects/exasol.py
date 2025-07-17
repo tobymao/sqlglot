@@ -42,7 +42,10 @@ class Exasol(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
-        KEYWORDS = {**tokens.Tokenizer.KEYWORDS, "USER": TokenType.CURRENT_USER}
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "USER": TokenType.CURRENT_USER,
+        }
 
     class Parser(parser.Parser):
         FUNCTIONS = {

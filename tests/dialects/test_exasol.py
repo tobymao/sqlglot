@@ -364,3 +364,20 @@ class TestExasol(Validator):
             "SELECT CAST(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP) AT TIME ZONE 'CET' AS DATE) - 1",
             "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
         )
+
+    def test_scalar(self):
+        self.validate_all(
+            "SELECT CURRENT_USER",
+            read={
+                "exasol": "SELECT USER",
+                "spark": "SELECT CURRENT_USER()",
+                "trino": "SELECT CURRENT_USER",
+                "snowflake": "SELECT CURRENT_USER()",
+            },
+            write={
+                "exasol": "SELECT CURRENT_USER",
+                "spark": "SELECT CURRENT_USER()",
+                "trino": "SELECT CURRENT_USER",
+                "snowflake": "SELECT CURRENT_USER()",
+            },
+        )

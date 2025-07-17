@@ -660,7 +660,7 @@ class ClickHouse(Dialect):
             return self.expression(exp.Placeholder, this=this, kind=kind)
 
         def _parse_bracket(
-            self, this: t.Optional[exp.Expression] = None, parse_map: bool = False
+            self, this: t.Optional[exp.Expression] = None
         ) -> t.Optional[exp.Expression]:
             l_brace = self._match(TokenType.L_BRACE, advance=False)
             bracket = super()._parse_bracket(this)

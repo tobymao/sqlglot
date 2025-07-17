@@ -6313,11 +6313,14 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected }")
         return expression
 
-    def _parse_bracket(
-        self, this: t.Optional[exp.Expression] = None, parse_map: bool = False
-    ) -> t.Optional[exp.Expression]:
+    def _parse_bracket(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
+
+        if self.dialect.MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS:
+            parse_map = self._tokens[self._index - 2].text.upper() == "MAP"
+        else:
+            parse_map = False
 
         bracket_kind = self._prev.token_type
         if (
@@ -6340,7 +6343,8 @@ class Parser(metaclass=_Parser):
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
             this = self.expression(
-                exp.Struct, expressions=self._kv_to_prop_eq(expressions, parse_map)
+                exp.Struct,
+                expressions=self._kv_to_prop_eq(expressions=expressions, parse_map=parse_map),
             )
         elif not this:
             this = build_array_constructor(

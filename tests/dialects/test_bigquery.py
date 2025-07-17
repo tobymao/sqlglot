@@ -2687,3 +2687,10 @@ OPTIONS (
                 "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) + 1 AS a_mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1 - 1) + 1)) AS _t0(seq, key, path, index, mnth, this)",
             },
         )
+
+    def test_json_array(self):
+        self.validate_identity("JSON_ARRAY()")
+        self.validate_identity("JSON_ARRAY(10)")
+        self.validate_identity("JSON_ARRAY([])")
+        self.validate_identity("JSON_ARRAY(STRUCT(10 AS a, 'foo' AS b))")
+        self.validate_identity("JSON_ARRAY(10, ['foo', 'bar'], [20, 30])")

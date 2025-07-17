@@ -455,6 +455,7 @@ class BigQuery(Dialect):
         exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
@@ -619,6 +620,9 @@ class BigQuery(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
+            "JSON_ARRAY": lambda self: self.expression(
+                exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
+            ),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
         }

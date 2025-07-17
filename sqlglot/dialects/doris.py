@@ -54,12 +54,7 @@ class Doris(MySQL):
             end = self._parse_wrapped(self._parse_string)
             self._match_text_seq("INTERVAL")
             number = self._parse_number()
-            unit = None
-            if self._curr:
-                unit = getattr(self._curr, "text", "").upper()
-                self._advance()
-            else:
-                unit = self._parse_var() or self._parse_identifier()
+            unit = self._parse_var() or self._parse_identifier()
             every = self.expression(exp.Interval, this=number, unit=unit)
             return self.expression(
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sqlglot import exp, generator, parser
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     rename_func,
@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
+from sqlglot.tokens import TokenType
 
 
 class Exasol(Dialect):
@@ -40,6 +41,9 @@ class Exasol(Dialect):
         "Z": "%z",
     }
 
+    class Tokenizer(tokens.Tokenizer):
+        KEYWORDS = {**tokens.Tokenizer.KEYWORDS, "USER": TokenType.CURRENT_USER}
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -69,6 +73,8 @@ class Exasol(Dialect):
                 timestamp=seq_get(args, 0),
                 options=seq_get(args, 3),
             ),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/user.htm
+            "USER": exp.CurrentUser.from_arg_list,
         }
 
     class Generator(generator.Generator):
@@ -145,6 +151,7 @@ class Exasol(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+            exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TZ",
                 e.this,

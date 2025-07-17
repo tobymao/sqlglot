@@ -6296,8 +6296,15 @@ class Parser(metaclass=_Parser):
         expressions = self._parse_wrapped_csv(
             self._parse_primary_key_part, optional=wrapped_optional
         )
+
+        include = None
+        if self._match_text_seq("INCLUDE"):
+            include = self._parse_wrapped_id_vars()
+
         options = self._parse_key_constraint_options()
-        return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
+        return self.expression(
+            exp.PrimaryKey, expressions=expressions, include=include, options=options
+        )
 
     def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
         return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))

@@ -76,8 +76,6 @@ class Exasol(Dialect):
                 timestamp=seq_get(args, 0),
                 options=seq_get(args, 3),
             ),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/user.htm
-            "USER": exp.CurrentUser.from_arg_list,
         }
 
     class Generator(generator.Generator):
@@ -134,13 +132,15 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
             exp.All: rename_func("EVERY"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("EDIT_DISTANCE")
-            ),
+            exp.Levenshtein: unsupported_args(
+                "ins_cost", "del_cost", "sub_cost", "max_dist"
+            )(rename_func("EDIT_DISTANCE")),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/regexp_replace.htm
-            exp.RegexpReplace: unsupported_args("modifiers")(rename_func("REGEXP_REPLACE")),
+            exp.RegexpReplace: unsupported_args("modifiers")(
+                rename_func("REGEXP_REPLACE")
+            ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/var_pop.htm
             exp.VariancePop: rename_func("VAR_POP"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/approximate_count_distinct.htm
@@ -148,12 +148,20 @@ class Exasol(Dialect):
                 rename_func("APPROXIMATE_COUNT_DISTINCT")
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_char%20(datetime).htm
-            exp.ToChar: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
+            exp.ToChar: lambda self, e: self.func(
+                "TO_CHAR", e.this, self.format_time(e)
+            ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
-            exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
-            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
+            exp.TsOrDsToDate: lambda self, e: self.func(
+                "TO_DATE", e.this, self.format_time(e)
+            ),
+            exp.TimeToStr: lambda self, e: self.func(
+                "TO_CHAR", e.this, self.format_time(e)
+            ),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+            exp.StrToTime: lambda self, e: self.func(
+                "TO_DATE", e.this, self.format_time(e)
+            ),
             exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TZ",

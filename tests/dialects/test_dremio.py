@@ -129,3 +129,30 @@ class TestDremio(Validator):
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
         )
+
+    def test_time_diff(self):
+        self.validate_identity("SELECT DATE_ADD(col, 1)")
+        self.validate_identity("SELECT DATE_ADD(col, CAST(1 AS INTERVAL HOUR))")
+        self.validate_identity(
+            "SELECT DATE_ADD(TIMESTAMP '2022-01-01 12:00:00', CAST(-1 AS INTERVAL HOUR))",
+            "SELECT DATE_ADD(CAST('2022-01-01 12:00:00' AS TIMESTAMP), CAST(-1 AS INTERVAL HOUR))",
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD(col, 2, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, 2, col)"
+        )
+
+        self.validate_identity("SELECT DATE_SUB(col, 1)")
+        self.validate_identity("SELECT DATE_SUB(col, CAST(1 AS INTERVAL HOUR))")
+        self.validate_identity(
+            "SELECT DATE_SUB(TIMESTAMP '2022-01-01 12:00:00', CAST(-1 AS INTERVAL HOUR))",
+            "SELECT DATE_SUB(CAST('2022-01-01 12:00:00' AS TIMESTAMP), CAST(-1 AS INTERVAL HOUR))",
+        )
+        self.validate_identity(
+            "SELECT DATE_SUB(col, 2, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, -2, col)"
+        )
+
+        self.validate_identity("SELECT DATE_ADD(col, 2, 'DAY')", "SELECT DATE_ADD(col, 2)")
+
+        self.validate_identity(
+            "SELECT DATE_SUB(col, a, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, a * -1, col)"
+        )

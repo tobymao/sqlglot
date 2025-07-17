@@ -6338,7 +6338,7 @@ class JSONBObjectAgg(AggFunc):
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAY.html
 class JSONArray(Func):
     arg_types = {
-        "expressions": True,
+        "expressions": False,
         "null_handling": False,
         "return_type": False,
         "strict": False,

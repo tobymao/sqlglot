@@ -511,13 +511,6 @@ class Dialect(metaclass=_Dialect):
     # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
-    MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = False
-    """
-    Whether map literals support arbitrary expressions as keys.
-    When True, allows complex keys like arrays or literals: {[1, 2]: 3}, {1: 2} (e.g. DuckDB).
-    When False, keys are typically restricted to identifiers.
-    """
-
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

@@ -1529,6 +1529,11 @@ class Parser(metaclass=_Parser):
     # Whether TIMESTAMP <literal> can produce a zone-aware timestamp
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = False
 
+    # Whether map literals support arbitrary expressions as keys.
+    # When True, allows complex keys like arrays or literals: {[1, 2]: 3}, {1: 2} (e.g. DuckDB).
+    # When False, keys are typically restricted to identifiers.
+    MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -6317,8 +6322,9 @@ class Parser(metaclass=_Parser):
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
-        if self.dialect.MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS:
-            parse_map = self._tokens[self._index - 2].text.upper() == "MAP"
+        if self.MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS:
+            map_token = seq_get(self._tokens, self._index - 2)
+            parse_map = map_token is not None and map_token.text.upper() == "MAP"
         else:
             parse_map = False
 

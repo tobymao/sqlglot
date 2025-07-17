@@ -1529,6 +1529,11 @@ class Parser(metaclass=_Parser):
     # Whether TIMESTAMP <literal> can produce a zone-aware timestamp
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = False
 
+    # Whether map literals support arbitrary expressions as keys.
+    # When True, allows complex keys like arrays or literals: {[1, 2]: 3}, {1: 2} (e.g. DuckDB).
+    # When False, keys are typically restricted to identifiers.
+    MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -5833,7 +5838,9 @@ class Parser(metaclass=_Parser):
     def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
         return expression
 
-    def _kv_to_prop_eq(self, expressions: t.List[exp.Expression]) -> t.List[exp.Expression]:
+    def _kv_to_prop_eq(
+        self, expressions: t.List[exp.Expression], parse_map: bool = False
+    ) -> t.List[exp.Expression]:
         transformed = []
 
         for index, e in enumerate(expressions):
@@ -5843,7 +5850,9 @@ class Parser(metaclass=_Parser):
 
                 if not isinstance(e, exp.PropertyEQ):
                     e = self.expression(
-                        exp.PropertyEQ, this=exp.to_identifier(e.this.name), expression=e.expression
+                        exp.PropertyEQ,
+                        this=e.this if parse_map else exp.to_identifier(e.this.name),
+                        expression=e.expression,
                     )
 
                 if isinstance(e.this, exp.Column):
@@ -6313,6 +6322,12 @@ class Parser(metaclass=_Parser):
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
+        if self.MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS:
+            map_token = seq_get(self._tokens, self._index - 2)
+            parse_map = map_token is not None and map_token.text.upper() == "MAP"
+        else:
+            parse_map = False
+
         bracket_kind = self._prev.token_type
         if (
             bracket_kind == TokenType.L_BRACE
@@ -6333,7 +6348,10 @@ class Parser(metaclass=_Parser):
 
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
-            this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
+            this = self.expression(
+                exp.Struct,
+                expressions=self._kv_to_prop_eq(expressions=expressions, parse_map=parse_map),
+            )
         elif not this:
             this = build_array_constructor(
                 exp.Array, args=expressions, bracket_kind=bracket_kind, dialect=self.dialect

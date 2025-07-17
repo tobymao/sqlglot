@@ -54,22 +54,23 @@ class Doris(MySQL):
             end = self._parse_wrapped(self._parse_string)
             self._match_text_seq("INTERVAL")
             number = self._parse_number()
-            unit = self._parse_var()
+            unit = None
+            if self._curr:
+                unit = getattr(self._curr, "text", "").upper()
+                self._advance()
+            else:
+                unit = self._parse_var() or self._parse_identifier()
             every = self.expression(exp.Interval, this=number, unit=unit)
             return self.expression(
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
-        def _parse_partition_definition(self):
-            # Handles: PARTITION `p2018` VALUES [(...), (...)), PARTITION `other` VALUES LESS THAN (MAXVALUE)
+        def _parse_partition_definition(self) -> exp.Partition:
             self._match_text_seq("PARTITION")
             name = self._parse_id_var()
             if self._match_text_seq("VALUES"):
                 if self._match_text_seq("LESS", "THAN"):
-                    # VALUES LESS THAN (...)
                     value = self._parse_wrapped_csv(self._parse_expression)
-                    if isinstance(value, list) and len(value) == 1:
-                        value = value[0]
                     return self.expression(
                         exp.Partition,
                         expressions=[
@@ -81,26 +82,27 @@ class Doris(MySQL):
                         ],
                     )
                 elif self._match(TokenType.L_BRACKET):
-                    # VALUES [(...), (...))
                     values = self._parse_csv(
                         lambda: self._parse_wrapped_csv(self._parse_expression)
                     )
                     self._match(TokenType.R_BRACKET)
+                    if self._curr and self._curr.token_type == TokenType.R_PAREN:
+                        self._advance()
                     return self.expression(
                         exp.Partition,
                         expressions=[
                             self.expression(
                                 exp.PartitionRange,
                                 this=name,
-                                expression=val,
+                                expression=values,
                             )
-                            for val in values
                         ],
                     )
                 else:
                     self.raise_error("Unsupported VALUES syntax in PARTITION definition")
             else:
                 self.raise_error("Expecting VALUES in PARTITION definition")
+            raise AssertionError("Unreachable")
 
         def _parse_partition_by_opt_range(
             self,
@@ -665,12 +667,59 @@ class Doris(MySQL):
             return super().partition_sql(expression)
 
         def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
-            # Doris expects: PARTITION <name> VALUES LESS THAN (<value>) or VALUES [(<tuple>), ...)
             name = self.sql(expression, "this")
             value = expression.expression
             if isinstance(value, list):
-                # Output as VALUES [(item1), (item2))
-                value_sql = ", ".join(f"({self.sql(v)})" for v in value)
-                return f"PARTITION {name} VALUES [{value_sql})"
-            value_sql = self.sql(value)
+                if len(value) == 1:
+                    value = value[0]
+                else:
+                    # Multiple values: use VALUES [ ... )
+                    if value and isinstance(value[0], list):
+                        value_sql = ", ".join(
+                            f"({', '.join(self.sql(v) for v in inner)})" for inner in value
+                        )
+                    else:
+                        value_sql = ", ".join(f"({self.sql(v)})" for v in value)
+                    return f"PARTITION {name} VALUES [{value_sql})"
+
+            # Inline is_maxvalue logic
+            def _is_maxvalue(expr):
+                if isinstance(expr, (exp.Literal, exp.Identifier)):
+                    return str(expr.this).upper() == "MAXVALUE"
+                if isinstance(expr, exp.Column):
+                    return _is_maxvalue(expr.this)
+                return False
+
+            if _is_maxvalue(value):
+                value_sql = "MAXVALUE"
+            else:
+                value_sql = self.sql(value)
             return f"PARTITION {name} VALUES LESS THAN ({value_sql})"
+
+        def partitionbyrangepropertydynamic_sql(self, expression):
+            # Generates: FROM ("start") TO ("end") INTERVAL N UNIT
+            start = self.sql(expression, "start")
+            end = self.sql(expression, "end")
+            every = expression.args.get("every")
+            if every:
+                number = self.sql(every, "this")
+                unit = every.args.get("unit")
+                if isinstance(unit, exp.Expression):
+                    unit = self.sql(unit)
+                elif isinstance(unit, str):
+                    unit = unit
+                else:
+                    unit = ""
+                interval = f"INTERVAL {number} {unit}".strip()
+            else:
+                interval = ""
+            return f"FROM ({start}) TO ({end}) {interval}".strip()
+
+        def partitionbyrangeproperty_sql(self, expression):
+            partition_expressions = ", ".join(
+                self.sql(e) for e in expression.args.get("partition_expressions") or []
+            )
+            create_expressions = expression.args.get("create_expressions") or []
+            # Handle both static and dynamic partition definitions
+            create_sql = ", ".join(self.sql(e) for e in create_expressions)
+            return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"

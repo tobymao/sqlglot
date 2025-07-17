@@ -5833,7 +5833,9 @@ class Parser(metaclass=_Parser):
     def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
         return expression
 
-    def _kv_to_prop_eq(self, expressions: t.List[exp.Expression]) -> t.List[exp.Expression]:
+    def _kv_to_prop_eq(
+        self, expressions: t.List[exp.Expression], parse_map: bool = False
+    ) -> t.List[exp.Expression]:
         transformed = []
 
         for index, e in enumerate(expressions):
@@ -5843,7 +5845,9 @@ class Parser(metaclass=_Parser):
 
                 if not isinstance(e, exp.PropertyEQ):
                     e = self.expression(
-                        exp.PropertyEQ, this=exp.to_identifier(e.this.name), expression=e.expression
+                        exp.PropertyEQ,
+                        this=e.this if parse_map else exp.to_identifier(e.this.name),
+                        expression=e.expression,
                     )
 
                 if isinstance(e.this, exp.Column):
@@ -6309,7 +6313,9 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected }")
         return expression
 
-    def _parse_bracket(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
+    def _parse_bracket(
+        self, this: t.Optional[exp.Expression] = None, parse_map: bool = False
+    ) -> t.Optional[exp.Expression]:
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
@@ -6333,7 +6339,9 @@ class Parser(metaclass=_Parser):
 
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
-            this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
+            this = self.expression(
+                exp.Struct, expressions=self._kv_to_prop_eq(expressions, parse_map)
+            )
         elif not this:
             this = build_array_constructor(
                 exp.Array, args=expressions, bracket_kind=bracket_kind, dialect=self.dialect

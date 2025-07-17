@@ -182,8 +182,15 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
         if is_bq_inline_struct:
             args.append(self.sql(value))
         else:
-            key = expr.name if is_property_eq else f"_{i}"
-            args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
+            if is_property_eq:
+                if isinstance(expr.this, exp.Identifier):
+                    key = self.sql(exp.Literal.string(expr.name))
+                else:
+                    key = self.sql(expr.this)
+            else:
+                key = self.sql(exp.Literal.string(f"_{i}"))
+
+            args.append(f"{key}: {self.sql(value)}")
 
     csv_args = ", ".join(args)
 
@@ -568,9 +575,9 @@ class DuckDB(Dialect):
             return sample
 
         def _parse_bracket(
-            self, this: t.Optional[exp.Expression] = None
+            self, this: t.Optional[exp.Expression] = None, parse_map: bool = False
         ) -> t.Optional[exp.Expression]:
-            bracket = super()._parse_bracket(this)
+            bracket = super()._parse_bracket(this, parse_map=parse_map)
 
             if self.dialect.version < Version("1.2.0") and isinstance(bracket, exp.Bracket):
                 # https://duckdb.org/2025/02/05/announcing-duckdb-120.html#breaking-changes
@@ -580,7 +587,7 @@ class DuckDB(Dialect):
 
         def _parse_map(self) -> exp.ToMap | exp.Map:
             if self._match(TokenType.L_BRACE, advance=False):
-                return self.expression(exp.ToMap, this=self._parse_bracket())
+                return self.expression(exp.ToMap, this=self._parse_bracket(parse_map=True))
 
             args = self._parse_wrapped_csv(self._parse_assignment)
             return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))

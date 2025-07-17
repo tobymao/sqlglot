@@ -836,7 +836,7 @@ class BigQuery(Dialect):
             return json_object
 
         def _parse_bracket(
-            self, this: t.Optional[exp.Expression] = None
+            self, this: t.Optional[exp.Expression] = None, parse_map: bool = False
         ) -> t.Optional[exp.Expression]:
             bracket = super()._parse_bracket(this)
 

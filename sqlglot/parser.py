@@ -1276,6 +1276,7 @@ class Parser(metaclass=_Parser):
         TokenType.CONNECT_BY: lambda self: ("connect", self._parse_connect(skip_start_token=True)),
         TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
     }
+    QUERY_MODIFIER_TOKENS = set(QUERY_MODIFIER_PARSERS)
 
     SET_PARSERS = {
         "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
@@ -4491,7 +4492,7 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.DISTINCT):
             elements["all"] = False
 
-        if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
+        if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
             return self.expression(exp.Group, comments=comments, **elements)  # type: ignore
 
         while True:

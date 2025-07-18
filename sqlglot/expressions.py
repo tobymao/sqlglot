@@ -6384,7 +6384,7 @@ class JSONValueArray(Func):
     arg_types = {"this": True, "expression": False}
 
 
-# # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 class JSONTable(Func):
     arg_types = {
         "this": True,
@@ -6393,6 +6393,13 @@ class JSONTable(Func):
         "error_handling": False,
         "empty_handling": False,
     }
+
+
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_type
+# https://doris.apache.org/docs/sql-manual/sql-functions/scalar-functions/json-functions/json-type#description
+class JSONType(Func):
+    arg_types = {"this": True, "expression": False}
+    _sql_names = ["JSON_TYPE"]
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/object_insert

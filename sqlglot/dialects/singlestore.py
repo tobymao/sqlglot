@@ -444,6 +444,13 @@ class SingleStore(Dialect):
             TokenType.DPIPE: exp.Or,
         }
 
+        ALTERABLES = parser.Parser.ALTERABLES | {TokenType.DATABASE}
+
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "WITH": lambda self: self._parse_alter_table_set(),
+        }
+
         def _parse_match_against(self) -> exp.MatchAgainst:
             if self._match_text_seq("TABLE"):
                 expressions = []
@@ -460,6 +467,17 @@ class SingleStore(Dialect):
             return self.expression(
                 exp.MatchAgainst, this=this, expressions=expressions
             )
+
+        def _parse_alter_table_set(self) -> exp.AlterSet:
+            alter_set = self.expression(exp.AlterSet)
+
+            if self._match_text_seq("SYNC", "REPLICATION"):
+                alter_set.set("expressions", [exp.Var(this=f"SYNC REPLICATION")])
+            elif self._match_text_seq("ASYNC", "REPLICATION"):
+                    alter_set.set("expressions", [exp.Var(
+                        this=f"ASYNC REPLICATION")])
+
+            return alter_set
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -2958,10 +2976,6 @@ class SingleStore(Dialect):
 
             self.unsupported("Unsupported index constraint option.")
             return ""
-
-        def alterset_sql(self, expression: exp.AlterSet) -> str:
-            self.unsupported("ALTER SET query is not supported in SingleStore")
-            return super().alterset_sql(expression)
 
         def periodforsystemtimeconstraint_sql(self,
             expression: exp.PeriodForSystemTimeConstraint) -> str:

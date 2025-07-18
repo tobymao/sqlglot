@@ -1957,12 +1957,10 @@ class TestSingleStore(Validator):
             sql="CREATE TABLE ColumnConstraint (id INT AUTO_INCREMENT PRIMARY KEY)",
             exp_type=exp.ColumnConstraint)
         self.validate_generation(
-            sql="ALTER TABLE orders SET DATA_RETENTION_TIME_IN_DAYS = 1",
-            expected_sql="ALTER TABLE orders SET",
-            error_message="ALTER SET query is not supported in SingleStore",
+            sql="ALTER DATABASE db SET SYNC REPLICATION",
+            expected_sql="ALTER DATABASE db SET SYNC REPLICATION",
             exp_type=exp.AlterSet,
-            from_dialect="snowflake",
-            run=False
+            from_dialect="singlestore",
         )
         self.validate_generation(
             sql="CREATE TABLE ConstraintTable (a INT, CONSTRAINT id PRIMARY KEY (a))",
@@ -6281,4 +6279,54 @@ class TestSingleStore(Validator):
                 expression=exp.Literal.number(5)
             ),
             run=False
+        )
+
+    def test_alter_database_parsing(self):
+        self.validate_parsing(
+            "ALTER DATABASE db WITH SYNC REPLICATION",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="db", kind="SCHEMA")),
+                kind="DATABASE",
+                actions=[
+                    exp.AlterSet(
+                        expressions=[exp.Var(this="SYNC REPLICATION")]
+                    )
+                ]
+            )
+        )
+        self.validate_parsing(
+            "ALTER DATABASE db WITH ASYNC REPLICATION",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="db", kind="SCHEMA")),
+                kind="DATABASE",
+                actions=[
+                    exp.AlterSet(
+                        expressions=[exp.Var(this="ASYNC REPLICATION")]
+                    )
+                ]
+            )
+        )
+        self.validate_parsing(
+            "ALTER DATABASE db SET SYNC REPLICATION",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="db", kind="SCHEMA")),
+                kind="DATABASE",
+                actions=[
+                    exp.AlterSet(
+                        expressions=[exp.Var(this="SYNC REPLICATION")]
+                    )
+                ]
+            )
+        )
+        self.validate_parsing(
+            "ALTER DATABASE db SET ASYNC REPLICATION",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="db", kind="SCHEMA")),
+                kind="DATABASE",
+                actions=[
+                    exp.AlterSet(
+                        expressions=[exp.Var(this="ASYNC REPLICATION")]
+                    )
+                ]
+            )
         )

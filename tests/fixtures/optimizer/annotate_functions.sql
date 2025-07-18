@@ -631,6 +631,10 @@ JSON;
 JSON_ARRAY(10, [1, 2]);
 JSON;
 
+# dialect: bigquery
+JSON_VALUE(JSON '{"foo": "1" }', '$.foo');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

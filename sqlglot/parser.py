@@ -7373,6 +7373,8 @@ class Parser(metaclass=_Parser):
             not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN
             or self._match_text_seq("COLUMNS")
         ):
+            self._match(TokenType.COLUMN)
+
             schema = self._parse_schema()
 
             return ensure_list(schema) if schema else self._parse_csv(self._parse_field_def)

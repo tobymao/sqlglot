@@ -493,6 +493,7 @@ class Snowflake(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     COPY_PARAMS_ARE_CSV = False
     ARRAY_AGG_INCLUDES_NULLS = None
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
     TIME_MAPPING = {
         "YYYY": "%Y",

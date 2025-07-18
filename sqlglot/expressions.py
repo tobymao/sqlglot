@@ -6397,6 +6397,7 @@ class JSONTable(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_type
 class JSONType(Func):
+    arg_types = {"this": True, "expression": False}
     _sql_names = ["JSON_TYPE"]
 
 

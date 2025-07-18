@@ -368,6 +368,7 @@ class TokenType(AutoName):
     QUALIFY = auto()
     QUOTE = auto()
     RANGE = auto()
+    RANK = auto()
     RECURSIVE = auto()
     REFRESH = auto()
     RENAME = auto()

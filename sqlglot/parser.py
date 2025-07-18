@@ -274,6 +274,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_TIME: exp.CurrentTime,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
         TokenType.CURRENT_USER: exp.CurrentUser,
+        TokenType.RANK: exp.Rank,
     }
 
     STRUCT_TYPE_TOKENS = {
@@ -626,6 +627,7 @@ class Parser(metaclass=_Parser):
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.RANGE,
+        TokenType.RANK,
         TokenType.REPLACE,
         TokenType.RLIKE,
         TokenType.ROW,

@@ -7073,6 +7073,10 @@ class CovarPop(Binary, AggFunc):
     pass
 
 
+class Rank(Func):
+    arg_types = {"this": False}
+
+
 class Week(Func):
     arg_types = {"this": True, "mode": False}
 

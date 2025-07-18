@@ -381,3 +381,7 @@ class TestExasol(Validator):
                 "snowflake": "SELECT CURRENT_USER()",
             },
         )
+        self.validate_identity(
+            "SELECT rank(date) over(order by date desc) as sort_order",
+            "SELECT RANK() OVER (ORDER BY date DESC) AS sort_order",
+        )

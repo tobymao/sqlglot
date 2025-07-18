@@ -159,6 +159,7 @@ class Exasol(Dialect):
                 "'UTC'",
                 e.args.get("zone"),
             ),
+            exp.Rank: lambda self, e: self.func("RANK"),
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

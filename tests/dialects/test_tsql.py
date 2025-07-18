@@ -1,7 +1,7 @@
 from sqlglot import exp, parse, parse_one
-from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
+from tests.dialects.test_dialect import Validator
 
 
 class TestTSQL(Validator):
@@ -17,6 +17,7 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT SYSDATETIMEOFFSET()")
         self.validate_identity("GO").assert_is(exp.Command)
         self.validate_identity("SELECT go").selects[0].assert_is(exp.Column)
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
@@ -39,7 +40,7 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
-            "SELECT TOP 10 s.RECORDID, n.c.value('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s(nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)"
+            "SELECT TOP 10 s.RECORDID, n.c.VALUE('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s(nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)"
         )
         self.validate_identity(
             "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
@@ -57,11 +58,23 @@ class TestTSQL(Validator):
             'SELECT 1 AS "[x]"',
             "SELECT 1 AS [[x]]]",
         )
+        self.validate_identity(
+            "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",
+            "WITH cte AS (SELECT 1 AS one) INSERT INTO foo.bar SELECT * FROM cte",
+        )
+
         self.assertEqual(
             annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
             "SELECT 1 WHERE EXISTS(SELECT 1)",
         )
 
+        self.validate_all(
+            "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
+            write={
+                "duckdb": "SELECT STRPTIME('2006-04-25T15:50:59.997', '%Y-%m-%dT%H:%M:%S.%f')",
+                "tsql": "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
+            },
+        )
         self.validate_all(
             "WITH A AS (SELECT 2 AS value), C AS (SELECT * FROM A) SELECT * INTO TEMP_NESTED_WITH FROM (SELECT * FROM C) AS temp",
             read={
@@ -481,7 +494,7 @@ class TestTSQL(Validator):
         self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
         self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'")
 
-        for output in ("OUT", "OUTPUT", "READ_ONLY"):
+        for output in ("OUT", "OUTPUT", "READONLY"):
             self.validate_identity(
                 f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output})"
             )
@@ -567,6 +580,79 @@ class TestTSQL(Validator):
                 "tsql": "SELECT col FROM t OPTION(LABEL = 'foo')",
                 "databricks": UnsupportedError,
             },
+        )
+
+    def test_for_xml(self):
+        xml_possible_options = [
+            "RAW('ElementName')",
+            "RAW('ElementName'), BINARY BASE64",
+            "RAW('ElementName'), TYPE",
+            "RAW('ElementName'), ROOT('RootName')",
+            "RAW('ElementName'), BINARY BASE64, TYPE",
+            "RAW('ElementName'), BINARY BASE64, ROOT('RootName')",
+            "RAW('ElementName'), TYPE, ROOT('RootName')",
+            "RAW('ElementName'), BINARY BASE64, TYPE, ROOT('RootName')",
+            "RAW('ElementName'), XMLDATA",
+            "RAW('ElementName'), XMLSCHEMA('TargetNameSpaceURI')",
+            "RAW('ElementName'), XMLDATA, ELEMENTS XSINIL",
+            "RAW('ElementName'), XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS ABSENT",
+            "RAW('ElementName'), XMLDATA, ELEMENTS ABSENT",
+            "RAW('ElementName'), XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS XSINIL",
+            "AUTO",
+            "AUTO, BINARY BASE64",
+            "AUTO, TYPE",
+            "AUTO, ROOT('RootName')",
+            "AUTO, BINARY BASE64, TYPE",
+            "AUTO, TYPE, ROOT('RootName')",
+            "AUTO, BINARY BASE64, TYPE, ROOT('RootName')",
+            "AUTO, XMLDATA",
+            "AUTO, XMLSCHEMA('TargetNameSpaceURI')",
+            "AUTO, XMLDATA, ELEMENTS XSINIL",
+            "AUTO, XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS ABSENT",
+            "AUTO, XMLDATA, ELEMENTS ABSENT",
+            "AUTO, XMLSCHEMA('TargetNameSpaceURI'), ELEMENTS XSINIL",
+            "EXPLICIT",
+            "EXPLICIT, BINARY BASE64",
+            "EXPLICIT, TYPE",
+            "EXPLICIT, ROOT('RootName')",
+            "EXPLICIT, BINARY BASE64, TYPE",
+            "EXPLICIT, TYPE, ROOT('RootName')",
+            "EXPLICIT, BINARY BASE64, TYPE, ROOT('RootName')",
+            "EXPLICIT, XMLDATA",
+            "EXPLICIT, XMLDATA, BINARY BASE64",
+            "EXPLICIT, XMLDATA, TYPE",
+            "EXPLICIT, XMLDATA, ROOT('RootName')",
+            "EXPLICIT, XMLDATA, BINARY BASE64, TYPE",
+            "EXPLICIT, XMLDATA, BINARY BASE64, TYPE, ROOT('RootName')",
+            "PATH('ElementName')",
+            "PATH('ElementName'), BINARY BASE64",
+            "PATH('ElementName'), TYPE",
+            "PATH('ElementName'), ROOT('RootName')",
+            "PATH('ElementName'), BINARY BASE64, TYPE",
+            "PATH('ElementName'), TYPE, ROOT('RootName')",
+            "PATH('ElementName'), BINARY BASE64, TYPE, ROOT('RootName')",
+            "PATH('ElementName'), ELEMENTS XSINIL",
+            "PATH('ElementName'), ELEMENTS ABSENT",
+            "PATH('ElementName'), BINARY BASE64, ELEMENTS XSINIL",
+            "PATH('ElementName'), TYPE, ELEMENTS ABSENT",
+            "PATH('ElementName'), ROOT('RootName'), ELEMENTS XSINIL",
+            "PATH('ElementName'), BINARY BASE64, TYPE, ROOT('RootName'), ELEMENTS ABSENT",
+        ]
+
+        for xml_option in xml_possible_options:
+            with self.subTest(f"Testing FOR XML option: {xml_option}"):
+                self.validate_identity(f"SELECT * FROM t FOR XML {xml_option}")
+
+        self.validate_identity(
+            "SELECT * FROM t FOR XML PATH, BINARY BASE64, ELEMENTS XSINIL",
+            """SELECT
+  *
+FROM t
+FOR XML
+  PATH,
+  BINARY BASE64,
+  ELEMENTS XSINIL""",
+            pretty=True,
         )
 
     def test_types(self):
@@ -904,18 +990,18 @@ class TestTSQL(Validator):
 
         self.validate_identity("CREATE SCHEMA testSchema")
         self.validate_identity("CREATE VIEW t AS WITH cte AS (SELECT 1 AS c) SELECT c FROM cte")
-        self.validate_identity("ALTER TABLE tbl SET SYSTEM_VERSIONING=OFF")
-        self.validate_identity("ALTER TABLE tbl SET FILESTREAM_ON = 'test'")
-        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=ON")
-        self.validate_identity("ALTER TABLE tbl SET DATA_DELETION=OFF")
+        self.validate_identity("ALTER TABLE tbl SET (SYSTEM_VERSIONING=OFF)")
+        self.validate_identity("ALTER TABLE tbl SET (FILESTREAM_ON = 'test')")
+        self.validate_identity("ALTER TABLE tbl SET (DATA_DELETION=ON)")
+        self.validate_identity("ALTER TABLE tbl SET (DATA_DELETION=OFF)")
         self.validate_identity(
-            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS)"
+            "ALTER TABLE tbl SET (SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS))"
         )
         self.validate_identity(
-            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, HISTORY_RETENTION_PERIOD=INFINITE)"
+            "ALTER TABLE tbl SET (SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, HISTORY_RETENTION_PERIOD=INFINITE))"
         )
         self.validate_identity(
-            "ALTER TABLE tbl SET DATA_DELETION=ON(FILTER_COLUMN=col, RETENTION_PERIOD=5 MONTHS)"
+            "ALTER TABLE tbl SET (DATA_DELETION=ON(FILTER_COLUMN=col, RETENTION_PERIOD=5 MONTHS))"
         )
 
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
@@ -962,7 +1048,8 @@ FROM (
       ProductID
   ) AS src(ProductID, OrderQty)
   ON pi.ProductID = src.ProductID
-  WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty
+  WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET
+    pi.Quantity = pi.Quantity - src.OrderQty
   WHEN MATCHED AND pi.Quantity - src.OrderQty <= 0 THEN DELETE
   OUTPUT $action, Inserted.ProductID, Inserted.LocationID, Inserted.Quantity AS NewQty, Deleted.Quantity AS PreviousQty
 ) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty)
@@ -1020,25 +1107,25 @@ WHERE
         )
 
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = 'foo') EXEC('CREATE SCHEMA foo')",
+            "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'foo') EXEC('CREATE SCHEMA foo')",
             read={
                 "": "CREATE SCHEMA IF NOT EXISTS foo",
             },
         )
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('CREATE TABLE foo.bar.baz (a INTEGER)')",
+            "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'baz' AND TABLE_SCHEMA = 'bar' AND TABLE_CATALOG = 'foo') EXEC('CREATE TABLE foo.bar.baz (a INTEGER)')",
             read={
                 "": "CREATE TABLE IF NOT EXISTS foo.bar.baz (a INTEGER)",
             },
         )
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('SELECT * INTO foo.bar.baz FROM (SELECT ''2020'' AS z FROM a.b.c) AS temp')",
+            "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'baz' AND TABLE_SCHEMA = 'bar' AND TABLE_CATALOG = 'foo') EXEC('SELECT * INTO foo.bar.baz FROM (SELECT ''2020'' AS z FROM a.b.c) AS temp')",
             read={
                 "": "CREATE TABLE IF NOT EXISTS foo.bar.baz AS SELECT '2020' AS z FROM a.b.c",
             },
         )
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT * INTO foo.bar.baz FROM (SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2) AS temp')",
+            "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'baz' AND TABLE_SCHEMA = 'bar' AND TABLE_CATALOG = 'foo') EXEC('WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT * INTO foo.bar.baz FROM (SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2) AS temp')",
             read={
                 "": "CREATE TABLE IF NOT EXISTS foo.bar.baz AS WITH cte1 AS (SELECT 1 AS col_a), cte2 AS (SELECT 1 AS col_b) SELECT col_a FROM cte1 UNION ALL SELECT col_b FROM cte2"
             },
@@ -1063,6 +1150,16 @@ WHERE
             },
         )
         self.validate_all(
+            "ALTER TABLE a ALTER COLUMN b INTEGER",
+            read={
+                "": "ALTER TABLE a ALTER COLUMN b INT",
+            },
+            write={
+                "": "ALTER TABLE a ALTER COLUMN b SET DATA TYPE INT",
+                "tsql": "ALTER TABLE a ALTER COLUMN b INTEGER",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT) USING PARQUET",
@@ -1070,11 +1167,11 @@ WHERE
             },
         )
 
-    def test_insert_cte(self):
-        self.validate_all(
-            "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",
-            write={"tsql": "WITH cte AS (SELECT 1 AS one) INSERT INTO foo.bar SELECT * FROM cte"},
-        )
+        constraint = self.validate_identity(
+            "ALTER TABLE tbl ADD CONSTRAINT cnstr PRIMARY KEY CLUSTERED (ID), CONSTRAINT cnstr2 UNIQUE CLUSTERED (ID)"
+        ).find(exp.AddConstraint)
+        assert constraint
+        assert len(list(constraint.find_all(exp.Constraint))) == 2
 
     def test_transaction(self):
         self.validate_identity("BEGIN TRANSACTION")
@@ -1307,6 +1404,7 @@ WHERE
         )
 
     def test_isnull(self):
+        self.validate_identity("ISNULL(x, y)")
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
     def test_json(self):
@@ -1763,6 +1861,10 @@ WHERE
             write={
                 "spark": "SELECT * FROM A LIMIT 3",
             },
+        )
+        self.validate_identity(
+            "CREATE TABLE schema.table AS SELECT a, id FROM (SELECT a, (SELECT id FROM tb ORDER BY t DESC LIMIT 1) as id FROM tbl) AS _subquery",
+            "SELECT * INTO schema.table FROM (SELECT a AS a, id AS id FROM (SELECT a AS a, (SELECT TOP 1 id FROM tb ORDER BY t DESC) AS id FROM tbl) AS _subquery) AS temp",
         )
         self.validate_identity("SELECT TOP 10 PERCENT")
         self.validate_identity("SELECT TOP 10 PERCENT WITH TIES")
@@ -2232,3 +2334,8 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
             },
         )
+
+    def test_collation_parse(self):
+        self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
+            exp.Alter
+        ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)

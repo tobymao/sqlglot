@@ -9,6 +9,11 @@ class TestSpark(Validator):
     dialect = "spark"
 
     def test_ddl(self):
+        self.validate_identity("DAYOFWEEK(TO_DATE(x))")
+        self.validate_identity("DAYOFMONTH(TO_DATE(x))")
+        self.validate_identity("DAYOFYEAR(TO_DATE(x))")
+        self.validate_identity("WEEKOFYEAR(TO_DATE(x))")
+
         self.validate_identity("DROP NAMESPACE my_catalog.my_namespace")
         self.validate_identity("CREATE NAMESPACE my_catalog.my_namespace")
         self.validate_identity("INSERT OVERWRITE TABLE db1.tb1 TABLE db2.tb2")
@@ -27,7 +32,7 @@ class TestSpark(Validator):
             write={
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b TEXT))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
-                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRING>)",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
             },
         )
@@ -37,7 +42,7 @@ class TestSpark(Validator):
                 "bigquery": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b STRUCT(nested_col_a TEXT, nested_col_b TEXT)))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
-                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
             },
         )
@@ -56,7 +61,7 @@ class TestSpark(Validator):
             "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             write={
                 "duckdb": "CREATE TABLE x",
-                "presto": "CREATE TABLE x WITH (FORMAT='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS(y)'])",
+                "presto": "CREATE TABLE x WITH (format='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS(y)'])",
                 "hive": "CREATE TABLE x STORED AS ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
                 "spark": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             },
@@ -65,13 +70,15 @@ class TestSpark(Validator):
             "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
+                "trino": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",
+                "athena": "CREATE TABLE test WITH (format='PARQUET') AS SELECT 1",  # note: lowercase format property is important for Athena
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
+                "spark": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             },
         )
         self.validate_all(
-            """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG TBLPROPERTIES('x' = '1')""",
+            """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) USING ICEBERG TBLPROPERTIES('x' = '1')""",
             write={
                 "duckdb": """CREATE TABLE blah (
   col_a INT
@@ -83,7 +90,7 @@ class TestSpark(Validator):
 COMMENT 'Test comment: blah'
 WITH (
   PARTITIONED_BY=ARRAY['date'],
-  FORMAT='ICEBERG',
+  format='ICEBERG',
   x='1'
 )""",
                 "hive": """CREATE TABLE blah (
@@ -245,6 +252,8 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("ALTER TABLE foo ADD PARTITION(event = 'click')")
+        self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS PARTITION(event = 'click')")
         self.validate_identity("IF(cond, foo AS bar, bla AS baz)")
         self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
         self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
@@ -268,6 +277,10 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
+        self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
         self.validate_identity(
             "SELECT 1 limit",
             "SELECT 1 AS limit",
@@ -814,6 +827,26 @@ TBLPROPERTIES (
                 "duckdb": "SELECT TRY_CAST(col AS TIMESTAMPTZ)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM {df}",
+            read={
+                "databricks": "SELECT * FROM {df}",
+            },
+            write={
+                "spark": "SELECT * FROM {df}",
+                "databricks": "SELECT * FROM {df}",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM {df} WHERE id > :foo",
+            read={
+                "databricks": "SELECT * FROM {df} WHERE id > :foo",
+            },
+            write={
+                "spark": "SELECT * FROM {df} WHERE id > :foo",
+                "databricks": "SELECT * FROM {df} WHERE id > :foo",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(
@@ -898,9 +931,32 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT POSEXPLODE(ARRAY('a'))",
+            write={
+                "duckdb": "SELECT GENERATE_SUBSCRIPTS(['a'], 1) - 1 AS pos, UNNEST(['a']) AS col",
+                "spark": "SELECT POSEXPLODE(ARRAY('a'))",
+            },
+        )
+        self.validate_all(
             "SELECT POSEXPLODE(x) AS (a, b)",
             write={
                 "presto": "SELECT IF(_u.pos = _u_2.a, _u_2.b) AS b, IF(_u.pos = _u_2.a, _u_2.a) AS a FROM UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(x)))) AS _u(pos) CROSS JOIN UNNEST(x) WITH ORDINALITY AS _u_2(b, a) WHERE _u.pos = _u_2.a OR (_u.pos > CARDINALITY(x) AND _u_2.a = CARDINALITY(x))",
+                "duckdb": "SELECT GENERATE_SUBSCRIPTS(x, 1) - 1 AS a, UNNEST(x) AS b",
+                "spark": "SELECT POSEXPLODE(x) AS (a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM POSEXPLODE(ARRAY('a'))",
+            write={
+                "duckdb": "SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(['a'], 1) - 1 AS pos, UNNEST(['a']) AS col)",
+                "spark": "SELECT * FROM POSEXPLODE(ARRAY('a'))",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM POSEXPLODE(ARRAY('a')) AS (a, b)",
+            write={
+                "duckdb": "SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(['a'], 1) - 1 AS a, UNNEST(['a']) AS b)",
+                "spark": "SELECT * FROM POSEXPLODE(ARRAY('a')) AS _t0(a, b)",
             },
         )
         self.validate_all(

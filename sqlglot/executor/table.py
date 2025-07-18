@@ -8,7 +8,12 @@ from sqlglot.schema import AbstractMappingSchema, normalize_name
 
 
 class Table:
-    def __init__(self, columns, rows=None, column_range=None):
+    def __init__(
+        self,
+        columns: t.Iterable,
+        rows: t.Optional[t.List] = None,
+        column_range: t.Optional[range] = None,
+    ) -> None:
         self.columns = tuple(columns)
         self.column_range = column_range
         self.reader = RowReader(self.columns, self.column_range)
@@ -25,28 +30,31 @@ class Table:
             )
         self.reader = RowReader(self.columns, self.column_range)
 
-    def append(self, row):
+    def append(self, row: t.List) -> None:
         assert len(row) == len(self.columns)
         self.rows.append(row)
 
-    def pop(self):
+    def pop(self) -> None:
         self.rows.pop()
 
+    def to_pylist(self) -> t.List:
+        return [dict(zip(self.columns, row)) for row in self.rows]
+
     @property
-    def width(self):
+    def width(self) -> int:
         return len(self.columns)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.rows)
 
-    def __iter__(self):
+    def __iter__(self) -> TableIter:
         return TableIter(self)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> RowReader:
         self.reader.row = self.rows[index]
         return self.reader
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         columns = tuple(
             column
             for i, column in enumerate(self.columns)
@@ -68,14 +76,14 @@ class Table:
 
 
 class TableIter:
-    def __init__(self, table):
+    def __init__(self, table: Table) -> None:
         self.table = table
         self.index = -1
 
-    def __iter__(self):
+    def __iter__(self) -> TableIter:
         return self
 
-    def __next__(self):
+    def __next__(self) -> RowReader:
         self.index += 1
         if self.index < len(self.table):
             return self.table[self.index]
@@ -83,14 +91,14 @@ class TableIter:
 
 
 class RangeReader:
-    def __init__(self, table):
+    def __init__(self, table: Table) -> None:
         self.table = table
         self.range = range(0)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.range)
 
-    def __getitem__(self, column):
+    def __getitem__(self, column: str):
         return (self.table[i][column] for i in self.range)
 
 

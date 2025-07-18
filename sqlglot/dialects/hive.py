@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+from copy import deepcopy
 from functools import partial
+from collections import defaultdict
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -43,6 +45,7 @@ from sqlglot.transforms import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -61,13 +64,6 @@ TIME_DIFF_FACTOR = {
 }
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
-
-TS_OR_DS_EXPRESSIONS = (
-    exp.DateDiff,
-    exp.Day,
-    exp.Month,
-    exp.Year,
-)
 
 
 def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
@@ -174,7 +170,7 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     if time_format and time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         return self.func("TO_DATE", expression.this, time_format)
 
-    if isinstance(expression.parent, TS_OR_DS_EXPRESSIONS):
+    if isinstance(expression.parent, self.TS_OR_DS_EXPRESSIONS):
         return self.sql(expression, "this")
 
     return self.func("TO_DATE", expression.this)
@@ -208,6 +204,23 @@ class Hive(Dialect):
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.If: lambda self, e: self._annotate_by_args(e, "true", "false", promote=True),
+        exp.Coalesce: lambda self, e: self._annotate_by_args(
+            e, "this", "expressions", promote=True
+        ),
+    }
+
+    # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
+    COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
+    for target_type in {
+        *exp.DataType.NUMERIC_TYPES,
+        *exp.DataType.TEMPORAL_TYPES,
+        exp.DataType.Type.INTERVAL,
+    }:
+        COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES
 
     TIME_MAPPING = {
         "y": "%Y",
@@ -285,10 +298,10 @@ class Hive(Dialect):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
         VALUES_FOLLOWED_BY_PAREN = False
+        JOINS_HAVE_EQUAL_PRECEDENCE = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ASCII": exp.Unicode.from_arg_list,
             "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
@@ -503,6 +516,7 @@ class Hive(Dialect):
             exp.DataType.Type.ROWVERSION: "BINARY",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.VARBINARY: "BINARY",
@@ -528,14 +542,13 @@ class Hive(Dialect):
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.DATEINT_FORMAT}) AS INT)",
             exp.DiToDate: lambda self,
             e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.DATEINT_FORMAT})",
-            exp.FileFormatProperty: lambda self,
-            e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.StorageHandlerProperty: lambda self, e: f"STORED BY {self.sql(e, 'this')}",
             exp.FromBase64: rename_func("UNBASE64"),
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
+            exp.IntDiv: lambda self, e: self.binary(e, "DIV"),
             exp.IsNan: rename_func("ISNAN"),
             exp.JSONExtract: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
             exp.JSONExtractScalar: lambda self, e: self.func(
@@ -636,6 +649,13 @@ class Hive(Dialect):
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        TS_OR_DS_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = (
+            exp.DateDiff,
+            exp.Day,
+            exp.Month,
+            exp.Year,
+        )
+
         def unnest_sql(self, expression: exp.Unnest) -> str:
             return rename_func("EXPLODE")(self, expression)
 
@@ -720,6 +740,17 @@ class Hive(Dialect):
 
             return self.func("STRUCT", *values)
 
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            return super().columndef_sql(
+                expression,
+                sep=(
+                    ": "
+                    if isinstance(expression.parent, exp.DataType)
+                    and expression.parent.is_type("struct")
+                    else sep
+                ),
+            )
+
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)
             exprs = f" {exprs}" if exprs else ""
@@ -752,3 +783,11 @@ class Hive(Dialect):
                 this = this.this
 
             return self.func("DATE_FORMAT", this, self.format_time(expression))
+
+        def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
+            if isinstance(expression.this, exp.InputOutputFormat):
+                this = self.sql(expression, "this")
+            else:
+                this = expression.name.upper()
+
+            return f"STORED AS {this}"

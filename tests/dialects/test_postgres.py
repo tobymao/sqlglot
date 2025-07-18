@@ -8,19 +8,6 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
-        self.validate_all(
-            "x ? y",
-            write={
-                "": "JSONB_CONTAINS(x, y)",
-                "postgres": "x ? y",
-            },
-        )
-
-        self.validate_identity("SHA384(x)")
-        self.validate_identity("1.x", "1. AS x")
-        self.validate_identity("|/ x", "SQRT(x)")
-        self.validate_identity("||/ x", "CBRT(x)")
-
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
@@ -31,6 +18,17 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.Alter)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        sql = "ARRAY[x" + ",x" * 27 + "]"
+        expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
+        self.validate_identity(sql, expected_sql, pretty=True)
+
+        self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
+        self.validate_identity("SHA384(x)")
+        self.validate_identity("1.x", "1. AS x")
+        self.validate_identity("|/ x", "SQRT(x)")
+        self.validate_identity("||/ x", "CBRT(x)")
+        self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
+        self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
@@ -77,6 +75,11 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity("SELECT INTERVAL '-1 MONTH'")
+        self.validate_identity("SELECT INTERVAL '4.1 DAY'")
+        self.validate_identity("SELECT INTERVAL '3.14159 HOUR'")
+        self.validate_identity("SELECT INTERVAL '2.5 MONTH'")
+        self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
+        self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
         self.validate_identity(
             "SELECT * FROM test_data, LATERAL JSONB_ARRAY_ELEMENTS(data) WITH ORDINALITY AS elem(value, ordinality)"
         )
@@ -372,6 +375,21 @@ FROM json_data, field_ids""",
             pretty=True,
         )
 
+        self.validate_all(
+            "x ? y",
+            write={
+                "": "JSONB_CONTAINS(x, y)",
+                "postgres": "x ? y",
+            },
+        )
+        self.validate_all(
+            "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
+            read={
+                "mysql": "SELECT DATE_ADD(CURRENT_TIMESTAMP, INTERVAL -1 QUARTER)",
+                "postgres": "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
+                "tsql": "SELECT DATEADD(QUARTER, -1, GETDATE())",
+            },
+        )
         self.validate_all(
             "SELECT ARRAY[]::INT[] AS foo",
             write={
@@ -891,6 +909,21 @@ FROM json_data, field_ids""",
             },
         )
 
+        # Postgres introduced ANY_VALUE in version 16
+        self.validate_all(
+            "SELECT ANY_VALUE(1) AS col",
+            write={
+                "postgres": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=16": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=17.5": "SELECT ANY_VALUE(1) AS col",
+                "postgres, version=15": "SELECT MAX(1) AS col",
+                "postgres, version=13.9": "SELECT MAX(1) AS col",
+            },
+        )
+
+        self.validate_identity("SELECT * FROM foo WHERE id = %s")
+        self.validate_identity("SELECT * FROM foo WHERE id = %(id_param)s")
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
@@ -1039,6 +1072,9 @@ FROM json_data, field_ids""",
         )
         self.validate_identity(
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "ALTER TABLE foo ADD COLUMN id BIGINT NOT NULL PRIMARY KEY DEFAULT 1, ADD CONSTRAINT fk_orders_user FOREIGN KEY (id) REFERENCES foo (id)"
         )
         self.validate_identity(
             "CREATE TABLE t (col integer ARRAY[3])",
@@ -1416,3 +1452,41 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                         "clickhouse": "SELECT JSONExtractString(foo, '12')",
                     },
                 )
+
+    def test_udt(self):
+        def _validate_udt(sql: str):
+            self.validate_identity(sql).to.assert_is(exp.DataType)
+
+        _validate_udt("CAST(5 AS MyType)")
+        _validate_udt('CAST(5 AS "MyType")')
+        _validate_udt("CAST(5 AS MySchema.MyType)")
+        _validate_udt('CAST(5 AS "MySchema"."MyType")')
+        _validate_udt('CAST(5 AS MySchema."MyType")')
+        _validate_udt('CAST(5 AS "MyCatalog"."MySchema"."MyType")')
+
+    def test_round(self):
+        self.validate_identity("ROUND(x)")
+        self.validate_identity("ROUND(x, y)")
+        self.validate_identity("ROUND(CAST(x AS DOUBLE PRECISION))")
+        self.validate_identity("ROUND(CAST(x AS DECIMAL), 4)")
+        self.validate_identity("ROUND(CAST(x AS INT), 4)")
+        self.validate_all(
+            "ROUND(CAST(CAST(x AS DOUBLE PRECISION) AS DECIMAL), 4)",
+            read={
+                "postgres": "ROUND(x::DOUBLE, 4)",
+                "hive": "ROUND(x::DOUBLE, 4)",
+                "bigquery": "ROUND(x::DOUBLE, 4)",
+            },
+        )
+        self.validate_all(
+            "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
+        )
+
+    def test_datatype(self):
+        self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")
+        self.validate_identity("CREATE TABLE foo (data XML)")
+
+    def test_locks(self):
+        for key_type in ("FOR SHARE", "FOR UPDATE", "FOR NO KEY UPDATE", "FOR KEY SHARE"):
+            with self.subTest(f"Test lock type {key_type}"):
+                self.validate_identity(f"SELECT 1 FROM foo AS x {key_type} OF x")

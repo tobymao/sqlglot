@@ -61,6 +61,7 @@ class TokenType(AutoName):
     OR = auto()
     AMP = auto()
     DPIPE = auto()
+    PIPE_GT = auto()
     PIPE = auto()
     PIPE_SLASH = auto()
     DPIPE_SLASH = auto()
@@ -228,6 +229,7 @@ class TokenType(AutoName):
     UNKNOWN = auto()
     VECTOR = auto()
     DYNAMIC = auto()
+    VOID = auto()
 
     # keywords
     ALIAS = auto()
@@ -295,6 +297,7 @@ class TokenType(AutoName):
     FROM = auto()
     FULL = auto()
     FUNCTION = auto()
+    GET = auto()
     GLOB = auto()
     GLOBAL = auto()
     GRANT = auto()
@@ -429,6 +432,9 @@ class TokenType(AutoName):
     ANALYZE = auto()
     NAMESPACE = auto()
     EXPORT = auto()
+
+    # sentinel
+    HIVE_TOKEN_STREAM = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)
@@ -684,6 +690,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "||": TokenType.DPIPE,
+        "|>": TokenType.PIPE_GT,
         ">=": TokenType.GTE,
         "<=": TokenType.LTE,
         "<>": TokenType.NEQ,
@@ -911,6 +918,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "JSONB": TokenType.JSONB,
         "CHAR": TokenType.CHAR,
         "CHARACTER": TokenType.CHAR,
+        "CHAR VARYING": TokenType.VARCHAR,
+        "CHARACTER VARYING": TokenType.VARCHAR,
         "NCHAR": TokenType.NCHAR,
         "UNICHAR": TokenType.UNICHAR,
         "VARCHAR": TokenType.VARCHAR,
@@ -1016,7 +1025,10 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(
-        self, dialect: DialectType = None, use_rs_tokenizer: t.Optional[bool] = None
+        self,
+        dialect: DialectType = None,
+        use_rs_tokenizer: t.Optional[bool] = None,
+        **opts: t.Any,
     ) -> None:
         from sqlglot.dialects import Dialect
 
@@ -1115,7 +1127,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             # Ensures we don't count an extra line if we get a \r\n line break sequence
             if not (self._char == "\r" and self._peek == "\n"):
-                self._col = 1
+                self._col = i
                 self._line += 1
         else:
             self._col += i
@@ -1509,10 +1521,14 @@ class Tokenizer(metaclass=_Tokenizer):
         if not self._RS_TOKENIZER:
             raise SqlglotError("Rust tokenizer is not available")
 
-        try:
-            tokens = self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
-            for token in tokens:
-                token.token_type = _ALL_TOKEN_TYPES[token.token_type_index]
-            return tokens
-        except Exception as e:
-            raise TokenError(str(e))
+        tokens, error_msg = self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
+        for token in tokens:
+            token.token_type = _ALL_TOKEN_TYPES[token.token_type_index]
+
+        # Setting this here so partial token lists can be inspected even if there is a failure
+        self.tokens = tokens
+
+        if error_msg is not None:
+            raise TokenError(error_msg)
+
+        return tokens

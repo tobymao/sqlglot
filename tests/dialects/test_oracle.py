@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError
+from sqlglot import exp, UnsupportedError, ParseError, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -16,6 +16,9 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("DBMS_RANDOM.NORMAL")
+        self.validate_identity("DBMS_RANDOM.VALUE(low, high)").assert_is(exp.Rand)
+        self.validate_identity("DBMS_RANDOM.VALUE()").assert_is(exp.Rand)
         self.validate_identity("CAST(value AS NUMBER DEFAULT 0 ON CONVERSION ERROR)")
         self.validate_identity("SYSDATE")
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
@@ -47,6 +50,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity("SELECT TO_DATE('January 15, 1989, 11:00 A.M.')")
         self.validate_identity("SELECT INSTR(haystack, needle)")
+        self.validate_identity(
+            "SELECT * FROM consumer LEFT JOIN groceries ON consumer.groceries_id = consumer.id PIVOT(MAX(type_id) FOR consumer_type IN (1, 2, 3, 4))"
+        )
         self.validate_identity(
             "SELECT * FROM test UNPIVOT INCLUDE NULLS (value FOR Description IN (col AS 'PREFIX ' || CHR(38) || ' SUFFIX'))"
         )
@@ -117,6 +123,17 @@ class TestOracle(Validator):
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
 
+        self.validate_all(
+            "SELECT DBMS_RANDOM.VALUE()",
+            read={
+                "oracle": "SELECT DBMS_RANDOM.VALUE",
+                "postgres": "SELECT RANDOM()",
+            },
+            write={
+                "oracle": "SELECT DBMS_RANDOM.VALUE()",
+                "postgres": "SELECT RANDOM()",
+            },
+        )
         self.validate_all(
             "SELECT TRIM('|' FROM '||Hello ||| world||')",
             write={
@@ -215,8 +232,8 @@ class TestOracle(Validator):
         self.validate_all(
             "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
             write={
-                "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",
-                "postgres": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",
+                "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
+                "postgres": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -320,6 +337,7 @@ class TestOracle(Validator):
             },
         )
         self.validate_identity("CREATE OR REPLACE FORCE VIEW foo1.foo2")
+        self.validate_identity("TO_TIMESTAMP('foo')")
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
@@ -522,6 +540,8 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
 )) src""",
             pretty=True,
         )
+        self.validate_identity("CONVERT('foo', 'dst')")
+        self.validate_identity("CONVERT('foo', 'dst', 'src')")
 
     def test_connect_by(self):
         start = "START WITH last_name = 'King'"
@@ -702,3 +722,11 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity(
             "ANALYZE TABLE tbl VALIDATE STRUCTURE CASCADE COMPLETE OFFLINE INTO db.tbl"
         )
+
+    def test_prior(self):
+        self.validate_identity(
+            "SELECT id, PRIOR name AS parent_name, name FROM tree CONNECT BY NOCYCLE PRIOR id = parent_id"
+        )
+
+        with self.assertRaises(ParseError):
+            parse_one("PRIOR as foo", read="oracle")

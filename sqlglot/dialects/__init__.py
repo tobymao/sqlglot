@@ -62,6 +62,7 @@ dialect implementations in order to understand how their various components can 
 """
 
 import importlib
+import threading
 
 DIALECTS = [
     "Athena",
@@ -69,10 +70,12 @@ DIALECTS = [
     "ClickHouse",
     "Databricks",
     "Doris",
+    "Dremio",
     "Drill",
     "Druid",
     "DuckDB",
     "Dune",
+    "Fabric",
     "Hive",
     "Materialize",
     "MySQL",
@@ -92,6 +95,7 @@ DIALECTS = [
     "Teradata",
     "Trino",
     "TSQL",
+    "Exasol",
 ]
 
 MODULE_BY_DIALECT = {name: name.lower() for name in DIALECTS}
@@ -105,11 +109,17 @@ MODULE_BY_ATTRIBUTE = {
 
 __all__ = list(MODULE_BY_ATTRIBUTE)
 
+# We use a reentrant lock because a dialect may depend on (i.e., import) other dialects.
+# Without it, the first dialect import would never be completed, because subsequent
+# imports would be blocked on the lock held by the first import.
+_import_lock = threading.RLock()
+
 
 def __getattr__(name):
     module_name = MODULE_BY_ATTRIBUTE.get(name)
     if module_name:
-        module = importlib.import_module(f"sqlglot.dialects.{module_name}")
+        with _import_lock:
+            module = importlib.import_module(f"sqlglot.dialects.{module_name}")
         return getattr(module, name)
 
     raise AttributeError(f"module {__name__} has no attribute {name}")

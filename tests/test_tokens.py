@@ -67,9 +67,19 @@ x"""
         tokens = Tokenizer().tokenize("SELECT\r\n  1,\r\n  2")
 
         self.assertEqual(tokens[0].line, 1)
+        self.assertEqual(tokens[0].col, 6)
         self.assertEqual(tokens[1].line, 2)
+        self.assertEqual(tokens[1].col, 3)
         self.assertEqual(tokens[2].line, 2)
+        self.assertEqual(tokens[2].col, 4)
         self.assertEqual(tokens[3].line, 3)
+        self.assertEqual(tokens[3].col, 3)
+
+        tokens = Tokenizer().tokenize("  SELECT\n    100")
+        self.assertEqual(tokens[0].line, 1)
+        self.assertEqual(tokens[0].col, 8)
+        self.assertEqual(tokens[1].line, 2)
+        self.assertEqual(tokens[1].col, 7)
 
     def test_crlf(self):
         tokens = Tokenizer().tokenize("SELECT a\r\nFROM b")
@@ -175,4 +185,26 @@ x"""
                 (TokenType.VAR, "x"),
                 (TokenType.STRING, ") }}"),
             ],
+        )
+
+    def test_partial_token_list(self):
+        tokenizer = Tokenizer()
+
+        try:
+            # This is expected to fail due to the unbalanced string quotes
+            tokenizer.tokenize("foo 'bar")
+        except TokenError as e:
+            self.assertIn("Error tokenizing 'foo 'ba'", str(e))
+
+        partial_tokens = tokenizer.tokens
+
+        self.assertEqual(len(partial_tokens), 1)
+        self.assertEqual(partial_tokens[0].token_type, TokenType.VAR)
+        self.assertEqual(partial_tokens[0].text, "foo")
+
+    def test_token_repr(self):
+        # Ensures both the Python and the Rust tokenizer produce a human-friendly representation
+        self.assertEqual(
+            repr(Tokenizer().tokenize("foo")),
+            "[<Token token_type: TokenType.VAR, text: foo, line: 1, col: 3, start: 0, end: 2, comments: []>]",
         )

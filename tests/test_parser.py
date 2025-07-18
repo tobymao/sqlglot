@@ -956,3 +956,62 @@ class TestParser(unittest.TestCase):
         # Incomplete or incorrect anonymous meta comments are not registered
         ast = parse_one("YEAR(a) /* sqlglot.anon */")
         self.assertIsInstance(ast, exp.Year)
+
+    def test_token_position_meta(self):
+        ast = parse_one(
+            "SELECT a, b FROM test_schema.test_table_a UNION ALL SELECT c, d FROM test_catalog.test_schema.test_table_b"
+        )
+        for identifier in ast.find_all(exp.Identifier):
+            self.assertEqual(set(identifier.meta), {"line", "col", "start", "end"})
+
+        self.assertEqual(
+            ast.this.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 41, "start": 29, "end": 40},
+        )
+        self.assertEqual(
+            ast.this.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 28, "start": 17, "end": 27},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["this"].meta,
+            {"line": 1, "col": 106, "start": 94, "end": 105},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["db"].meta,
+            {"line": 1, "col": 93, "start": 82, "end": 92},
+        )
+        self.assertEqual(
+            ast.expression.args["from"].this.args["catalog"].meta,
+            {"line": 1, "col": 81, "start": 69, "end": 80},
+        )
+
+        ast = parse_one("SELECT FOO()")
+        self.assertEqual(ast.find(exp.Anonymous).meta, {"line": 1, "col": 10, "start": 7, "end": 9})
+
+        ast = parse_one("SELECT * FROM t")
+        self.assertEqual(ast.find(exp.Star).meta, {"line": 1, "col": 8, "start": 7, "end": 7})
+
+        ast = parse_one("SELECT t.* FROM t")
+        self.assertEqual(ast.find(exp.Star).meta, {"line": 1, "col": 10, "start": 9, "end": 9})
+
+    def test_quoted_identifier_meta(self):
+        sql = 'SELECT "a" FROM "test_schema"."test_table_a"'
+        ast = parse_one(sql)
+
+        db_meta = ast.args["from"].this.args["db"].meta
+        self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], '"test_schema"')
+
+        table_meta = ast.args["from"].this.this.meta
+        self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], '"test_table_a"')
+
+    def test_qualified_function(self):
+        sql = "a.b.c.d.e.f.g.foo()"
+        ast = parse_one(sql)
+        assert not any(isinstance(n, exp.Column) for n in ast.walk())
+        assert len(list(ast.find_all(exp.Dot))) == 7
+
+    def test_pivot_missing_agg_func(self):
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("select * from tbl pivot(col1 for col2 in (val1, val1))")
+
+        self.assertIn("Expecting an aggregation function in PIVOT", str(ctx.exception))

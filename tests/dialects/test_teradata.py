@@ -41,13 +41,8 @@ class TestTeradata(Validator):
         ).assert_is(exp.Command)
 
     def test_translate(self):
-        self.validate_all(
-            "TRANSLATE(x USING LATIN_TO_UNICODE)",
-            write={
-                "teradata": "CAST(x AS CHAR CHARACTER SET UNICODE)",
-            },
-        )
-        self.validate_identity("CAST(x AS CHAR CHARACTER SET UNICODE)")
+        self.validate_identity("TRANSLATE(x USING LATIN_TO_UNICODE)")
+        self.validate_identity("TRANSLATE(x USING LATIN_TO_UNICODE WITH ERROR)")
 
     def test_update(self):
         self.validate_all(
@@ -234,6 +229,17 @@ class TestTeradata(Validator):
                 "snowflake": "TRY_CAST('-2.5' AS DECIMAL(5, 2))",
                 "teradata": "TRYCAST('-2.5' AS DECIMAL(5, 2))",
             },
+        )
+
+    def test_format_override(self):
+        # Teradata column format overrides use the `(FORMAT <format_string>)` syntax.
+        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+        self.validate_identity("SELECT ('a' || 'b') (FORMAT '...')")
+        self.validate_identity("SELECT Col1 (FORMAT '+9999') FROM Test1")
+        self.validate_identity("SELECT date_col (FORMAT 'YYYY-MM-DD') FROM t")
+        self.validate_identity(
+            "SELECT CAST(Col1 AS INTEGER) FROM Test1",
+            "SELECT CAST(Col1 AS INT) FROM Test1",
         )
 
     def test_time(self):

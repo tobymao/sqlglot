@@ -162,7 +162,7 @@ class Teradata(Dialect):
             # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
             "TRYCAST": parser.Parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),
-            "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
+            "TRANSLATE": lambda self: self._parse_translate(),
         }
 
         FUNCTIONS = {
@@ -175,19 +175,17 @@ class Teradata(Dialect):
             TokenType.DSTAR: exp.Pow,
         }
 
-        def _parse_translate(self, strict: bool) -> exp.Expression:
+        def _parse_translate(self) -> exp.TranslateCharacters:
             this = self._parse_assignment()
+            self._match(TokenType.USING)
+            self._match_texts(self.CHARSET_TRANSLATORS)
 
-            if not self._match(TokenType.USING):
-                self.raise_error("Expected USING in TRANSLATE")
-
-            if self._match_texts(self.CHARSET_TRANSLATORS):
-                charset_split = self._prev.text.split("_TO_")
-                to = self.expression(exp.CharacterSet, this=charset_split[1])
-            else:
-                self.raise_error("Expected a character set translator after USING in TRANSLATE")
-
-            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+            return self.expression(
+                exp.TranslateCharacters,
+                this=this,
+                expression=self._prev.text.upper(),
+                with_error=self._match_text_seq("WITH", "ERROR"),
+            )
 
         # FROM before SET in Teradata UPDATE syntax
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
@@ -218,6 +216,45 @@ class Teradata(Dialect):
             if this.args.get("on"):
                 this.set("on", None)
                 self._retreat(self._index - 2)
+            return this
+
+        def _parse_function(
+            self,
+            functions: t.Optional[t.Dict[str, t.Callable]] = None,
+            anonymous: bool = False,
+            optional_parens: bool = True,
+            any_token: bool = False,
+        ) -> t.Optional[exp.Expression]:
+            # Teradata uses a `(FORMAT <format_string>)` clause after column references to
+            # override the output format. When we see this pattern we do not
+            # parse it as a function call.  The syntax is documented at
+            # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+            if (
+                self._next
+                and self._next.token_type == TokenType.L_PAREN
+                and self._index + 2 < len(self._tokens)
+                and self._tokens[self._index + 2].token_type == TokenType.FORMAT
+            ):
+                return None
+
+            return super()._parse_function(
+                functions=functions,
+                anonymous=anonymous,
+                optional_parens=optional_parens,
+                any_token=any_token,
+            )
+
+        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_ops(this)
+
+            if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):
+                # `(FORMAT <format_string>)` after a column specifies a Teradata format override.
+                # See https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+                fmt_string = self._parse_string()
+                self._match_r_paren()
+
+                this = self.expression(exp.FormatPhrase, this=this, format=fmt_string)
+
             return this
 
     class Generator(generator.Generator):

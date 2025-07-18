@@ -8,9 +8,9 @@ easy and transparent as possible, whether it's:
 - Submitting a fix
 - Proposing new features
 
-## We develop with Github
+## We develop with GitHub
 
-We use github to host code, to track issues and feature requests, as well as accept pull requests.
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
 ## Finding tasks to work on
 
@@ -39,7 +39,7 @@ to share any relevant context and increase its chances of getting merged.
 
 Note: make sure to follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) guidelines when creating a PR.
 
-## Report bugs using Github's [issues](https://github.com/tobymao/sqlglot/issues)
+## Report bugs using GitHub's [issues](https://github.com/tobymao/sqlglot/issues)
 
 We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 
@@ -54,7 +54,7 @@ We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 - References (e.g. documentation pages related to the issue)
 
-## Start a discussion using Github's [discussions](https://github.com/tobymao/sqlglot/discussions)
+## Start a discussion using GitHub's [discussions](https://github.com/tobymao/sqlglot/discussions)
 
 [We use GitHub discussions](https://github.com/tobymao/sqlglot/discussions/190) to discuss about the current state
 of the code. If you want to propose a new feature, this is the right place to do it. Just start a discussion, and

@@ -161,9 +161,18 @@ class TestHive(Validator):
             "CREATE TABLE test STORED AS parquet TBLPROPERTIES ('x'='1', 'Z'='2') AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
-                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET', x='1', Z='2') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (format='parquet', x='1', Z='2') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('x'='1', 'Z'='2') AS SELECT 1",
-                "spark": "CREATE TABLE test USING PARQUET TBLPROPERTIES ('x'='1', 'Z'='2') AS SELECT 1",
+                "spark": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('x'='1', 'Z'='2') AS SELECT 1",
+            },
+        )
+
+        self.validate_all(
+            "CREATE TABLE test STORED AS INPUTFORMAT 'foo1' OUTPUTFORMAT 'foo2'",
+            write={
+                "hive": "CREATE TABLE test STORED AS INPUTFORMAT 'foo1' OUTPUTFORMAT 'foo2'",
+                "spark": "CREATE TABLE test STORED AS INPUTFORMAT 'foo1' OUTPUTFORMAT 'foo2'",
+                "databricks": "CREATE TABLE test STORED AS INPUTFORMAT 'foo1' OUTPUTFORMAT 'foo2'",
             },
         )
 
@@ -183,6 +192,28 @@ class TestHive(Validator):
         self.validate_identity("ALTER VIEW v1 SET TBLPROPERTIES ('tblp1'='1', 'tblp2'='2')")
         self.validate_identity(
             "ALTER VIEW v1 UNSET TBLPROPERTIES ('tblp1', 'tblp2')", check_command_warning=True
+        )
+        self.validate_identity("CREATE TABLE foo (col STRUCT<struct_col_a: VARCHAR((50))>)")
+
+        self.validate_all(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            write={
+                "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b TEXT))",
+                "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
+                "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
+            },
+        )
+
+        self.validate_all(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            write={
+                "bigquery": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+                "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b STRUCT(nested_col_a TEXT, nested_col_b TEXT)))",
+                "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
+                "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
+                "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
+            },
         )
 
     def test_lateral_view(self):
@@ -470,6 +501,10 @@ class TestHive(Validator):
         self.validate_identity(
             "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address = 'abc')"
         )
+        self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
 
         self.validate_all(
             "SELECT ${hiveconf:some_var}",
@@ -710,12 +745,20 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "x div y",
+            "x DIV y",
+            read={
+                "databricks": "x DIV y",
+                "duckdb": "x // y",
+                "hive": "x DIV y",
+                "spark2": "x DIV y",
+                "spark": "x DIV y",
+            },
             write={
                 "duckdb": "x // y",
+                "databricks": "x DIV y",
                 "presto": "CAST(CAST(x AS DOUBLE) / y AS INTEGER)",
-                "hive": "CAST(x / y AS INT)",
-                "spark": "CAST(x / y AS INT)",
+                "spark2": "x DIV y",
+                "spark": "x DIV y",
             },
         )
         self.validate_all(

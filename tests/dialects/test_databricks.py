@@ -7,6 +7,12 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        null_type = exp.DataType.build("VOID", dialect="databricks")
+        self.assertEqual(null_type.sql(), "NULL")
+        self.assertEqual(null_type.sql("databricks"), "VOID")
+
+        self.validate_identity("SELECT CAST(NULL AS VOID)")
+        self.validate_identity("SELECT void FROM t")
         self.validate_identity("SELECT * FROM stream")
         self.validate_identity("SELECT t.current_time FROM t")
         self.validate_identity("ALTER TABLE labels ADD COLUMN label_score FLOAT")
@@ -29,6 +35,7 @@ class TestDatabricks(Validator):
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
         self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
+        self.validate_identity("SELECT PARSE_JSON('{}')")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )
@@ -50,7 +57,14 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "COPY INTO target FROM `s3://link` FILEFORMAT = AVRO VALIDATE = ALL FILES = ('file1', 'file2') FORMAT_OPTIONS ('opt1'='true', 'opt2'='test') COPY_OPTIONS ('mergeSchema'='true')"
         )
-        self.validate_identity("SELECT PARSE_JSON('{}')")
+        self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2025-04-29 18.47.18'::DATE",
+            "SELECT CAST(CAST('2025-04-29 18.47.18' AS DATE) AS TIMESTAMP)",
+        )
         self.validate_identity(
             "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(foo, 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
             "SELECT DATE_FORMAT(CAST(FROM_UTC_TIMESTAMP(CAST(foo AS TIMESTAMP), 'America/Los_Angeles') AS TIMESTAMP), 'yyyy-MM-dd HH:mm:ss') AS foo FROM t",
@@ -66,6 +80,30 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "FROM_UTC_TIMESTAMP(x::TIMESTAMP, tz)",
             "FROM_UTC_TIMESTAMP(CAST(x AS TIMESTAMP), tz)",
+        )
+
+        self.validate_identity("SELECT SUBSTRING_INDEX(str, delim, count)")
+
+        self.validate_all(
+            "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            write={
+                "databricks": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "spark": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+                "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT TYPEOF(1)",
+            read={
+                "databricks": "SELECT TYPEOF(1)",
+                "snowflake": "SELECT TYPEOF(1)",
+                "hive": "SELECT TYPEOF(1)",
+                "clickhouse": "SELECT toTypeName(1)",
+            },
+            write={
+                "clickhouse": "SELECT toTypeName(1)",
+            },
         )
 
         self.validate_all(
@@ -152,9 +190,25 @@ class TestDatabricks(Validator):
             },
         )
 
+        for option in ("", " (foo)", " MATCH FULL", " NOT ENFORCED"):
+            with self.subTest(f"Databricks foreign key REFERENCES option: {option}."):
+                self.validate_identity(
+                    f"CREATE TABLE t1 (foo BIGINT NOT NULL CONSTRAINT foo_c FOREIGN KEY REFERENCES t2{option})"
+                )
+        self.validate_identity(
+            "SELECT test, LISTAGG(email, '') AS Email FROM organizations GROUP BY test",
+        )
+
+        self.validate_identity(
+            "WITH t AS (VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t",
+            "WITH t AS (SELECT * FROM VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t",
+        )
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")
+        self.validate_identity("SELECT TRY_CAST(c1:price AS ARRAY<VARIANT>)")
+        self.validate_identity("""SELECT TRY_CAST(c1:["foo bar"]["baz qux"] AS ARRAY<VARIANT>)""")
         self.validate_identity(
             """SELECT c1:item[1].price FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
         )
@@ -325,4 +379,9 @@ class TestDatabricks(Validator):
         self.validate_identity("ANALYZE TABLES IN db COMPUTE STATISTICS")
         self.validate_identity(
             "ANALYZE TABLE ctlg.db.tbl PARTITION(foo = 'foo', bar = 'bar') COMPUTE STATISTICS NOSCAN"
+        )
+
+    def test_udf_environment_property(self):
+        self.validate_identity(
+            """CREATE FUNCTION a() ENVIRONMENT (dependencies = '["foo1==1", "foo2==2"]', environment_version = 'None')"""
         )

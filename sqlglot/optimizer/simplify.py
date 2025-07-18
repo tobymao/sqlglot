@@ -39,6 +39,7 @@ class UnsupportedUnit(Exception):
 def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
+    coalesce_simplification: bool = False,
     dialect: DialectType = None,
 ):
     """
@@ -53,6 +54,9 @@ def simplify(
     Args:
         expression: expression to simplify
         constant_propagation: whether the constant propagation rule should be used
+        coalesce_simplification: whether the simplify coalesce rule should be used.
+            This rule tries to remove coalesce functions, which can be useful in certain analyses but
+            can leave the query more verbose.
     Returns:
         sqlglot.Expression: simplified expression
     """
@@ -125,13 +129,15 @@ def simplify(
             new_node = flatten(new_node)
             new_node = simplify_connectors(new_node, root)
             new_node = remove_complements(new_node, root)
-            new_node = simplify_coalesce(new_node, dialect)
+
+            if coalesce_simplification:
+                new_node = simplify_coalesce(new_node, dialect)
 
             new_node.parent = parent
 
             new_node = simplify_literals(new_node, root)
             new_node = simplify_equality(new_node)
-            new_node = simplify_parens(new_node)
+            new_node = simplify_parens(new_node, dialect)
             new_node = simplify_datetrunc(new_node, dialect)
             new_node = sort_comparison(new_node)
             new_node = simplify_startswith(new_node)
@@ -723,7 +729,7 @@ def _simplify_binary(expression, a, b):
     return None
 
 
-def simplify_parens(expression):
+def simplify_parens(expression: exp.Expression, dialect: DialectType = None) -> exp.Expression:
     if not isinstance(expression, exp.Paren):
         return expression
 
@@ -731,23 +737,35 @@ def simplify_parens(expression):
     parent = expression.parent
     parent_is_predicate = isinstance(parent, exp.Predicate)
 
+    if isinstance(this, exp.Select):
+        return expression
+
+    if isinstance(parent, (exp.SubqueryPredicate, exp.Bracket)):
+        return expression
+
+    # Handle risingwave struct columns
+    # see https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
     if (
-        not isinstance(this, exp.Select)
-        and not isinstance(parent, (exp.SubqueryPredicate, exp.Bracket))
-        and (
-            not isinstance(parent, (exp.Condition, exp.Binary))
-            or isinstance(parent, exp.Paren)
-            or (
-                not isinstance(this, exp.Binary)
-                and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
-            )
-            or (isinstance(this, exp.Predicate) and not parent_is_predicate)
-            or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
-            or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
-            or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
+        dialect == "risingwave"
+        and isinstance(parent, exp.Dot)
+        and (isinstance(parent.right, (exp.Identifier, exp.Star)))
+    ):
+        return expression
+
+    if (
+        not isinstance(parent, (exp.Condition, exp.Binary))
+        or isinstance(parent, exp.Paren)
+        or (
+            not isinstance(this, exp.Binary)
+            and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
         )
+        or (isinstance(this, exp.Predicate) and not parent_is_predicate)
+        or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
+        or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
+        or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):
         return this
+
     return expression
 
 

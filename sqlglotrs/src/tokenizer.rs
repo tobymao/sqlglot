@@ -1,7 +1,6 @@
 use crate::settings::TokenType;
 use crate::trie::{Trie, TrieResult};
 use crate::{Token, TokenTypeSettings, TokenizerDialectSettings, TokenizerSettings};
-use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use std::cmp::{max, min};
 
@@ -45,7 +44,7 @@ impl Tokenizer {
         &self,
         sql: &str,
         dialect_settings: &TokenizerDialectSettings,
-    ) -> Result<Vec<Token>, PyErr> {
+    ) -> (Vec<Token>, Option<String>) {
         let mut state = TokenizerState::new(
             sql,
             &self.settings,
@@ -53,9 +52,14 @@ impl Tokenizer {
             dialect_settings,
             &self.keyword_trie,
         );
-        state.tokenize().map_err(|e| {
-            PyException::new_err(format!("Error tokenizing '{}': {}", e.context, e.message))
-        })
+        let tokenize_result = state.tokenize();
+        match tokenize_result {
+            Ok(tokens) => (tokens, None),
+            Err(e) => {
+                let msg = format!("Error tokenizing '{}': {}", e.context, e.message);
+                (state.tokens, Some(msg))
+            }
+        }
     }
 }
 
@@ -173,7 +177,7 @@ impl<'a> TokenizerState<'a> {
         if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
             if !(self.current_char == '\r' && self.peek_char == '\n') {
-                self.column = 1;
+                self.column = i as usize;
                 self.line += 1;
             }
         } else {

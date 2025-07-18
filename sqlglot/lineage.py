@@ -307,7 +307,7 @@ def to_node(
             else:
                 # The column is not in the pivot, so it must be an implicit column of the
                 # pivoted source -- adapt column to be from the implicit pivoted source.
-                downstream_columns.append(exp.column(c.this, table=pivot.parent.this))
+                downstream_columns.append(exp.column(c.this, table=pivot.parent.alias_or_name))
 
             for downstream_column in downstream_columns:
                 table = downstream_column.table

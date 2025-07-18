@@ -1,20 +1,21 @@
-name: Test and Lint Python Package
+name: Run tests and linter checks
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
-  build:
+  run-checks:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
@@ -26,7 +27,7 @@ jobs:
         source ./.venv/bin/activate
         python -m pip install --upgrade pip
         make install-dev
-    - name: Run checks (linter, code style, tests)
+    - name: Run tests and linter checks
       run: |
         source ./.venv/bin/activate
         make check

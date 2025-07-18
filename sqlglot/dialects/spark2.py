@@ -201,6 +201,7 @@ class Spark2(Hive):
             "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
             "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _build_as_cast("string"),
+            "SLICE": exp.ArraySlice.from_arg_list,
             "TIMESTAMP": _build_as_cast("timestamp"),
             "TO_TIMESTAMP": lambda args: (
                 _build_as_cast("timestamp")(args)
@@ -255,12 +256,21 @@ class Spark2(Hive):
             exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        TS_OR_DS_EXPRESSIONS = (
+            *Hive.Generator.TS_OR_DS_EXPRESSIONS,
+            exp.DayOfMonth,
+            exp.DayOfWeek,
+            exp.DayOfYear,
+            exp.WeekOfYear,
+        )
+
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self,
             e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
+            exp.ArraySlice: rename_func("SLICE"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "FROM_UTC_TIMESTAMP", e.this, e.args.get("zone")
             ),
@@ -282,7 +292,6 @@ class Spark2(Hive):
             # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfYear: rename_func("DAYOFYEAR"),
-            exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
             exp.FromTimeZone: lambda self, e: self.func(
                 "TO_UTC_TIMESTAMP", e.this, e.args.get("zone")
@@ -334,7 +343,9 @@ class Spark2(Hive):
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             arg = expression.this
-            is_json_extract = isinstance(arg, (exp.JSONExtract, exp.JSONExtractScalar))
+            is_json_extract = isinstance(
+                arg, (exp.JSONExtract, exp.JSONExtractScalar)
+            ) and not arg.args.get("variant_extract")
 
             # We can't use a non-nested type (eg. STRING) as a schema
             if expression.to.args.get("nested") and (is_parse_json(arg) or is_json_extract):
@@ -346,13 +357,8 @@ class Spark2(Hive):
 
             return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)
 
-        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-            return super().columndef_sql(
-                expression,
-                sep=(
-                    ": "
-                    if isinstance(expression.parent, exp.DataType)
-                    and expression.parent.is_type("struct")
-                    else sep
-                ),
-            )
+        def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
+            if expression.args.get("hive_format"):
+                return super().fileformatproperty_sql(expression)
+
+            return f"USING {expression.name.upper()}"

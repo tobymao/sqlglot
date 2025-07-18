@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     build_json_extract_path,
     rename_func,
+    remove_from_array_using_filter,
     sha256_sql,
     strposition_sql,
     var_map_sql,
@@ -253,6 +254,7 @@ class ClickHouse(Dialect):
             "DYNAMIC": TokenType.DYNAMIC,
             "ENUM8": TokenType.ENUM8,
             "ENUM16": TokenType.ENUM16,
+            "EXCHANGE": TokenType.COMMAND,
             "FINAL": TokenType.FINAL,
             "FIXEDSTRING": TokenType.FIXEDSTRING,
             "FLOAT32": TokenType.FLOAT,
@@ -295,11 +297,14 @@ class ClickHouse(Dialect):
         MODIFIERS_ATTACHED_TO_SET_OP = False
         INTERVAL_SPANS = False
         OPTIONAL_ALIAS_TOKEN_CTE = False
+        JOINS_HAVE_EQUAL_PRECEDENCE = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
+            "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
+            "ARRAYSLICE": exp.ArraySlice.from_arg_list,
             "COUNTIF": _build_count_if,
             "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
@@ -327,6 +332,8 @@ class ClickHouse(Dialect):
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,
+            "TOTYPENAME": exp.Typeof.from_arg_list,
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
         }
@@ -498,7 +505,10 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS.pop("MATCH")
 
-        PROPERTY_PARSERS = parser.Parser.PROPERTY_PARSERS.copy()
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "ENGINE": lambda self: self._parse_engine_property(),
+        }
         PROPERTY_PARSERS.pop("DYNAMIC")
 
         NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
@@ -567,6 +577,13 @@ class ClickHouse(Dialect):
             **parser.Parser.PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
+
+        def _parse_engine_property(self) -> exp.EngineProperty:
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.EngineProperty,
+                this=self._parse_field(any_token=True, anonymous_func=True),
+            )
 
         # https://clickhouse.com/docs/en/sql-reference/statements/create/function
         def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expression]:
@@ -679,6 +696,7 @@ class ClickHouse(Dialect):
             parse_bracket: bool = False,
             is_db_reference: bool = False,
             parse_partition: bool = False,
+            consume_pipe: bool = False,
         ) -> t.Optional[exp.Expression]:
             this = super()._parse_table(
                 schema=schema,
@@ -1006,6 +1024,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.DECIMAL128: "Decimal128",
             exp.DataType.Type.DECIMAL256: "Decimal256",
             exp.DataType.Type.TIMESTAMP: "DateTime",
+            exp.DataType.Type.TIMESTAMPNTZ: "DateTime",
             exp.DataType.Type.TIMESTAMPTZ: "DateTime",
             exp.DataType.Type.DOUBLE: "Float64",
             exp.DataType.Type.ENUM: "Enum",
@@ -1049,6 +1068,9 @@ class ClickHouse(Dialect):
             exp.ApproxDistinct: rename_func("uniq"),
             exp.ArrayConcat: rename_func("arrayConcat"),
             exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
+            exp.ArrayRemove: remove_from_array_using_filter,
+            exp.ArrayReverse: rename_func("arrayReverse"),
+            exp.ArraySlice: rename_func("arraySlice"),
             exp.ArraySum: rename_func("arraySum"),
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
             exp.ArgMin: arg_max_or_min_no_count("argMin"),
@@ -1082,6 +1104,7 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
+            exp.EndsWith: rename_func("endsWith"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self,
                 e,
@@ -1095,6 +1118,7 @@ class ClickHouse(Dialect):
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
             exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
+            exp.Typeof: rename_func("toTypeName"),
             exp.VarMap: _map_sql,
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
             exp.MD5Digest: rename_func("MD5"),

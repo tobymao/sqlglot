@@ -20,14 +20,22 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT (JULIANDAY('now') - 2440587.5) * 86400.0")
         self.validate_identity("SELECT UNIXEPOCH('now', 'subsec')")
         self.validate_identity("SELECT TIMEDIFF('now', '1809-02-12')")
+        self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
+        self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
         )
         self.validate_identity(
             """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
         )
-        self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
-        self.validate_identity("SELECT INSTR(haystack, needle)")
+        self.validate_identity(
+            "SELECT * FROM t1, t2",
+            "SELECT * FROM t1 CROSS JOIN t2",
+        )
+        self.validate_identity(
+            "ALTER TABLE t RENAME a TO b",
+            "ALTER TABLE t RENAME COLUMN a TO b",
+        )
 
         self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})
         self.validate_all("SELECT GLOB('*y*', 'xyz')", write={"sqlite": "SELECT 'xyz' GLOB '*y*'"})
@@ -113,6 +121,7 @@ class TestSQLite(Validator):
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL, PRIMARY KEY ("foo t id"))',
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL PRIMARY KEY)',
         )
+        self.validate_identity("REPLACE INTO foo (x, y) VALUES (1, 2)", check_command_warning=True)
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

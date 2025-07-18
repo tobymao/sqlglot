@@ -17,6 +17,19 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
+# https://docs.starrocks.io/docs/sql-reference/sql-functions/spatial-functions/st_distance_sphere/
+def st_distance_sphere(self, expression: exp.StDistance) -> str:
+    point1 = expression.this
+    point2 = expression.expression
+
+    point1_x = self.func("ST_X", point1)
+    point1_y = self.func("ST_Y", point1)
+    point2_x = self.func("ST_X", point2)
+    point2_y = self.func("ST_Y", point2)
+
+    return self.func("ST_Distance_Sphere", point1_x, point1_y, point2_x, point2_y)
+
+
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
 
@@ -41,9 +54,9 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
-            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
-            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
+            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
@@ -132,6 +145,9 @@ class StarRocks(MySQL):
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
+            exp.ArrayAgg: rename_func("ARRAY_AGG"),
+            exp.ArrayFilter: rename_func("ARRAY_FILTER"),
+            exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression
@@ -140,12 +156,13 @@ class StarRocks(MySQL):
             exp.JSONExtract: arrow_json_extract_sql,
             exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
+            exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
+            exp.StDistance: st_distance_sphere,
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
-            exp.ArrayFilter: rename_func("ARRAY_FILTER"),
         }
 
         TRANSFORMS.pop(exp.DateTrunc)

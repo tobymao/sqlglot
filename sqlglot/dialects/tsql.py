@@ -10,16 +10,16 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     any_value_to_max_sql,
+    build_date_delta,
     date_delta_sql,
     datestrtodate_sql,
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
-    build_date_delta,
     rename_func,
     strposition_sql,
-    trim_sql,
     timestrtotime_sql,
+    trim_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.parser import build_coalesce
@@ -101,6 +101,24 @@ OPTIONS: parser.OPTIONS_TYPE = {
     "ROBUST": ("PLAN",),
     "USE": ("PLAN",),
 }
+
+
+XML_OPTIONS: parser.OPTIONS_TYPE = {
+    **dict.fromkeys(
+        (
+            "AUTO",
+            "EXPLICIT",
+            "TYPE",
+        ),
+        tuple(),
+    ),
+    "ELEMENTS": (
+        "XSINIL",
+        "ABSENT",
+    ),
+    "BINARY": ("BASE64",),
+}
+
 
 OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
 
@@ -390,6 +408,7 @@ class TSQL(Dialect):
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
@@ -474,6 +493,7 @@ class TSQL(Dialect):
         "114": "%H:%M:%S:%f",
         "120": "%Y-%m-%d %H:%M:%S",
         "121": "%Y-%m-%d %H:%M:%S.%f",
+        "126": "%Y-%m-%dT%H:%M:%S.%f",
     }
 
     FORMAT_TIME_MAPPING = {
@@ -540,13 +560,13 @@ class TSQL(Dialect):
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
         LOG_DEFAULTS_TO_LN = True
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         STRING_ALIASES = True
         NO_PAREN_IF_COMMANDS = False
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.OPTION: lambda self: ("options", self._parse_options()),
+            TokenType.FOR: lambda self: ("for", self._parse_for()),
         }
 
         # T-SQL does not allow BEGIN to be used as an identifier
@@ -578,7 +598,7 @@ class TSQL(Dialect):
             "FORMAT": _build_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "HASHBYTES": _build_hashbytes,
-            "ISNULL": build_coalesce,
+            "ISNULL": lambda args: build_coalesce(args=args, is_null=True),
             "JSON_QUERY": _build_json_query,
             "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _build_with_arg_as_text(exp.Length),
@@ -592,6 +612,7 @@ class TSQL(Dialect):
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "SUSER_NAME": exp.CurrentUser.from_arg_list,
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
+            "SYSDATETIMEOFFSET": exp.CurrentTimestampLTZ.from_arg_list,
             "SYSTEM_USER": exp.CurrentUser.from_arg_list,
             "TIMEFROMPARTS": _build_timefromparts,
             "DATETRUNC": _build_datetrunc,
@@ -603,7 +624,7 @@ class TSQL(Dialect):
             ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
         )
 
-        COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READ_ONLY"}
+        COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READONLY"}
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
@@ -637,6 +658,9 @@ class TSQL(Dialect):
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
 
+        def _parse_alter_table_set(self) -> exp.AlterSet:
+            return self._parse_wrapped(super()._parse_alter_table_set)
+
         def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
             if self._match(TokenType.MERGE):
                 comments = self._prev_comments
@@ -669,6 +693,28 @@ class TSQL(Dialect):
                 )
 
             return self._parse_wrapped_csv(_parse_option)
+
+        def _parse_xml_key_value_option(self) -> exp.XMLKeyValueOption:
+            this = self._parse_primary_or_var()
+            if self._match(TokenType.L_PAREN, advance=False):
+                expression = self._parse_wrapped(self._parse_string)
+            else:
+                expression = None
+
+            return exp.XMLKeyValueOption(this=this, expression=expression)
+
+        def _parse_for(self) -> t.Optional[t.List[exp.Expression]]:
+            if not self._match_pair(TokenType.FOR, TokenType.XML):
+                return None
+
+            def _parse_for_xml() -> t.Optional[exp.Expression]:
+                return self.expression(
+                    exp.QueryOption,
+                    this=self._parse_var_from_options(XML_OPTIONS, raise_unmatched=False)
+                    or self._parse_xml_key_value_option(),
+                )
+
+            return self._parse_csv(_parse_for_xml)
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -890,6 +936,17 @@ class TSQL(Dialect):
 
             return self.expression(exp.DeclareItem, this=var, kind=data_type, default=value)
 
+        def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
+            expression = super()._parse_alter_table_alter()
+
+            if expression is not None:
+                collation = expression.args.get("collate")
+                if isinstance(collation, exp.Column) and isinstance(collation.this, exp.Identifier):
+                    identifier = collation.this
+                    collation.set("this", exp.Var(this=identifier.name))
+
+            return expression
+
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
         QUERY_HINTS = False
@@ -910,6 +967,8 @@ class TSQL(Dialect):
         COPY_PARAMS_EQ_REQUIRED = True
         PARSE_JSON_NAME = None
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+        ALTER_SET_WRAPPED = True
+        ALTER_SET_TYPE = ""
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Create,
@@ -962,6 +1021,7 @@ class TSQL(Dialect):
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
+            exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.Extract: rename_func("DATEPART"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
@@ -1166,8 +1226,6 @@ class TSQL(Dialect):
                     # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
                     ctas_expression.set("with", with_.pop())
 
-            sql = super().create_sql(expression)
-
             table = expression.find(exp.Table)
 
             # Convert CTAS statement to SELECT .. INTO ..
@@ -1185,21 +1243,23 @@ class TSQL(Dialect):
                     select_into.limit(0, copy=False)
 
                 sql = self.sql(select_into)
+            else:
+                sql = super().create_sql(expression)
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
                 sql_with_ctes = self.prepend_ctes(expression, sql)
                 sql_literal = self.sql(exp.Literal.string(sql_with_ctes))
                 if kind == "SCHEMA":
-                    return f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql_literal})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = {identifier}) EXEC({sql_literal})"""
                 elif kind == "TABLE":
                     assert table
                     where = exp.and_(
-                        exp.column("table_name").eq(table.name),
-                        exp.column("table_schema").eq(table.db) if table.db else None,
-                        exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
+                        exp.column("TABLE_NAME").eq(table.name),
+                        exp.column("TABLE_SCHEMA").eq(table.db) if table.db else None,
+                        exp.column("TABLE_CATALOG").eq(table.catalog) if table.catalog else None,
                     )
-                    return f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql_literal})"""
+                    return f"""IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE {where}) EXEC({sql_literal})"""
                 elif kind == "INDEX":
                     index = self.sql(exp.Literal.string(expression.this.text("this")))
                     return f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC({sql_literal})"""
@@ -1339,3 +1399,7 @@ class TSQL(Dialect):
             output = self.sql(expression, "output")
             output = f" {output}" if output else ""
             return f"{this}{default}{output}"
+
+        def coalesce_sql(self, expression: exp.Coalesce) -> str:
+            func_name = "ISNULL" if expression.args.get("is_null") else "COALESCE"
+            return rename_func(func_name)(self, expression)

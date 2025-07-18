@@ -449,3 +449,76 @@ SELECT
 FROM foo
 WHERE
   1 = 1 AND /* first comment */ foo.a /* second comment */ = 1;
+
+MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET status = s.status, amount = s.amount;
+MERGE INTO t
+USING s
+ON t.id = s.id
+WHEN MATCHED THEN UPDATE SET
+  status = s.status,
+  amount = s.amount;
+
+SELECT
+    id,
+    -- SUM(total) as all_that,
+    ARRAY_AGG(foo)[0][0] AS first_foo,
+FROM facts
+GROUP BY all;
+SELECT
+  id,
+  ARRAY_AGG(foo)[0][0] AS first_foo /* SUM(total) as all_that, */
+FROM facts
+GROUP BY ALL;
+
+ALTER TABLE ct ADD CONSTRAINT ct_id_fk FOREIGN KEY (id) REFERENCES et (fid) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ct
+  ADD CONSTRAINT ct_id_fk FOREIGN KEY (id) REFERENCES et (
+    fid
+  ) DEFERRABLE INITIALLY DEFERRED;
+
+SELECT
+    *
+FROM
+    a
+WHERE
+    /*111*/
+    b = 1
+    /*222*/
+ORDER BY
+    c;
+SELECT
+  *
+FROM a
+WHERE
+  b /* 111 */ = 1
+/* 222 */
+ORDER BY
+  c;
+
+SELECT
+    COUNT(*)
+FROM
+    table_a
+/* join comment */
+JOIN
+    table_b
+ON
+    table_a.id = table_b.id
+/* group by comment */
+GROUP BY
+    table_a.id
+/* having comment */
+HAVING
+    table_a.id = 1;
+SELECT
+  COUNT(*)
+FROM table_a
+/* join comment */
+JOIN table_b
+  ON table_a.id = table_b.id
+/* group by comment */
+GROUP BY
+  table_a.id
+/* having comment */
+HAVING
+  table_a.id = 1;

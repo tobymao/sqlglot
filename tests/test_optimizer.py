@@ -51,7 +51,9 @@ def normalize(expression, **kwargs):
 
 
 def simplify(expression, **kwargs):
-    return optimizer.simplify.simplify(expression, constant_propagation=True, **kwargs)
+    return optimizer.simplify.simplify(
+        expression, constant_propagation=True, coalesce_simplification=True, **kwargs
+    )
 
 
 def annotate_functions(expression, **kwargs):
@@ -120,6 +122,11 @@ class TestOptimizer(unittest.TestCase):
             "temporal": {
                 "d": "DATE",
                 "t": "DATETIME",
+            },
+            "structs": {
+                "one": "STRUCT<a_1 INT, b_1 VARCHAR>",
+                "nested_0": "STRUCT<a_1 INT, nested_1 STRUCT<a_2 INT, nested_2 STRUCT<a_3 INT>>>",
+                "quoted": 'STRUCT<"foo bar" INT>',
             },
         }
 
@@ -395,18 +402,6 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             qualified.sql(),
             'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_columns.qualify_columns(
-                parse_one(
-                    "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 as f1) AS col) SELECT tbl1.col.* from tbl1",
-                    dialect="bigquery",
-                ),
-                schema=MappingSchema(schema=None, dialect="bigquery"),
-                infer_schema=False,
-            ).sql(dialect="bigquery"),
-            "WITH tbl1 AS (SELECT STRUCT(1 AS `f0`, 2 AS f1) AS col) SELECT tbl1.col.`f0` AS `f0`, tbl1.col.f1 AS f1 FROM tbl1",
         )
 
         # can't coalesce USING columns because they don't exist in every already-joined table
@@ -869,6 +864,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         sql = "UPDATE tbl1 SET col = 0"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
 
+        sql = "SELECT * FROM t LEFT JOIN UNNEST(a) AS a1 LEFT JOIN UNNEST(a1.a) AS a2"
+        scope = build_scope(parse_one(sql, read="bigquery"))
+        self.assertEqual(set(scope.selected_sources), {"t", "a1", "a2"})
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)
@@ -891,7 +890,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_annotate_funcs(self):
         test_schema = {
-            "tbl": {"bin_col": "BINARY", "str_col": "STRING", "bignum_col": "BIGNUMERIC"}
+            "tbl": {
+                "bin_col": "BINARY",
+                "str_col": "STRING",
+                "bignum_col": "BIGNUMERIC",
+                "date_col": "DATE",
+                "timestamp_col": "TIMESTAMP",
+                "double_col": "DOUBLE",
+                "bigint_col": "BIGINT",
+                "bool_col": "BOOLEAN",
+                "bytes_col": "BYTES",
+                "interval_col": "INTERVAL",
+                "array_col": "ARRAY<STRING>",
+            }
         }
 
         for i, (meta, sql, expected) in enumerate(
@@ -1552,3 +1563,56 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
         self.assertEqual(18, normalization_distance(gen_expr(3), max_=100))
         self.assertEqual(110, normalization_distance(gen_expr(10), max_=100))
+
+    def test_manually_annotate_snowflake(self):
+        dialect = "snowflake"
+        schema = {
+            "SCHEMA": {
+                "TBL": {"COL": "INT", "col2": "VARCHAR"},
+            }
+        }
+        example_query = 'SELECT * FROM "SCHEMA"."TBL"'
+
+        expression = parse_one(example_query, dialect=dialect)
+        qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
+        annotated = optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
+
+        self.assertTrue(annotated.selects[0].is_type("INT"))
+        self.assertTrue(annotated.selects[1].is_type("VARCHAR"))
+
+    def test_annotate_table_as_struct_bigquery(self):
+        dialect = "bigquery"
+        schema = {"d": {"s": {"t": {"c1": "int64", "c2": "struct<f1 int64, f2 string>"}}}}
+
+        def _annotate(query: str) -> exp.Expression:
+            expression = parse_one(example_query, dialect=dialect)
+            qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
+            return optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
+
+        example_query = "SELECT t FROM d.s.t"
+        annotated = _annotate(example_query)
+
+        self.assertIsInstance(annotated.selects[0].this, exp.TableColumn)
+        self.assertEqual(
+            annotated.sql("bigquery"), "SELECT `t` AS `_col_0` FROM `d`.`s`.`t` AS `t`"
+        )
+        self.assertTrue(
+            annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
+        )
+
+        example_query = "SELECT subq FROM (SELECT * from d.s.t) subq"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(
+            annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
+        )
+
+        example_query = "WITH t AS (SELECT 1 AS c) SELECT t FROM t"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(annotated.selects[0].is_type("STRUCT<c INT>"))
+
+        example_query = "WITH t AS (SELECT FOO() AS c) SELECT t FROM t"
+        annotated = _annotate(example_query)
+
+        self.assertTrue(annotated.selects[0].is_type("UNKNOWN"))

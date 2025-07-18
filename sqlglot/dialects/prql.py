@@ -47,7 +47,7 @@ class PRQL(Dialect):
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
-            "FILTER": lambda self, query: query.where(self._parse_assignment()),
+            "FILTER": lambda self, query: query.where(self._parse_disjunction()),
             "APPEND": lambda self, query: query.union(
                 _select_all(self._parse_table()), distinct=False, copy=False
             ),
@@ -189,11 +189,15 @@ class PRQL(Dialect):
             parse_bracket: bool = False,
             is_db_reference: bool = False,
             parse_partition: bool = False,
+            consume_pipe: bool = False,
         ) -> t.Optional[exp.Expression]:
             return self._parse_table_parts()
 
         def _parse_from(
-            self, joins: bool = False, skip_from_token: bool = False
+            self,
+            joins: bool = False,
+            skip_from_token: bool = False,
+            consume_pipe: bool = False,
         ) -> t.Optional[exp.From]:
             if not skip_from_token and not self._match(TokenType.FROM):
                 return None

@@ -12,7 +12,7 @@ from sqlglot.helper import (
     seq_get,
 )
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import Schema, ensure_schema
+from sqlglot.schema import MappingSchema, Schema, ensure_schema
 from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
@@ -32,7 +32,7 @@ def annotate_types(
     schema: t.Optional[t.Dict | Schema] = None,
     annotators: t.Optional[AnnotatorsType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
-    dialect: t.Optional[DialectType] = None,
+    dialect: DialectType = None,
 ) -> E:
     """
     Infers the types of an expression, annotating its AST accordingly.
@@ -55,9 +55,9 @@ def annotate_types(
         The expression annotated with types.
     """
 
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, dialect=dialect)
 
-    return TypeAnnotator(schema, annotators, coerces_to, dialect=dialect).annotate(expression)
+    return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 
 
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
@@ -182,11 +182,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         annotators: t.Optional[AnnotatorsType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
-        dialect: t.Optional[DialectType] = None,
     ) -> None:
         self.schema = schema
-        self.annotators = annotators or Dialect.get_or_raise(dialect).ANNOTATORS
-        self.coerces_to = coerces_to or self.COERCES_TO
+        self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
+        self.coerces_to = (
+            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
+        )
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
@@ -289,8 +290,52 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 elif isinstance(source.expression, exp.Unnest):
                     self._set_type(col, source.expression.type)
 
+        if isinstance(self.schema, MappingSchema):
+            for table_column in scope.table_columns:
+                source = scope.sources.get(table_column.name)
+
+                if isinstance(source, exp.Table):
+                    schema = self.schema.find(
+                        source, raise_on_missing=False, ensure_data_types=True
+                    )
+                    if not isinstance(schema, dict):
+                        continue
+
+                    struct_type = exp.DataType(
+                        this=exp.DataType.Type.STRUCT,
+                        expressions=[
+                            exp.ColumnDef(this=exp.to_identifier(c), kind=kind)
+                            for c, kind in schema.items()
+                        ],
+                        nested=True,
+                    )
+                    self._set_type(table_column, struct_type)
+                elif (
+                    isinstance(source, Scope)
+                    and isinstance(source.expression, exp.Query)
+                    and source.expression.is_type(exp.DataType.Type.STRUCT)
+                ):
+                    self._set_type(table_column, source.expression.type)
+
         # Then (possibly) annotate the remaining expressions in the scope
         self._maybe_annotate(scope.expression)
+
+        if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
+            struct_type = exp.DataType(
+                this=exp.DataType.Type.STRUCT,
+                expressions=[
+                    exp.ColumnDef(this=exp.to_identifier(select.output_name), kind=select.type)
+                    for select in scope.expression.selects
+                ],
+                nested=True,
+            )
+
+            if not any(
+                cd.kind.is_type(exp.DataType.Type.UNKNOWN)
+                for cd in struct_type.expressions
+                if cd.kind
+            ):
+                self._set_type(scope.expression, struct_type)
 
     def _maybe_annotate(self, expression: E) -> E:
         if id(expression) in self._visited:
@@ -311,7 +356,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _maybe_coerce(
-        self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
+        self,
+        type1: exp.DataType | exp.DataType.Type,
+        type2: exp.DataType | exp.DataType.Type,
     ) -> exp.DataType | exp.DataType.Type:
         """
         Returns type2 if type1 can be coerced into it, otherwise type1.
@@ -328,7 +375,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(type2, exp.DataType):
             if type2.expressions:
-                return type1
+                return type2
             type2_value = type2.this
         else:
             type2_value = type2
@@ -583,4 +630,16 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.DATE)
         else:
             self._set_type(expression, exp.DataType.Type.INT)
+        return expression
+
+    def _annotate_by_array_element(self, expression: exp.Expression) -> exp.Expression:
+        self._annotate_args(expression)
+
+        array_arg = expression.this
+        if array_arg.type.is_type(exp.DataType.Type.ARRAY):
+            element_type = seq_get(array_arg.type.expressions, 0) or exp.DataType.Type.UNKNOWN
+            self._set_type(expression, element_type)
+        else:
+            self._set_type(expression, exp.DataType.Type.UNKNOWN)
+
         return expression

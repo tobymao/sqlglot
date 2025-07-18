@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+
 from sqlglot.expressions import DATA_TYPE
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -26,6 +27,7 @@ from sqlglot.dialects.dialect import (
     no_timestamp_sql,
     pivot_column_names,
     rename_func,
+    remove_from_array_using_filter,
     strposition_sql,
     str_to_time_sql,
     timestamptrunc_sql,
@@ -180,8 +182,15 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
         if is_bq_inline_struct:
             args.append(self.sql(value))
         else:
-            key = expr.name if is_property_eq else f"_{i}"
-            args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
+            if is_property_eq:
+                if isinstance(expr.this, exp.Identifier):
+                    key = self.sql(exp.Literal.string(expr.name))
+                else:
+                    key = self.sql(expr.this)
+            else:
+                key = self.sql(exp.Literal.string(f"_{i}"))
+
+            args.append(f"{key}: {self.sql(value)}")
 
     csv_args = ", ".join(args)
 
@@ -289,6 +298,12 @@ class DuckDB(Dialect):
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    DATE_PART_MAPPING = {
+        **Dialect.DATE_PART_MAPPING,
+        "DAYOFWEEKISO": "ISODOW",
+    }
+    DATE_PART_MAPPING.pop("WEEKDAY")
+
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
             # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.
@@ -320,7 +335,7 @@ class DuckDB(Dialect):
             "BITSTRING": TokenType.BIT,
             "BPCHAR": TokenType.TEXT,
             "CHAR": TokenType.TEXT,
-            "CHARACTER VARYING": TokenType.TEXT,
+            "DATETIME": TokenType.TIMESTAMPNTZ,
             "DETACH": TokenType.DETACH,
             "EXCLUDE": TokenType.EXCEPT,
             "LOGICAL": TokenType.BOOLEAN,
@@ -330,6 +345,7 @@ class DuckDB(Dialect):
             "SIGNED": TokenType.INT,
             "STRING": TokenType.TEXT,
             "SUMMARIZE": TokenType.SUMMARIZE,
+            "TIMESTAMP": TokenType.TIMESTAMPNTZ,
             "TIMESTAMP_S": TokenType.TIMESTAMP_S,
             "TIMESTAMP_MS": TokenType.TIMESTAMP_MS,
             "TIMESTAMP_NS": TokenType.TIMESTAMP_NS,
@@ -350,6 +366,8 @@ class DuckDB(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
+        MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
+
         BITWISE = {
             **parser.Parser.BITWISE,
             TokenType.TILDA: exp.RegexpLike,
@@ -476,6 +494,24 @@ class DuckDB(Dialect):
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
+        SET_PARSERS = {
+            **parser.Parser.SET_PARSERS,
+            "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
+        }
+
+        def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expression]:
+            index = self._index
+            if not self._match_text_seq("LAMBDA"):
+                return super()._parse_lambda(alias=alias)
+
+            expressions = self._parse_csv(self._parse_lambda_arg)
+            if not self._match(TokenType.COLON):
+                self._retreat(index)
+                return None
+
+            this = self._replace_lambda(self._parse_assignment(), expressions)
+            return self.expression(exp.Lambda, this=this, expressions=expressions, colon=True)
+
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             # DuckDB supports prefix aliases, e.g. foo: 1
             if self._next and self._next.token_type == TokenType.COLON:
@@ -500,6 +536,7 @@ class DuckDB(Dialect):
             parse_bracket: bool = False,
             is_db_reference: bool = False,
             parse_partition: bool = False,
+            consume_pipe: bool = False,
         ) -> t.Optional[exp.Expression]:
             # DuckDB supports prefix aliases, e.g. FROM foo: bar
             if self._next and self._next.token_type == TokenType.COLON:
@@ -591,6 +628,12 @@ class DuckDB(Dialect):
         def _parse_show_duckdb(self, this: str) -> exp.Show:
             return self.expression(exp.Show, this=this)
 
+        def _parse_primary(self) -> t.Optional[exp.Expression]:
+            if self._match_pair(TokenType.HASH, TokenType.NUMBER):
+                return exp.PositionalColumn(this=exp.Literal.number(self._prev.text))
+
+            return super()._parse_primary()
+
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         NAMED_PLACEHOLDER_TOKEN = "$"
@@ -612,17 +655,20 @@ class DuckDB(Dialect):
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
+        SUPPORTS_WINDOW_EXCLUDE = True
         COPY_HAS_INTO_KEYWORD = False
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
         ARRAY_CONCAT_IS_VAR_LEN = False
         ARRAY_SIZE_DIM_REQUIRED = False
+        NORMALIZE_EXTRACT_DATE_PARTS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
+            exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.BitwiseXor: rename_func("XOR"),
@@ -879,6 +925,19 @@ class DuckDB(Dialect):
             exp.NthValue,
         )
 
+        def lambda_sql(
+            self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True
+        ) -> str:
+            if expression.args.get("colon"):
+                prefix = "LAMBDA "
+                arrow_sep = ":"
+                wrap = False
+            else:
+                prefix = ""
+
+            lambda_sql = super().lambda_sql(expression, arrow_sep=arrow_sep, wrap=wrap)
+            return f"{prefix}{lambda_sql}"
+
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"
 
@@ -947,20 +1006,6 @@ class DuckDB(Dialect):
                     expression.set("method", exp.var("RESERVOIR"))
 
             return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
-
-        def interval_sql(self, expression: exp.Interval) -> str:
-            multiplier: t.Optional[int] = None
-            unit = expression.text("unit").lower()
-
-            if unit.startswith("week"):
-                multiplier = 7
-            if unit.startswith("quarter"):
-                multiplier = 90
-
-            if multiplier:
-                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
-
-            return super().interval_sql(expression)
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             if isinstance(expression.parent, exp.UserDefinedFunction):
@@ -1153,3 +1198,48 @@ class DuckDB(Dialect):
         def autoincrementcolumnconstraint_sql(self, _) -> str:
             self.unsupported("The AUTOINCREMENT column constraint is not supported by DuckDB")
             return ""
+
+        def aliases_sql(self, expression: exp.Aliases) -> str:
+            this = expression.this
+            if isinstance(this, exp.Posexplode):
+                return self.posexplode_sql(this)
+
+            return super().aliases_sql(expression)
+
+        def posexplode_sql(self, expression: exp.Posexplode) -> str:
+            this = expression.this
+            parent = expression.parent
+
+            # The default Spark aliases are "pos" and "col", unless specified otherwise
+            pos, col = exp.to_identifier("pos"), exp.to_identifier("col")
+
+            if isinstance(parent, exp.Aliases):
+                # Column case: SELECT POSEXPLODE(col) [AS (a, b)]
+                pos, col = parent.expressions
+            elif isinstance(parent, exp.Table):
+                # Table case: SELECT * FROM POSEXPLODE(col) [AS (a, b)]
+                alias = parent.args.get("alias")
+                if alias:
+                    pos, col = alias.columns or [pos, col]
+                    alias.pop()
+
+            # Translate POSEXPLODE to UNNEST + GENERATE_SUBSCRIPTS
+            # Note: In Spark pos is 0-indexed, but in DuckDB it's 1-indexed, so we subtract 1 from GENERATE_SUBSCRIPTS
+            unnest_sql = self.sql(exp.Unnest(expressions=[this], alias=col))
+            gen_subscripts = self.sql(
+                exp.Alias(
+                    this=exp.Anonymous(
+                        this="GENERATE_SUBSCRIPTS", expressions=[this, exp.Literal.number(1)]
+                    )
+                    - exp.Literal.number(1),
+                    alias=pos,
+                )
+            )
+
+            posexplode_sql = self.format_args(gen_subscripts, unnest_sql)
+
+            if isinstance(parent, exp.From) or (parent and isinstance(parent.parent, exp.From)):
+                # SELECT * FROM POSEXPLODE(col) -> SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(...), UNNEST(...))
+                return self.sql(exp.Subquery(this=exp.Select(expressions=[posexplode_sql])))
+
+            return posexplode_sql

@@ -31,12 +31,20 @@ def _trim_sql(self: Oracle.Generator, expression: exp.Trim) -> str:
     return trim_sql(self, expression)
 
 
+def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
+    if len(args) == 1:
+        return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
+
+    return build_formatted_time(exp.StrToTime, "oracle")(args)
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     NULL_ORDERING = "nulls_are_large"
     ON_CONDITION_EMPTY_BEFORE_ERROR = False
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -97,16 +105,16 @@ class Oracle(Dialect):
         }
 
     class Parser(parser.Parser):
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
         VALUES_FOLLOWED_BY_PAREN = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "CONVERT": exp.ConvertToCharset.from_arg_list,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": build_timetostr_or_tochar,
-            "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
+            "TO_TIMESTAMP": _build_to_timestamp,
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1) or exp.Literal.string("DD"),
@@ -118,7 +126,9 @@ class Oracle(Dialect):
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "NEXT": lambda self: self._parse_next_value_for(),
+            "PRIOR": lambda self: self.expression(exp.Prior, this=self._parse_bitwise()),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
+            "DBMS_RANDOM": lambda self: self._parse_dbms_random(),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -134,6 +144,7 @@ class Oracle(Dialect):
             ),
             "JSON_EXISTS": lambda self: self._parse_json_exists(),
         }
+        FUNCTION_PARSERS.pop("CONVERT")
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
@@ -166,6 +177,19 @@ class Oracle(Dialect):
                 ("CHECK", "OPTION"),
             ),
         }
+
+        def _parse_dbms_random(self) -> t.Optional[exp.Expression]:
+            if self._match_text_seq(".", "VALUE"):
+                lower, upper = None, None
+                if self._match(TokenType.L_PAREN, advance=False):
+                    lower_upper = self._parse_wrapped_csv(self._parse_bitwise)
+                    if len(lower_upper) == 2:
+                        lower, upper = lower_upper
+
+                return exp.Rand(lower=lower, upper=upper)
+
+            self._retreat(self._index - 1)
+            return None
 
         def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
             return self.expression(
@@ -240,6 +264,9 @@ class Oracle(Dialect):
 
             return self.expression(exp.Into, bulk_collect=bulk_collect, expressions=expressions)
 
+        def _parse_connect_with_prior(self):
+            return self._parse_assignment()
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -251,7 +278,9 @@ class Oracle(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_SELECT_INTO = True
         TZ_TO_WITH_TIME_ZONE = True
+        SUPPORTS_WINDOW_EXCLUDE = True
         QUERY_HINT_SEP = " "
+        SUPPORTS_DECODE_CASE = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -266,6 +295,7 @@ class Oracle(Dialect):
             exp.DataType.Type.NCHAR: "NCHAR",
             exp.DataType.Type.TEXT: "CLOB",
             exp.DataType.Type.TIMETZ: "TIME",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.VARBINARY: "BLOB",
@@ -284,6 +314,7 @@ class Oracle(Dialect):
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Mod: rename_func("MOD"),
+            exp.Rand: rename_func("DBMS_RANDOM.VALUE"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
@@ -326,11 +357,8 @@ class Oracle(Dialect):
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def add_column_sql(self, expression: exp.Alter) -> str:
-            actions = self.expressions(expression, key="actions", flat=True)
-            if len(expression.args.get("actions", [])) > 1:
-                return f"ADD ({actions})"
-            return f"ADD {actions}"
+        def add_column_sql(self, expression: exp.Expression) -> str:
+            return f"ADD {self.sql(expression)}"
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:
             option = self.sql(expression, "this")

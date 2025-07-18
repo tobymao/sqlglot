@@ -1,6 +1,6 @@
 ![SQLGlot logo](sqlglot.png)
 
-SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [24 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
+SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [30 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
 
 It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks), while being written purely in Python.
 
@@ -496,7 +496,8 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 * [Apache Superset](https://github.com/apache/superset)
 * [Dagster](https://github.com/dagster-io/dagster)
 * [Fugue](https://github.com/fugue-project/fugue)
-* [ibis](https://github.com/ibis-project/ibis)
+* [Ibis](https://github.com/ibis-project/ibis)
+* [dlt](https://github.com/dlt-hub/dlt)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)
 * [Querybook](https://github.com/pinterest/querybook)
 * [Quokka](https://github.com/marsupialtail/quokka)

@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     binary_from_function,
     bool_xor_sql,
+    build_replace_with_optional_replacement,
     date_trunc_to_time,
     datestrtodate_sql,
     encode_decode_sql,
@@ -30,6 +31,7 @@ from sqlglot.dialects.dialect import (
     sequence_sql,
     build_regexp_extract,
     explode_to_unnest_sql,
+    space_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -220,7 +222,7 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
     return explode_to_unnest_sql(self, expression)
 
 
-def _amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
+def amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
     # We check for expression.type because the columns can be amended only if types were inferred
     if isinstance(expression, exp.Select) and expression.type:
         for lateral in expression.args.get("laterals") or []:
@@ -281,6 +283,11 @@ class Presto(Dialect):
         else self._set_type(e, exp.DataType.Type.DOUBLE),
     }
 
+    SUPPORTED_SETTINGS = {
+        *Dialect.SUPPORTED_SETTINGS,
+        "variant_extract_is_json_extract",
+    }
+
     class Tokenizer(tokens.Tokenizer):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         UNICODE_STRINGS = [
@@ -288,6 +295,8 @@ class Presto(Dialect):
             for q in t.cast(t.List[str], tokens.Tokenizer.QUOTES)
             for prefix in ("U&", "u&")
         ]
+
+        NESTED_COMMENTS = False
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
@@ -308,6 +317,7 @@ class Presto(Dialect):
 
     class Parser(parser.Parser):
         VALUES_FOLLOWED_BY_PAREN = False
+        ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -330,6 +340,8 @@ class Presto(Dialect):
             "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
             "DATE_TRUNC": date_trunc_to_time,
             "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
+            "DOW": exp.DayOfWeekIso.from_arg_list,
+            "DOY": exp.DayOfYear.from_arg_list,
             "ELEMENT_AT": lambda args: exp.Bracket(
                 this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
             ),
@@ -350,6 +362,7 @@ class Presto(Dialect):
                 expression=seq_get(args, 1),
                 replacement=seq_get(args, 2) or exp.Literal.string(""),
             ),
+            "REPLACE": build_replace_with_optional_replacement,
             "ROW": exp.Struct.from_arg_list,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SET_AGG": exp.ArrayUniqueAgg.from_arg_list,
@@ -357,6 +370,7 @@ class Presto(Dialect):
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0), substr=seq_get(args, 1), occurrence=seq_get(args, 2)
             ),
+            "SLICE": exp.ArraySlice.from_arg_list,
             "TO_CHAR": _build_to_char,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
@@ -425,6 +439,7 @@ class Presto(Dialect):
             exp.ArrayContains: rename_func("CONTAINS"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("SET_AGG"),
+            exp.ArraySlice: rename_func("SLICE"),
             exp.AtTimeZone: rename_func("AT_TIMEZONE"),
             exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
             exp.BitwiseLeftShift: lambda self, e: self.func(
@@ -454,7 +469,8 @@ class Presto(Dialect):
             exp.DiToDate: lambda self,
             e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
-            exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
+            exp.FileFormatProperty: lambda self,
+            e: f"format={self.sql(exp.Literal.string(e.name))}",
             exp.First: _first_last_sql,
             exp.FromTimeZone: lambda self,
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
@@ -482,13 +498,15 @@ class Presto(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_window_clause,
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     transforms.explode_projection_to_unnest(1),
                     transforms.eliminate_semi_and_anti_joins,
-                    _amend_exploded_column_table,
+                    amend_exploded_column_table,
                 ]
             ),
+            exp.Space: space_sql,
             exp.SortArray: _no_sort_array,
             exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",

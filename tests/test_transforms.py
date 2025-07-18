@@ -5,6 +5,7 @@ from sqlglot.transforms import (
     eliminate_distinct_on,
     eliminate_join_marks,
     eliminate_qualify,
+    eliminate_window_clause,
     remove_precision_parameterized_types,
     unalias_group,
 )
@@ -16,7 +17,8 @@ class TestTransforms(unittest.TestCase):
     def validate(self, transform, sql, target, dialect=None):
         with self.subTest(f"{dialect} - {sql}"):
             self.assertEqual(
-                parse_one(sql, dialect=dialect).transform(transform).sql(dialect=dialect), target
+                parse_one(sql, dialect=dialect).transform(transform).sql(dialect=dialect),
+                target,
             )
 
     def test_unalias_group(self):
@@ -248,6 +250,13 @@ class TestTransforms(unittest.TestCase):
                 "SELECT * FROM table1 LEFT JOIN table2 ON table1.col = table2.col1 + 25",
                 dialect,
             )
+            # eliminate join mark while preserving non-participating joins
+            self.validate(
+                eliminate_join_marks,
+                "SELECT * FROM a, b, c WHERE a.id = b.id AND b.id(+) = c.id",
+                "SELECT * FROM a LEFT JOIN b ON b.id = c.id CROSS JOIN c WHERE a.id = b.id",
+                dialect,
+            )
 
             alias = "AS " if dialect != "oracle" else ""
             self.validate(
@@ -265,3 +274,51 @@ class TestTransforms(unittest.TestCase):
                 tree.sql(dialect=dialect)
                 == "SELECT a.id FROM a LEFT JOIN b ON a.id = b.id AND b.d = const"
             )
+
+            # validate parens
+            self.validate(
+                eliminate_join_marks,
+                "select t1.a, t2.b from t1, t2 where (1 = 1) and (t1.id = t2.id1 (+))",
+                "SELECT t1.a, t2.b FROM t1 LEFT JOIN t2 ON t1.id = t2.id1 WHERE (1 = 1)",
+                dialect,
+            )
+
+            # validate a CASE
+            self.validate(
+                eliminate_join_marks,
+                "select t1.a, t2.b from t1, t2 where t1.id = case when t2.id (+) = 'n/a' then null else t2.id (+) end",
+                "SELECT t1.a, t2.b FROM t1 LEFT JOIN t2 ON t1.id = CASE WHEN t2.id = 'n/a' THEN NULL ELSE t2.id END",
+                dialect,
+            )
+
+            # validate OR
+            self.validate(
+                eliminate_join_marks,
+                "select t1.a, t2.b from t1, t2 where t1.id = t2.id1 (+) or t1.id = t2.id2 (+)",
+                "SELECT t1.a, t2.b FROM t1 LEFT JOIN t2 ON t1.id = t2.id1 OR t1.id = t2.id2",
+                dialect,
+            )
+
+            # validate knockout
+            script = """
+                    SELECT c.customer_name,
+                            (SELECT MAX(o.order_date)
+                            FROM orders o
+                            WHERE o.customer_id(+) = c.customer_id) AS latest_order_date
+                    FROM customers c
+                    """
+            self.assertRaises(
+                AssertionError, eliminate_join_marks, parse_one(script, dialect=dialect)
+            )
+
+    def test_eliminate_window_clause(self):
+        self.validate(
+            eliminate_window_clause,
+            "SELECT purchases, LAST_VALUE(item) OVER (d) AS most_popular FROM Produce WINDOW a AS (PARTITION BY purchases), b AS (a ORDER BY purchases), c AS (b ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING), d AS (c)",
+            "SELECT purchases, LAST_VALUE(item) OVER (PARTITION BY purchases ORDER BY purchases ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce",
+        )
+        self.validate(
+            eliminate_window_clause,
+            "SELECT LAST_VALUE(c) OVER (a) AS c2 FROM (SELECT LAST_VALUE(i) OVER (a) AS c FROM p WINDOW a AS (PARTITION BY x)) AS q(c) WINDOW a AS (PARTITION BY y)",
+            "SELECT LAST_VALUE(c) OVER (PARTITION BY y) AS c2 FROM (SELECT LAST_VALUE(i) OVER (PARTITION BY x) AS c FROM p) AS q(c)",
+        )

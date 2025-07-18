@@ -84,6 +84,7 @@ class TestDoris(Validator):
                 "postgres": "SELECT LEAD(1, 2) OVER (ORDER BY 1)",
             },
         )
+        self.validate_identity("""JSON_TYPE('{"foo": "1" }', '$.foo')""")
 
     def test_identity(self):
         self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")

@@ -639,6 +639,10 @@ STRING;
 JSON_VALUE_ARRAY(JSON '["a","b"]');
 ARRAY<STRING>;
 
+# dialect: bigquery
+JSON_TYPE(JSON '1');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

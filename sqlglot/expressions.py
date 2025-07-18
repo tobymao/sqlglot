@@ -6395,6 +6395,11 @@ class JSONTable(Func):
     }
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_type
+class JSONType(Func):
+    _sql_names = ["JSON_TYPE"]
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/object_insert
 class ObjectInsert(Func):
     arg_types = {

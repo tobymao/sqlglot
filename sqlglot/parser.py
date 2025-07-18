@@ -6297,9 +6297,10 @@ class Parser(metaclass=_Parser):
             self._parse_primary_key_part, optional=wrapped_optional
         )
 
-        include = None
-        if self._match_text_seq("INCLUDE"):
-            include = self._parse_wrapped_id_vars()
+        index_params = None
+        if self._match_text_seq("INCLUDE", advance=False):
+            index_params = self._parse_index_params()
+        include = index_params.args.get("include") if index_params else None
 
         options = self._parse_key_constraint_options()
         return self.expression(

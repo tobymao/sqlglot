@@ -3249,7 +3249,7 @@ class Generator(metaclass=_Generator):
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"
 
-    def atindex_sql(self, expression: exp.AtTimeZone) -> str:
+    def atindex_sql(self, expression: exp.AtIndex) -> str:
         this = self.sql(expression, "this")
         index = self.sql(expression, "expression")
         return f"{this} AT {index}"

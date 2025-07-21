@@ -2997,8 +2997,7 @@ class Generator(metaclass=_Generator):
 
     def primarykey_sql(self, expression: exp.PrimaryKey) -> str:
         expressions = self.expressions(expression, flat=True)
-        include = self.expressions(expression, key="include", flat=True)
-        include = f" INCLUDE ({include})" if include else ""
+        include = self.sql(expression, "include")
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
         return f"PRIMARY KEY ({expressions}){include}{options}"

@@ -817,3 +817,15 @@ class Postgres(Dialect):
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             this = f"({expression.name})" if expression.this else ""
             return f"{self.NAMED_PLACEHOLDER_TOKEN}{this}s"
+
+        def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
+            value = expression.expression
+
+            eq_expr = exp.EQ(this=value, expression=exp.Any(this=exp.Paren(this=expression.this)))
+
+            case_expr = exp.Case(
+                ifs=[exp.If(this=exp.Is(this=value, expression=exp.null()), true=exp.null())],
+                default=exp.Coalesce(this=eq_expr, expressions=[exp.false()]),
+            )
+
+            return self.sql(case_expr)

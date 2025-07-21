@@ -3,34 +3,46 @@ import math
 from tests.dialects.test_dialect import Validator
 from sqlglot import exp, parse_one, ErrorLevel, UnsupportedError
 import typing as t
-import singlestoredb as s2
 import os
 
 SINGELSTORE_HOST = os.environ.get("SINGELSTORE_HOST", "127.0.0.1")
 SINGELSTORE_PORT = os.environ.get("SINGELSTORE_PORT", "3306")
 SINGELSTORE_USER = os.environ.get("SINGELSTORE_USER", "root")
 SINGELSTORE_PASSWORD = os.environ.get("SINGELSTORE_PASSWORD", "1")
+INTEGRATION_TEST = os.environ.get("INTEGRATION_TEST", "0") == "1"
 
-conn = s2.connect(
-    host=SINGELSTORE_HOST,
-    port=SINGELSTORE_PORT,
-    user=SINGELSTORE_USER,
-    password=SINGELSTORE_PASSWORD,
-    multi_statements=True,
-)
+
+# Executes the query against the actual database only if INTEGRATION_TEST is enabled
+def execute_query(query: str):
+    if not INTEGRATION_TEST:
+        return
+
+    import singlestoredb as s2
+
+    if not hasattr(execute_query, "conn"):
+        execute_query.conn = s2.connect(
+            host=SINGELSTORE_HOST,
+            port=SINGELSTORE_PORT,
+            user=SINGELSTORE_USER,
+            password=SINGELSTORE_PASSWORD,
+            multi_statements=True,
+        )
+
+    with execute_query.conn.cursor() as cur:
+        cur.execute(query)
 
 
 class TestSingleStore(Validator):
     dialect = "singlestore"
 
     def setUp(self):
-        with conn.cursor() as cur:
-            cur.execute("DROP DATABASE IF EXISTS db")
-            cur.execute("CREATE DATABASE db")
-            cur.execute("USE db")
-            cur.execute("DROP ROLE IF EXISTS r")
-            cur.execute("CREATE ROLE r")
-            cur.execute("""CREATE ROWSTORE TABLE users (
+        execute_query("DROP DATABASE IF EXISTS db")
+        execute_query("DROP DATABASE IF EXISTS db")
+        execute_query("CREATE DATABASE db")
+        execute_query("USE db")
+        execute_query("DROP ROLE IF EXISTS r")
+        execute_query("CREATE ROLE r")
+        execute_query("""CREATE ROWSTORE TABLE users (
     id INT PRIMARY KEY,
     name VARCHAR(100),
     email VARCHAR(100),
@@ -39,7 +51,7 @@ class TestSingleStore(Validator):
     is_active BOOLEAN
 );
 """)
-            cur.execute("""CREATE TABLE orders (
+        execute_query("""CREATE TABLE orders (
     id INT PRIMARY KEY,
     user_id INT,
     amount DECIMAL(10, 2),
@@ -48,7 +60,7 @@ class TestSingleStore(Validator):
     KEY(user_id)
 );
 """)
-            cur.execute("""CREATE TABLE products (
+        execute_query("""CREATE TABLE products (
     id INT PRIMARY KEY,
     name VARCHAR(100),
     price DECIMAL(10, 2),
@@ -57,7 +69,7 @@ class TestSingleStore(Validator):
     FULLTEXT USING VERSION 1 ind (name)
 );
 """)
-            cur.execute("""CREATE TABLE products2 (
+        execute_query("""CREATE TABLE products2 (
                 id INT PRIMARY KEY,
                 name VARCHAR(100),
                 price DECIMAL(10, 2),
@@ -66,7 +78,7 @@ class TestSingleStore(Validator):
                 FULLTEXT USING VERSION 2 ind (name)
             );
             """)
-            cur.execute("""CREATE TABLE order_items (
+        execute_query("""CREATE TABLE order_items (
     id INT PRIMARY KEY,
     order_id INT,
     product_id INT,
@@ -74,7 +86,7 @@ class TestSingleStore(Validator):
     item_price DECIMAL(10, 2)
 );
 """)
-            cur.execute("""CREATE TABLE events (
+        execute_query("""CREATE TABLE events (
     id INT PRIMARY KEY,
     user_id INT,
     event_type VARCHAR(50),
@@ -84,7 +96,7 @@ class TestSingleStore(Validator):
     FULLTEXT USING VERSION 2 index (event_type)
 );
     """)
-            cur.execute("""CREATE FUNCTION is_prime(n BIGINT NOT NULL) returns BIGINT AS
+        execute_query("""CREATE FUNCTION is_prime(n BIGINT NOT NULL) returns BIGINT AS
   BEGIN
     IF n <= 1 THEN
       RETURN FALSE;
@@ -99,9 +111,9 @@ class TestSingleStore(Validator):
     RETURN TRUE;
   END
 """)
-            cur.execute(
-                """CREATE OR REPLACE PROCEDURE proc() RETURNS void AS BEGIN ECHO SELECT 1; END"""
-            )
+        execute_query(
+            """CREATE OR REPLACE PROCEDURE proc() RETURNS void AS BEGIN ECHO SELECT 1; END"""
+        )
 
     def validate_generation(
         self,
@@ -130,8 +142,7 @@ class TestSingleStore(Validator):
         print(generated)
 
         if run:
-            with conn.cursor() as cur:
-                cur.execute(generated)
+            execute_query(generated)
 
         if expected_sql is not None:
             self.assertEqual(expected_sql, generated)
@@ -148,8 +159,7 @@ class TestSingleStore(Validator):
         generated = query.sql(dialect="singlestore")
         print(generated)
         if run:
-            with conn.cursor() as cur:
-                cur.execute(generated)
+            execute_query(generated)
 
     def test_predicate_generation(self):
         self.validate_generation(
@@ -2572,13 +2582,12 @@ class TestSingleStore(Validator):
         )
 
     def test_drop_generation(self):
-        with conn.cursor() as cur:
-            cur.execute("DROP DATABASE IF EXISTS dropDB")
-            cur.execute("CREATE DATABASE dropDB")
-            cur.execute("CREATE TABLE dropDB.dropTable(a INT, INDEX a (a))")
-            cur.execute("CREATE TEMPORARY TABLE dropDB.dropTableTemp(a INT, INDEX a (a))")
-            cur.execute("CREATE VIEW dropDB.dropView AS SELECT * FROM dropDB.dropTable")
-            cur.execute("USE dropDB")
+        execute_query("DROP DATABASE IF EXISTS dropDB")
+        execute_query("CREATE DATABASE dropDB")
+        execute_query("CREATE TABLE dropDB.dropTable(a INT, INDEX a (a))")
+        execute_query("CREATE TEMPORARY TABLE dropDB.dropTableTemp(a INT, INDEX a (a))")
+        execute_query("CREATE VIEW dropDB.dropView AS SELECT * FROM dropDB.dropTable")
+        execute_query("USE dropDB")
 
         self.validate_generation(
             sql="DROP INDEX a ON dropTable",
@@ -2601,8 +2610,7 @@ class TestSingleStore(Validator):
             exp_type=exp.Drop,
         )
 
-        with conn.cursor() as cur:
-            cur.execute("USE db")
+    execute_query("USE db")
 
     def test_column_constraints(self):
         self.validate_generation(

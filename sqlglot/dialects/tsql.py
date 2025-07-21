@@ -890,7 +890,7 @@ class TSQL(Dialect):
                 if create.kind == "TABLE" and create.this and hasattr(create.this, "expressions"):
                     for column in create.this.expressions:
                         if isinstance(column, exp.ColumnDef):
-                            column_type = column.args.get("kind")
+                            column_type = column.kind
                             if (
                                 isinstance(column_type, exp.DataType)
                                 and column_type.this == exp.DataType.Type.VARCHAR

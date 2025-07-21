@@ -393,7 +393,7 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
 
 
 def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Expression:
-    """Transform function to add VARCHAR(MAX) for cross-dialect conversion."""
+    """Transform function to add VARCHAR(MAX) or CHAR(MAX) for cross-dialect conversion."""
     if isinstance(expression, exp.Create) and expression.kind == "TABLE":
         if expression.this and hasattr(expression.this, "expressions"):
             for column in expression.this.expressions:
@@ -401,10 +401,10 @@ def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Express
                     column_type = column.args.get("kind")
                     if (
                         isinstance(column_type, exp.DataType)
-                        and column_type.this == exp.DataType.Type.VARCHAR
+                        and column_type.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
                         and not column_type.expressions
                     ):
-                        # For cross-dialect conversion, VARCHAR without precision becomes VARCHAR(MAX)
+                        # For cross-dialect conversion, VARCHAR/CHAR without precision becomes VARCHAR(MAX)/CHAR(MAX)
                         column_type.set("expressions", [exp.var("MAX")])
     return expression
 
@@ -886,17 +886,18 @@ class TSQL(Dialect):
 
                     create.args["properties"].append("expressions", exp.TemporaryProperty())
 
-                # Transform VARCHAR without precision to VARCHAR(1)
+                # Transform VARCHAR/CHAR without precision to VARCHAR(1)/CHAR(1)
                 if create.kind == "TABLE" and isinstance(create.this, exp.Schema):
                     for column in create.this.expressions:
                         if isinstance(column, exp.ColumnDef):
                             column_type = column.kind
                             if (
                                 isinstance(column_type, exp.DataType)
-                                and column_type.this == exp.DataType.Type.VARCHAR
+                                and column_type.this
+                                in (exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
                                 and not column_type.expressions
                             ):
-                                # Add default precision of 1 to VARCHAR without precision
+                                # Add default precision of 1 to VARCHAR/CHAR without precision
                                 # When n isn't specified in a data definition or variable declaration statement, the default length is 1.
                                 # https://learn.microsoft.com/en-us/sql/t-sql/data-types/char-and-varchar-transact-sql?view=sql-server-ver17#remarks
                                 column_type.set("expressions", [exp.Literal.number("1")])

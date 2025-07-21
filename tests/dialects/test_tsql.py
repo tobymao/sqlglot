@@ -299,11 +299,30 @@ class TestTSQL(Validator):
             "CREATE TABLE t (col VARCHAR(50))",
         )
 
+        # Test CHAR without precision conversion to CHAR(1)
+        self.validate_identity(
+            "CREATE TABLE t (col CHAR)",
+            "CREATE TABLE t (col CHAR(1))",
+        )
+
+        # Test CHAR with existing precision should remain unchanged
+        self.validate_identity(
+            "CREATE TABLE t (col CHAR(10))",
+        )
+
         # Test cross-dialect conversion: non-TSQL VARCHAR -> TSQL VARCHAR(MAX)
         self.validate_all(
             "CREATE TABLE t (col VARCHAR(MAX))",
             read={
                 "postgres": "CREATE TABLE t (col VARCHAR)",
+            },
+        )
+
+        # Test cross-dialect conversion: non-TSQL CHAR -> TSQL CHAR(MAX)
+        self.validate_all(
+            "CREATE TABLE t (col CHAR(MAX))",
+            read={
+                "postgres": "CREATE TABLE t (col CHAR)",
             },
         )
 

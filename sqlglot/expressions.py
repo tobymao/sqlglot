@@ -935,11 +935,19 @@ class Expression(metaclass=_Expression):
             ),
         )
 
-    def between(self, low: t.Any, high: t.Any, copy: bool = True, **opts) -> Between:
+    def between(
+        self,
+        low: t.Any,
+        high: t.Any,
+        copy: bool = True,
+        symmetric: t.Optional[bool] = False,
+        **opts,
+    ) -> Between:
         return Between(
             this=maybe_copy(self, copy),
             low=convert(low, copy=copy, **opts),
             high=convert(high, copy=copy, **opts),
+            symmetric=symmetric,
         )
 
     def is_(self, other: ExpOrStr) -> Is:
@@ -5224,7 +5232,7 @@ class FormatPhrase(Expression):
 
 
 class Between(Predicate):
-    arg_types = {"this": True, "low": True, "high": True}
+    arg_types = {"this": True, "low": True, "high": True, "symmetric": False}
 
 
 class Bracket(Condition):

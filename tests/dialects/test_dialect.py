@@ -3655,3 +3655,56 @@ FROM subquery2""",
                 "mysql": "BIT_COUNT(x)",
             },
         )
+
+    def test_between(self):
+        self.validate_all(
+            "SELECT x BETWEEN 2 AND 10",
+            read={
+                "": "SELECT x BETWEEN 2 AND 10",
+                "clickhouse": "SELECT x BETWEEN 2 AND 10",
+                "dremio": "SELECT x BETWEEN 2 AND 10",
+                "duckdb": "SELECT x BETWEEN 2 AND 10",
+                "tsql": "SELECT x BETWEEN 2 AND 10",
+                "oracle": "SELECT x BETWEEN 2 AND 10",
+                "mysql": "SELECT x BETWEEN 2 AND 10",
+                "postgres": "SELECT x BETWEEN 2 AND 10",
+            },
+            write={
+                "": "SELECT x BETWEEN 2 AND 10",
+                "clickhouse": "SELECT x BETWEEN 2 AND 10",
+                "dremio": "SELECT x BETWEEN 2 AND 10",
+                "duckdb": "SELECT x BETWEEN 2 AND 10",
+                "tsql": "SELECT x BETWEEN 2 AND 10",
+                "oracle": "SELECT x BETWEEN 2 AND 10",
+                "mysql": "SELECT x BETWEEN 2 AND 10",
+                "postgres": "SELECT x BETWEEN 2 AND 10",
+            },
+        )
+
+        self.validate_all(
+            "SELECT x BETWEEN SYMMETRIC 10 AND 2",
+            write={
+                "dremio": "SELECT x BETWEEN SYMMETRIC 10 AND 2",
+                "postgres": "SELECT x BETWEEN SYMMETRIC 10 AND 2",
+                "": "SELECT (x BETWEEN 10 AND 2 OR x BETWEEN 2 AND 10)",
+                "mysql": "SELECT (x BETWEEN 10 AND 2 OR x BETWEEN 2 AND 10)",
+                "oracle": "SELECT (x BETWEEN 10 AND 2 OR x BETWEEN 2 AND 10)",
+                "duckdb": "SELECT (x BETWEEN 10 AND 2 OR x BETWEEN 2 AND 10)",
+                "clickhouse": "SELECT (x BETWEEN 10 AND 2 OR x BETWEEN 2 AND 10)",
+                "tsql": "SELECT (x BETWEEN 10 AND 2 OR x BETWEEN 2 AND 10)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT x BETWEEN ASYMMETRIC 10 AND 2",
+            write={
+                "dremio": "SELECT x BETWEEN ASYMMETRIC 10 AND 2",
+                "postgres": "SELECT x BETWEEN ASYMMETRIC 10 AND 2",
+                "": "SELECT x BETWEEN 10 AND 2",
+                "mysql": "SELECT x BETWEEN 10 AND 2",
+                "oracle": "SELECT x BETWEEN 10 AND 2",
+                "duckdb": "SELECT x BETWEEN 10 AND 2",
+                "clickhouse": "SELECT x BETWEEN 10 AND 2",
+                "tsql": "SELECT x BETWEEN 10 AND 2",
+            },
+        )

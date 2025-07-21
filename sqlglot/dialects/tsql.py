@@ -897,6 +897,8 @@ class TSQL(Dialect):
                                 and not column_type.expressions
                             ):
                                 # Add default precision of 1 to VARCHAR without precision
+                                # When n isn't specified in a data definition or variable declaration statement, the default length is 1.
+                                # https://learn.microsoft.com/en-us/sql/t-sql/data-types/char-and-varchar-transact-sql?view=sql-server-ver17#remarks
                                 column_type.set("expressions", [exp.Literal.number("1")])
 
             return create

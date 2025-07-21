@@ -978,6 +978,28 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT #2, #1 FROM (VALUES (1, 'foo'))")
         self.validate_identity("SELECT #2 AS a, #1 AS b FROM (VALUES (1, 'foo'))")
 
+        self.validate_all(
+            "LIST_CONTAINS([1, 2, NULL], 1)",
+            write={
+                "duckdb": "ARRAY_CONTAINS([1, 2, NULL], 1)",
+                "postgres": "CASE WHEN 1 IS NULL THEN NULL ELSE COALESCE(1 = ANY(ARRAY[1, 2, NULL]), FALSE) END",
+            },
+        )
+        self.validate_all(
+            "LIST_CONTAINS([1, 2, NULL], NULL)",
+            write={
+                "duckdb": "ARRAY_CONTAINS([1, 2, NULL], NULL)",
+                "postgres": "CASE WHEN NULL IS NULL THEN NULL ELSE COALESCE(NULL = ANY(ARRAY[1, 2, NULL]), FALSE) END",
+            },
+        )
+        self.validate_all(
+            "LIST_HAS_ANY([1, 2, 3], [1,2])",
+            write={
+                "duckdb": "[1, 2, 3] && [1, 2]",
+                "postgres": "ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            },
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

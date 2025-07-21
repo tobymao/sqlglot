@@ -2995,11 +2995,13 @@ class Generator(metaclass=_Generator):
         options = f" {options}" if options else ""
         return f"FOREIGN KEY{expressions}{reference}{delete}{update}{options}"
 
-    def primarykey_sql(self, expression: exp.ForeignKey) -> str:
+    def primarykey_sql(self, expression: exp.PrimaryKey) -> str:
         expressions = self.expressions(expression, flat=True)
+        include = self.expressions(expression, key="include", flat=True)
+        include = f" INCLUDE ({include})" if include else ""
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
-        return f"PRIMARY KEY ({expressions}){options}"
+        return f"PRIMARY KEY ({expressions}){include}{options}"
 
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))

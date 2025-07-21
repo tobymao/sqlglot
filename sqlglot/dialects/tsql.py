@@ -887,7 +887,7 @@ class TSQL(Dialect):
                     create.args["properties"].append("expressions", exp.TemporaryProperty())
 
                 # Transform VARCHAR without precision to VARCHAR(1)
-                if create.kind == "TABLE" and create.this and hasattr(create.this, "expressions"):
+                if create.kind == "TABLE" and isinstance(create.this, exp.Schema):
                     for column in create.this.expressions:
                         if isinstance(column, exp.ColumnDef):
                             column_type = column.kind

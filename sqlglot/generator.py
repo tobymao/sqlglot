@@ -2868,15 +2868,19 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         low = self.sql(expression, "low")
         high = self.sql(expression, "high")
-        kind = expression.args.get("kind")
+        symmetric = expression.args.get("symmetric")
 
-        if kind == "SYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
+        if symmetric and not self.SUPPORTS_BETWEEN_FLAGS:
             return f"({this} BETWEEN {low} AND {high} OR {this} BETWEEN {high} AND {low})"
 
-        if kind == "ASYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
-            kind = None  # silently drop – semantics identical
-
-        return f"{this} BETWEEN{' ' + kind if kind else ''} {low} AND {high}"
+        flag = (
+            " SYMMETRIC"
+            if symmetric
+            else " ASYMMETRIC"
+            if symmetric is False and self.SUPPORTS_BETWEEN_FLAGS
+            else ""  # silently drop ASYMMETRIC – semantics identical
+        )
+        return f"{this} BETWEEN{flag} {low} AND {high}"
 
     def bracket_offset_expressions(
         self, expression: exp.Bracket, index_offset: t.Optional[int] = None

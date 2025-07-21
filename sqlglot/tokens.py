@@ -236,7 +236,6 @@ class TokenType(AutoName):
     ARRAY = auto()
     ASC = auto()
     ASOF = auto()
-    ASYMMETRIC = auto()
     ATTACH = auto()
     AUTO_INCREMENT = auto()
     BEGIN = auto()
@@ -397,7 +396,6 @@ class TokenType(AutoName):
     STRAIGHT_JOIN = auto()
     STRUCT = auto()
     SUMMARIZE = auto()
-    SYMMETRIC = auto()
     TABLE_SAMPLE = auto()
     TAG = auto()
     TEMPORARY = auto()
@@ -713,7 +711,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
         "ASOF": TokenType.ASOF,
-        "ASYMMETRIC": TokenType.ASYMMETRIC,
         "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
@@ -841,7 +838,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "SORT BY": TokenType.SORT_BY,
         "START WITH": TokenType.START_WITH,
         "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
-        "SYMMETRIC": TokenType.SYMMETRIC,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

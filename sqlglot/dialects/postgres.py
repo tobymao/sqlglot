@@ -819,13 +819,27 @@ class Postgres(Dialect):
             return f"{self.NAMED_PLACEHOLDER_TOKEN}{this}s"
 
         def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
+            # Convert DuckDB's LIST_CONTAINS(array, value) to PostgreSQL
+            # DuckDB behavior:
+            #   - LIST_CONTAINS([1,2,3], 2) -> true
+            #   - LIST_CONTAINS([1,2,3], 4) -> false
+            #   - LIST_CONTAINS([1,2,NULL], 4) -> false (not NULL)
+            #   - LIST_CONTAINS([1,2,3], NULL) -> NULL
+            #
+            # PostgreSQL equivalent: CASE WHEN value IS NULL THEN NULL
+            #                            ELSE COALESCE(value = ANY(array), FALSE) END
             value = expression.expression
+            array = expression.this
 
-            eq_expr = exp.EQ(this=value, expression=exp.Any(this=exp.Paren(this=expression.this)))
+            coalesce_expr = exp.Coalesce(
+                this=exp.EQ(this=value, expression=exp.Any(this=exp.Paren(this=array))),
+                expressions=[exp.false()],
+            )
 
-            case_expr = exp.Case(
-                ifs=[exp.If(this=exp.Is(this=value, expression=exp.null()), true=exp.null())],
-                default=exp.Coalesce(this=eq_expr, expressions=[exp.false()]),
+            case_expr = (
+                exp.Case()
+                .when(exp.Is(this=value, expression=exp.null()), exp.null(), copy=False)
+                .else_(coalesce_expr, copy=False)
             )
 
             return self.sql(case_expr)

@@ -114,6 +114,8 @@ class TestSingleStore(Validator):
         execute_query(
             """CREATE OR REPLACE PROCEDURE proc() RETURNS void AS BEGIN ECHO SELECT 1; END"""
         )
+        execute_query("""DROP VIEW IF EXISTS users_view""")
+        execute_query("""CREATE VIEW users_view AS SELECT * FROM users""")
 
     def validate_generation(
         self,
@@ -5892,5 +5894,85 @@ class TestSingleStore(Validator):
                 this=exp.Table(this=exp.Identifier(this="db", kind="SCHEMA")),
                 kind="DATABASE",
                 actions=[exp.AlterSet(expressions=[exp.Var(this="ASYNC REPLICATION")])],
+            ),
+        )
+
+    def test_alter_view_parsing(self):
+        self.validate_parsing(
+            "ALTER VIEW users_view AS SELECT * FROM users",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="users_view", quoted=False)),
+                kind="VIEW",
+                actions=[
+                    exp.Select(
+                        **{
+                            "expressions": [exp.Star()],
+                            "from": exp.From(
+                                this=exp.Table(this=exp.Identifier(this="users", quoted=False))
+                            ),
+                        }
+                    )
+                ],
+            ),
+        )
+        self.validate_parsing(
+            "ALTER DEFINER = CURRENT_USER() VIEW users_view AS SELECT * FROM users",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="users_view", quoted=False)),
+                kind="VIEW",
+                actions=[
+                    exp.Select(
+                        **{
+                            "expressions": [exp.Star()],
+                            "from": exp.From(
+                                this=exp.Table(this=exp.Identifier(this="users", quoted=False))
+                            ),
+                        }
+                    )
+                ],
+                definer=exp.EQ(
+                    this=exp.Column(this=exp.Identifier(this="DEFINER", quoted=False)),
+                    expression=exp.CurrentUser(),
+                ),
+            ),
+        )
+        self.validate_parsing(
+            "ALTER SCHEMA_BINDING = ON VIEW users_view AS SELECT * FROM users",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="users_view", quoted=False)),
+                kind="VIEW",
+                actions=[
+                    exp.Select(
+                        **{
+                            "expressions": [exp.Star()],
+                            "from": exp.From(
+                                this=exp.Table(this=exp.Identifier(this="users", quoted=False))
+                            ),
+                        }
+                    )
+                ],
+                schema_binding=True,
+            ),
+        )
+        self.validate_parsing(
+            "ALTER DEFINER = CURRENT_USER() SCHEMA_BINDING = ON VIEW users_view AS SELECT * FROM users",
+            exp.Alter(
+                this=exp.Table(this=exp.Identifier(this="users_view", quoted=False)),
+                kind="VIEW",
+                actions=[
+                    exp.Select(
+                        **{
+                            "expressions": [exp.Star()],
+                            "from": exp.From(
+                                this=exp.Table(this=exp.Identifier(this="users", quoted=False))
+                            ),
+                        }
+                    )
+                ],
+                definer=exp.EQ(
+                    this=exp.Column(this=exp.Identifier(this="DEFINER", quoted=False)),
+                    expression=exp.CurrentUser(),
+                ),
+                schema_binding=True,
             ),
         )

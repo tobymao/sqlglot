@@ -4856,6 +4856,8 @@ class Alter(Expression):
         "options": False,
         "cluster": False,
         "not_valid": False,
+        "definer": False,
+        "schema_binding": False,
     }
 
     @property

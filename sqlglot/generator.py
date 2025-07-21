@@ -2865,22 +2865,18 @@ class Generator(metaclass=_Generator):
         return f"{this} WITHIN GROUP ({expression_sql})"
 
     def between_sql(self, expression: exp.Between) -> str:
+        this = self.sql(expression, "this")
+        low = self.sql(expression, "low")
+        high = self.sql(expression, "high")
         kind = expression.args.get("kind")
+
+        if kind == "SYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
+            return f"({this} BETWEEN {low} AND {high} OR {this} BETWEEN {high} AND {low})"
 
         if kind == "ASYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
             kind = None  # silently drop – semantics identical
 
-        if kind == "SYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
-            left = self.sql(expression.this)
-            low = self.sql(expression.args["low"])
-            high = self.sql(expression.args["high"])
-            return f"({left} BETWEEN {low} AND {high} OR {left} BETWEEN {high} AND {low})"
-
-        kind_part = f" {kind}" if kind else ""
-        return (
-            f"{self.sql(expression.this)} BETWEEN{kind_part} "
-            f"{self.sql(expression.args['low'])} AND {self.sql(expression.args['high'])}"
-        )
+        return f"{this} BETWEEN{' ' + kind if kind else ''} {low} AND {high}"
 
     def bracket_offset_expressions(
         self, expression: exp.Bracket, index_offset: t.Optional[int] = None

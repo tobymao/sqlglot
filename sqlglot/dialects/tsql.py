@@ -395,8 +395,9 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
 def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Expression:
     """Transform function to add VARCHAR(MAX) or CHAR(MAX) for cross-dialect conversion."""
     if isinstance(expression, exp.Create) and expression.kind == "TABLE":
-        if expression.this and hasattr(expression.this, "expressions"):
-            for column in expression.this.expressions:
+        schema = expression.this if isinstance(expression.this, exp.Schema) else None
+        if schema:
+            for column in schema.expressions:
                 if isinstance(column, exp.ColumnDef):
                     column_type = column.args.get("kind")
                     if (

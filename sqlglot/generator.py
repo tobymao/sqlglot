@@ -488,6 +488,9 @@ class Generator(metaclass=_Generator):
     # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
     SUPPORTS_DECODE_CASE = True
 
+    # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
+    SUPPORTS_BETWEEN_FLAGS = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2865,7 +2868,19 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         low = self.sql(expression, "low")
         high = self.sql(expression, "high")
-        return f"{this} BETWEEN {low} AND {high}"
+        symmetric = expression.args.get("symmetric")
+
+        if symmetric and not self.SUPPORTS_BETWEEN_FLAGS:
+            return f"({this} BETWEEN {low} AND {high} OR {this} BETWEEN {high} AND {low})"
+
+        flag = (
+            " SYMMETRIC"
+            if symmetric
+            else " ASYMMETRIC"
+            if symmetric is False and self.SUPPORTS_BETWEEN_FLAGS
+            else ""  # silently drop ASYMMETRIC – semantics identical
+        )
+        return f"{this} BETWEEN{flag} {low} AND {high}"
 
     def bracket_offset_expressions(
         self, expression: exp.Bracket, index_offset: t.Optional[int] = None

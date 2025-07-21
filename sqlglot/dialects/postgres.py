@@ -832,7 +832,7 @@ class Postgres(Dialect):
             array = expression.this
 
             coalesce_expr = exp.Coalesce(
-                this=exp.EQ(this=value, expression=exp.Any(this=exp.Paren(this=array))),
+                this=value.eq(exp.Any(this=exp.paren(expression=array, copy=False))),
                 expressions=[exp.false()],
             )
 

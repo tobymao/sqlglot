@@ -288,6 +288,17 @@ class TestTSQL(Validator):
             "CREATE TABLE [db].[tbl] ([a] INTEGER)",
         )
 
+        # Test VARCHAR without precision conversion to VARCHAR(1)
+        self.validate_identity(
+            "CREATE TABLE t (col VARCHAR)",
+            "CREATE TABLE t (col VARCHAR(1))",
+        )
+
+        # Test VARCHAR with existing precision should remain unchanged
+        self.validate_identity(
+            "CREATE TABLE t (col VARCHAR(50))",
+        )
+
         self.validate_identity("SELECT a = 1", "SELECT 1 AS a").selects[0].assert_is(
             exp.Alias
         ).args["alias"].assert_is(exp.Identifier)

@@ -869,6 +869,19 @@ class TSQL(Dialect):
 
                     create.args["properties"].append("expressions", exp.TemporaryProperty())
 
+                # Transform VARCHAR without precision to VARCHAR(1)
+                if create.kind == "TABLE" and create.this and hasattr(create.this, "expressions"):
+                    for column in create.this.expressions:
+                        if isinstance(column, exp.ColumnDef):
+                            column_type = column.args.get("kind")
+                            if (
+                                isinstance(column_type, exp.DataType)
+                                and column_type.this == exp.DataType.Type.VARCHAR
+                                and not column_type.expressions
+                            ):
+                                # Add default precision of 1 to VARCHAR without precision
+                                column_type.set("expressions", [exp.Literal.number("1")])
+
             return create
 
         def _parse_if(self) -> t.Optional[exp.Expression]:

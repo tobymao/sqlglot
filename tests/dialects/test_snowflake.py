@@ -1234,6 +1234,10 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "ALTER TABLE foo ADD col1 VARCHAR NOT NULL TAG (key1='value_1'), col2 VARCHAR NOT NULL TAG (key2='value_2')"
         )
+        self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, col2 INT")
+        self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, IF NOT EXISTS col2 INT")
+        self.validate_identity("ALTER TABLE foo ADD col1 INT, IF NOT EXISTS col2 INT")
+        self.validate_identity("ALTER TABLE IF EXISTS foo ADD IF NOT EXISTS col1 INT")
 
     def test_null_treatment(self):
         self.validate_all(

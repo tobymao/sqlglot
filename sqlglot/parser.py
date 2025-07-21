@@ -7317,10 +7317,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.TABLE)
         return self.expression(exp.Refresh, this=self._parse_string() or self._parse_table())
 
-    def _parse_add_column(self) -> t.Optional[exp.ColumnDef]:
-        if not self._prev.text.upper() == "ADD":
-            return None
-
+    def _parse_column_def_with_exists(self):
         start = self._index
         self._match(TokenType.COLUMN)
 
@@ -7332,6 +7329,16 @@ class Parser(metaclass=_Parser):
             return None
 
         expression.set("exists", exists_column)
+
+        return expression
+
+    def _parse_add_column(self) -> t.Optional[exp.ColumnDef]:
+        if not self._prev.text.upper() == "ADD":
+            return None
+
+        expression = self._parse_column_def_with_exists()
+        if not expression:
+            return None
 
         # https://docs.databricks.com/delta/update-schema.html#explicitly-update-schema-to-add-columns
         if self._match_texts(("FIRST", "AFTER")):
@@ -7379,11 +7386,13 @@ class Parser(metaclass=_Parser):
             not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN
             or self._match_text_seq("COLUMNS")
         ):
-            self._match(TokenType.COLUMN)
-
             schema = self._parse_schema()
 
-            return ensure_list(schema) if schema else self._parse_csv(self._parse_field_def)
+            return (
+                ensure_list(schema)
+                if schema
+                else self._parse_csv(self._parse_column_def_with_exists)
+            )
 
         return self._parse_csv(_parse_add_alteration)
 

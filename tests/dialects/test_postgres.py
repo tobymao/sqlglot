@@ -987,6 +987,7 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
         )
+        self.validate_identity("CREATE TABLE t (i INT, a TEXT, PRIMARY KEY (i) INCLUDE (a))")
         self.validate_identity(
             "CREATE TABLE t (i INT, PRIMARY KEY (i), EXCLUDE USING gist(col varchar_pattern_ops DESC NULLS LAST WITH &&) WITH (sp1=1, sp2=2))"
         )

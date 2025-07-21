@@ -1589,7 +1589,7 @@ class Declare(Expression):
 
 
 class DeclareItem(Expression):
-    arg_types = {"this": True, "kind": True, "default": False}
+    arg_types = {"this": True, "kind": False, "default": False}
 
 
 class Set(Expression):

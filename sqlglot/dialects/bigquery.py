@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
     space_sql,
 )
-from sqlglot.helper import seq_get, split_num_words
+from sqlglot.helper import csv, seq_get, split_num_words
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
@@ -530,7 +530,7 @@ class BigQuery(Dialect):
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "DATETIME": TokenType.TIMESTAMP,
-            "DECLARE": TokenType.COMMAND,
+            "DECLARE": TokenType.DECLARE,
             "ELSEIF": TokenType.COMMAND,
             "EXCEPTION": TokenType.COMMAND,
             "EXPORT": TokenType.EXPORT,
@@ -671,6 +671,7 @@ class BigQuery(Dialect):
             TokenType.END: lambda self: self._parse_as_command(self._prev),
             TokenType.FOR: lambda self: self._parse_for_in(),
             TokenType.EXPORT: lambda self: self._parse_export_data(),
+            TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 
         BRACKET_OFFSETS = {
@@ -936,6 +937,33 @@ class BigQuery(Dialect):
                 options=self._parse_properties(),
                 this=self._match_text_seq("AS") and self._parse_select(),
             )
+
+        def _parse_declare(self) -> exp.Declare | exp.Command:
+            index = self._index
+            expressions = self._try_parse(self._parse_declareitem)
+
+            if not expressions or self._curr:
+                self._retreat(index)
+                return self._parse_as_command(self._prev)
+
+            return self.expression(exp.Declare, expressions=[expressions])
+
+        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
+            vars = self._parse_csv(self._parse_id_var)
+            if not vars:
+                return None
+
+            data_type = self._parse_types()
+            default = None
+            if self._match(TokenType.DEFAULT):
+                default = self._parse_bitwise()
+
+            if not data_type and not default:
+                self.raise_error(
+                    "BigQuery requires a data type or default value for DECLARE statements",
+                    token=self._curr,
+                )
+            return self.expression(exp.DeclareItem, this=vars, kind=data_type, default=default)
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
@@ -1361,3 +1389,15 @@ class BigQuery(Dialect):
                     return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def declare_sql(self, expression: exp.Declare) -> str:
+            return f"DECLARE {self.expressions(expression, flat=True)}"
+
+        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
+            variables = csv(*[self.sql(v) for v in expression.this])
+            default = self.sql(expression, "default")
+            default = f"DEFAULT {default}" if default else ""
+            kind = self.sql(expression, "kind")
+            space = " " if kind and default else ""
+
+            return f"{variables} {kind}{space}{default}"

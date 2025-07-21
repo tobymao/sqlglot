@@ -392,6 +392,23 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     return sql
 
 
+def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Expression:
+    """Transform function to add VARCHAR(MAX) for cross-dialect conversion."""
+    if isinstance(expression, exp.Create) and expression.kind == "TABLE":
+        if expression.this and hasattr(expression.this, "expressions"):
+            for column in expression.this.expressions:
+                if isinstance(column, exp.ColumnDef):
+                    column_type = column.args.get("kind")
+                    if (
+                        isinstance(column_type, exp.DataType)
+                        and column_type.this == exp.DataType.Type.VARCHAR
+                        and not column_type.expressions
+                    ):
+                        # For cross-dialect conversion, VARCHAR without precision becomes VARCHAR(MAX)
+                        column_type.set("expressions", [exp.var("MAX")])
+    return expression
+
+
 def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
@@ -1032,6 +1049,7 @@ class TSQL(Dialect):
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
+            exp.Create: transforms.preprocess([_add_default_precision_to_varchar]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),

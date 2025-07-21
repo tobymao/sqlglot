@@ -4992,10 +4992,23 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_between(self, this: t.Optional[exp.Expression]) -> exp.Between:
+        kind = None
+        if self._match(TokenType.SYMMETRIC):
+            kind = "SYMMETRIC"
+        elif self._match(TokenType.ASYMMETRIC):
+            kind = "ASYMMETRIC"
+
         low = self._parse_bitwise()
         self._match(TokenType.AND)
         high = self._parse_bitwise()
-        return self.expression(exp.Between, this=this, low=low, high=high)
+
+        return self.expression(
+            exp.Between,
+            this=this,
+            low=low,
+            high=high,
+            kind=kind,
+        )
 
     def _parse_escape(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.ESCAPE):

@@ -561,6 +561,7 @@ class Postgres(Dialect):
         ARRAY_CONCAT_IS_VAR_LEN = False
         SUPPORTS_MEDIAN = False
         ARRAY_SIZE_DIM_REQUIRED = True
+        SUPPORTS_BETWEEN_FLAGS = True
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

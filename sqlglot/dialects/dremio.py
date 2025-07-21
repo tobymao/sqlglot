@@ -83,6 +83,7 @@ class Dremio(Dialect):
         JOIN_HINTS = False
         LIMIT_ONLY_LITERALS = True
         MULTI_ARG_DISTINCT = False
+        SUPPORTS_BETWEEN_FLAGS = True
 
         # https://docs.dremio.com/current/reference/sql/data-types/
         TYPE_MAPPING = {

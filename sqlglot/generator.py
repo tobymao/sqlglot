@@ -488,6 +488,9 @@ class Generator(metaclass=_Generator):
     # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
     SUPPORTS_DECODE_CASE = True
 
+    # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
+    SUPPORTS_BETWEEN_FLAGS = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2862,10 +2865,22 @@ class Generator(metaclass=_Generator):
         return f"{this} WITHIN GROUP ({expression_sql})"
 
     def between_sql(self, expression: exp.Between) -> str:
-        this = self.sql(expression, "this")
-        low = self.sql(expression, "low")
-        high = self.sql(expression, "high")
-        return f"{this} BETWEEN {low} AND {high}"
+        kind = expression.args.get("kind")
+
+        if kind == "ASYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
+            kind = None  # silently drop – semantics identical
+
+        if kind == "SYMMETRIC" and not self.SUPPORTS_BETWEEN_FLAGS:
+            left = self.sql(expression.this)
+            low = self.sql(expression.args["low"])
+            high = self.sql(expression.args["high"])
+            return f"({left} BETWEEN {low} AND {high} OR {left} BETWEEN {high} AND {low})"
+
+        kind_part = f" {kind}" if kind else ""
+        return (
+            f"{self.sql(expression.this)} BETWEEN{kind_part} "
+            f"{self.sql(expression.args['low'])} AND {self.sql(expression.args['high'])}"
+        )
 
     def bracket_offset_expressions(
         self, expression: exp.Bracket, index_offset: t.Optional[int] = None

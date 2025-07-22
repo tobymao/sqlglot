@@ -371,7 +371,6 @@ class TokenType(AutoName):
     RECURSIVE = auto()
     REFRESH = auto()
     RENAME = auto()
-    RESET = auto()
     REPLACE = auto()
     RETURNING = auto()
     REFERENCES = auto()

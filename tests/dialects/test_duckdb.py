@@ -1720,6 +1720,17 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SET VARIABLE my_var TO 30", "SET VARIABLE my_var = 30")
 
+    def test_reset(self):
+        self.validate_identity("RESET threads", check_command_warning=True)
+        self.validate_identity("RESET memory_limit", check_command_warning=True)
+        self.validate_identity("RESET default_collation", check_command_warning=True)
+
+        # Test RESET with scope modifiers
+        self.validate_identity("RESET SESSION threads", check_command_warning=True)
+        self.validate_identity("RESET GLOBAL memory_limit", check_command_warning=True)
+        self.validate_identity("RESET LOCAL threads", check_command_warning=True)
+        self.validate_identity("RESET SESSION default_collation", check_command_warning=True)
+
     def test_map_struct(self):
         self.validate_identity("MAP {1: 'a', 2: 'b'}")
         self.validate_identity("MAP {'1': 'a', '2': 'b'}")

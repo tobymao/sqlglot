@@ -1390,9 +1390,6 @@ class BigQuery(Dialect):
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
-        def declare_sql(self, expression: exp.Declare) -> str:
-            return f"DECLARE {self.expressions(expression, flat=True)}"
-
         def declareitem_sql(self, expression: exp.DeclareItem) -> str:
             variables = self.expressions(expression, "this")
             default = self.sql(expression, "default")

@@ -2692,26 +2692,14 @@ OPTIONS (
 
     def test_declare(self):
         # supported cases
-        self.validate_identity("DECLARE X INT", "DECLARE X INT64")
-        self.validate_identity("DECLARE X INT DEFAULT 1", "DECLARE X INT64 DEFAULT 1")
-        self.validate_identity("DECLARE X FLOAT64 DEFAULT .9", "DECLARE X FLOAT64 DEFAULT 0.9")
+        self.validate_identity("DECLARE X INT64")
+        self.validate_identity("DECLARE X INT64 DEFAULT 1")
+        self.validate_identity("DECLARE X FLOAT64 DEFAULT 0.9")
+        self.validate_identity("DECLARE X INT64 DEFAULT (SELECT MAX(col) FROM foo)")
+        self.validate_identity("DECLARE X, Y, Z INT64")
+        self.validate_identity("DECLARE X, Y, Z INT64 DEFAULT 42")
+        self.validate_identity("DECLARE X, Y, Z INT64 DEFAULT (SELECT 42)")
+        self.validate_identity("DECLARE START_DATE DATE DEFAULT CURRENT_DATE - 1")
         self.validate_identity(
-            "DECLARE X INT DEFAULT (SELECT MAX(col) FROM foo)",
-            "DECLARE X INT64 DEFAULT (SELECT MAX(col) FROM foo)",
-        )
-        self.validate_identity("DECLARE X,Y,Z INT", "DECLARE X, Y, Z INT64")
-        self.validate_identity("DECLARE X,Y,Z INT DEFAULT 42", "DECLARE X, Y, Z INT64 DEFAULT 42")
-        self.validate_identity(
-            "DECLARE X,Y,Z INT DEFAULT (SELECT 42)", "DECLARE X, Y, Z INT64 DEFAULT (SELECT 42)"
-        )
-        self.validate_identity(
-            "DECLARE START_DATE DATE DEFAULT CURRENT_DATE() - 1",
-            "DECLARE START_DATE DATE DEFAULT CURRENT_DATE - 1",
-        )
-        self.validate_identity(
-            "DECLARE TS TIMESTAMP DEFAULT CURRENT_TIMESTAMP() - INTERVAL '1' HOUR",
-            "DECLARE TS TIMESTAMP DEFAULT CURRENT_TIMESTAMP() - INTERVAL '1' HOUR",
-        )
-        self.validate_identity(
-            "DECLARE START_DATE DEFAULT CURRENT_DATE", "DECLARE START_DATE DEFAULT CURRENT_DATE"
+            "DECLARE TS TIMESTAMP DEFAULT CURRENT_TIMESTAMP() - INTERVAL '1' HOUR"
         )

@@ -195,6 +195,7 @@ class MySQL(Dialect):
             # The DESCRIBE and EXPLAIN statements are synonyms.
             # https://dev.mysql.com/doc/refman/8.4/en/explain.html
             "BLOB": TokenType.BLOB,
+            "DISTINCTROW": TokenType.DISTINCT,
             "EXPLAIN": TokenType.DESCRIBE,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,

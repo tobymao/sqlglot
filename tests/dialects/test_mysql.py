@@ -295,6 +295,10 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT @var1, @var2 := @var1")
         self.validate_identity("SELECT @var1 := COUNT(*) FROM t1")
 
+        self.validate_identity(
+            "SELECT DISTINCTROW tbl.col FROM tbl", "SELECT DISTINCT tbl.col FROM tbl"
+        )
+
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:
             with self.subTest(f"MySQL cast into {char_type}"):

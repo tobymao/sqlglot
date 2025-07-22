@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import re
 import typing as t
-from functools import partial, reduce
+from functools import reduce
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -947,31 +947,18 @@ class TSQL(Dialect):
 
             return partition
 
-        def _parse_declare(self) -> exp.Declare | exp.Command:
-            index = self._index
-            expressions = self._try_parse(partial(self._parse_csv, self._parse_declareitem))
-
-            if not expressions or self._curr:
-                self._retreat(index)
-                return self._parse_as_command(self._prev)
-
-            return self.expression(exp.Declare, expressions=expressions)
-
         def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
             var = self._parse_id_var()
             if not var:
                 return None
 
-            value = None
             self._match(TokenType.ALIAS)
-            if self._match(TokenType.TABLE):
-                data_type = self._parse_schema()
-            else:
-                data_type = self._parse_types()
-                if self._match(TokenType.EQ):
-                    value = self._parse_bitwise()
-
-            return self.expression(exp.DeclareItem, this=var, kind=data_type, default=value)
+            return self.expression(
+                exp.DeclareItem,
+                this=var,
+                kind=self._parse_schema() if self._match(TokenType.TABLE) else self._parse_types(),
+                default=self._match(TokenType.EQ) and self._parse_bitwise(),
+            )
 
         def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
             expression = super()._parse_alter_table_alter()

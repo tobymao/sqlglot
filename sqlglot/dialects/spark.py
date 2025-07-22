@@ -3,7 +3,13 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import rename_func, unit_to_var, timestampdiff_sql, build_date_delta
+from sqlglot.dialects.dialect import (
+    rename_func,
+    unit_to_var,
+    timestampdiff_sql,
+    build_date_delta,
+    groupconcat_sql,
+)
 from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
 from sqlglot.helper import ensure_list, seq_get
@@ -175,6 +181,7 @@ class Spark(Spark2):
                     move_partitioned_by_to_schema_columns,
                 ]
             ),
+            exp.GroupConcat: groupconcat_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.PartitionedByProperty: lambda self,
             e: f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}",

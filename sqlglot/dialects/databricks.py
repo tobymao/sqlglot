@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     timestamptrunc_sql,
     build_formatted_time,
-    groupconcat_sql,
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
@@ -88,7 +87,6 @@ class Databricks(Spark):
                 e.this,
             ),
             exp.DatetimeTrunc: timestamptrunc_sql(),
-            exp.GroupConcat: groupconcat_sql,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

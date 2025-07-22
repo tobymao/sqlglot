@@ -40,11 +40,16 @@ class TestRedshift(Validator):
             "LISTAGG(sellerid, ', ')",
             read={
                 "duckdb": "STRING_AGG(sellerid, ', ')",
+                "spark": "STRING_AGG(sellerid, ', ')",
+                "databricks": "STRING_AGG(sellerid, ', ')",
             },
             write={
                 # GROUP_CONCAT, LISTAGG and STRING_AGG are aliases in DuckDB
+                # LISTAGG and STRING_AGG are aliases in Spark4, Databricks
                 "duckdb": "LISTAGG(sellerid, ', ')",
                 "redshift": "LISTAGG(sellerid, ', ')",
+                "spark": "LISTAGG(sellerid, ', ')",
+                "databricks": "LISTAGG(sellerid, ', ')",
             },
         )
         self.validate_all(

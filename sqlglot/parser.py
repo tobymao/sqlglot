@@ -2811,6 +2811,10 @@ class Parser(metaclass=_Parser):
         else:
             this = self._parse_table(schema=True)
 
+        query = None
+        if self._match(TokenType.DARROW):
+            query = self._parse_select()
+
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
         partition = self._parse_partition()
@@ -2822,6 +2826,7 @@ class Parser(metaclass=_Parser):
             expressions=expressions,
             partition=partition,
             format=format,
+            query=query,
         )
 
     def _parse_multitable_inserts(self, comments: t.Optional[t.List[str]]) -> exp.MultitableInserts:

@@ -1,6 +1,48 @@
 Changelog
 =========
 
+## [v27.2.0] - 2025-07-22
+### :boom: BREAKING CHANGES
+- due to [`6268f6f`](https://github.com/tobymao/sqlglot/commit/6268f6f39dda1ca5cf2ad0403e219b49c5c9593a) - add default precision to CHAR/VARCHAR create expressions *(PR [#5434](https://github.com/tobymao/sqlglot/pull/5434) by [@mattiasthalen](https://github.com/mattiasthalen))*:
+
+  add default precision to CHAR/VARCHAR create expressions (#5434)
+
+- due to [`8467bad`](https://github.com/tobymao/sqlglot/commit/8467bad405e27c842c989e71588adc39cf2383fc) - add parsing/generating for BigQuery `DECLARE` *(PR [#5442](https://github.com/tobymao/sqlglot/pull/5442) by [@plaflamme](https://github.com/plaflamme))*:
+
+  add parsing/generating for BigQuery `DECLARE` (#5442)
+
+- due to [`79c5c30`](https://github.com/tobymao/sqlglot/commit/79c5c30f3802c6959376b3b0f3c4d055a30b6b43) - transpile STRING_AGG *(PR [#5449](https://github.com/tobymao/sqlglot/pull/5449) by [@geooo109](https://github.com/geooo109))*:
+
+  transpile STRING_AGG (#5449)
+
+- due to [`190f8ab`](https://github.com/tobymao/sqlglot/commit/190f8abe3d3bbda09e2f945287398d2aa9d6a863) - improve BigQuery `UNNEST` transpilation *(PR [#5451](https://github.com/tobymao/sqlglot/pull/5451) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve BigQuery `UNNEST` transpilation (#5451)
+
+
+### :sparkles: New Features
+- [`732548f`](https://github.com/tobymao/sqlglot/commit/732548ff7a6792cfa38dba8b3b8a73a302532ae7) - **postgresql**: add support for table creation DDL that contains a primary key alongside the INCLUDE keyword *(PR [#5425](https://github.com/tobymao/sqlglot/pull/5425) by [@amosbiras](https://github.com/amosbiras))*
+- [`9f887f1`](https://github.com/tobymao/sqlglot/commit/9f887f14d20cd493b4a0a4489649fc5b9f2ae7fd) - Add support for BETWEEN flags *(PR [#5435](https://github.com/tobymao/sqlglot/pull/5435) by [@mateuszpoleski](https://github.com/mateuszpoleski))*
+- [`edef00a`](https://github.com/tobymao/sqlglot/commit/edef00af9b703ace76871b989d9b94d9c30dcafd) - **duckdb**: Add reset command for duckdb *(PR [#5448](https://github.com/tobymao/sqlglot/pull/5448) by [@themisvaltinos](https://github.com/themisvaltinos))*
+- [`6268f6f`](https://github.com/tobymao/sqlglot/commit/6268f6f39dda1ca5cf2ad0403e219b49c5c9593a) - **tsql**: add default precision to CHAR/VARCHAR create expressions *(PR [#5434](https://github.com/tobymao/sqlglot/pull/5434) by [@mattiasthalen](https://github.com/mattiasthalen))*
+- [`bbf26e9`](https://github.com/tobymao/sqlglot/commit/bbf26e9610bee341d4e6df12a031b05ff6b57861) - **mysql**: Add support for SELECT DISTINCTROW *(PR [#5446](https://github.com/tobymao/sqlglot/pull/5446) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#5445](https://github.com/tobymao/sqlglot/issues/5445) opened by [@chenweida123](https://github.com/chenweida123)*
+- [`8467bad`](https://github.com/tobymao/sqlglot/commit/8467bad405e27c842c989e71588adc39cf2383fc) - add parsing/generating for BigQuery `DECLARE` *(PR [#5442](https://github.com/tobymao/sqlglot/pull/5442) by [@plaflamme](https://github.com/plaflamme))*
+- [`190f8ab`](https://github.com/tobymao/sqlglot/commit/190f8abe3d3bbda09e2f945287398d2aa9d6a863) - improve BigQuery `UNNEST` transpilation *(PR [#5451](https://github.com/tobymao/sqlglot/pull/5451) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`9f860a0`](https://github.com/tobymao/sqlglot/commit/9f860a0ce47f74930efa1afcd86fe7668a40c239) - **snowflake**: ALTER TABLE ADD with IF NOT EXISTS *(PR [#5438](https://github.com/tobymao/sqlglot/pull/5438) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5432](https://github.com/tobymao/sqlglot/issues/5432) opened by [@ca0904](https://github.com/ca0904)*
+- [`d7b3a26`](https://github.com/tobymao/sqlglot/commit/d7b3a261647e4ce675c84bbf72a33d320099fc01) - **postgres**: transpile duckdb LIST_HAS_ANY and LIST_CONTAINS *(PR [#5440](https://github.com/tobymao/sqlglot/pull/5440) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5437](https://github.com/tobymao/sqlglot/issues/5437) opened by [@aersam](https://github.com/aersam)*
+- [`79c5c30`](https://github.com/tobymao/sqlglot/commit/79c5c30f3802c6959376b3b0f3c4d055a30b6b43) - **spark**: transpile STRING_AGG *(PR [#5449](https://github.com/tobymao/sqlglot/pull/5449) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5441](https://github.com/tobymao/sqlglot/issues/5441) opened by [@dxaen](https://github.com/dxaen)*
+
+### :wrench: Chores
+- [`59fd875`](https://github.com/tobymao/sqlglot/commit/59fd875cd4ee1c44f9ca20f701215ae64d669d60) - Refactor PRIMARY KEY ... INCLUDE handling *(PR [#5433](https://github.com/tobymao/sqlglot/pull/5433) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`e9bb3e8`](https://github.com/tobymao/sqlglot/commit/e9bb3e8ccb52c76ed77fc5e7d04cf75230b737fa) - Refactor DECLARE statement *(PR [#5450](https://github.com/tobymao/sqlglot/pull/5450) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v27.1.0] - 2025-07-18
 ### :boom: BREAKING CHANGES
 - due to [`5724538`](https://github.com/tobymao/sqlglot/commit/5724538f278b2178114b88850251afd7c3db0dda) - ARRAY_CONCAT type annotation *(PR [#5293](https://github.com/tobymao/sqlglot/pull/5293) by [@geooo109](https://github.com/geooo109))*:
@@ -8238,3 +8280,4 @@ Changelog
 [v26.33.0]: https://github.com/tobymao/sqlglot/compare/v26.32.0...v26.33.0
 [v27.0.0]: https://github.com/tobymao/sqlglot/compare/v26.21.3...v27.0.0
 [v27.1.0]: https://github.com/tobymao/sqlglot/compare/v26.31.2...v27.1.0
+[v27.2.0]: https://github.com/tobymao/sqlglot/compare/v27.1.0...v27.2.0

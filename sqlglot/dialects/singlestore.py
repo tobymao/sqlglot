@@ -1,6 +1,5 @@
 from sqlglot import Dialect
 from sqlglot.dialects.dialect import NormalizationStrategy
-import typing as t
 
 
 class SingleStore(Dialect):

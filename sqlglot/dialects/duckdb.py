@@ -342,6 +342,7 @@ class DuckDB(Dialect):
             "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,
             "POSITIONAL": TokenType.POSITIONAL,
+            "RESET": TokenType.COMMAND,
             "SIGNED": TokenType.INT,
             "STRING": TokenType.TEXT,
             "SUMMARIZE": TokenType.SUMMARIZE,

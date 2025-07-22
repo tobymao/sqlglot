@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
+    Version,
     rename_func,
     unit_to_var,
     timestampdiff_sql,
@@ -96,6 +97,17 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
     return this
 
 
+def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
+    if self.dialect.version < Version("4.0.0"):
+        expr = exp.ArrayToString(
+            this=exp.ArrayAgg(this=expression.this),
+            expression=expression.args.get("separator") or exp.Literal.string(""),
+        )
+        return self.sql(expr)
+
+    return groupconcat_sql(self, expression)
+
+
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
 
@@ -181,7 +193,7 @@ class Spark(Spark2):
                     move_partitioned_by_to_schema_columns,
                 ]
             ),
-            exp.GroupConcat: groupconcat_sql,
+            exp.GroupConcat: _groupconcat_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.PartitionedByProperty: lambda self,
             e: f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}",

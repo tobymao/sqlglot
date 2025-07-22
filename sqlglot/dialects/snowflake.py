@@ -1139,6 +1139,7 @@ class Snowflake(Dialect):
             "REMOVE": TokenType.COMMAND,
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,
+            "SEMANTIC VIEW": TokenType.SEMANTIC_VIEW,
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
             "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,

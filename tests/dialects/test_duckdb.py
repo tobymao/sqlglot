@@ -999,6 +999,8 @@ class TestDuckDB(Validator):
                 "postgres": "ARRAY[1, 2, 3] && ARRAY[1, 2]",
             },
         )
+        self.validate_identity("LISTAGG(x, ', ')")
+        self.validate_identity("STRING_AGG(x, ', ')", "LISTAGG(x, ', ')")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

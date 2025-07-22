@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
     space_sql,
 )
-from sqlglot.helper import csv, seq_get, split_num_words
+from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 
@@ -1394,10 +1394,10 @@ class BigQuery(Dialect):
             return f"DECLARE {self.expressions(expression, flat=True)}"
 
         def declareitem_sql(self, expression: exp.DeclareItem) -> str:
-            variables = csv(*[self.sql(v) for v in expression.this])
+            variables = self.expressions(expression, "this")
             default = self.sql(expression, "default")
-            default = f"DEFAULT {default}" if default else ""
+            default = f" DEFAULT {default}" if default else ""
             kind = self.sql(expression, "kind")
-            space = " " if kind and default else ""
+            kind = f" {kind}" if kind else ""
 
-            return f"{variables} {kind}{space}{default}"
+            return f"{variables}{kind}{default}"

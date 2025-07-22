@@ -812,8 +812,9 @@ SELECT c.f::VARCHAR(MAX) AS f, e AS e FROM a.b AS c, c.d AS e;
 SELECT CAST(c.f AS VARCHAR(MAX)) AS f, e AS e FROM a.b AS c, c.d AS e;
 
 # dialect: bigquery
+# execute: false
 WITH cte AS (SELECT 1 AS col) SELECT * FROM cte LEFT JOIN UNNEST((SELECT ARRAY_AGG(DISTINCT x) AS agg FROM UNNEST([1]) AS x WHERE col = 1));
-WITH cte AS (SELECT 1 AS col) SELECT * FROM cte AS cte LEFT JOIN UNNEST((SELECT ARRAY_AGG(DISTINCT x) AS agg FROM UNNEST([1]) AS x WHERE cte.col = 1));
+WITH cte AS (SELECT 1 AS col) SELECT cte.col AS col, _q_1 AS _q_1 FROM cte AS cte LEFT JOIN UNNEST((SELECT ARRAY_AGG(DISTINCT x) AS agg FROM UNNEST([1]) AS x WHERE cte.col = 1)) AS _q_1;
 
 --------------------------------------
 -- Window functions

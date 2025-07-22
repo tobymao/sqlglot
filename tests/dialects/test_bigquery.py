@@ -1776,12 +1776,6 @@ WHERE
             transpile("DATE_ADD(x, day)", read="bigquery")
 
     def test_warnings(self):
-        with self.assertLogs(parser_logger) as cm:
-            self.validate_identity(
-                "/* some comment */ DECLARE foo DATE DEFAULT DATE_SUB(current_date, INTERVAL 2 day)"
-            )
-            self.assertIn("contains unsupported syntax", cm.output[0])
-
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(
                 "WITH cte(c) AS (SELECT * FROM t) SELECT * FROM cte",
@@ -2695,3 +2689,17 @@ OPTIONS (
         self.validate_identity("JSON_ARRAY([])")
         self.validate_identity("JSON_ARRAY(STRUCT(10 AS a, 'foo' AS b))")
         self.validate_identity("JSON_ARRAY(10, ['foo', 'bar'], [20, 30])")
+
+    def test_declare(self):
+        # supported cases
+        self.validate_identity("DECLARE X INT64")
+        self.validate_identity("DECLARE X INT64 DEFAULT 1")
+        self.validate_identity("DECLARE X FLOAT64 DEFAULT 0.9")
+        self.validate_identity("DECLARE X INT64 DEFAULT (SELECT MAX(col) FROM foo)")
+        self.validate_identity("DECLARE X, Y, Z INT64")
+        self.validate_identity("DECLARE X, Y, Z INT64 DEFAULT 42")
+        self.validate_identity("DECLARE X, Y, Z INT64 DEFAULT (SELECT 42)")
+        self.validate_identity("DECLARE START_DATE DATE DEFAULT CURRENT_DATE - 1")
+        self.validate_identity(
+            "DECLARE TS TIMESTAMP DEFAULT CURRENT_TIMESTAMP() - INTERVAL '1' HOUR"
+        )

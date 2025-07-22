@@ -938,33 +938,6 @@ class BigQuery(Dialect):
                 this=self._match_text_seq("AS") and self._parse_select(),
             )
 
-        def _parse_declare(self) -> exp.Declare | exp.Command:
-            index = self._index
-            expressions = self._try_parse(self._parse_declareitem)
-
-            if not expressions or self._curr:
-                self._retreat(index)
-                return self._parse_as_command(self._prev)
-
-            return self.expression(exp.Declare, expressions=[expressions])
-
-        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
-            vars = self._parse_csv(self._parse_id_var)
-            if not vars:
-                return None
-
-            data_type = self._parse_types()
-            default = None
-            if self._match(TokenType.DEFAULT):
-                default = self._parse_bitwise()
-
-            if not data_type and not default:
-                self.raise_error(
-                    "BigQuery requires a data type or default value for DECLARE statements",
-                    token=self._curr,
-                )
-            return self.expression(exp.DeclareItem, this=vars, kind=data_type, default=default)
-
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False

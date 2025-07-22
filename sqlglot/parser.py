@@ -8626,3 +8626,24 @@ class Parser(metaclass=_Parser):
                 query = parser(self, query)
 
         return query
+
+    def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
+        vars = self._parse_csv(self._parse_id_var)
+        if not vars:
+            return None
+
+        return self.expression(
+            exp.DeclareItem,
+            this=vars,
+            kind=self._parse_types(),
+            default=self._match(TokenType.DEFAULT) and self._parse_bitwise(),
+        )
+
+    def _parse_declare(self) -> exp.Declare | exp.Command:
+        start = self._prev
+        expressions = self._try_parse(lambda: self._parse_csv(self._parse_declareitem))
+
+        if not expressions or self._curr:
+            return self._parse_as_command(start)
+
+        return self.expression(exp.Declare, expressions=expressions)

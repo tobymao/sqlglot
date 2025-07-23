@@ -465,8 +465,13 @@ class Postgres(Dialect):
                 if self._match(TokenType.L_PAREN, advance=False)
                 else None
             )
+
             self._match_text_seq("S")
-            return self.expression(exp.Placeholder, this=this)
+
+            if not this:
+                return self.expression(exp.Placeholder, this=self._prev.text)
+
+            return self.expression(exp.Placeholder, this=exp.paren(this, copy=False))
 
         def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             while True:
@@ -816,8 +821,11 @@ class Postgres(Dialect):
             return super().interval_sql(expression)
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
-            this = f"({expression.name})" if expression.this else ""
-            return f"{self.NAMED_PLACEHOLDER_TOKEN}{this}s"
+            this = expression.this
+
+            expr = f"{self.NAMED_PLACEHOLDER_TOKEN}{self.sql(this)}" if this else "?"
+
+            return f"{expr}s" if isinstance(this, exp.Paren) else expr
 
         def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
             # Convert DuckDB's LIST_CONTAINS(array, value) to PostgreSQL

@@ -276,6 +276,16 @@ class TestExasol(Validator):
                 },
             ),
         )
+        self.validate_all(
+            "STRPOS(haystack, needle)",
+            write={
+                "exasol": "INSTR(haystack, needle)",
+                "bigquery": "INSTR(haystack, needle)",
+                "databricks": "LOCATE(needle, haystack)",
+                "oracle": "INSTR(haystack, needle)",
+                "presto": "STRPOS(haystack, needle)",
+            },
+        )
 
     def test_datetime_functions(self):
         formats = {

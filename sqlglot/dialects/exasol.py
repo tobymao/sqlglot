@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     build_formatted_time,
     timestrtotime_sql,
+    strposition_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
@@ -158,6 +159,12 @@ class Exasol(Dialect):
                 e.this,
                 "'UTC'",
                 e.args.get("zone"),
+            ),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/instr.htm
+            exp.StrPosition: lambda self, e: (
+                strposition_sql(
+                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
+                )
             ),
         }
 

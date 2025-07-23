@@ -384,6 +384,7 @@ class Postgres(Dialect):
 
         PLACEHOLDER_PARSERS = {
             **parser.Parser.PLACEHOLDER_PARSERS,
+            TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder, jdbc=True),
             TokenType.MOD: lambda self: self._parse_query_parameter(),
         }
 
@@ -816,6 +817,9 @@ class Postgres(Dialect):
             return super().interval_sql(expression)
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            if expression.args.get("jdbc"):
+                return "?"
+
             this = f"({expression.name})" if expression.this else ""
             return f"{self.NAMED_PLACEHOLDER_TOKEN}{this}s"
 

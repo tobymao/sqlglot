@@ -923,6 +923,7 @@ FROM json_data, field_ids""",
 
         self.validate_identity("SELECT * FROM foo WHERE id = %s")
         self.validate_identity("SELECT * FROM foo WHERE id = %(id_param)s")
+        self.validate_identity("SELECT * FROM foo WHERE id = ?")
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

@@ -4467,8 +4467,9 @@ class SessionParameter(Condition):
 
 
 # https://www.databricks.com/blog/parameterized-queries-pyspark
+# https://jdbc.postgresql.org/documentation/query/#using-the-statement-or-preparedstatement-interface
 class Placeholder(Condition):
-    arg_types = {"this": False, "kind": False, "widget": False}
+    arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
 
     @property
     def name(self) -> str:

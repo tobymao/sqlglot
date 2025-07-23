@@ -2174,12 +2174,6 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
         self.validate_all(
-            'DESC SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM ->> SELECT "object_kind","property_value" as "parent_object","object_name" FROM $1 WHERE "object_kind" IN (\'METRIC\',\'DIMENSION\') AND "property" IN (\'TABLE\')',
-            write={
-                "snowflake": 'DESCRIBE SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM ->> SELECT "object_kind", "property_value" AS "parent_object", "object_name" FROM $1 WHERE "object_kind" IN (\'METRIC\', \'DIMENSION\') AND "property" IN (\'TABLE\')',
-            },
-        )
-        self.validate_all(
             "ENDSWITH('abc', 'c')",
             read={
                 "bigquery": "ENDS_WITH('abc', 'c')",

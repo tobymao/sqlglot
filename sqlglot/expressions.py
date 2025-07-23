@@ -1558,7 +1558,6 @@ class Describe(Expression):
         "expressions": False,
         "partition": False,
         "format": False,
-        "query": False,
     }
 
 

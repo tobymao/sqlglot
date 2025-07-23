@@ -208,6 +208,10 @@ class TestExasol(Validator):
                 "exasol": "SELECT APPROXIMATE_COUNT_DISTINCT(y)",
             },
         )
+        self.validate_identity(
+            "SELECT rank(date) over(order by date desc) as sort_order",
+            "SELECT RANK() OVER (ORDER BY date DESC) AS sort_order",
+        )
 
     def test_stringFunctions(self):
         self.validate_identity(

@@ -175,3 +175,11 @@ class Exasol(Dialect):
             options = expression.args.get("options")
 
             return self.func("CONVERT_TZ", datetime, from_tz, to_tz, options)
+
+        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
+        def anonymous_sql(self, expression: exp.Anonymous) -> str:
+            func_name = expression.name.upper()
+
+            if func_name == "RANK":
+                return f"{func_name}()"
+            return super().anonymous_sql(expression)

@@ -2275,6 +2275,14 @@ OPTIONS (
             },
         )
 
+        self.validate_all(
+            """SELECT JSON_QUERY(foo, '$.class')""",
+            write={
+                "bigquery": """SELECT JSON_QUERY(foo, '$.class')""",
+                "snowflake": """SELECT GET_PATH(PARSE_JSON(foo), 'class')""",
+            },
+        )
+
         for func in ("JSON_EXTRACT_SCALAR", "JSON_VALUE"):
             with self.subTest(f"Testing BigQuery's {func}"):
                 self.validate_all(

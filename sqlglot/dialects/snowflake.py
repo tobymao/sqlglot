@@ -547,6 +547,7 @@ class Snowflake(Dialect):
         IDENTIFY_PIVOT_STRINGS = True
         DEFAULT_SAMPLING_METHOD = "BERNOULLI"
         COLON_IS_VARIANT_EXTRACT = True
+        JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
 
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,
@@ -590,7 +591,9 @@ class Snowflake(Dialect):
             ),
             "FLATTEN": exp.Explode.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
-                this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
+                this=seq_get(args, 0),
+                expression=dialect.to_json_path(seq_get(args, 1)),
+                requires_json=True,
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
@@ -1555,10 +1558,16 @@ class Snowflake(Dialect):
         def jsonextract_sql(self, expression: exp.JSONExtract):
             this = expression.this
 
-            # JSON strings are valid coming from other dialects such as BQ
+            # JSON strings are valid coming from other dialects such as BQ so
+            # for these cases we PARSE_JSON preemptively
+            if not isinstance(this, (exp.ParseJSON, exp.JSONExtract)) and not expression.args.get(
+                "requires_json"
+            ):
+                this = exp.ParseJSON(this=this)
+
             return self.func(
                 "GET_PATH",
-                exp.ParseJSON(this=this) if this.is_string else this,
+                this,
                 expression.expression,
             )
 

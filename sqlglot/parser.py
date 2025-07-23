@@ -1535,6 +1535,10 @@ class Parser(metaclass=_Parser):
     # When False, keys are typically restricted to identifiers.
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = False
 
+    # Whether JSON_EXTRACT requires a JSON expression as the first argument, e.g this
+    # is true for Snowflake but not for BigQuery which can also process strings
+    JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -5592,6 +5596,7 @@ class Parser(metaclass=_Parser):
                 this=this,
                 expression=json_path_expr,
                 variant_extract=True,
+                requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
             )
 
             while casts:

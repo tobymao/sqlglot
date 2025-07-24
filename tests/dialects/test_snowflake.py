@@ -83,6 +83,8 @@ class TestSnowflake(Validator):
         self.validate_identity("TO_TIMESTAMP(col, fmt)")
         self.validate_identity("SELECT TO_CHAR(CAST('12:05:05' AS TIME))")
         self.validate_identity("SELECT TRIM(COALESCE(TO_CHAR(CAST(c AS TIME)), '')) FROM t")
+        self.validate_identity("SELECT GET_PATH(PARSE_JSON(foo), 'bar')")
+        self.validate_identity("SELECT GET_PATH(foo, 'bar')")
         self.validate_identity(
             "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )

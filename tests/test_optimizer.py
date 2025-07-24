@@ -1556,6 +1556,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         qualified = optimizer.qualify.qualify(query)
         self.assertEqual(qualified.expressions[0].alias, "c")
 
+    def test_gen(self):
+        for func in exp.ALL_FUNCTIONS:
+            self.assertIsInstance(optimizer.simplify.gen(func()), str)
+
     def test_normalization_distance(self):
         def gen_expr(depth: int) -> exp.Expression:
             return parse_one(" OR ".join("a AND b" for _ in range(depth)))

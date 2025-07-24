@@ -391,3 +391,13 @@ class TestExasol(Validator):
                 "snowflake": "SELECT CURRENT_USER()",
             },
         )
+        self.validate_all(
+            'CREATE OR REPLACE VIEW "schema"."v" ("col" COMMENT IS \'desc\') AS SELECT "src_col" AS "col"',
+            read={
+                "exasol": 'CREATE OR REPLACE VIEW "schema"."v" ("col" COMMENT IS \'desc\') AS SELECT "src_col" AS "col"',
+            },
+            write={
+                "databricks": "CREATE OR REPLACE VIEW `schema`.`v` (`col` COMMENT 'desc') AS SELECT `src_col` AS `col`",
+                "exasol": 'CREATE OR REPLACE VIEW "schema"."v" ("col" COMMENT IS \'desc\') AS SELECT "src_col" AS "col"',
+            },
+        )

@@ -305,6 +305,13 @@ LANGUAGE js AS
         )
 
         self.validate_all(
+            "SELECT TRUE IS TRUE",
+            write={
+                "bigquery": "SELECT TRUE IS TRUE",
+                "snowflake": "SELECT TRUE",
+            },
+        )
+        self.validate_all(
             "SELECT REPEAT(' ', 2)",
             read={
                 "hive": "SELECT SPACE(2)",

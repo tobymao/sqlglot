@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v27.3.1] - 2025-07-24
+### :boom: BREAKING CHANGES
+- due to [`48703c4`](https://github.com/tobymao/sqlglot/commit/48703c4fadd9f24de151a63d1bfa74f4b8e71133) - temporarily move VARCHAR length inference logic to Fabric *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  temporarily move VARCHAR length inference logic to Fabric
+
+
+### :sparkles: New Features
+- [`4cc321c`](https://github.com/tobymao/sqlglot/commit/4cc321cc1995d538ab0c48a7a0a473c31e76ddff) - **singlestore**: Added initial implementation of SingleStore dialect *(PR [#5447](https://github.com/tobymao/sqlglot/pull/5447) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+
+### :wrench: Chores
+- [`48703c4`](https://github.com/tobymao/sqlglot/commit/48703c4fadd9f24de151a63d1bfa74f4b8e71133) - **tsql**: temporarily move VARCHAR length inference logic to Fabric *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.3.0] - 2025-07-24
 ### :boom: BREAKING CHANGES
 - due to [`d7ccb48`](https://github.com/tobymao/sqlglot/commit/d7ccb48e542c49258e31cc4df45f49beebc2e238) - week/quarter support *(PR [#5374](https://github.com/tobymao/sqlglot/pull/5374) by [@eakmanrq](https://github.com/eakmanrq))*:
@@ -8458,3 +8472,4 @@ Changelog
 [v27.1.0]: https://github.com/tobymao/sqlglot/compare/v26.31.2...v27.1.0
 [v27.2.0]: https://github.com/tobymao/sqlglot/compare/v27.1.0...v27.2.0
 [v27.3.0]: https://github.com/tobymao/sqlglot/compare/v27.0.1...v27.3.0
+[v27.3.1]: https://github.com/tobymao/sqlglot/compare/v27.3.0...v27.3.1

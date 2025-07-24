@@ -2594,6 +2594,7 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
     def test_try_cast(self):
         self.validate_identity("SELECT TRY_CAST(x AS DOUBLE)")
+        self.validate_identity("SELECT TRY_CAST(FOO() AS TEXT)")
 
         self.validate_all("TRY_CAST('foo' AS TEXT)", read={"hive": "CAST('foo' AS STRING)"})
         self.validate_all("CAST(5 + 5 AS TEXT)", read={"hive": "CAST(5 + 5 AS STRING)"})
@@ -2616,17 +2617,13 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
         expression = parse_one("SELECT CAST(t.x AS STRING) FROM t", read="hive")
 
-        expression = annotate_types(expression, schema={"t": {"x": "string"}})
-        self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(t.x AS TEXT) FROM t")
+        for value_type in ("string", "int"):
+            func = "TRY_CAST" if value_type == "string" else "CAST"
 
-        expression = annotate_types(expression, schema={"t": {"x": "int"}})
-        self.assertEqual(expression.sql(dialect="snowflake"), "SELECT CAST(t.x AS TEXT) FROM t")
-
-        # We can't infer FOO's type since it's a UDF in this case, so we don't get rid of TRY_CAST
-        expression = parse_one("SELECT TRY_CAST(FOO() AS TEXT)", read="snowflake")
-
-        expression = annotate_types(expression)
-        self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(FOO() AS TEXT)")
+            expression = annotate_types(expression, schema={"t": {"x": value_type}})
+            self.assertEqual(
+                expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS TEXT) FROM t"
+            )
 
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")

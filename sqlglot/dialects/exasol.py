@@ -46,7 +46,6 @@ class Exasol(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "USER": TokenType.CURRENT_USER,
-            "COMMENT IS": TokenType.COMMENT,
         }
 
     class Parser(parser.Parser):
@@ -81,11 +80,11 @@ class Exasol(Dialect):
         }
         CONSTRAINT_PARSERS = {
             **parser.Parser.CONSTRAINT_PARSERS,
-            "COMMENT IS": lambda self: self.expression(
-                exp.CommentColumnConstraint, this=self._parse_string()
+            "COMMENT": lambda self: self.expression(
+                exp.CommentColumnConstraint,
+                this=self._match(TokenType.IS) and self._parse_string(),
             ),
         }
-        CONSTRAINT_PARSERS.pop("COMMENT")
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType

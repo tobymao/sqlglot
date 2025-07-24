@@ -511,6 +511,10 @@ class Dialect(metaclass=_Dialect):
     # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
+    # Whether the value/LHS of the TRY_CAST(<value> AS <type>) should strictly be a
+    # STRING type (Snowflake's case) or can be of any type
+    TRY_CAST_REQUIRES_STRING: t.Optional[bool] = None
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

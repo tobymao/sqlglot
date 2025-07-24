@@ -759,11 +759,8 @@ class Parser(metaclass=_Parser):
             this=this,
             to=to,
         ),
-        TokenType.DCOLON: lambda self, this, to: self.expression(
-            exp.Cast if self.STRICT_CAST else exp.TryCast,
-            this=this,
-            to=to,
-            requires_string=self.dialect.TRY_CAST_REQUIRES_STRING,
+        TokenType.DCOLON: lambda self, this, to: self.build_cast(
+            strict=self.STRICT_CAST, this=this, to=to
         ),
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
@@ -6538,15 +6535,14 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
 
-        return self.expression(
-            exp.Cast if strict else exp.TryCast,
+        return self.build_cast(
+            strict=strict,
             this=this,
             to=to,
             format=fmt,
             safe=safe,
             action=self._parse_var_from_options(self.CAST_ACTIONS, raise_unmatched=False),
             default=default,
-            requires_string=self.dialect.TRY_CAST_REQUIRES_STRING,
         )
 
     def _parse_string_agg(self) -> exp.GroupConcat:
@@ -6615,13 +6611,7 @@ class Parser(metaclass=_Parser):
         else:
             to = None
 
-        return self.expression(
-            exp.Cast if strict else exp.TryCast,
-            this=this,
-            to=to,
-            safe=safe,
-            requires_string=self.dialect.TRY_CAST_REQUIRES_STRING,
-        )
+        return self.build_cast(strict=strict, this=this, to=to, safe=safe)
 
     def _parse_xml_table(self) -> exp.XMLTable:
         namespaces = None
@@ -8656,3 +8646,11 @@ class Parser(metaclass=_Parser):
             return self._parse_as_command(start)
 
         return self.expression(exp.Declare, expressions=expressions)
+
+    def build_cast(self, strict: bool, **kwargs) -> exp.Cast | exp.TryCast:
+        exp_class = exp.Cast if strict else exp.TryCast
+
+        if exp_class == exp.TryCast:
+            kwargs["requires_string"] = self.dialect.TRY_CAST_REQUIRES_STRING
+
+        return self.expression(exp_class, **kwargs)

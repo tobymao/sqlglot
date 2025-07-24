@@ -5755,7 +5755,6 @@ class Cast(Func):
         "safe": False,
         "action": False,
         "default": False,
-        "requires_string": False,
     }
 
     @property
@@ -5786,7 +5785,7 @@ class Cast(Func):
 
 
 class TryCast(Cast):
-    pass
+    arg_types = {**Cast.arg_types, "requires_string": False}
 
 
 # https://clickhouse.com/docs/sql-reference/data-types/newjson#reading-json-paths-as-sub-columns

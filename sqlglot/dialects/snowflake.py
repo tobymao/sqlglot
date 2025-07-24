@@ -1189,6 +1189,7 @@ class Snowflake(Dialect):
         SUPPORTS_MEDIAN = True
         ARRAY_SIZE_NAME = "ARRAY_SIZE"
         SUPPORTS_DECODE_CASE = True
+        IS_BOOL_ALLOWED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

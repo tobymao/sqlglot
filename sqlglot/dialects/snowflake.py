@@ -54,7 +54,7 @@ def _build_datetime(
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return (
-                    exp.TryCast(this=value, to=exp.DataType.build(kind))
+                    exp.TryCast(this=value, to=exp.DataType.build(kind), requires_string=True)
                     if safe
                     else exp.cast(value, kind)
                 )
@@ -494,6 +494,7 @@ class Snowflake(Dialect):
     COPY_PARAMS_ARE_CSV = False
     ARRAY_AGG_INCLUDES_NULLS = None
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
+    TRY_CAST_REQUIRES_STRING = True
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -1396,10 +1397,12 @@ class Snowflake(Dialect):
 
                 value = annotate_types(value, dialect=self.dialect)
 
-            if value.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
+            # Snowflake requires that TRY_CAST's value be a string
+            # If TRY_CAST is being roundtripped (since Snowflake is the only dialect that sets "requires_string") or
+            # if we can deduce that the value is a string, then we can generate TRY_CAST
+            if expression.args.get("requires_string") or value.is_type(*exp.DataType.TEXT_TYPES):
                 return super().trycast_sql(expression)
 
-            # TRY_CAST only works for string values in Snowflake
             return self.cast_sql(expression)
 
         def log_sql(self, expression: exp.Log) -> str:

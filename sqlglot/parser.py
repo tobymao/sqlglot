@@ -763,6 +763,7 @@ class Parser(metaclass=_Parser):
             exp.Cast if self.STRICT_CAST else exp.TryCast,
             this=this,
             to=to,
+            requires_string=self.dialect.TRY_CAST_REQUIRES_STRING,
         ),
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
@@ -6545,6 +6546,7 @@ class Parser(metaclass=_Parser):
             safe=safe,
             action=self._parse_var_from_options(self.CAST_ACTIONS, raise_unmatched=False),
             default=default,
+            requires_string=self.dialect.TRY_CAST_REQUIRES_STRING,
         )
 
     def _parse_string_agg(self) -> exp.GroupConcat:
@@ -6613,7 +6615,13 @@ class Parser(metaclass=_Parser):
         else:
             to = None
 
-        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, safe=safe)
+        return self.expression(
+            exp.Cast if strict else exp.TryCast,
+            this=this,
+            to=to,
+            safe=safe,
+            requires_string=self.dialect.TRY_CAST_REQUIRES_STRING,
+        )
 
     def _parse_xml_table(self) -> exp.XMLTable:
         namespaces = None

@@ -5755,6 +5755,7 @@ class Cast(Func):
         "safe": False,
         "action": False,
         "default": False,
+        "requires_string": False,
     }
 
     @property

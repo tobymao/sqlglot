@@ -414,6 +414,13 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SAFE_CAST(x AS TIMESTAMP)",
+            write={
+                "bigquery": "SAFE_CAST(x AS TIMESTAMP)",
+                "snowflake": "CAST(x AS TIMESTAMPTZ)",
+            },
+        )
+        self.validate_all(
             "SELECT t.c1, h.c2, s.c3 FROM t1 AS t, UNNEST(t.t2) AS h, UNNEST(h.t3) AS s",
             write={
                 "bigquery": "SELECT t.c1, h.c2, s.c3 FROM t1 AS t CROSS JOIN UNNEST(t.t2) AS h CROSS JOIN UNNEST(h.t3) AS s",

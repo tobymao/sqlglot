@@ -2605,10 +2605,10 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             },
         )
         self.validate_all(
-            "TRY_CAST(x AS TEXT)",
+            "TRY_CAST('val' AS TEXT)",
             read={
-                "hive": "CAST(x AS STRING)",
-                "snowflake": "TRY_CAST(x AS TEXT)",
+                "hive": "CAST('val' AS STRING)",
+                "snowflake": "TRY_CAST('val' AS TEXT)",
             },
         )
 

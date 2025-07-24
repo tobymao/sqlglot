@@ -8647,7 +8647,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Declare, expressions=expressions)
 
-    def build_cast(self, strict: bool, **kwargs) -> exp.Cast | exp.TryCast:
+    def build_cast(self, strict: bool, **kwargs) -> exp.Cast:
         exp_class = exp.Cast if strict else exp.TryCast
 
         if exp_class == exp.TryCast:

@@ -122,6 +122,18 @@ class TestSQLite(Validator):
             'CREATE TABLE "foo t" ("foo t id" TEXT NOT NULL PRIMARY KEY)',
         )
         self.validate_identity("REPLACE INTO foo (x, y) VALUES (1, 2)", check_command_warning=True)
+        self.validate_identity(
+            "ATTACH DATABASE 'foo' AS schema_name", "ATTACH 'foo' AS schema_name"
+        )
+        self.validate_identity(
+            "ATTACH DATABASE IF NOT EXISTS 'foo' AS schema_name",
+            "ATTACH IF NOT EXISTS 'foo' AS schema_name",
+        )
+        self.validate_identity(
+            "ATTACH DATABASE 'foo' || '.foo2' AS schema_name",
+            "ATTACH 'foo' || '.foo2' AS schema_name",
+        )
+        self.validate_identity("DETACH DATABASE schema_name", "DETACH schema_name")
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

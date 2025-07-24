@@ -392,27 +392,6 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
     return sql
 
 
-def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Expression:
-    """Transform function to add VARCHAR(MAX) or CHAR(MAX) for cross-dialect conversion."""
-    if (
-        isinstance(expression, exp.Create)
-        and expression.kind == "TABLE"
-        and isinstance(expression.this, exp.Schema)
-    ):
-        for column in expression.this.expressions:
-            if isinstance(column, exp.ColumnDef):
-                column_type = column.kind
-                if (
-                    isinstance(column_type, exp.DataType)
-                    and column_type.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
-                    and not column_type.expressions
-                ):
-                    # For transpilation, VARCHAR/CHAR without precision becomes VARCHAR(MAX)/CHAR(MAX)
-                    column_type.set("expressions", [exp.var("MAX")])
-
-    return expression
-
-
 def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
@@ -890,22 +869,6 @@ class TSQL(Dialect):
 
                     create.args["properties"].append("expressions", exp.TemporaryProperty())
 
-                # Transform VARCHAR/CHAR without precision to VARCHAR(1)/CHAR(1)
-                if create.kind == "TABLE" and isinstance(create.this, exp.Schema):
-                    for column in create.this.expressions:
-                        if isinstance(column, exp.ColumnDef):
-                            column_type = column.kind
-                            if (
-                                isinstance(column_type, exp.DataType)
-                                and column_type.this
-                                in (exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
-                                and not column_type.expressions
-                            ):
-                                # Add default precision of 1 to VARCHAR/CHAR without precision
-                                # When n isn't specified in a data definition or variable declaration statement, the default length is 1.
-                                # https://learn.microsoft.com/en-us/sql/t-sql/data-types/char-and-varchar-transact-sql?view=sql-server-ver17#remarks
-                                column_type.set("expressions", [exp.Literal.number("1")])
-
             return create
 
         def _parse_if(self) -> t.Optional[exp.Expression]:
@@ -1043,7 +1006,6 @@ class TSQL(Dialect):
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
-            exp.Create: transforms.preprocess([_add_default_precision_to_varchar]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),

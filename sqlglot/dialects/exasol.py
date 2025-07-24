@@ -78,6 +78,13 @@ class Exasol(Dialect):
                 options=seq_get(args, 3),
             ),
         }
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "COMMENT": lambda self: self.expression(
+                exp.CommentColumnConstraint,
+                this=self._match(TokenType.IS) and self._parse_string(),
+            ),
+        }
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
@@ -166,6 +173,8 @@ class Exasol(Dialect):
                     self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
                 )
             ),
+            # https://docs.exasol.com/db/latest/sql/create_view.htm
+            exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

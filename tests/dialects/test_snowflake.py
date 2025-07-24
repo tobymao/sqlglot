@@ -2618,12 +2618,15 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         expression = parse_one("SELECT CAST(t.x AS STRING) FROM t", read="hive")
 
         for value_type in ("string", "int"):
-            func = "TRY_CAST" if value_type == "string" else "CAST"
+            with self.subTest(
+                f"Testing Hive -> Snowflake CAST/TRY_CAST conversion for {value_type}"
+            ):
+                func = "TRY_CAST" if value_type == "string" else "CAST"
 
-            expression = annotate_types(expression, schema={"t": {"x": value_type}})
-            self.assertEqual(
-                expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS TEXT) FROM t"
-            )
+                expression = annotate_types(expression, schema={"t": {"x": value_type}})
+                self.assertEqual(
+                    expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS TEXT) FROM t"
+                )
 
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")

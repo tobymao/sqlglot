@@ -59,6 +59,7 @@ class Exasol(Dialect):
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
+            "HASH_SHA": exp.SHA.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -173,6 +174,8 @@ class Exasol(Dialect):
                     self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
                 )
             ),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hash_sha%5B1%5D.htm#HASH_SHA%5B1%5D
+            exp.SHA: rename_func("HASH_SHA"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
         }

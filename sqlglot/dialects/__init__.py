@@ -85,6 +85,7 @@ DIALECTS = [
     "PRQL",
     "Redshift",
     "RisingWave",
+    "SingleStore",
     "Snowflake",
     "Spark",
     "Spark2",

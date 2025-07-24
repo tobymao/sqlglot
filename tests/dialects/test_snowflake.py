@@ -2138,7 +2138,13 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
-    def test_describe_table(self):
+    def test_describe(self):
+        self.validate_identity("DESCRIBE SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM")
+        self.validate_identity(
+            "DESC SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM",
+            "DESCRIBE SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM",
+        )
+
         self.validate_all(
             "DESCRIBE TABLE db.table",
             write={
@@ -2165,12 +2171,6 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             write={
                 "snowflake": "DESCRIBE VIEW db.table",
                 "spark": "DESCRIBE db.table",
-            },
-        )
-        self.validate_all(
-            "DESC SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM",
-            write={
-                "snowflake": "DESCRIBE SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM",
             },
         )
         self.validate_all(

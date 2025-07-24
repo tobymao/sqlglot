@@ -412,6 +412,7 @@ class TokenType(AutoName):
     USING = auto()
     VALUES = auto()
     VIEW = auto()
+    SEMANTIC_VIEW = auto()
     VOLATILE = auto()
     WHEN = auto()
     WHERE = auto()

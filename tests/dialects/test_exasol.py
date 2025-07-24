@@ -402,6 +402,7 @@ class TestExasol(Validator):
             "HASH_SHA(x)",
             read={
                 "clickhouse": "SHA1(x)",
+                "exasol": "HASH_SHA1(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
             },

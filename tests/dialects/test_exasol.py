@@ -398,3 +398,19 @@ class TestExasol(Validator):
                 "exasol": 'CREATE OR REPLACE VIEW "schema"."v" ("col" COMMENT IS \'desc\') AS SELECT "src_col" AS "col"',
             },
         )
+        self.validate_all(
+            "HASH_SHA1(x)",
+            read={
+                "clickhouse": "SHA1(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+            write={
+                "exasol": "HASH_SHA1(x)",
+                "clickhouse": "SHA1(x)",
+                "bigquery": "SHA1(x)",
+                "": "SHA(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+        )

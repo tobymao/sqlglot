@@ -60,6 +60,7 @@ class Exasol(Dialect):
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
             "HASH_SHA": exp.SHA.from_arg_list,
+            "HASH_SHA1": exp.SHA.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),

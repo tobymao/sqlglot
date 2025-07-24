@@ -451,6 +451,7 @@ class Parser(metaclass=_Parser):
         TokenType.MODEL,
         TokenType.NAMESPACE,
         TokenType.SCHEMA,
+        TokenType.SEMANTIC_VIEW,
         TokenType.SEQUENCE,
         TokenType.SINK,
         TokenType.SOURCE,

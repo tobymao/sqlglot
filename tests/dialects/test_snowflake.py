@@ -2168,6 +2168,12 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
         self.validate_all(
+            "DESC SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM",
+            write={
+                "snowflake": "DESCRIBE SEMANTIC VIEW TPCDS_SEMANTIC_VIEW_SM",
+            },
+        )
+        self.validate_all(
             "ENDSWITH('abc', 'c')",
             read={
                 "bigquery": "ENDS_WITH('abc', 'c')",

@@ -5374,7 +5374,9 @@ class Func(Condition):
 
     @classmethod
     def sql_name(cls):
-        return cls.sql_names()[0]
+        sql_names = cls.sql_names()
+        assert sql_names, f"Expected non-empty 'sql_names' for Func: {cls.__name__}."
+        return sql_names[0]
 
     @classmethod
     def default_parser_mappings(cls):
@@ -6046,7 +6048,6 @@ class Decode(Func):
 
 
 class DecodeCase(Func):
-    _sql_names: t.List[str] = []
     arg_types = {"expressions": True}
     is_var_len_args = True
 

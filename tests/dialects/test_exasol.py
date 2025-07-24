@@ -399,14 +399,14 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            "HASH_SHA1(x)",
+            "HASH_SHA(x)",
             read={
                 "clickhouse": "SHA1(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
             },
             write={
-                "exasol": "HASH_SHA1(x)",
+                "exasol": "HASH_SHA(x)",
                 "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
                 "": "SHA(x)",

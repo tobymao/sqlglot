@@ -216,6 +216,21 @@ class TestHive(Validator):
             },
         )
 
+        self.validate_all(
+            "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+            read={
+                "spark2": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+                "spark": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+                "databricks": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+            },
+            write={
+                "hive": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+                "spark2": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+                "spark": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+                "databricks": "ALTER TABLE db.example_table ADD PARTITION(col_a = 'a') LOCATION 'b'",
+            },
+        )
+
     def test_lateral_view(self):
         self.validate_all(
             "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",

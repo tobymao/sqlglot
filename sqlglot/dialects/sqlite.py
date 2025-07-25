@@ -96,7 +96,12 @@ class SQLite(Dialect):
 
         NESTED_COMMENTS = False
 
-        KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "ATTACH": TokenType.ATTACH,
+            "DETACH": TokenType.DETACH,
+        }
+
         KEYWORDS.pop("/*+")
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE}
@@ -114,6 +119,12 @@ class SQLite(Dialect):
             "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.ATTACH: lambda self: self._parse_attach_detach(),
+            TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        }
+
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
             # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
@@ -121,6 +132,16 @@ class SQLite(Dialect):
                 return self.expression(exp.UniqueColumnConstraint)
 
             return super()._parse_unique()
+
+        def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
+            self._match(TokenType.DATABASE)
+            this = self._parse_expression()
+
+            return (
+                self.expression(exp.Attach, this=this)
+                if is_attach
+                else self.expression(exp.Detach, this=this)
+            )
 
     class Generator(generator.Generator):
         JOIN_HINTS = False

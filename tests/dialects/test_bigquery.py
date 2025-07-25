@@ -1762,6 +1762,14 @@ WHERE
         self.validate_identity("ARRAY_LAST(['a', 'b'])")
         self.validate_identity("JSON_TYPE(PARSE_JSON('1'))")
 
+        self.validate_all(
+            "SELECT CAST(col AS STRUCT<fld1 STRUCT<fld2 INT>>).fld1.fld2",
+            write={
+                "bigquery": "SELECT CAST(col AS STRUCT<fld1 STRUCT<fld2 INT64>>).fld1.fld2",
+                "snowflake": "SELECT CAST(col AS OBJECT(fld1 OBJECT(fld2 INT))):fld1.fld2",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

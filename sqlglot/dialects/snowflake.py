@@ -1673,3 +1673,11 @@ class Snowflake(Dialect):
                 to=exp.DataType(this=exp.DataType.Type.DATE),
             )
             return self.sql(expr)
+
+        def dot_sql(self, expression: exp.Dot) -> str:
+            this = expression.this
+
+            if this.is_type(exp.DataType.Type.STRUCT):
+                return f"{self.sql(this)}:{self.sql(expression, 'expression')}"
+
+            return super().dot_sql(expression)

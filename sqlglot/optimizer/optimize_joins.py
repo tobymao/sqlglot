@@ -79,7 +79,8 @@ def normalize(expression):
         if join.kind == "CROSS":
             join.set("on", None)
         else:
-            join.set("kind", None)
+            if join.kind in ("INNER", "OUTER"):
+                join.set("kind", None)
 
             if not join.args.get("on") and not join.args.get("using"):
                 join.set("on", exp.true())

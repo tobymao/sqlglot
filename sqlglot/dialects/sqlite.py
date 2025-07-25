@@ -136,6 +136,7 @@ class SQLite(Dialect):
         def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
             self._match(TokenType.DATABASE)
             this = self._parse_expression()
+
             return (
                 self.expression(exp.Attach, this=this)
                 if is_attach

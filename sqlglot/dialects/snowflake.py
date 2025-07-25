@@ -1677,7 +1677,13 @@ class Snowflake(Dialect):
         def dot_sql(self, expression: exp.Dot) -> str:
             this = expression.this
 
-            if this.is_type(exp.DataType.Type.STRUCT):
+            if not this.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                this = annotate_types(this, dialect=self.dialect)
+
+            if not isinstance(this, exp.Dot) and this.is_type(exp.DataType.Type.STRUCT):
+                # Generate colon notation for the top level STRUCT
                 return f"{self.sql(this)}:{self.sql(expression, 'expression')}"
 
             return super().dot_sql(expression)

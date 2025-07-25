@@ -415,3 +415,16 @@ class TestExasol(Validator):
                 "trino": "SHA1(x)",
             },
         )
+        self.validate_all(
+            "HASH_MD5(x)",
+            write={
+                "exasol": "HASH_MD5(x)",
+                "": "MD5(x)",
+                "bigquery": "TO_HEX(MD5(x))",
+                "clickhouse": "LOWER(HEX(MD5(x)))",
+                "hive": "MD5(x)",
+                "presto": "LOWER(TO_HEX(MD5(x)))",
+                "spark": "MD5(x)",
+                "trino": "LOWER(TO_HEX(MD5(x)))",
+            },
+        )

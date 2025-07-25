@@ -61,6 +61,7 @@ class Exasol(Dialect):
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
             "HASH_SHA": exp.SHA.from_arg_list,
             "HASH_SHA1": exp.SHA.from_arg_list,
+            "HASH_MD5": exp.MD5.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -177,6 +178,7 @@ class Exasol(Dialect):
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hash_sha%5B1%5D.htm#HASH_SHA%5B1%5D
             exp.SHA: rename_func("HASH_SHA"),
+            exp.MD5: rename_func("HASH_MD5"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
         }

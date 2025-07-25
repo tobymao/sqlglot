@@ -126,6 +126,10 @@ class TestSQLite(Validator):
             "ATTACH DATABASE 'foo' AS schema_name", "ATTACH 'foo' AS schema_name"
         )
         self.validate_identity(
+            "ATTACH DATABASE NOT EXISTS(SELECT 1) AS schema_name",
+            "ATTACH NOT EXISTS(SELECT 1) AS schema_name",
+        )
+        self.validate_identity(
             "ATTACH DATABASE IIF(NOT EXISTS(SELECT 1), 'foo1', 'foo2') AS schema_name",
             "ATTACH IIF(NOT EXISTS(SELECT 1), 'foo1', 'foo2') AS schema_name",
         )

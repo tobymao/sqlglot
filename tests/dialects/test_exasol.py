@@ -441,3 +441,42 @@ class TestExasol(Validator):
                 "trino": "MD5(x)",
             },
         )
+
+        self.validate_all(
+            "HASH_SHA256(x)",
+            read={
+                "clickhouse": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
+                "postgres": "SHA256(x)",
+                "duckdb": "SHA256(x)",
+            },
+            write={
+                "exasol": "HASH_SHA256(x)",
+                "bigquery": "SHA256(x)",
+                "spark2": "SHA2(x, 256)",
+                "clickhouse": "SHA256(x)",
+                "postgres": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "redshift": "SHA2(x, 256)",
+                "trino": "SHA256(x)",
+                "duckdb": "SHA256(x)",
+                "snowflake": "SHA2(x, 256)",
+            },
+        )
+        self.validate_all(
+            "HASH_SHA512(x)",
+            read={
+                "clickhouse": "SHA512(x)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
+            },
+            write={
+                "exasol": "HASH_SHA512(x)",
+                "clickhouse": "SHA512(x)",
+                "bigquery": "SHA512(x)",
+                "spark2": "SHA2(x, 512)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
+            },
+        )

@@ -7394,7 +7394,11 @@ class Parser(metaclass=_Parser):
             exists = self._parse_exists(not_=True)
             if self._match_pair(TokenType.PARTITION, TokenType.L_PAREN, advance=False):
                 return self.expression(
-                    exp.AddPartition, exists=exists, this=self._parse_field(any_token=True)
+                    exp.AddPartition,
+                    exists=exists,
+                    this=self._parse_field(any_token=True),
+                    location=self._match_text_seq("LOCATION", advance=False)
+                    and self._parse_property(),
                 )
 
             return None

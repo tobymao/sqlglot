@@ -365,6 +365,31 @@ def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
     return annotated
 
 
+def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
+    array_args = expression.expressions
+
+    # BigQuery behaves as follows:
+    #
+    # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
+    # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
+    if (
+        len(array_args) == 1
+        and isinstance(select := array_args[0].unnest(), exp.Select)
+        and (query_type := select.meta.get("query_type")) is not None
+        and query_type.is_type(exp.DataType.Type.STRUCT)
+        and len(query_type.expressions) == 1
+    ):
+        projection_type = query_type.expressions[0].kind.copy()
+        array_type = exp.DataType(
+            this=exp.DataType.Type.ARRAY,
+            expressions=[projection_type],
+            nested=True,
+        )
+        return self._annotate_with_type(expression, array_type)
+
+    return self._annotate_by_args(expression, "expressions", array=True)
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -445,6 +470,7 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
+        exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseAndAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),

@@ -428,3 +428,16 @@ class TestExasol(Validator):
                 "trino": "LOWER(TO_HEX(MD5(x)))",
             },
         )
+        self.validate_all(
+            "HASHTYPE_MD5(x)",
+            write={
+                "exasol": "HASHTYPE_MD5(x)",
+                "": "MD5_DIGEST(x)",
+                "bigquery": "MD5(x)",
+                "clickhouse": "MD5(x)",
+                "hive": "UNHEX(MD5(x))",
+                "presto": "MD5(x)",
+                "spark": "UNHEX(MD5(x))",
+                "trino": "MD5(x)",
+            },
+        )

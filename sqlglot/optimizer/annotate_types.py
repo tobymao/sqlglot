@@ -313,9 +313,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 elif (
                     isinstance(source, Scope)
                     and isinstance(source.expression, exp.Query)
-                    and source.expression.is_type(exp.DataType.Type.STRUCT)
+                    and (
+                        source.expression.meta.get("query_type") or exp.DataType.build("UNKNOWN")
+                    ).is_type(exp.DataType.Type.STRUCT)
                 ):
-                    self._set_type(table_column, source.expression.type)
+                    self._set_type(table_column, source.expression.meta["query_type"])
 
         # Then (possibly) annotate the remaining expressions in the scope
         self._maybe_annotate(scope.expression)
@@ -335,7 +337,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 for cd in struct_type.expressions
                 if cd.kind
             ):
-                self._set_type(scope.expression, struct_type)
+                # We don't use `_set_type` on purpose here. If we annotated the query directly, then
+                # using it in other contexts (e.g., ARRAY(<query>)) could result in incorrect type
+                # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
+                scope.expression.meta["query_type"] = struct_type
 
     def _maybe_annotate(self, expression: E) -> E:
         if id(expression) in self._visited:

@@ -1589,7 +1589,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         schema = {"d": {"s": {"t": {"c1": "int64", "c2": "struct<f1 int64, f2 string>"}}}}
 
         def _annotate(query: str) -> exp.Expression:
-            expression = parse_one(example_query, dialect=dialect)
+            expression = parse_one(query, dialect=dialect)
             qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
             return optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
 
@@ -1620,3 +1620,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         annotated = _annotate(example_query)
 
         self.assertTrue(annotated.selects[0].is_type("UNKNOWN"))
+
+        for query in ("SELECT 'foo'", "(SELECT 'foo')"):
+            query = f"SELECT ARRAY({query})"
+            with self.subTest(f"Annotating '{query}' in BigQuery"):
+                self.assertTrue(_annotate(query).selects[0].is_type("ARRAY<VARCHAR>"))

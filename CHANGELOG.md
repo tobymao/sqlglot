@@ -1,6 +1,31 @@
 Changelog
 =========
 
+## [v27.4.0] - 2025-07-25
+### :boom: BREAKING CHANGES
+- due to [`4f348bd`](https://github.com/tobymao/sqlglot/commit/4f348bddda21b18841fd2d728fe486e95cdaa549) - store Query schemas in meta dict instead of type attr *(PR [#5480](https://github.com/tobymao/sqlglot/pull/5480) by [@georgesittas](https://github.com/georgesittas))*:
+
+  store Query schemas in meta dict instead of type attr (#5480)
+
+
+### :sparkles: New Features
+- [`7961ece`](https://github.com/tobymao/sqlglot/commit/7961ece058f3771364aad5beedba9484e3a2e27c) - **exasol**: Add support for HASH_SHA1 function *(PR [#5468](https://github.com/tobymao/sqlglot/pull/5468) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`406815d`](https://github.com/tobymao/sqlglot/commit/406815de21f0fdc9874ff46155d4ee0274aa6337) - **exasol**: support HASH_SHA1 *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`e6f4fc9`](https://github.com/tobymao/sqlglot/commit/e6f4fc9c6d59d96777b2a2ec5dcc360e53639f8d) - **sqlite**: support ATTACH/DETACH DATABASE *(PR [#5469](https://github.com/tobymao/sqlglot/pull/5469) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#5459](https://github.com/tobymao/sqlglot/issues/5459) opened by [@mariofox](https://github.com/mariofox)*
+- [`8aa3498`](https://github.com/tobymao/sqlglot/commit/8aa349890673dccdd4daa0aea6ca5fcb9fdaf46f) - **hive, spark**: Add support for LOCATION in ADD PARTITION *(PR [#5472](https://github.com/tobymao/sqlglot/pull/5472) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#5457](https://github.com/tobymao/sqlglot/issues/5457) opened by [@tsamaras](https://github.com/tsamaras)*
+- [`44adfc0`](https://github.com/tobymao/sqlglot/commit/44adfc0e74da9d1b05a5a8a67b81fb7c67634c70) - **exasol**: add HASH_MD5 functionality to exasol dialect *(PR [#5473](https://github.com/tobymao/sqlglot/pull/5473) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`05e1c4d`](https://github.com/tobymao/sqlglot/commit/05e1c4dbf795915448173a894a89a33b289a3b5b) - **snowflake**: Transpile BQ's `STRUCT` dot access *(PR [#5471](https://github.com/tobymao/sqlglot/pull/5471) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3c5ecdf`](https://github.com/tobymao/sqlglot/commit/3c5ecdf7f27629c01f0f3402e64a9dedf0583851) - **exasol**: Add HASHTYPE_MD5 functions to Exasol dialect *(PR [#5474](https://github.com/tobymao/sqlglot/pull/5474) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`1d640d2`](https://github.com/tobymao/sqlglot/commit/1d640d2278288b9a39a65b2532a13bc17e06c4e8) - **exasol**: add support for HASH_SHA256 and HASH_SHA512 hashing *(PR [#5475](https://github.com/tobymao/sqlglot/pull/5475) by [@nnamdi16](https://github.com/nnamdi16))*
+
+### :bug: Bug Fixes
+- [`e1819d6`](https://github.com/tobymao/sqlglot/commit/e1819d6451fec0eb3a1f77c90fd8d5c5b0d89889) - only strip kind from joins when it is inner|outer *(PR [#5477](https://github.com/tobymao/sqlglot/pull/5477) by [@themattmorris](https://github.com/themattmorris))*
+  - :arrow_lower_right: *fixes issue [#5470](https://github.com/tobymao/sqlglot/issues/5470) opened by [@themattmorris](https://github.com/themattmorris)*
+- [`4f348bd`](https://github.com/tobymao/sqlglot/commit/4f348bddda21b18841fd2d728fe486e95cdaa549) - **bigquery**: store Query schemas in meta dict instead of type attr *(PR [#5480](https://github.com/tobymao/sqlglot/pull/5480) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.3.1] - 2025-07-24
 ### :boom: BREAKING CHANGES
 - due to [`48703c4`](https://github.com/tobymao/sqlglot/commit/48703c4fadd9f24de151a63d1bfa74f4b8e71133) - temporarily move VARCHAR length inference logic to Fabric *(commit by [@georgesittas](https://github.com/georgesittas))*:
@@ -8473,3 +8498,4 @@ Changelog
 [v27.2.0]: https://github.com/tobymao/sqlglot/compare/v27.1.0...v27.2.0
 [v27.3.0]: https://github.com/tobymao/sqlglot/compare/v27.0.1...v27.3.0
 [v27.3.1]: https://github.com/tobymao/sqlglot/compare/v27.3.0...v27.3.1
+[v27.4.0]: https://github.com/tobymao/sqlglot/compare/v27.3.1...v27.4.0

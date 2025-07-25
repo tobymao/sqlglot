@@ -468,17 +468,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 self._set_type(expression, exp.DataType.Type.DOUBLE)
 
         if array:
-            array_arg_type = expression.type
-
-            if array_arg_type.is_type(exp.DataType.Type.UNKNOWN):
-                self._set_type(expression, exp.DataType.Type.UNKNOWN)
-            else:
-                self._set_type(
-                    expression,
-                    exp.DataType(
-                        this=exp.DataType.Type.ARRAY, expressions=[array_arg_type], nested=True
-                    ),
-                )
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
+                ),
+            )
 
         return expression
 

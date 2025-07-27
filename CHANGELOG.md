@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.4.1] - 2025-07-27
+### :bug: Bug Fixes
+- [`ba2b3e2`](https://github.com/tobymao/sqlglot/commit/ba2b3e21ca5454402808b68697ea4eb62963d341) - **bigquery**: make exp.Array type inference more robust *(PR [#5483](https://github.com/tobymao/sqlglot/pull/5483) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.4.0] - 2025-07-25
 ### :boom: BREAKING CHANGES
 - due to [`4f348bd`](https://github.com/tobymao/sqlglot/commit/4f348bddda21b18841fd2d728fe486e95cdaa549) - store Query schemas in meta dict instead of type attr *(PR [#5480](https://github.com/tobymao/sqlglot/pull/5480) by [@georgesittas](https://github.com/georgesittas))*:
@@ -8499,3 +8504,4 @@ Changelog
 [v27.3.0]: https://github.com/tobymao/sqlglot/compare/v27.0.1...v27.3.0
 [v27.3.1]: https://github.com/tobymao/sqlglot/compare/v27.3.0...v27.3.1
 [v27.4.0]: https://github.com/tobymao/sqlglot/compare/v27.3.1...v27.4.0
+[v27.4.1]: https://github.com/tobymao/sqlglot/compare/v27.4.0...v27.4.1

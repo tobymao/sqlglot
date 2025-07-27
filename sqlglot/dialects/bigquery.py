@@ -378,11 +378,13 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
         and (query_type := select.meta.get("query_type")) is not None
         and query_type.is_type(exp.DataType.Type.STRUCT)
         and len(query_type.expressions) == 1
+        and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
+        and (projection_type := col_def.kind) is not None
+        and not projection_type.is_type(exp.DataType.Type.UNKNOWN)
     ):
-        projection_type = query_type.expressions[0].kind.copy()
         array_type = exp.DataType(
             this=exp.DataType.Type.ARRAY,
-            expressions=[projection_type],
+            expressions=[projection_type.copy()],
             nested=True,
         )
         return self._annotate_with_type(expression, array_type)

@@ -655,12 +655,6 @@ class Snowflake(Dialect):
 
         TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
 
-        RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,
-            TokenType.LIKE_ANY: parser.binary_range_parser(exp.LikeAny),
-            TokenType.ILIKE_ANY: parser.binary_range_parser(exp.ILikeAny),
-        }
-
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
             "UNSET": lambda self: self.expression(
@@ -1133,8 +1127,6 @@ class Snowflake(Dialect):
             "EXCLUDE": TokenType.EXCEPT,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
-            "ILIKE ANY": TokenType.ILIKE_ANY,
-            "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,

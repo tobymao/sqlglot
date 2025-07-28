@@ -5774,6 +5774,7 @@ class Parser(metaclass=_Parser):
             return None
 
         comments = self._curr.comments
+        prev = self._prev
         token = self._curr
         token_type = self._curr.token_type
         this = self._curr.text
@@ -5805,12 +5806,17 @@ class Parser(metaclass=_Parser):
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
 
-            if subquery_predicate and self._curr.token_type in (TokenType.SELECT, TokenType.WITH):
-                this = self.expression(
-                    subquery_predicate, comments=comments, this=self._parse_select()
-                )
-                self._match_r_paren()
-                return this
+            if subquery_predicate:
+                expr = None
+                if self._curr.token_type in (TokenType.SELECT, TokenType.WITH):
+                    expr = self._parse_select()
+                    self._match_r_paren()
+                elif prev and prev.token_type in (TokenType.LIKE, TokenType.ILIKE):
+                    self._advance(-1)
+                    expr = self._parse_bitwise()
+
+                if expr:
+                    return self.expression(subquery_predicate, comments=comments, this=expr)
 
             if functions is None:
                 functions = self.FUNCTIONS

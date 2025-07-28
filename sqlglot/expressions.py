@@ -5093,10 +5093,6 @@ class ILike(Binary, Predicate):
     pass
 
 
-class ILikeAny(Binary, Predicate):
-    pass
-
-
 class IntDiv(Binary):
     pass
 
@@ -5110,10 +5106,6 @@ class Kwarg(Binary):
 
 
 class Like(Binary, Predicate):
-    pass
-
-
-class LikeAny(Binary, Predicate):
     pass
 
 

@@ -32,7 +32,7 @@ def _parse_trunc(args: t.List[exp.Expression]) -> exp.Expression:
         return exp.Anonymous(this="TRUNC", expressions=args)
 
     if not first.type:
-        first = annotate_types(first, dialect="exasol")  # or self.dialect if in a class context
+        first = annotate_types(first, dialect="exasol")
 
     if (
         first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP)

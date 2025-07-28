@@ -11,12 +11,28 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
 from sqlglot.tokens import TokenType
+import typing as t
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
     length = expression.text("length")
     func_name = "HASH_SHA256" if length == "256" else "HASH_SHA512"
     return self.func(func_name, expression.this)
+
+
+def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            position=seq_get(args, 2),
+            occurrence=seq_get(args, 3),
+        )
+
+    return _builder
 
 
 class Exasol(Dialect):
@@ -69,6 +85,7 @@ class Exasol(Dialect):
             "HASH_SHA1": exp.SHA.from_arg_list,
             "HASH_MD5": exp.MD5.from_arg_list,
             "HASHTYPE_MD5": exp.MD5Digest.from_arg_list,
+            "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -161,6 +178,10 @@ class Exasol(Dialect):
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/regexp_substr.htm
+            exp.RegexpExtract: unsupported_args("parameters", "group")(
+                rename_func("REGEXP_SUBSTR")
+            ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/regexp_replace.htm
             exp.RegexpReplace: unsupported_args("modifiers")(rename_func("REGEXP_REPLACE")),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/var_pop.htm

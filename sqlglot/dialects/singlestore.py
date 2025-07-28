@@ -2,7 +2,6 @@ from sqlglot.dialects.dialect import build_formatted_time
 from sqlglot.dialects.mysql import MySQL
 import typing as t
 from sqlglot import exp, Dialect
-from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
 
@@ -10,21 +9,17 @@ class SingleStore(MySQL):
     SUPPORTS_ORDER_BY_ALL = True
 
     TIME_MAPPING: t.Dict[str, str] = {
-        "AM": "%p",  # Meridian indicator with or without periods
-        "A.M.": "%p",  # Meridian indicator with or without periods
-        "PM": "%p",  # Meridian indicator with or without periods
-        "P.M.": "%p",  # Meridian indicator with or without periods
         "D": "%u",  # Day of week (1-7)
-        "DD": "%d",  # day of month (1-31)
+        "DD": "%d",  # day of month (01-31)
         "DY": "%a",  # abbreviated name of day
-        "HH": "%I",  # Hour of day (1-12)
+        "HH": "%I",  # Hour of day (01-12)
         "HH12": "%I",  # alias for HH
-        "HH24": "%H",  # Hour of day (0-23)
-        "MI": "%M",  # Minute (0-59)
+        "HH24": "%H",  # Hour of day (00-23)
+        "MI": "%M",  # Minute (00-59)
         "MM": "%m",  # Month (01-12; January = 01)
         "MON": "%b",  # Abbreviated name of month
         "MONTH": "%B",  # Name of month
-        "SS": "%S",  # Second (0-59)
+        "SS": "%S",  # Second (00-59)
         "RR": "%y",  # 15
         "YY": "%y",  # 15
         "YYYY": "%Y",  # 2015
@@ -86,9 +81,3 @@ class SingleStore(MySQL):
                 ),
             ),
         }
-
-        @unsupported_args("format")
-        @unsupported_args("action")
-        @unsupported_args("default")
-        def cast_sql(self, expression: exp.Cast) -> str:  # type: ignore
-            return f"{self.sql(expression, 'this')} :> {self.sql(expression, 'to')}"

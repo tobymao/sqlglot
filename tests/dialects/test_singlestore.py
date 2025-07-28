@@ -36,5 +36,5 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d %h:%i:%s')")
         self.validate_identity(
             "SELECT TIME_FORMAT('12:05:47', '%s, %i, %h')",
-            write_sql="SELECT DATE_FORMAT('12:05:47' :> TIME(6), '%s, %i, %h')",
+            write_sql="SELECT DATE_FORMAT(CAST('12:05:47' AS TIME(6)), '%s, %i, %h')",
         )

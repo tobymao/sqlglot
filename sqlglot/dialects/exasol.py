@@ -14,6 +14,7 @@ from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
 from sqlglot.tokens import TokenType
 import typing as t
+from sqlglot.optimizer.annotate_types import annotate_types
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
@@ -27,12 +28,17 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
 def _parse_trunc(args: t.List[exp.Expression]) -> exp.Expression:
     first, second = seq_get(args, 0), seq_get(args, 1)
 
-    if isinstance(first, (exp.Date, exp.Timestamp, exp.Cast)) or (
-        isinstance(first, exp.Literal) and first.is_string
-    ):
-        return exp.DateTrunc(this=first, unit=second)
+    if not first or not second:
+        return exp.Anonymous(this="TRUNC", expressions=args)
 
-    if isinstance(first, exp.Column) and isinstance(second, exp.Literal) and second.is_string:
+    if not first.type:
+        first = annotate_types(first, dialect="exasol")  # or self.dialect if in a class context
+
+    if (
+        first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP)
+        and isinstance(second, exp.Literal)
+        and second.is_string
+    ):
         return exp.DateTrunc(this=first, unit=second)
 
     return exp.Anonymous(this="TRUNC", expressions=args)

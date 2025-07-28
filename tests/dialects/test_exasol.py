@@ -328,10 +328,76 @@ class TestExasol(Validator):
                 )
 
         self.validate_all(
-            "SELECT TRUNC(order_date, 'MM') AS month_start",
+            "TO_DATE(x, 'YYYY-MM-DD')",
             write={
-                "exasol": "SELECT TRUNC(order_date, 'MM') AS month_start",
-                "presto": "SELECT DATE_TRUNC('MM', order_date) AS month_start",
+                "exasol": "TO_DATE(x, 'YYYY-MM-DD')",
+                "duckdb": "CAST(x AS DATE)",
+                "hive": "TO_DATE(x)",
+                "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
+                "spark": "TO_DATE(x)",
+                "snowflake": "TO_DATE(x, 'yyyy-mm-DD')",
+                "databricks": "TO_DATE(x)",
+            },
+        )
+        self.validate_all(
+            "TO_DATE(x, 'YYYY')",
+            write={
+                "exasol": "TO_DATE(x, 'YYYY')",
+                "duckdb": "CAST(STRPTIME(x, '%Y') AS DATE)",
+                "hive": "TO_DATE(x, 'yyyy')",
+                "presto": "CAST(DATE_PARSE(x, '%Y') AS DATE)",
+                "spark": "TO_DATE(x, 'yyyy')",
+                "snowflake": "TO_DATE(x, 'yyyy')",
+                "databricks": "TO_DATE(x, 'yyyy')",
+            },
+        )
+        self.validate_identity(
+            "SELECT CONVERT_TZ(CAST('2012-03-25 02:30:00' AS TIMESTAMP), 'Europe/Berlin', 'UTC', 'INVALID REJECT AMBIGUOUS REJECT') AS CONVERT_TZ"
+        )
+        self.validate_all(
+            "SELECT CONVERT_TZ('2012-05-10 12:00:00', 'Europe/Berlin', 'America/New_York')",
+            read={
+                "exasol": "SELECT CONVERT_TZ('2012-05-10 12:00:00', 'Europe/Berlin', 'America/New_York')",
+                "mysql": "SELECT CONVERT_TZ('2012-05-10 12:00:00', 'Europe/Berlin', 'America/New_York')",
+                "databricks": "SELECT CONVERT_TIMEZONE('Europe/Berlin', 'America/New_York', '2012-05-10 12:00:00')",
+            },
+            write={
+                "exasol": "SELECT CONVERT_TZ('2012-05-10 12:00:00', 'Europe/Berlin', 'America/New_York')",
+                "mysql": "SELECT CONVERT_TZ('2012-05-10 12:00:00', 'Europe/Berlin', 'America/New_York')",
+                "databricks": "SELECT CONVERT_TIMEZONE('Europe/Berlin', 'America/New_York', '2012-05-10 12:00:00')",
+                "snowflake": "SELECT CONVERT_TIMEZONE('Europe/Berlin', 'America/New_York', '2012-05-10 12:00:00')",
+                "spark": "SELECT CONVERT_TIMEZONE('Europe/Berlin', 'America/New_York', '2012-05-10 12:00:00')",
+                "redshift": "SELECT CONVERT_TIMEZONE('Europe/Berlin', 'America/New_York', '2012-05-10 12:00:00')",
+                "duckdb": "SELECT CAST('2012-05-10 12:00:00' AS TIMESTAMP) AT TIME ZONE 'Europe/Berlin' AT TIME ZONE 'America/New_York'",
+            },
+        )
+        self.validate_identity(
+            "TIME_TO_STR(b, '%Y-%m-%d %H:%M:%S')",
+            "TO_CHAR(b, 'YYYY-MM-DD HH:MI:SS')",
+        )
+        self.validate_identity(
+            "SELECT TIME_TO_STR(CAST(STR_TO_TIME(date, '%Y%m%d') AS DATE), '%a') AS day_of_week",
+            "SELECT TO_CHAR(CAST(TO_DATE(date, 'YYYYMMDD') AS DATE), 'DY') AS day_of_week",
+        )
+        self.validate_identity(
+            "SELECT CAST(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP) AT TIME ZONE 'CET' AS DATE) - 1",
+            "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
+        )
+
+        self.validate_all(
+            "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
+            write={
+                "exasol": "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
+                "presto": "SELECT DATE_TRUNC('MM', CAST('2006-12-31' AS DATE)) AS TRUNC",
+                "databricks": "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_TRUNC('minute', TIMESTAMP '2006-12-31 23:59:59') DATE_TRUNC",
+            write={
+                "exasol": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                "presto": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
             },
         )
 

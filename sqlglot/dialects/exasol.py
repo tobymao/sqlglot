@@ -81,7 +81,7 @@ class Exasol(Dialect):
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-                this=seq_get(args, 1), unit=exp.var(seq_get(args, 0))
+                this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,

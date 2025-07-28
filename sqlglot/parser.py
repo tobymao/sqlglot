@@ -6201,7 +6201,7 @@ class Parser(metaclass=_Parser):
         return self._parse_id_var(any_token=False)
 
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
-        self._match_text_seq("KEY")
+        self._match_texts(("KEY", "INDEX"))
         return self.expression(
             exp.UniqueColumnConstraint,
             nulls=self._match_text_seq("NULLS", "NOT", "DISTINCT"),

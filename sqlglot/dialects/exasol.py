@@ -22,6 +22,8 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
     return self.func(func_name, expression.this)
 
 
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
 def _parse_trunc(args: t.List) -> exp.DateTrunc | exp.Anonymous:
     if args and isinstance(args[0], exp.Literal) and args[0].is_number:
         return exp.Anonymous(this="TRUNC", expressions=args)
@@ -73,6 +75,7 @@ class Exasol(Dialect):
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=exp.var(seq_get(args, 0))
             ),

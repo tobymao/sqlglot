@@ -138,6 +138,12 @@ class TestPostgres(Validator):
             "SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')"
         )
         self.validate_identity(
+            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 AM', 'DD Mon YYYY HH:MI AM')"
+        )
+        self.validate_identity(
+            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 PM', 'DD Mon YYYY HH:MI PM')"
+        )
+        self.validate_identity(
             "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"
         )
         self.validate_identity(

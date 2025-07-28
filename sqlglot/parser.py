@@ -1136,7 +1136,14 @@ class Parser(metaclass=_Parser):
         "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
     }
 
-    def _parse_partitioned_by_bucket_or_truncate(self) -> exp.Expression:
+    def _parse_partitioned_by_bucket_or_truncate(self) -> t.Optional[exp.Expression]:
+        if not self._match(TokenType.L_PAREN, advance=False):
+            # Partitioning by bucket or truncate follows the syntax:
+            # PARTITION BY (BUCKET(..) | TRUNCATE(..))
+            # If we don't have parenthesis after each keyword, we should instead parse this as an identifier
+            self._retreat(self._index - 1)
+            return None
+
         klass = (
             exp.PartitionedByBucket
             if self._prev.text.upper() == "BUCKET"

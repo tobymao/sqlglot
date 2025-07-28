@@ -24,14 +24,17 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
-def _parse_trunc(args: t.List) -> exp.Expression:
-    if len(args) == 2:
-        first = args[0]
-        if isinstance(first, (exp.Column, exp.Date, exp.Timestamp, exp.Cast)) or (
-            isinstance(first, exp.Literal) and first.is_string
-        ):
-            return exp.DateTrunc(this=first, unit=args[1])
-    
+def _parse_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+    first, second = seq_get(args, 0), seq_get(args, 1)
+
+    if isinstance(first, (exp.Date, exp.Timestamp, exp.Cast)) or (
+        isinstance(first, exp.Literal) and first.is_string
+    ):
+        return exp.DateTrunc(this=first, unit=second)
+
+    if isinstance(first, exp.Column) and isinstance(second, exp.Literal) and second.is_string:
+        return exp.DateTrunc(this=first, unit=second)
+
     return exp.Anonymous(this="TRUNC", expressions=args)
 
 

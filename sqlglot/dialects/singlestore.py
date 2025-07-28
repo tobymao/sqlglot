@@ -1,7 +1,7 @@
 from sqlglot.dialects.dialect import build_formatted_time
 from sqlglot.dialects.mysql import MySQL
 import typing as t
-from sqlglot import exp, Dialect
+from sqlglot import exp
 from sqlglot.helper import seq_get
 
 
@@ -29,9 +29,9 @@ class SingleStore(MySQL):
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
-            "TO_DATE": build_formatted_time(exp.StrToDate, "singlestore"),
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "singlestore"),
+            "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
             "STR_TO_DATE": build_formatted_time(exp.StrToDate, "mysql"),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
             # The first argument is converted to TIME(6)
@@ -46,20 +46,35 @@ class SingleStore(MySQL):
                         expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
                     ),
                 ),
-                format=Dialect["mysql"].format_time(seq_get(args, 1)),
+                format=MySQL.format_time(seq_get(args, 1)),
             ),
         }
 
     class Generator(MySQL.Generator):
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
+            exp.TsOrDsToDate: lambda self, e: self.func(
+                "TO_DATE",
+                e.this,
+                self.format_time(e),
+            ),
+            exp.StrToTime: lambda self, e: self.func(
+                "TO_TIMESTAMP",
+                e.this,
+                self.format_time(e),
+            ),
+            exp.ToChar: lambda self, e: self.func(
+                "TO_CHAR",
+                e.this,
+                self.format_time(e),
+            ),
             exp.StrToDate: lambda self, e: self.func(
                 "STR_TO_DATE",
                 e.this,
                 self.format_time(
                     e,
-                    inverse_time_mapping=Dialect["mysql"].INVERSE_TIME_MAPPING,
-                    inverse_time_trie=Dialect["mysql"].INVERSE_TIME_TRIE,
+                    inverse_time_mapping=MySQL.INVERSE_TIME_MAPPING,
+                    inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
                 ),
             ),
             exp.TimeToStr: lambda self, e: self.func(
@@ -67,17 +82,8 @@ class SingleStore(MySQL):
                 e.this,
                 self.format_time(
                     e,
-                    inverse_time_mapping=Dialect["mysql"].INVERSE_TIME_MAPPING,
-                    inverse_time_trie=Dialect["mysql"].INVERSE_TIME_TRIE,
-                ),
-            ),
-            exp.StrToTime: lambda self, e: self.func(
-                "STR_TO_DATE",
-                e.this,
-                self.format_time(
-                    e,
-                    inverse_time_mapping=Dialect["mysql"].INVERSE_TIME_MAPPING,
-                    inverse_time_trie=Dialect["mysql"].INVERSE_TIME_TRIE,
+                    inverse_time_mapping=MySQL.INVERSE_TIME_MAPPING,
+                    inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
                 ),
             ),
         }

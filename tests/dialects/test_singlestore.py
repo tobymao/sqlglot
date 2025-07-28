@@ -22,19 +22,16 @@ class TestSingleStore(Validator):
     def test_time_formatting(self):
         self.validate_identity(
             "SELECT TO_DATE('03/01/2019', 'MM/DD/YYYY') AS result",
-            write_sql="SELECT STR_TO_DATE('03/01/2019', '%m/%d/%Y') AS result",
         )
         self.validate_identity(
             "SELECT TO_TIMESTAMP('The date and time are 01/01/2018 2:30:15.123456', 'The date and time are MM/DD/YYYY HH12:MI:SS.FF6') AS result",
-            write_sql="SELECT STR_TO_DATE('The date and time are 01/01/2018 2:30:15.123456', 'The date and time are %m/%d/%Y %h:%i:%s.%f') AS result",
         )
         self.validate_identity(
             "SELECT TO_CHAR('2018-03-01', 'MM/DD')",
-            write_sql="SELECT DATE_FORMAT('2018-03-01', '%m/%d')",
         )
         self.validate_identity("SELECT STR_TO_DATE('March 3rd, 2015', '%M %D, %Y')")
         self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d %h:%i:%s')")
         self.validate_identity(
             "SELECT TIME_FORMAT('12:05:47', '%s, %i, %h')",
-            write_sql="SELECT DATE_FORMAT(CAST('12:05:47' AS TIME(6)), '%s, %i, %h')",
+            "SELECT DATE_FORMAT(CAST('12:05:47' AS TIME(6)), '%s, %i, %h')",
         )

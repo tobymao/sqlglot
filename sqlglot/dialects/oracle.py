@@ -52,10 +52,6 @@ class Oracle(Dialect):
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
     TIME_MAPPING = {
-        "AM": "%p",  # Meridian indicator with or without periods
-        "A.M.": "%p",  # Meridian indicator with or without periods
-        "PM": "%p",  # Meridian indicator with or without periods
-        "P.M.": "%p",  # Meridian indicator with or without periods
         "D": "%u",  # Day of week (1-7)
         "DAY": "%A",  # name of day
         "DD": "%d",  # day of month (1-31)

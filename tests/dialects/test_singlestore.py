@@ -18,3 +18,7 @@ class TestSingleStore(Validator):
             "SELECT `data`.`id` AS `my_id` FROM `data` AS `data` WHERE `data`.`my_id` = 1 GROUP BY `data`.`my_id` HAVING `data`.`id` = 1",
             ast.sql(dialect=self.dialect),
         )
+
+    def test_tokenizer(self):
+        self.validate_identity("SELECT e'text'")
+        self.validate_identity("SELECT E'text'", "SELECT e'text'")

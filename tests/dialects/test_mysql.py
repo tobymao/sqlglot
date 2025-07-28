@@ -139,6 +139,10 @@ class TestMySQL(Validator):
             "CREATE TABLE `foo` (a VARCHAR(10), KEY idx_a (a DESC))",
             "CREATE TABLE `foo` (a VARCHAR(10), INDEX idx_a (a DESC))",
         )
+        self.validate_identity(
+            "CREATE TABLE `foo` (a VARCHAR(10), UNIQUE INDEX idx_a (a))",
+            "CREATE TABLE `foo` (a VARCHAR(10), UNIQUE idx_a (a))",
+        )
 
         self.validate_all(
             "insert into t(i) values (default)",

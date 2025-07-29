@@ -1,20 +1,24 @@
 from __future__ import annotations
+
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.clickhouse import timestamptrunc_sql
 from sqlglot.dialects.dialect import (
     Dialect,
-    rename_func,
     binary_from_function,
     build_formatted_time,
-    timestrtotime_sql,
+    rename_func,
     strposition_sql,
+    timestrtotime_sql,
     unit_to_str,
 )
-from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
-import typing as t
-from sqlglot.optimizer.annotate_types import annotate_types
+
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
@@ -25,14 +29,16 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
-def _build_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
     first, second = seq_get(args, 0), seq_get(args, 1)
 
     if not first or not second:
         return exp.Anonymous(this="TRUNC", expressions=args)
 
     if not first.type:
-        first = annotate_types(first, dialect="exasol")
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        first = annotate_types(first, dialect=dialect)
 
     if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP) and second.is_string:
         return exp.DateTrunc(this=first, unit=second)

@@ -5812,6 +5812,8 @@ class Parser(metaclass=_Parser):
                     expr = self._parse_select()
                     self._match_r_paren()
                 elif prev and prev.token_type in (TokenType.LIKE, TokenType.ILIKE):
+                    # Backtrack one token since we've consumed the L_PAREN here. Instead, we'd like
+                    # to parse "LIKE [ANY | ALL] (...)" as a whole into an exp.Tuple or exp.Paren
                     self._advance(-1)
                     expr = self._parse_bitwise()
 

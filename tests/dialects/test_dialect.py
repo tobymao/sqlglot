@@ -3740,3 +3740,11 @@ FROM subquery2""",
                         "duckdb": f"SELECT (col ILIKE x {connector} col ILIKE y) {connector} col ILIKE z",
                     },
                 )
+
+        self.validate_all(
+            "SELECT 'foo' LIKE ANY((('bar', 'fo%')))",
+            write={
+                "": "SELECT 'foo' LIKE ANY((('bar', 'fo%')))",
+                "duckdb": "SELECT 'foo' LIKE 'bar' OR 'foo' LIKE 'fo%'",
+            },
+        )

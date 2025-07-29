@@ -3673,15 +3673,18 @@ class Generator(metaclass=_Generator):
             op = "ILIKE"
 
         if isinstance(rhs, (exp.All, exp.Any)) and not self.SUPPORTS_LIKE_QUANTIFIERS:
-            exprs = [rhs.this.this] if isinstance(rhs.this, exp.Paren) else rhs.this.expressions
-            func = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
+            exprs = rhs.this.unnest()
 
-            like_sql: exp.Expression = exp_class(this=this, expression=exprs[0])
+            if isinstance(exprs, exp.Tuple):
+                exprs = exprs.expressions
 
+            connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
+
+            like_expr: exp.Expression = exp_class(this=this, expression=exprs[0])
             for expr in exprs[1:]:
-                like_sql = func(like_sql, exp_class(this=this, expression=expr))
+                like_expr = connective(like_expr, exp_class(this=this, expression=expr))
 
-            return self.sql(like_sql)
+            return self.sql(like_expr)
 
         return self.binary(expression, op)
 

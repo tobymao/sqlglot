@@ -34,7 +34,7 @@ class SingleStore(MySQL):
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
             "BSON": TokenType.JSONB,
-            "GEOGRAPHYPOINT": TokenType.GEOGRAPHY,
+            "GEOGRAPHYPOINT": TokenType.GEOGRAPHYPOINT,
             ":>": TokenType.COLON_GT,
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,

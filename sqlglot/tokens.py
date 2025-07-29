@@ -187,6 +187,7 @@ class TokenType(AutoName):
     DATEMULTIRANGE = auto()
     UUID = auto()
     GEOGRAPHY = auto()
+    GEOGRAPHYPOINT = auto()
     NULLABLE = auto()
     GEOMETRY = auto()
     POINT = auto()

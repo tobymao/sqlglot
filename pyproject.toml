@@ -4,13 +4,12 @@ dynamic = ["version", "optional-dependencies"]
 description = "An easily customizable SQL parser and transpiler"
 readme = "README.md"
 authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
-license = { file = "LICENSE" }
+license-files = ["LICENSE"]
 requires-python = ">= 3.9"
-classifiers=[
+classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: SQL",
     "Programming Language :: Python :: 3 :: Only",
@@ -35,7 +34,7 @@ fallback_version = "0.0.0"
 local_scheme = "no-local-version"
 
 [tool.setuptools.packages.find]
-include=["sqlglot", "sqlglot.*"]
+include = ["sqlglot", "sqlglot.*"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]

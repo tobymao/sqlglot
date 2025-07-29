@@ -34,7 +34,7 @@ def _build_trunc(args: t.List[exp.Expression]) -> exp.Expression:
     if not first.type:
         first = annotate_types(first, dialect="exasol")
 
-    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP) and second.is_string
+    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP) and second.is_string:
         return exp.DateTrunc(this=first, unit=second)
 
     return exp.Anonymous(this="TRUNC", expressions=args)

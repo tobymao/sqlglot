@@ -114,3 +114,30 @@ WHERE
       a
     FROM q
   );
+
+
+# Title: Do not remove CTE if it is an RHS of a SEMI/ANTI join
+WITH t1 AS (
+  SELECT
+    1 AS foo
+), t2 AS (
+  SELECT
+    1 AS foo
+)
+SELECT
+  *
+FROM t1
+LEFT ANTI JOIN t2
+  ON t1.foo = t2.foo;
+WITH t1 AS (
+  SELECT
+    1 AS foo
+), t2 AS (
+  SELECT
+    1 AS foo
+)
+SELECT
+  *
+FROM t1
+LEFT ANTI JOIN t2
+  ON t1.foo = t2.foo

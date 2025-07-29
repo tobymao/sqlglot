@@ -315,3 +315,22 @@ CROSS JOIN (
     y.b
   FROM y
 ) AS y;
+
+
+# title: Do not remove left anti join
+SELECT
+  x.b
+FROM x
+LEFT ANTI JOIN (
+  SELECT
+    1 AS b
+) AS sub
+  ON x.b = sub.b;
+SELECT
+  x.b
+FROM x
+LEFT ANTI JOIN (
+  SELECT
+    1 AS b
+) AS sub
+  ON x.b = sub.b;

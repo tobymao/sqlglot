@@ -4546,6 +4546,7 @@ class DataType(Expression):
         FIXEDSTRING = auto()
         FLOAT = auto()
         GEOGRAPHY = auto()
+        GEOGRAPHYPOINT = auto()
         GEOMETRY = auto()
         POINT = auto()
         RING = auto()

@@ -380,6 +380,7 @@ class Parser(metaclass=_Parser):
         TokenType.BIGDECIMAL,
         TokenType.UUID,
         TokenType.GEOGRAPHY,
+        TokenType.GEOGRAPHYPOINT,
         TokenType.GEOMETRY,
         TokenType.POINT,
         TokenType.RING,

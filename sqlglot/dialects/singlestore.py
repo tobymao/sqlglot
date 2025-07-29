@@ -1,3 +1,4 @@
+from sqlglot import TokenType
 import typing as t
 
 from sqlglot import exp
@@ -26,6 +27,19 @@ class SingleStore(MySQL):
         "YYYY": "%Y",  # 2015
         "FF6": "%f",  # only 6 digits are supported in python formats
     }
+
+    class Tokenizer(MySQL.Tokenizer):
+        BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+
+        KEYWORDS = {
+            **MySQL.Tokenizer.KEYWORDS,
+            "BSON": TokenType.JSONB,
+            "GEOGRAPHYPOINT": TokenType.GEOGRAPHYPOINT,
+            ":>": TokenType.COLON_GT,
+            "!:>": TokenType.NCOLON_GT,
+            "::$": TokenType.DCOLONDOLLAR,
+            "::%": TokenType.DCOLONPERCENT,
+        }
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {

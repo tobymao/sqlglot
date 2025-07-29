@@ -20,6 +20,10 @@ class TestSingleStore(Validator):
             ast.sql(dialect=self.dialect),
         )
 
+    def test_tokenizer(self):
+        self.validate_identity("SELECT e'text'")
+        self.validate_identity("SELECT E'text'", "SELECT e'text'")
+
     def test_restricted_keywords(self):
         self.validate_identity("SELECT * FROM abs", "SELECT * FROM `abs`")
         self.validate_identity("SELECT * FROM ABS", "SELECT * FROM `ABS`")

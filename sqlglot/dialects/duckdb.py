@@ -665,6 +665,7 @@ class DuckDB(Dialect):
         ARRAY_CONCAT_IS_VAR_LEN = False
         ARRAY_SIZE_DIM_REQUIRED = False
         NORMALIZE_EXTRACT_DATE_PARTS = True
+        SUPPORTS_LIKE_QUANTIFIERS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

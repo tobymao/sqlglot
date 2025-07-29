@@ -3708,3 +3708,43 @@ FROM subquery2""",
                 "tsql": "SELECT x BETWEEN 10 AND 2",
             },
         )
+
+    def test_like_quantifiers(self):
+        for quantifier in ("ANY", "ALL"):
+            connector = "OR" if quantifier == "ANY" else "AND"
+
+            with self.subTest(f"Testing LIKE {quantifier}"):
+                self.validate_all(
+                    f"SELECT col LIKE {quantifier} (x, y, z)",
+                    read={
+                        "": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "bigquery": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "snowflake": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "spark": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "databricks": f"SELECT col LIKE {quantifier} (x, y, z)",
+                    },
+                    write={
+                        "bigquery": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "snowflake": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "spark": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "databricks": f"SELECT col LIKE {quantifier} (x, y, z)",
+                        "duckdb": f"SELECT (col LIKE x {connector} col LIKE y) {connector} col LIKE z",
+                    },
+                )
+
+            with self.subTest(f"Testing ILIKE {quantifier}"):
+                self.validate_all(
+                    f"SELECT col ILIKE {quantifier} (x, y, z)",
+                    write={
+                        "": f"SELECT col ILIKE {quantifier} (x, y, z)",
+                        "duckdb": f"SELECT (col ILIKE x {connector} col ILIKE y) {connector} col ILIKE z",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT 'foo' LIKE ANY((('bar', 'fo%')))",
+            write={
+                "": "SELECT 'foo' LIKE ANY((('bar', 'fo%')))",
+                "duckdb": "SELECT 'foo' LIKE 'bar' OR 'foo' LIKE 'fo%'",
+            },
+        )

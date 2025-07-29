@@ -274,8 +274,6 @@ class Postgres(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
 
     TIME_MAPPING = {
-        "AM": "%p",
-        "PM": "%p",
         "d": "%u",  # 1-based day of week
         "D": "%u",  # 1-based day of week
         "dd": "%d",  # day of month

@@ -990,7 +990,7 @@ def any_to_exists(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
         for any_expr in expression.find_all(exp.Any):
             this = any_expr.this
-            if isinstance(this, exp.Query):
+            if isinstance(this, exp.Query) or isinstance(any_expr.parent, (exp.Like, exp.ILike)):
                 continue
 
             binop = any_expr.parent

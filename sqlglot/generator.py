@@ -491,6 +491,9 @@ class Generator(metaclass=_Generator):
     # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
     SUPPORTS_BETWEEN_FLAGS = False
 
+    # Whether LIKE and ILIKE support quantifiers such as LIKE ANY/ALL/SOME
+    SUPPORTS_LIKE_QUANTIFIERS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2898,7 +2901,10 @@ class Generator(metaclass=_Generator):
         return f"{self.sql(expression, 'this')}[{expressions_sql}]"
 
     def all_sql(self, expression: exp.All) -> str:
-        return f"ALL {self.wrap(expression)}"
+        this = self.sql(expression, "this")
+        if not isinstance(expression.this, (exp.Tuple, exp.Paren)):
+            this = self.wrap(this)
+        return f"ALL {this}"
 
     def any_sql(self, expression: exp.Any) -> str:
         this = self.sql(expression, "this")
@@ -3648,12 +3654,6 @@ class Generator(metaclass=_Generator):
     def gte_sql(self, expression: exp.GTE) -> str:
         return self.binary(expression, ">=")
 
-    def ilike_sql(self, expression: exp.ILike) -> str:
-        return self.binary(expression, "ILIKE")
-
-    def ilikeany_sql(self, expression: exp.ILikeAny) -> str:
-        return self.binary(expression, "ILIKE ANY")
-
     def is_sql(self, expression: exp.Is) -> str:
         if not self.IS_BOOL_ALLOWED and isinstance(expression.expression, exp.Boolean):
             return self.sql(
@@ -3661,11 +3661,38 @@ class Generator(metaclass=_Generator):
             )
         return self.binary(expression, "IS")
 
-    def like_sql(self, expression: exp.Like) -> str:
-        return self.binary(expression, "LIKE")
+    def _like_sql(self, expression: exp.Like | exp.ILike) -> str:
+        this = expression.this
+        rhs = expression.expression
 
-    def likeany_sql(self, expression: exp.LikeAny) -> str:
-        return self.binary(expression, "LIKE ANY")
+        if isinstance(expression, exp.Like):
+            exp_class: t.Type[exp.Like | exp.ILike] = exp.Like
+            op = "LIKE"
+        else:
+            exp_class = exp.ILike
+            op = "ILIKE"
+
+        if isinstance(rhs, (exp.All, exp.Any)) and not self.SUPPORTS_LIKE_QUANTIFIERS:
+            exprs = rhs.this.unnest()
+
+            if isinstance(exprs, exp.Tuple):
+                exprs = exprs.expressions
+
+            connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
+
+            like_expr: exp.Expression = exp_class(this=this, expression=exprs[0])
+            for expr in exprs[1:]:
+                like_expr = connective(like_expr, exp_class(this=this, expression=expr))
+
+            return self.sql(like_expr)
+
+        return self.binary(expression, op)
+
+    def like_sql(self, expression: exp.Like) -> str:
+        return self._like_sql(expression)
+
+    def ilike_sql(self, expression: exp.ILike) -> str:
+        return self._like_sql(expression)
 
     def similarto_sql(self, expression: exp.SimilarTo) -> str:
         return self.binary(expression, "SIMILAR TO")

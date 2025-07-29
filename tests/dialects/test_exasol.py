@@ -384,6 +384,26 @@ class TestExasol(Validator):
             "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
         )
 
+        self.validate_all(
+            "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
+            write={
+                "exasol": "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
+                "presto": "SELECT DATE_TRUNC('MM', CAST('2006-12-31' AS DATE)) AS TRUNC",
+                "databricks": "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_TRUNC('minute', TIMESTAMP '2006-12-31 23:59:59') DATE_TRUNC",
+            write={
+                "exasol": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                "presto": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+            },
+        )
+
+    def test_number_functions(self):
+        self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
+
     def test_scalar(self):
         self.validate_all(
             "SELECT CURRENT_USER",

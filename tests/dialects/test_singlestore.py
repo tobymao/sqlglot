@@ -18,3 +18,11 @@ class TestSingleStore(Validator):
             "SELECT `data`.`id` AS `my_id` FROM `data` AS `data` WHERE `data`.`my_id` = 1 GROUP BY `data`.`my_id` HAVING `data`.`id` = 1",
             ast.sql(dialect=self.dialect),
         )
+
+    def test_restricted_keywords(self):
+        self.validate_identity("SELECT * FROM abs", "SELECT * FROM `abs`")
+        self.validate_identity("SELECT * FROM ABS", "SELECT * FROM `ABS`")
+        self.validate_identity(
+            "SELECT * FROM security_lists_intersect", "SELECT * FROM `security_lists_intersect`"
+        )
+        self.validate_identity("SELECT * FROM vacuum", "SELECT * FROM `vacuum`")

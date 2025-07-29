@@ -25,7 +25,7 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
-def _parse_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+def _build_trunc(args: t.List[exp.Expression]) -> exp.Expression:
     first, second = seq_get(args, 0), seq_get(args, 1)
 
     if not first or not second:
@@ -34,10 +34,8 @@ def _parse_trunc(args: t.List[exp.Expression]) -> exp.Expression:
     if not first.type:
         first = annotate_types(first, dialect="exasol")
 
-    if (
-        first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP)
-        and isinstance(second, exp.Literal)
-        and second.is_string
+    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP) and isinstance(
+        second, exp.Literal
     ):
         return exp.DateTrunc(this=first, unit=second)
 
@@ -112,8 +110,8 @@ class Exasol(Dialect):
             "HASH_SHA512": lambda args: exp.SHA2(
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
-            "TRUNC": _parse_trunc,
-            "TRUNCATE": _parse_trunc,
+            "TRUNC": _build_trunc,
+            "TRUNCATE": _build_trunc,
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.ToChar, "exasol"),

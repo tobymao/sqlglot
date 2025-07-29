@@ -2197,12 +2197,10 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_parse_like_any(self):
-        like = parse_one("a LIKE ANY fun('foo')", read="snowflake")
-        ilike = parse_one("a ILIKE ANY fun('foo')", read="snowflake")
+        for keyword in ("LIKE", "ILIKE"):
+            ast = self.validate_identity(f"a {keyword} ANY FUN('foo')")
 
-        self.assertIsInstance(like, exp.LikeAny)
-        self.assertIsInstance(ilike, exp.ILikeAny)
-        like.sql()  # check that this doesn't raise
+            ast.sql()  # check that this doesn't raise
 
     @mock.patch("sqlglot.generator.logger")
     def test_regexp_substr(self, logger):

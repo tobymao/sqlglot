@@ -2746,7 +2746,7 @@ SINGLE = TRUE""",
 
     def test_get_from_stage(self):
         self.validate_identity('GET @"my_DB"."schEMA1"."MYstage" \'file:///dir/tmp.csv\'')
-        self.validate_identity("GET @s1/test 'file:///dir/tmp.csv'")
+        self.validate_identity("GET @s1/test 'file:///dir/tmp.csv'").assert_is(exp.Get)
 
         # GET with file path and stage ref containing spaces (wrapped in single quotes)
         ast = parse_one("GET '@s1/my folder' 'file://my file.txt'", read="snowflake")
@@ -2950,3 +2950,26 @@ FROM SEMANTIC_VIEW(
 )""",
             pretty=True,
         )
+
+    def test_get_extract(self):
+        for arr, index in (("arr", 1), ("[1, 2]", "index")):
+            # Test that either an ARRAY literal or a numeric index is transpiled to an array access,
+            # even if the other arg is of unknown type
+            with self.subTest(f"Testing GET({arr}, {index})"):
+                self.validate_all(
+                    f"SELECT GET({arr}, {index})",
+                    write={
+                        "snowflake": f"SELECT GET({arr}, {index})",
+                        "duckdb": f"SELECT {arr}[{index + 1 if isinstance(index, int) else index}]",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT GET(v, 'field')",
+            write={
+                "snowflake": "SELECT GET(v, 'field')",
+                "duckdb": "SELECT v -> '$.field'",
+            },
+        )
+
+        self.validate_identity("GET(foo, bar)").assert_is(exp.GetExtract)

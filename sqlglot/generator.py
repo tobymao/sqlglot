@@ -5113,3 +5113,20 @@ class Generator(metaclass=_Generator):
         where = self.sql(expression, "where")
         where = self.seg(f"WHERE {where}") if where else ""
         return f"SEMANTIC_VIEW({self.indent(this + metrics + dimensions + where)}{self.seg(')', sep='')}"
+
+    def getextract_sql(self, expression: exp.GetExtract) -> str:
+        this = expression.this
+        expression = expression.expression
+
+        if not this.type or not expression.type:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            this = annotate_types(this, dialect=self.dialect)
+            expression = annotate_types(expression, dialect=self.dialect)
+
+        if this.is_type(exp.DataType.Type.ARRAY) or expression.is_type(*exp.DataType.NUMERIC_TYPES):
+            return self.sql(exp.Bracket(this=this, expressions=[expression]))
+
+        return self.sql(
+            exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expression))
+        )

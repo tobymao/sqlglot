@@ -1,4 +1,5 @@
-from sqlglot import parse_one
+from sqlglot import parse_one, TokenType
+from sqlglot.dialects.singlestore import SingleStore
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
@@ -22,3 +23,25 @@ class TestSingleStore(Validator):
     def test_tokenizer(self):
         self.validate_identity("SELECT e'text'")
         self.validate_identity("SELECT E'text'", "SELECT e'text'")
+
+        assert any(
+            token.token_type == TokenType.JSONB for token in SingleStore().tokenize(sql="BSON")
+        )
+        assert any(
+            token.token_type == TokenType.GEOGRAPHY
+            for token in SingleStore().tokenize(sql="GEOGRAPHYPOINT")
+        )
+        assert any(
+            token.token_type == TokenType.COLON_GT for token in SingleStore().tokenize(sql=":>")
+        )
+        assert any(
+            token.token_type == TokenType.NCOLON_GT for token in SingleStore().tokenize(sql="!:>")
+        )
+        assert any(
+            token.token_type == TokenType.DCOLONDOLLAR
+            for token in SingleStore().tokenize(sql="::$")
+        )
+        assert any(
+            token.token_type == TokenType.DCOLONPERCENT
+            for token in SingleStore().tokenize(sql="::%")
+        )

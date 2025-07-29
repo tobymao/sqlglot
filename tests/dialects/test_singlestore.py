@@ -6,10 +6,7 @@ from tests.dialects.test_dialect import Validator
 class TestSingleStore(Validator):
     dialect = "singlestore"
 
-    def test_basic(self):
-        self.validate_identity("SELECT 1")
-        self.validate_identity("SELECT * FROM `users` ORDER BY ALL")
-
+    def test_singlestore(self):
         ast = parse_one(
             "SELECT id AS my_id FROM data WHERE my_id = 1 GROUP BY my_id HAVING my_id = 1",
             dialect=self.dialect,
@@ -20,7 +17,11 @@ class TestSingleStore(Validator):
             ast.sql(dialect=self.dialect),
         )
 
-    def test_tokenizer(self):
+        self.validate_identity("SELECT 1")
+        self.validate_identity("SELECT * FROM `users` ORDER BY ALL")
+        self.validate_identity("SELECT CAST(x AS GEOGRAPHYPOINT)")
+
+    def test_byte_strings(self):
         self.validate_identity("SELECT e'text'")
         self.validate_identity("SELECT E'text'", "SELECT e'text'")
 

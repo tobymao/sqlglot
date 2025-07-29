@@ -1,5 +1,6 @@
 from __future__ import annotations
 from sqlglot import exp, generator, parser, tokens
+from sqlglot.dialects.clickhouse import timestamptrunc_sql
 from sqlglot.dialects.dialect import (
     Dialect,
     rename_func,
@@ -7,16 +8,36 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     timestrtotime_sql,
     strposition_sql,
+    unit_to_str,
 )
 from sqlglot.helper import seq_get
 from sqlglot.generator import unsupported_args
 from sqlglot.tokens import TokenType
+import typing as t
+from sqlglot.optimizer.annotate_types import annotate_types
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
     length = expression.text("length")
     func_name = "HASH_SHA256" if length == "256" else "HASH_SHA512"
     return self.func(func_name, expression.this)
+
+
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
+def _build_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+    first, second = seq_get(args, 0), seq_get(args, 1)
+
+    if not first or not second:
+        return exp.Anonymous(this="TRUNC", expressions=args)
+
+    if not first.type:
+        first = annotate_types(first, dialect="exasol")
+
+    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP) and second.is_string:
+        return exp.DateTrunc(this=first, unit=second)
+
+    return exp.Anonymous(this="TRUNC", expressions=args)
 
 
 class Exasol(Dialect):
@@ -63,6 +84,10 @@ class Exasol(Dialect):
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
+            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
+                this=seq_get(args, 1), unit=seq_get(args, 0)
+            ),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
             "HASH_SHA": exp.SHA.from_arg_list,
@@ -83,6 +108,8 @@ class Exasol(Dialect):
             "HASH_SHA512": lambda args: exp.SHA2(
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
+            "TRUNC": _build_trunc,
+            "TRUNCATE": _build_trunc,
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.ToChar, "exasol"),
@@ -156,6 +183,8 @@ class Exasol(Dialect):
             exp.BitwiseXor: rename_func("BIT_XOR"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
             exp.All: rename_func("EVERY"),
+            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DatetimeTrunc: timestamptrunc_sql(),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")
@@ -180,6 +209,7 @@ class Exasol(Dialect):
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
+            exp.TimestampTrunc: timestamptrunc_sql(),
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.AtTimeZone: lambda self, e: self.func(

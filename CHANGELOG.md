@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.5.1] - 2025-07-30
+### :bug: Bug Fixes
+- [`caf71d6`](https://github.com/tobymao/sqlglot/commit/caf71d687c0048d2346fddaee58b519e4f2e7945) - `between` builder should not set `symmetric` by default *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.5.0] - 2025-07-30
 ### :boom: BREAKING CHANGES
 - due to [`002286e`](https://github.com/tobymao/sqlglot/commit/002286ee05a608e303a2238a9a74ab963709b5da) - remove AM/PM entries from postgres, oracle `TIME_MAPPING` *(PR [#5491](https://github.com/tobymao/sqlglot/pull/5491) by [@georgesittas](https://github.com/georgesittas))*:
@@ -8540,3 +8545,4 @@ Changelog
 [v27.4.0]: https://github.com/tobymao/sqlglot/compare/v27.3.1...v27.4.0
 [v27.4.1]: https://github.com/tobymao/sqlglot/compare/v27.4.0...v27.4.1
 [v27.5.0]: https://github.com/tobymao/sqlglot/compare/v27.4.1...v27.5.0
+[v27.5.1]: https://github.com/tobymao/sqlglot/compare/v27.5.0...v27.5.1

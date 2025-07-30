@@ -5116,17 +5116,14 @@ class Generator(metaclass=_Generator):
 
     def getextract_sql(self, expression: exp.GetExtract) -> str:
         this = expression.this
-        expression = expression.expression
+        expr = expression.expression
 
         if not this.type or not expression.type:
             from sqlglot.optimizer.annotate_types import annotate_types
 
             this = annotate_types(this, dialect=self.dialect)
-            expression = annotate_types(expression, dialect=self.dialect)
 
-        if this.is_type(exp.DataType.Type.ARRAY) or expression.is_type(*exp.DataType.NUMERIC_TYPES):
-            return self.sql(exp.Bracket(this=this, expressions=[expression]))
+        if this.is_type(*(exp.DataType.Type.ARRAY, exp.DataType.Type.MAP)):
+            return self.sql(exp.Bracket(this=this, expressions=[expr]))
 
-        return self.sql(
-            exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expression))
-        )
+        return self.sql(exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expr)))

@@ -2952,17 +2952,21 @@ FROM SEMANTIC_VIEW(
         )
 
     def test_get_extract(self):
-        for arr, index in (("arr", 1), ("[1, 2]", "index")):
-            # Test that either an ARRAY literal or a numeric index is transpiled to an array access,
-            # even if the other arg is of unknown type
-            with self.subTest(f"Testing GET({arr}, {index})"):
-                self.validate_all(
-                    f"SELECT GET({arr}, {index})",
-                    write={
-                        "snowflake": f"SELECT GET({arr}, {index})",
-                        "duckdb": f"SELECT {arr}[{index + 1 if isinstance(index, int) else index}]",
-                    },
-                )
+        self.validate_all(
+            "SELECT GET([4, 5, 6], 1)",
+            write={
+                "snowflake": "SELECT GET([4, 5, 6], 1)",
+                "duckdb": "SELECT [4, 5, 6][2]",
+            },
+        )
+
+        self.validate_all(
+            "SELECT GET(col::MAP(INTEGER, VARCHAR), 1)",
+            write={
+                "snowflake": "SELECT GET(CAST(col AS MAP(INT, VARCHAR)), 1)",
+                "duckdb": "SELECT CAST(col AS MAP(INT, TEXT))[1]",
+            },
+        )
 
         self.validate_all(
             "SELECT GET(v, 'field')",

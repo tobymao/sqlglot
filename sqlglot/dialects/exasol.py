@@ -46,6 +46,18 @@ def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expr
     return exp.Anonymous(this="TRUNC", expressions=args)
 
 
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/zeroifnull.htm
+def _build_zeroifnull(args: t.List) -> exp.If:
+    cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
+    return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
+
+
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/nullifzero.htm
+def _build_nullifzero(args: t.List) -> exp.If:
+    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
+    return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+
+
 class Exasol(Dialect):
     TIME_MAPPING = {
         "yyyy": "%Y",
@@ -79,6 +91,7 @@ class Exasol(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "USER": TokenType.CURRENT_USER,
+            "ENDIF": TokenType.END,
         }
 
     class Parser(parser.Parser):
@@ -127,6 +140,8 @@ class Exasol(Dialect):
                 timestamp=seq_get(args, 0),
                 options=seq_get(args, 3),
             ),
+            "NULLIFZERO": _build_nullifzero,
+            "ZEROIFNULL": _build_zeroifnull,
         }
         CONSTRAINT_PARSERS = {
             **parser.Parser.CONSTRAINT_PARSERS,
@@ -135,6 +150,20 @@ class Exasol(Dialect):
                 this=self._match(TokenType.IS) and self._parse_string(),
             ),
         }
+
+        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+        def _parse_if(self) -> t.Optional[exp.Expression]:
+            if self._match_text_seq("IF"):
+                condition = self._parse_expression()
+                self._match_text_seq("THEN")
+                true_value = self._parse_expression()
+                self._match_text_seq("ELSE")
+                false_value = self._parse_expression()
+                self._match_text_seq("ENDIF")
+
+                return exp.If(this=condition, true=true_value, false=false_value)
+
+            return super()._parse_if()
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
@@ -249,3 +278,9 @@ class Exasol(Dialect):
             options = expression.args.get("options")
 
             return self.func("CONVERT_TZ", datetime, from_tz, to_tz, options)
+
+        def if_sql(self, expression: exp.If) -> str:
+            this = self.sql(expression, "this")
+            true = self.sql(expression, "true")
+            false = self.sql(expression, "false")
+            return f"IF {this} THEN {true} ELSE {false} ENDIF"

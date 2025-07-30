@@ -509,3 +509,30 @@ class TestExasol(Validator):
                 "trino": "SHA512(x)",
             },
         )
+        self.validate_all(
+            "SELECT NULLIFZERO(1) NIZ1",
+            write={
+                "exasol": "SELECT IF 1 = 0 THEN NULL ELSE 1 ENDIF AS NIZ1",
+                "snowflake": "SELECT IFF(1 = 0, NULL, 1) AS NIZ1",
+                "sqlite": "SELECT IIF(1 = 0, NULL, 1) AS NIZ1",
+                "presto": "SELECT IF(1 = 0, NULL, 1) AS NIZ1",
+                "spark": "SELECT IF(1 = 0, NULL, 1) AS NIZ1",
+                "hive": "SELECT IF(1 = 0, NULL, 1) AS NIZ1",
+                "duckdb": "SELECT CASE WHEN 1 = 0 THEN NULL ELSE 1 END AS NIZ1",
+            },
+        )
+        self.validate_all(
+            "SELECT ZEROIFNULL(NULL) NIZ1",
+            write={
+                "exasol": "SELECT IF NULL IS NULL THEN 0 ELSE NULL ENDIF AS NIZ1",
+                "snowflake": "SELECT IFF(NULL IS NULL, 0, NULL) AS NIZ1",
+                "sqlite": "SELECT IIF(NULL IS NULL, 0, NULL) AS NIZ1",
+                "presto": "SELECT IF(NULL IS NULL, 0, NULL) AS NIZ1",
+                "spark": "SELECT IF(NULL IS NULL, 0, NULL) AS NIZ1",
+                "hive": "SELECT IF(NULL IS NULL, 0, NULL) AS NIZ1",
+                "duckdb": "SELECT CASE WHEN NULL IS NULL THEN 0 ELSE NULL END AS NIZ1",
+            },
+        )
+        self.validate_identity(
+            "SELECT name, age, IF age < 18 THEN 'underaged' ELSE 'adult' ENDIF AS LEGALITY FROM persons"
+        )

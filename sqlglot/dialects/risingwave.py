@@ -61,6 +61,7 @@ class RisingWave(Postgres):
 
     class Generator(Postgres.Generator):
         LOCKING_READS_SUPPORTED = False
+        SUPPORTS_BETWEEN_FLAGS = False
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,

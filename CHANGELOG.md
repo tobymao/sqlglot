@@ -1,6 +1,40 @@
 Changelog
 =========
 
+## [v27.5.0] - 2025-07-30
+### :boom: BREAKING CHANGES
+- due to [`002286e`](https://github.com/tobymao/sqlglot/commit/002286ee05a608e303a2238a9a74ab963709b5da) - remove AM/PM entries from postgres, oracle `TIME_MAPPING` *(PR [#5491](https://github.com/tobymao/sqlglot/pull/5491) by [@georgesittas](https://github.com/georgesittas))*:
+
+  remove AM/PM entries from postgres, oracle `TIME_MAPPING` (#5491)
+
+- due to [`ad78db6`](https://github.com/tobymao/sqlglot/commit/ad78db6c9002a5bf9188d66f0080dfefd070f77b) - Refactor `LIKE ANY` and support  `ALL | SOME` quantifiers *(PR [#5493](https://github.com/tobymao/sqlglot/pull/5493) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Refactor `LIKE ANY` and support  `ALL | SOME` quantifiers (#5493)
+
+
+### :sparkles: New Features
+- [`8cdd9e8`](https://github.com/tobymao/sqlglot/commit/8cdd9e8715b4cf67c200c723940743ed69bbfd80) - **mysql**: Parse UNIQUE INDEX constraint similar to UNIQUE KEY *(PR [#5489](https://github.com/tobymao/sqlglot/pull/5489) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#5479](https://github.com/tobymao/sqlglot/issues/5479) opened by [@nathanchapman](https://github.com/nathanchapman)*
+- [`787d167`](https://github.com/tobymao/sqlglot/commit/787d167d694b557d6e43ed391f59847a888fa572) - **exasol**: add support for REGEXP_SUBSTR  in exasol dialect *(PR [#5487](https://github.com/tobymao/sqlglot/pull/5487) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`0963f60`](https://github.com/tobymao/sqlglot/commit/0963f60987c267c64f2fcfbde469b8b28911a14b) - **singlestore**: Fixed time formatting *(PR [#5476](https://github.com/tobymao/sqlglot/pull/5476) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`488d2e4`](https://github.com/tobymao/sqlglot/commit/488d2e4bf9d4eb148356d1fd6c2360bbf77f283c) - **singlestore**: Added RESERVED_KEYWORDS *(PR [#5497](https://github.com/tobymao/sqlglot/pull/5497) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`fad9992`](https://github.com/tobymao/sqlglot/commit/fad9992a00478a964552f72802b95ca3918c4377) - **exasol**: Add support for TRUNC, TRUNCATE and DATE_TRUNC function… *(PR [#5490](https://github.com/tobymao/sqlglot/pull/5490) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`ad78db6`](https://github.com/tobymao/sqlglot/commit/ad78db6c9002a5bf9188d66f0080dfefd070f77b) - Refactor `LIKE ANY` and support  `ALL | SOME` quantifiers *(PR [#5493](https://github.com/tobymao/sqlglot/pull/5493) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#5484](https://github.com/tobymao/sqlglot/issues/5484) opened by [@mazum21](https://github.com/mazum21)*
+- [`a7a6f16`](https://github.com/tobymao/sqlglot/commit/a7a6f167d30ac19383ad15931c26751c66a61976) - **singlestore**: Added Tokenizer *(PR [#5492](https://github.com/tobymao/sqlglot/pull/5492) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+
+### :bug: Bug Fixes
+- [`3982653`](https://github.com/tobymao/sqlglot/commit/3982653e62a42ca1be2bdd8722119e27bd1ba680) - Do not consume BUCKET/TRUNCATE as partitioning keywords *(PR [#5488](https://github.com/tobymao/sqlglot/pull/5488) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5485](https://github.com/tobymao/sqlglot/issues/5485) opened by [@chenkovsky](https://github.com/chenkovsky)*
+- [`002286e`](https://github.com/tobymao/sqlglot/commit/002286ee05a608e303a2238a9a74ab963709b5da) - remove AM/PM entries from postgres, oracle `TIME_MAPPING` *(PR [#5491](https://github.com/tobymao/sqlglot/pull/5491) by [@georgesittas](https://github.com/georgesittas))*
+- [`74f278a`](https://github.com/tobymao/sqlglot/commit/74f278a226058e196270042e2a9664b9acded28a) - **optimizer**: Fix SEMI/ANTI join handling in optimizer rules *(PR [#5498](https://github.com/tobymao/sqlglot/pull/5498) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5481](https://github.com/tobymao/sqlglot/issues/5481) opened by [@themattmorris](https://github.com/themattmorris)*
+- [`42633fb`](https://github.com/tobymao/sqlglot/commit/42633fb49b3c04eeea42e061e33ee08e61960cb4) - dont print (A)SYMMETRIC keyword in BETWEEN for postgres subclasses *(PR [#5503](https://github.com/tobymao/sqlglot/pull/5503) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`18b7d0f`](https://github.com/tobymao/sqlglot/commit/18b7d0fe19708d88b224770d844a8f6a74fe2aa7) - fix deprecated 'license' specification format *(PR [#5494](https://github.com/tobymao/sqlglot/pull/5494) by [@loonies](https://github.com/loonies))*
+
+
 ## [v27.4.1] - 2025-07-27
 ### :bug: Bug Fixes
 - [`ba2b3e2`](https://github.com/tobymao/sqlglot/commit/ba2b3e21ca5454402808b68697ea4eb62963d341) - **bigquery**: make exp.Array type inference more robust *(PR [#5483](https://github.com/tobymao/sqlglot/pull/5483) by [@georgesittas](https://github.com/georgesittas))*
@@ -8505,3 +8539,4 @@ Changelog
 [v27.3.1]: https://github.com/tobymao/sqlglot/compare/v27.3.0...v27.3.1
 [v27.4.0]: https://github.com/tobymao/sqlglot/compare/v27.3.1...v27.4.0
 [v27.4.1]: https://github.com/tobymao/sqlglot/compare/v27.4.0...v27.4.1
+[v27.5.0]: https://github.com/tobymao/sqlglot/compare/v27.4.1...v27.5.0

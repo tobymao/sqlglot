@@ -940,15 +940,18 @@ class Expression(metaclass=_Expression):
         low: t.Any,
         high: t.Any,
         copy: bool = True,
-        symmetric: t.Optional[bool] = False,
+        symmetric: t.Optional[bool] = None,
         **opts,
     ) -> Between:
-        return Between(
+        between = Between(
             this=maybe_copy(self, copy),
             low=convert(low, copy=copy, **opts),
             high=convert(high, copy=copy, **opts),
-            symmetric=symmetric,
         )
+        if symmetric is not None:
+            between.set("symmetric", symmetric)
+
+        return between
 
     def is_(self, other: ExpOrStr) -> Is:
         return self._binop(Is, other)

@@ -91,6 +91,7 @@ class Exasol(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "USER": TokenType.CURRENT_USER,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
         }
 
@@ -150,20 +151,6 @@ class Exasol(Dialect):
                 this=self._match(TokenType.IS) and self._parse_string(),
             ),
         }
-
-        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
-        def _parse_if(self) -> t.Optional[exp.Expression]:
-            if self._match_text_seq("IF"):
-                condition = self._parse_expression()
-                self._match_text_seq("THEN")
-                true_value = self._parse_expression()
-                self._match_text_seq("ELSE")
-                false_value = self._parse_expression()
-                self._match_text_seq("ENDIF")
-
-                return exp.If(this=condition, true=true_value, false=false_value)
-
-            return super()._parse_if()
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType

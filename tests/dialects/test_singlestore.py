@@ -49,3 +49,9 @@ class TestSingleStore(Validator):
             "SELECT TIME_FORMAT('12:05:47', '%s, %i, %h')",
             "SELECT DATE_FORMAT(CAST('12:05:47' AS TIME(6)), '%s, %i, %h')",
         )
+
+    def test_cast(self):
+        self.validate_identity("SELECT 1 :> INT")
+        self.validate_identity("SELECT 1 !:> INT")
+        self.validate_identity("SELECT '{\"a\" : 1}' :> JSON")
+        self.validate_identity("SELECT NOW() !:> TIMESTAMP(6)")

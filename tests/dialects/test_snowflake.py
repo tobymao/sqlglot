@@ -2746,7 +2746,7 @@ SINGLE = TRUE""",
 
     def test_get_from_stage(self):
         self.validate_identity('GET @"my_DB"."schEMA1"."MYstage" \'file:///dir/tmp.csv\'')
-        self.validate_identity("GET @s1/test 'file:///dir/tmp.csv'")
+        self.validate_identity("GET @s1/test 'file:///dir/tmp.csv'").assert_is(exp.Get)
 
         # GET with file path and stage ref containing spaces (wrapped in single quotes)
         ast = parse_one("GET '@s1/my folder' 'file://my file.txt'", read="snowflake")
@@ -2950,3 +2950,30 @@ FROM SEMANTIC_VIEW(
 )""",
             pretty=True,
         )
+
+    def test_get_extract(self):
+        self.validate_all(
+            "SELECT GET([4, 5, 6], 1)",
+            write={
+                "snowflake": "SELECT GET([4, 5, 6], 1)",
+                "duckdb": "SELECT [4, 5, 6][2]",
+            },
+        )
+
+        self.validate_all(
+            "SELECT GET(col::MAP(INTEGER, VARCHAR), 1)",
+            write={
+                "snowflake": "SELECT GET(CAST(col AS MAP(INT, VARCHAR)), 1)",
+                "duckdb": "SELECT CAST(col AS MAP(INT, TEXT))[1]",
+            },
+        )
+
+        self.validate_all(
+            "SELECT GET(v, 'field')",
+            write={
+                "snowflake": "SELECT GET(v, 'field')",
+                "duckdb": "SELECT v -> '$.field'",
+            },
+        )
+
+        self.validate_identity("GET(foo, bar)").assert_is(exp.GetExtract)

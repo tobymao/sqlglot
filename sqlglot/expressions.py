@@ -6185,6 +6185,11 @@ class GenerateTimestampArray(Func):
     arg_types = {"start": True, "end": True, "step": True}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/get
+class GetExtract(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Greatest(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

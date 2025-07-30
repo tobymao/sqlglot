@@ -591,6 +591,7 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
             ),
             "FLATTEN": exp.Explode.from_arg_list,
+            "GET": exp.GetExtract.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
                 this=seq_get(args, 0),
                 expression=dialect.to_json_path(seq_get(args, 1)),
@@ -1220,6 +1221,7 @@ class Snowflake(Dialect):
             exp.GenerateSeries: lambda self, e: self.func(
                 "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")
             ),
+            exp.GetExtract: rename_func("GET"),
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
             exp.If: if_sql(name="IFF", false_value="NULL"),
             exp.JSONExtractArray: _json_extract_value_array_sql,

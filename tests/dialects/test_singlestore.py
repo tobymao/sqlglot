@@ -19,7 +19,6 @@ class TestSingleStore(Validator):
 
         self.validate_identity("SELECT 1")
         self.validate_identity("SELECT * FROM `users` ORDER BY ALL")
-        self.validate_identity("SELECT x :> GEOGRAPHYPOINT")
 
     def test_byte_strings(self):
         self.validate_identity("SELECT e'text'")
@@ -51,7 +50,26 @@ class TestSingleStore(Validator):
         )
 
     def test_cast(self):
-        self.validate_identity("SELECT 1 :> INT")
-        self.validate_identity("SELECT 1 !:> INT")
+        self.validate_all(
+            "SELECT 1 :> INT",
+            read={
+                "": "SELECT CAST(1 AS INT)",
+            },
+            write={
+                "singlestore": "SELECT 1 :> INT",
+                "": "SELECT CAST(1 AS INT)",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 !:> INT",
+            read={
+                "": "SELECT TRY_CAST(1 AS INT)",
+            },
+            write={
+                "singlestore": "SELECT 1 !:> INT",
+                "": "SELECT TRY_CAST(1 AS INT)",
+            },
+        )
         self.validate_identity("SELECT '{\"a\" : 1}' :> JSON")
         self.validate_identity("SELECT NOW() !:> TIMESTAMP(6)")
+        self.validate_identity("SELECT x :> GEOGRAPHYPOINT")

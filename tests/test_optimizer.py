@@ -1625,3 +1625,17 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             query = f"SELECT ARRAY({query})"
             with self.subTest(f"Annotating '{query}' in BigQuery"):
                 self.assertTrue(_annotate(query).selects[0].is_type("ARRAY<VARCHAR>"))
+
+        def test_semi_anti_join(self):
+            # - Do not remove semi/anti join
+            # - Do not remove CTEs/subqueries that participate in anti/semi joins, even though they do not count as selected sources
+            for join_kind in ("LEFT ANTI", "ANTI", "SEMI"):
+                query = f"""
+                WITH x AS (SELECT 1 AS b UNION ALL SELECT 2 AS b) SELECT x.b FROM x {join_kind} JOIN (SELECT 1 AS b) AS sub ON x.b = sub.b
+                """
+                self.assertEqual(
+                    optimizer.optimize(query).sql(),
+                    f"""
+                    WITH "x" AS (SELECT 1 AS "b" UNION ALL SELECT 2 AS "b"), "sub" AS (SELECT 1 AS "b") SELECT "x"."b" AS "b" FROM "x" AS "x" {join_kind} JOIN "sub" AS "sub" ON "sub"."b" = "x"."b"
+                    """,
+                )

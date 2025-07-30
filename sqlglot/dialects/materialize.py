@@ -51,6 +51,7 @@ class Materialize(Postgres):
 
     class Generator(Postgres.Generator):
         SUPPORTS_CREATE_TABLE_LIKE = False
+        SUPPORTS_BETWEEN_FLAGS = False
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,

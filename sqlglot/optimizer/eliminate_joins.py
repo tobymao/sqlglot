@@ -32,6 +32,9 @@ def eliminate_joins(expression):
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
+            if join.is_semi_or_anti_join:
+                continue
+
             alias = join.alias_or_name
             if _should_eliminate_join(scope, join, alias):
                 join.pop()

@@ -523,6 +523,12 @@ class Scope:
             for _, source in scope.selected_sources.values():
                 scope_ref_count[id(source)] += 1
 
+            for name in scope._semi_anti_join_tables:
+                # semi/anti join sources are not actually selected but we still need to
+                # increment their ref count to avoid them being optimized away
+                if name in scope.sources:
+                    scope_ref_count[id(scope.sources[name])] += 1
+
         return scope_ref_count
 
 

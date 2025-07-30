@@ -19,7 +19,7 @@ class TestSingleStore(Validator):
 
         self.validate_identity("SELECT 1")
         self.validate_identity("SELECT * FROM `users` ORDER BY ALL")
-        self.validate_identity("SELECT CAST(x AS GEOGRAPHYPOINT)")
+        self.validate_identity("SELECT x :> GEOGRAPHYPOINT")
 
     def test_byte_strings(self):
         self.validate_identity("SELECT e'text'")
@@ -47,7 +47,7 @@ class TestSingleStore(Validator):
         )
         self.validate_identity(
             "SELECT TIME_FORMAT('12:05:47', '%s, %i, %h')",
-            "SELECT DATE_FORMAT(CAST('12:05:47' AS TIME(6)), '%s, %i, %h')",
+            "SELECT DATE_FORMAT('12:05:47' :> TIME(6), '%s, %i, %h')",
         )
 
     def test_cast(self):

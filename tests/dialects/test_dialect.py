@@ -3657,6 +3657,11 @@ FROM subquery2""",
         )
 
     def test_between(self):
+        between = exp.column("x").between(1, 2)
+        self.assertEqual(between.sql("postgres"), "x BETWEEN 1 AND 2")
+        self.assertEqual(between.sql("redshift"), "x BETWEEN 1 AND 2")
+        self.assertFalse("symmetric" in between.args)
+
         self.validate_all(
             "SELECT x BETWEEN 2 AND 10",
             read={

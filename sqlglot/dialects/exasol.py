@@ -195,6 +195,7 @@ class Exasol(Dialect):
             exp.DataType.Type.DECIMAL256: "DECIMAL",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
+
         DATE_ADD_FUNCTION_BY_UNIT = {
             "DAY": "ADD_DAYS",
             "WEEK": "ADD_WEEKS",
@@ -304,4 +305,5 @@ class Exasol(Dialect):
             if not func_name:
                 self.unsupported(f"'{unit}' is not supported in Exasol.")
                 return self.function_fallback_sql(expression)
+
             return self.func(func_name, expression.this, expression.expression)

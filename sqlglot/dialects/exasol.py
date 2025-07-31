@@ -195,6 +195,15 @@ class Exasol(Dialect):
             exp.DataType.Type.DECIMAL256: "DECIMAL",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
+        DATE_ADD_FUNCTION_BY_UNIT = {
+            "DAY": "ADD_DAYS",
+            "WEEK": "ADD_WEEKS",
+            "MONTH": "ADD_MONTHS",
+            "YEAR": "ADD_YEARS",
+            "HOUR": "ADD_HOURS",
+            "MINUTE": "ADD_MINUTES",
+            "SECOND": "ADD_SECONDS",
+        }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
@@ -224,8 +233,6 @@ class Exasol(Dialect):
             exp.All: rename_func("EVERY"),
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
-            # exp.DateAdd: dateadd_sql,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")
@@ -292,18 +299,9 @@ class Exasol(Dialect):
             return f"IF {this} THEN {true} ELSE {false} ENDIF"
 
         def dateadd_sql(self, expression: exp.DateAdd) -> str:
-            unit = expression.args.get("unit")
-            unit_name = unit.name.upper() if unit else "DAY"
-
-            function_map = {
-                "DAY": "ADD_DAYS",
-                "WEEK": "ADD_WEEKS",
-                "MONTH": "ADD_MONTHS",
-                "YEAR": "ADD_YEARS",
-                "HOUR": "ADD_HOURS",
-                "MINUTE": "ADD_MINUTES",
-                "SECOND": "ADD_SECONDS",
-            }
-
-            func_name = function_map.get(unit_name, "ADD_DAYS")
+            unit = expression.text("unit").upper() or "DAY"
+            func_name = self.DATE_ADD_FUNCTION_BY_UNIT.get(unit)
+            if not func_name:
+                self.unsupported(f"'{unit}' is not supported in Exasol.")
+                return self.function_fallback_sql(expression)
             return self.func(func_name, expression.this, expression.expression)

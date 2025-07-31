@@ -434,7 +434,9 @@ class BigQuery(Dialect):
 
     # The _PARTITIONTIME and _PARTITIONDATE pseudo-columns are not returned by a SELECT * statement
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
-    PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
+    # https://cloud.google.com/bigquery/docs/querying-wildcard-tables#scanning_a_range_of_tables_using_table_suffix
+    # https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column
+    PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE", "_TABLE_SUFFIX", "_FILE_NAME"}
 
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)

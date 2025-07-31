@@ -100,12 +100,19 @@ class Exasol(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
             "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit="DAY"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_years.htm
             "ADD_YEARS": build_date_delta(exp.DateAdd, default_unit="YEAR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_months.htm
             "ADD_MONTHS": build_date_delta(exp.DateAdd, default_unit="MONTH"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_weeks.htm
             "ADD_WEEKS": build_date_delta(exp.DateAdd, default_unit="WEEK"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_hour.htm
             "ADD_HOURS": build_date_delta(exp.DateAdd, default_unit="HOUR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_minutes.htm
             "ADD_MINUTES": build_date_delta(exp.DateAdd, default_unit="MINUTE"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_seconds.htm
             "ADD_SECONDS": build_date_delta(exp.DateAdd, default_unit="SECOND"),
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),

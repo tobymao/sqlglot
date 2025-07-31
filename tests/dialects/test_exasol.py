@@ -13,7 +13,10 @@ class TestExasol(Validator):
         self.validate_identity("CAST(x AS MEDIUMTEXT)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS TINYBLOB)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS TINYTEXT)", "CAST(x AS VARCHAR)")
-        self.validate_identity("CAST(x AS TEXT)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS TEXT)", "CAST(x AS LONG VARCHAR)")
+        self.validate_identity(
+            "SELECT CAST((CAST(202305 AS INT) - 100) AS LONG VARCHAR) AS CAL_YEAR_WEEK_ADJUSTED"
+        )
         self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS CHAR)", "CAST(x AS CHAR)")

@@ -994,7 +994,7 @@ class Resolver:
             side = set_op.side
             kind = set_op.kind
 
-            # Visit the children UNIONs (if any) in a pre-order traversal
+            # Visit the children UNIONs (if any) in a post-order traversal
             left = self.get_source_columns_from_set_op(set_op.left)
             right = self.get_source_columns_from_set_op(set_op.right)
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.clickhouse import timestamptrunc_sql
+from sqlglot.dialects.clickhouse import build_date_delta, timestamptrunc_sql
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
@@ -99,6 +99,7 @@ class Exasol(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit=None),
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -209,6 +210,8 @@ class Exasol(Dialect):
             exp.All: rename_func("EVERY"),
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
+            exp.DateAdd: rename_func("ADD_DAYS"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")

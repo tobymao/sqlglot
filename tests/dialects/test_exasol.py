@@ -403,6 +403,20 @@ class TestExasol(Validator):
                 "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
             },
         )
+        self.validate_all(
+            "SELECT ADD_DAYS(DATE '2000-02-28', 1) AD1",
+            write={
+                "exasol": "SELECT ADD_DAYS(CAST('2000-02-28' AS DATE), 1) AS AD1",
+                "bigquery": "SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 DAY) AS AD1",
+                "duckdb": "SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 DAY AS AD1",
+                "hive": "SELECT DATE_ADD(CAST('2000-02-28' AS DATE), 1) AS AD1",
+                "presto": "SELECT DATE_ADD('DAY', 1, CAST('2000-02-28' AS DATE)) AS AD1",
+                "redshift": "SELECT DATEADD(DAY, 1, CAST('2000-02-28' AS DATE)) AS AD1",
+                "snowflake": "SELECT DATEADD(DAY, 1, CAST('2000-02-28' AS DATE)) AS AD1",
+                "spark": "SELECT DATE_ADD(CAST('2000-02-28' AS DATE), 1) AS AD1",
+                "tsql": "SELECT DATEADD(DAY, 1, CAST('2000-02-28' AS DATE)) AS AD1",
+            },
+        )
 
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")

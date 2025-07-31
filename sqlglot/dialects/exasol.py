@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.clickhouse import build_date_delta, timestamptrunc_sql
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
@@ -12,6 +11,8 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     unit_to_str,
+    timestamptrunc_sql,
+    build_date_delta,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -99,7 +100,13 @@ class Exasol(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit=None),
+            "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit="DAY"),
+            "ADD_YEARS": build_date_delta(exp.DateAdd, default_unit="YEAR"),
+            "ADD_MONTHS": build_date_delta(exp.DateAdd, default_unit="MONTH"),
+            "ADD_WEEKS": build_date_delta(exp.DateAdd, default_unit="WEEK"),
+            "ADD_HOURS": build_date_delta(exp.DateAdd, default_unit="HOUR"),
+            "ADD_MINUTES": build_date_delta(exp.DateAdd, default_unit="MINUTE"),
+            "ADD_SECONDS": build_date_delta(exp.DateAdd, default_unit="SECOND"),
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -211,7 +218,7 @@ class Exasol(Dialect):
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
-            exp.DateAdd: rename_func("ADD_DAYS"),
+            # exp.DateAdd: dateadd_sql,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")
@@ -276,3 +283,20 @@ class Exasol(Dialect):
             true = self.sql(expression, "true")
             false = self.sql(expression, "false")
             return f"IF {this} THEN {true} ELSE {false} ENDIF"
+
+        def dateadd_sql(self, expression: exp.DateAdd) -> str:
+            unit = expression.args.get("unit")
+            unit_name = unit.name.upper() if unit else "DAY"
+
+            function_map = {
+                "DAY": "ADD_DAYS",
+                "WEEK": "ADD_WEEKS",
+                "MONTH": "ADD_MONTHS",
+                "YEAR": "ADD_YEARS",
+                "HOUR": "ADD_HOURS",
+                "MINUTE": "ADD_MINUTES",
+                "SECOND": "ADD_SECONDS",
+            }
+
+            func_name = function_map.get(unit_name, "ADD_DAYS")
+            return self.func(func_name, expression.this, expression.expression)

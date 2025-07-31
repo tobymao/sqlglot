@@ -403,20 +403,32 @@ class TestExasol(Validator):
                 "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
             },
         )
-        self.validate_all(
-            "SELECT ADD_DAYS(DATE '2000-02-28', 1) AD1",
-            write={
-                "exasol": "SELECT ADD_DAYS(CAST('2000-02-28' AS DATE), 1) AS AD1",
-                "bigquery": "SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 DAY) AS AD1",
-                "duckdb": "SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 DAY AS AD1",
-                "hive": "SELECT DATE_ADD(CAST('2000-02-28' AS DATE), 1) AS AD1",
-                "presto": "SELECT DATE_ADD('DAY', 1, CAST('2000-02-28' AS DATE)) AS AD1",
-                "redshift": "SELECT DATEADD(DAY, 1, CAST('2000-02-28' AS DATE)) AS AD1",
-                "snowflake": "SELECT DATEADD(DAY, 1, CAST('2000-02-28' AS DATE)) AS AD1",
-                "spark": "SELECT DATE_ADD(CAST('2000-02-28' AS DATE), 1) AS AD1",
-                "tsql": "SELECT DATEADD(DAY, 1, CAST('2000-02-28' AS DATE)) AS AD1",
-            },
-        )
+        test_cases = {
+            "ADD_DAYS": ("DAY", "add_days"),
+            "ADD_WEEKS": ("WEEK", "add_weeks"),
+            "ADD_MONTHS": ("MONTH", "add_months"),
+            "ADD_YEARS": ("YEAR", "add_years"),
+            "ADD_HOURS": ("HOUR", "add_hours"),
+            "ADD_MINUTES": ("MINUTE", "add_minutes"),
+            "ADD_SECONDS": ("SECOND", "add_seconds"),
+        }
+
+        for func_name, (unit, alias) in test_cases.items():
+            with self.subTest(f"Testing {func_name}"):
+                write = {
+                    "exasol": f"SELECT {func_name}(CAST('2000-02-28' AS DATE), 1) AS {alias}",
+                    "bigquery": f"SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 {unit}) AS {alias}",
+                    "duckdb": f"SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 {unit} AS {alias}",
+                    "presto": f"SELECT DATE_ADD('{unit}', 1, CAST('2000-02-28' AS DATE)) AS {alias}",
+                    "redshift": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE)) AS {alias}",
+                    "snowflake": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE)) AS {alias}",
+                    "tsql": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE)) AS {alias}",
+                }
+
+                self.validate_all(
+                    f"SELECT {func_name}(DATE '2000-02-28', 1) AS {alias}",
+                    write=write,
+                )
 
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")

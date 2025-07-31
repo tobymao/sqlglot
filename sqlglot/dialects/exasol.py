@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.clickhouse import timestamptrunc_sql
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
@@ -12,6 +11,8 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     unit_to_str,
+    timestamptrunc_sql,
+    build_date_delta,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -99,6 +100,20 @@ class Exasol(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
+            "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit="DAY"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_years.htm
+            "ADD_YEARS": build_date_delta(exp.DateAdd, default_unit="YEAR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_months.htm
+            "ADD_MONTHS": build_date_delta(exp.DateAdd, default_unit="MONTH"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_weeks.htm
+            "ADD_WEEKS": build_date_delta(exp.DateAdd, default_unit="WEEK"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_hour.htm
+            "ADD_HOURS": build_date_delta(exp.DateAdd, default_unit="HOUR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_minutes.htm
+            "ADD_MINUTES": build_date_delta(exp.DateAdd, default_unit="MINUTE"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_seconds.htm
+            "ADD_SECONDS": build_date_delta(exp.DateAdd, default_unit="SECOND"),
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -179,6 +194,15 @@ class Exasol(Dialect):
             exp.DataType.Type.DECIMAL128: "DECIMAL",
             exp.DataType.Type.DECIMAL256: "DECIMAL",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+        }
+        DATE_ADD_FUNCTION_BY_UNIT = {
+            "DAY": "ADD_DAYS",
+            "WEEK": "ADD_WEEKS",
+            "MONTH": "ADD_MONTHS",
+            "YEAR": "ADD_YEARS",
+            "HOUR": "ADD_HOURS",
+            "MINUTE": "ADD_MINUTES",
+            "SECOND": "ADD_SECONDS",
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
@@ -273,3 +297,11 @@ class Exasol(Dialect):
             true = self.sql(expression, "true")
             false = self.sql(expression, "false")
             return f"IF {this} THEN {true} ELSE {false} ENDIF"
+
+        def dateadd_sql(self, expression: exp.DateAdd) -> str:
+            unit = expression.text("unit").upper() or "DAY"
+            func_name = self.DATE_ADD_FUNCTION_BY_UNIT.get(unit)
+            if not func_name:
+                self.unsupported(f"'{unit}' is not supported in Exasol.")
+                return self.function_fallback_sql(expression)
+            return self.func(func_name, expression.this, expression.expression)

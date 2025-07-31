@@ -5626,7 +5626,7 @@ class Parser(metaclass=_Parser):
             op_token = self._prev.token_type
             op = self.COLUMN_OPERATORS.get(op_token)
 
-            if op_token in (self.CAST_COLUMN_OPERATORS):
+            if op_token in self.CAST_COLUMN_OPERATORS:
                 field = self._parse_dcolon()
                 if not field:
                     self.raise_error("Expected type")

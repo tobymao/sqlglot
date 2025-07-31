@@ -93,6 +93,7 @@ class Exasol(Dialect):
             "USER": TokenType.CURRENT_USER,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
+            "LONG VARCHAR": TokenType.TEXT,
         }
 
     class Parser(parser.Parser):
@@ -162,7 +163,8 @@ class Exasol(Dialect):
             exp.DataType.Type.MEDIUMTEXT: "VARCHAR",
             exp.DataType.Type.TINYBLOB: "VARCHAR",
             exp.DataType.Type.TINYTEXT: "VARCHAR",
-            exp.DataType.Type.TEXT: "VARCHAR",
+            # https://docs.exasol.com/db/latest/sql_references/data_types/datatypealiases.htm
+            exp.DataType.Type.TEXT: "LONG VARCHAR",
             exp.DataType.Type.VARBINARY: "VARCHAR",
         }
 

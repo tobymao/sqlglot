@@ -4,6 +4,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.dialect import build_formatted_time
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
 
@@ -65,6 +66,21 @@ class SingleStore(MySQL):
             ),
         }
 
+        CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
+
+        COLUMN_OPERATORS = {
+            TokenType.COLON_GT: lambda self, this, to: self.expression(
+                exp.Cast,
+                this=this,
+                to=to,
+            ),
+            TokenType.NCOLON_GT: lambda self, this, to: self.expression(
+                exp.TryCast,
+                this=this,
+                to=to,
+            ),
+        }
+
     class Generator(MySQL.Generator):
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
@@ -88,6 +104,12 @@ class SingleStore(MySQL):
                     inverse_time_mapping=MySQL.INVERSE_TIME_MAPPING,
                     inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
                 ),
+            ),
+            exp.Cast: unsupported_args("format", "action", "default")(
+                lambda self, e: f"{self.sql(e, 'this')} :> {self.sql(e, 'to')}"
+            ),
+            exp.TryCast: unsupported_args("format", "action", "default")(
+                lambda self, e: f"{self.sql(e, 'this')} !:> {self.sql(e, 'to')}"
             ),
         }
 

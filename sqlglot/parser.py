@@ -3820,7 +3820,8 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.USING):
             kwargs["using"] = self._parse_using_identifiers()
         elif (
-            not (outer_apply or cross_apply)
+            not method
+            and not (outer_apply or cross_apply)
             and not isinstance(kwargs["this"], exp.Unnest)
             and not (kind and kind.token_type in (TokenType.CROSS, TokenType.ARRAY))
         ):

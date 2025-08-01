@@ -786,6 +786,7 @@ class TestParser(unittest.TestCase):
         warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
         warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
         warn_over_threshold("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
+        warn_over_threshold("SELECT * FROM a " + ("NATURAL FULL OUTER JOIN x " * 30))
 
     def test_parse_properties(self):
         self.assertEqual(

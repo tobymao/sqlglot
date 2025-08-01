@@ -95,6 +95,11 @@ def _build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
     )
 
 
+def _build_identifier_func(args: t.List) -> exp.IdentifierFunc:
+    """Build IDENTIFIER() function expression."""
+    return exp.IdentifierFunc(this=seq_get(args, 0))
+
+
 def _build_datediff(args: t.List) -> exp.DateDiff:
     return exp.DateDiff(
         this=seq_get(args, 2), expression=seq_get(args, 1), unit=map_date_part(seq_get(args, 0))
@@ -598,6 +603,7 @@ class Snowflake(Dialect):
                 requires_json=True,
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
+            "IDENTIFIER": _build_identifier_func,
             "IFF": exp.If.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
@@ -1553,6 +1559,11 @@ class Snowflake(Dialect):
                     unit=expression.unit,
                 )
             )
+
+        def identifierfunc_sql(self, expression: exp.IdentifierFunc) -> str:
+            """Generate SQL for Snowflake IDENTIFIER() function."""
+            # For Snowflake, always keep as IDENTIFIER() function
+            return self.function_fallback_sql(expression)
 
         def jsonextract_sql(self, expression: exp.JSONExtract):
             this = expression.this

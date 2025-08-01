@@ -6234,6 +6234,20 @@ class Nullif(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class IdentifierFunc(Func):
+    """
+    Snowflake IDENTIFIER() function for dynamic object name references.
+
+    Args:
+        this: The expression that resolves to the object name
+              (string literal, variable, or parameter)
+    """
+
+    arg_types = {"this": True}
+    _sql_names = ["IDENTIFIER"]
+    is_var = True  # Indicates this can be used as an identifier
+
+
 class Initcap(Func):
     arg_types = {"this": True, "expression": False}
 

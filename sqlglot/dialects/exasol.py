@@ -27,6 +27,7 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
     func_name = "HASH_SHA256" if length == "256" else "HASH_SHA512"
     return self.func(func_name, expression.this)
 
+
 def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
     unit = expression.text("unit").upper() or "DAY"
     func_name = self.DATE_DIFF_FUNCTION_BY_UNIT.get(unit)

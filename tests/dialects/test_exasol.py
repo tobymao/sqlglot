@@ -440,7 +440,6 @@ class TestExasol(Validator):
 
         for func_name, (unit, alias) in date_between_test_cases.items():
             with self.subTest(f"Testing {func_name}"):
-
                 exasol_sql = f"SELECT {func_name}(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP()) AS {alias}"
                 write = {
                     "exasol": exasol_sql,

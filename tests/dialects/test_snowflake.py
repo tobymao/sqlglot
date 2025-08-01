@@ -2977,3 +2977,61 @@ FROM SEMANTIC_VIEW(
         )
 
         self.validate_identity("GET(foo, bar)").assert_is(exp.GetExtract)
+
+    def test_identifier_function(self):
+        """Test IDENTIFIER() function parsing and transpilation."""
+        # Test basic IDENTIFIER() literal transpilation to other dialects
+        self.validate_all(
+            "SELECT * FROM IDENTIFIER('users')",
+            write={
+                "": "SELECT * FROM users",  # Default dialect converts IDENTIFIER to identifier
+                "snowflake": "SELECT * FROM IDENTIFIER('users')",  # Snowflake keeps IDENTIFIER function
+                "postgres": "SELECT * FROM users",  # Other dialects convert to identifier
+                "mysql": "SELECT * FROM users",
+                "bigquery": "SELECT * FROM users",
+            },
+        )
+
+        # Test IDENTIFIER() in SELECT clause
+        self.validate_all(
+            "SELECT IDENTIFIER('col_name') FROM my_table",
+            write={
+                "": "SELECT col_name FROM my_table",
+                "snowflake": "SELECT IDENTIFIER('col_name') FROM my_table",
+                "postgres": "SELECT col_name FROM my_table",
+                "mysql": "SELECT col_name FROM my_table",
+            },
+        )
+
+        # Test that variables remain as IDENTIFIER() function calls
+        self.validate_identity("SELECT * FROM IDENTIFIER($table_var)")
+        self.validate_identity("SELECT * FROM IDENTIFIER(:bind_var)")
+
+        # Test complex expressions remain as IDENTIFIER() function calls
+        self.validate_identity("SELECT * FROM IDENTIFIER(CONCAT('prefix_', 'suffix'))")
+
+        # Test DDL context - handled by _parse_id_var, not our FUNCTIONS mapping
+        self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
+        self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
+
+        # Test existing cases - IDENTIFIER('literal') now converts to identifier in non-Snowflake dialects
+        # but stays as IDENTIFIER() in Snowflake dialect
+        self.assertEqual(
+            parse_one(
+                "WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')", read="snowflake"
+            ).sql("snowflake"),
+            "WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')",
+        )
+        self.assertEqual(
+            parse_one(
+                "WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x", read="snowflake"
+            ).sql("snowflake"),
+            "WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x",
+        )
+        # When generating to other dialects, it converts to identifiers
+        self.assertEqual(
+            parse_one(
+                "WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')", read="snowflake"
+            ).sql("postgres"),
+            "WITH x AS (SELECT 1 AS foo) SELECT foo FROM x",
+        )

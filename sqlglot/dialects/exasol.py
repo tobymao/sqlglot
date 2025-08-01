@@ -228,7 +228,6 @@ class Exasol(Dialect):
 
         DATE_DIFF_FUNCTION_BY_UNIT = {
             "DAY": "DAYS_BETWEEN",
-            "MONTH": "ADD_MONTHS",
             "YEAR": "YEARS_BETWEEN",
             "HOUR": "HOURS_BETWEEN",
             "MINUTE": "MINUTES_BETWEEN",

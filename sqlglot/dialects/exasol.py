@@ -27,6 +27,15 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
     func_name = "HASH_SHA256" if length == "256" else "HASH_SHA512"
     return self.func(func_name, expression.this)
 
+def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
+    unit = expression.text("unit").upper() or "DAY"
+    func_name = self.DATE_DIFF_FUNCTION_BY_UNIT.get(unit)
+    if not func_name:
+        self.unsupported(f"'{unit}' is not supported in Exasol.")
+        return self.function_fallback_sql(expression)
+
+    return self.func(func_name, expression.this, expression.expression)
+
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
@@ -114,6 +123,16 @@ class Exasol(Dialect):
             "ADD_MINUTES": build_date_delta(exp.DateAdd, default_unit="MINUTE"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_seconds.htm
             "ADD_SECONDS": build_date_delta(exp.DateAdd, default_unit="SECOND"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/days_between.htm
+            "DAYS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="DAY"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/years_between.htm
+            "YEARS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="YEAR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hours_between.htm
+            "HOURS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="HOUR"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/minutes_between.htm
+            "MINUTES_BETWEEN": build_date_delta(exp.DateDiff, default_unit="MINUTE"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/seconds_between.htm
+            "SECONDS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="SECOND"),
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -206,6 +225,15 @@ class Exasol(Dialect):
             "SECOND": "ADD_SECONDS",
         }
 
+        DATE_DIFF_FUNCTION_BY_UNIT = {
+            "DAY": "DAYS_BETWEEN",
+            "MONTH": "ADD_MONTHS",
+            "YEAR": "YEARS_BETWEEN",
+            "HOUR": "HOURS_BETWEEN",
+            "MINUTE": "MINUTES_BETWEEN",
+            "SECOND": "SECONDS_BETWEEN",
+        }
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
             # and does not allow specifying a different custom precision
@@ -230,8 +258,8 @@ class Exasol(Dialect):
             exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
-            exp.All: rename_func("EVERY"),
+            exp.DateDiff: _date_diff_sql,
+            exp.TsOrDsDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE

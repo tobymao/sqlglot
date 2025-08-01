@@ -430,6 +430,33 @@ class TestExasol(Validator):
                     write=write,
                 )
 
+        date_between_test_cases = {
+            "DAYS_BETWEEN": ("DAY", "days_between"),
+            "YEARS_BETWEEN": ("YEAR", "years_between"),
+            "HOURS_BETWEEN": ("HOUR", "hours_between"),
+            "MINUTES_BETWEEN": ("MINUTE", "minutes_between"),
+            "SECONDS_BETWEEN": ("SECOND", "seconds_between"),
+        }
+
+        for func_name, (unit, alias) in date_between_test_cases.items():
+            with self.subTest(f"Testing {func_name}"):
+
+                exasol_sql = f"SELECT {func_name}(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP()) AS {alias}"
+                write = {
+                    "exasol": exasol_sql,
+                    "bigquery": f"SELECT DATE_DIFF(CAST('2000-02-28 00:00:00' AS DATETIME), CURRENT_TIMESTAMP(), {unit}) AS {alias}",
+                    "duckdb": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
+                    "presto": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
+                    "redshift": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
+                    "snowflake": f"SELECT DATEDIFF({unit}, CURRENT_TIMESTAMP(), CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
+                    "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2)) AS {alias}",
+                }
+
+                self.validate_all(
+                    f"SELECT {func_name}(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP) AS {alias}",
+                    write=write,
+                )
+
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
 

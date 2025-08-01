@@ -1,6 +1,30 @@
 Changelog
 =========
 
+## [v27.6.0] - 2025-08-01
+### :boom: BREAKING CHANGES
+- due to [`6b691b3`](https://github.com/tobymao/sqlglot/commit/6b691b33c3528c0377bd8822a3df90de869c6cb1) - Parse and transpile GET(...) extract function *(PR [#5500](https://github.com/tobymao/sqlglot/pull/5500) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Parse and transpile GET(...) extract function (#5500)
+
+- due to [`964a275`](https://github.com/tobymao/sqlglot/commit/964a275b42314380de3b301ada9f9756602729f7) - Make `UNION` column qualification recursive *(PR [#5508](https://github.com/tobymao/sqlglot/pull/5508) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Make `UNION` column qualification recursive (#5508)
+
+
+### :sparkles: New Features
+- [`6b691b3`](https://github.com/tobymao/sqlglot/commit/6b691b33c3528c0377bd8822a3df90de869c6cb1) - **snowflake**: Parse and transpile GET(...) extract function *(PR [#5500](https://github.com/tobymao/sqlglot/pull/5500) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#5495](https://github.com/tobymao/sqlglot/issues/5495) opened by [@kyle-cheung](https://github.com/kyle-cheung)*
+- [`a2a2f0f`](https://github.com/tobymao/sqlglot/commit/a2a2f0fe910228651c5c39beebcc02172a0b7e94) - **exasol**: Add support for IF, NULLIFZERO, and ZEROIFNULL functions *(PR [#5502](https://github.com/tobymao/sqlglot/pull/5502) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`2d8ce58`](https://github.com/tobymao/sqlglot/commit/2d8ce587c75f21b188ec4c201936eedac3b051e8) - **singlestore**: Added cast operator *(PR [#5504](https://github.com/tobymao/sqlglot/pull/5504) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`6256348`](https://github.com/tobymao/sqlglot/commit/6256348a28b72ae9052d4244736846af209410b0) - **exasol**: add support for ADD_DAYS function in exasol dialect *(PR [#5507](https://github.com/tobymao/sqlglot/pull/5507) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`2f40fc5`](https://github.com/tobymao/sqlglot/commit/2f40fc578a840c9276a4c3b91351fb8d95c837fc) - add more pseudocols to bq which are not expanded by star *(PR [#5509](https://github.com/tobymao/sqlglot/pull/5509) by [@z3z1ma](https://github.com/z3z1ma))*
+
+### :bug: Bug Fixes
+- [`3b52061`](https://github.com/tobymao/sqlglot/commit/3b520611c5a894ddea935d13aadd27c791a8a755) - **exasol**: fix TokenType.TEXT mapping in exasol dialect *(PR [#5506](https://github.com/tobymao/sqlglot/pull/5506) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`964a275`](https://github.com/tobymao/sqlglot/commit/964a275b42314380de3b301ada9f9756602729f7) - Make `UNION` column qualification recursive *(PR [#5508](https://github.com/tobymao/sqlglot/pull/5508) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v27.5.1] - 2025-07-30
 ### :bug: Bug Fixes
 - [`caf71d6`](https://github.com/tobymao/sqlglot/commit/caf71d687c0048d2346fddaee58b519e4f2e7945) - `between` builder should not set `symmetric` by default *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -8546,3 +8570,4 @@ Changelog
 [v27.4.1]: https://github.com/tobymao/sqlglot/compare/v27.4.0...v27.4.1
 [v27.5.0]: https://github.com/tobymao/sqlglot/compare/v27.4.1...v27.5.0
 [v27.5.1]: https://github.com/tobymao/sqlglot/compare/v27.5.0...v27.5.1
+[v27.6.0]: https://github.com/tobymao/sqlglot/compare/v27.5.1...v27.6.0

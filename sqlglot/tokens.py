@@ -369,6 +369,7 @@ class TokenType(AutoName):
     PSEUDO_TYPE = auto()
     PUT = auto()
     QUALIFY = auto()
+    QUERY_BAND = auto()
     QUOTE = auto()
     RANGE = auto()
     RECURSIVE = auto()

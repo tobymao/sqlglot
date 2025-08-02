@@ -334,7 +334,7 @@ class TestTeradata(Validator):
         )
 
     def test_query_band(self):
-        expr = self.validate_identity("SET QUERY_BAND = 'app=myapp;' FOR SESSION")
+        self.validate_identity("SET QUERY_BAND = 'app=myapp;' FOR SESSION")
         self.validate_identity("SET QUERY_BAND = 'app=myapp;user=john;' FOR TRANSACTION")
         self.validate_identity("SET QUERY_BAND = 'priority=high;' UPDATE FOR SESSION")
         self.validate_identity("SET QUERY_BAND = 'workload=batch;' UPDATE FOR TRANSACTION")

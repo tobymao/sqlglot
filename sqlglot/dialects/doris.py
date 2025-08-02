@@ -693,5 +693,5 @@ class Doris(MySQL):
             while current:
                 if isinstance(current, (exp.Update, exp.Delete)):
                     return super().table_sql(expression, sep=" ")
-                current = getattr(current, 'parent', None)
+                current = getattr(current, "parent", None)
             return super().table_sql(expression, sep=sep)

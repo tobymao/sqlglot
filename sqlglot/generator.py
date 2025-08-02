@@ -2405,6 +2405,22 @@ class Generator(metaclass=_Generator):
         tag = " TAG" if expression.args.get("tag") else ""
         return f"{'UNSET' if expression.args.get('unset') else 'SET'}{tag}{expressions}"
 
+    def queryband_sql(self, expression: exp.QueryBand) -> str:
+        # Default implementation - may be overridden by dialects
+        query_band_string = self.sql(expression, "this")
+        scope = expression.args.get("scope")
+        update = expression.args.get("update")
+        
+        parts = ["QUERY_BAND", "=", query_band_string]
+        
+        if update:
+            parts.append("UPDATE")
+            
+        if scope:
+            parts.extend(["FOR", scope])
+            
+        return " ".join(parts)
+
     def pragma_sql(self, expression: exp.Pragma) -> str:
         return f"PRAGMA {self.sql(expression, 'this')}"
 

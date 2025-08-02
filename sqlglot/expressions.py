@@ -1613,6 +1613,14 @@ class SetItem(Expression):
     }
 
 
+class QueryBand(Expression):
+    arg_types = {
+        "this": True,  # The query band string
+        "scope": False,  # SESSION or TRANSACTION
+        "update": False,  # Whether this is an UPDATE operation
+    }
+
+
 class Show(Expression):
     arg_types = {
         "this": True,

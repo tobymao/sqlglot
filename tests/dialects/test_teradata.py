@@ -332,3 +332,15 @@ class TestTeradata(Validator):
                 "teradata": "CAST(TO_CHAR(x, 'Q') AS INT)",
             },
         )
+
+    def test_query_band(self):
+        expr = self.validate_identity("SET QUERY_BAND = 'app=myapp;' FOR SESSION")
+        self.validate_identity("SET QUERY_BAND = 'app=myapp;user=john;' FOR TRANSACTION")
+        self.validate_identity("SET QUERY_BAND = 'priority=high;' UPDATE FOR SESSION")
+        self.validate_identity("SET QUERY_BAND = 'workload=batch;' UPDATE FOR TRANSACTION")
+        self.validate_identity("SET QUERY_BAND = 'org=Finance;report=Fin123;' FOR SESSION")
+        self.validate_identity("SET QUERY_BAND = NONE FOR SESSION")
+        self.validate_identity("SET QUERY_BAND = 'NONE' FOR SESSION")  # quoted NONE should remain quoted
+        self.validate_identity("SET QUERY_BAND = '' FOR SESSION")
+
+

@@ -221,35 +221,35 @@ class Teradata(Dialect):
             # Also supports: SET QUERY_BAND = 'key=value;' UPDATE FOR SESSION|TRANSACTION
             # Also supports: SET QUERY_BAND = NONE FOR SESSION|TRANSACTION
             self._match(TokenType.EQ)
-            
+
             # Handle both string literals and NONE keyword
             is_unquoted_none = False
             if self._match_text_seq("NONE"):
-                query_band_string = exp.Literal.string("NONE")
+                query_band_string: t.Optional[exp.Expression] = exp.Literal.string("NONE")
                 is_unquoted_none = True
             else:
                 query_band_string = self._parse_string()
-            
+
             update = self._match_text_seq("UPDATE")
             self._match_text_seq("FOR")
-            
+
             scope = None
             if self._match_text_seq("SESSION"):
                 scope = "SESSION"
             elif self._match_text_seq("TRANSACTION"):
                 scope = "TRANSACTION"
-            
+
             query_band = self.expression(
                 exp.QueryBand,
                 this=query_band_string,
                 scope=scope,
                 update=update,
             )
-            
+
             # Mark this as unquoted NONE for the generator
             if is_unquoted_none:
                 query_band.set("is_unquoted_none", True)
-            
+
             return query_band
 
         def _parse_index_params(self) -> exp.IndexParameters:
@@ -440,20 +440,20 @@ class Teradata(Dialect):
         def queryband_sql(self, expression: exp.QueryBand) -> str:
             scope = expression.args.get("scope")
             update = expression.args.get("update")
-            
+
             # Special handling for unquoted NONE - output without quotes
             # Only applies to the unquoted NONE keyword, not quoted 'NONE' strings
             if expression.args.get("is_unquoted_none"):
                 query_band_string = "NONE"
             else:
                 query_band_string = self.sql(expression, "this")
-            
+
             parts = ["QUERY_BAND", "=", query_band_string]
-            
+
             if update:
                 parts.append("UPDATE")
-                
+
             if scope:
                 parts.extend(["FOR", scope])
-                
+
             return " ".join(parts)

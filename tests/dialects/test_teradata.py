@@ -51,13 +51,19 @@ class TestTeradata(Validator):
         self.validate_identity("LOCKING DATABASE db1 FOR READ SELECT * FROM table1")
         self.validate_identity("LOCKING ROW FOR EXCLUSIVE SELECT * FROM table1")
         self.validate_identity("LOCKING VIEW view1 FOR ACCESS SELECT * FROM view1")
-        
+
         # Test with more complex SELECT statements
-        self.validate_identity("LOCKING ROW FOR ACCESS SELECT col1, col2 FROM table1 WHERE col1 > 10")
-        self.validate_identity("LOCKING TABLE table1 FOR ACCESS SELECT * FROM table1 JOIN table2 ON table1.id = table2.id")
-        
+        self.validate_identity(
+            "LOCKING ROW FOR ACCESS SELECT col1, col2 FROM table1 WHERE col1 > 10"
+        )
+        self.validate_identity(
+            "LOCKING TABLE table1 FOR ACCESS SELECT * FROM table1 JOIN table2 ON table1.id = table2.id"
+        )
+
         # Test that it still works in CREATE VIEW context (regression test)
-        self.validate_identity("CREATE VIEW view_b AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b")
+        self.validate_identity(
+            "CREATE VIEW view_b AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b"
+        )
 
     def test_update(self):
         self.validate_all(

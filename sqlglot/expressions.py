@@ -1458,6 +1458,20 @@ class DDL(Expression):
         return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
+class LockingStatement(Expression):
+    """
+    A Teradata LOCKING statement that wraps a query with locking specifications.
+
+    Example:
+        LOCKING TABLE database.table FOR ACCESS SELECT * FROM database.table
+    """
+
+    arg_types = {
+        "this": True,  # LockingProperty containing all locking details
+        "expression": True,  # the wrapped query (SELECT, etc.)
+    }
+
+
 class DML(Expression):
     def returning(
         self,

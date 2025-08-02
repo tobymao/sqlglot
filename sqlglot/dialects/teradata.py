@@ -90,6 +90,7 @@ class Teradata(Dialect):
             "HELP": TokenType.COMMAND,
             "INS": TokenType.INSERT,
             "LE": TokenType.LTE,
+            "LOCKING": TokenType.LOCK,
             "LT": TokenType.LT,
             "MINUS": TokenType.EXCEPT,
             "MOD": TokenType.MOD,
@@ -155,7 +156,28 @@ class Teradata(Dialect):
                 exp.Use, this=self._parse_table(schema=False)
             ),
             TokenType.REPLACE: lambda self: self._parse_create(),
+            TokenType.LOCK: lambda self: self._parse_locking_statement(),
         }
+
+        def _parse_locking_statement(self) -> t.Optional[exp.Expression]:
+            """Parse standalone LOCKING statement"""
+            # Parse the locking details (LOCKING token already consumed by STATEMENT_PARSERS)
+            locking_property = self._parse_locking()
+            select_expr = self._parse_select()
+
+            if not select_expr or not isinstance(select_expr, exp.Select):
+                self.raise_error("Expected SELECT statement after LOCKING clause")
+                return None
+
+            # Add the locking property to the select statement
+            properties = select_expr.args.get("properties")
+            if not properties:
+                properties = exp.Properties(expressions=[locking_property])
+                select_expr.set("properties", properties)
+            else:
+                properties.expressions.append(locking_property)
+
+            return select_expr
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
@@ -280,6 +302,7 @@ class Teradata(Dialect):
             exp.OnCommitProperty: exp.Properties.Location.POST_INDEX,
             exp.PartitionedByProperty: exp.Properties.Location.POST_EXPRESSION,
             exp.StabilityProperty: exp.Properties.Location.POST_CREATE,
+            exp.LockingProperty: exp.Properties.Location.POST_EXPRESSION,
         }
 
         TRANSFORMS = {
@@ -357,6 +380,86 @@ class Teradata(Dialect):
             each_sql = f" EACH {each_sql}" if each_sql else ""
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
+
+        def select_sql(self, expression: exp.Select) -> str:
+            """Override to handle LOCKING clause as prefix"""
+            locking_prefix = ""
+
+            # Check if there's a LockingProperty in the properties and extract it
+            properties = expression.args.get("properties")
+            if properties and hasattr(properties, "expressions"):
+                locking_props = [
+                    prop for prop in properties.expressions if isinstance(prop, exp.LockingProperty)
+                ]
+                if locking_props:
+                    # Generate LOCKING prefix
+                    locking_prefix = f"{self.lockingproperty_sql(locking_props[0])} "
+                    # Create new properties without LockingProperty to avoid double rendering
+                    non_locking_props = [
+                        prop
+                        for prop in properties.expressions
+                        if not isinstance(prop, exp.LockingProperty)
+                    ]
+                    if non_locking_props:
+                        expression.set("properties", exp.Properties(expressions=non_locking_props))
+                    else:
+                        expression.set("properties", None)
+
+            # Generate the normal SELECT SQL
+            select_sql = super().select_sql(expression)
+
+            # Prefix with LOCKING if present
+            return f"{locking_prefix}{select_sql}" if locking_prefix else select_sql
+
+        def create_sql(self, expression: exp.Create) -> str:
+            """Override to handle CREATE VIEW with LOCKING prefix"""
+            # Check if this is a CREATE VIEW with LOCKING property
+            if (
+                expression.kind
+                and expression.kind.upper() == "VIEW"
+                and expression.args.get("properties")
+            ):
+                properties = expression.args.get("properties")
+                locking_props = []
+
+                # Find LOCKING properties
+                if properties and hasattr(properties, "expressions"):
+                    locking_props = [
+                        prop
+                        for prop in properties.expressions
+                        if isinstance(prop, exp.LockingProperty)
+                    ]
+
+                if locking_props:
+                    # Move LOCKING property to the SELECT statement
+                    select_expr = expression.args.get("expression")
+                    if select_expr and isinstance(select_expr, exp.Select):
+                        # Add LOCKING to SELECT properties
+                        select_properties = select_expr.args.get("properties")
+                        if not select_properties:
+                            select_properties = exp.Properties(expressions=locking_props)
+                            select_expr.set("properties", select_properties)
+                        else:
+                            select_properties.expressions.extend(locking_props)
+
+                        # Remove LOCKING from CREATE properties
+                        non_locking_props = (
+                            [
+                                prop
+                                for prop in properties.expressions
+                                if not isinstance(prop, exp.LockingProperty)
+                            ]
+                            if properties and hasattr(properties, "expressions")
+                            else []
+                        )
+                        if non_locking_props:
+                            expression.set(
+                                "properties", exp.Properties(expressions=non_locking_props)
+                            )
+                        else:
+                            expression.set("properties", None)
+
+            return super().create_sql(expression)
 
         def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             kind = self.sql(expression, "kind").upper()

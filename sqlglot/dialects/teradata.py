@@ -110,6 +110,7 @@ class Teradata(Dialect):
     class Parser(parser.Parser):
         TABLESAMPLE_CSV = True
         VALUES_FOLLOWED_BY_PAREN = False
+        OPERATION_MODIFIERS = {"LOCKING"}
 
         CHARSET_TRANSLATORS = {
             "GRAPHIC_TO_KANJISJIS",
@@ -157,6 +158,38 @@ class Teradata(Dialect):
             TokenType.REPLACE: lambda self: self._parse_create(),
         }
 
+        def _parse_locking_statement(self) -> exp.Select:
+            """Parse a standalone LOCKING statement like 'LOCKING ROW FOR ACCESS SELECT ...'"""
+            # Skip the LOCKING token since _parse_locking doesn't expect it
+            self._match_text_seq("LOCKING")
+            locking_property = self._parse_locking()
+            
+            # Parse the SELECT statement that follows
+            select_expr = self._parse_select()
+            
+            if not select_expr or not isinstance(select_expr, exp.Select):
+                self.raise_error("Expected SELECT statement after LOCKING clause")
+            
+            # Add the locking property to the select statement
+            properties = select_expr.args.get("properties")
+            if not properties:
+                properties = exp.Properties(expressions=[locking_property])
+                select_expr.set("properties", properties)
+            else:
+                properties.expressions.append(locking_property)
+            
+            # Mark this as a standalone locking statement
+            select_expr.set("_standalone_locking", True)
+            return select_expr
+
+        def _parse_statement(self) -> t.Optional[exp.Expression]:
+            # Handle standalone LOCKING statements
+            if self._curr and self._curr.text.upper() == "LOCKING":
+                return self._parse_locking_statement()
+            
+            return super()._parse_statement()
+
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
@@ -174,6 +207,7 @@ class Teradata(Dialect):
         EXPONENT = {
             TokenType.DSTAR: exp.Pow,
         }
+
 
         def _parse_translate(self) -> exp.TranslateCharacters:
             this = self._parse_assignment()
@@ -280,6 +314,7 @@ class Teradata(Dialect):
             exp.OnCommitProperty: exp.Properties.Location.POST_INDEX,
             exp.PartitionedByProperty: exp.Properties.Location.POST_EXPRESSION,
             exp.StabilityProperty: exp.Properties.Location.POST_CREATE,
+            exp.LockingProperty: exp.Properties.Location.POST_WITH,
         }
 
         TRANSFORMS = {
@@ -358,6 +393,36 @@ class Teradata(Dialect):
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
 
+        def create_sql(self, expression: exp.Create) -> str:
+            # Handle CREATE VIEW with LOCKING specially
+            if (expression.kind and expression.kind.upper() == "VIEW" and 
+                expression.args.get("properties")):
+                
+                properties = expression.args.get("properties")
+                locking_property = None
+                
+                # Find and extract LOCKING property
+                if properties and hasattr(properties, "expressions"):
+                    for i, prop in enumerate(properties.expressions):
+                        if isinstance(prop, exp.LockingProperty):
+                            locking_property = properties.expressions.pop(i)
+                            break
+                
+                if locking_property:
+                    # Temporarily move the LOCKING to the SELECT within the expression
+                    select_expr = expression.args.get("expression")
+                    if select_expr and isinstance(select_expr, exp.Select):
+                        # Add LOCKING as prefix to the SELECT
+                        select_properties = select_expr.args.get("properties")
+                        if not select_properties:
+                            select_properties = exp.Properties(expressions=[locking_property])
+                            select_expr.set("properties", select_properties)
+                        else:
+                            select_properties.expressions.append(locking_property)
+                        select_expr.set("_standalone_locking", True)
+            
+            return super().create_sql(expression)
+
         def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind == "TABLE" and locations.get(exp.Properties.Location.POST_NAME):
@@ -379,6 +444,36 @@ class Teradata(Dialect):
 
             to_char = exp.func("to_char", expression.expression, exp.Literal.string("Q"))
             return self.sql(exp.cast(to_char, exp.DataType.Type.INT))
+
+        def select_sql(self, expression: exp.Select) -> str:
+            # Check if this SELECT was parsed with a standalone LOCKING clause
+            locking_prefix = ""
+            if expression.args.get("_standalone_locking"):
+                properties = expression.args.get("properties")
+                if properties and hasattr(properties, "expressions"):
+                    for prop in properties.expressions[:]:  # Copy list to avoid modification during iteration
+                        if isinstance(prop, exp.LockingProperty):
+                            locking_prefix = f"{self.lockingproperty_sql(prop)} "
+                            properties.expressions.remove(prop)  # Remove from properties to avoid duplicate rendering
+                            break
+            
+            # Check if this SELECT is part of a CREATE VIEW with LOCKING
+            # In that case, we should also prefix with LOCKING instead of using WITH (...)
+            elif hasattr(self, '_create_view_context') and self._create_view_context:
+                properties = expression.args.get("properties")
+                if properties and hasattr(properties, "expressions"):
+                    for prop in properties.expressions[:]:  # Copy list to avoid modification during iteration
+                        if isinstance(prop, exp.LockingProperty):
+                            locking_prefix = f"{self.lockingproperty_sql(prop)} "
+                            properties.expressions.remove(prop)  # Remove from properties to avoid duplicate rendering
+                            break
+            
+            # Generate the normal SELECT SQL
+            select_sql = super().select_sql(expression)
+            
+            # Prefix with LOCKING if present
+            return f"{locking_prefix}{select_sql}" if locking_prefix else select_sql
+
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier = 0

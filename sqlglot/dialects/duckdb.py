@@ -920,6 +920,8 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
+        PROPERTIES_LOCATION[exp.SequenceProperties] = exp.Properties.Location.POST_EXPRESSION
+        PROPERTIES_LOCATION[exp.Property] = exp.Properties.Location.POST_EXPRESSION
 
         IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
             exp.FirstValue,
@@ -941,6 +943,19 @@ class DuckDB(Dialect):
 
             lambda_sql = super().lambda_sql(expression, arrow_sep=arrow_sep, wrap=wrap)
             return f"{prefix}{lambda_sql}"
+
+        def property_sql(self, expression: exp.Property) -> str:
+            key = expression.this if isinstance(expression.this, str) else expression.this.name
+            value = self.sql(expression, "value")
+
+            # Handle sequence properties with DuckDB syntax
+            if key == "START":
+                return f"START WITH {value}"
+            elif key == "INCREMENT":
+                return f"INCREMENT BY {value}"
+
+            # Fall back to default property handling
+            return super().property_sql(expression)
 
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"

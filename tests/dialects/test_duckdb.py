@@ -293,6 +293,7 @@ class TestDuckDB(Validator):
         self.validate_identity("'red' IN flags").args["field"].assert_is(exp.Column)
         self.validate_identity("'red' IN tbl.flags")
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
+        self.validate_identity("CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
         self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")

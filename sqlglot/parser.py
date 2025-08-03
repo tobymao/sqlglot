@@ -1729,7 +1729,15 @@ class Parser(metaclass=_Parser):
         Returns:
             The target expression.
         """
+        start_token = kwargs.pop("start_token", self._prev)
+        end_token = self._prev
         instance = exp_class(**kwargs)
+        if start_token and end_token:
+            instance.meta["line"] = start_token.line
+            instance.meta["col"] = start_token.col
+            instance.meta["start"] = start_token.start
+            instance.meta["end"] = end_token.end + 1
+            instance.meta["text"] = self.sql[start_token.start : end_token.end + 1]
         instance.add_comments(comments) if comments else self._add_comments(instance)
         return self.validate_expression(instance)
 
@@ -3244,6 +3252,7 @@ class Parser(metaclass=_Parser):
             else None
         )
 
+        start_token = self._curr
         if self._match(TokenType.SELECT):
             comments = self._prev_comments
 
@@ -3279,6 +3288,7 @@ class Parser(metaclass=_Parser):
 
             this = self.expression(
                 exp.Select,
+                start_token=start_token,
                 kind=kind,
                 hint=hint,
                 distinct=distinct,

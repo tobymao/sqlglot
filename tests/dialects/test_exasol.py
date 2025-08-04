@@ -403,56 +403,38 @@ class TestExasol(Validator):
                 "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
             },
         )
-        test_cases = {
-            "ADD_DAYS": ("DAY", "add_days"),
-            "ADD_WEEKS": ("WEEK", "add_weeks"),
-            "ADD_MONTHS": ("MONTH", "add_months"),
-            "ADD_YEARS": ("YEAR", "add_years"),
-            "ADD_HOURS": ("HOUR", "add_hours"),
-            "ADD_MINUTES": ("MINUTE", "add_minutes"),
-            "ADD_SECONDS": ("SECOND", "add_seconds"),
-        }
-
-        for func_name, (unit, alias) in test_cases.items():
-            with self.subTest(f"Testing {func_name}"):
-                write = {
-                    "exasol": f"SELECT {func_name}(CAST('2000-02-28' AS DATE), 1) AS {alias}",
-                    "bigquery": f"SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 {unit}) AS {alias}",
-                    "duckdb": f"SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 {unit} AS {alias}",
-                    "presto": f"SELECT DATE_ADD('{unit}', 1, CAST('2000-02-28' AS DATE)) AS {alias}",
-                    "redshift": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE)) AS {alias}",
-                    "snowflake": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE)) AS {alias}",
-                    "tsql": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE)) AS {alias}",
+        DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
+        for unit in DATE_UNITS:
+            with self.subTest(f"Testing ADD_{unit}S"):
+                write_add = {
+                    "exasol": f"SELECT ADD_{unit}S(CAST('2000-02-28' AS DATE), 1)",
+                    "bigquery": f"SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 {unit})",
+                    "duckdb": f"SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 {unit}",
+                    "presto": f"SELECT DATE_ADD('{unit}', 1, CAST('2000-02-28' AS DATE))",
+                    "redshift": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                    "snowflake": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                    "tsql": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
                 }
 
                 self.validate_all(
-                    f"SELECT {func_name}(DATE '2000-02-28', 1) AS {alias}",
-                    write=write,
+                    f"SELECT ADD_{unit}S(DATE '2000-02-28', 1)",
+                    write=write_add,
                 )
 
-        date_between_test_cases = {
-            "DAYS_BETWEEN": ("DAY", "days_between"),
-            "YEARS_BETWEEN": ("YEAR", "years_between"),
-            "HOURS_BETWEEN": ("HOUR", "hours_between"),
-            "MINUTES_BETWEEN": ("MINUTE", "minutes_between"),
-            "SECONDS_BETWEEN": ("SECOND", "seconds_between"),
-        }
-
-        for func_name, (unit, alias) in date_between_test_cases.items():
-            with self.subTest(f"Testing {func_name}"):
-                write = {
-                    "exasol": f"SELECT {func_name}(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP()) AS {alias}",
-                    "bigquery": f"SELECT DATE_DIFF(CAST('2000-02-28 00:00:00' AS DATETIME), CURRENT_TIMESTAMP(), {unit}) AS {alias}",
-                    "duckdb": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
-                    "presto": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
-                    "redshift": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
-                    "snowflake": f"SELECT DATEDIFF({unit}, CURRENT_TIMESTAMP(), CAST('2000-02-28 00:00:00' AS TIMESTAMP)) AS {alias}",
-                    "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2)) AS {alias}",
+            with self.subTest(f"Testing {unit}S_BETWEEN"):
+                write_between = {
+                    "exasol": f"SELECT {unit}S_BETWEEN(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP())",
+                    "bigquery": f"SELECT DATE_DIFF(CAST('2000-02-28 00:00:00' AS DATETIME), CURRENT_TIMESTAMP(), {unit})",
+                    "duckdb": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                    "presto": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                    "redshift": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                    "snowflake": f"SELECT DATEDIFF({unit}, CURRENT_TIMESTAMP(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                    "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2))",
                 }
 
                 self.validate_all(
-                    f"SELECT {func_name}(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP) AS {alias}",
-                    write=write,
+                    f"SELECT {unit}S_BETWEEN(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP)",
+                    write=write_between,
                 )
 
     def test_number_functions(self):

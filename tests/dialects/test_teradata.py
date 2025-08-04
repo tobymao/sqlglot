@@ -340,6 +340,8 @@ class TestTeradata(Validator):
         self.validate_identity("SET QUERY_BAND = 'workload=batch;' UPDATE FOR TRANSACTION")
         self.validate_identity("SET QUERY_BAND = 'org=Finance;report=Fin123;' FOR SESSION")
         self.validate_identity("SET QUERY_BAND = NONE FOR SESSION")
+        self.validate_identity("SET QUERY_BAND = NONE FOR SESSION VOLATILE")
+        self.validate_identity("SET QUERY_BAND = 'priority=high;' UPDATE FOR SESSION VOLATILE")
         self.validate_identity(
             "SET QUERY_BAND = 'NONE' FOR SESSION"
         )  # quoted NONE should remain quoted

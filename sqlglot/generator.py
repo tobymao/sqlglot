@@ -2407,11 +2407,11 @@ class Generator(metaclass=_Generator):
 
     def queryband_sql(self, expression: exp.QueryBand) -> str:
         this = self.sql(expression, "this")
-        scope = self.sql(expression, "scope")
         update = " UPDATE" if expression.args.get("update") else ""
-        scope_clause = f" FOR {scope}" if scope else ""
+        scope = self.sql(expression, "scope")
+        scope = f" FOR {scope}" if scope else ""
 
-        return f"QUERY_BAND = {this}{update}{scope_clause}"
+        return f"QUERY_BAND = {this}{update}{scope}"
 
     def pragma_sql(self, expression: exp.Pragma) -> str:
         return f"PRAGMA {self.sql(expression, 'this')}"

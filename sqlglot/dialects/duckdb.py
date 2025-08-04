@@ -1251,24 +1251,16 @@ class DuckDB(Dialect):
         def addmonths_sql(self, expression: exp.AddMonths) -> str:
             from sqlglot.optimizer.annotate_types import annotate_types
 
-            this = expression.this
-            this = annotate_types(this, dialect=self.dialect)
-
-            interval = self.sql(exp.Interval(this=expression.expression, unit=exp.var("MONTH")))
+            this = annotate_types(expression.this, dialect=self.dialect)
 
             if this.is_type(*exp.DataType.TEXT_TYPES):
-                func = self.func(
-                    "DATE_ADD",
-                    self.sql(exp.cast(expression=this, to=exp.DataType.Type.TIMESTAMP, copy=False)),
-                    interval,
-                )
-                return self.sql(
-                    exp.cast(expression=func, to=exp.DataType.Type.TIMESTAMP, copy=False)
-                )
+                this = exp.Cast(this=this, to=exp.DataType(this=exp.DataType.Type.TIMESTAMP))
 
-            func = self.func("DATE_ADD", self.sql(this), interval)
+            func = self.func(
+                "DATE_ADD", this, exp.Interval(this=expression.expression, unit=exp.var("MONTH"))
+            )
 
             if this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMPTZ):
-                return self.sql(exp.cast(expression=func, to=this.type, copy=False))
+                return self.sql(exp.Cast(this=func, to=this.type))
 
-            return func
+            return self.sql(func)

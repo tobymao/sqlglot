@@ -30,12 +30,12 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
 
 def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
     unit = expression.text("unit").upper() or "DAY"
-    func_name = self.DATE_DIFF_FUNCTION_BY_UNIT.get(unit)
-    if not func_name:
+
+    if unit not in DATE_UNITS:
         self.unsupported(f"'{unit}' is not supported in Exasol.")
         return self.function_fallback_sql(expression)
 
-    return self.func(func_name, expression.this, expression.expression)
+    return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
@@ -67,6 +67,9 @@ def _build_zeroifnull(args: t.List) -> exp.If:
 def _build_nullifzero(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+
+
+DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
 class Exasol(Dialect):
@@ -110,30 +113,14 @@ class Exasol(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
-            "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit="DAY"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_years.htm
-            "ADD_YEARS": build_date_delta(exp.DateAdd, default_unit="YEAR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_months.htm
-            "ADD_MONTHS": build_date_delta(exp.DateAdd, default_unit="MONTH"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_weeks.htm
-            "ADD_WEEKS": build_date_delta(exp.DateAdd, default_unit="WEEK"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_hour.htm
-            "ADD_HOURS": build_date_delta(exp.DateAdd, default_unit="HOUR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_minutes.htm
-            "ADD_MINUTES": build_date_delta(exp.DateAdd, default_unit="MINUTE"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_seconds.htm
-            "ADD_SECONDS": build_date_delta(exp.DateAdd, default_unit="SECOND"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/days_between.htm
-            "DAYS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="DAY"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/years_between.htm
-            "YEARS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="YEAR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hours_between.htm
-            "HOURS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="HOUR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/minutes_between.htm
-            "MINUTES_BETWEEN": build_date_delta(exp.DateDiff, default_unit="MINUTE"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/seconds_between.htm
-            "SECONDS_BETWEEN": build_date_delta(exp.DateDiff, default_unit="SECOND"),
+            **{
+                f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit)
+                for unit in DATE_UNITS
+            },
+            **{
+                f"{unit}S_BETWEEN": build_date_delta(exp.DateDiff, default_unit=unit)
+                for unit in DATE_UNITS
+            },
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -214,16 +201,6 @@ class Exasol(Dialect):
             exp.DataType.Type.DECIMAL128: "DECIMAL",
             exp.DataType.Type.DECIMAL256: "DECIMAL",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
-        }
-
-        DATE_ADD_FUNCTION_BY_UNIT = {
-            "DAY": "ADD_DAYS",
-            "WEEK": "ADD_WEEKS",
-            "MONTH": "ADD_MONTHS",
-            "YEAR": "ADD_YEARS",
-            "HOUR": "ADD_HOURS",
-            "MINUTE": "ADD_MINUTES",
-            "SECOND": "ADD_SECONDS",
         }
 
         DATE_DIFF_FUNCTION_BY_UNIT = {
@@ -329,9 +306,8 @@ class Exasol(Dialect):
 
         def dateadd_sql(self, expression: exp.DateAdd) -> str:
             unit = expression.text("unit").upper() or "DAY"
-            func_name = self.DATE_ADD_FUNCTION_BY_UNIT.get(unit)
-            if not func_name:
+            if unit not in DATE_UNITS:
                 self.unsupported(f"'{unit}' is not supported in Exasol.")
                 return self.function_fallback_sql(expression)
 
-            return self.func(func_name, expression.this, expression.expression)
+            return self.func(f"ADD_{unit}S", expression.this, expression.expression)

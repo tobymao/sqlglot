@@ -3,11 +3,9 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-
-from sqlglot.expressions import DATA_TYPE
 from sqlglot.dialects.dialect import (
-    Dialect,
     JSON_EXTRACT_TYPE,
+    Dialect,
     NormalizationStrategy,
     Version,
     approx_count_distinct_sql,
@@ -15,35 +13,36 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     build_default_decimal_type,
+    build_formatted_time,
+    build_regexp_extract,
     count_if_to_sum,
     date_trunc_to_time,
     datestrtodate_sql,
-    no_datetime_sql,
     encode_decode_sql,
-    build_formatted_time,
+    explode_to_unnest_sql,
+    groupconcat_sql,
     inline_array_unless_query,
     no_comment_column_constraint_sql,
+    no_datetime_sql,
+    no_make_interval_sql,
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
-    rename_func,
     remove_from_array_using_filter,
-    strposition_sql,
+    rename_func,
+    sha256_sql,
     str_to_time_sql,
+    strposition_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
-    unit_to_var,
     unit_to_str,
-    sha256_sql,
-    build_regexp_extract,
-    explode_to_unnest_sql,
-    no_make_interval_sql,
-    groupconcat_sql,
+    unit_to_var,
 )
+from sqlglot.expressions import DATA_TYPE
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
+from sqlglot.tokens import TokenType
 
 DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
@@ -944,45 +943,38 @@ class DuckDB(Dialect):
             return f"{prefix}{lambda_sql}"
 
         def create_sql(self, expression: exp.Create) -> str:
-            # Handle CREATE SEQUENCE specially to process properties
             if expression.kind == "SEQUENCE":
-                # For sequences, we need to handle generic Property objects
+                # process CREATE SEQUENCE properties
+                sequence_name = self.sql(expression, 'this')
                 properties = expression.args.get("properties")
-                if properties:
-                    # Process sequence properties manually
-                    sequence_props = []
-                    for prop in properties.expressions:
-                        if isinstance(prop, exp.Property):
-                            key = prop.this if isinstance(prop.this, str) else prop.this.name
-                            value = self.sql(prop, "value")
-                            if key == "START":
-                                sequence_props.append(f"START WITH {value}")
-                            elif key == "INCREMENT":
-                                sequence_props.append(f"INCREMENT BY {value}")
-                            elif key == "MINVALUE":
-                                sequence_props.append(f"MINVALUE {value}")
-                            elif key == "MAXVALUE":
-                                sequence_props.append(f"MAXVALUE {value}")
-                            elif key == "CACHE":
-                                sequence_props.append(f"CACHE {value}")
-                            elif key == "CYCLE":
-                                sequence_props.append("CYCLE" if value else "")
-                            elif key == "OWNED":
-                                if value and value != "NONE":
-                                    sequence_props.append(f"OWNED BY {value}")
-                        elif isinstance(prop, exp.SequenceProperties):
-                            # Handle proper SequenceProperties objects
-                            sequence_props.append(self.sql(prop))
 
-                    # Create a new CREATE expression with processed properties
-                    if sequence_props:
-                        return f"CREATE SEQUENCE {self.sql(expression, 'this')} {' '.join(filter(None, sequence_props))}"
-                    else:
-                        return f"CREATE SEQUENCE {self.sql(expression, 'this')}"
-                else:
-                    return f"CREATE SEQUENCE {self.sql(expression, 'this')}"
+                if not properties:
+                    return f"CREATE SEQUENCE {sequence_name}"
 
-            # Fall back to default create handling for non-sequence contexts
+                sequence_props = []
+                for prop in properties.expressions:
+                    if isinstance(prop, exp.SequenceProperties):
+                        sequence_props.append(self.sql(prop))
+                    elif isinstance(prop, exp.Property):
+                        key = prop.this if isinstance(prop.this, str) else prop.this.name
+                        value = self.sql(prop, "value")
+
+                        if key == "START":
+                            sequence_props.append(f"START WITH {value}")
+                        elif key == "INCREMENT":
+                            sequence_props.append(f"INCREMENT BY {value}")
+                        elif key == "MINVALUE":
+                            sequence_props.append(f"MINVALUE {value}")
+                        elif key == "MAXVALUE":
+                            sequence_props.append(f"MAXVALUE {value}")
+                        elif key == "CYCLE":
+                            if value:
+                                sequence_props.append("CYCLE")
+
+                props_sql = ' '.join(filter(None, sequence_props))
+                return f"CREATE SEQUENCE {sequence_name} {props_sql}".rstrip()
+
+            # Fall back to default create handling for non-sequence creates
             return super().create_sql(expression)
 
         def show_sql(self, expression: exp.Show) -> str:

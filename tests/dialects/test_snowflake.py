@@ -1240,6 +1240,27 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE foo ADD col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE IF EXISTS foo ADD IF NOT EXISTS col1 INT")
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31', 1)",
+            write={
+                "duckdb": "SELECT DATE_ADD(CAST('2023-01-31' AS TIMESTAMP), INTERVAL 1 MONTH)",
+                "snowflake": "SELECT ADD_MONTHS('2023-01-31', 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31'::date, 1)",
+            write={
+                "duckdb": "SELECT CAST(DATE_ADD(CAST('2023-01-31' AS DATE), INTERVAL 1 MONTH) AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS DATE), 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31'::timestamptz, 1)",
+            write={
+                "duckdb": "SELECT CAST(DATE_ADD(CAST('2023-01-31' AS TIMESTAMPTZ), INTERVAL 1 MONTH) AS TIMESTAMPTZ)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

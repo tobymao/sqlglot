@@ -669,14 +669,6 @@ class DuckDB(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.AddMonths: lambda self, e: _date_delta_sql(
-                self,
-                exp.DateAdd(
-                    this=e.this,
-                    expression=e.expression,
-                    unit=exp.var("MONTH"),
-                ),
-            ),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
@@ -1255,3 +1247,28 @@ class DuckDB(Dialect):
                 return self.sql(exp.Subquery(this=exp.Select(expressions=[posexplode_sql])))
 
             return posexplode_sql
+
+        def addmonths_sql(self, expression: exp.AddMonths) -> str:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            this = expression.this
+            this = annotate_types(this, dialect=self.dialect)
+
+            interval = self.sql(exp.Interval(this=expression.expression, unit=exp.var("MONTH")))
+
+            if this.is_type(*exp.DataType.TEXT_TYPES):
+                func = self.func(
+                    "DATE_ADD",
+                    self.sql(exp.cast(expression=this, to=exp.DataType.Type.TIMESTAMP, copy=False)),
+                    interval,
+                )
+                return self.sql(
+                    exp.cast(expression=func, to=exp.DataType.Type.TIMESTAMP, copy=False)
+                )
+
+            func = self.func("DATE_ADD", self.sql(this), interval)
+
+            if this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMPTZ):
+                return self.sql(exp.cast(expression=func, to=this.type, copy=False))
+
+            return func

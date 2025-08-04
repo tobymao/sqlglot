@@ -1243,15 +1243,22 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT ADD_MONTHS('2023-01-31', 1)",
             write={
-                "duckdb": "SELECT CAST('2023-01-31' AS DATE) + INTERVAL 1 MONTH",
+                "duckdb": "SELECT CAST(CAST('2023-01-31' AS TIMESTAMP) + INTERVAL '1' MONTH AS TIMESTAMP)",
                 "snowflake": "SELECT ADD_MONTHS('2023-01-31', 1)",
             },
         )
         self.validate_all(
-            "SELECT ADD_MONTHS('2023-01-31'::timestamp, 1)",
+            "SELECT ADD_MONTHS('2023-01-31'::date, 1)",
             write={
-                "duckdb": "SELECT CAST('2023-01-31' AS TIMESTAMP) + INTERVAL 1 MONTH",
-                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMP), 1)",
+                "duckdb": "SELECT CAST(CAST('2023-01-31' AS DATE) + INTERVAL '1' MONTH AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS DATE), 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31'::timestamptz, 1)",
+            write={
+                "duckdb": "SELECT CAST(CAST('2023-01-31' AS TIMESTAMPTZ) + INTERVAL '1' MONTH AS TIMESTAMPTZ)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
             },
         )
 

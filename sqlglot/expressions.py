@@ -1613,6 +1613,10 @@ class SetItem(Expression):
     }
 
 
+class QueryBand(Expression):
+    arg_types = {"this": True, "scope": False, "update": False}
+
+
 class Show(Expression):
     arg_types = {
         "this": True,

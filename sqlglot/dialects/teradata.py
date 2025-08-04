@@ -157,6 +157,11 @@ class Teradata(Dialect):
             TokenType.REPLACE: lambda self: self._parse_create(),
         }
 
+        SET_PARSERS = {
+            **parser.Parser.SET_PARSERS,
+            "QUERY_BAND": lambda self: self._parse_query_band(),
+        }
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
@@ -209,6 +214,36 @@ class Teradata(Dialect):
             each = self._match_text_seq("EACH") and self._parse_assignment()
 
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
+
+        def _parse_query_band(self) -> exp.QueryBand:
+            # Parse: SET QUERY_BAND = 'key=value;key2=value2;' FOR SESSION|TRANSACTION
+            # Also supports: SET QUERY_BAND = 'key=value;' UPDATE FOR SESSION|TRANSACTION
+            # Also supports: SET QUERY_BAND = NONE FOR SESSION|TRANSACTION
+            self._match(TokenType.EQ)
+
+            # Handle both string literals and NONE keyword
+            if self._match_text_seq("NONE"):
+                query_band_string: t.Optional[exp.Expression] = exp.Var(this="NONE")
+            else:
+                query_band_string = self._parse_string()
+
+            update = self._match_text_seq("UPDATE")
+            self._match_text_seq("FOR")
+
+            # Handle scope - can be SESSION, TRANSACTION, VOLATILE, or SESSION VOLATILE
+            if self._match_text_seq("SESSION", "VOLATILE"):
+                scope = "SESSION VOLATILE"
+            elif self._match_texts(("SESSION", "TRANSACTION")):
+                scope = self._prev.text.upper()
+            else:
+                scope = None
+
+            return self.expression(
+                exp.QueryBand,
+                this=query_band_string,
+                scope=scope,
+                update=update,
+            )
 
         def _parse_index_params(self) -> exp.IndexParameters:
             this = super()._parse_index_params()

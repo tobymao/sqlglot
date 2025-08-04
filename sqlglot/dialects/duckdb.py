@@ -669,6 +669,14 @@ class DuckDB(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.AddMonths: lambda self, e: _date_delta_sql(
+                self,
+                exp.DateAdd(
+                    this=e.this,
+                    expression=e.expression,
+                    unit=exp.var("MONTH"),
+                ),
+            ),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),

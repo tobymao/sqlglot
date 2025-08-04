@@ -203,14 +203,6 @@ class Exasol(Dialect):
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
-        DATE_DIFF_FUNCTION_BY_UNIT = {
-            "DAY": "DAYS_BETWEEN",
-            "YEAR": "YEARS_BETWEEN",
-            "HOUR": "HOURS_BETWEEN",
-            "MINUTE": "MINUTES_BETWEEN",
-            "SECOND": "SECONDS_BETWEEN",
-        }
-
         def datatype_sql(self, expression: exp.DataType) -> str:
             # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
             # and does not allow specifying a different custom precision

@@ -28,6 +28,16 @@ def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
     return self.func(func_name, expression.this)
 
 
+def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
+    unit = expression.text("unit").upper() or "DAY"
+
+    if unit not in DATE_UNITS:
+        self.unsupported(f"'{unit}' is not supported in Exasol.")
+        return self.function_fallback_sql(expression)
+
+    return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
+
+
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
 def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
@@ -57,6 +67,9 @@ def _build_zeroifnull(args: t.List) -> exp.If:
 def _build_nullifzero(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+
+
+DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
 class Exasol(Dialect):
@@ -100,20 +113,14 @@ class Exasol(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_days.htm
-            "ADD_DAYS": build_date_delta(exp.DateAdd, default_unit="DAY"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_years.htm
-            "ADD_YEARS": build_date_delta(exp.DateAdd, default_unit="YEAR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_months.htm
-            "ADD_MONTHS": build_date_delta(exp.DateAdd, default_unit="MONTH"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_weeks.htm
-            "ADD_WEEKS": build_date_delta(exp.DateAdd, default_unit="WEEK"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_hour.htm
-            "ADD_HOURS": build_date_delta(exp.DateAdd, default_unit="HOUR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_minutes.htm
-            "ADD_MINUTES": build_date_delta(exp.DateAdd, default_unit="MINUTE"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/add_seconds.htm
-            "ADD_SECONDS": build_date_delta(exp.DateAdd, default_unit="SECOND"),
+            **{
+                f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit)
+                for unit in DATE_UNITS
+            },
+            **{
+                f"{unit}S_BETWEEN": build_date_delta(exp.DateDiff, default_unit=unit)
+                for unit in DATE_UNITS
+            },
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -196,16 +203,6 @@ class Exasol(Dialect):
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
-        DATE_ADD_FUNCTION_BY_UNIT = {
-            "DAY": "ADD_DAYS",
-            "WEEK": "ADD_WEEKS",
-            "MONTH": "ADD_MONTHS",
-            "YEAR": "ADD_YEARS",
-            "HOUR": "ADD_HOURS",
-            "MINUTE": "ADD_MINUTES",
-            "SECOND": "ADD_SECONDS",
-        }
-
         def datatype_sql(self, expression: exp.DataType) -> str:
             # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
             # and does not allow specifying a different custom precision
@@ -230,8 +227,8 @@ class Exasol(Dialect):
             exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
-            exp.All: rename_func("EVERY"),
+            exp.DateDiff: _date_diff_sql,
+            exp.TsOrDsDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
@@ -301,9 +298,8 @@ class Exasol(Dialect):
 
         def dateadd_sql(self, expression: exp.DateAdd) -> str:
             unit = expression.text("unit").upper() or "DAY"
-            func_name = self.DATE_ADD_FUNCTION_BY_UNIT.get(unit)
-            if not func_name:
+            if unit not in DATE_UNITS:
                 self.unsupported(f"'{unit}' is not supported in Exasol.")
                 return self.function_fallback_sql(expression)
 
-            return self.func(func_name, expression.this, expression.expression)
+            return self.func(f"ADD_{unit}S", expression.this, expression.expression)

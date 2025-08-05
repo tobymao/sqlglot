@@ -90,6 +90,7 @@ class Teradata(Dialect):
             "HELP": TokenType.COMMAND,
             "INS": TokenType.INSERT,
             "LE": TokenType.LTE,
+            "LOCKING": TokenType.LOCK,
             "LT": TokenType.LT,
             "MINUS": TokenType.EXCEPT,
             "MOD": TokenType.MOD,
@@ -155,7 +156,22 @@ class Teradata(Dialect):
                 exp.Use, this=self._parse_table(schema=False)
             ),
             TokenType.REPLACE: lambda self: self._parse_create(),
+            TokenType.LOCK: lambda self: self._parse_locking_statement(),
         }
+
+        def _parse_locking_statement(self) -> exp.LockingStatement:
+            # Reuse exp.LockingProperty parsing for the lock kind, type etc
+            locking_property = self._parse_locking()
+            wrapped_query = self._parse_select()
+
+            if not wrapped_query:
+                self.raise_error("Expected SELECT statement after LOCKING clause")
+
+            return self.expression(
+                exp.LockingStatement,
+                this=locking_property,
+                expression=wrapped_query,
+            )
 
         SET_PARSERS = {
             **parser.Parser.SET_PARSERS,
@@ -392,6 +408,13 @@ class Teradata(Dialect):
             each_sql = f" EACH {each_sql}" if each_sql else ""
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
+
+        def lockingstatement_sql(self, expression: exp.LockingStatement) -> str:
+            """Generate SQL for LOCKING statement"""
+            locking_clause = self.sql(expression, "this")
+            query_sql = self.sql(expression, "expression")
+
+            return f"{locking_clause} {query_sql}"
 
         def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             kind = self.sql(expression, "kind").upper()

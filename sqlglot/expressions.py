@@ -1458,6 +1458,10 @@ class DDL(Expression):
         return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
+# https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/Statement-Syntax/LOCKING-Request-Modifier/LOCKING-Request-Modifier-Syntax
+class LockingStatement(Expression):
+    arg_types = {"this": True, "expression": True}
+
 class DML(Expression):
     def returning(
         self,

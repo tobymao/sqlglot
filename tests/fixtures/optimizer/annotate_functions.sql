@@ -91,6 +91,9 @@ INT;
 UNICODE('bcd');
 INT;
 
+LAST_DAY(tbl.timestamp_col);
+DATE;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

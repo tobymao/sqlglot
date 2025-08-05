@@ -674,6 +674,7 @@ class Dialect(metaclass=_Dialect):
             exp.DateFromParts,
             exp.DateStrToDate,
             exp.DiToDate,
+            exp.LastDay,
             exp.StrToDate,
             exp.TimeStrToDate,
             exp.TsOrDsToDate,

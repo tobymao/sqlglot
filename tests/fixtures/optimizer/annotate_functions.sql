@@ -646,6 +646,10 @@ ARRAY<STRING>;
 JSON_TYPE(JSON '1');
 STRING;
 
+# dialect: bigquery
+GENERATE_TIMESTAMP_ARRAY('2016-10-05', '2016-10-07', INTERVAL '1' DAY);
+ARRAY<TIMESTAMP>;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

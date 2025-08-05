@@ -5956,6 +5956,10 @@ class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
+class DateFromUnixDate(Func):
+    pass
+
+
 class DayOfWeek(Func):
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 

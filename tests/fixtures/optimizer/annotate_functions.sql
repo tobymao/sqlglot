@@ -650,6 +650,10 @@ STRING;
 GENERATE_TIMESTAMP_ARRAY('2016-10-05', '2016-10-07', INTERVAL '1' DAY);
 ARRAY<TIMESTAMP>;
 
+# dialect: bigquery
+TIME_TRUNC(TIME "15:30:00", HOUR);
+TIME;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -687,9 +687,6 @@ class Doris(MySQL):
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""
             # Check if this table is part of an UPDATE or DELETE statement or their clauses
-            current = expression.parent
-            while current:
-                if isinstance(current, (exp.Update, exp.Delete)):
-                    return super().table_sql(expression, sep=" ")
-                current = getattr(current, "parent", None)
+            if expression.find_ancestor(exp.Update, exp.Delete):
+                return super().table_sql(expression, sep=" ")
             return super().table_sql(expression, sep=sep)

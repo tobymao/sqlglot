@@ -504,6 +504,8 @@ class BigQuery(Dialect):
         exp.TimestampFromParts: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.DATETIME
         ),
+        exp.TimeFromParts: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
+        exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }

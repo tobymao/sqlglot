@@ -159,17 +159,14 @@ class Teradata(Dialect):
             TokenType.LOCK: lambda self: self._parse_locking_statement(),
         }
 
-        def _parse_locking_statement(self) -> t.Optional[exp.Expression]:
-            """Parse standalone LOCKING statement"""
-            # Parse the locking details (LOCKING token already consumed by STATEMENT_PARSERS)
+        def _parse_locking_statement(self) -> exp.LockingStatement:
+            # Reuse exp.LockingProperty parsing for the lock kind, type etc
             locking_property = self._parse_locking()
             wrapped_query = self._parse_select()
 
             if not wrapped_query:
                 self.raise_error("Expected SELECT statement after LOCKING clause")
-                return None
 
-            # Create a LockingStatement that wraps the query with the locking details
             return self.expression(
                 exp.LockingStatement,
                 this=locking_property,

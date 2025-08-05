@@ -5141,6 +5141,6 @@ class Generator(metaclass=_Generator):
             exp.DateAdd(
                 this=exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
                 expression=expression.this,
-                uni=exp.var("DAY"),
+                unit=exp.var("DAY"),
             )
         )

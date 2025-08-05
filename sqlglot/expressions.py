@@ -1462,6 +1462,7 @@ class DDL(Expression):
 class LockingStatement(Expression):
     arg_types = {"this": True, "expression": True}
 
+
 class DML(Expression):
     def returning(
         self,

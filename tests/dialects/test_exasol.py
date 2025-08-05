@@ -403,38 +403,36 @@ class TestExasol(Validator):
                 "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
             },
         )
-        DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
+
+        from sqlglot.dialects.exasol import DATE_UNITS
+
         for unit in DATE_UNITS:
             with self.subTest(f"Testing ADD_{unit}S"):
-                write_add = {
-                    "exasol": f"SELECT ADD_{unit}S(CAST('2000-02-28' AS DATE), 1)",
-                    "bigquery": f"SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 {unit})",
-                    "duckdb": f"SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 {unit}",
-                    "presto": f"SELECT DATE_ADD('{unit}', 1, CAST('2000-02-28' AS DATE))",
-                    "redshift": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
-                    "snowflake": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
-                    "tsql": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
-                }
-
                 self.validate_all(
                     f"SELECT ADD_{unit}S(DATE '2000-02-28', 1)",
-                    write=write_add,
+                    write={
+                        "exasol": f"SELECT ADD_{unit}S(CAST('2000-02-28' AS DATE), 1)",
+                        "bigquery": f"SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 {unit})",
+                        "duckdb": f"SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 {unit}",
+                        "presto": f"SELECT DATE_ADD('{unit}', 1, CAST('2000-02-28' AS DATE))",
+                        "redshift": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                        "snowflake": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                        "tsql": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                    },
                 )
 
             with self.subTest(f"Testing {unit}S_BETWEEN"):
-                write_between = {
-                    "exasol": f"SELECT {unit}S_BETWEEN(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP())",
-                    "bigquery": f"SELECT DATE_DIFF(CAST('2000-02-28 00:00:00' AS DATETIME), CURRENT_TIMESTAMP(), {unit})",
-                    "duckdb": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
-                    "presto": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
-                    "redshift": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
-                    "snowflake": f"SELECT DATEDIFF({unit}, CURRENT_TIMESTAMP(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
-                    "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2))",
-                }
-
                 self.validate_all(
                     f"SELECT {unit}S_BETWEEN(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP)",
-                    write=write_between,
+                    write={
+                        "exasol": f"SELECT {unit}S_BETWEEN(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP())",
+                        "bigquery": f"SELECT DATE_DIFF(CAST('2000-02-28 00:00:00' AS DATETIME), CURRENT_TIMESTAMP(), {unit})",
+                        "duckdb": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "presto": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "redshift": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "snowflake": f"SELECT DATEDIFF({unit}, CURRENT_TIMESTAMP(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2))",
+                    },
                 )
 
     def test_number_functions(self):

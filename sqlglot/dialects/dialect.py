@@ -719,6 +719,9 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.INTERVAL: {
             exp.Interval,
+            exp.JustifyDays,
+            exp.JustifyHours,
+            exp.JustifyInterval,
             exp.MakeInterval,
         },
         exp.DataType.Type.JSON: {

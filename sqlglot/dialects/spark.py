@@ -194,6 +194,7 @@ class Spark(Spark2):
                     move_partitioned_by_to_schema_columns,
                 ]
             ),
+            exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
             exp.GroupConcat: _groupconcat_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.PartitionedByProperty: lambda self,

@@ -666,6 +666,10 @@ TIME;
 TIME_TRUNC(TIME "15:30:00", HOUR);
 TIME;
 
+# dialect: bigquery
+DATE_FROM_UNIX_DATE(1);
+DATE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

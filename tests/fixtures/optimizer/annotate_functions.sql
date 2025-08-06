@@ -94,6 +94,15 @@ INT;
 LAST_DAY(tbl.timestamp_col);
 DATE;
 
+JUSTIFY_DAYS(INTERVAL '1' DAY);
+INTERVAL;
+
+JUSTIFY_HOURS(INTERVAL '1' HOUR);
+INTERVAL;
+
+JUSTIFY_INTERVAL(INTERVAL '1' HOUR);
+INTERVAL;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------
@@ -669,18 +678,6 @@ TIME;
 # dialect: bigquery
 DATE_FROM_UNIX_DATE(1);
 DATE;
-
-# dialect: bigquery
-JUSTIFY_DAYS(INTERVAL '1' DAY);
-INTERVAL;
-
-# dialect: bigquery
-JUSTIFY_HOURS(INTERVAL '1' HOUR);
-INTERVAL;
-
-# dialect: bigquery
-JUSTIFY_INTERVAL(INTERVAL '1' HOUR);
-INTERVAL;
 
 --------------------------------------
 -- Snowflake

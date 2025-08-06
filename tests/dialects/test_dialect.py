@@ -3789,10 +3789,12 @@ FROM subquery2""",
                 "": "JUSTIFY_DAYS(INTERVAL '1' DAY)",
                 "bigquery": "JUSTIFY_DAYS(INTERVAL '1' DAY)",
                 "postgres": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
+                "materialize": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
             },
             write={
                 "bigquery": "JUSTIFY_DAYS(INTERVAL '1' DAY)",
                 "postgres": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
+                "materialize": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
             },
         )
         self.validate_all(
@@ -3801,10 +3803,12 @@ FROM subquery2""",
                 "": "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
                 "bigquery": "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
                 "postgres": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
             },
             write={
                 "bigquery": "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
                 "postgres": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
             },
         )
         self.validate_all(
@@ -3813,9 +3817,11 @@ FROM subquery2""",
                 "": "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
                 "bigquery": "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
                 "postgres": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
             },
             write={
                 "bigquery": "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
                 "postgres": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
             },
         )

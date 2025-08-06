@@ -509,8 +509,6 @@ class BigQuery(Dialect):
         exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.UnixMicros: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.UnixMillis: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }
 
     def normalize_identifier(self, expression: E) -> E:

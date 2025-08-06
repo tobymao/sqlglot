@@ -5800,6 +5800,18 @@ class JSONCast(Cast):
     pass
 
 
+class JustifyDays(Func):
+    pass
+
+
+class JustifyHours(Func):
+    pass
+
+
+class JustifyInterval(Func):
+    pass
+
+
 class Try(Func):
     pass
 

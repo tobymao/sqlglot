@@ -94,6 +94,15 @@ INT;
 LAST_DAY(tbl.timestamp_col);
 DATE;
 
+JUSTIFY_DAYS(INTERVAL '1' DAY);
+INTERVAL;
+
+JUSTIFY_HOURS(INTERVAL '1' HOUR);
+INTERVAL;
+
+JUSTIFY_INTERVAL(INTERVAL '1' HOUR);
+INTERVAL;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

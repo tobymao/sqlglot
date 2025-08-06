@@ -654,6 +654,8 @@ class Dialect(metaclass=_Dialect):
             exp.Length,
             exp.UnixDate,
             exp.UnixSeconds,
+            exp.UnixMicros,
+            exp.UnixMillis,
         },
         exp.DataType.Type.BINARY: {
             exp.FromBase64,

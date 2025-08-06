@@ -103,6 +103,12 @@ INTERVAL;
 JUSTIFY_INTERVAL(INTERVAL '1' HOUR);
 INTERVAL;
 
+UNIX_MICROS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP));
+BIGINT;
+
+UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP));
+BIGINT;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

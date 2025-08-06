@@ -3825,3 +3825,33 @@ FROM subquery2""",
                 "materialize": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
             },
         )
+
+    def test_unix_time(self):
+        self.validate_all(
+            "UNIX_MICROS(foo)",
+            read={
+                "": "UNIX_MICROS(foo)",
+                "bigquery": "UNIX_MICROS(foo)",
+                "spark": "UNIX_MICROS(foo)",
+                "databricks": "UNIX_MICROS(foo)",
+            },
+            write={
+                "bigquery": "UNIX_MICROS(foo)",
+                "spark": "UNIX_MICROS(foo)",
+                "databricks": "UNIX_MICROS(foo)",
+            },
+        )
+        self.validate_all(
+            "UNIX_MILLIS(foo)",
+            read={
+                "": "UNIX_MILLIS(foo)",
+                "bigquery": "UNIX_MILLIS(foo)",
+                "spark": "UNIX_MILLIS(foo)",
+                "databricks": "UNIX_MILLIS(foo)",
+            },
+            write={
+                "bigquery": "UNIX_MILLIS(foo)",
+                "spark": "UNIX_MILLIS(foo)",
+                "databricks": "UNIX_MILLIS(foo)",
+            },
+        )

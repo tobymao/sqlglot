@@ -497,6 +497,11 @@ class BigQuery(Dialect):
             e, exp.DataType.build("ARRAY<VARCHAR>")
         ),
         exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
+        exp.JustifyDays: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
+        exp.JustifyHours: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
+        exp.JustifyInterval: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.INTERVAL
+        ),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),

@@ -3,11 +3,9 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-
-from sqlglot.expressions import DATA_TYPE
 from sqlglot.dialects.dialect import (
-    Dialect,
     JSON_EXTRACT_TYPE,
+    Dialect,
     NormalizationStrategy,
     Version,
     approx_count_distinct_sql,
@@ -15,35 +13,36 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     build_default_decimal_type,
+    build_formatted_time,
+    build_regexp_extract,
     count_if_to_sum,
     date_trunc_to_time,
     datestrtodate_sql,
-    no_datetime_sql,
     encode_decode_sql,
-    build_formatted_time,
+    explode_to_unnest_sql,
+    groupconcat_sql,
     inline_array_unless_query,
     no_comment_column_constraint_sql,
+    no_datetime_sql,
+    no_make_interval_sql,
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
-    rename_func,
     remove_from_array_using_filter,
-    strposition_sql,
+    rename_func,
+    sha256_sql,
     str_to_time_sql,
+    strposition_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
-    unit_to_var,
     unit_to_str,
-    sha256_sql,
-    build_regexp_extract,
-    explode_to_unnest_sql,
-    no_make_interval_sql,
-    groupconcat_sql,
+    unit_to_var,
 )
+from sqlglot.expressions import DATA_TYPE
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
+from sqlglot.tokens import TokenType
 
 DATETIME_DELTA = t.Union[
     exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
@@ -920,6 +919,7 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
+        PROPERTIES_LOCATION[exp.SequenceProperties] = exp.Properties.Location.POST_EXPRESSION
 
         IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
             exp.FirstValue,

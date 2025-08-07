@@ -1802,11 +1802,17 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "CREATE SEQUENCE seq1 WITH START=1, INCREMENT=1 ORDER",
-            "CREATE SEQUENCE seq1 START=1 INCREMENT BY 1 ORDER",
+            "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1 ORDER",
         )
         self.validate_identity(
             "CREATE SEQUENCE seq1 WITH START=1 INCREMENT=1 ORDER",
-            "CREATE SEQUENCE seq1 START=1 INCREMENT=1 ORDER",
+            "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1 ORDER",
+        )
+        self.validate_all(
+            "CREATE SEQUENCE seq_5 START=5 INCREMENT=10",
+            write={
+                "duckdb": "CREATE SEQUENCE seq_5 START WITH 5 INCREMENT BY 10",
+            },
         )
         self.validate_identity(
             """create external table et2(

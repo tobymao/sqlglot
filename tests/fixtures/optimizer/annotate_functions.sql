@@ -685,6 +685,18 @@ TIME;
 DATE_FROM_UNIX_DATE(1);
 DATE;
 
+# dialect: bigquery
+DATE_TRUNC(DATE '2008-12-25', MONTH);
+DATE;
+
+# dialect: bigquery
+DATE_TRUNC(TIMESTAMP '2008-12-25', MONTH);
+TIMESTAMP;
+
+# dialect: bigquery
+DATE_TRUNC(DATETIME '2008-12-25', MONTH);
+DATETIME;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

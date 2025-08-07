@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import re
 import typing as t
-import itertools
 from collections import defaultdict
 
 from sqlglot import exp
@@ -2075,7 +2075,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_schema(this=table_parts)
 
             # exp.Properties.Location.POST_SCHEMA and POST_WITH
-            extend_props(self._parse_properties())
+            extend_props(self._parse_properties(context="SEQUENCE"))
 
             has_alias = self._match(TokenType.ALIAS)
             if not self._match_set(self.DDL_SELECT_TOKENS, advance=False):
@@ -2084,7 +2084,7 @@ class Parser(metaclass=_Parser):
 
             if create_token.token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
-                extend_props(self._parse_properties())
+                extend_props(self._parse_properties(context="SEQUENCE"))
             else:
                 expression = self._parse_ddl_select()
 
@@ -2208,7 +2208,7 @@ class Parser(metaclass=_Parser):
     def _parse_wrapped_properties(self) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_property)
 
-    def _parse_property(self) -> t.Optional[exp.Expression]:
+    def _parse_property(self, context: t.Optional[str] = None) -> t.Optional[exp.Expression]:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -2224,7 +2224,7 @@ class Parser(metaclass=_Parser):
         index = self._index
         key = self._parse_column()
 
-        if not self._match(TokenType.EQ):
+        if context == "SEQUENCE" or not self._match(TokenType.EQ):
             self._retreat(index)
             return self._parse_sequence_properties()
 
@@ -2275,13 +2275,13 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp_class, this=self._parse_unquoted_field(), **kwargs)
 
-    def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
+    def _parse_properties(self, before: t.Optional[bool] = None, context: t.Optional[str] = None) -> t.Optional[exp.Properties]:
         properties = []
         while True:
             if before:
                 prop = self._parse_property_before()
             else:
-                prop = self._parse_property()
+                prop = self._parse_property(context=context)
             if not prop:
                 break
             for p in ensure_list(prop):
@@ -3474,7 +3474,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
-        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
+        from sqlglot.optimizer.normalize_identifiers import (
+            normalize_identifiers as _norm,
+        )
 
         refs = {_norm(this.args["from"].this.copy(), dialect=self.dialect).alias_or_name}
         for i, join in enumerate(this.args.get("joins") or []):

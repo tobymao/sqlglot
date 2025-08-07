@@ -942,41 +942,6 @@ class DuckDB(Dialect):
             lambda_sql = super().lambda_sql(expression, arrow_sep=arrow_sep, wrap=wrap)
             return f"{prefix}{lambda_sql}"
 
-        def create_sql(self, expression: exp.Create) -> str:
-            if expression.kind == "SEQUENCE":
-                # process CREATE SEQUENCE properties
-                sequence_name = self.sql(expression, 'this')
-                properties = expression.args.get("properties")
-
-                if not properties:
-                    return f"CREATE SEQUENCE {sequence_name}"
-
-                sequence_props = []
-                for prop in properties.expressions:
-                    if isinstance(prop, exp.SequenceProperties):
-                        sequence_props.append(self.sql(prop))
-                    elif isinstance(prop, exp.Property):
-                        key = prop.this if isinstance(prop.this, str) else prop.this.name
-                        value = self.sql(prop, "value")
-
-                        if key == "START":
-                            sequence_props.append(f"START WITH {value}")
-                        elif key == "INCREMENT":
-                            sequence_props.append(f"INCREMENT BY {value}")
-                        elif key == "MINVALUE":
-                            sequence_props.append(f"MINVALUE {value}")
-                        elif key == "MAXVALUE":
-                            sequence_props.append(f"MAXVALUE {value}")
-                        elif key == "CYCLE":
-                            if value:
-                                sequence_props.append("CYCLE")
-
-                props_sql = ' '.join(filter(None, sequence_props))
-                return f"CREATE SEQUENCE {sequence_name} {props_sql}".rstrip()
-
-            # Fall back to default create handling for non-sequence creates
-            return super().create_sql(expression)
-
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"
 

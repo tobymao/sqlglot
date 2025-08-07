@@ -919,7 +919,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
                 with self.subTest(title):
                     self.assertEqual(
-                        result.type.sql(dialect), exp.DataType.build(expected).sql(dialect)
+                        result.type.sql(dialect),
+                        exp.DataType.build(expected, dialect=dialect).sql(dialect),
                     )
 
     def test_cast_type_annotation(self):

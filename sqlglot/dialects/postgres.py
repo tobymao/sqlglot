@@ -193,7 +193,7 @@ def _build_timezone(args: t.List) -> exp.AtTimeZone:
     # TIMEZONE(timestamp) -> `timestamp AT TIME ZONE local`
 
     if len(args) == 1:
-        timestamp = seq_get(0)
+        timestamp = seq_get(args, 0)
         return exp.AtTimeZone(
             this=timestamp,
             zone=exp.Identifier(this="LOCAL")

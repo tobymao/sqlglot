@@ -154,6 +154,7 @@ class Generator(metaclass=_Generator):
         exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
         exp.IcebergProperty: lambda *_: "ICEBERG",
+        exp.IdentifierFunc: lambda self, e: self.identifierfunc_sql(e),
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
@@ -1627,6 +1628,21 @@ class Generator(metaclass=_Generator):
         ):
             text = f"{self._identifier_start}{text}{self._identifier_end}"
         return text
+
+    def identifierfunc_sql(self, expression: exp.IdentifierFunc) -> str:
+        """Generate SQL for IDENTIFIER() function.
+
+        For dialects other than Snowflake, converts IDENTIFIER('literal') to a plain identifier.
+        For non-literals, falls back to function call syntax.
+        """
+        # For other dialects, convert IDENTIFIER('literal') to identifier if possible
+        if isinstance(expression.this, exp.Literal) and expression.this.is_string:
+            # expression.this is the Literal, expression.this.this is the string value
+            return self.sql(exp.to_identifier(expression.this.this))
+
+        # For non-literals (variables, expressions), fallback to function call
+        # This may error in other dialects, which is appropriate
+        return self.function_fallback_sql(expression)
 
     def hex_sql(self, expression: exp.Hex) -> str:
         text = self.func(self.HEX_FUNC, self.sql(expression, "this"))

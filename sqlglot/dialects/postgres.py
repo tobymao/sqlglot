@@ -196,7 +196,7 @@ def _build_timezone(args: t.List) -> exp.AtTimeZone:
         timestamp = seq_get(0)
         return exp.AtTimeZone(
             this=timestamp,
-            zone=this=exp.Identifier(this="LOCAL")
+            zone=exp.Identifier(this="LOCAL")
         )
         
     timezone = seq_get(args, 0)

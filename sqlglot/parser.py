@@ -2075,7 +2075,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_schema(this=table_parts)
 
             # exp.Properties.Location.POST_SCHEMA and POST_WITH
-            extend_props(self._parse_properties(context="SEQUENCE"))
+            extend_props(self._parse_properties(context=create_token.token_type))
 
             has_alias = self._match(TokenType.ALIAS)
             if not self._match_set(self.DDL_SELECT_TOKENS, advance=False):
@@ -2084,7 +2084,7 @@ class Parser(metaclass=_Parser):
 
             if create_token.token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
-                extend_props(self._parse_properties(context="SEQUENCE"))
+                extend_props(self._parse_properties(context=create_token.token_type))
             else:
                 expression = self._parse_ddl_select()
 
@@ -2208,7 +2208,7 @@ class Parser(metaclass=_Parser):
     def _parse_wrapped_properties(self) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_property)
 
-    def _parse_property(self, context: t.Optional[str] = None) -> t.Optional[exp.Expression]:
+    def _parse_property(self, context: t.Optional[TokenType] = None) -> t.Optional[exp.Expression]:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -2224,7 +2224,7 @@ class Parser(metaclass=_Parser):
         index = self._index
         key = self._parse_column()
 
-        if context == "SEQUENCE" or not self._match(TokenType.EQ):
+        if context == TokenType.SEQUENCE or not self._match(TokenType.EQ):
             self._retreat(index)
             return self._parse_sequence_properties()
 
@@ -2275,7 +2275,9 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp_class, this=self._parse_unquoted_field(), **kwargs)
 
-    def _parse_properties(self, before: t.Optional[bool] = None, context: t.Optional[str] = None) -> t.Optional[exp.Properties]:
+    def _parse_properties(
+        self, before: t.Optional[bool] = None, context: t.Optional[TokenType] = None
+    ) -> t.Optional[exp.Properties]:
         properties = []
         while True:
             if before:

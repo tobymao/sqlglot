@@ -185,6 +185,28 @@ def _build_to_timestamp(args: t.List) -> exp.UnixToTime | exp.StrToTime:
     return build_formatted_time(exp.StrToTime, "postgres")(args)
 
 
+def _build_timezone(args: t.List) -> exp.AtTimeZone:
+    # Convert TIMEZONE function to AtTimeZone expression
+    # See https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-ZONECONVERT
+    # The signature of TIMEZONE is 
+    # TIMEZONE(zone, timestamp) -> `timestamp AT TIME ZONE zone`
+    # TIMEZONE(timestamp) -> `timestamp AT TIME ZONE local`
+
+    if len(args) == 1:
+        timestamp = seq_get(0)
+        return exp.AtTimeZone(
+            this=timestamp,
+            zone=this=exp.Identifier(this="LOCAL")
+        )
+        
+    timezone = seq_get(args, 0)
+    timestamp = seq_get(args, 1)
+
+    return exp.AtTimeZone(
+        this=timestamp,
+        zone=timezone
+    )
+
 def _json_extract_sql(
     name: str, op: str
 ) -> t.Callable[[Postgres.Generator, JSON_EXTRACT_TYPE], str]:
@@ -400,6 +422,7 @@ class Postgres(Dialect):
             "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "REGEXP_REPLACE": _build_regexp_replace,
+            "TIMEZONE": _build_timezone,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,

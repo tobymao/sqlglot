@@ -697,6 +697,14 @@ TIMESTAMP;
 DATE_TRUNC(DATETIME '2008-12-25', MONTH);
 DATETIME;
 
+# dialect: bigquery
+TIMESTAMP_TRUNC(TIMESTAMP "2008-12-25 15:30:00+00", DAY, "UTC");
+TIMESTAMP;
+
+# dialect: bigquery
+TIMESTAMP_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
+DATETIME;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

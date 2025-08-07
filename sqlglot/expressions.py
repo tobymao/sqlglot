@@ -1458,6 +1458,11 @@ class DDL(Expression):
         return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
+# https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/Statement-Syntax/LOCKING-Request-Modifier/LOCKING-Request-Modifier-Syntax
+class LockingStatement(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class DML(Expression):
     def returning(
         self,
@@ -1611,6 +1616,10 @@ class SetItem(Expression):
         "collate": False,  # MySQL SET NAMES statement
         "global": False,
     }
+
+
+class QueryBand(Expression):
+    arg_types = {"this": True, "scope": False, "update": False}
 
 
 class Show(Expression):
@@ -5791,6 +5800,18 @@ class JSONCast(Cast):
     pass
 
 
+class JustifyDays(Func):
+    pass
+
+
+class JustifyHours(Func):
+    pass
+
+
+class JustifyInterval(Func):
+    pass
+
+
 class Try(Func):
     pass
 
@@ -5945,6 +5966,10 @@ class DatetimeDiff(Func, TimeUnit):
 
 class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DateFromUnixDate(Func):
+    pass
 
 
 class DayOfWeek(Func):
@@ -7044,6 +7069,14 @@ class UnixToTimeStr(Func):
 
 
 class UnixSeconds(Func):
+    pass
+
+
+class UnixMicros(Func):
+    pass
+
+
+class UnixMillis(Func):
     pass
 
 

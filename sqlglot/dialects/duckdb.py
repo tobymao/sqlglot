@@ -1247,3 +1247,24 @@ class DuckDB(Dialect):
                 return self.sql(exp.Subquery(this=exp.Select(expressions=[posexplode_sql])))
 
             return posexplode_sql
+
+        def addmonths_sql(self, expression: exp.AddMonths) -> str:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            this = annotate_types(expression.this, dialect=self.dialect)
+
+            if this.is_type(*exp.DataType.TEXT_TYPES):
+                this = exp.Cast(this=this, to=exp.DataType(this=exp.DataType.Type.TIMESTAMP))
+
+            func = self.func(
+                "DATE_ADD", this, exp.Interval(this=expression.expression, unit=exp.var("MONTH"))
+            )
+
+            # DuckDB's DATE_ADD function returns TIMESTAMP/DATETIME by default, even when the input is DATE
+            # To match for example Snowflake's ADD_MONTHS behavior (which preserves the input type)
+            # We need to cast the result back to the original type when the input is DATE or TIMESTAMPTZ
+            # Example: ADD_MONTHS('2023-01-31'::date, 1) should return DATE, not TIMESTAMP
+            if this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMPTZ):
+                return self.sql(exp.Cast(this=func, to=this.type))
+
+            return self.sql(func)

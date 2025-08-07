@@ -3765,3 +3765,93 @@ FROM subquery2""",
                 "duckdb": "SELECT 'foo' LIKE 'bar' OR 'foo' LIKE 'fo%'",
             },
         )
+
+    def test_date_to_unix_date(self):
+        self.validate_all(
+            "DATE_FROM_UNIX_DATE(1)",
+            write={
+                "": "DATE_ADD(CAST('1970-01-01' AS DATE), 1, 'DAY')",
+                "bigquery": "DATE_FROM_UNIX_DATE(1)",
+                "spark": "DATE_FROM_UNIX_DATE(1)",
+                "databricks": "DATE_FROM_UNIX_DATE(1)",
+                "snowflake": "DATEADD(DAY, 1, CAST('1970-01-01' AS DATE))",
+                "duckdb": "CAST('1970-01-01' AS DATE) + INTERVAL 1 DAY",
+                "redshift": "DATEADD(DAY, 1, CAST('1970-01-01' AS DATE))",
+                "presto": "DATE_ADD('DAY', 1, CAST('1970-01-01' AS DATE))",
+                "trino": "DATE_ADD('DAY', 1, CAST('1970-01-01' AS DATE))",
+            },
+        )
+
+    def test_justify(self):
+        self.validate_all(
+            "JUSTIFY_DAYS(INTERVAL '1' DAY)",
+            read={
+                "": "JUSTIFY_DAYS(INTERVAL '1' DAY)",
+                "bigquery": "JUSTIFY_DAYS(INTERVAL '1' DAY)",
+                "postgres": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
+                "materialize": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
+            },
+            write={
+                "bigquery": "JUSTIFY_DAYS(INTERVAL '1' DAY)",
+                "postgres": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
+                "materialize": "JUSTIFY_DAYS(INTERVAL '1 DAY')",
+            },
+        )
+        self.validate_all(
+            "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
+            read={
+                "": "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
+                "bigquery": "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
+                "postgres": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
+            },
+            write={
+                "bigquery": "JUSTIFY_HOURS(INTERVAL '1' HOUR)",
+                "postgres": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_HOURS(INTERVAL '1 HOUR')",
+            },
+        )
+        self.validate_all(
+            "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
+            read={
+                "": "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
+                "bigquery": "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
+                "postgres": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
+            },
+            write={
+                "bigquery": "JUSTIFY_INTERVAL(INTERVAL '1' HOUR)",
+                "postgres": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
+                "materialize": "JUSTIFY_INTERVAL(INTERVAL '1 HOUR')",
+            },
+        )
+
+    def test_unix_time(self):
+        self.validate_all(
+            "UNIX_MICROS(foo)",
+            read={
+                "": "UNIX_MICROS(foo)",
+                "bigquery": "UNIX_MICROS(foo)",
+                "spark": "UNIX_MICROS(foo)",
+                "databricks": "UNIX_MICROS(foo)",
+            },
+            write={
+                "bigquery": "UNIX_MICROS(foo)",
+                "spark": "UNIX_MICROS(foo)",
+                "databricks": "UNIX_MICROS(foo)",
+            },
+        )
+        self.validate_all(
+            "UNIX_MILLIS(foo)",
+            read={
+                "": "UNIX_MILLIS(foo)",
+                "bigquery": "UNIX_MILLIS(foo)",
+                "spark": "UNIX_MILLIS(foo)",
+                "databricks": "UNIX_MILLIS(foo)",
+            },
+            write={
+                "bigquery": "UNIX_MILLIS(foo)",
+                "spark": "UNIX_MILLIS(foo)",
+                "databricks": "UNIX_MILLIS(foo)",
+            },
+        )

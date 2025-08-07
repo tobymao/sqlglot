@@ -683,3 +683,10 @@ class Doris(MySQL):
             # Handle both static and dynamic partition definitions
             create_sql = ", ".join(self.sql(e) for e in create_expressions)
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
+
+        def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+            """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""
+            ancestor = expression.find_ancestor(exp.Update, exp.Delete, exp.Select)
+            if not isinstance(ancestor, exp.Select):
+                sep = " "
+            return super().table_sql(expression, sep=sep)

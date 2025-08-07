@@ -654,6 +654,8 @@ class Dialect(metaclass=_Dialect):
             exp.Length,
             exp.UnixDate,
             exp.UnixSeconds,
+            exp.UnixMicros,
+            exp.UnixMillis,
         },
         exp.DataType.Type.BINARY: {
             exp.FromBase64,
@@ -674,6 +676,7 @@ class Dialect(metaclass=_Dialect):
             exp.DateFromParts,
             exp.DateStrToDate,
             exp.DiToDate,
+            exp.LastDay,
             exp.StrToDate,
             exp.TimeStrToDate,
             exp.TsOrDsToDate,
@@ -718,6 +721,9 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.INTERVAL: {
             exp.Interval,
+            exp.JustifyDays,
+            exp.JustifyHours,
+            exp.JustifyInterval,
             exp.MakeInterval,
         },
         exp.DataType.Type.JSON: {

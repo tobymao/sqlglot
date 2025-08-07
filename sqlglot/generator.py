@@ -2405,6 +2405,14 @@ class Generator(metaclass=_Generator):
         tag = " TAG" if expression.args.get("tag") else ""
         return f"{'UNSET' if expression.args.get('unset') else 'SET'}{tag}{expressions}"
 
+    def queryband_sql(self, expression: exp.QueryBand) -> str:
+        this = self.sql(expression, "this")
+        update = " UPDATE" if expression.args.get("update") else ""
+        scope = self.sql(expression, "scope")
+        scope = f" FOR {scope}" if scope else ""
+
+        return f"QUERY_BAND = {this}{update}{scope}"
+
     def pragma_sql(self, expression: exp.Pragma) -> str:
         return f"PRAGMA {self.sql(expression, 'this')}"
 
@@ -5127,3 +5135,12 @@ class Generator(metaclass=_Generator):
             return self.sql(exp.Bracket(this=this, expressions=[expr]))
 
         return self.sql(exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expr)))
+
+    def datefromunixdate_sql(self, expression: exp.DateFromUnixDate) -> str:
+        return self.sql(
+            exp.DateAdd(
+                this=exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
+                expression=expression.this,
+                unit=exp.var("DAY"),
+            )
+        )

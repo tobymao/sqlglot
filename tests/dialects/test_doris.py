@@ -136,3 +136,78 @@ class TestDoris(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (FROM ('2000-11-14') TO ('2021-11-14') INTERVAL 2 YEAR)"
         )
+
+    def test_table_alias_conversion(self):
+        """Test conversion from postgres to Doris for DELETE/UPDATE statements with table aliases."""
+
+        # Test cases for DELETE statements with table aliases
+        self.validate_all(
+            "DELETE FROM sales s WHERE s.id = 1",
+            read={
+                "postgres": "DELETE FROM sales AS s WHERE s.id = 1",
+            },
+            write={
+                "doris": "DELETE FROM sales s WHERE s.id = 1",
+                "postgres": "DELETE FROM sales AS s WHERE s.id = 1",
+            },
+        )
+
+        # DELETE with multiple table references
+        self.validate_all(
+            "DELETE FROM orders o WHERE o.customer_id IN (SELECT c.id FROM customers AS c WHERE c.status_code = 'inactive')",
+            read={
+                "postgres": "DELETE FROM orders AS o WHERE o.customer_id IN (SELECT c.id FROM customers AS c WHERE c.status_code = 'inactive')",
+            },
+            write={
+                "doris": "DELETE FROM orders o WHERE o.customer_id IN (SELECT c.id FROM customers AS c WHERE c.status_code = 'inactive')",
+                "postgres": "DELETE FROM orders AS o WHERE o.customer_id IN (SELECT c.id FROM customers AS c WHERE c.status_code = 'inactive')",
+            },
+        )
+
+        # DELETE with EXISTS clause
+        self.validate_all(
+            "DELETE FROM temp_data t WHERE NOT EXISTS(SELECT 1 FROM main_data AS m WHERE m.id = t.id)",
+            read={
+                "postgres": "DELETE FROM temp_data AS t WHERE NOT EXISTS(SELECT 1 FROM main_data AS m WHERE m.id = t.id)",
+            },
+            write={
+                "doris": "DELETE FROM temp_data t WHERE NOT EXISTS(SELECT 1 FROM main_data AS m WHERE m.id = t.id)",
+                "postgres": "DELETE FROM temp_data AS t WHERE NOT EXISTS(SELECT 1 FROM main_data AS m WHERE m.id = t.id)",
+            },
+        )
+
+        # UPDATE statements with table aliases
+        self.validate_all(
+            "UPDATE employees e SET e.salary = e.salary * 1.1 WHERE e.department = 'IT'",
+            read={
+                "postgres": "UPDATE employees AS e SET e.salary = e.salary * 1.1 WHERE e.department = 'IT'",
+            },
+            write={
+                "doris": "UPDATE employees e SET e.salary = e.salary * 1.1 WHERE e.department = 'IT'",
+                "postgres": "UPDATE employees AS e SET e.salary = e.salary * 1.1 WHERE e.department = 'IT'",
+            },
+        )
+
+        # UPDATE with multiple columns
+        self.validate_all(
+            "UPDATE accounts a SET a.balance = a.balance + 100, a.status_code = 'active' WHERE a.account_type = 'savings'",
+            read={
+                "postgres": "UPDATE accounts AS a SET a.balance = a.balance + 100, a.status_code = 'active' WHERE a.account_type = 'savings'",
+            },
+            write={
+                "doris": "UPDATE accounts a SET a.balance = a.balance + 100, a.status_code = 'active' WHERE a.account_type = 'savings'",
+                "postgres": "UPDATE accounts AS a SET a.balance = a.balance + 100, a.status_code = 'active' WHERE a.account_type = 'savings'",
+            },
+        )
+
+        # UPDATE with multiple table references in subquery
+        self.validate_all(
+            "UPDATE prices p SET p.amount = p.amount * 0.9 WHERE p.product_id IN (SELECT pr.id FROM products AS pr JOIN categories AS c ON pr.category_id = c.id WHERE c.foo = 'Electronics')",
+            read={
+                "postgres": "UPDATE prices AS p SET p.amount = p.amount * 0.9 WHERE p.product_id IN (SELECT pr.id FROM products AS pr JOIN categories AS c ON pr.category_id = c.id WHERE c.foo = 'Electronics')",
+            },
+            write={
+                "doris": "UPDATE prices p SET p.amount = p.amount * 0.9 WHERE p.product_id IN (SELECT pr.id FROM products AS pr JOIN categories AS c ON pr.category_id = c.id WHERE c.foo = 'Electronics')",
+                "postgres": "UPDATE prices AS p SET p.amount = p.amount * 0.9 WHERE p.product_id IN (SELECT pr.id FROM products AS pr JOIN categories AS c ON pr.category_id = c.id WHERE c.foo = 'Electronics')",
+            },
+        )

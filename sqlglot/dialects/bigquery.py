@@ -487,7 +487,7 @@ class BigQuery(Dialect):
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<TIMESTAMP>")
+            e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(

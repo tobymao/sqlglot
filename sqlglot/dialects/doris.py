@@ -111,6 +111,7 @@ class Doris(MySQL):
         LAST_DAY_SUPPORTS_DATE_PART = False
         VARCHAR_REQUIRES_SIZE = False
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
+        RENAME_TABLE_WITH_DB = False
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
@@ -690,3 +691,12 @@ class Doris(MySQL):
             if not isinstance(ancestor, exp.Select):
                 sep = " "
             return super().table_sql(expression, sep=sep)
+
+        def alterrename_sql(self, expression: exp.AlterRename) -> str:
+            if not self.RENAME_TABLE_WITH_DB:
+                # Remove db from tables
+                expression = expression.transform(
+                    lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
+                ).assert_is(exp.AlterRename)
+            this = self.sql(expression, "this")
+            return f"RENAME {this}"

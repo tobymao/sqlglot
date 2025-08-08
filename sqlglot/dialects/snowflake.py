@@ -347,6 +347,19 @@ def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAl
     )
 
 
+def _str_to_unix_sql(self: Snowflake.Generator, expression: exp.StrToUnix) -> str:
+    this = expression.this
+
+    if not this:
+        timestamp_expr = self.sql(exp.CurrentTimestamp())
+    elif expression.args.get("format"):
+        timestamp_expr = self.func("TO_TIMESTAMP", this, self.format_time(expression))
+    else:
+        timestamp_expr = this
+
+    return self.func("DATE_PART", exp.Literal.string("epoch_second"), timestamp_expr)
+
+
 def _json_extract_value_array_sql(
     self: Snowflake.Generator, expression: exp.JSONValueArray | exp.JSONExtractArray
 ) -> str:
@@ -1270,6 +1283,7 @@ class Snowflake(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
+            exp.StrToUnix: _str_to_unix_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self, e, func_name="CHARINDEX", supports_position=True

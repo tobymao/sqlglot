@@ -901,3 +901,55 @@ class TestHive(Validator):
                 "hive": "CAST(a AS BOOLEAN)",
             },
         )
+
+    def test_unix_timestamp(self):
+        self.validate_all(
+            "UNIX_TIMESTAMP('20240115 143025',  'yyyyMMdd HHmmss')",
+            write={
+                "hive": "UNIX_TIMESTAMP('20240115 143025', 'yyyyMMdd HHmmss')",
+                "spark2": "UNIX_TIMESTAMP('20240115 143025', 'yyyyMMdd HHmmss')",
+                "spark": "UNIX_TIMESTAMP('20240115 143025', 'yyyyMMdd HHmmss')",
+                "databricks": "UNIX_TIMESTAMP('20240115 143025', 'yyyyMMdd HHmmss')",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP('20240115 143025', 'yyyymmDD hh24miss'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP('2024/01/15 14:30',  'yyyy/MM/dd HH:mm')",
+            write={
+                "hive": "UNIX_TIMESTAMP('2024/01/15 14:30', 'yyyy/MM/dd HH:mm')",
+                "spark2": "UNIX_TIMESTAMP('2024/01/15 14:30', 'yyyy/MM/dd HH:mm')",
+                "spark": "UNIX_TIMESTAMP('2024/01/15 14:30', 'yyyy/MM/dd HH:mm')",
+                "databricks": "UNIX_TIMESTAMP('2024/01/15 14:30', 'yyyy/MM/dd HH:mm')",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP('2024/01/15 14:30', 'yyyy/mm/DD hh24:mi'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+            write={
+                "hive": "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+                "spark2": "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+                "spark": "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+                "databricks": "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP('Jan 15, 2024 14:30:25', 'mon DD, yyyy hh24:mi:ss'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP()",
+            write={
+                "hive": "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "spark2": "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "spark": "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "databricks": "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP(CURRENT_TIMESTAMP(), 'yyyy-mm-DD hh24:mi:ss'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP(col)",
+            write={
+                "hive": "UNIX_TIMESTAMP(col)",
+                "spark2": "UNIX_TIMESTAMP(col)",
+                "spark": "UNIX_TIMESTAMP(col)",
+                "databricks": "UNIX_TIMESTAMP(col)",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP(col, 'yyyy-mm-DD hh24:mi:ss'))",
+            },
+        )

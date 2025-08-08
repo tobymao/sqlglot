@@ -2229,7 +2229,7 @@ OPTIONS (
 
         self.assertEqual(
             ast.sql("bigquery"),
-            "SELECT x, ys, zs FROM UNNEST([STRUCT('x' AS x, ['y1', 'y2', 'y3'] AS y, ['z1', 'z2', 'z3'] AS z)]) AS _q_0 CROSS JOIN UNNEST(y) AS ys CROSS JOIN UNNEST(z) AS zs",
+            "SELECT x, ys, zs FROM UNNEST([STRUCT('x' AS x, ['y1', 'y2', 'y3'] AS y, ['z1', 'z2', 'z3'] AS z)]) CROSS JOIN UNNEST(y) AS ys CROSS JOIN UNNEST(z) AS zs",
         )
         self.assertEqual(
             ast.sql("duckdb"),

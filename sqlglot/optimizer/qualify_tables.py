@@ -133,7 +133,6 @@ def qualify_tables(
                     and dialect.UNNEST_COLUMN_ONLY
                     and not table_alias.columns
                 ):
-                    table_alias.set("columns", [table_alias.this.copy()])
                     table_alias.set("column_only", True)
 
                 udtf.set("alias", table_alias)

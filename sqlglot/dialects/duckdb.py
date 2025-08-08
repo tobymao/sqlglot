@@ -1138,7 +1138,12 @@ class DuckDB(Dialect):
                 alias = expression.args.get("alias")
                 if alias:
                     expression.set("alias", None)
-                    alias = exp.TableAlias(this=seq_get(alias.args.get("columns"), 0))
+                    this = (
+                        alias.this.copy()
+                        if alias.args.get("column_only")
+                        else seq_get(alias.args.get("columns"), 0)
+                    )
+                    alias = exp.TableAlias(this=this)
 
                 unnest_sql = super().unnest_sql(expression)
                 select = exp.Select(expressions=[unnest_sql]).subquery(alias)

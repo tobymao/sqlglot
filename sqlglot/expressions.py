@@ -5942,7 +5942,6 @@ class DateTrunc(Func):
             # In BQ WEEK(WEEKDAY), WEEKDAY must be treaded as a non-identifier
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date_trunc
             unit.set("this", Var(this=unit.this.name.upper()))
-            args["unit"] = unit
 
         super().__init__(**args)
 

@@ -459,12 +459,13 @@ def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
         unnest_aliases = set()
         for unnest in find_all_in_scope(expression, exp.Unnest):
             unnest_alias = unnest.args.get("alias")
-            if (
-                isinstance(unnest_alias, exp.TableAlias)
-                and (unnest_alias.args.get("column_only") or not unnest_alias.this)
-                and len(unnest_alias.columns) == 1
-            ):
-                unnest_aliases.add(unnest_alias.columns[0].name)
+            if isinstance(unnest_alias, exp.TableAlias):
+                column_only = unnest_alias.args.get("column_only")
+                if column_only and not unnest_alias.columns:
+                    unnest_alias.set("columns", [unnest_alias.this.copy()])
+
+                if (column_only or not unnest_alias.this) and len(unnest_alias.columns) == 1:
+                    unnest_aliases.add(unnest_alias.columns[0].name)
 
         if unnest_aliases:
             for c in find_all_in_scope(expression, exp.Column):

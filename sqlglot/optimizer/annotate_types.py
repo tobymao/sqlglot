@@ -326,7 +326,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             struct_type = exp.DataType(
                 this=exp.DataType.Type.STRUCT,
                 expressions=[
-                    exp.ColumnDef(this=exp.to_identifier(select.output_name), kind=select.type)
+                    exp.ColumnDef(
+                        this=exp.to_identifier(select.output_name),
+                        kind=select.type.copy() if select.type else None,
+                    )
                     for select in scope.expression.selects
                 ],
                 nested=True,

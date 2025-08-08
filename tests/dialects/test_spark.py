@@ -863,6 +863,46 @@ TBLPROPERTIES (
                 "spark": "LISTAGG(x, ', ')",
             },
         )
+        self.validate_all(
+            "UNIX_TIMESTAMP('20240115 143025',  'yyyyMMdd HHmmss')",
+            write={
+                "spark": "UNIX_TIMESTAMP('20240115 143025', 'yyyyMMdd HHmmss')",
+                "databricks": "UNIX_TIMESTAMP('20240115 143025', 'yyyyMMdd HHmmss')",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP('20240115 143025', 'yyyymmDD hh24miss'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP('2024/01/15 14:30',  'yyyy/MM/dd HH:mm')",
+            write={
+                "spark": "UNIX_TIMESTAMP('2024/01/15 14:30', 'yyyy/MM/dd HH:mm')",
+                "databricks": "UNIX_TIMESTAMP('2024/01/15 14:30', 'yyyy/MM/dd HH:mm')",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP('2024/01/15 14:30', 'yyyy/mm/DD hh24:mi'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+            write={
+                "spark": "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+                "databricks": "UNIX_TIMESTAMP('Jan 15, 2024 14:30:25', 'MMM dd, yyyy HH:mm:ss')",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP('Jan 15, 2024 14:30:25', 'mon DD, yyyy hh24:mi:ss'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP()",
+            write={
+                "spark": "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "databricks": "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP(CURRENT_TIMESTAMP(), 'yyyy-mm-DD hh24:mi:ss'))",
+            },
+        )
+        self.validate_all(
+            "UNIX_TIMESTAMP(col)",
+            write={
+                "spark": "UNIX_TIMESTAMP(col)",
+                "databricks": "UNIX_TIMESTAMP(col)",
+                "snowflake": "DATE_PART('epoch_second', TO_TIMESTAMP(col, 'yyyy-mm-DD hh24:mi:ss'))",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(

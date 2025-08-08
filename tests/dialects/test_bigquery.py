@@ -1770,6 +1770,9 @@ WHERE
             },
         )
 
+        trunc_expr = self.parse_one("DATE_TRUNC(date, WEEK(MONDAY))")
+        self.assertEqual(trunc_expr.find(exp.Var).name, "MONDAY")
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

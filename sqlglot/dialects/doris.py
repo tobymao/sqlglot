@@ -3,13 +3,13 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
-    build_timestamp_trunc,
     property_sql,
     rename_func,
     time_format,
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -31,7 +31,10 @@ class Doris(MySQL):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
-            "DATE_TRUNC": build_timestamp_trunc,
+            # Doris uses DATE_TRUNC(expr, 'unit') order
+            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
+                this=seq_get(args, 0), unit=seq_get(args, 1)
+            ),
             "MONTHS_ADD": exp.AddMonths.from_arg_list,
             "REGEXP": exp.RegexpLike.from_arg_list,
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
@@ -123,6 +126,7 @@ class Doris(MySQL):
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -683,6 +687,13 @@ class Doris(MySQL):
             # Handle both static and dynamic partition definitions
             create_sql = ", ".join(self.sql(e) for e in create_expressions)
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
+
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            # Avoid double parens; Doris syntax expects a single set of parens
+            inner = self.sql(expression, "this")
+            if inner.startswith("(") and inner.endswith(")"):
+                inner = inner[1:-1]
+            return f"PARTITION BY ({inner})"
 
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""

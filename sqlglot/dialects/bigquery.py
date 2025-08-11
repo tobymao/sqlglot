@@ -1005,6 +1005,13 @@ class BigQuery(Dialect):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_UNIX_SECONDS = True
 
+        TS_OR_DS_TYPES = (
+            exp.TsOrDsToDatetime,
+            exp.TsOrDsToTimestamp,
+            exp.TsOrDsToTime,
+            exp.TsOrDsToDate,
+        )
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
@@ -1314,19 +1321,7 @@ class BigQuery(Dialect):
             else:
                 func_name = "FORMAT_DATE"
 
-            time_expr = (
-                this
-                if isinstance(
-                    this,
-                    (
-                        exp.TsOrDsToDatetime,
-                        exp.TsOrDsToTimestamp,
-                        exp.TsOrDsToTime,
-                        exp.TsOrDsToDate,
-                    ),
-                )
-                else expression
-            )
+            time_expr = this if isinstance(this, self.TS_OR_DS_TYPES) else expression
             return self.func(
                 func_name, self.format_time(expression), time_expr.this, expression.args.get("zone")
             )

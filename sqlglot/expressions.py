@@ -5938,10 +5938,6 @@ class DateTrunc(Func):
                 unit_name = TimeUnit.UNABBREVIATED_UNIT_NAME[unit_name]
 
             args["unit"] = Literal.string(unit_name)
-        elif isinstance(unit, Week):
-            # In BQ WEEK(WEEKDAY), WEEKDAY must be treaded as a non-identifier
-            # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date_trunc
-            unit.set("this", Var(this=unit.this.name.upper()))
 
         super().__init__(**args)
 
@@ -7131,6 +7127,10 @@ class CovarPop(Binary, AggFunc):
 
 class Week(Func):
     arg_types = {"this": True, "mode": False}
+
+
+class WeekStart(Expression):
+    pass
 
 
 class XMLElement(Func):

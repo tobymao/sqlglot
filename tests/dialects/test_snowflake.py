@@ -11,6 +11,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        ast = self.parse_one("DATEADD(DAY, n, d)")
+        ast.set("unit", exp.Literal.string("MONTH"))
+        self.assertEqual(ast.sql("snowflake"), "DATEADD(MONTH, n, d)")
+
         self.validate_identity("SELECT GET(a, b)")
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`

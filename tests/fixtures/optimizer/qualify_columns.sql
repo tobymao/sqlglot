@@ -278,6 +278,11 @@ SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.x) AS x FROM t AS t;
 WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) FROM t;
 WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) AS _col_0 FROM t AS t;
 
+# execute: false
+# dialect: bigquery
+SELECT DATE_TRUNC(col1, WEEK(MONDAY)), col2 FROM t;
+SELECT DATE_TRUNC(t.col1, WEEK(MONDAY)) AS _col_0, t.col2 AS col2 FROM t AS t;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

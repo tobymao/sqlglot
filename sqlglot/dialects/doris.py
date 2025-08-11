@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import seq_get, is_date_unit
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -27,28 +27,10 @@ def _build_date_trunc(args: list[exp.Expression]) -> exp.Expression:
     a0, a1 = seq_get(args, 0), seq_get(args, 1)
 
     def _is_unit_like(e: exp.Expression | None) -> bool:
-        if e is None:
+        if not (isinstance(e, exp.Literal) and e.is_string):
             return False
-        # Var units like DAY, WEEK, MONTH, QUARTER, YEAR
-        if isinstance(e, exp.Var):
-            return is_date_unit(e) or e.name.lower() in {
-                "hour",
-                "minute",
-                "second",
-            }
-        # String literal units like 'day'
-        if isinstance(e, exp.Literal) and e.is_string:
-            return e.this.strip("'\"").lower() in {
-                "year",
-                "quarter",
-                "month",
-                "week",
-                "day",
-                "hour",
-                "minute",
-                "second",
-            }
-        return False
+        text = e.this
+        return not any(ch.isdigit() for ch in text)
 
     # Determine which argument is the unit
     unit_first = _is_unit_like(a0) and not _is_unit_like(a1)
@@ -59,8 +41,6 @@ def _build_date_trunc(args: list[exp.Expression]) -> exp.Expression:
 
     node = exp.TimestampTrunc(this=this, unit=unit)
 
-    # Preserve original argument order for identity rendering via meta
-    node.meta["unit_first"] = unit_first
     return node
 
 
@@ -181,11 +161,7 @@ class Doris(MySQL):
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
-            exp.DateTrunc: lambda self, e: (
-                self.func("DATE_TRUNC", unit_to_str(e), e.this)
-                if e.meta.get("unit_first")
-                else self.func("DATE_TRUNC", e.this, unit_to_str(e))
-            ),
+            exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(
                 "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),
@@ -204,11 +180,7 @@ class Doris(MySQL):
             exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimestampTrunc: lambda self, e: (
-                self.func("DATE_TRUNC", unit_to_str(e), e.this)
-                if e.meta.get("unit_first")
-                else self.func("DATE_TRUNC", e.this, unit_to_str(e))
-            ),
+            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, time_format("doris")(self, e)
             ),

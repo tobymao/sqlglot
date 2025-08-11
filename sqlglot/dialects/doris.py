@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
@@ -33,7 +35,7 @@ def _build_date_trunc(args: t.List[exp.Expression]) -> exp.Expression:
         return not any(ch.isdigit() for ch in text)
 
     # Determine which argument is the unit
-    unit, this = a0, a1 if _is_unit_like(a0) else a1, a0
+    unit, this = (a0, a1) if _is_unit_like(a0) else (a1, a0)
 
     return exp.TimestampTrunc(this=this, unit=unit)
 

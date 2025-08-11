@@ -1043,7 +1043,7 @@ class TestDialect(Validator):
                 "snowflake": "DATE_TRUNC('day', x)",
                 "starrocks": "DATE_TRUNC('day', x)",
                 "spark": "DATE_TRUNC('day', x)",
-                "doris": "DATE_TRUNC(x, 'day')",
+                "doris": "DATE_TRUNC('day', x)",
             },
         )
         self.validate_all(

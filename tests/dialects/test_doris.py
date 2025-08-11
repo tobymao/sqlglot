@@ -101,6 +101,7 @@ class TestDoris(Validator):
         self.validate_identity("TIMESTAMP('2022-01-01')")
         self.validate_identity("DATE_TRUNC(event_date, 'DAY')")
         self.validate_identity("DATE_TRUNC('2010-12-02 19:28:30', 'HOUR')")
+        self.validate_identity("DATE_TRUNC('HOUR', '2010-12-02 19:28:30')")
 
     def test_regex(self):
         self.validate_all(

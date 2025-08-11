@@ -710,10 +710,6 @@ PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008');
 DATETIME;
 
 # dialect: bigquery
-PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008');
-DATETIME;
-
-# dialect: bigquery
 FORMAT_TIME("%R", TIME "15:30:00");
 STRING;
 

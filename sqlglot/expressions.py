@@ -7129,6 +7129,10 @@ class Week(Func):
     arg_types = {"this": True, "mode": False}
 
 
+class WeekStart(Expression):
+    pass
+
+
 class XMLElement(Func):
     _sql_names = ["XMLELEMENT"]
     arg_types = {"this": True, "expressions": False}

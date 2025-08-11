@@ -6535,7 +6535,7 @@ class ParseJSON(Func):
 
 
 class ParseDatetime(Func):
-    arg_types = {"this": True, "format": True, "timezone": False}
+    arg_types = {"this": True, "format": False, "timezone": False}
 
 
 class Least(Func):

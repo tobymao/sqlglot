@@ -1783,7 +1783,6 @@ WHERE
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
         )
-        
 
     def test_errors(self):
         with self.assertRaises(ParseError):

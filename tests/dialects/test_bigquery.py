@@ -1771,7 +1771,7 @@ WHERE
         )
 
         trunc_expr = self.parse_one("DATE_TRUNC(date, WEEK(MONDAY))")
-        self.assertEqual(trunc_expr.find(exp.WeekStart).name, "MONDAY")
+        self.assertEqual(trunc_expr.find(exp.Var).name, "MONDAY")
         self.validate_identity("DATE_TRUNC(date, WEEK(MONDAY))")
         self.validate_identity(
             "LAST_DAY(DATETIME '2008-11-10 15:30:00', WEEK(SUNDAY))",

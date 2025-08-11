@@ -128,14 +128,6 @@ def qualify_tables(
                 table_alias = udtf.args.get("alias") or exp.TableAlias(
                     this=exp.to_identifier(next_alias_name())
                 )
-                if (
-                    isinstance(udtf, exp.Unnest)
-                    and dialect.UNNEST_COLUMN_ONLY
-                    and not table_alias.columns
-                ):
-                    table_alias.set("columns", [table_alias.this.copy()])
-                    table_alias.set("column_only", True)
-
                 udtf.set("alias", table_alias)
 
                 if not table_alias.name:

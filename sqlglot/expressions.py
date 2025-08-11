@@ -1689,7 +1689,7 @@ class ProjectionDef(Expression):
 
 
 class TableAlias(Expression):
-    arg_types = {"this": False, "columns": False, "column_only": False}
+    arg_types = {"this": False, "columns": False}
 
     @property
     def columns(self):

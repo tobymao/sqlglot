@@ -99,6 +99,8 @@ class TestDoris(Validator):
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
+        self.validate_identity("DATE_TRUNC(event_date, 'DAY')")
+        self.validate_identity("DATE_TRUNC('2010-12-02 19:28:30', 'HOUR')")
 
     def test_regex(self):
         self.validate_all(
@@ -126,7 +128,7 @@ class TestDoris(Validator):
             "CREATE TABLE test_table (c1 INT, c2 INT) DISTRIBUTED BY RANDOM BUCKETS 1"
         )
 
-    def test_partitionbyrange(self):
+    def test_partition(self):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (PARTITION `p201701` VALUES LESS THAN ('2017-02-01'), PARTITION `p201702` VALUES LESS THAN ('2017-03-01'))"
         )
@@ -135,6 +137,11 @@ class TestDoris(Validator):
         )
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (FROM ('2000-11-14') TO ('2021-11-14') INTERVAL 2 YEAR)"
+        )
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c2)")
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c1, c2)")
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (DATE_TRUNC(c2, 'MONTH'))"
         )
 
     def test_table_alias_conversion(self):

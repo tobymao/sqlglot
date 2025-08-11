@@ -708,11 +708,11 @@ class Doris(MySQL):
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
-            # Avoid double parens; Doris syntax expects a single set of parens
-            inner = self.sql(expression, "this")
-            if inner.startswith("(") and inner.endswith(")"):
-                inner = inner[1:-1]
-            return f"PARTITION BY ({inner})"
+            node = expression.this
+            if isinstance(node, exp.Schema):
+                parts = ", ".join(self.sql(e) for e in node.expressions)
+                return f"PARTITION BY ({parts})"
+            return f"PARTITION BY ({self.sql(node)})"
 
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""

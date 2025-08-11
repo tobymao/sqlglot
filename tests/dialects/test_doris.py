@@ -138,8 +138,10 @@ class TestDoris(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (FROM ('2000-11-14') TO ('2021-11-14') INTERVAL 2 YEAR)"
         )
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c2)")
+        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c1, c2)")
         self.validate_identity(
-            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (DATE_TRUNC(o_orderdate, 'MONTH'))"
+            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (DATE_TRUNC(c2, 'MONTH'))"
         )
 
     def test_table_alias_conversion(self):

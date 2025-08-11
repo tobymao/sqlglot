@@ -1768,6 +1768,7 @@ WHERE
                 "snowflake": "SELECT CAST(col AS OBJECT(fld1 OBJECT(fld2 INT))):fld1.fld2",
             },
         )
+        self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

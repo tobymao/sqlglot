@@ -661,6 +661,7 @@ class BigQuery(Dialect):
             "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
             "FORMAT_DATETIME": _build_format_time(exp.TsOrDsToDatetime),
             "FORMAT_TIMESTAMP": _build_format_time(exp.TsOrDsToTimestamp),
+            "FORMAT_TIME": _build_format_time(exp.TsOrDsToTime),
             "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
         }
 
@@ -1308,12 +1309,22 @@ class BigQuery(Dialect):
                 func_name = "FORMAT_DATETIME"
             elif isinstance(this, exp.TsOrDsToTimestamp):
                 func_name = "FORMAT_TIMESTAMP"
+            elif isinstance(this, exp.TsOrDsToTime):
+                func_name = "FORMAT_TIME"
             else:
                 func_name = "FORMAT_DATE"
 
             time_expr = (
                 this
-                if isinstance(this, (exp.TsOrDsToDatetime, exp.TsOrDsToTimestamp, exp.TsOrDsToDate))
+                if isinstance(
+                    this,
+                    (
+                        exp.TsOrDsToDatetime,
+                        exp.TsOrDsToTimestamp,
+                        exp.TsOrDsToTime,
+                        exp.TsOrDsToDate,
+                    ),
+                )
                 else expression
             )
             return self.func(

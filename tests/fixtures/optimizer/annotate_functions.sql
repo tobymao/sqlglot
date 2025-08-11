@@ -705,6 +705,10 @@ TIMESTAMP;
 TIMESTAMP_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
 DATETIME;
 
+# dialect: bigquery
+FORMAT_TIME("%R", TIME "15:30:00");
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

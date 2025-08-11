@@ -73,3 +73,89 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT '{\"a\" : 1}' :> JSON")
         self.validate_identity("SELECT NOW() !:> TIMESTAMP(6)")
         self.validate_identity("SELECT x :> GEOGRAPHYPOINT")
+
+    def test_json_extract(self):
+        self.validate_identity(
+            "SELECT a::b FROM t", write_sql="SELECT JSON_EXTRACT_JSON(a, 'b') FROM t"
+        )
+        self.validate_identity(
+            "SELECT a::$b FROM t", write_sql="SELECT JSON_EXTRACT_STRING(a, 'b') FROM t"
+        )
+        self.validate_identity(
+            "SELECT a::%b FROM t", write_sql="SELECT JSON_EXTRACT_DOUBLE(a, 'b') FROM t"
+        )
+        self.validate_identity(
+            "SELECT a::`b`::`2` FROM t",
+            write_sql="SELECT JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(a, 'b'), '2') FROM t",
+        )
+        self.validate_identity(
+            "SELECT a::2 FROM t", write_sql="SELECT JSON_EXTRACT_JSON(a, 2) FROM t"
+        )
+
+        self.validate_all(
+            "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t",
+            read={"": "SELECT JSON_EXTRACT(a, '$.b') FROM t"},
+            write={"": "SELECT JSON_EXTRACT(a, '$.b') FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_STRING(a, 'b') FROM t",
+            write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b', STRING) FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_DOUBLE(a, 'b') FROM t",
+            write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b', DOUBLE) FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_BIGINT(a, 'b') FROM t",
+            write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b', BIGINT) FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_BIGINT(a, 'b') FROM t",
+            write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b', BIGINT) FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_JSON(a, 'b', 2) FROM t",
+            read={"": "SELECT JSON_EXTRACT(a, '$.b[2]') FROM t"},
+            write={"": "SELECT JSON_EXTRACT(a, '$.b[2]') FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_STRING(a, 'b', 2) FROM t",
+            write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b[2]', STRING) FROM t"},
+        )
+
+        self.validate_all(
+            "SELECT BSON_EXTRACT_BSON(a, 'b') FROM t",
+            read={"": "SELECT JSONB_EXTRACT(a, 'b') FROM t"},
+            write={"": "SELECT JSONB_EXTRACT(a, '$.b') FROM t"},
+        )
+        self.validate_all(
+            "SELECT BSON_EXTRACT_STRING(a, 'b') FROM t",
+            write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b', STRING) FROM t"},
+        )
+        self.validate_all(
+            "SELECT BSON_EXTRACT_DOUBLE(a, 'b') FROM t",
+            write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b', DOUBLE) FROM t"},
+        )
+        self.validate_all(
+            "SELECT BSON_EXTRACT_BIGINT(a, 'b') FROM t",
+            write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b', BIGINT) FROM t"},
+        )
+        self.validate_all(
+            "SELECT BSON_EXTRACT_BIGINT(a, 'b') FROM t",
+            write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b', BIGINT) FROM t"},
+        )
+        self.validate_all(
+            "SELECT BSON_EXTRACT_BSON(a, 'b', 2) FROM t",
+            write={"": "SELECT JSONB_EXTRACT(a, '$.b[2]') FROM t"},
+        )
+        self.validate_all(
+            "SELECT BSON_EXTRACT_STRING(a, 'b', 2) FROM t",
+            write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b[2]', STRING) FROM t"},
+        )
+
+        self.validate_all(
+            'SELECT JSON_EXTRACT_STRING(\'{"item": "shoes", "price": "49.95"}\', \'price\') :> DECIMAL(4, 2)',
+            read={
+                "mysql": 'SELECT JSON_VALUE(\'{"item": "shoes", "price": "49.95"}\', \'$.price\' RETURNING DECIMAL(4, 2))'
+            },
+        )

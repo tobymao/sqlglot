@@ -5,7 +5,46 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import build_formatted_time
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get
+from sqlglot.helper import seq_get, is_int
+from sqlglot._typing import F
+
+
+def build_json_extract_path(
+    expr_type: t.Type[F], zero_based_indexing: bool = True, json_type: t.Union[str, None] = None
+) -> t.Callable[[t.List], F]:
+    def _builder(args: t.List) -> F:
+        segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
+        for arg in args[1:]:
+            if isinstance(arg, exp.Column):
+                segments.append(exp.JSONPathKey(this=arg.this.this))
+            elif isinstance(arg, exp.Literal):
+                text = arg.name
+                if is_int(text):
+                    index = int(text)
+                    segments.append(
+                        exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
+                    )
+                else:
+                    segments.append(exp.JSONPathKey(this=text))
+            else:
+                # We use the fallback parser because we can't really transpile non-literals safely
+                return expr_type.from_arg_list(args)
+
+        # This is done to avoid failing in the expression validator due to the arg count
+        del args[2:]
+        if json_type is not None:
+            return expr_type(
+                this=seq_get(args, 0),
+                expression=exp.JSONPath(expressions=segments),
+                json_type=json_type,
+            )
+        else:
+            return expr_type(
+                this=seq_get(args, 0),
+                expression=exp.JSONPath(expressions=segments),
+            )
+
+    return _builder
 
 
 class SingleStore(MySQL):
@@ -64,6 +103,26 @@ class SingleStore(MySQL):
                 ),
                 format=MySQL.format_time(seq_get(args, 1)),
             ),
+            "BSON_EXTRACT_BSON": build_json_extract_path(exp.JSONBExtract),
+            "BSON_EXTRACT_STRING": build_json_extract_path(
+                exp.JSONBExtractScalar, json_type="STRING"
+            ),
+            "BSON_EXTRACT_DOUBLE": build_json_extract_path(
+                exp.JSONBExtractScalar, json_type="DOUBLE"
+            ),
+            "BSON_EXTRACT_BIGINT": build_json_extract_path(
+                exp.JSONBExtractScalar, json_type="BIGINT"
+            ),
+            "JSON_EXTRACT_JSON": build_json_extract_path(exp.JSONExtract),
+            "JSON_EXTRACT_STRING": build_json_extract_path(
+                exp.JSONExtractScalar, json_type="STRING"
+            ),
+            "JSON_EXTRACT_DOUBLE": build_json_extract_path(
+                exp.JSONExtractScalar, json_type="DOUBLE"
+            ),
+            "JSON_EXTRACT_BIGINT": build_json_extract_path(
+                exp.JSONExtractScalar, json_type="BIGINT"
+            ),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -79,6 +138,15 @@ class SingleStore(MySQL):
                 this=this,
                 to=to,
             ),
+            TokenType.DCOLON: lambda self, this, path: build_json_extract_path(
+                exp.JSONExtract,
+            )([this, path]),
+            TokenType.DCOLONDOLLAR: lambda self, this, path: build_json_extract_path(
+                exp.JSONExtractScalar, json_type="STRING"
+            )([this, path]),
+            TokenType.DCOLONPERCENT: lambda self, this, path: build_json_extract_path(
+                exp.JSONExtractScalar, json_type="DOUBLE"
+            )([this, path]),
         }
 
     class Generator(MySQL.Generator):
@@ -112,6 +180,18 @@ class SingleStore(MySQL):
                 lambda self, e: f"{self.sql(e, 'this')} !:> {self.sql(e, 'to')}"
             ),
         }
+
+        TRANSFORMS.pop(exp.JSONPathFilter)
+        TRANSFORMS.pop(exp.JSONPathKey)
+        TRANSFORMS.pop(exp.JSONPathRecursive)
+        TRANSFORMS.pop(exp.JSONPathRoot)
+        TRANSFORMS.pop(exp.JSONPathScript)
+        TRANSFORMS.pop(exp.JSONPathSelector)
+        TRANSFORMS.pop(exp.JSONPathSlice)
+        TRANSFORMS.pop(exp.JSONPathSubscript)
+        TRANSFORMS.pop(exp.JSONPathUnion)
+        TRANSFORMS.pop(exp.JSONPathWildcard)
+        TRANSFORMS.pop(exp.JSONExtractScalar)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1166,3 +1246,98 @@ class SingleStore(MySQL):
             "zerofill",
             "zone",
         }
+
+        def jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
+            return self.sql(exp.Literal.string(expression.this))
+
+        def jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
+            return self.sql(exp.Literal.number(expression.this))
+
+        def jsonpathfilter_sql(self, expression: exp.JSONPathFilter) -> str:
+            self.unsupported("JSONPathFilter is not supported in SingleStore")
+            return f"?{expression.this}"
+
+        def jsonpathrecursive_sql(self, expression: exp.JSONPathRecursive) -> str:
+            self.unsupported("JSONPathRecursive is not supported in SingleStore")
+            return f"..{expression.this or ''}"
+
+        def jsonpathroot_sql(self, expression: exp.JSONPathRoot) -> str:
+            self.unsupported("JSONPathRoot is not supported in SingleStore")
+            return "$"
+
+        def jsonpathscript_sql(self, expression: exp.JSONPathScript) -> str:
+            self.unsupported("JSONPathScript is not supported in SingleStore")
+            return f"({expression.this}"
+
+        def jsonpathselector_sql(self, expression: exp.JSONPathSelector) -> str:
+            self.unsupported("JSONPathSelector is not supported in SingleStore")
+            return f"[{self.json_path_part(expression.this)}]"
+
+        def jsonpathslice_sql(self, expression: exp.JSONPathSlice) -> str:
+            self.unsupported("JSONPathSlice is not supported in SingleStore")
+            return ":".join(
+                "" if p is False else self.json_path_part(p)
+                for p in [
+                    expression.args.get("start"),
+                    expression.args.get("end"),
+                    expression.args.get("step"),
+                ]
+                if p is not None
+            )
+
+        def jsonpathunion_sql(self, expression: exp.JSONPathUnion) -> str:
+            self.unsupported("JSONPathUnion is not supported in SingleStore")
+            return f"[{','.join(self.json_path_part(p) for p in expression.expressions)}]"
+
+        def jsonpathwildcard_sql(self, expression: exp.JSONPathWildcard) -> str:
+            self.unsupported("JSONPathWildcard is not supported in SingleStore")
+            return "*"
+
+        def jsonpath_sql(self, expression: exp.JSONPath) -> str:
+            args = [e for e in expression.expressions if not isinstance(e, exp.JSONPathRoot)]
+
+            return self.format_args(*args)
+
+        @unsupported_args(
+            "only_json_types",
+            "expressions",
+            "variant_extract",
+            "json_query",
+            "option",
+            "quote",
+            "on_condition",
+            "requires_json",
+        )
+        def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
+            return self.func("JSON_EXTRACT_JSON", expression.this, expression.expression)
+
+        def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
+            json_type = expression.args.get("json_type")
+            if json_type is None:
+                json_type = "JSON"
+            return self.func(f"JSON_EXTRACT_{json_type}", expression.this, expression.expression)
+
+        def jsonbextract_sql(self, expression: exp.JSONBExtract) -> str:
+            return self.func("BSON_EXTRACT_BSON", expression.this, expression.expression)
+
+        def jsonbextractscalar_sql(self, expression: exp.JSONBExtractScalar) -> str:
+            json_type = expression.args.get("json_type")
+            if json_type is None:
+                json_type = "JSON"
+            return self.func(f"BSON_EXTRACT_{json_type}", expression.this, expression.expression)
+
+        def jsonextractarray_sql(self, expression: exp.JSONExtractArray) -> str:
+            self.unsupported("Arrays are not supported in SingleStore")
+            return self.function_fallback_sql(expression)
+
+        @unsupported_args("on_condition")
+        def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
+            path = self.sql(expression, "path")
+
+            res = self.func("JSON_EXTRACT_STRING", expression.this, f"{path}")
+
+            returning = self.sql(expression, "returning")
+            if returning:
+                return f"{res} :> {returning}"
+            else:
+                return res

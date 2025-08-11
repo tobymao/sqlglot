@@ -1658,7 +1658,9 @@ def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[
 
     if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart)):
         return unit
-    return exp.Var(this=default) if default else None
+
+    value = unit.name if unit else default
+    return exp.Var(this=value) if value else None
 
 
 @t.overload

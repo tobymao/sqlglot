@@ -40,6 +40,7 @@ class Dremio(Dialect):
     SUPPORTS_VALUES_DEFAULT = False
 
     TIME_MAPPING = {
+        # year
         "YYYY": "%Y",
         "YY": "%y",
         # month / day

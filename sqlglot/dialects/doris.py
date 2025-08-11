@@ -35,9 +35,7 @@ def _build_date_trunc(args: t.List[exp.Expression]) -> exp.Expression:
     # Determine which argument is the unit
     unit, this = a0, a1 if _is_unit_like(a0) else a1, a0
 
-    node = exp.TimestampTrunc(this=this, unit=unit)
-
-    return node
+    return exp.TimestampTrunc(this=this, unit=unit)
 
 
 class Doris(MySQL):

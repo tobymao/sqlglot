@@ -33,11 +33,7 @@ def _build_date_trunc(args: t.List[exp.Expression]) -> exp.Expression:
         return not any(ch.isdigit() for ch in text)
 
     # Determine which argument is the unit
-    unit_first = _is_unit_like(a0) and not _is_unit_like(a1)
-    if unit_first:
-        unit, this = a0, a1
-    else:
-        this, unit = a0, a1
+    unit, this = a0, a1 if _is_unit_like(a0) else a1, a0
 
     node = exp.TimestampTrunc(this=this, unit=unit)
 

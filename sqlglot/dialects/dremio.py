@@ -40,7 +40,6 @@ class Dremio(Dialect):
     SUPPORTS_VALUES_DEFAULT = False
 
     TIME_MAPPING = {
-        # year
         "YYYY": "%Y",
         "YY": "%y",
         # month / day
@@ -66,6 +65,32 @@ class Dremio(Dialect):
         # timezone
         "TZD": "%Z",  # abbreviation  (UTC, PST, ...)
         "TZO": "%z",  # numeric offset (+0200)
+        # year
+        "yyyy": "%Y",
+        "yy": "%y",
+        # month / day
+        "mm": "%m",
+        "mon": "%b",
+        "month": "%B",
+        "ddd": "%j",
+        "dd": "%d",
+        "dy": "%a",
+        "day": "%A",
+        # hours / minutes / seconds
+        "hh24": "%H",
+        "hh12": "%I",
+        "hh": "%I",  # 24- / 12-hour
+        "mi": "%M",
+        "ss": "%S",
+        "fff": "%f",
+        "ampm": "%p",
+        # ISO week / century etc.
+        "ww": "%W",
+        "d": "%w",
+        "cc": "%C",
+        # timezone
+        "tzd": "%Z",  # abbreviation  (UTC, PST, ...)
+        "tzo": "%z",  # numeric offset (+0200)
     }
 
     class Parser(parser.Parser):

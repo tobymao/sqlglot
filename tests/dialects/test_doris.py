@@ -211,3 +211,13 @@ class TestDoris(Validator):
                 "postgres": "UPDATE prices AS p SET p.amount = p.amount * 0.9 WHERE p.product_id IN (SELECT pr.id FROM products AS pr JOIN categories AS c ON pr.category_id = c.id WHERE c.foo = 'Electronics')",
             },
         )
+
+    def test_rename_table(self):
+        self.validate_all(
+            "ALTER TABLE db.t1 RENAME TO db.t2",
+            write={
+                "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
+                "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
+                "doris": "ALTER TABLE db.t1 RENAME t2",
+            },
+        )

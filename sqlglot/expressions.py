@@ -6534,6 +6534,10 @@ class ParseJSON(Func):
     arg_types = {"this": True, "expression": False, "safe": False}
 
 
+class ParseDatetime(Func):
+    arg_types = {"this": True, "format": True}
+
+
 class Least(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

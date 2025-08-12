@@ -1772,6 +1772,7 @@ WHERE
             "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')"
         )
         self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
+        self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

@@ -713,6 +713,10 @@ DATETIME;
 FORMAT_TIME("%R", TIME "15:30:00");
 STRING;
 
+# dialect: bigquery
+PARSE_TIME("%I:%M:%S", "07:30:00");
+TIME;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -40,7 +40,9 @@ class TestAthena(Validator):
 
     def test_ddl(self):
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
-        self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")
+        self.validate_identity(
+            "CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'"
+        )
         self.validate_identity(
             r"CREATE EXTERNAL TABLE george.t (id INT COMMENT 'foo \\ bar') LOCATION 's3://my-bucket/'"
         )
@@ -94,7 +96,9 @@ class TestAthena(Validator):
     def test_dml(self):
         self.validate_all(
             "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
-            read={"": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)"},
+            read={
+                "": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)"
+            },
             write={
                 "hive": "SELECT CAST(ds AS STRING) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
                 "trino": "SELECT CAST(ds AS VARCHAR) AS ds FROM (VALUES ('2022-01-01')) AS t(ds)",
@@ -106,8 +110,12 @@ class TestAthena(Validator):
         self.validate_identity("CREATE SCHEMA `foo`")
         self.validate_identity("CREATE SCHEMA foo")
 
-        self.validate_identity("CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'")
-        self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'")
+        self.validate_identity(
+            "CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'"
+        )
+        self.validate_identity(
+            "CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'"
+        )
         self.validate_identity(
             "CREATE EXTERNAL TABLE foo (id INT) LOCATION 's3://foo/'",
             "CREATE EXTERNAL TABLE `foo` (`id` INT) LOCATION 's3://foo/'",
@@ -180,8 +188,12 @@ class TestAthena(Validator):
         table_schema = exp.Schema(
             this=exp.to_table("foo.bar"),
             expressions=[
-                exp.ColumnDef(this=exp.to_identifier("a"), kind=exp.DataType.build("int")),
-                exp.ColumnDef(this=exp.to_identifier("b"), kind=exp.DataType.build("varchar")),
+                exp.ColumnDef(
+                    this=exp.to_identifier("a"), kind=exp.DataType.build("int")
+                ),
+                exp.ColumnDef(
+                    this=exp.to_identifier("b"), kind=exp.DataType.build("varchar")
+                ),
             ],
         )
 
@@ -220,12 +232,15 @@ class TestAthena(Validator):
                             expressions=[
                                 exp.to_column("partition_col"),
                                 exp.PartitionedByBucket(
-                                    this=exp.to_column("a"), expression=exp.Literal.number(4)
+                                    this=exp.to_column("a"),
+                                    expression=exp.Literal.number(4),
                                 ),
                             ]
                         )
                     ),
-                    exp.Property(this=exp.var("table_type"), value=exp.Literal.string("iceberg")),
+                    exp.Property(
+                        this=exp.var("table_type"), value=exp.Literal.string("iceberg")
+                    ),
                 ]
             ),
         )
@@ -247,7 +262,9 @@ class TestAthena(Validator):
                     exp.FileFormatProperty(this=exp.Literal.string("parquet")),
                     exp.LocationProperty(this=exp.Literal.string("s3://foo")),
                     exp.PartitionedByProperty(
-                        this=exp.Schema(expressions=[exp.to_column("partition_col", quoted=True)])
+                        this=exp.Schema(
+                            expressions=[exp.to_column("partition_col", quoted=True)]
+                        )
                     ),
                 ]
             ),
@@ -269,7 +286,9 @@ class TestAthena(Validator):
             kind="TABLE",
             properties=exp.Properties(
                 expressions=[
-                    exp.Property(this=exp.var("table_type"), value=exp.Literal.string("iceberg")),
+                    exp.Property(
+                        this=exp.var("table_type"), value=exp.Literal.string("iceberg")
+                    ),
                     exp.LocationProperty(this=exp.Literal.string("s3://foo")),
                     exp.PartitionedByProperty(
                         this=exp.Schema(
@@ -301,10 +320,15 @@ class TestAthena(Validator):
     def test_parse_partitioned_by_returns_iceberg_transforms(self):
         # check that parse_into works for PartitionedByProperty and also that correct AST nodes are emitted for Iceberg transforms
         parsed = self.parse_one(
-            "(a, bucket(4, b), truncate(3, c), month(d))", into=exp.PartitionedByProperty
+            "(a, bucket(4, b), truncate(3, c), month(d))",
+            into=exp.PartitionedByProperty,
         )
 
         assert isinstance(parsed, exp.PartitionedByProperty)
         assert isinstance(parsed.this, exp.Schema)
-        assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionedByBucket))
-        assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionByTruncate))
+        assert next(
+            n for n in parsed.this.expressions if isinstance(n, exp.PartitionedByBucket)
+        )
+        assert next(
+            n for n in parsed.this.expressions if isinstance(n, exp.PartitionByTruncate)
+        )

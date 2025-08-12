@@ -95,7 +95,9 @@ class TestDoris(Validator):
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS example_tbl_unique (user_id BIGINT NOT NULL, user_name VARCHAR(50) NOT NULL, city VARCHAR(20), age SMALLINT, sex TINYINT) UNIQUE KEY (user_id, user_name) DISTRIBUTED BY HASH (user_id) BUCKETS 10 PROPERTIES ('enable_unique_key_merge_on_write'='true')"
         )
-        self.validate_identity("INSERT OVERWRITE TABLE test PARTITION(p1, p2) VALUES (1, 2)")
+        self.validate_identity(
+            "INSERT OVERWRITE TABLE test PARTITION(p1, p2) VALUES (1, 2)"
+        )
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
@@ -116,14 +118,20 @@ class TestDoris(Validator):
         self.validate_identity("ANALYZE TABLE TBL(c1, c2)")
 
     def test_key(self):
-        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) UNIQUE KEY (c1)")
-        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) DUPLICATE KEY (c1)")
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 INT) UNIQUE KEY (c1)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 INT) DUPLICATE KEY (c1)"
+        )
 
     def test_distributed(self):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 INT) UNIQUE KEY (c1) DISTRIBUTED BY HASH (c1)"
         )
-        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) DISTRIBUTED BY RANDOM")
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 INT) DISTRIBUTED BY RANDOM"
+        )
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 INT) DISTRIBUTED BY RANDOM BUCKETS 1"
         )
@@ -138,8 +146,12 @@ class TestDoris(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY RANGE (`c2`) (FROM ('2000-11-14') TO ('2021-11-14') INTERVAL 2 YEAR)"
         )
-        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c2)")
-        self.validate_identity("CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c1, c2)")
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c2)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (c1, c2)"
+        )
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (DATE_TRUNC(c2, 'MONTH'))"
         )

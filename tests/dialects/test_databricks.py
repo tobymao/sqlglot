@@ -19,7 +19,9 @@ class TestDatabricks(Validator):
         self.validate_identity("DESCRIBE HISTORY a.b")
         self.validate_identity("DESCRIBE history.tbl")
         self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")
-        self.validate_identity("CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)")
+        self.validate_identity(
+            "CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)"
+        )
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES (a.b=15)")
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES ('a.b'=15)")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO HOUR)")
@@ -33,8 +35,12 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1")
         self.validate_identity("CREATE FUNCTION a AS b")
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
-        self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
-        self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
+        self.validate_identity(
+            "CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))"
+        )
+        self.validate_identity(
+            "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)"
+        )
         self.validate_identity("SELECT PARSE_JSON('{}')")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
@@ -208,7 +214,9 @@ class TestDatabricks(Validator):
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")
         self.validate_identity("SELECT TRY_CAST(c1:price AS ARRAY<VARIANT>)")
-        self.validate_identity("""SELECT TRY_CAST(c1:["foo bar"]["baz qux"] AS ARRAY<VARIANT>)""")
+        self.validate_identity(
+            """SELECT TRY_CAST(c1:["foo bar"]["baz qux"] AS ARRAY<VARIANT>)"""
+        )
         self.validate_identity(
             """SELECT c1:item[1].price FROM VALUES ('{ "item": [ { "model" : "basic", "price" : 6.12 }, { "model" : "medium", "price" : 9.24 } ] }') AS T(c1)"""
         )
@@ -367,13 +375,21 @@ class TestDatabricks(Validator):
         self.validate_identity("GRANT CREATE ON SCHEMA my_schema TO `alf@melmak.et`")
         self.validate_identity("GRANT SELECT ON TABLE sample_data TO `alf@melmak.et`")
         self.validate_identity("GRANT ALL PRIVILEGES ON TABLE forecasts TO finance")
-        self.validate_identity("GRANT SELECT ON TABLE t TO `fab9e00e-ca35-11ec-9d64-0242ac120002`")
+        self.validate_identity(
+            "GRANT SELECT ON TABLE t TO `fab9e00e-ca35-11ec-9d64-0242ac120002`"
+        )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS NOSCAN")
-        self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR ALL COLUMNS")
-        self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR COLUMNS foo, bar")
-        self.validate_identity("ANALYZE TABLE ctlg.db.tbl COMPUTE DELTA STATISTICS NOSCAN")
+        self.validate_identity(
+            "ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR ALL COLUMNS"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR COLUMNS foo, bar"
+        )
+        self.validate_identity(
+            "ANALYZE TABLE ctlg.db.tbl COMPUTE DELTA STATISTICS NOSCAN"
+        )
         self.validate_identity("ANALYZE TABLES COMPUTE STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLES FROM db COMPUTE STATISTICS")
         self.validate_identity("ANALYZE TABLES IN db COMPUTE STATISTICS")

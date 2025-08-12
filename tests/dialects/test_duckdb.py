@@ -127,11 +127,17 @@ class TestDuckDB(Validator):
 
         self.assertEqual(
             parse_one("select * from t limit (select 5)").sql(dialect="duckdb"),
-            exp.select("*").from_("t").limit(exp.select("5").subquery()).sql(dialect="duckdb"),
+            exp.select("*")
+            .from_("t")
+            .limit(exp.select("5").subquery())
+            .sql(dialect="duckdb"),
         )
         self.assertEqual(
             parse_one("select * from t offset (select 5)").sql(dialect="duckdb"),
-            exp.select("*").from_("t").offset(exp.select("5").subquery()).sql(dialect="duckdb"),
+            exp.select("*")
+            .from_("t")
+            .offset(exp.select("5").subquery())
+            .sql(dialect="duckdb"),
         )
 
         self.validate_all(
@@ -265,10 +271,14 @@ class TestDuckDB(Validator):
 
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
         self.assertEqual(
-            parse_one("a / b", read="duckdb").assert_is(exp.Div).sql(dialect="duckdb"), "a / b"
+            parse_one("a / b", read="duckdb").assert_is(exp.Div).sql(dialect="duckdb"),
+            "a / b",
         )
         self.assertEqual(
-            parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
+            parse_one("a // b", read="duckdb")
+            .assert_is(exp.IntDiv)
+            .sql(dialect="duckdb"),
+            "a // b",
         )
 
         self.validate_identity(
@@ -280,8 +290,12 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT LIST_TRANSFORM(LIST_FILTER([0, 1, 2, 3, 4, 5], LAMBDA x : x % 2 = 0), LAMBDA y : y * y)"
         )
-        self.validate_identity("SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x : COALESCE(x, 0) + 1)")
-        self.validate_identity("SELECT LIST_TRANSFORM(nbr, LAMBDA x : x + 1) FROM article AS a")
+        self.validate_identity(
+            "SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x : COALESCE(x, 0) + 1)"
+        )
+        self.validate_identity(
+            "SELECT LIST_TRANSFORM(nbr, LAMBDA x : x + 1) FROM article AS a"
+        )
         self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
         self.validate_identity("SELECT UUIDV7()")
         self.validate_identity("SELECT TRY(LOG(0))")
@@ -295,7 +309,9 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
-        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
+        self.validate_identity(
+            "SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)"
+        )
         self.validate_identity("SELECT * FROM GLOB(x)")
         self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
         self.validate_identity("SELECT MAP {'x': 1}")
@@ -316,7 +332,9 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT ROW(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
         self.validate_identity("SELECT (x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
         self.validate_identity("SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a)")
-        self.validate_identity("FROM  x SELECT x UNION SELECT 1", "SELECT x FROM x UNION SELECT 1")
+        self.validate_identity(
+            "FROM  x SELECT x UNION SELECT 1", "SELECT x FROM x UNION SELECT 1"
+        )
         self.validate_identity("FROM (FROM tbl)", "SELECT * FROM (SELECT * FROM tbl)")
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
         self.validate_identity("x -> '$.family'")
@@ -324,11 +342,13 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT * FROM foo WHERE bar > $baz AND bla = $bob")
         self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)
         self.validate_identity("SUMMARIZE SELECT * FROM tbl").assert_is(exp.Summarize)
-        self.validate_identity("CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)")
-        self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
-        self.validate_identity("UNION_VALUE(k1 := 1)").find(exp.PropertyEQ).this.assert_is(
-            exp.Identifier
+        self.validate_identity(
+            "CREATE TABLE tbl_summary AS SELECT * FROM (SUMMARIZE tbl)"
         )
+        self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
+        self.validate_identity("UNION_VALUE(k1 := 1)").find(
+            exp.PropertyEQ
+        ).this.assert_is(exp.Identifier)
         self.validate_identity(
             "SELECT species, island, COUNT(*) FROM t GROUP BY GROUPING SETS (species), GROUPING SETS (island)"
         )
@@ -342,7 +362,8 @@ class TestDuckDB(Validator):
             "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
         ).assert_is(exp.Summarize)
         self.validate_identity(
-            "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
+            "SELECT * FROM x LEFT JOIN UNNEST(y)",
+            "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE",
         )
         self.validate_identity(
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
@@ -436,13 +457,19 @@ class TestDuckDB(Validator):
             # QUALIFY comes after WINDOW
             "SELECT schema_name, function_name, ROW_NUMBER() OVER my_window AS function_rank FROM DUCKDB_FUNCTIONS() WINDOW my_window AS (PARTITION BY schema_name ORDER BY function_name) QUALIFY ROW_NUMBER() OVER my_window < 3"
         )
-        self.validate_identity("DATE_SUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
-        self.validate_identity("DATESUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
+        self.validate_identity("DATE_SUB('YEAR', col, '2020-01-01')").assert_is(
+            exp.Anonymous
+        )
+        self.validate_identity("DATESUB('YEAR', col, '2020-01-01')").assert_is(
+            exp.Anonymous
+        )
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
-        self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
+        self.validate_all(
+            "SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'}
+        )
         self.validate_all(
             "COUNT_IF(x)",
             write={
@@ -519,7 +546,8 @@ class TestDuckDB(Validator):
             write={"duckdb": "PIVOT Cities ON Year USING SUM(Population)"},
         )
         self.validate_all(
-            "WITH t AS (SELECT 1) FROM t", write={"duckdb": "WITH t AS (SELECT 1) SELECT * FROM t"}
+            "WITH t AS (SELECT 1) FROM t",
+            write={"duckdb": "WITH t AS (SELECT 1) SELECT * FROM t"},
         )
         self.validate_all(
             "WITH t AS (SELECT 1) SELECT * FROM (FROM t)",
@@ -773,11 +801,15 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT CAST('2020-05-06' AS DATE) - INTERVAL '5' DAY",
-            read={"bigquery": "SELECT DATE_SUB(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
+            read={
+                "bigquery": "SELECT DATE_SUB(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"
+            },
         )
         self.validate_all(
             "SELECT CAST('2020-05-06' AS DATE) + INTERVAL '5' DAY",
-            read={"bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
+            read={
+                "bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"
+            },
         )
         self.validate_identity(
             "SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t",
@@ -880,7 +912,9 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' WITH (FORMAT JSON, ARRAY TRUE)"
         )
-        self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')")
+        self.validate_identity(
+            "COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')"
+        )
 
         self.validate_all(
             "VARIANCE(a)",
@@ -1046,7 +1080,8 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
 
         self.validate_all(
-            "SELECT MAKE_DATE(2016, 12, 25)", read={"bigquery": "SELECT DATE(2016, 12, 25)"}
+            "SELECT MAKE_DATE(2016, 12, 25)",
+            read={"bigquery": "SELECT DATE(2016, 12, 25)"},
         )
         self.validate_all(
             "SELECT CAST(CAST('2016-12-25 23:59:59' AS TIMESTAMP) AS DATE)",
@@ -1276,7 +1311,9 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS BINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS BLOB)")
         self.validate_identity("CAST(x AS LOGICAL)", "CAST(x AS BOOLEAN)")
-        self.validate_identity("""CAST({'i': 1, 's': 'foo'} AS STRUCT("s" TEXT, "i" INT))""")
+        self.validate_identity(
+            """CAST({'i': 1, 's': 'foo'} AS STRUCT("s" TEXT, "i" INT))"""
+        )
         self.validate_identity(
             "CAST(ROW(1, ROW(1)) AS STRUCT(number BIGINT, row STRUCT(number BIGINT)))"
         )
@@ -1503,7 +1540,9 @@ class TestDuckDB(Validator):
 
         agg_funcs = (exp.Sum, exp.Max, exp.Min)
 
-        for func_type in DuckDB.Generator.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS + agg_funcs:
+        for func_type in (
+            DuckDB.Generator.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS + agg_funcs
+        ):
             func = func_type(this=exp.to_identifier("col"))
             ignore_null = exp.IgnoreNulls(this=func)
             windowed_ignore_null = exp.Window(this=ignore_null)
@@ -1536,18 +1575,28 @@ class TestDuckDB(Validator):
 
         # when 'if exists' is set, the syntax is DETACH DATABASE, not DETACH
         # ref: https://duckdb.org/docs/stable/sql/statements/attach.html#detach-syntax
-        self.validate_identity("DETACH IF EXISTS file", "DETACH DATABASE IF EXISTS file")
-        self.validate_identity("DETACH DATABASE IF EXISTS file", "DETACH DATABASE IF EXISTS file")
+        self.validate_identity(
+            "DETACH IF EXISTS file", "DETACH DATABASE IF EXISTS file"
+        )
+        self.validate_identity(
+            "DETACH DATABASE IF EXISTS file", "DETACH DATABASE IF EXISTS file"
+        )
 
         self.validate_identity("DETACH DATABASE db", "DETACH db")
 
     def test_simplified_pivot_unpivot(self):
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
         self.validate_identity("PIVOT Cities ON Year USING FIRST(Population)")
-        self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country")
+        self.validate_identity(
+            "PIVOT Cities ON Year USING SUM(Population) GROUP BY Country"
+        )
         self.validate_identity("PIVOT Cities ON Country, Name USING SUM(Population)")
-        self.validate_identity("PIVOT Cities ON Country || '_' || Name USING SUM(Population)")
-        self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country, Name")
+        self.validate_identity(
+            "PIVOT Cities ON Country || '_' || Name USING SUM(Population)"
+        )
+        self.validate_identity(
+            "PIVOT Cities ON Year USING SUM(Population) GROUP BY Country, Name"
+        )
 
         self.validate_identity("UNPIVOT (SELECT 1 AS col1, 2 AS col2) ON foo, bar")
         self.validate_identity(
@@ -1699,7 +1748,9 @@ class TestDuckDB(Validator):
     def test_extract_date_parts(self):
         for part in ("WEEK", "WEEKOFYEAR"):
             # Both are synonyms for ISO week
-            self.validate_identity(f"EXTRACT({part} FROM foo)", "EXTRACT(WEEK FROM foo)")
+            self.validate_identity(
+                f"EXTRACT({part} FROM foo)", "EXTRACT(WEEK FROM foo)"
+            )
 
         for part in (
             "WEEKDAY",
@@ -1731,7 +1782,9 @@ class TestDuckDB(Validator):
         self.validate_identity("RESET SESSION threads", check_command_warning=True)
         self.validate_identity("RESET GLOBAL memory_limit", check_command_warning=True)
         self.validate_identity("RESET LOCAL threads", check_command_warning=True)
-        self.validate_identity("RESET SESSION default_collation", check_command_warning=True)
+        self.validate_identity(
+            "RESET SESSION default_collation", check_command_warning=True
+        )
 
     def test_map_struct(self):
         self.validate_identity("MAP {1: 'a', 2: 'b'}")

@@ -44,10 +44,14 @@ class StarRocks(MySQL):
             **MySQL.Parser.FUNCTIONS,
             "DATE_TRUNC": build_timestamp_trunc,
             "DATEDIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                unit=exp.Literal.string("DAY"),
             ),
             "DATE_DIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
+                this=seq_get(args, 1),
+                expression=seq_get(args, 2),
+                unit=seq_get(args, 0),
             ),
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
@@ -56,7 +60,9 @@ class StarRocks(MySQL):
             **MySQL.Parser.PROPERTY_PARSERS,
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
-            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+            "UNIQUE": lambda self: self._parse_composite_key_property(
+                exp.UniqueKeyProperty
+            ),
         }
 
         def _parse_create(self) -> exp.Create | exp.Command:
@@ -82,7 +88,8 @@ class StarRocks(MySQL):
                 if not alias:
                     # Starrocks defaults to naming the table alias as "unnest"
                     alias = exp.TableAlias(
-                        this=exp.to_identifier("unnest"), columns=[exp.to_identifier("unnest")]
+                        this=exp.to_identifier("unnest"),
+                        columns=[exp.to_identifier("unnest")],
                     )
                     unnest.set("alias", alias)
                 elif not alias.args.get("columns"):
@@ -92,13 +99,17 @@ class StarRocks(MySQL):
 
             return unnest
 
-        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
+        def _parse_partitioning_granularity_dynamic(
+            self,
+        ) -> exp.PartitionByRangePropertyDynamic:
             self._match_text_seq("START")
             start = self._parse_wrapped(self._parse_string)
             self._match_text_seq("END")
             end = self._parse_wrapped(self._parse_string)
             self._match_text_seq("EVERY")
-            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
+            every = self._parse_wrapped(
+                lambda: self._parse_interval() or self._parse_number()
+            )
             return self.expression(
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
@@ -158,10 +169,16 @@ class StarRocks(MySQL):
             exp.RegexpLike: rename_func("REGEXP"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.StDistance: st_distance_sphere,
-            exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
+            exp.StrToUnix: lambda self, e: self.func(
+                "UNIX_TIMESTAMP", e.this, self.format_time(e)
+            ),
+            exp.TimestampTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", unit_to_str(e), e.this
+            ),
             exp.TimeStrToDate: rename_func("TO_DATE"),
-            exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
+            exp.UnixToStr: lambda self, e: self.func(
+                "FROM_UNIXTIME", e.this, self.format_time(e)
+            ),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
         }
 
@@ -339,6 +356,11 @@ class StarRocks(MySQL):
                     # otherwise insert it at the beginning
                     engine = props.find(exp.EngineProperty)
                     engine_index = (engine.index or 0) if engine else -1
-                    props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
+                    props.set(
+                        "expressions",
+                        primary_key.pop(),
+                        engine_index + 1,
+                        overwrite=False,
+                    )
 
             return super().create_sql(expression)

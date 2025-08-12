@@ -8,7 +8,9 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
-        expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
+        expr = self.parse_one(
+            "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)"
+        )
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
 
@@ -27,11 +29,17 @@ class TestPostgres(Validator):
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
-        self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
-        self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
+        self.validate_identity(
+            "SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))"
+        )
+        self.validate_identity(
+            "SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))"
+        )
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
-        self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
+        self.validate_identity(
+            "SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)"
+        )
         self.validate_identity("x @@ y")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
@@ -57,18 +65,28 @@ class TestPostgres(Validator):
         self.validate_identity("STRING_AGG(x, ',' ORDER BY y)")
         self.validate_identity("STRING_AGG(x, ',' ORDER BY y DESC)")
         self.validate_identity("STRING_AGG(DISTINCT x, ',' ORDER BY y DESC)")
-        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
+        self.validate_identity(
+            "SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END"
+        )
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
-        self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
+        self.validate_identity(
+            "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')"
+        )
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
-        self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
-        self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
+        self.validate_identity(
+            "SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)"
+        )
+        self.validate_identity(
+            """SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)"""
+        )
         self.validate_identity("x ~ 'y'")
         self.validate_identity("x ~* 'y'")
-        self.validate_identity("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
+        self.validate_identity(
+            "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)"
+        )
         self.validate_identity("CAST(1 AS DECIMAL) / CAST(2 AS DECIMAL) * -100")
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_SCHEMA")
@@ -187,7 +205,8 @@ class TestPostgres(Validator):
             "SELECT 'The price is $9.95' AS msg",
         )
         self.validate_identity(
-            "COMMENT ON TABLE mytable IS $$doc this$$", "COMMENT ON TABLE mytable IS 'doc this'"
+            "COMMENT ON TABLE mytable IS $$doc this$$",
+            "COMMENT ON TABLE mytable IS 'doc this'",
         )
         self.validate_identity(
             "UPDATE MYTABLE T1 SET T1.COL = 13",
@@ -862,7 +881,9 @@ FROM json_data, field_ids""",
         )
         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1)")
         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1 FOR 1)")
-        self.validate_identity("ARRAY[1, 2, 3] && ARRAY[1, 2]").assert_is(exp.ArrayOverlaps)
+        self.validate_identity("ARRAY[1, 2, 3] && ARRAY[1, 2]").assert_is(
+            exp.ArrayOverlaps
+        )
 
         self.validate_all(
             """SELECT JSONB_EXISTS('{"a": [1,2,3]}', 'a')""",
@@ -933,28 +954,35 @@ FROM json_data, field_ids""",
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
-        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
-            exp.DataType
-        )
+        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args[
+            "kind"
+        ].assert_is(exp.DataType)
 
         # Checks that OID is parsed into a DataType (ObjectIdentifier)
         self.assertIsInstance(
-            self.parse_one("CREATE TABLE p.t (c oid)").find(exp.DataType), exp.ObjectIdentifier
+            self.parse_one("CREATE TABLE p.t (c oid)").find(exp.DataType),
+            exp.ObjectIdentifier,
         )
 
         expr = self.parse_one("CREATE TABLE t (x INTERVAL day)")
         cdef = expr.find(exp.ColumnDef)
         cdef.args["kind"].assert_is(exp.DataType)
-        self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
+        self.assertEqual(
+            expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)"
+        )
 
-        self.validate_identity('ALTER INDEX "IX_Ratings_Column1" RENAME TO "IX_Ratings_Column2"')
+        self.validate_identity(
+            'ALTER INDEX "IX_Ratings_Column1" RENAME TO "IX_Ratings_Column2"'
+        )
         self.validate_identity('CREATE TABLE x (a TEXT COLLATE "de_DE")')
         self.validate_identity('CREATE TABLE x (a TEXT COLLATE pg_catalog."default")')
         self.validate_identity("CREATE TABLE t (col INT[3][5])")
         self.validate_identity("CREATE TABLE t (col INT[3])")
         self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")
         self.validate_identity("CREATE INDEX et_vid_idx ON et(vid) INCLUDE (fid)")
-        self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
+        self.validate_identity(
+            "CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)"
+        )
         self.validate_identity("CREATE TABLE test (elems JSONB[])")
         self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
         self.validate_identity("CREATE TABLE test (foo HSTORE)")
@@ -965,10 +993,18 @@ FROM json_data, field_ids""",
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
         self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
-        self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
-        self.validate_identity("CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)")
-        self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
-        self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'")
+        self.validate_identity(
+            "CREATE TABLE cities_partdef PARTITION OF cities DEFAULT"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)"
+        )
+        self.validate_identity(
+            "CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'"
+        )
         self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY")
         self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY")
         self.validate_identity("TRUNCATE TABLE t1 CASCADE")
@@ -981,7 +1017,9 @@ FROM json_data, field_ids""",
         self.validate_identity("ALTER TABLE t1 SET WITHOUT OIDS")
         self.validate_identity("ALTER TABLE t1 SET ACCESS METHOD method")
         self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
-        self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
+        self.validate_identity(
+            "ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)"
+        )
         self.validate_identity(
             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
         )
@@ -994,7 +1032,9 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
         )
-        self.validate_identity("CREATE TABLE t (i INT, a TEXT, PRIMARY KEY (i) INCLUDE (a))")
+        self.validate_identity(
+            "CREATE TABLE t (i INT, a TEXT, PRIMARY KEY (i) INCLUDE (a))"
+        )
         self.validate_identity(
             "CREATE TABLE t (i INT, PRIMARY KEY (i), EXCLUDE USING gist(col varchar_pattern_ops DESC NULLS LAST WITH &&) WITH (sp1=1, sp2=2))"
         )
@@ -1163,12 +1203,22 @@ FROM json_data, field_ids""",
             },
         )
 
-        self.validate_identity("CREATE TABLE tbl (col INT UNIQUE NULLS NOT DISTINCT DEFAULT 9.99)")
-        self.validate_identity("CREATE TABLE tbl (col UUID UNIQUE DEFAULT GEN_RANDOM_UUID())")
-        self.validate_identity("CREATE TABLE tbl (col UUID, UNIQUE NULLS NOT DISTINCT (col))")
-        self.validate_identity("CREATE TABLE tbl (col_a INT GENERATED ALWAYS AS (1 + 2) STORED)")
+        self.validate_identity(
+            "CREATE TABLE tbl (col INT UNIQUE NULLS NOT DISTINCT DEFAULT 9.99)"
+        )
+        self.validate_identity(
+            "CREATE TABLE tbl (col UUID UNIQUE DEFAULT GEN_RANDOM_UUID())"
+        )
+        self.validate_identity(
+            "CREATE TABLE tbl (col UUID, UNIQUE NULLS NOT DISTINCT (col))"
+        )
+        self.validate_identity(
+            "CREATE TABLE tbl (col_a INT GENERATED ALWAYS AS (1 + 2) STORED)"
+        )
 
-        self.validate_identity("CREATE INDEX CONCURRENTLY ix_table_id ON tbl USING btree(id)")
+        self.validate_identity(
+            "CREATE INDEX CONCURRENTLY ix_table_id ON tbl USING btree(id)"
+        )
         self.validate_identity(
             "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_table_id ON tbl USING btree(id)"
         )
@@ -1201,7 +1251,9 @@ FROM json_data, field_ids""",
         )
 
         with self.assertRaises(ParseError):
-            transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
+            transpile(
+                "CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres"
+            )
         with self.assertRaises(ParseError):
             transpile(
                 "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
@@ -1411,8 +1463,12 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
 
     def test_xmlelement(self):
         self.validate_identity("SELECT XMLELEMENT(NAME foo)")
-        self.validate_identity("SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES('xyz' AS bar))")
-        self.validate_identity("SELECT XMLELEMENT(NAME test, XMLATTRIBUTES(a, b)) FROM test")
+        self.validate_identity(
+            "SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES('xyz' AS bar))"
+        )
+        self.validate_identity(
+            "SELECT XMLELEMENT(NAME test, XMLATTRIBUTES(a, b)) FROM test"
+        )
         self.validate_identity(
             "SELECT XMLELEMENT(NAME foo, XMLATTRIBUTES(CURRENT_DATE AS bar), 'cont', 'ent')"
         )
@@ -1441,7 +1497,9 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
 
     def test_json_extract(self):
         for arrow_op in ("->", "->>"):
-            with self.subTest(f"Ensure {arrow_op} operator roundtrips int values as subscripts"):
+            with self.subTest(
+                f"Ensure {arrow_op} operator roundtrips int values as subscripts"
+            ):
                 self.validate_all(
                     f"SELECT foo {arrow_op} 1",
                     write={
@@ -1487,14 +1545,22 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             },
         )
         self.validate_all(
-            "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
+            "ROUND(CAST(x AS DECIMAL(18, 3)), 4)",
+            read={"duckdb": "ROUND(x::DECIMAL, 4)"},
         )
 
     def test_datatype(self):
-        self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")
+        self.assertEqual(
+            exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML"
+        )
         self.validate_identity("CREATE TABLE foo (data XML)")
 
     def test_locks(self):
-        for key_type in ("FOR SHARE", "FOR UPDATE", "FOR NO KEY UPDATE", "FOR KEY SHARE"):
+        for key_type in (
+            "FOR SHARE",
+            "FOR UPDATE",
+            "FOR NO KEY UPDATE",
+            "FOR KEY SHARE",
+        ):
             with self.subTest(f"Test lock type {key_type}"):
                 self.validate_identity(f"SELECT 1 FROM foo AS x {key_type} OF x")

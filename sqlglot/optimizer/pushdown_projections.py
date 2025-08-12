@@ -141,7 +141,12 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
     for selection in scope.expression.selects:
         name = selection.alias_or_name
 
-        if select_all or name in parent_selections or name in order_refs or alias_count > 0:
+        if (
+            select_all
+            or name in parent_selections
+            or name in order_refs
+            or alias_count > 0
+        ):
             new_selections.append(selection)
             alias_count -= 1
         else:
@@ -159,7 +164,11 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
         for name in sorted(parent_selections):
             if name not in names:
                 new_selections.append(
-                    alias(exp.column(name, table=resolver.get_table(name)), name, copy=False)
+                    alias(
+                        exp.column(name, table=resolver.get_table(name)),
+                        name,
+                        copy=False,
+                    )
                 )
 
     # If there are no remaining selections, just select a single constant

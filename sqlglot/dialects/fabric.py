@@ -7,7 +7,9 @@ from sqlglot.dialects.tsql import TSQL
 from sqlglot.tokens import TokenType
 
 
-def _cap_data_type_precision(expression: exp.DataType, max_precision: int = 6) -> exp.DataType:
+def _cap_data_type_precision(
+    expression: exp.DataType, max_precision: int = 6
+) -> exp.DataType:
     """
     Cap the precision of to a maximum of `max_precision` digits.
     If no precision is specified, default to `max_precision`.
@@ -39,7 +41,8 @@ def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Express
                 column_type = column.kind
                 if (
                     isinstance(column_type, exp.DataType)
-                    and column_type.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
+                    and column_type.this
+                    in (exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
                     and not column_type.expressions
                 ):
                     # For transpilation, VARCHAR/CHAR without precision becomes VARCHAR(MAX)/CHAR(MAX)
@@ -100,7 +103,9 @@ class Fabric(TSQL):
                                 # Add default precision of 1 to VARCHAR/CHAR without precision
                                 # When n isn't specified in a data definition or variable declaration statement, the default length is 1.
                                 # https://learn.microsoft.com/en-us/sql/t-sql/data-types/char-and-varchar-transact-sql?view=sql-server-ver17#remarks
-                                column_type.set("expressions", [exp.Literal.number("1")])
+                                column_type.set(
+                                    "expressions", [exp.Literal.number("1")]
+                                )
 
             return create
 
@@ -157,14 +162,18 @@ class Fabric(TSQL):
                     return super().cast_sql(expression, safe_prefix)
 
                 # Get the precision from the original TIMESTAMPTZ cast and cap it to 6
-                capped_data_type = _cap_data_type_precision(expression.to, max_precision=6)
+                capped_data_type = _cap_data_type_precision(
+                    expression.to, max_precision=6
+                )
                 precision = capped_data_type.find(exp.DataTypeParam)
                 precision_value = (
                     precision.this.to_py() if precision and precision.this.is_int else 6
                 )
 
                 # Do the cast explicitly to bypass sqlglot's default handling
-                datetimeoffset = f"CAST({expression.this} AS DATETIMEOFFSET({precision_value}))"
+                datetimeoffset = (
+                    f"CAST({expression.this} AS DATETIMEOFFSET({precision_value}))"
+                )
 
                 return self.sql(datetimeoffset)
 
@@ -174,7 +183,9 @@ class Fabric(TSQL):
             # Wrap the AT TIME ZONE expression in a cast to DATETIME2 if it contains a TIMESTAMPTZ
             ## https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
             timestamptz_cast = expression.find(exp.Cast)
-            if timestamptz_cast and timestamptz_cast.to.is_type(exp.DataType.Type.TIMESTAMPTZ):
+            if timestamptz_cast and timestamptz_cast.to.is_type(
+                exp.DataType.Type.TIMESTAMPTZ
+            ):
                 # Get the precision from the original TIMESTAMPTZ cast and cap it to 6
                 data_type = timestamptz_cast.to
                 capped_data_type = _cap_data_type_precision(data_type, max_precision=6)

@@ -22,11 +22,15 @@ def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str
         increment = expression.expression
         if isinstance(expression, exp.DateSub):
             if isinstance(increment, exp.Literal):
-                value = increment.to_py() if increment.is_number else int(increment.name)
+                value = (
+                    increment.to_py() if increment.is_number else int(increment.name)
+                )
                 increment = exp.Literal.number(value * -1)
             else:
                 increment *= exp.Literal.number(-1)
-        return self.func("TIMESTAMPADD", unit_to_var(expression), increment, expression.this)
+        return self.func(
+            "TIMESTAMPADD", unit_to_var(expression), increment, expression.this
+        )
 
     return _delta_sql
 
@@ -123,7 +127,9 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
+            exp.TimeToStr: lambda self, e: self.func(
+                "TO_CHAR", e.this, self.format_time(e)
+            ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),

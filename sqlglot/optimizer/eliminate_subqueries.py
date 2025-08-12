@@ -89,7 +89,9 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
         new_ctes.append(cte_scope.expression.parent)
 
     # Now append the rest
-    for scope in itertools.chain(root.union_scopes, root.subquery_scopes, root.table_scopes):
+    for scope in itertools.chain(
+        root.union_scopes, root.subquery_scopes, root.table_scopes
+    ):
         for child_scope in scope.traverse():
             new_cte = _eliminate(child_scope, existing_ctes, taken)
             if new_cte:
@@ -149,7 +151,9 @@ def _eliminate_cte(
     for child_scope in scope.parent.traverse():
         for table, source in child_scope.selected_sources.values():
             if source is scope:
-                new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name, copy=False)
+                new_table = exp.alias_(
+                    exp.table_(name), alias=table.alias_or_name, copy=False
+                )
                 table.replace(new_table)
 
     return cte

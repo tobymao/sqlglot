@@ -45,7 +45,9 @@ def _build_datediff(args: t.List) -> exp.Expression:
         this = args[2]
 
     return exp.DateDiff(
-        this=exp.TsOrDsToDate(this=this), expression=exp.TsOrDsToDate(this=expression), unit=unit
+        this=exp.TsOrDsToDate(this=this),
+        expression=exp.TsOrDsToDate(this=expression),
+        unit=unit,
     )
 
 
@@ -61,7 +63,9 @@ def _build_dateadd(args: t.List) -> exp.Expression:
 
     # DATE_ADD / DATEADD / TIMESTAMPADD(unit, value integer, expr)
     # https://docs.databricks.com/en/sql/language-manual/functions/date_add3.html
-    return exp.TimestampAdd(this=seq_get(args, 2), expression=expression, unit=seq_get(args, 0))
+    return exp.TimestampAdd(
+        this=seq_get(args, 2), expression=expression, unit=seq_get(args, 0)
+    )
 
 
 def _normalize_partition(e: exp.Expression) -> exp.Expression:
@@ -73,9 +77,12 @@ def _normalize_partition(e: exp.Expression) -> exp.Expression:
     return e
 
 
-def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.TimestampAdd) -> str:
+def _dateadd_sql(
+    self: Spark.Generator, expression: exp.TsOrDsAdd | exp.TimestampAdd
+) -> str:
     if not expression.unit or (
-        isinstance(expression, exp.TsOrDsAdd) and expression.text("unit").upper() == "DAY"
+        isinstance(expression, exp.TsOrDsAdd)
+        and expression.text("unit").upper() == "DAY"
     ):
         # Coming from Hive/Spark2 DATE_ADD or roundtripping the 2-arg version of Spark3/DB
         return self.func("DATE_ADD", expression.this, expression.expression)
@@ -91,7 +98,9 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
         # The 3 arg version of DATE_ADD produces a timestamp in Spark3/DB but possibly not
         # in other dialects
         return_type = expression.return_type
-        if not return_type.is_type(exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME):
+        if not return_type.is_type(
+            exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME
+        ):
             this = f"CAST({this} AS {return_type})"
 
     return this
@@ -160,7 +169,9 @@ class Spark(Spark2):
         ):
             this = super()._parse_generated_as_identity()
             if this.expression:
-                return self.expression(exp.ComputedColumnConstraint, this=this.expression)
+                return self.expression(
+                    exp.ComputedColumnConstraint, this=this.expression
+                )
             return this
 
     class Generator(Spark2.Generator):
@@ -214,12 +225,16 @@ class Spark(Spark2):
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe"):
-                key = seq_get(self.bracket_offset_expressions(expression, index_offset=1), 0)
+                key = seq_get(
+                    self.bracket_offset_expressions(expression, index_offset=1), 0
+                )
                 return self.func("TRY_ELEMENT_AT", expression.this, key)
 
             return super().bracket_sql(expression)
 
-        def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+        def computedcolumnconstraint_sql(
+            self, expression: exp.ComputedColumnConstraint
+        ) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')})"
 
         def anyvalue_sql(self, expression: exp.AnyValue) -> str:

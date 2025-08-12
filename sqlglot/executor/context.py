@@ -19,7 +19,9 @@ class Context:
     evaluation of aggregation functions.
     """
 
-    def __init__(self, tables: t.Dict[str, Table], env: t.Optional[t.Dict] = None) -> None:
+    def __init__(
+        self, tables: t.Dict[str, Table], env: t.Optional[t.Dict] = None
+    ) -> None:
         """
         Args
             tables: representing the scope of the current execution context.
@@ -27,7 +29,9 @@ class Context:
         """
         self.tables = tables
         self._table: t.Optional[Table] = None
-        self.range_readers = {name: table.range_reader for name, table in self.tables.items()}
+        self.range_readers = {
+            name: table.range_reader for name, table in self.tables.items()
+        }
         self.row_readers = {name: table.reader for name, table in tables.items()}
         self.env = {**ENV, **(env or {}), "scope": self.row_readers}
 

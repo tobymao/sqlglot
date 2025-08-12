@@ -40,7 +40,9 @@ class TestJsonpath(unittest.TestCase):
                 self.assertEqual(parse(selector).sql(), f"'{expected}'")
 
     def test_cts_file(self):
-        with open(os.path.join(FIXTURES_DIR, "jsonpath", "cts.json"), encoding="utf-8") as file:
+        with open(
+            os.path.join(FIXTURES_DIR, "jsonpath", "cts.json"), encoding="utf-8"
+        ) as file:
             tests = json.load(file)["tests"]
 
         # sqlglot json path generator rewrites to a normal form
@@ -137,4 +139,6 @@ class TestJsonpath(unittest.TestCase):
                         pass
                 else:
                     path = parse(selector)
-                    self.assertEqual(path.sql(), f"'{overrides.get(selector, selector)}'")
+                    self.assertEqual(
+                        path.sql(), f"'{overrides.get(selector, selector)}'"
+                    )

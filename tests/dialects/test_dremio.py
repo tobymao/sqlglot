@@ -63,7 +63,8 @@ class TestDremio(Validator):
             "SELECT * FROM t ORDER BY a NULLS LAST", "SELECT * FROM t ORDER BY a"
         )
         self.validate_identity(
-            "SELECT * FROM t ORDER BY a DESC NULLS LAST", "SELECT * FROM t ORDER BY a DESC"
+            "SELECT * FROM t ORDER BY a DESC NULLS LAST",
+            "SELECT * FROM t ORDER BY a DESC",
         )
 
         # If the clause is not the default, it must be kept
@@ -152,7 +153,9 @@ class TestDremio(Validator):
             "SELECT DATE_SUB(col, 2, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, -2, col)"
         )
 
-        self.validate_identity("SELECT DATE_ADD(col, 2, 'DAY')", "SELECT DATE_ADD(col, 2)")
+        self.validate_identity(
+            "SELECT DATE_ADD(col, 2, 'DAY')", "SELECT DATE_ADD(col, 2)"
+        )
 
         self.validate_identity(
             "SELECT DATE_SUB(col, a, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, a * -1, col)"

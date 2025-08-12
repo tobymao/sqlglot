@@ -499,6 +499,7 @@ class BigQuery(Dialect):
         ),
         exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
+        exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
@@ -629,6 +630,9 @@ class BigQuery(Dialect):
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _build_to_hex,
             "PARSE_DATE": lambda args: build_formatted_time(exp.StrToDate, "bigquery")(
+                [seq_get(args, 1), seq_get(args, 0)]
+            ),
+            "PARSE_TIME": lambda args: build_formatted_time(exp.ParseTime, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
             "PARSE_TIMESTAMP": _build_parse_timestamp,
@@ -1082,6 +1086,7 @@ class BigQuery(Dialect):
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Rollback: lambda *_: "ROLLBACK TRANSACTION",
+            exp.ParseTime: lambda self, e: self.func("PARSE_TIME", self.format_time(e), e.this),
             exp.ParseDatetime: lambda self, e: self.func(
                 "PARSE_DATETIME", self.format_time(e), e.this
             ),

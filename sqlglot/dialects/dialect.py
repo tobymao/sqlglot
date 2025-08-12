@@ -1728,31 +1728,44 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
 
 
 def build_json_extract_path(
-    expr_type: t.Type[F], zero_based_indexing: bool = True, arrow_req_json_type: bool = False
+    expr_type: t.Type[F],
+    zero_based_indexing: bool = True,
+    arrow_req_json_type: bool = False,
+    json_type: t.Union[str, None] = None,
 ) -> t.Callable[[t.List], F]:
     def _builder(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
         for arg in args[1:]:
-            if not isinstance(arg, exp.Literal):
+            if isinstance(arg, exp.Column):
+                segments.append(exp.JSONPathKey(this=arg.this.this))
+            elif isinstance(arg, exp.Literal):
+                text = arg.name
+                if is_int(text) and (not arrow_req_json_type or not arg.is_string):
+                    index = int(text)
+                    segments.append(
+                        exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
+                    )
+                else:
+                    segments.append(exp.JSONPathKey(this=text))
+            else:
                 # We use the fallback parser because we can't really transpile non-literals safely
                 return expr_type.from_arg_list(args)
 
-            text = arg.name
-            if is_int(text) and (not arrow_req_json_type or not arg.is_string):
-                index = int(text)
-                segments.append(
-                    exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
-                )
-            else:
-                segments.append(exp.JSONPathKey(this=text))
-
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]
-        return expr_type(
-            this=seq_get(args, 0),
-            expression=exp.JSONPath(expressions=segments),
-            only_json_types=arrow_req_json_type,
-        )
+        kwargs = {
+            "this": seq_get(args, 0),
+            "expression": exp.JSONPath(expressions=segments),
+        }
+
+        is_jsonb = issubclass(expr_type, (exp.JSONBExtract, exp.JSONBExtractScalar))
+        if not is_jsonb:
+            kwargs["only_json_types"] = arrow_req_json_type
+
+        if json_type is not None:
+            kwargs["json_type"] = json_type
+
+        return expr_type(**kwargs)
 
     return _builder
 

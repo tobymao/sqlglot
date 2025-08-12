@@ -2,49 +2,10 @@ from sqlglot import TokenType
 import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import build_formatted_time
+from sqlglot.dialects.dialect import build_formatted_time, build_json_extract_path
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get, is_int
-from sqlglot._typing import F
-
-
-def build_json_extract_path(
-    expr_type: t.Type[F], zero_based_indexing: bool = True, json_type: t.Union[str, None] = None
-) -> t.Callable[[t.List], F]:
-    def _builder(args: t.List) -> F:
-        segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
-        for arg in args[1:]:
-            if isinstance(arg, exp.Column):
-                segments.append(exp.JSONPathKey(this=arg.this.this))
-            elif isinstance(arg, exp.Literal):
-                text = arg.name
-                if is_int(text):
-                    index = int(text)
-                    segments.append(
-                        exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
-                    )
-                else:
-                    segments.append(exp.JSONPathKey(this=text))
-            else:
-                # We use the fallback parser because we can't really transpile non-literals safely
-                return expr_type.from_arg_list(args)
-
-        # This is done to avoid failing in the expression validator due to the arg count
-        del args[2:]
-        if json_type is not None:
-            return expr_type(
-                this=seq_get(args, 0),
-                expression=exp.JSONPath(expressions=segments),
-                json_type=json_type,
-            )
-        else:
-            return expr_type(
-                this=seq_get(args, 0),
-                expression=exp.JSONPath(expressions=segments),
-            )
-
-    return _builder
+from sqlglot.helper import seq_get
 
 
 class SingleStore(MySQL):

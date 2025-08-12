@@ -1736,20 +1736,18 @@ def build_json_extract_path(
     def _builder(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
         for arg in args[1:]:
-            if isinstance(arg, exp.Column):
-                segments.append(exp.JSONPathKey(this=arg.this.this))
-            elif isinstance(arg, exp.Literal):
-                text = arg.name
-                if is_int(text) and (not arrow_req_json_type or not arg.is_string):
-                    index = int(text)
-                    segments.append(
-                        exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
-                    )
-                else:
-                    segments.append(exp.JSONPathKey(this=text))
-            else:
+            if not isinstance(arg, exp.Literal):
                 # We use the fallback parser because we can't really transpile non-literals safely
                 return expr_type.from_arg_list(args)
+
+            text = arg.name
+            if is_int(text) and (not arrow_req_json_type or not arg.is_string):
+                index = int(text)
+                segments.append(
+                    exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
+                )
+            else:
+                segments.append(exp.JSONPathKey(this=text))
 
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]

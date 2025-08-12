@@ -86,7 +86,7 @@ class TestSingleStore(Validator):
         )
         self.validate_identity(
             "SELECT a::`b`::`2` FROM t",
-            write_sql="SELECT JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(a, 'b'), '2') FROM t",
+            write_sql="SELECT JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(a, 'b'), 2) FROM t",
         )
         self.validate_identity(
             "SELECT a::2 FROM t", write_sql="SELECT JSON_EXTRACT_JSON(a, 2) FROM t"

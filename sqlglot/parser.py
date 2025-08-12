@@ -5256,7 +5256,7 @@ class Parser(metaclass=_Parser):
         while self._match(TokenType.DOT):
             type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
 
-        return exp.DataType.build(type_name, udt=True)
+        return exp.DataType.build(type_name, dialect=self.dialect, udt=True)
 
     def _parse_types(
         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
@@ -6557,7 +6557,7 @@ class Parser(metaclass=_Parser):
         elif not to:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
-            to = exp.DataType.build(to.name, udt=True)
+            to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())

@@ -69,6 +69,13 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "CREATE TABLE test_table([ID] [BIGINT] NOT NULL,[EffectiveFrom] [DATETIME2] (3) NOT NULL)",
+            write={
+                "spark": "CREATE TABLE test_table (`ID` BIGINT NOT NULL, `EffectiveFrom` TIMESTAMP NOT NULL)",
+                "tsql": "CREATE TABLE test_table ([ID] BIGINT NOT NULL, [EffectiveFrom] DATETIME2(3) NOT NULL)",
+            },
+        )
+        self.validate_all(
             "SELECT CONVERT(DATETIME, '2006-04-25T15:50:59.997', 126)",
             write={
                 "duckdb": "SELECT STRPTIME('2006-04-25T15:50:59.997', '%Y-%m-%dT%H:%M:%S.%f')",

@@ -99,13 +99,11 @@ class SingleStore(MySQL):
                 this=this,
                 to=to,
             ),
-            TokenType.DCOLON: lambda self, this, path:
-            build_json_extract_path(
-                exp.JSONExtract
-            )([this, exp.Literal.string(path.this.this)])
+            TokenType.DCOLON: lambda self, this, path: build_json_extract_path(exp.JSONExtract)(
+                [this, exp.Literal.string(path.this.this)]
+            )
             if isinstance(path, exp.Column)
-            else
-                build_json_extract_path(exp.JSONExtract)([this, path]),
+            else build_json_extract_path(exp.JSONExtract)([this, path]),
             TokenType.DCOLONDOLLAR: lambda self, this, path: build_json_extract_path(
                 exp.JSONExtractScalar, json_type="STRING"
             )([this, exp.Literal.string(path.this.this)])

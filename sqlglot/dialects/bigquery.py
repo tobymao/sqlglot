@@ -1086,9 +1086,7 @@ class BigQuery(Dialect):
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Rollback: lambda *_: "ROLLBACK TRANSACTION",
-            exp.ParseTime: lambda self, e: self.func(
-                "PARSE_TIME", self.format_time(e), e.this
-            ),
+            exp.ParseTime: lambda self, e: self.func("PARSE_TIME", self.format_time(e), e.this),
             exp.ParseDatetime: lambda self, e: self.func(
                 "PARSE_DATETIME", self.format_time(e), e.this
             ),

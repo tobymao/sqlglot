@@ -162,11 +162,6 @@ def _build_timestamp(args: t.List) -> exp.Timestamp:
     return timestamp
 
 
-def _build_parse_datetime(args: t.List) -> exp.ParseDatetime:
-    this = build_formatted_time(exp.ParseDatetime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
-    return this
-
-
 def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:
     expr_type = exp.DateFromParts if len(args) == 3 else exp.Date
     return expr_type.from_arg_list(args)
@@ -637,7 +632,9 @@ class BigQuery(Dialect):
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
             "PARSE_TIMESTAMP": _build_parse_timestamp,
-            "PARSE_DATETIME": _build_parse_datetime,
+            "PARSE_DATETIME": lambda args: build_formatted_time(exp.ParseDatetime, "bigquery")(
+                [seq_get(args, 1), seq_get(args, 0)]
+            ),
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),

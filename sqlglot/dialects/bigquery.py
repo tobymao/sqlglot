@@ -506,6 +506,7 @@ class BigQuery(Dialect):
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
         exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
+        exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Reverse: lambda self, e: self._annotate_by_args(e, "this"),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),

@@ -738,6 +738,14 @@ REVERSE(b'1a3');
 BINARY;
 
 # dialect: bigquery
+REGEXP_EXTRACT_ALL('Try `func(x)` or `func(y)`', '`(.+?)`');
+ARRAY<STRING>;
+
+# dialect: bigquery
+REGEXP_EXTRACT_ALL(b'\x48\x65\x6C\x6C\x6F', b'(\x6C+)');
+ARRAY<BINARY>;
+
+# dialect: bigquery
 REPLACE ('cherry', 'pie', 'cobbler');
 STRING;
 

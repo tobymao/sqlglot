@@ -36,6 +36,10 @@ class JSONPathTokenizer(Tokenizer):
     IDENTIFIER_ESCAPES = ["\\"]
     STRING_ESCAPES = ["\\"]
 
+    VAR_TOKENS = {
+        TokenType.VAR,
+    }
+
 
 def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     """Takes in a JSON path string and parses it into a JSONPath expression."""
@@ -75,6 +79,9 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         if raise_unmatched:
             raise ParseError(_error(f"Expected {token_type}"))
         return None
+
+    def _match_set(types: t.Collection[TokenType]) -> t.Optional[Token]:
+        return _advance() if _curr() in types else None
 
     def _parse_literal() -> t.Any:
         token = _match(TokenType.STRING) or _match(TokenType.IDENTIFIER)
@@ -155,7 +162,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         """
         prev_index = i - 2
 
-        while _match(TokenType.VAR):
+        while _match_set(jsonpath_tokenizer.VAR_TOKENS):
             pass
 
         start = 0 if prev_index < 0 else tokens[prev_index].end + 1
@@ -177,7 +184,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         if _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
 
-            if _match(TokenType.VAR):
+            if _match_set(jsonpath_tokenizer.VAR_TOKENS):
                 value: t.Optional[str | exp.JSONPathWildcard] = _parse_var_text()
             elif _match(TokenType.IDENTIFIER):
                 value = _prev().text
@@ -194,7 +201,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())
-        elif _match(TokenType.VAR):
+        elif _match_set(jsonpath_tokenizer.VAR_TOKENS):
             expressions.append(exp.JSONPathKey(this=_parse_var_text()))
         elif _match(TokenType.IDENTIFIER):
             expressions.append(exp.JSONPathKey(this=_prev().text))

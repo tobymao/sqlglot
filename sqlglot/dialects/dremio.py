@@ -94,7 +94,14 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_CHAR": lambda args: (
+                build_formatted_time(exp.TimeToStr, "dremio")(args)
+                if len(args) == 2
+                and isinstance(args[1], exp.Literal)
+                and isinstance(args[1].this, str)
+                and "#" not in args[1].this
+                else exp.ToChar(this=args[0], format=args[1])
+            ),
         }
 
     class Generator(generator.Generator):
@@ -123,8 +130,13 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
-            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.TimeToStr: lambda self, e: (
+                self.func("TO_CHAR", e.this, self.format_time(e))
+                if isinstance(e.args.get("format"), exp.Literal)
+                and isinstance(e.args["format"].this, str)
+                and "#" not in e.args["format"].this
+                else self.function_fallback_sql(e)
+            ),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
         }

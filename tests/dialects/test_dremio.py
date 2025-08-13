@@ -98,7 +98,6 @@ class TestDremio(Validator):
     def test_time_mapping(self):
         ts = "CAST('2025-06-24 12:34:56' AS TIMESTAMP)"
 
-        # Use lowercase in test input to match Dremio behavior
         self.validate_all(
             f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
             read={
@@ -116,7 +115,7 @@ class TestDremio(Validator):
         )
 
         self.validate_all(
-            f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",  # lowercase to match Dremio
+            f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
             read={
                 "dremio": f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
@@ -130,6 +129,11 @@ class TestDremio(Validator):
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
         )
+
+    def test_to_char_special(self):
+        self.validate_identity("SELECT TO_CHAR(5555, '#')", "SELECT CAST(5555 AS VARCHAR)")
+        self.validate_identity("SELECT TO_CHAR(3.14, '#.#')", "SELECT CAST(3.14 AS VARCHAR)")
+        self.validate_identity("SELECT TO_CHAR(3.14, columnname)", "SELECT CAST(3.14 AS VARCHAR)")
 
     def test_time_diff(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")

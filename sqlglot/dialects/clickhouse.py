@@ -1185,6 +1185,17 @@ class ClickHouse(Dialect):
             exp.DataType.Type.MULTIPOLYGON,
         }
 
+        def offset_sql(self, expression: exp.Offset) -> str:
+            offset = super().offset_sql(expression)
+
+            # OFFSET ... FETCH syntax requires a "ROW" or "ROWS" keyword
+            # https://clickhouse.com/docs/sql-reference/statements/select/offset
+            parent = expression.parent
+            if isinstance(parent, exp.Select) and isinstance(parent.args.get("limit"), exp.Fetch):
+                offset = f"{offset} ROWS"
+
+            return offset
+
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)
 

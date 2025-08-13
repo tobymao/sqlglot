@@ -95,15 +95,12 @@ class Dremio(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "TO_CHAR": lambda args: (
-                exp.ToChar(this=args[0], format=args[1])
-                if (
-                    len(args) == 2
-                    and (
-                        not isinstance(args[1], exp.Literal)
-                        or (isinstance(args[1].this, str) and "#" in args[1].this)
-                    )
-                )
-                else build_formatted_time(exp.TimeToStr, "dremio")(args)
+                build_formatted_time(exp.TimeToStr, "dremio")(args)
+                if len(args) == 2
+                and isinstance(args[1], exp.Literal)
+                and isinstance(args[1].this, str)
+                and "#" not in args[1].this
+                else exp.ToChar(this=args[0], format=args[1])
             ),
         }
 

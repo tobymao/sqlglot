@@ -717,6 +717,10 @@ STRING;
 PARSE_TIME("%I:%M:%S", "07:30:00");
 TIME;
 
+# dialect: bigquery
+BYTE_LENGTH('foo');
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

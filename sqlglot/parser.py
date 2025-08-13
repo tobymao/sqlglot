@@ -2031,13 +2031,13 @@ class Parser(metaclass=_Parser):
                 return
 
             seq_props_list = []
-            other_props = []
+            accum_props = []
 
             for prop in properties.expressions:
                 if isinstance(prop, exp.SequenceProperties):
                     seq_props_list.append(prop)
                 else:
-                    other_props.append(prop)
+                    accum_props.append(prop)
 
             if len(seq_props_list) > 1:
                 merged_args = {}
@@ -2053,8 +2053,9 @@ class Parser(metaclass=_Parser):
                 merged_args["options"] = options_list
 
                 merged_seq_props = exp.SequenceProperties(**merged_args)
+                accum_props.append(merged_seq_props)
 
-                properties.set("expressions", [merged_seq_props] + other_props)
+                properties.set("expressions", accum_props)
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)

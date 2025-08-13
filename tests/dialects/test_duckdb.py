@@ -444,6 +444,13 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "SELECT ANY_VALUE(sample_column) FROM sample_table",
+            write={
+                "duckdb": "SELECT ANY_VALUE(sample_column) FROM sample_table",
+                "spark": "SELECT ANY_VALUE(sample_column) IGNORE NULLS FROM sample_table",
+            },
+        )
+        self.validate_all(
             "COUNT_IF(x)",
             write={
                 "duckdb": "COUNT_IF(x)",

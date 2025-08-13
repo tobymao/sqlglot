@@ -396,6 +396,7 @@ class DuckDB(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "DATEDIFF": _build_date_diff,
@@ -1153,7 +1154,9 @@ class DuckDB(Dialect):
                 # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
                 return super().ignorenulls_sql(expression)
 
-            self.unsupported("IGNORE NULLS is not supported for non-window functions.")
+            if not isinstance(expression.this, exp.AnyValue):
+                self.unsupported("IGNORE NULLS is not supported for non-window functions.")
+
             return self.sql(expression, "this")
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:

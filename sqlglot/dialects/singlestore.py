@@ -1304,7 +1304,4 @@ class SingleStore(MySQL):
             res = self.func("JSON_EXTRACT_STRING", expression.this, f"{path}")
 
             returning = self.sql(expression, "returning")
-            if returning:
-                return f"{res} :> {returning}"
-            else:
-                return res
+            return f"{res} :> {returning}" if returning else res

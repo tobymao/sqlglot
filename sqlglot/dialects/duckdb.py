@@ -920,6 +920,7 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
+        PROPERTIES_LOCATION[exp.SequenceProperties] = exp.Properties.Location.POST_EXPRESSION
 
         IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
             exp.FirstValue,

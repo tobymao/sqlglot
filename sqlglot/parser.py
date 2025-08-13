@@ -2025,6 +2025,37 @@ class Parser(metaclass=_Parser):
             elif temp_props:
                 properties = temp_props
 
+        def merge_sequence_properties() -> None:
+            nonlocal properties
+            if not properties:
+                return
+
+            seq_props_list = []
+            other_props = []
+
+            for prop in properties.expressions:
+                if isinstance(prop, exp.SequenceProperties):
+                    seq_props_list.append(prop)
+                else:
+                    other_props.append(prop)
+
+            if len(seq_props_list) > 1:
+                merged_args = {}
+                options_list = []
+
+                for seq_prop in seq_props_list:
+                    for key, value in seq_prop.args.items():
+                        if key == "options":
+                            options_list.extend(value)
+                        else:
+                            merged_args[key] = value
+
+                merged_args["options"] = options_list
+
+                merged_seq_props = exp.SequenceProperties(**merged_args)
+
+                properties.set("expressions", [merged_seq_props] + other_props)
+
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
 
@@ -2085,6 +2116,7 @@ class Parser(metaclass=_Parser):
             if create_token.token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
                 extend_props(self._parse_properties())
+                merge_sequence_properties()
             else:
                 expression = self._parse_ddl_select()
 
@@ -2222,11 +2254,17 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
         index = self._index
+
+        seq_props = self._parse_sequence_properties()
+        if seq_props:
+            return seq_props
+
+        self._retreat(index)
         key = self._parse_column()
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
-            return self._parse_sequence_properties()
+            return None
 
         # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
         if isinstance(key, exp.Column):

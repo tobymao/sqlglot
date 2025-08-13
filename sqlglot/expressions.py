@@ -5577,6 +5577,10 @@ class ConvertTimezone(Func):
     }
 
 
+class CodePointsToString(Func):
+    pass
+
+
 class GenerateSeries(Func):
     arg_types = {"start": True, "end": True, "step": False, "is_end_exclusive": False}
 

@@ -721,6 +721,10 @@ TIME;
 BYTE_LENGTH('foo');
 BIGINT;
 
+# dialect: bigquery
+CODE_POINTS_TO_STRING([65, 255, 513, 1024]);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

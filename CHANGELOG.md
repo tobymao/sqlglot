@@ -1,6 +1,136 @@
 Changelog
 =========
 
+## [v27.7.0] - 2025-08-13
+### :boom: BREAKING CHANGES
+- due to [`938f4b6`](https://github.com/tobymao/sqlglot/commit/938f4b6ebc1c0d26bd3c1400883978c79a435189) - annotate type for LAST_DAY *(PR [#5528](https://github.com/tobymao/sqlglot/pull/5528) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for LAST_DAY (#5528)
+
+- due to [`7d12dac`](https://github.com/tobymao/sqlglot/commit/7d12dac613ba5119334408f2c52cb270067156d9) - annotate type for bigquery GENERATE_TIMESTAMP_ARRAY *(PR [#5529](https://github.com/tobymao/sqlglot/pull/5529) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery GENERATE_TIMESTAMP_ARRAY (#5529)
+
+- due to [`d50ebe2`](https://github.com/tobymao/sqlglot/commit/d50ebe286dd8e2836b9eb2a3406f15976db3aa05) - annotate type for bigquery TIME_TRUNC *(PR [#5530](https://github.com/tobymao/sqlglot/pull/5530) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery TIME_TRUNC (#5530)
+
+- due to [`29748be`](https://github.com/tobymao/sqlglot/commit/29748be7dfc10edc9f29665c98327883dd25c13d) - annotate type for bigquery TIME *(PR [#5531](https://github.com/tobymao/sqlglot/pull/5531) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery TIME (#5531)
+
+- due to [`7003b3f`](https://github.com/tobymao/sqlglot/commit/7003b3fa39cd455e3643066364696708d1ac4f38) - parse and annotate type for bigquery DATE_FROM_UNIX_DATE *(PR [#5532](https://github.com/tobymao/sqlglot/pull/5532) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery DATE_FROM_UNIX_DATE (#5532)
+
+- due to [`a276ca6`](https://github.com/tobymao/sqlglot/commit/a276ca6fd5f9d47fa8c90fcfa19f9864e7a28f8f) - parse and annotate type for bigquery JUSTIFY funcs *(PR [#5534](https://github.com/tobymao/sqlglot/pull/5534) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery JUSTIFY funcs (#5534)
+
+- due to [`374178e`](https://github.com/tobymao/sqlglot/commit/374178e22fe8d2d2275b65fe08e27ef66c611220) - parse and annotate type for bigquery UNIX_MICROS and UNIX_MILLIS *(PR [#5535](https://github.com/tobymao/sqlglot/pull/5535) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery UNIX_MICROS and UNIX_MILLIS (#5535)
+
+- due to [`1d8d1ab`](https://github.com/tobymao/sqlglot/commit/1d8d1abe459053a135a46525d0a13bb861220927) - annotate type for bigquery DATE_TRUNC *(PR [#5540](https://github.com/tobymao/sqlglot/pull/5540) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery DATE_TRUNC (#5540)
+
+- due to [`306ba65`](https://github.com/tobymao/sqlglot/commit/306ba6531839ea2823f5165de7bde01d17560845) - annotate type for bigquery TIMESTAMP_TRUNC *(PR [#5541](https://github.com/tobymao/sqlglot/pull/5541) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery TIMESTAMP_TRUNC (#5541)
+
+- due to [`d799c5a`](https://github.com/tobymao/sqlglot/commit/d799c5af23010a67c29edb6d45a40fb24903e1a3) - preserve projection names when merging subqueries *(commit by [@snovik75](https://github.com/snovik75))*:
+
+  preserve projection names when merging subqueries
+
+- due to [`8130bd4`](https://github.com/tobymao/sqlglot/commit/8130bd40815803a6781ee8f20fccd30987516192) - WEEKDAY of WEEK as VAR *(PR [#5552](https://github.com/tobymao/sqlglot/pull/5552) by [@geooo109](https://github.com/geooo109))*:
+
+  WEEKDAY of WEEK as VAR (#5552)
+
+- due to [`f3ffe19`](https://github.com/tobymao/sqlglot/commit/f3ffe19ec01533c5f27b9d3a7b6704b83c005118) - annotate type for bigquery format_time *(PR [#5559](https://github.com/tobymao/sqlglot/pull/5559) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery format_time (#5559)
+
+- due to [`6872b43`](https://github.com/tobymao/sqlglot/commit/6872b43ba17a39137172fd2fa9f0d059ce595ef9) - use dialect in DataType.build fixes [#5560](https://github.com/tobymao/sqlglot/pull/5560) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  use dialect in DataType.build fixes #5560
+
+- due to [`3ab3690`](https://github.com/tobymao/sqlglot/commit/3ab369096313b418699b7942b1c513c0c66a5331) - parse and annotate type for bigquery PARSE_DATETIME *(PR [#5558](https://github.com/tobymao/sqlglot/pull/5558) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery PARSE_DATETIME (#5558)
+
+- due to [`e5da951`](https://github.com/tobymao/sqlglot/commit/e5da951542eb55691bc43fbbfbec4a30100de038) - parse and annotate type for bigquery PARSE_TIME *(PR [#5561](https://github.com/tobymao/sqlglot/pull/5561) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery PARSE_TIME (#5561)
+
+- due to [`798e213`](https://github.com/tobymao/sqlglot/commit/798e213fd10c3b61afbd8cef621546de65fa6f26) - improve transpilability of ANY_VALUE closes [#5563](https://github.com/tobymao/sqlglot/pull/5563) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve transpilability of ANY_VALUE closes #5563
+
+- due to [`8c0cb76`](https://github.com/tobymao/sqlglot/commit/8c0cb764fd825062fb7334032b8eeffbc39627d5) - more robust CREATE SEQUENCE *(PR [#5566](https://github.com/tobymao/sqlglot/pull/5566) by [@geooo109](https://github.com/geooo109))*:
+
+  more robust CREATE SEQUENCE (#5566)
+
+- due to [`c7041c7`](https://github.com/tobymao/sqlglot/commit/c7041c71250b17192c2f25fb8f33407324d332c2) - parse and annotate type for bigquery BYTE_LENGHT *(PR [#5568](https://github.com/tobymao/sqlglot/pull/5568) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery BYTE_LENGHT (#5568)
+
+- due to [`a6c61c3`](https://github.com/tobymao/sqlglot/commit/a6c61c34f1e168c97dd5c2b8ec071372ba593992) - parse and annotate type for bigquery CODE_POINTS_TO_STRING *(PR [#5569](https://github.com/tobymao/sqlglot/pull/5569) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery CODE_POINTS_TO_STRING (#5569)
+
+- due to [`51e0335`](https://github.com/tobymao/sqlglot/commit/51e0335377fe2bc2e2a94a623475791e9dd19fb9) - parse and annotate type for bigquery REVERSE *(PR [#5571](https://github.com/tobymao/sqlglot/pull/5571) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery REVERSE (#5571)
+
+
+### :sparkles: New Features
+- [`1fb90db`](https://github.com/tobymao/sqlglot/commit/1fb90db52b59e6e3a40597c6f611d0476b72025b) - **teradata**: Add support for Teradata set query band expression *(PR [#5519](https://github.com/tobymao/sqlglot/pull/5519) by [@treff7es](https://github.com/treff7es))*
+- [`a49baaf`](https://github.com/tobymao/sqlglot/commit/a49baaf717cb41abb25ca51ae5adddc8473baa8b) - **doris**: Override table_sql to avoid AS keyword in UPDATE and DELETE statements *(PR [#5517](https://github.com/tobymao/sqlglot/pull/5517) by [@peterylh](https://github.com/peterylh))*
+- [`75fd6d2`](https://github.com/tobymao/sqlglot/commit/75fd6d21fb7bc8399432e73d10b4837ae62d2ab5) - **exasol**: Add support for date difference functions in Exasol dialect *(PR [#5510](https://github.com/tobymao/sqlglot/pull/5510) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`2a91bb4`](https://github.com/tobymao/sqlglot/commit/2a91bb4f17c7569a5b409cc07e970e5d68235149) - **teradata**: Add support for Teradata locking select *(PR [#5524](https://github.com/tobymao/sqlglot/pull/5524) by [@treff7es](https://github.com/treff7es))*
+- [`938f4b6`](https://github.com/tobymao/sqlglot/commit/938f4b6ebc1c0d26bd3c1400883978c79a435189) - **optimizer**: annotate type for LAST_DAY *(PR [#5528](https://github.com/tobymao/sqlglot/pull/5528) by [@geooo109](https://github.com/geooo109))*
+- [`7d12dac`](https://github.com/tobymao/sqlglot/commit/7d12dac613ba5119334408f2c52cb270067156d9) - **optimizer**: annotate type for bigquery GENERATE_TIMESTAMP_ARRAY *(PR [#5529](https://github.com/tobymao/sqlglot/pull/5529) by [@geooo109](https://github.com/geooo109))*
+- [`d50ebe2`](https://github.com/tobymao/sqlglot/commit/d50ebe286dd8e2836b9eb2a3406f15976db3aa05) - **optimizer**: annotate type for bigquery TIME_TRUNC *(PR [#5530](https://github.com/tobymao/sqlglot/pull/5530) by [@geooo109](https://github.com/geooo109))*
+- [`29748be`](https://github.com/tobymao/sqlglot/commit/29748be7dfc10edc9f29665c98327883dd25c13d) - **optimizer**: annotate type for bigquery TIME *(PR [#5531](https://github.com/tobymao/sqlglot/pull/5531) by [@geooo109](https://github.com/geooo109))*
+- [`7003b3f`](https://github.com/tobymao/sqlglot/commit/7003b3fa39cd455e3643066364696708d1ac4f38) - **optimizer**: parse and annotate type for bigquery DATE_FROM_UNIX_DATE *(PR [#5532](https://github.com/tobymao/sqlglot/pull/5532) by [@geooo109](https://github.com/geooo109))*
+- [`a276ca6`](https://github.com/tobymao/sqlglot/commit/a276ca6fd5f9d47fa8c90fcfa19f9864e7a28f8f) - **optimizer**: parse and annotate type for bigquery JUSTIFY funcs *(PR [#5534](https://github.com/tobymao/sqlglot/pull/5534) by [@geooo109](https://github.com/geooo109))*
+- [`374178e`](https://github.com/tobymao/sqlglot/commit/374178e22fe8d2d2275b65fe08e27ef66c611220) - **optimizer**: parse and annotate type for bigquery UNIX_MICROS and UNIX_MILLIS *(PR [#5535](https://github.com/tobymao/sqlglot/pull/5535) by [@geooo109](https://github.com/geooo109))*
+- [`1d8d1ab`](https://github.com/tobymao/sqlglot/commit/1d8d1abe459053a135a46525d0a13bb861220927) - **optimizer**: annotate type for bigquery DATE_TRUNC *(PR [#5540](https://github.com/tobymao/sqlglot/pull/5540) by [@geooo109](https://github.com/geooo109))*
+- [`306ba65`](https://github.com/tobymao/sqlglot/commit/306ba6531839ea2823f5165de7bde01d17560845) - **optimizer**: annotate type for bigquery TIMESTAMP_TRUNC *(PR [#5541](https://github.com/tobymao/sqlglot/pull/5541) by [@geooo109](https://github.com/geooo109))*
+- [`6a68cca`](https://github.com/tobymao/sqlglot/commit/6a68cca97ad4bdd75c544ada0a5af0fa92ec4664) - **dremio**: support lowercase `TIME_MAPPING` formats *(PR [#5556](https://github.com/tobymao/sqlglot/pull/5556) by [@jasonthomassql](https://github.com/jasonthomassql))*
+- [`f3ffe19`](https://github.com/tobymao/sqlglot/commit/f3ffe19ec01533c5f27b9d3a7b6704b83c005118) - **optimizer**: annotate type for bigquery format_time *(PR [#5559](https://github.com/tobymao/sqlglot/pull/5559) by [@geooo109](https://github.com/geooo109))*
+- [`3ab3690`](https://github.com/tobymao/sqlglot/commit/3ab369096313b418699b7942b1c513c0c66a5331) - **optimizer**: parse and annotate type for bigquery PARSE_DATETIME *(PR [#5558](https://github.com/tobymao/sqlglot/pull/5558) by [@geooo109](https://github.com/geooo109))*
+- [`e5da951`](https://github.com/tobymao/sqlglot/commit/e5da951542eb55691bc43fbbfbec4a30100de038) - **optimizer**: parse and annotate type for bigquery PARSE_TIME *(PR [#5561](https://github.com/tobymao/sqlglot/pull/5561) by [@geooo109](https://github.com/geooo109))*
+- [`902a0cd`](https://github.com/tobymao/sqlglot/commit/902a0cdfe46f693aa55612d45a2de2def21f0b8c) - **singlestore**: Added parsing/generation of UNIXTIME functions *(PR [#5562](https://github.com/tobymao/sqlglot/pull/5562) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`798e213`](https://github.com/tobymao/sqlglot/commit/798e213fd10c3b61afbd8cef621546de65fa6f26) - **duckdb**: improve transpilability of ANY_VALUE closes [#5563](https://github.com/tobymao/sqlglot/pull/5563) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`c7041c7`](https://github.com/tobymao/sqlglot/commit/c7041c71250b17192c2f25fb8f33407324d332c2) - **optimizer**: parse and annotate type for bigquery BYTE_LENGHT *(PR [#5568](https://github.com/tobymao/sqlglot/pull/5568) by [@geooo109](https://github.com/geooo109))*
+- [`a6c61c3`](https://github.com/tobymao/sqlglot/commit/a6c61c34f1e168c97dd5c2b8ec071372ba593992) - **optimizer**: parse and annotate type for bigquery CODE_POINTS_TO_STRING *(PR [#5569](https://github.com/tobymao/sqlglot/pull/5569) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`9020684`](https://github.com/tobymao/sqlglot/commit/9020684a7e984a10fa4775339596ac5a0d6a6d93) - nested natural join performance closes [#5514](https://github.com/tobymao/sqlglot/pull/5514) *(PR [#5515](https://github.com/tobymao/sqlglot/pull/5515) by [@tobymao](https://github.com/tobymao))*
+- [`394870a`](https://github.com/tobymao/sqlglot/commit/394870a7ee9bb3bc814b7c3847193687f06b432b) - **duckdb**: transpile ADD_MONTHS *(PR [#5523](https://github.com/tobymao/sqlglot/pull/5523) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5505](https://github.com/tobymao/sqlglot/issues/5505) opened by [@kyle-cheung](https://github.com/kyle-cheung)*
+- [`249692c`](https://github.com/tobymao/sqlglot/commit/249692c67450a1fe3775e1f35b6f62fdb0a62e1a) - **duckdb**: put guard in AddMonths generator before annotating it *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`d799c5a`](https://github.com/tobymao/sqlglot/commit/d799c5af23010a67c29edb6d45a40fb24903e1a3) - **optimizer**: preserve projection names when merging subqueries *(commit by [@snovik75](https://github.com/snovik75))*
+- [`8130bd4`](https://github.com/tobymao/sqlglot/commit/8130bd40815803a6781ee8f20fccd30987516192) - **parser**: WEEKDAY of WEEK as VAR *(PR [#5552](https://github.com/tobymao/sqlglot/pull/5552) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5547](https://github.com/tobymao/sqlglot/issues/5547) opened by [@rloredo](https://github.com/rloredo)*
+- [`4e1373f`](https://github.com/tobymao/sqlglot/commit/4e1373f301cbea3cb5762fc1430b65deae3f9d04) - **doris**: Rename Table *(PR [#5549](https://github.com/tobymao/sqlglot/pull/5549) by [@xinge-ji](https://github.com/xinge-ji))*
+- [`16f544d`](https://github.com/tobymao/sqlglot/commit/16f544dc25d5d61277d32f02e4be18c10d16cf9f) - **doris**: fix DATE_TRUNC and partition by *(PR [#5553](https://github.com/tobymao/sqlglot/pull/5553) by [@xinge-ji](https://github.com/xinge-ji))*
+- [`6295414`](https://github.com/tobymao/sqlglot/commit/6295414fb41401f92993e661b880a0727e74c087) - convert unit to Var instead of choosing default in `unit_to_var` *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6872b43`](https://github.com/tobymao/sqlglot/commit/6872b43ba17a39137172fd2fa9f0d059ce595ef9) - **parser**: use dialect in DataType.build fixes [#5560](https://github.com/tobymao/sqlglot/pull/5560) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6f354d9`](https://github.com/tobymao/sqlglot/commit/6f354d958fb9ca9242b7fc1d2da86af74d57fedc) - **clickhouse**: add ROWS keyword in OFFSET followed by FETCH fixes [#5564](https://github.com/tobymao/sqlglot/pull/5564) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`8c0cb76`](https://github.com/tobymao/sqlglot/commit/8c0cb764fd825062fb7334032b8eeffbc39627d5) - **parser**: more robust CREATE SEQUENCE *(PR [#5566](https://github.com/tobymao/sqlglot/pull/5566) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5537](https://github.com/tobymao/sqlglot/issues/5537) opened by [@tekumara](https://github.com/tekumara)*
+- [`7e9df88`](https://github.com/tobymao/sqlglot/commit/7e9df880bc118d0dbb2dbd6344f805f79af2fe5e) - **doris**: CURRENT_DATE *(PR [#5567](https://github.com/tobymao/sqlglot/pull/5567) by [@xinge-ji](https://github.com/xinge-ji))*
+- [`51e0335`](https://github.com/tobymao/sqlglot/commit/51e0335377fe2bc2e2a94a623475791e9dd19fb9) - **optimizer**: parse and annotate type for bigquery REVERSE *(PR [#5571](https://github.com/tobymao/sqlglot/pull/5571) by [@geooo109](https://github.com/geooo109))*
+
+### :wrench: Chores
+- [`720f634`](https://github.com/tobymao/sqlglot/commit/720f6343f6144e8986ec6b7e50419c3d7a331f0a) - Fix style on main, refactor exasol tests *(PR [#5527](https://github.com/tobymao/sqlglot/pull/5527) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`5653501`](https://github.com/tobymao/sqlglot/commit/5653501606f041282b6315c3efa33b9a3baf8d98) - Refactor PR 5517 *(PR [#5526](https://github.com/tobymao/sqlglot/pull/5526) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`d15dfe3`](https://github.com/tobymao/sqlglot/commit/d15dfe3f0f4444e4999ad65051b2474e62f422b3) - build type using dialect for bigquery *(PR [#5539](https://github.com/tobymao/sqlglot/pull/5539) by [@geooo109](https://github.com/geooo109))*
+
+
 ## [v27.6.0] - 2025-08-01
 ### :boom: BREAKING CHANGES
 - due to [`6b691b3`](https://github.com/tobymao/sqlglot/commit/6b691b33c3528c0377bd8822a3df90de869c6cb1) - Parse and transpile GET(...) extract function *(PR [#5500](https://github.com/tobymao/sqlglot/pull/5500) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -8571,3 +8701,4 @@ Changelog
 [v27.5.0]: https://github.com/tobymao/sqlglot/compare/v27.4.1...v27.5.0
 [v27.5.1]: https://github.com/tobymao/sqlglot/compare/v27.5.0...v27.5.1
 [v27.6.0]: https://github.com/tobymao/sqlglot/compare/v27.5.1...v27.6.0
+[v27.7.0]: https://github.com/tobymao/sqlglot/compare/v27.6.0...v27.7.0

@@ -1739,7 +1739,9 @@ class TestDuckDB(Validator):
         self.validate_identity("MAP {[1, 2]: 'a', [3, 4]: 'b'}")
 
     def test_create_sequence(self):
-        self.validate_identity("CREATE SEQUENCE serial START 101", "CREATE SEQUENCE serial START WITH 101")
+        self.validate_identity(
+            "CREATE SEQUENCE serial START 101", "CREATE SEQUENCE serial START WITH 101"
+        )
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 INCREMENT BY 2")
         self.validate_identity("CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99")
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 NO CYCLE")

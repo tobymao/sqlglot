@@ -718,12 +718,24 @@ PARSE_TIME("%I:%M:%S", "07:30:00");
 TIME;
 
 # dialect: bigquery
-BYTE_LENGTH('foo');
+BYTE_LENGTH("foo");
 BIGINT;
 
 # dialect: bigquery
 CODE_POINTS_TO_STRING([65, 255, 513, 1024]);
 STRING;
+
+# dialect: bigquery
+REVERSE("abc");
+STRING;
+
+# dialect: bigquery
+REVERSE(tbl.bin_col);
+BINARY;
+
+# dialect: bigquery
+REVERSE(b'1a3');
+BINARY;
 
 --------------------------------------
 -- Snowflake

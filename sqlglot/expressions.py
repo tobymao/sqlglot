@@ -6563,6 +6563,10 @@ class Right(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Reverse(Func):
+    pass
+
+
 class Length(Func):
     arg_types = {"this": True, "binary": False, "encoding": False}
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]

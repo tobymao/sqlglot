@@ -1301,7 +1301,7 @@ class SingleStore(MySQL):
         def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
             path = self.sql(expression, "path")
 
-            res = self.func("JSON_EXTRACT_STRING", expression.this, f"{path}")
+            res = self.func("JSON_EXTRACT_STRING", expression.this, path)
 
             returning = self.sql(expression, "returning")
             return f"{res} :> {returning}" if returning else res

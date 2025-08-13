@@ -131,6 +131,10 @@ class TestDremio(Validator):
             },
         )
 
+    def test_to_char_special(self):
+        self.validate_identity("SELECT TO_CHAR(5555, '#')")
+        self.validate_identity("SELECT TO_CHAR(3.14, '#.#')")
+
     def test_time_diff(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")
         self.validate_identity("SELECT DATE_ADD(col, CAST(1 AS INTERVAL HOUR))")

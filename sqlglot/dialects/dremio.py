@@ -94,7 +94,11 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_CHAR": lambda args: (
+                exp.Func(this=exp.to_identifier("TO_CHAR"), expressions=args)
+                if len(args) == 2 and isinstance(args[1], exp.Literal) and "#" in args[1].name
+                else build_formatted_time(exp.TimeToStr, "dremio")(args)
+            ),
         }
 
     class Generator(generator.Generator):

@@ -1773,6 +1773,8 @@ WHERE
         )
         self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
+        self.validate_identity("BYTE_LENGTH('foo')")
+        self.validate_identity("BYTE_LENGTH(b'foo')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

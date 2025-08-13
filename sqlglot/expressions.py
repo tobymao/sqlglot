@@ -5425,6 +5425,10 @@ class BitwiseCountAgg(AggFunc):
     _sql_names = ["BIT_COUNT"]
 
 
+class ByteLength(Func):
+    pass
+
+
 class ArrayRemove(Func):
     arg_types = {"this": True, "expression": True}
 

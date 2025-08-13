@@ -73,3 +73,35 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT '{\"a\" : 1}' :> JSON")
         self.validate_identity("SELECT NOW() !:> TIMESTAMP(6)")
         self.validate_identity("SELECT x :> GEOGRAPHYPOINT")
+
+    def test_unix_functions(self):
+        self.validate_identity("SELECT FROM_UNIXTIME(1234567890)")
+        self.validate_identity("SELECT FROM_UNIXTIME(1234567890, '%M %D, %Y')")
+        self.validate_identity("SELECT UNIX_TIMESTAMP()")
+        self.validate_identity("SELECT UNIX_TIMESTAMP('2009-02-13 23:31:30') AS funday")
+
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2009-02-13 23:31:30')",
+            read={"duckdb": "SELECT EPOCH('2009-02-13 23:31:30')"},
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2009-02-13 23:31:30')",
+            read={"duckdb": "SELECT TIME_STR_TO_UNIX('2009-02-13 23:31:30')"},
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2009-02-13 23:31:30')",
+            read={"": "SELECT TIME_STR_TO_UNIX('2009-02-13 23:31:30')"},
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2009-02-13 23:31:30')",
+            read={"": "SELECT UNIX_SECONDS('2009-02-13 23:31:30')"},
+        )
+
+        self.validate_all(
+            "SELECT FROM_UNIXTIME(1234567890, '%Y-%m-%d %T')",
+            read={"hive": "SELECT FROM_UNIXTIME(1234567890)"},
+        )
+        self.validate_all(
+            "SELECT FROM_UNIXTIME(1234567890) :> TEXT",
+            read={"": "SELECT UNIX_TO_TIME_STR(1234567890)"},
+        )

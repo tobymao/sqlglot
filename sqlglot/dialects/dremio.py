@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
-from sqlglot.dialects.dialect import Dialect, build_formatted_time, unit_to_var
+from sqlglot.dialects.dialect import (
+    Dialect,
+    build_formatted_time,
+    rename_func,
+    unit_to_var,
+)
 import typing as t
 
 DATE_DELTA = t.Union[
@@ -95,12 +100,9 @@ class Dremio(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "TO_CHAR": lambda args: (
-                build_formatted_time(exp.TimeToStr, "dremio")(args)
-                if len(args) == 2
-                and isinstance(args[1], exp.Literal)
-                and isinstance(args[1].this, str)
-                and "#" not in args[1].this
-                else exp.ToChar(this=args[0], format=args[1])
+                exp.ToChar(this=args[0], format=args[1])
+                if len(args) == 2 and (not isinstance(args[1], exp.Literal) or "#" in args[1].name)
+                else build_formatted_time(exp.TimeToStr, "dremio")(args)
             ),
         }
 
@@ -130,13 +132,8 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.TimeToStr: lambda self, e: (
-                self.func("TO_CHAR", e.this, self.format_time(e))
-                if isinstance(e.args.get("format"), exp.Literal)
-                and isinstance(e.args["format"].this, str)
-                and "#" not in e.args["format"].this
-                else self.function_fallback_sql(e)
-            ),
+            exp.ToChar: rename_func("TO_CHAR"),
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
         }

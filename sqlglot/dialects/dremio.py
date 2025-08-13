@@ -128,11 +128,7 @@ class Dremio(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
-            exp.ToChar: lambda self, e: (
-                f"TO_CHAR({self.sql(e, 'this')}, {self.sql(e, 'format')})"
-                if isinstance(e.args.get("format"), exp.Literal) and "#" in e.args["format"].this
-                else self.function_fallback_sql(e)
-            ),
+            exp.ToChar: lambda self, e: f"CAST({self.sql(e, 'this')} AS VARCHAR)",
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
         }

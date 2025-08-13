@@ -1731,7 +1731,7 @@ def build_json_extract_path(
     expr_type: t.Type[F],
     zero_based_indexing: bool = True,
     arrow_req_json_type: bool = False,
-    json_type: t.Union[str, None] = None,
+    json_type: t.Optional[str] = None,
 ) -> t.Callable[[t.List], F]:
     def _builder(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]

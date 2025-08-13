@@ -126,7 +126,7 @@ class SingleStore(MySQL):
                     inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
                 ),
             ),
-            exp.UnixToTime: unsupported_args("scale", "zone", "hours", "minutes", "format")(
+            exp.UnixToTime: unsupported_args("scale", "zone", "hours", "minutes")(
                 lambda self, e: self.func(
                     "FROM_UNIXTIME",
                     e.this,

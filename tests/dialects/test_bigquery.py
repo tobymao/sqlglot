@@ -1775,6 +1775,7 @@ WHERE
         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
         self.validate_identity("BYTE_LENGTH('foo')")
         self.validate_identity("BYTE_LENGTH(b'foo')")
+        self.validate_identity("CODE_POINTS_TO_STRING([65, 255])")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

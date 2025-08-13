@@ -2025,38 +2025,6 @@ class Parser(metaclass=_Parser):
             elif temp_props:
                 properties = temp_props
 
-        def merge_sequence_properties() -> None:
-            nonlocal properties
-            if not properties:
-                return
-
-            seq_props_list = []
-            accum_props = []
-
-            for prop in properties.expressions:
-                if isinstance(prop, exp.SequenceProperties):
-                    seq_props_list.append(prop)
-                else:
-                    accum_props.append(prop)
-
-            if len(seq_props_list) > 1:
-                merged_args = {}
-                options_list = []
-
-                for seq_prop in seq_props_list:
-                    for key, value in seq_prop.args.items():
-                        if key == "options":
-                            options_list.extend(value)
-                        else:
-                            merged_args[key] = value
-
-                merged_args["options"] = options_list
-
-                merged_seq_props = exp.SequenceProperties(**merged_args)
-                accum_props.append(merged_seq_props)
-
-                properties.set("expressions", accum_props)
-
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
 
@@ -2116,8 +2084,24 @@ class Parser(metaclass=_Parser):
 
             if create_token.token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
-                extend_props(self._parse_properties())
-                merge_sequence_properties()
+                props = self._parse_properties()
+                if props:
+                    sequence_props = exp.SequenceProperties()
+                    options = []
+                    for prop in props:
+                        if isinstance(prop, exp.SequenceProperties):
+                            for arg, value in prop.args.items():
+                                if arg == "options":
+                                    options.extend(value)
+                                else:
+                                    sequence_props.set(arg, value)
+                            prop.pop()
+
+                    if options:
+                        sequence_props.set("options", options)
+
+                    props.append("expressions", sequence_props)
+                    extend_props(props)
             else:
                 expression = self._parse_ddl_select()
 

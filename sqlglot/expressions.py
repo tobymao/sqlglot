@@ -6845,6 +6845,10 @@ class SortArray(Func):
     arg_types = {"this": True, "asc": False}
 
 
+class Soundex(Func):
+    pass
+
+
 class Split(Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 

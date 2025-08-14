@@ -761,6 +761,10 @@ STRING;
 TRANSLATE(b'AaBbCc', b'abc', b'123');
 BINARY;
 
+# dialect: bigquery
+SOUNDEX('foo');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

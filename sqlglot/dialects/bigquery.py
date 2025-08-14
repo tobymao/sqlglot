@@ -474,6 +474,8 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
+        exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),

@@ -769,6 +769,22 @@ STRING;
 MD5('foo');
 BINARY;
 
+# dialect: bigquery
+MAX_BY(tbl.str_col, tbl.bigint_col);
+STRING;
+
+# dialect: bigquery
+MAX_BY(tbl.bigint_col, tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+MIN_BY(tbl.str_col, tbl.bigint_col);
+STRING;
+
+# dialect: bigquery
+MIN_BY(tbl.bigint_col, tbl.str_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -92,8 +92,6 @@ class Dremio(Dialect):
         "tzd": "%Z",  # abbreviation (UTC, PST, ...)
         "TZO": "%z",
         "tzo": "%z",  # numeric offset (+0200)
-        # "#": "FM9999",
-        # "#.#": "FM9999.9",
     }
 
     class Parser(parser.Parser):

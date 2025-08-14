@@ -92,6 +92,8 @@ class Dremio(Dialect):
         "tzd": "%Z",  # abbreviation (UTC, PST, ...)
         "TZO": "%z",
         "tzo": "%z",  # numeric offset (+0200)
+        # "#": "FM9999",
+        # "#.#": "FM9999.9",
     }
 
     class Parser(parser.Parser):
@@ -100,7 +102,7 @@ class Dremio(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "TO_CHAR": lambda args: (
-                exp.ToChar(this=args[0], format=args[1])
+                exp.Cast(this=args[0], to=exp.DataType.build("VARCHAR"))
                 if len(args) == 2 and (not isinstance(args[1], exp.Literal) or "#" in args[1].name)
                 else build_formatted_time(exp.TimeToStr, "dremio")(args)
             ),

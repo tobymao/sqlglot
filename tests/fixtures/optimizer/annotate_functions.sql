@@ -753,6 +753,14 @@ STRING;
 REPLACE(b'\x48\x65\x6C\x6C\x6F', b'\x6C\x6C', b'\x59\x59');
 BINARY;
 
+# dialect: bigquery
+TRANSLATE('AaBbCc', 'abc', '1');
+STRING;
+
+# dialect: bigquery
+TRANSLATE(b'AaBbCc', b'abc', b'123');
+BINARY;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

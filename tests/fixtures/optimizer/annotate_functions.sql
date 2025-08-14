@@ -765,6 +765,10 @@ BINARY;
 SOUNDEX('foo');
 STRING;
 
+# dialect: bigquery
+MD5('foo');
+BINARY;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

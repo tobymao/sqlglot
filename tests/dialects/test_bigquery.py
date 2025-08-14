@@ -713,6 +713,7 @@ LANGUAGE js AS
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
                     "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) + INTERVAL '1' MILLISECOND",
                     "snowflake": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
+                    "spark": "SELECT '2023-01-01T00:00:00' + INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -723,6 +724,7 @@ LANGUAGE js AS
                     "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1' * -1, '2023-01-01T00:00:00')",
                     "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) - INTERVAL '1' MILLISECOND",
+                    "spark": "SELECT '2023-01-01T00:00:00' - INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -753,6 +755,7 @@ LANGUAGE js AS
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
                 "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
                 "snowflake": "SELECT TIMESTAMPADD(MINUTE, '10' * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) - INTERVAL 10 MINUTE",
             },
         )
         self.validate_all(
@@ -760,6 +763,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL col MINUTE)",
                 "snowflake": "SELECT TIMESTAMPADD(MINUTE, col * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) - INTERVAL col MINUTE",
             },
         )
         self.validate_all(
@@ -767,6 +771,15 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL '2' HOUR)",
                 "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+                "spark": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL 1 HOUR)",
+            write={
+                "bigquery": "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL '1' HOUR)",
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '1' HOUR",
+                "spark": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '1' HOUR",
             },
         )
         self.validate_all(
@@ -2639,9 +2652,9 @@ OPTIONS (
                 f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET {offset}",
                 write={
                     "bigquery": f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET AS {alias}",
-                    "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
-                    "spark2": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
-                    "spark": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
-                    "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS ref, {alias}",
+                    "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "spark2": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "spark": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
                 },
             )

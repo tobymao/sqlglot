@@ -180,6 +180,11 @@ class Spark(Spark2):
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.TsOrDsAdd: _dateadd_sql,
             exp.TimestampAdd: _dateadd_sql,
+            exp.TimestampSub: lambda self, e: f"{self.sql(e.this)} - INTERVAL {self.sql(e.expression)} {unit_to_var(e)}" if e.unit else f"{self.sql(e.this)} - {self.sql(e.expression)}",
+            exp.TimeAdd: lambda self, e: f"{self.sql(e.this)} + INTERVAL {self.sql(e.expression)} {unit_to_var(e)}" if e.unit else f"{self.sql(e.this)} + {self.sql(e.expression)}",
+            exp.TimeSub: lambda self, e: f"{self.sql(e.this)} - INTERVAL {self.sql(e.expression)} {unit_to_var(e)}" if e.unit else f"{self.sql(e.this)} - {self.sql(e.expression)}",
+            exp.DatetimeAdd: lambda self, e: f"{self.sql(e.this)} + INTERVAL {self.sql(e.expression)} {unit_to_var(e)}" if e.unit else f"{self.sql(e.this)} + {self.sql(e.expression)}",
+            exp.DatetimeSub: lambda self, e: f"{self.sql(e.this)} - INTERVAL {self.sql(e.expression)} {unit_to_var(e)}" if e.unit else f"{self.sql(e.this)} - {self.sql(e.expression)}",
             exp.DatetimeDiff: timestampdiff_sql,
             exp.TimestampDiff: timestampdiff_sql,
             exp.TryCast: lambda self, e: (

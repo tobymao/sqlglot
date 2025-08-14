@@ -5467,6 +5467,7 @@ class Transform(Func):
 class Translate(Func):
     arg_types = {"this": True, "from": True, "to": True}
 
+
 class Anonymous(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

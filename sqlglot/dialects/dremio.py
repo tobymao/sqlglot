@@ -104,6 +104,9 @@ class Dremio(Dialect):
                 if len(args) == 2 and (not isinstance(args[1], exp.Literal) or "#" in args[1].name)
                 else build_formatted_time(exp.TimeToStr, "dremio")(args)
             ),
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
+            "TO_TIMESTAMP": build_formatted_time(exp.TimeStrToTime, "dremio"),
         }
 
     class Generator(generator.Generator):

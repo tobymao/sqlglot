@@ -75,25 +75,15 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT x :> GEOGRAPHYPOINT")
 
     def test_json_extract(self):
-        self.validate_identity(
-            "SELECT a::b FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t"
-        )
-        self.validate_identity(
-            "SELECT a::b FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t"
-        )
-        self.validate_identity(
-            "SELECT a::$b FROM t", "SELECT JSON_EXTRACT_STRING(a, 'b') FROM t"
-        )
-        self.validate_identity(
-            "SELECT a::%b FROM t", "SELECT JSON_EXTRACT_DOUBLE(a, 'b') FROM t"
-        )
+        self.validate_identity("SELECT a::b FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t")
+        self.validate_identity("SELECT a::b FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t")
+        self.validate_identity("SELECT a::$b FROM t", "SELECT JSON_EXTRACT_STRING(a, 'b') FROM t")
+        self.validate_identity("SELECT a::%b FROM t", "SELECT JSON_EXTRACT_DOUBLE(a, 'b') FROM t")
         self.validate_identity(
             "SELECT a::`b`::`2` FROM t",
             "SELECT JSON_EXTRACT_JSON(JSON_EXTRACT_JSON(a, 'b'), '2') FROM t",
         )
-        self.validate_identity(
-            "SELECT a::2 FROM t", "SELECT JSON_EXTRACT_JSON(a, '2') FROM t"
-        )
+        self.validate_identity("SELECT a::2 FROM t", "SELECT JSON_EXTRACT_JSON(a, '2') FROM t")
 
         self.validate_all(
             "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t",

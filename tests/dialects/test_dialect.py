@@ -3968,3 +3968,55 @@ FROM subquery2""",
                 "oracle": "SOUNDEX(x)",
             },
         )
+
+    def test_grouping(self):
+        self.validate_all(
+            "GROUPING(x)",
+            read={
+                "": "GROUPING(x)",
+                "bigquery": "GROUPING(x)",
+                "hive": "GROUPING(x)",
+                "spark2": "GROUPING(x)",
+                "spark": "GROUPING(x)",
+                "databricks": "GROUPING(x)",
+                "mysql": "GROUPING(x)",
+                "postgres": "GROUPING(x)",
+                "tsql": "GROUPING(x)",
+                "snowflake": "GROUPING(x)",
+                "clickhouse": "GROUPING(x)",
+                "redshift": "GROUPING(x)",
+                "oracle": "GROUPING(x)",
+            },
+            write={
+                "bigquery": "GROUPING(x)",
+                "hive": "GROUPING(x)",
+                "spark2": "GROUPING(x)",
+                "spark": "GROUPING(x)",
+                "databricks": "GROUPING(x)",
+                "mysql": "GROUPING(x)",
+                "postgres": "GROUPING(x)",
+                "tsql": "GROUPING(x)",
+                "snowflake": "GROUPING(x)",
+                "clickhouse": "GROUPING(x)",
+                "redshift": "GROUPING(x)",
+                "oracle": "GROUPING(x)",
+            },
+        )
+        self.validate_all(
+            "GROUPING(col1, col2, col3)",
+            read={
+                "": "GROUPING(col1, col2, col3)",
+                "snowflake": "GROUPING(col1, col2, col3)",
+                "mysql": "GROUPING(col1, col2, col3)",
+                "postgres": "GROUPING(col1, col2, col3)",
+                "clickhouse": "GROUPING(col1, col2, col3)",
+                "redshift": "GROUPING(col1, col2, col3)",
+            },
+            write={
+                "snowflake": "GROUPING(col1, col2, col3)",
+                "mysql": "GROUPING(col1, col2, col3)",
+                "postgres": "GROUPING(col1, col2, col3)",
+                "clickhouse": "GROUPING(col1, col2, col3)",
+                "redshift": "GROUPING(col1, col2, col3)",
+            },
+        )

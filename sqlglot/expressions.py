@@ -5468,6 +5468,11 @@ class Translate(Func):
     arg_types = {"this": True, "from": True, "to": True}
 
 
+class Grouping(AggFunc):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class Anonymous(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

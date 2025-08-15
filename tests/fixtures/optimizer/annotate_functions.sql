@@ -785,6 +785,14 @@ STRING;
 MIN_BY(tbl.bigint_col, tbl.str_col);
 BIGINT;
 
+# dialect: bigquery
+GROUPING(tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+GROUPING(tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -12,7 +12,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.jsonpath import JSON_PATH_PART_TRANSFORMS
 
 
 class SingleStore(MySQL):
@@ -196,6 +195,13 @@ class SingleStore(MySQL):
             exp.JSONPathRoot: lambda *_: "",
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
+        TRANSFORMS.pop(exp.JSONPathFilter)
+        TRANSFORMS.pop(exp.JSONPathRecursive)
+        TRANSFORMS.pop(exp.JSONPathScript)
+        TRANSFORMS.pop(exp.JSONPathSelector)
+        TRANSFORMS.pop(exp.JSONPathSlice)
+        TRANSFORMS.pop(exp.JSONPathUnion)
+        TRANSFORMS.pop(exp.JSONPathWildcard)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1250,34 +1256,6 @@ class SingleStore(MySQL):
             "zerofill",
             "zone",
         }
-
-        def jsonpathfilter_sql(self, expression: exp.JSONPathFilter) -> str:
-            self.unsupported("JSONPathFilter is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathFilter)(self, expression)  # type: ignore
-
-        def jsonpathrecursive_sql(self, expression: exp.JSONPathRecursive) -> str:
-            self.unsupported("JSONPathRecursive is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathRecursive)(self, expression)  # type: ignore
-
-        def jsonpathscript_sql(self, expression: exp.JSONPathScript) -> str:
-            self.unsupported("JSONPathScript is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathScript)(self, expression)  # type: ignore
-
-        def jsonpathselector_sql(self, expression: exp.JSONPathSelector) -> str:
-            self.unsupported("JSONPathSelector is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathSelector)(self, expression)  # type: ignore
-
-        def jsonpathslice_sql(self, expression: exp.JSONPathSlice) -> str:
-            self.unsupported("JSONPathSlice is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathSlice)(self, expression)  # type: ignore
-
-        def jsonpathunion_sql(self, expression: exp.JSONPathUnion) -> str:
-            self.unsupported("JSONPathUnion is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathUnion)(self, expression)  # type: ignore
-
-        def jsonpathwildcard_sql(self, expression: exp.JSONPathWildcard) -> str:
-            self.unsupported("JSONPathWildcard is not supported in SingleStore")
-            return JSON_PATH_PART_TRANSFORMS.get(exp.JSONPathWildcard)(self, expression)  # type: ignore
 
         def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
             json_type = expression.args.get("json_type")

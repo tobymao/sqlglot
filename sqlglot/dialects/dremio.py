@@ -112,7 +112,7 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": to_char_is_numeric_handler,
+            "TO_CHAR": lambda args, dialect=None: to_char_is_numeric_handler(args, dialect=dialect),
         }
 
     class Generator(generator.Generator):

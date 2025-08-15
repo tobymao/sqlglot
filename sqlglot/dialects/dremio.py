@@ -4,7 +4,6 @@ from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
-    build_formatted_time,
     build_timetostr_or_tochar,
     unit_to_var,
 )
@@ -132,9 +131,6 @@ class Dremio(Dialect):
                     dialect,
                 )
             ),
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
-            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
-            "TO_TIMESTAMP": build_formatted_time(exp.TimeStrToTime, "dremio"),
         }
 
     class Generator(generator.Generator):

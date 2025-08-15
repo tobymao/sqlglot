@@ -36,6 +36,15 @@ DATE_ADD_OR_DIFF = t.Union[
 ]
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
 JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
+DATETIME_DELTA = t.Union[
+    exp.DateAdd,
+    exp.DatetimeAdd,
+    exp.DatetimeSub,
+    exp.TimeAdd,
+    exp.TimeSub,
+    exp.TimestampSub,
+    exp.TsOrDsAdd,
+]
 
 
 if t.TYPE_CHECKING:
@@ -1641,6 +1650,40 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
         )
 
     return _delta_sql
+
+
+def date_delta_to_binary_interval_op(
+    cast: bool = True,
+) -> t.Callable[[Generator, DATETIME_DELTA], str]:
+    def date_delta_to_binary_interval_op_sql(self: Generator, expression: DATETIME_DELTA) -> str:
+        this = expression.this
+        unit = unit_to_var(expression)
+        op = (
+            "+"
+            if isinstance(expression, (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd))
+            else "-"
+        )
+
+        to_type: t.Optional[exp.DATA_TYPE] = None
+        if cast:
+            if isinstance(expression, exp.TsOrDsAdd):
+                to_type = expression.return_type
+            elif this.is_string:
+                # Cast string literals (i.e function parameters) to the appropriate type for +/- interval to work
+                to_type = (
+                    exp.DataType.Type.DATETIME
+                    if isinstance(expression, (exp.DatetimeAdd, exp.DatetimeSub))
+                    else exp.DataType.Type.DATE
+                )
+
+        this = exp.cast(this, to_type) if to_type else this
+
+        expr = expression.expression
+        interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
+
+        return f"{self.sql(this)} {op} {self.sql(interval)}"
+
+    return date_delta_to_binary_interval_op_sql
 
 
 def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:

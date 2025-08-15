@@ -153,9 +153,7 @@ class TestDremio(Validator):
             "SELECT DATE_SUB(col, 2, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, -2, col)"
         )
 
-        self.validate_identity(
-            "SELECT DATE_ADD(col, 2, 'DAY')", "SELECT DATE_ADD(col, 2)"
-        )
+        self.validate_identity("SELECT DATE_ADD(col, 2, 'DAY')", "SELECT DATE_ADD(col, 2)")
 
         self.validate_identity(
             "SELECT DATE_SUB(col, a, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, a * -1, col)"

@@ -502,8 +502,7 @@ class _Tokenizer(type):
 
         def _convert_quotes(arr: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
             return dict(
-                (item, item) if isinstance(item, str) else (item[0], item[1])
-                for item in arr
+                (item, item) if isinstance(item, str) else (item[0], item[1]) for item in arr
             )
 
         def _quotes_to_format(
@@ -532,9 +531,7 @@ class _Tokenizer(type):
         klass._IDENTIFIER_ESCAPES = set(klass.IDENTIFIER_ESCAPES)
         klass._COMMENTS = {
             **dict(
-                (comment, None)
-                if isinstance(comment, str)
-                else (comment[0], comment[1])
+                (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
                 for comment in klass.COMMENTS
             ),
             "{#": "#}",  # Ensure Jinja comments are tokenized correctly in all dialects
@@ -555,15 +552,9 @@ class _Tokenizer(type):
 
         if USE_RS_TOKENIZER:
             settings = RsTokenizerSettings(
-                white_space={
-                    k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.WHITE_SPACE.items()
-                },
-                single_tokens={
-                    k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.SINGLE_TOKENS.items()
-                },
-                keywords={
-                    k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.KEYWORDS.items()
-                },
+                white_space={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.WHITE_SPACE.items()},
+                single_tokens={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.SINGLE_TOKENS.items()},
+                keywords={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.KEYWORDS.items()},
                 numeric_literals=klass.NUMERIC_LITERALS,
                 identifiers=klass._IDENTIFIERS,
                 identifier_escapes=klass._IDENTIFIER_ESCAPES,
@@ -602,9 +593,7 @@ class _Tokenizer(type):
                 semicolon=_TOKEN_TYPE_TO_INDEX[TokenType.SEMICOLON],
                 string=_TOKEN_TYPE_TO_INDEX[TokenType.STRING],
                 var=_TOKEN_TYPE_TO_INDEX[TokenType.VAR],
-                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[
-                    klass.HEREDOC_STRING_ALTERNATIVE
-                ],
+                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[klass.HEREDOC_STRING_ALTERNATIVE],
                 hint=_TOKEN_TYPE_TO_INDEX[TokenType.HINT],
             )
             klass._RS_TOKENIZER = RsTokenizer(settings, token_types)
@@ -1197,10 +1186,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if (
             token_type in self.COMMANDS
             and self._peek != ";"
-            and (
-                len(self.tokens) == 1
-                or self.tokens[-2].token_type in self.COMMAND_PREFIX_TOKENS
-            )
+            and (len(self.tokens) == 1 or self.tokens[-2].token_type in self.COMMAND_PREFIX_TOKENS)
         ):
             start = self._current
             tokens = len(self.tokens)
@@ -1300,15 +1286,10 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._advance(comment_start_size)
                     comment_count += 1
 
-            self._comments.append(
-                self._text[comment_start_size : -comment_end_size + 1]
-            )
+            self._comments.append(self._text[comment_start_size : -comment_end_size + 1])
             self._advance(comment_end_size - 1)
         else:
-            while (
-                not self._end
-                and self.WHITE_SPACE.get(self._peek) is not TokenType.BREAK
-            ):
+            while not self._end and self.WHITE_SPACE.get(self._peek) is not TokenType.BREAK:
                 self._advance(alnum=True)
             self._comments.append(self._text[comment_start_size:])
 
@@ -1332,17 +1313,9 @@ class Tokenizer(metaclass=_Tokenizer):
         if self._char == "0":
             peek = self._peek.upper()
             if peek == "B":
-                return (
-                    self._scan_bits()
-                    if self.BIT_STRINGS
-                    else self._add(TokenType.NUMBER)
-                )
+                return self._scan_bits() if self.BIT_STRINGS else self._add(TokenType.NUMBER)
             elif peek == "X":
-                return (
-                    self._scan_hex()
-                    if self.HEX_STRINGS
-                    else self._add(TokenType.NUMBER)
-                )
+                return self._scan_hex() if self.HEX_STRINGS else self._add(TokenType.NUMBER)
 
         decimal = False
         scientific = 0
@@ -1369,9 +1342,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     literal += self._peek
                     self._advance()
 
-                token_type = self.KEYWORDS.get(
-                    self.NUMERIC_LITERALS.get(literal.upper(), "")
-                )
+                token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal.upper(), ""))
 
                 if token_type:
                     self._add(TokenType.NUMBER, number_text)
@@ -1379,10 +1350,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     return self._add(token_type, literal)
                 else:
                     replaced = literal.replace("_", "")
-                    if (
-                        self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED
-                        and replaced.isdigit()
-                    ):
+                    if self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED and replaced.isdigit():
                         return self._add(TokenType.NUMBER, number_text + replaced)
                     if self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
                         return self._add(TokenType.VAR)
@@ -1447,11 +1415,7 @@ class Tokenizer(metaclass=_Tokenizer):
                         raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
                     )
 
-                if (
-                    tag
-                    and self.HEREDOC_TAG_IS_IDENTIFIER
-                    and (self._end or not tag.isidentifier())
-                ):
+                if tag and self.HEREDOC_TAG_IS_IDENTIFIER and (self._end or not tag.isidentifier()):
                     if not self._end:
                         self._advance(-1)
 
@@ -1487,9 +1451,7 @@ class Tokenizer(metaclass=_Tokenizer):
     def _scan_var(self) -> None:
         while True:
             char = self._peek.strip()
-            if char and (
-                char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS
-            ):
+            if char and (char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS):
                 self._advance(alnum=True)
             else:
                 break
@@ -1518,9 +1480,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 and self._peek
                 and self._char in self.STRING_ESCAPES
             ):
-                unescaped_sequence = self.dialect.UNESCAPED_SEQUENCES.get(
-                    self._char + self._peek
-                )
+                unescaped_sequence = self.dialect.UNESCAPED_SEQUENCES.get(self._char + self._peek)
                 if unescaped_sequence:
                     self._advance(2)
                     text += unescaped_sequence
@@ -1539,9 +1499,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 if self._current + 1 < self.size:
                     self._advance(2)
                 else:
-                    raise TokenError(
-                        f"Missing {delimiter} from {self._line}:{self._current}"
-                    )
+                    raise TokenError(f"Missing {delimiter} from {self._line}:{self._current}")
             else:
                 if self._chars(delim_size) == delimiter:
                     if delim_size > 1:
@@ -1552,9 +1510,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     if not raise_unmatched:
                         return text + self._char
 
-                    raise TokenError(
-                        f"Missing {delimiter} from {self._line}:{self._start}"
-                    )
+                    raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1
                 self._advance(alnum=True)

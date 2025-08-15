@@ -11,9 +11,7 @@ class TestSingleStore(Validator):
             "SELECT id AS my_id FROM data WHERE my_id = 1 GROUP BY my_id HAVING my_id = 1",
             dialect=self.dialect,
         )
-        ast = qualify(
-            ast, dialect=self.dialect, schema={"data": {"id": "INT", "my_id": "INT"}}
-        )
+        ast = qualify(ast, dialect=self.dialect, schema={"data": {"id": "INT", "my_id": "INT"}})
         self.assertEqual(
             "SELECT `data`.`id` AS `my_id` FROM `data` AS `data` WHERE `data`.`my_id` = 1 GROUP BY `data`.`my_id` HAVING `data`.`id` = 1",
             ast.sql(dialect=self.dialect),

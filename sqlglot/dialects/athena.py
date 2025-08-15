@@ -79,9 +79,7 @@ class Athena(Dialect):
         IDENTIFIERS = Trino.Tokenizer.IDENTIFIERS + Hive.Tokenizer.IDENTIFIERS
         STRING_ESCAPES = Trino.Tokenizer.STRING_ESCAPES + Hive.Tokenizer.STRING_ESCAPES
         HEX_STRINGS = Trino.Tokenizer.HEX_STRINGS + Hive.Tokenizer.HEX_STRINGS
-        UNICODE_STRINGS = (
-            Trino.Tokenizer.UNICODE_STRINGS + Hive.Tokenizer.UNICODE_STRINGS
-        )
+        UNICODE_STRINGS = Trino.Tokenizer.UNICODE_STRINGS + Hive.Tokenizer.UNICODE_STRINGS
 
         NUMERIC_LITERALS = {
             **Trino.Tokenizer.NUMERIC_LITERALS,
@@ -101,17 +99,13 @@ class Athena(Dialect):
             super().__init__(*args, **kwargs)
 
             self._hive_tokenizer = hive.tokenizer(*args, **{**kwargs, "dialect": hive})
-            self._trino_tokenizer = _TrinoTokenizer(
-                *args, **{**kwargs, "dialect": trino}
-            )
+            self._trino_tokenizer = _TrinoTokenizer(*args, **{**kwargs, "dialect": trino})
 
         def tokenize(self, sql: str) -> t.List[Token]:
             tokens = super().tokenize(sql)
 
             if _tokenize_as_hive(tokens):
-                return [
-                    Token(TokenType.HIVE_TOKEN_STREAM, "")
-                ] + self._hive_tokenizer.tokenize(sql)
+                return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + self._hive_tokenizer.tokenize(sql)
 
             return self._trino_tokenizer.tokenize(sql)
 
@@ -140,9 +134,7 @@ class Athena(Dialect):
             sql: t.Optional[str] = None,
         ) -> t.List[t.Optional[exp.Expression]]:
             if raw_tokens and raw_tokens[0].token_type == TokenType.HIVE_TOKEN_STREAM:
-                return self._hive_parser.parse_into(
-                    expression_types, raw_tokens[1:], sql
-                )
+                return self._hive_parser.parse_into(expression_types, raw_tokens[1:], sql)
 
             return self._trino_parser.parse_into(expression_types, raw_tokens, sql)
 
@@ -154,9 +146,7 @@ class Athena(Dialect):
             super().__init__(*args, **kwargs)
 
             self._hive_generator = _HiveGenerator(*args, **{**kwargs, "dialect": hive})
-            self._trino_generator = _TrinoGenerator(
-                *args, **{**kwargs, "dialect": trino}
-            )
+            self._trino_generator = _TrinoGenerator(*args, **{**kwargs, "dialect": trino})
 
         def generate(self, expression: exp.Expression, copy: bool = True) -> str:
             if _generate_as_hive(expression):
@@ -178,10 +168,7 @@ def _tokenize_as_hive(tokens: t.List[Token]) -> bool:
     second_type = second.token_type
     second_text = second.text.upper()
 
-    if (
-        first_type in (TokenType.DESCRIBE, TokenType.SHOW)
-        or first_text == "MSCK REPAIR"
-    ):
+    if first_type in (TokenType.DESCRIBE, TokenType.SHOW) or first_text == "MSCK REPAIR":
         return True
 
     if first_type in (TokenType.ALTER, TokenType.CREATE, TokenType.DROP):
@@ -243,9 +230,7 @@ def _location_property_sql(self: Athena.Generator, e: exp.LocationProperty):
     return f"{prop_name}={self.sql(e, 'this')}"
 
 
-def _partitioned_by_property_sql(
-    self: Athena.Generator, e: exp.PartitionedByProperty
-) -> str:
+def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByProperty) -> str:
     # If table_type='iceberg' then the table property for partitioning is called 'partitioning'
     # If table_type='hive' it's called 'partitioned_by'
     # ref: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html#ctas-table-properties

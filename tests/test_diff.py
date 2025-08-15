@@ -15,12 +15,8 @@ class TestDiff(unittest.TestCase):
             [
                 Remove(expression=parse_one("a + b")),  # the Add node
                 Insert(expression=parse_one("a - b")),  # the Sub node
-                Move(
-                    source=parse_one("a"), target=parse_one("a")
-                ),  # the `a` Column node
-                Move(
-                    source=parse_one("b"), target=parse_one("b")
-                ),  # the `b` Column node
+                Move(source=parse_one("a"), target=parse_one("a")),  # the `a` Column node
+                Move(source=parse_one("b"), target=parse_one("b")),  # the `b` Column node
             ],
         )
 
@@ -154,9 +150,7 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
-        expr_src = parse_one(
-            "SELECT a as a, b as b FROM t WHERE CONCAT('a', 'b') = 'ab'"
-        )
+        expr_src = parse_one("SELECT a as a, b as b FROM t WHERE CONCAT('a', 'b') = 'ab'")
         expr_tgt = parse_one("SELECT a as a FROM t WHERE CONCAT('a', 'b', b) = 'ab'")
 
         b_alias = expr_src.selects[1]
@@ -230,9 +224,7 @@ class TestDiff(unittest.TestCase):
         )
 
         expr_src = parse_one("SELECT MAX(x) OVER (ORDER BY y) FROM z", "oracle")
-        expr_tgt = parse_one(
-            "SELECT MAX(x) KEEP (DENSE_RANK LAST ORDER BY y) FROM z", "oracle"
-        )
+        expr_tgt = parse_one("SELECT MAX(x) KEEP (DENSE_RANK LAST ORDER BY y) FROM z", "oracle")
 
         self._validate_delta_only(
             diff_delta_only(expr_src, expr_tgt),

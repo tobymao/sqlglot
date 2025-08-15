@@ -118,17 +118,13 @@ class PRQL(Dialect):
                 selects = [expression] if expression else []
 
             projections = {
-                select.alias_or_name: select.this
-                if isinstance(select, exp.Alias)
-                else select
+                select.alias_or_name: select.this if isinstance(select, exp.Alias) else select
                 for select in query.selects
             }
 
             selects = [
                 select.transform(
-                    lambda s: (
-                        projections[s.name].copy() if s.name in projections else s
-                    )
+                    lambda s: (projections[s.name].copy() if s.name in projections else s)
                     if isinstance(s, exp.Column)
                     else s,
                     copy=False,
@@ -158,9 +154,7 @@ class PRQL(Dialect):
             expressions = self._parse_csv(self._parse_ordered)
             if l_brace and not self._match(TokenType.R_BRACE):
                 self.raise_error("Expecting }")
-            return query.order_by(
-                self.expression(exp.Order, expressions=expressions), copy=False
-            )
+            return query.order_by(self.expression(exp.Order, expressions=expressions), copy=False)
 
         def _parse_aggregate(self) -> t.Optional[exp.Expression]:
             alias = None
@@ -184,9 +178,7 @@ class PRQL(Dialect):
             if self._next and self._next.token_type == TokenType.ALIAS:
                 alias = self._parse_id_var(True)
                 self._match(TokenType.ALIAS)
-                return self.expression(
-                    exp.Alias, this=self._parse_assignment(), alias=alias
-                )
+                return self.expression(exp.Alias, this=self._parse_assignment(), alias=alias)
             return self._parse_assignment()
 
         def _parse_table(

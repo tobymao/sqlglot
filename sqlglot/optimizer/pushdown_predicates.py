@@ -38,8 +38,7 @@ def pushdown_predicates(expression, dialect=None):
             if where:
                 selected_sources = scope.selected_sources
                 join_index = {
-                    join.alias_or_name: i
-                    for i, join in enumerate(select.args.get("joins") or [])
+                    join.alias_or_name: i for i, join in enumerate(select.args.get("joins") or [])
                 }
 
                 # a right join can only push down to itself and not the source FROM table
@@ -111,9 +110,7 @@ def pushdown_cnf(predicates, sources, scope_ref_count, join_index=None):
 
                 # Don't push the predicate if it references tables that appear in later joins
                 this_index = join_index[name]
-                if all(
-                    join_index.get(table, -1) < this_index for table in predicate_tables
-                ):
+                if all(join_index.get(table, -1) < this_index for table in predicate_tables):
                     predicate.replace(exp.true())
                     node.on(predicate, copy=False)
                     break
@@ -156,9 +153,7 @@ def pushdown_dnf(predicates, sources, scope_ref_count):
                 continue
 
             conditions[table] = (
-                exp.or_(conditions[table], predicate)
-                if table in conditions
-                else predicate
+                exp.or_(conditions[table], predicate) if table in conditions else predicate
             )
 
         for name, node in nodes.items():
@@ -180,9 +175,7 @@ def pushdown_dnf(predicates, sources, scope_ref_count):
 def nodes_for_predicate(predicate, sources, scope_ref_count):
     nodes = {}
     tables = exp.column_table_names(predicate)
-    where_condition = isinstance(
-        predicate.find_ancestor(exp.Join, exp.Where), exp.Where
-    )
+    where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
 
     for table in sorted(tables):
         node, source = sources.get(table) or (None, None)

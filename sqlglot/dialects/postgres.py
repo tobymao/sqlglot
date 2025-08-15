@@ -151,9 +151,7 @@ def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
     if data_type:
         expression.args["kind"].replace(data_type)
         constraints = expression.args["constraints"]
-        generated = exp.ColumnConstraint(
-            kind=exp.GeneratedAsIdentityColumnConstraint(this=False)
-        )
+        generated = exp.ColumnConstraint(kind=exp.GeneratedAsIdentityColumnConstraint(this=False))
         notnull = exp.ColumnConstraint(kind=exp.NotNullColumnConstraint())
 
         if notnull not in constraints:
@@ -192,17 +190,13 @@ def _json_extract_sql(
 ) -> t.Callable[[Postgres.Generator, JSON_EXTRACT_TYPE], str]:
     def _generate(self: Postgres.Generator, expression: JSON_EXTRACT_TYPE) -> str:
         if expression.args.get("only_json_types"):
-            return json_extract_segments(name, quoted_index=False, op=op)(
-                self, expression
-            )
+            return json_extract_segments(name, quoted_index=False, op=op)(self, expression)
         return json_extract_segments(name)(self, expression)
 
     return _generate
 
 
-def _build_regexp_replace(
-    args: t.List, dialect: DialectType = None
-) -> exp.RegexpReplace:
+def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.RegexpReplace:
     # The signature of REGEXP_REPLACE is:
     # regexp_replace(source, pattern, replacement [, start [, N ]] [, flags ])
     #
@@ -212,9 +206,7 @@ def _build_regexp_replace(
     if len(args) > 3:
         last = args[-1]
         if not is_int(last.name):
-            if not last.type or last.is_type(
-                exp.DataType.Type.UNKNOWN, exp.DataType.Type.NULL
-            ):
+            if not last.type or last.is_type(exp.DataType.Type.UNKNOWN, exp.DataType.Type.NULL):
                 from sqlglot.optimizer.annotate_types import annotate_types
 
                 last = annotate_types(last, dialect=dialect)
@@ -259,9 +251,7 @@ def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
 
 
 def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein) -> str:
-    name = (
-        "LEVENSHTEIN_LESS_EQUAL" if expression.args.get("max_dist") else "LEVENSHTEIN"
-    )
+    name = "LEVENSHTEIN_LESS_EQUAL" if expression.args.get("max_dist") else "LEVENSHTEIN"
 
     return rename_func(name)(self, expression)
 
@@ -386,17 +376,13 @@ class Postgres(Dialect):
     class Parser(parser.Parser):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
-            "SET": lambda self: self.expression(
-                exp.SetConfigProperty, this=self._parse_set()
-            ),
+            "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
         }
         PROPERTY_PARSERS.pop("INPUT")
 
         PLACEHOLDER_PARSERS = {
             **parser.Parser.PLACEHOLDER_PARSERS,
-            TokenType.PLACEHOLDER: lambda self: self.expression(
-                exp.Placeholder, jdbc=True
-            ),
+            TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder, jdbc=True),
             TokenType.MOD: lambda self: self._parse_query_parameter(),
         }
 
@@ -409,9 +395,7 @@ class Postgres(Dialect):
             "GENERATE_SERIES": _build_generate_series,
             "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
             "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
-            "LENGTH": lambda args: exp.Length(
-                this=seq_get(args, 0), encoding=seq_get(args, 1)
-            ),
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
             "MAKE_TIME": exp.TimeFromParts.from_arg_list,
             "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
@@ -420,15 +404,9 @@ class Postgres(Dialect):
             "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,
             "UNNEST": exp.Explode.from_arg_list,
-            "SHA256": lambda args: exp.SHA2(
-                this=seq_get(args, 0), length=exp.Literal.number(256)
-            ),
-            "SHA384": lambda args: exp.SHA2(
-                this=seq_get(args, 0), length=exp.Literal.number(384)
-            ),
-            "SHA512": lambda args: exp.SHA2(
-                this=seq_get(args, 0), length=exp.Literal.number(512)
-            ),
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
             "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
             "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
@@ -490,9 +468,7 @@ class Postgres(Dialect):
             self._match_text_seq("S")
             return self.expression(exp.Placeholder, this=this)
 
-        def _parse_operator(
-            self, this: t.Optional[exp.Expression]
-        ) -> t.Optional[exp.Expression]:
+        def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             while True:
                 if not self._match(TokenType.L_PAREN):
                     break
@@ -546,9 +522,7 @@ class Postgres(Dialect):
             this = super()._parse_generated_as_identity()
 
             if self._match_text_seq("STORED"):
-                this = self.expression(
-                    exp.ComputedColumnConstraint, this=this.expression
-                )
+                this = self.expression(exp.ComputedColumnConstraint, this=this.expression)
 
             return this
 
@@ -614,9 +588,7 @@ class Postgres(Dialect):
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
-            exp.ColumnDef: transforms.preprocess(
-                [_auto_increment_to_serial, _serial_to_generated]
-            ),
+            exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.CurrentUser: lambda *_: "CURRENT_USER",
@@ -635,9 +607,7 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
-            exp.ParseJSON: lambda self, e: self.sql(
-                exp.cast(e.this, exp.DataType.Type.JSON)
-            ),
+            exp.ParseJSON: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.JSON)),
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
@@ -648,8 +618,7 @@ class Postgres(Dialect):
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
             exp.Merge: merge_without_target_sql,
-            exp.PartitionedByProperty: lambda self,
-            e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
             ),
@@ -667,24 +636,16 @@ class Postgres(Dialect):
                 ]
             ),
             exp.SHA2: sha256_sql,
-            exp.StrPosition: lambda self, e: strposition_sql(
-                self, e, func_name="POSITION"
-            ),
-            exp.StrToDate: lambda self, e: self.func(
-                "TO_DATE", e.this, self.format_time(e)
-            ),
-            exp.StrToTime: lambda self, e: self.func(
-                "TO_TIMESTAMP", e.this, self.format_time(e)
-            ),
+            exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
+            exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+            exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StructExtract: struct_extract_sql,
             exp.Substring: _substring_sql,
             exp.TimeFromParts: rename_func("MAKE_TIME"),
             exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeToStr: lambda self, e: self.func(
-                "TO_CHAR", e.this, self.format_time(e)
-            ),
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
@@ -737,18 +698,12 @@ class Postgres(Dialect):
 
             return self.func("ROUND", this, decimals)
 
-        def schemacommentproperty_sql(
-            self, expression: exp.SchemaCommentProperty
-        ) -> str:
+        def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
             self.unsupported("Table comments are not supported in the CREATE statement")
             return ""
 
-        def commentcolumnconstraint_sql(
-            self, expression: exp.CommentColumnConstraint
-        ) -> str:
-            self.unsupported(
-                "Column comments are not supported in the CREATE statement"
-            )
+        def commentcolumnconstraint_sql(self, expression: exp.CommentColumnConstraint) -> str:
+            self.unsupported("Column comments are not supported in the CREATE statement")
             return ""
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
@@ -759,15 +714,8 @@ class Postgres(Dialect):
                     if isinstance(expression.parent, (exp.From, exp.Join)):
                         generate_series = (
                             exp.select("value::date")
-                            .from_(
-                                exp.Table(this=generate_series).as_(
-                                    "_t", table=["value"]
-                                )
-                            )
-                            .subquery(
-                                expression.args.get("alias")
-                                or "_unnested_generate_series"
-                            )
+                            .from_(exp.Table(this=generate_series).as_("_t", table=["value"]))
+                            .subquery(expression.args.get("alias") or "_unnested_generate_series")
                         )
                     return self.sql(generate_series)
 
@@ -830,15 +778,11 @@ class Postgres(Dialect):
 
             return super().datatype_sql(expression)
 
-        def cast_sql(
-            self, expression: exp.Cast, safe_prefix: t.Optional[str] = None
-        ) -> str:
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             this = expression.this
 
             # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
-            if isinstance(this, exp.IntDiv) and expression.to == exp.DataType.build(
-                "decimal"
-            ):
+            if isinstance(this, exp.IntDiv) and expression.to == exp.DataType.build("decimal"):
                 return self.sql(this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
@@ -852,9 +796,7 @@ class Postgres(Dialect):
 
             return f"{func_name}{inline_array_sql(self, expression)}"
 
-        def computedcolumnconstraint_sql(
-            self, expression: exp.ComputedColumnConstraint
-        ) -> str:
+        def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')}) STORED"
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
@@ -868,9 +810,7 @@ class Postgres(Dialect):
             unit = expression.text("unit").lower()
 
             if unit.startswith("quarter") and isinstance(expression.this, exp.Literal):
-                expression.this.replace(
-                    exp.Literal.number(int(expression.this.to_py()) * 3)
-                )
+                expression.this.replace(exp.Literal.number(int(expression.this.to_py()) * 3))
                 expression.args["unit"].replace(exp.var("MONTH"))
 
             return super().interval_sql(expression)

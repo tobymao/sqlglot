@@ -135,15 +135,9 @@ def diff(
         # We cache the hash of each new node here to speed up equality comparisons. If the input
         # trees aren't copied, these hashes will be evicted before returning the edit script.
         if copy and matchings:
-            source_mapping = compute_node_mappings(
-                source_nodes, tuple(source_copy.walk())
-            )
-            target_mapping = compute_node_mappings(
-                target_nodes, tuple(target_copy.walk())
-            )
-            matchings = [
-                (source_mapping[id(s)], target_mapping[id(t)]) for s, t in matchings
-            ]
+            source_mapping = compute_node_mappings(source_nodes, tuple(source_copy.walk()))
+            target_mapping = compute_node_mappings(target_nodes, tuple(target_copy.walk()))
+            matchings = [(source_mapping[id(s)], target_mapping[id(t)]) for s, t in matchings]
         else:
             for node in chain(reversed(source_nodes), reversed(target_nodes)):
                 node._hash = hash(node)
@@ -184,9 +178,7 @@ class ChangeDistiller:
     Chawathe et al. described in http://ilpubs.stanford.edu:8090/115/1/1995-46.pdf.
     """
 
-    def __init__(
-        self, f: float = 0.6, t: float = 0.6, dialect: DialectType = None
-    ) -> None:
+    def __init__(self, f: float = 0.6, t: float = 0.6, dialect: DialectType = None) -> None:
         self.f = f
         self.t = t
         self._sql_generator = Dialect.get_or_raise(dialect).generator()
@@ -204,27 +196,19 @@ class ChangeDistiller:
         self._source = source
         self._target = target
         self._source_index = {
-            id(n): n
-            for n in self._source.bfs()
-            if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
+            id(n): n for n in self._source.bfs() if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
         }
         self._target_index = {
-            id(n): n
-            for n in self._target.bfs()
-            if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
+            id(n): n for n in self._target.bfs() if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
         }
         self._unmatched_source_nodes = set(self._source_index) - set(pre_matched_nodes)
-        self._unmatched_target_nodes = set(self._target_index) - set(
-            pre_matched_nodes.values()
-        )
+        self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
         matching_set = self._compute_matching_set() | set(pre_matched_nodes.items())
         return self._generate_edit_script(dict(matching_set), delta_only)
 
-    def _generate_edit_script(
-        self, matchings: t.Dict[int, int], delta_only: bool
-    ) -> t.List[Edit]:
+    def _generate_edit_script(self, matchings: t.Dict[int, int], delta_only: bool) -> t.List[Edit]:
         edit_script: t.List[Edit] = []
         for removed_node_id in self._unmatched_source_nodes:
             edit_script.append(Remove(self._source_index[removed_node_id]))
@@ -236,10 +220,7 @@ class ChangeDistiller:
 
             identical_nodes = source_node == target_node
 
-            if (
-                not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES)
-                or identical_nodes
-            ):
+            if not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES) or identical_nodes:
                 if identical_nodes:
                     source_parent = source_node.parent
                     target_parent = target_node.parent
@@ -259,12 +240,8 @@ class ChangeDistiller:
                         self._generate_move_edits(source_node, target_node, matchings)
                     )
 
-                source_non_expression_leaves = dict(
-                    _get_non_expression_leaves(source_node)
-                )
-                target_non_expression_leaves = dict(
-                    _get_non_expression_leaves(target_node)
-                )
+                source_non_expression_leaves = dict(_get_non_expression_leaves(source_node))
+                target_non_expression_leaves = dict(_get_non_expression_leaves(target_node))
 
                 if source_non_expression_leaves != target_non_expression_leaves:
                     edit_script.append(Update(source_node, target_node))
@@ -309,14 +286,10 @@ class ChangeDistiller:
         matching_set = leaves_matching_set.copy()
 
         ordered_unmatched_source_nodes = {
-            id(n): None
-            for n in self._source.bfs()
-            if id(n) in self._unmatched_source_nodes
+            id(n): None for n in self._source.bfs() if id(n) in self._unmatched_source_nodes
         }
         ordered_unmatched_target_nodes = {
-            id(n): None
-            for n in self._target.bfs()
-            if id(n) in self._unmatched_target_nodes
+            id(n): None for n in self._target.bfs() if id(n) in self._unmatched_target_nodes
         }
 
         for source_node_id in ordered_unmatched_source_nodes:
@@ -324,12 +297,8 @@ class ChangeDistiller:
                 source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
                 if _is_same_type(source_node, target_node):
-                    source_leaf_ids = {
-                        id(l) for l in _get_expression_leaves(source_node)
-                    }
-                    target_leaf_ids = {
-                        id(l) for l in _get_expression_leaves(target_node)
-                    }
+                    source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
+                    target_leaf_ids = {id(l) for l in _get_expression_leaves(target_node)}
 
                     max_leaves_num = max(len(source_leaf_ids), len(target_leaf_ids))
                     if max_leaves_num:
@@ -342,9 +311,7 @@ class ChangeDistiller:
                         leaf_similarity_score = 0.0
 
                     adjusted_t = (
-                        self.t
-                        if min(len(source_leaf_ids), len(target_leaf_ids)) > 4
-                        else 0.4
+                        self.t if min(len(source_leaf_ids), len(target_leaf_ids)) > 4 else 0.4
                     )
 
                     if leaf_similarity_score >= 0.8 or (
@@ -360,9 +327,7 @@ class ChangeDistiller:
         return matching_set
 
     def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
-        candidate_matchings: t.List[
-            t.Tuple[float, int, int, exp.Expression, exp.Expression]
-        ] = []
+        candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expression, exp.Expression]] = []
         source_expression_leaves = list(_get_expression_leaves(self._source))
         target_expression_leaves = list(_get_expression_leaves(self._target))
         for source_leaf in source_expression_leaves:
@@ -395,9 +360,7 @@ class ChangeDistiller:
 
         return matching_set
 
-    def _dice_coefficient(
-        self, source: exp.Expression, target: exp.Expression
-    ) -> float:
+    def _dice_coefficient(self, source: exp.Expression, target: exp.Expression) -> float:
         source_histo = self._bigram_histo(source)
         target_histo = self._bigram_histo(target)
 

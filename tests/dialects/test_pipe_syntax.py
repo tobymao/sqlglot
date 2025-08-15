@@ -90,12 +90,8 @@ class TestPipeSyntax(Validator):
     def test_limit(self):
         for option in ("LIMIT 1", "LIMIT 1 OFFSET 2"):
             with self.subTest(f"Testing pipe syntax LIMIT and OFFSET option: {option}"):
-                self.validate_identity(
-                    f"FROM x |> {option}", f"SELECT * FROM x {option}"
-                )
-                self.validate_identity(
-                    f"FROM x |> {option}", f"SELECT * FROM x {option}"
-                )
+                self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
+                self.validate_identity(f"FROM x |> {option}", f"SELECT * FROM x {option}")
                 self.validate_identity(
                     f"FROM x |> {option} |> SELECT x1, x2 |> WHERE x1 > 0 |> WHERE x2 > 0  |> ORDER BY x1, x2",
                     f"WITH __tmp1 AS (SELECT x1, x2 FROM x {option}) SELECT * FROM __tmp1 WHERE x1 > 0 AND x2 > 0 ORDER BY x1, x2",
@@ -143,9 +139,7 @@ class TestPipeSyntax(Validator):
             "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x2 AS g_x2 FROM x GROUP BY g_x2) SELECT * FROM __tmp1 WHERE s_x1 > 0",
         )
         for order_option in ("ASC", "DESC", "ASC NULLS LAST", "DESC NULLS FIRST"):
-            with self.subTest(
-                f"Testing pipe syntax AGGREGATE for order option: {order_option}"
-            ):
+            with self.subTest(f"Testing pipe syntax AGGREGATE for order option: {order_option}"):
                 self.validate_all(
                     f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s FROM x ORDER BY x_s {order_option}) SELECT * FROM __tmp1",
                     read={
@@ -195,9 +189,7 @@ class TestPipeSyntax(Validator):
                 "INTERSECT DISTINCT",
                 "EXCEPT DISTINCT",
             ):
-                with self.subTest(
-                    f"Testing pipe syntax SET OPERATORS: {op_prefix} {op_operator}"
-                ):
+                with self.subTest(f"Testing pipe syntax SET OPERATORS: {op_prefix} {op_operator}"):
                     self.validate_all(
                         f"FROM x|> SELECT x1, x2 |> {op_prefix} {op_operator} BY NAME (SELECT y1, y2 FROM y), (SELECT z1, z2 FROM z)",
                         write={
@@ -341,9 +333,7 @@ WHERE
             "RIGHT JOIN",
             "RIGHT OUTER JOIN",
         ):
-            with self.subTest(
-                f"Testing pipe syntax no projecton with JOIN : {join_type}"
-            ):
+            with self.subTest(f"Testing pipe syntax no projecton with JOIN : {join_type}"):
                 self.validate_identity(
                     f"FROM x |> {join_type} y ON x.id = y.id",
                     f"SELECT * FROM x {join_type} y ON x.id = y.id",
@@ -353,9 +343,7 @@ WHERE
                     f"FROM x |> SELECT id |> {join_type} y ON x.id = y.id",
                     f"WITH __tmp1 AS (SELECT id FROM x) SELECT * FROM __tmp1 {join_type} y ON x.id = y.id",
                 )
-            with self.subTest(
-                f"Testing pipe syntax complex queries with JOIN: {join_type}"
-            ):
+            with self.subTest(f"Testing pipe syntax complex queries with JOIN: {join_type}"):
                 self.validate_identity(
                     f"FROM x |> {join_type} y ON x.id = y.id |> SELECT x1 as a_x1, x2 |> UNION ALL (SELECT 1, 2) |> WHERE a_x1 > 0",
                     f"""WITH __tmp1 AS (

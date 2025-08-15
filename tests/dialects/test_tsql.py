@@ -23,34 +23,22 @@ class TestTSQL(Validator):
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
-        self.validate_identity(
-            "EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True
-        )
+        self.validate_identity("EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True)
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
-        self.validate_identity(
-            "SELECT TRIM('.,! ' FROM '     #     test    .') AS Result"
-        )
+        self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (20 ROWS)")
-        self.validate_identity(
-            "SELECT * FROM t TABLESAMPLE (10 PERCENT) REPEATABLE (123)"
-        )
+        self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT) REPEATABLE (123)")
         self.validate_identity("SELECT CONCAT(column1, column2)")
         self.validate_identity("SELECT TestSpecialChar.Test# FROM TestSpecialChar")
         self.validate_identity("SELECT TestSpecialChar.Test@ FROM TestSpecialChar")
         self.validate_identity("SELECT TestSpecialChar.Test$ FROM TestSpecialChar")
         self.validate_identity("SELECT TestSpecialChar.Test_ FROM TestSpecialChar")
         self.validate_identity("SELECT TOP (2 + 1) 1")
-        self.validate_identity(
-            "SELECT * FROM t WHERE NOT c", "SELECT * FROM t WHERE NOT c <> 0"
-        )
+        self.validate_identity("SELECT * FROM t WHERE NOT c", "SELECT * FROM t WHERE NOT c <> 0")
         self.validate_identity("1 AND true", "1 <> 0 AND (1 = 1)")
-        self.validate_identity(
-            "CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0"
-        )
-        self.validate_identity(
-            "TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))"
-        )
+        self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
+        self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
             "SELECT TOP 10 s.RECORDID, n.c.VALUE('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s(nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)"
         )
@@ -76,9 +64,7 @@ class TestTSQL(Validator):
         )
 
         self.assertEqual(
-            annotate_types(
-                self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")
-            ).sql("tsql"),
+            annotate_types(self.validate_identity("SELECT 1 WHERE EXISTS(SELECT 1)")).sql("tsql"),
             "SELECT 1 WHERE EXISTS(SELECT 1)",
         )
 
@@ -328,17 +314,13 @@ class TestTSQL(Validator):
         self.validate_identity("UPDATE STATISTICS x", check_command_warning=True)
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b INTO @y FROM y")
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b FROM y")
-        self.validate_identity(
-            "INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z"
-        )
+        self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z")
         self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b SELECT * FROM z")
         self.validate_identity("DELETE x OUTPUT x.a FROM z")
         self.validate_identity("SELECT * FROM t WITH (TABLOCK, INDEX(myindex))")
         self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
-        self.validate_identity(
-            "SELECT * FROM taxi ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY"
-        )
+        self.validate_identity("SELECT * FROM taxi ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY")
         self.validate_identity("END")
         self.validate_identity("@x")
         self.validate_identity("#x")
@@ -517,9 +499,7 @@ class TestTSQL(Validator):
         with self.assertRaises(ParseError):
             parse_one("SELECT begin", read="tsql")
 
-        self.validate_identity(
-            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')"
-        )
+        self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
         self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'")
 
         for output in ("OUT", "OUTPUT", "READONLY"):
@@ -583,9 +563,7 @@ class TestTSQL(Validator):
                 result = self.validate_identity(query)
                 options = result.args.get("options")
                 self.assertIsInstance(options, list, f"When parsing query {query}")
-                is_query_options = map(
-                    lambda o: isinstance(o, exp.QueryOption), options
-                )
+                is_query_options = map(lambda o: isinstance(o, exp.QueryOption), options)
                 self.assertTrue(all(is_query_options), f"When parsing query {query}")
 
             self.validate_identity(
@@ -985,9 +963,7 @@ FOR XML
 
         self.validate_all("SELECT TRUE, FALSE", write={"tsql": "SELECT 1, 0"})
 
-        self.validate_all(
-            "SELECT TRUE AS a, FALSE AS b", write={"tsql": "SELECT 1 AS a, 0 AS b"}
-        )
+        self.validate_all("SELECT TRUE AS a, FALSE AS b", write={"tsql": "SELECT 1 AS a, 0 AS b"})
 
         self.validate_all(
             "SELECT 1 FROM a WHERE TRUE",
@@ -996,9 +972,7 @@ FOR XML
 
         self.validate_all(
             "CASE WHEN TRUE THEN 'y' WHEN FALSE THEN 'n' ELSE NULL END",
-            write={
-                "tsql": "CASE WHEN (1 = 1) THEN 'y' WHEN (1 = 0) THEN 'n' ELSE NULL END"
-            },
+            write={"tsql": "CASE WHEN (1 = 1) THEN 'y' WHEN (1 = 0) THEN 'n' ELSE NULL END"},
         )
 
     def test_ddl(self):
@@ -1006,13 +980,11 @@ FOR XML
             self.validate_identity(f"CREATE {colstore} INDEX index_name ON foo.bar")
 
         for view_attr in ("ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"):
-            self.validate_identity(
-                f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x"
-            )
+            self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
 
-        self.validate_identity(
-            "ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B"
-        ).assert_is(exp.Alter).args["actions"][0].assert_is(exp.Drop)
+        self.validate_identity("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B").assert_is(
+            exp.Alter
+        ).args["actions"][0].assert_is(exp.Drop)
 
         for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(
@@ -1027,9 +999,7 @@ FOR XML
             )
 
         self.validate_identity("CREATE SCHEMA testSchema")
-        self.validate_identity(
-            "CREATE VIEW t AS WITH cte AS (SELECT 1 AS c) SELECT c FROM cte"
-        )
+        self.validate_identity("CREATE VIEW t AS WITH cte AS (SELECT 1 AS c) SELECT c FROM cte")
         self.validate_identity("ALTER TABLE tbl SET (SYSTEM_VERSIONING=OFF)")
         self.validate_identity("ALTER TABLE tbl SET (FILESTREAM_ON = 'test')")
         self.validate_identity("ALTER TABLE tbl SET (DATA_DELETION=ON)")
@@ -1218,9 +1188,7 @@ WHERE
         self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRANSACTION"})
         self.validate_identity("BEGIN TRANSACTION transaction_name")
         self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
-        self.validate_identity(
-            "BEGIN TRANSACTION transaction_name WITH MARK 'description'"
-        )
+        self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
 
     def test_commit(self):
         self.validate_all("COMMIT", write={"tsql": "COMMIT TRANSACTION"})
@@ -1259,23 +1227,15 @@ WHERE
         self.validate_identity("CREATE PROCEDURE foo WITH ENCRYPTION AS SELECT 1")
         self.validate_identity("CREATE PROCEDURE foo WITH RECOMPILE AS SELECT 1")
         self.validate_identity("CREATE PROCEDURE foo WITH SCHEMABINDING AS SELECT 1")
-        self.validate_identity(
-            "CREATE PROCEDURE foo WITH NATIVE_COMPILATION AS SELECT 1"
-        )
+        self.validate_identity("CREATE PROCEDURE foo WITH NATIVE_COMPILATION AS SELECT 1")
         self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS OWNER AS SELECT 1")
-        self.validate_identity(
-            "CREATE PROCEDURE foo WITH EXECUTE AS 'username' AS SELECT 1"
-        )
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS 'username' AS SELECT 1")
         self.validate_identity(
             "CREATE PROCEDURE foo WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS SELECT 1"
         )
 
-        self.validate_identity(
-            "CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1"
-        )
-        self.validate_identity(
-            "CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER"
-        )
+        self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
+        self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
 
         # The following two cases don't necessarily correspond to valid TSQL, but they are used to verify
         # that the syntax RETURNS @return_variable TABLE <table_type_definition> ... is parsed correctly.
@@ -1443,12 +1403,8 @@ WHERE
             read={"": "LEFT(CAST(x AS STRING), 1)"},
             write={"spark": "LEFT(CAST(x AS STRING), 1)"},
         )
-        self.validate_all(
-            "LEN(1)", write={"tsql": "LEN(1)", "spark": "LENGTH(CAST(1 AS STRING))"}
-        )
-        self.validate_all(
-            "LEN('x')", write={"tsql": "LEN('x')", "spark": "LENGTH('x')"}
-        )
+        self.validate_all("LEN(1)", write={"tsql": "LEN(1)", "spark": "LENGTH(CAST(1 AS STRING))"})
+        self.validate_all("LEN('x')", write={"tsql": "LEN('x')", "spark": "LENGTH('x')"})
 
     def test_replicate(self):
         self.validate_all(
@@ -2092,16 +2048,10 @@ WHERE
 
     def test_system_time(self):
         self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo'")
-        self.validate_identity(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo' AS alias"
-        )
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo' AS alias")
         self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME FROM c TO d")
-        self.validate_identity(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME BETWEEN c AND d"
-        )
-        self.validate_identity(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME CONTAINED IN (c, d)"
-        )
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME BETWEEN c AND d")
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME CONTAINED IN (c, d)")
         self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME ALL AS alias")
 
     def test_current_user(self):
@@ -2284,9 +2234,7 @@ FROM OPENJSON(@json) WITH (
             with self.subTest(f"Scope resolution, LHS: {lhs}, RHS: {rhs}"):
                 expr = self.validate_identity(f"{lhs}::{rhs}")
                 base_sql = expr.sql()
-                self.assertEqual(
-                    base_sql, f"SCOPE_RESOLUTION({lhs + ', ' if lhs else ''}{rhs})"
-                )
+                self.assertEqual(base_sql, f"SCOPE_RESOLUTION({lhs + ', ' if lhs else ''}{rhs})")
                 self.assertEqual(parse_one(base_sql).sql("tsql"), f"{lhs}::{rhs}")
 
     def test_count(self):
@@ -2319,9 +2267,7 @@ FROM OPENJSON(@json) WITH (
 
     def test_grant(self):
         self.validate_identity("GRANT EXECUTE ON TestProc TO User2")
-        self.validate_identity(
-            "GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION"
-        )
+        self.validate_identity("GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION")
         self.validate_identity(
             "GRANT EXECUTE ON TestProc TO User2 AS TesterRole",
             check_command_warning=True,
@@ -2403,8 +2349,6 @@ FROM OPENJSON(@json) WITH (
         )
 
     def test_collation_parse(self):
-        self.validate_identity(
-            "ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc"
-        ).assert_is(exp.Alter).args.get("actions")[0].args.get(
-            "collate"
-        ).this.assert_is(exp.Var)
+        self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
+            exp.Alter
+        ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)

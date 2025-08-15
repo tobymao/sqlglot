@@ -20,20 +20,14 @@ def gen_condition(n):
 # Create benchmark functions that return the setup data
 def get_tpch_setup():
     return (
-        [
-            parse_one(sql)
-            for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
-        ],
+        [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")],
         TPCH_SCHEMA,
     )
 
 
 def get_tpcds_setup():
     return (
-        [
-            parse_one(sql)
-            for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")
-        ],
+        [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")],
         TPCDS_SCHEMA,
     )
 
@@ -71,9 +65,7 @@ def run_benchmarks():
     for benchmark_name, benchmark_setup in benchmarks.items():
         expressions, schema = benchmark_setup()
 
-        runner.bench_func(
-            f"optimize_{benchmark_name}", optimize_queries, expressions, schema
-        )
+        runner.bench_func(f"optimize_{benchmark_name}", optimize_queries, expressions, schema)
 
 
 if __name__ == "__main__":

@@ -14,33 +14,23 @@ class TestOracle(Validator):
                 "oracle": "SELECT CONNECT_BY_ROOT x AS y",
             },
         )
-        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(
-            exp.Alter
-        )
+        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
         self.validate_identity("DBMS_RANDOM.NORMAL")
         self.validate_identity("DBMS_RANDOM.VALUE(low, high)").assert_is(exp.Rand)
         self.validate_identity("DBMS_RANDOM.VALUE()").assert_is(exp.Rand)
         self.validate_identity("CAST(value AS NUMBER DEFAULT 0 ON CONVERSION ERROR)")
         self.validate_identity("SYSDATE")
-        self.validate_identity(
-            "CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders"
-        )
-        self.validate_identity(
-            "CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders"
-        )
+        self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
+        self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("REGEXP_REPLACE('source', 'search')")
         self.validate_identity("TIMESTAMP(3) WITH TIME ZONE")
         self.validate_identity("CURRENT_TIMESTAMP(precision)")
         self.validate_identity("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol")
         self.validate_identity("ALTER TABLE Payments ADD Stock NUMBER NOT NULL")
         self.validate_identity("SELECT x FROM t WHERE cond FOR UPDATE")
-        self.validate_identity(
-            "SELECT JSON_OBJECT(k1: v1 FORMAT JSON, k2: v2 FORMAT JSON)"
-        )
-        self.validate_identity(
-            "SELECT JSON_OBJECT('name': first_name || ' ' || last_name) FROM t"
-        )
+        self.validate_identity("SELECT JSON_OBJECT(k1: v1 FORMAT JSON, k2: v2 FORMAT JSON)")
+        self.validate_identity("SELECT JSON_OBJECT('name': first_name || ' ' || last_name) FROM t")
         self.validate_identity("COALESCE(c1, c2, c3)")
         self.validate_identity("SELECT * FROM TABLE(foo)")
         self.validate_identity("SELECT a$x#b")
@@ -54,9 +44,7 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM t FOR UPDATE OF s.t.c, s.t.v SKIP LOCKED")
         self.validate_identity("SELECT STANDARD_HASH('hello')")
         self.validate_identity("SELECT STANDARD_HASH('hello', 'MD5')")
-        self.validate_identity(
-            "SELECT * FROM table_name@dblink_name.database_link_domain"
-        )
+        self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
@@ -130,9 +118,7 @@ class TestOracle(Validator):
             "SELECT * FROM t SAMPLE (.25)",
             "SELECT * FROM t SAMPLE (0.25)",
         )
-        self.validate_identity(
-            "SELECT TO_CHAR(-100, 'L99', 'NL_CURRENCY = '' AusDollars '' ')"
-        )
+        self.validate_identity("SELECT TO_CHAR(-100, 'L99', 'NL_CURRENCY = '' AusDollars '' ')")
         self.validate_identity(
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
@@ -414,9 +400,7 @@ class TestOracle(Validator):
         )
 
     def test_join_marker(self):
-        self.validate_identity(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y"
-        )
+        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
 
         self.validate_all(
             "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
@@ -431,9 +415,7 @@ class TestOracle(Validator):
         )
 
     def test_hints(self):
-        self.validate_identity(
-            "SELECT /*+ USE_NL(A B) */ A.COL_TEST FROM TABLE_A A, TABLE_B B"
-        )
+        self.validate_identity("SELECT /*+ USE_NL(A B) */ A.COL_TEST FROM TABLE_A A, TABLE_B B")
         self.validate_identity(
             "SELECT /*+ INDEX(v.j jhist_employee_ix (employee_id start_date)) */ * FROM v"
         )
@@ -449,12 +431,8 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT /*+ LEADING(e j) */ * FROM employees e, departments d, job_history j WHERE e.department_id = d.department_id AND e.hire_date = j.start_date"
         )
-        self.validate_identity(
-            "INSERT /*+ APPEND */ INTO IAP_TBL (id, col1) VALUES (2, 'test2')"
-        )
-        self.validate_identity(
-            "INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')"
-        )
+        self.validate_identity("INSERT /*+ APPEND */ INTO IAP_TBL (id, col1) VALUES (2, 'test2')")
+        self.validate_identity("INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')")
         self.validate_identity(
             "SELECT /*+ LEADING(departments employees) USE_NL(employees) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
             """SELECT /*+ LEADING(departments employees)
@@ -651,9 +629,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         for restriction in ("READ ONLY", "CHECK OPTION"):
             for constraint_name in (" CONSTRAINT name", ""):
                 with self.subTest(f"Restriction: {restriction}"):
-                    self.validate_identity(
-                        f"SELECT * FROM tbl WITH {restriction}{constraint_name}"
-                    )
+                    self.validate_identity(f"SELECT * FROM tbl WITH {restriction}{constraint_name}")
                     self.validate_identity(
                         f"CREATE VIEW view AS SELECT * FROM tbl WITH {restriction}{constraint_name}"
                     )
@@ -789,15 +765,9 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl")
         self.validate_identity("ANALYZE INDEX ndx")
-        self.validate_identity(
-            "ANALYZE TABLE db.tbl PARTITION(foo = 'foo', bar = 'bar')"
-        )
-        self.validate_identity(
-            "ANALYZE TABLE db.tbl SUBPARTITION(foo = 'foo', bar = 'bar')"
-        )
-        self.validate_identity(
-            "ANALYZE INDEX db.ndx PARTITION(foo = 'foo', bar = 'bar')"
-        )
+        self.validate_identity("ANALYZE TABLE db.tbl PARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE TABLE db.tbl SUBPARTITION(foo = 'foo', bar = 'bar')")
+        self.validate_identity("ANALYZE INDEX db.ndx PARTITION(foo = 'foo', bar = 'bar')")
         self.validate_identity("ANALYZE INDEX db.ndx PARTITION(part1)")
         self.validate_identity("ANALYZE CLUSTER db.cluster")
         self.validate_identity("ANALYZE TABLE tbl VALIDATE REF UPDATE")

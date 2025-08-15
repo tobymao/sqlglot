@@ -49,9 +49,7 @@ class Materialize(Postgres):
             if not self._match(TokenType.R_BRACKET):
                 self.raise_error("Expecting ]")
 
-            return self.expression(
-                exp.ToMap, this=self.expression(exp.Struct, expressions=entries)
-            )
+            return self.expression(exp.ToMap, this=self.expression(exp.Struct, expressions=entries))
 
     class Generator(Postgres.Generator):
         SUPPORTS_CREATE_TABLE_LIKE = False
@@ -81,10 +79,7 @@ class Materialize(Postgres):
                     return f"{self.expressions(expression, flat=True)} LIST"
                 return "LIST"
 
-            if (
-                expression.is_type(exp.DataType.Type.MAP)
-                and len(expression.expressions) == 2
-            ):
+            if expression.is_type(exp.DataType.Type.MAP) and len(expression.expressions) == 2:
                 key, value = expression.expressions
                 return f"MAP[{self.sql(key)} => {self.sql(value)}]"
 

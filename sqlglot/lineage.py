@@ -50,9 +50,7 @@ class Node:
                 label = node.expression.sql(pretty=True, dialect=dialect)
                 source = node.source.transform(
                     lambda n: (
-                        exp.Tag(this=n, prefix="<b>", postfix="</b>")
-                        if n is node.expression
-                        else n
+                        exp.Tag(this=n, prefix="<b>", postfix="</b>") if n is node.expression else n
                     ),
                     copy=False,
                 ).sql(pretty=True, dialect=dialect)
@@ -105,10 +103,7 @@ def lineage(
     if sources:
         expression = exp.expand(
             expression,
-            {
-                k: t.cast(exp.Query, maybe_parse(v, dialect=dialect))
-                for k, v in sources.items()
-            },
+            {k: t.cast(exp.Query, maybe_parse(v, dialect=dialect)) for k, v in sources.items()},
             dialect=dialect,
         )
 
@@ -147,11 +142,7 @@ def to_node(
         scope.expression.selects[column]
         if isinstance(column, int)
         else next(
-            (
-                select
-                for select in scope.expression.selects
-                if select.alias_or_name == column
-            ),
+            (select for select in scope.expression.selects if select.alias_or_name == column),
             exp.Star() if scope.expression.is_star else scope.expression,
         )
     )
@@ -169,9 +160,7 @@ def to_node(
             )
     if isinstance(scope.expression, exp.SetOperation):
         name = type(scope.expression).__name__.upper()
-        upstream = upstream or Node(
-            name=name, source=scope.expression, expression=select
-        )
+        upstream = upstream or Node(name=name, source=scope.expression, expression=select)
 
         index = (
             column
@@ -224,8 +213,7 @@ def to_node(
         upstream.downstream.append(node)
 
     subquery_scopes = {
-        id(subquery_scope.expression): subquery_scope
-        for subquery_scope in scope.subquery_scopes
+        id(subquery_scope.expression): subquery_scope for subquery_scope in scope.subquery_scopes
     }
 
     for subquery in find_all_in_scope(select, exp.UNWRAPPED_QUERIES):
@@ -299,10 +287,7 @@ def to_node(
 
         if isinstance(source, Scope):
             reference_node_name = None
-            if (
-                source.scope_type == ScopeType.DERIVED_TABLE
-                and table not in source_names
-            ):
+            if source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
                 reference_node_name = table
             elif source.scope_type == ScopeType.CTE:
                 selected_node, _ = scope.selected_sources.get(table, (None, None))
@@ -328,9 +313,7 @@ def to_node(
             else:
                 # The column is not in the pivot, so it must be an implicit column of the
                 # pivoted source -- adapt column to be from the implicit pivoted source.
-                downstream_columns.append(
-                    exp.column(c.this, table=pivot.parent.alias_or_name)
-                )
+                downstream_columns.append(exp.column(c.this, table=pivot.parent.alias_or_name))
 
             for downstream_column in downstream_columns:
                 table = downstream_column.table

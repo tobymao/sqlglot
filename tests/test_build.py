@@ -125,10 +125,7 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl WHERE FALSE",
             ),
             (
-                lambda: select("x")
-                .from_("tbl")
-                .where("x > 0")
-                .where("x < 9", append=False),
+                lambda: select("x").from_("tbl").where("x > 0").where("x < 9", append=False),
                 "SELECT x FROM tbl WHERE x < 9",
             ),
             (
@@ -160,10 +157,7 @@ class TestBuild(unittest.TestCase):
                 "SELECT x, y FROM tbl GROUP BY x, y",
             ),
             (
-                lambda: select("x", "y", "z", "a")
-                .from_("tbl")
-                .group_by("x, y", "z")
-                .group_by("a"),
+                lambda: select("x", "y", "z", "a").from_("tbl").group_by("x, y", "z").group_by("a"),
                 "SELECT x, y, z, a FROM tbl GROUP BY x, y, z, a",
             ),
             (
@@ -195,9 +189,7 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y",
             ),
             (
-                lambda: select("x")
-                .from_("tbl")
-                .join("tbl2", on=["tbl.y = tbl2.y", "a = b"]),
+                lambda: select("x").from_("tbl").join("tbl2", on=["tbl.y = tbl2.y", "a = b"]),
                 "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y AND a = b",
             ),
             (
@@ -311,10 +303,7 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM foo JOIN bla USING (bob)",
             ),
             (
-                lambda: select("x", "COUNT(y)")
-                .from_("tbl")
-                .group_by("x")
-                .having("COUNT(y) > 0"),
+                lambda: select("x", "COUNT(y)").from_("tbl").group_by("x").having("COUNT(y) > 0"),
                 "SELECT x, COUNT(y) FROM tbl GROUP BY x HAVING COUNT(y) > 0",
             ),
             (
@@ -322,9 +311,7 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl ORDER BY y",
             ),
             (
-                lambda: parse_one("select * from x union select * from y").order_by(
-                    "y"
-                ),
+                lambda: parse_one("select * from x union select * from y").order_by("y"),
                 "SELECT * FROM x UNION SELECT * FROM y ORDER BY y",
             ),
             (
@@ -352,10 +339,7 @@ class TestBuild(unittest.TestCase):
                 "hive",
             ),
             (
-                lambda: select("x", "y", "z", "a")
-                .from_("tbl")
-                .order_by("x, y", "z")
-                .order_by("a"),
+                lambda: select("x", "y", "z", "a").from_("tbl").order_by("x, y", "z").order_by("a"),
                 "SELECT x, y, z, a FROM tbl ORDER BY x, y, z, a",
             ),
             (
@@ -367,10 +351,7 @@ class TestBuild(unittest.TestCase):
                 "hive",
             ),
             (
-                lambda: select("x", "y", "z", "a")
-                .from_("tbl")
-                .sort_by("x, y", "z")
-                .sort_by("a"),
+                lambda: select("x", "y", "z", "a").from_("tbl").sort_by("x, y", "z").sort_by("a"),
                 "SELECT x, y, z, a FROM tbl SORT BY x, y, z, a",
                 "hive",
             ),
@@ -424,9 +405,7 @@ class TestBuild(unittest.TestCase):
                 "WITH RECURSIVE tbl AS NOT MATERIALIZED (SELECT x FROM tbl2) SELECT x FROM tbl",
             ),
             (
-                lambda: select("x")
-                .from_("tbl")
-                .with_("tbl", as_=select("x").from_("tbl2")),
+                lambda: select("x").from_("tbl").with_("tbl", as_=select("x").from_("tbl2")),
                 "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl",
             ),
             (
@@ -450,9 +429,7 @@ class TestBuild(unittest.TestCase):
                 "WITH tbl AS (SELECT x, y FROM tbl2) SELECT x, y FROM tbl",
             ),
             (
-                lambda: select("x")
-                .with_("tbl", as_=select("x").from_("tbl2"))
-                .from_("tbl"),
+                lambda: select("x").with_("tbl", as_=select("x").from_("tbl2")).from_("tbl"),
                 "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl",
             ),
             (
@@ -522,9 +499,7 @@ class TestBuild(unittest.TestCase):
             ),
             (lambda: from_("tbl").select("x"), "SELECT x FROM tbl"),
             (
-                lambda: parse_one("SELECT a FROM tbl")
-                .assert_is(exp.Select)
-                .select("b"),
+                lambda: parse_one("SELECT a FROM tbl").assert_is(exp.Select).select("b"),
                 "SELECT a, b FROM tbl",
             ),
             (
@@ -566,15 +541,13 @@ class TestBuild(unittest.TestCase):
                 "SELECT * FROM x WHERE y = 1 AND z = 1",
             ),
             (
-                lambda: exp.subquery("select x from tbl", "foo")
-                .select("x")
-                .where("x > 0"),
+                lambda: exp.subquery("select x from tbl", "foo").select("x").where("x > 0"),
                 "SELECT x FROM (SELECT x FROM tbl) AS foo WHERE x > 0",
             ),
             (
-                lambda: exp.subquery(
-                    "select x from tbl UNION select x from bar", "unioned"
-                ).select("x"),
+                lambda: exp.subquery("select x from tbl UNION select x from bar", "unioned").select(
+                    "x"
+                ),
                 "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
             ),
             (lambda: parse_one("(SELECT 1)").select("2"), "(SELECT 1, 2)"),
@@ -682,9 +655,7 @@ class TestBuild(unittest.TestCase):
                 "(SELECT * FROM foo) UNION SELECT * FROM bla",
             ),
             (
-                lambda: parse_one("(SELECT * FROM foo)").union(
-                    "SELECT * FROM bla", distinct=False
-                ),
+                lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla", distinct=False),
                 "(SELECT * FROM foo) UNION ALL SELECT * FROM bla",
             ),
             (
@@ -696,9 +667,7 @@ class TestBuild(unittest.TestCase):
                 "LAG(x) OVER (ORDER BY z) AS a",
             ),
             (
-                lambda: alias(
-                    parse_one("LAG(x) OVER (PARTITION BY y ORDER BY z)"), "a"
-                ),
+                lambda: alias(parse_one("LAG(x) OVER (PARTITION BY y ORDER BY z)"), "a"),
                 "LAG(x) OVER (PARTITION BY y ORDER BY z) AS a",
             ),
             (
@@ -749,22 +718,16 @@ class TestBuild(unittest.TestCase):
                 "DELETE FROM tbl WHERE x = 1 AND y = 2",
             ),
             (
-                lambda: exp.delete("tbl", "x = 1").where(
-                    exp.condition("y = 2").or_("z = 3")
-                ),
+                lambda: exp.delete("tbl", "x = 1").where(exp.condition("y = 2").or_("z = 3")),
                 "DELETE FROM tbl WHERE x = 1 AND (y = 2 OR z = 3)",
             ),
             (
-                lambda: exp.delete("tbl")
-                .where("x = 1")
-                .returning("*", dialect="postgres"),
+                lambda: exp.delete("tbl").where("x = 1").returning("*", dialect="postgres"),
                 "DELETE FROM tbl WHERE x = 1 RETURNING *",
                 "postgres",
             ),
             (
-                lambda: exp.delete(
-                    "tbl", where="x = 1", returning="*", dialect="postgres"
-                ),
+                lambda: exp.delete("tbl", where="x = 1", returning="*", dialect="postgres"),
                 "DELETE FROM tbl WHERE x = 1 RETURNING *",
                 "postgres",
             ),
@@ -781,9 +744,7 @@ class TestBuild(unittest.TestCase):
                 "INSERT OVERWRITE TABLE tbl SELECT * FROM tbl2",
             ),
             (
-                lambda: exp.insert(
-                    "VALUES (1, 2), (3, 4)", "tbl", columns=["cola", "colb"]
-                ),
+                lambda: exp.insert("VALUES (1, 2), (3, 4)", "tbl", columns=["cola", "colb"]),
                 "INSERT INTO tbl (cola, colb) VALUES (1, 2), (3, 4)",
             ),
             (
@@ -791,9 +752,7 @@ class TestBuild(unittest.TestCase):
                 'INSERT INTO tbl ("col a") VALUES (1), (2)',
             ),
             (
-                lambda: exp.insert("SELECT * FROM cte", "t").with_(
-                    "cte", as_="SELECT x FROM tbl"
-                ),
+                lambda: exp.insert("SELECT * FROM cte", "t").with_("cte", as_="SELECT x FROM tbl"),
                 "WITH cte AS (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
             ),
             (
@@ -809,9 +768,7 @@ class TestBuild(unittest.TestCase):
                 "WITH cte AS NOT MATERIALIZED (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
             ),
             (
-                lambda: exp.convert((exp.column("x"), exp.column("y"))).isin(
-                    (1, 2), (3, 4)
-                ),
+                lambda: exp.convert((exp.column("x"), exp.column("y"))).isin((1, 2), (3, 4)),
                 "(x, y) IN ((1, 2), (3, 4))",
                 "postgres",
             ),
@@ -878,9 +835,7 @@ class TestBuild(unittest.TestCase):
                         matched=True,
                         then=exp.Update(
                             expressions=[
-                                exp.column("name", "target").eq(
-                                    exp.column("name", "source")
-                                )
+                                exp.column("name", "target").eq(exp.column("name", "source"))
                             ]
                         ),
                     ),

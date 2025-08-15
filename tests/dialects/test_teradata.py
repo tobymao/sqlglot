@@ -46,9 +46,7 @@ class TestTeradata(Validator):
 
     def test_locking(self):
         self.validate_identity("LOCKING ROW FOR ACCESS SELECT * FROM table1")
-        self.validate_identity(
-            "LOCKING TABLE table1 FOR ACCESS SELECT col1, col2 FROM table1"
-        )
+        self.validate_identity("LOCKING TABLE table1 FOR ACCESS SELECT col1, col2 FROM table1")
         self.validate_identity("LOCKING ROW FOR SHARE SELECT * FROM table1")
         self.validate_identity("LOCKING DATABASE db1 FOR READ SELECT * FROM table1")
         self.validate_identity("LOCKING ROW FOR EXCLUSIVE SELECT * FROM table1")
@@ -77,18 +75,10 @@ class TestTeradata(Validator):
         )
 
     def test_statistics(self):
-        self.validate_identity(
-            "COLLECT STATISTICS ON tbl INDEX(col)", check_command_warning=True
-        )
-        self.validate_identity(
-            "COLLECT STATS ON tbl COLUMNS(col)", check_command_warning=True
-        )
-        self.validate_identity(
-            "COLLECT STATS COLUMNS(col) ON tbl", check_command_warning=True
-        )
-        self.validate_identity(
-            "HELP STATISTICS personel.employee", check_command_warning=True
-        )
+        self.validate_identity("COLLECT STATISTICS ON tbl INDEX(col)", check_command_warning=True)
+        self.validate_identity("COLLECT STATS ON tbl COLUMNS(col)", check_command_warning=True)
+        self.validate_identity("COLLECT STATS COLUMNS(col) ON tbl", check_command_warning=True)
+        self.validate_identity("HELP STATISTICS personel.employee", check_command_warning=True)
         self.validate_identity(
             "HELP STATISTICS personnel.employee FROM my_qcd", check_command_warning=True
         )
@@ -102,9 +92,7 @@ class TestTeradata(Validator):
             "REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
             "CREATE OR REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
         )
-        self.validate_identity(
-            "CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)"
-        )
+        self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
         self.validate_identity("CREATE TABLE x (y INT) PARTITION BY y INDEX (y)")
         self.validate_identity(
             "CREATE MULTISET VOLATILE TABLE my_table (id INT) PRIMARY INDEX (id) ON COMMIT PRESERVE ROWS"
@@ -207,9 +195,7 @@ class TestTeradata(Validator):
         self.validate_all("a MOD b", write={"teradata": "a MOD b", "mysql": "a % b"})
 
     def test_power(self):
-        self.validate_all(
-            "a ** b", write={"teradata": "a ** b", "mysql": "POWER(a, b)"}
-        )
+        self.validate_all("a ** b", write={"teradata": "a ** b", "mysql": "POWER(a, b)"})
 
     def test_abbrev(self):
         self.validate_identity("a LT b", "a < b")
@@ -371,21 +357,13 @@ class TestTeradata(Validator):
 
     def test_query_band(self):
         self.validate_identity("SET QUERY_BAND = 'app=myapp;' FOR SESSION")
-        self.validate_identity(
-            "SET QUERY_BAND = 'app=myapp;user=john;' FOR TRANSACTION"
-        )
+        self.validate_identity("SET QUERY_BAND = 'app=myapp;user=john;' FOR TRANSACTION")
         self.validate_identity("SET QUERY_BAND = 'priority=high;' UPDATE FOR SESSION")
-        self.validate_identity(
-            "SET QUERY_BAND = 'workload=batch;' UPDATE FOR TRANSACTION"
-        )
-        self.validate_identity(
-            "SET QUERY_BAND = 'org=Finance;report=Fin123;' FOR SESSION"
-        )
+        self.validate_identity("SET QUERY_BAND = 'workload=batch;' UPDATE FOR TRANSACTION")
+        self.validate_identity("SET QUERY_BAND = 'org=Finance;report=Fin123;' FOR SESSION")
         self.validate_identity("SET QUERY_BAND = NONE FOR SESSION")
         self.validate_identity("SET QUERY_BAND = NONE FOR SESSION VOLATILE")
-        self.validate_identity(
-            "SET QUERY_BAND = 'priority=high;' UPDATE FOR SESSION VOLATILE"
-        )
+        self.validate_identity("SET QUERY_BAND = 'priority=high;' UPDATE FOR SESSION VOLATILE")
         self.validate_identity(
             "SET QUERY_BAND = 'NONE' FOR SESSION"
         )  # quoted NONE should remain quoted

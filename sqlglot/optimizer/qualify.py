@@ -96,9 +96,7 @@ def qualify(
         )
 
     if quote_identifiers:
-        expression = quote_identifiers_func(
-            expression, dialect=dialect, identify=identify
-        )
+        expression = quote_identifiers_func(expression, dialect=dialect, identify=identify)
 
     if validate_qualify_columns:
         validate_qualify_columns_func(expression)

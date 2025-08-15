@@ -216,9 +216,7 @@ class TestExasol(Validator):
         self.validate_identity(
             "TO_CHAR(CAST(TO_DATE(date, 'YYYYMMDD') AS TIMESTAMP), 'DY') AS day_of_week"
         )
-        self.validate_identity(
-            "SELECT TO_CHAR(12345.67890, '9999999.999999999') AS TO_CHAR"
-        )
+        self.validate_identity("SELECT TO_CHAR(12345.67890, '9999999.999999999') AS TO_CHAR")
         self.validate_identity(
             "SELECT TO_CHAR(DATE '1999-12-31') AS TO_CHAR",
             "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
@@ -228,9 +226,7 @@ class TestExasol(Validator):
             "SELECT TO_CHAR(CAST('1999-12-31 23:59:00' AS TIMESTAMP), 'HH24:MI:SS DD-MM-YYYY') AS TO_CHAR",
         )
         self.validate_identity("SELECT TO_CHAR(12345.6789) AS TO_CHAR")
-        self.validate_identity(
-            "SELECT TO_CHAR(-12345.67890, '000G000G000D000000MI') AS TO_CHAR"
-        )
+        self.validate_identity("SELECT TO_CHAR(-12345.67890, '000G000G000D000000MI') AS TO_CHAR")
         self.validate_all(
             "EDIT_DISTANCE(col1, col2)",
             read={
@@ -325,12 +321,8 @@ class TestExasol(Validator):
             "SELECT TO_DATE('31-12-1999', 'dd-mm-YY') AS TO_DATE",
             "SELECT TO_DATE('31-12-1999', 'DD-MM-YY') AS TO_DATE",
         )
-        self.validate_identity(
-            "SELECT TO_DATE('31-DECEMBER-1999', 'DD-MONTH-YYYY') AS TO_DATE"
-        )
-        self.validate_identity(
-            "SELECT TO_DATE('31-DEC-1999', 'DD-MON-YYYY') AS TO_DATE"
-        )
+        self.validate_identity("SELECT TO_DATE('31-DECEMBER-1999', 'DD-MONTH-YYYY') AS TO_DATE")
+        self.validate_identity("SELECT TO_DATE('31-DEC-1999', 'DD-MON-YYYY') AS TO_DATE")
 
         for fmt, alias in formats.items():
             with self.subTest(f"Testing TO_CHAR with format '{fmt}'"):

@@ -26,9 +26,7 @@ class TestBigQuery(Validator):
     def test_bigquery(self):
         for prefix in ("c.db.", "db.", ""):
             with self.subTest(f"Parsing {prefix}INFORMATION_SCHEMA.X into a Table"):
-                table = self.parse_one(
-                    f"`{prefix}INFORMATION_SCHEMA.X`", into=exp.Table
-                )
+                table = self.parse_one(f"`{prefix}INFORMATION_SCHEMA.X`", into=exp.Table)
                 this = table.this
 
                 self.assertIsInstance(this, exp.Identifier)
@@ -46,28 +44,16 @@ class TestBigQuery(Validator):
 
         self.validate_identity("SAFE.SUBSTR('foo', 0, -2)").assert_is(exp.Dot)
         self.validate_identity("SELECT * FROM x-0.y")
-        self.assertEqual(
-            exp.to_table("`a.b`.`c.d`", dialect="bigquery").sql(), '"a"."b"."c"."d"'
-        )
-        self.assertEqual(
-            exp.to_table("`x`.`y.z`", dialect="bigquery").sql(), '"x"."y"."z"'
-        )
-        self.assertEqual(
-            exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"'
-        )
-        self.assertEqual(
-            exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`"
-        )
-        self.assertEqual(
-            exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`"
-        )
+        self.assertEqual(exp.to_table("`a.b`.`c.d`", dialect="bigquery").sql(), '"a"."b"."c"."d"')
+        self.assertEqual(exp.to_table("`x`.`y.z`", dialect="bigquery").sql(), '"x"."y"."z"')
+        self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"')
+        self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
+        self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
 
         column = self.validate_identity("SELECT `db.t`.`c` FROM `db.t`").selects[0]
         self.assertEqual(len(column.parts), 3)
 
-        select_with_quoted_udf = self.validate_identity(
-            "SELECT `p.d.UdF`(data) FROM `p.d.t`"
-        )
+        select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
         self.validate_identity("DATE_TRUNC(x, @foo)").unit.assert_is(exp.Parameter)
@@ -87,9 +73,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT x, 1 AS y GROUP BY 1 ORDER BY 1")
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")
-        self.validate_identity(
-            "CASE A WHEN 90 THEN 'red' WHEN 50 THEN 'blue' ELSE 'green' END"
-        )
+        self.validate_identity("CASE A WHEN 90 THEN 'red' WHEN 50 THEN 'blue' ELSE 'green' END")
         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
@@ -99,26 +83,18 @@ class TestBigQuery(Validator):
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS)")
-        self.validate_identity(
-            "ARRAY_AGG(DISTINCT x IGNORE NULLS HAVING MAX x ORDER BY x LIMIT 1)"
-        )
-        self.validate_identity(
-            "SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)"
-        )
+        self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS HAVING MAX x ORDER BY x LIMIT 1)")
+        self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
         self.validate_identity("SELECT test.Unknown FROM test")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
-        self.validate_identity(
-            "SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')"
-        )
+        self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
         self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")
-        self.validate_identity(
-            "SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day"
-        )
+        self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("DATE(2016, 12, 25)")
@@ -134,15 +110,9 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT * FROM my-project.mydataset.mytable")
         self.validate_identity("SELECT * FROM pro-ject_id.c.d CROSS JOIN foo-bar")
         self.validate_identity("SELECT * FROM foo.bar.25", "SELECT * FROM foo.bar.`25`")
-        self.validate_identity(
-            "SELECT * FROM foo.bar.25_", "SELECT * FROM foo.bar.`25_`"
-        )
-        self.validate_identity(
-            "SELECT * FROM foo.bar.25x a", "SELECT * FROM foo.bar.`25x` AS a"
-        )
-        self.validate_identity(
-            "SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c"
-        )
+        self.validate_identity("SELECT * FROM foo.bar.25_", "SELECT * FROM foo.bar.`25_`")
+        self.validate_identity("SELECT * FROM foo.bar.25x a", "SELECT * FROM foo.bar.`25x` AS a")
+        self.validate_identity("SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c")
         self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
         self.validate_identity("DATE_TRUNC(col, MONTH, 'UTC+8')")
@@ -152,9 +122,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
-        self.validate_identity(
-            """CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)"""
-        )
+        self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity("CAST(x AS TIMESTAMP)")
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("BEGIN TRANSACTION")
@@ -169,17 +137,13 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
         self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
         self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b))")
-        self.validate_identity(
-            "SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b) LIMIT 10)"
-        )
+        self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b) LIMIT 10)")
         self.validate_identity("CAST(x AS CHAR)", "CAST(x AS STRING)")
         self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS STRING)")
         self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS STRING)")
         self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
         self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
-        self.validate_identity(
-            "SELECT * FROM x WHERE x.y >= (SELECT MAX(a) FROM b-c) - 20"
-        )
+        self.validate_identity("SELECT * FROM x WHERE x.y >= (SELECT MAX(a) FROM b-c) - 20")
         self.validate_identity(
             "SELECT FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', CURRENT_TIMESTAMP(), 'Europe/Berlin') AS ts"
         )
@@ -992,9 +956,7 @@ LANGUAGE js AS
         )
         self.validate_all(
             "SELECT CAST('20201225' AS TIMESTAMP FORMAT 'YYYYMMDD' AT TIME ZONE 'America/New_York')",
-            write={
-                "bigquery": "SELECT PARSE_TIMESTAMP('%Y%m%d', '20201225', 'America/New_York')"
-            },
+            write={"bigquery": "SELECT PARSE_TIMESTAMP('%Y%m%d', '20201225', 'America/New_York')"},
         )
         self.validate_all(
             "SELECT CAST('20201225' AS TIMESTAMP FORMAT 'YYYYMMDD')",
@@ -1753,9 +1715,7 @@ WHERE
         self.validate_identity(
             "SELECT * FROM ML.FEATURES_AT_TIME(TABLE mydataset.feature_table, time => '2022-06-11 10:00:00+00', num_rows => 1, ignore_feature_nulls => TRUE)"
         )
-        self.validate_identity(
-            "SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)"
-        )
+        self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
 
         self.validate_identity(
             "EXPORT DATA OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') AS SELECT * FROM all_rows"
@@ -1849,12 +1809,8 @@ WHERE
                 "WITH cte AS (SELECT * FROM t) SELECT * FROM cte",
             )
 
-            self.assertIn(
-                "Can't push down CTE column names for star queries.", cm.output[0]
-            )
-            self.assertIn(
-                "Named columns are not supported in table alias.", cm.output[1]
-            )
+            self.assertIn("Can't push down CTE column names for star queries.", cm.output[0])
+            self.assertIn("Named columns are not supported in table alias.", cm.output[1])
 
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(
@@ -1862,9 +1818,7 @@ WHERE
                 "SELECT * FROM t AS t",
             )
 
-            self.assertIn(
-                "Named columns are not supported in table alias.", cm.output[0]
-            )
+            self.assertIn("Named columns are not supported in table alias.", cm.output[0])
 
         with self.assertLogs(helper_logger) as cm:
             statements = parse(
@@ -1947,9 +1901,7 @@ WHERE
                 "SELECT * FROM t AS t",
             )
 
-            self.assertIn(
-                "Named columns are not supported in table alias.", cm.output[0]
-            )
+            self.assertIn("Named columns are not supported in table alias.", cm.output[0])
 
         with self.assertLogs(helper_logger):
             self.validate_all(
@@ -1988,9 +1940,7 @@ WHERE
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"
         )
         self.validate_identity("CREATE TEMPORARY FUNCTION udf(x ANY TYPE) AS (x)")
-        self.validate_identity(
-            "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) AS ((x + 4) / y)"
-        )
+        self.validate_identity("CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) AS ((x + 4) / y)")
         self.validate_identity(
             "CREATE TABLE FUNCTION a(x INT64) RETURNS TABLE <q STRING, r INT64> AS SELECT s, t"
         )
@@ -2147,19 +2097,13 @@ OPTIONS (
         )
         self.validate_all(
             "WITH cte AS (SELECT 1 AS foo UNION ALL SELECT 2) SELECT foo FROM cte",
-            read={
-                "postgres": "WITH cte(foo) AS (SELECT 1 UNION ALL SELECT 2) SELECT foo FROM cte"
-            },
+            read={"postgres": "WITH cte(foo) AS (SELECT 1 UNION ALL SELECT 2) SELECT foo FROM cte"},
         )
 
     def test_json_object(self):
         self.validate_identity("SELECT JSON_OBJECT() AS json_data")
-        self.validate_identity(
-            "SELECT JSON_OBJECT('foo', 10, 'bar', TRUE) AS json_data"
-        )
-        self.validate_identity(
-            "SELECT JSON_OBJECT('foo', 10, 'bar', ['a', 'b']) AS json_data"
-        )
+        self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', TRUE) AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', ['a', 'b']) AS json_data")
         self.validate_identity("SELECT JSON_OBJECT('a', 10, 'a', 'foo') AS json_data")
         self.validate_identity(
             "SELECT JSON_OBJECT(['a', 'b'], [10, NULL]) AS json_data",
@@ -2297,13 +2241,9 @@ OPTIONS (
             ("RANGE<TIMESTAMP>", "'[2020-10-01 12:00:00+08, 2020-12-31 12:00:00+08)'"),
         ):
             with self.subTest(f"Testing BigQuery's RANGE<T> type: {type} {value}"):
-                self.validate_identity(
-                    f"SELECT {type} {value}", f"SELECT CAST({value} AS {type})"
-                )
+                self.validate_identity(f"SELECT {type} {value}", f"SELECT CAST({value} AS {type})")
 
-                self.assertEqual(
-                    self.parse_one(type), exp.DataType.build(type, dialect="bigquery")
-                )
+                self.assertEqual(self.parse_one(type), exp.DataType.build(type, dialect="bigquery"))
 
         self.validate_identity(
             "SELECT RANGE(CAST('2022-12-01' AS DATE), CAST('2022-12-31' AS DATE))"
@@ -2553,9 +2493,7 @@ OPTIONS (
             self.assertEqual(select.type.sql("bigquery"), "TIMESTAMP")
 
     def test_set_operations(self):
-        self.validate_identity(
-            "SELECT 1 AS foo INNER UNION ALL SELECT 3 AS foo, 4 AS bar"
-        )
+        self.validate_identity("SELECT 1 AS foo INNER UNION ALL SELECT 3 AS foo, 4 AS bar")
 
         for side in ("", " LEFT", " FULL"):
             for kind in ("", " OUTER"):
@@ -2564,9 +2502,7 @@ OPTIONS (
                     " BY NAME",
                     " BY NAME ON (foo, bar)",
                 ):
-                    with self.subTest(
-                        f"Testing {side} {kind} {name} in test_set_operations"
-                    ):
+                    with self.subTest(f"Testing {side} {kind} {name} in test_set_operations"):
                         self.validate_identity(
                             f"SELECT 1 AS foo{side}{kind} UNION ALL{name} SELECT 3 AS foo, 4 AS bar",
                         )
@@ -2643,8 +2579,7 @@ OPTIONS (
         meta = ast.args["from"].this.this.meta
         self.assertEqual(meta, {"line": 1, "col": 50, "start": 24, "end": 49})
         assert (
-            information_schema_sql[meta["start"] : meta["end"] + 1]
-            == "INFORMATION_SCHEMA.COLUMNS"
+            information_schema_sql[meta["start"] : meta["end"] + 1] == "INFORMATION_SCHEMA.COLUMNS"
         )
 
     def test_quoted_identifier_meta(self):
@@ -2653,9 +2588,7 @@ OPTIONS (
         db_meta = ast.args["from"].this.args["db"].meta
         self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], "`test_schema`")
         table_meta = ast.args["from"].this.this.meta
-        self.assertEqual(
-            sql[table_meta["start"] : table_meta["end"] + 1], "`test_table_a`"
-        )
+        self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], "`test_table_a`")
 
         information_schema_sql = "SELECT a, b FROM `region.INFORMATION_SCHEMA.COLUMNS`"
         ast = parse_one(information_schema_sql, dialect="bigquery")
@@ -2668,9 +2601,7 @@ OPTIONS (
     def test_override_normalization_strategy(self):
         sql = "SELECT * FROM p.d.t"
         ast = self.parse_one(sql)
-        qualified = qualify(
-            ast.copy(), dialect="bigquery,normalization_strategy=uppercase"
-        )
+        qualified = qualify(ast.copy(), dialect="bigquery,normalization_strategy=uppercase")
         self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
 
         from sqlglot.dialects import BigQuery
@@ -2679,12 +2610,8 @@ OPTIONS (
         try:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
 
-            qualified = qualify(
-                ast.copy(), dialect="bigquery,normalization_strategy=uppercase"
-            )
-            self.assertEqual(
-                qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`"
-            )
+            qualified = qualify(ast.copy(), dialect="bigquery,normalization_strategy=uppercase")
+            self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
@@ -2832,9 +2759,7 @@ OPTIONS (
             "LAST_DAY(CAST('2008-11-10 15:30:00' AS DATETIME), WEEK(SUNDAY))",
         )
         self.validate_identity("DATE_DIFF('2017-12-18', '2017-12-17', WEEK(SATURDAY))")
-        self.validate_identity(
-            "DATETIME_DIFF('2017-12-18', '2017-12-17', WEEK(MONDAY))"
-        )
+        self.validate_identity("DATETIME_DIFF('2017-12-18', '2017-12-17', WEEK(MONDAY))")
         self.validate_identity(
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",

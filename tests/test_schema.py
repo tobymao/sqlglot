@@ -164,9 +164,7 @@ class TestSchema(unittest.TestCase):
 
     def test_schema_get_column_type(self):
         schema = MappingSchema({"A": {"b": "varchar"}})
-        self.assertEqual(
-            schema.get_column_type("a", "B").this, exp.DataType.Type.VARCHAR
-        )
+        self.assertEqual(schema.get_column_type("a", "B").this, exp.DataType.Type.VARCHAR)
         self.assertEqual(
             schema.get_column_type(exp.table_("a"), exp.column("b")).this,
             exp.DataType.Type.VARCHAR,
@@ -188,9 +186,7 @@ class TestSchema(unittest.TestCase):
         )
         schema = MappingSchema({"a": {"b": {"c": {"d": "varchar"}}}})
         self.assertEqual(
-            schema.get_column_type(
-                exp.table_("c", db="b", catalog="a"), exp.column("d")
-            ).this,
+            schema.get_column_type(exp.table_("c", db="b", catalog="a"), exp.column("d")).this,
             exp.DataType.Type.VARCHAR,
         )
         self.assertEqual(
@@ -199,15 +195,11 @@ class TestSchema(unittest.TestCase):
         )
 
         schema = MappingSchema({"foo": {"bar": parse_one("INT", into=exp.DataType)}})
-        self.assertEqual(
-            schema.get_column_type("foo", "bar").this, exp.DataType.Type.INT
-        )
+        self.assertEqual(schema.get_column_type("foo", "bar").this, exp.DataType.Type.INT)
 
     def test_schema_normalization(self):
         schema = MappingSchema(
-            schema={
-                "x": {"`y`": {"Z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"C": "INT"}}}
-            },
+            schema={"x": {"`y`": {"Z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"C": "INT"}}}},
             dialect="clickhouse",
         )
 
@@ -223,20 +215,14 @@ class TestSchema(unittest.TestCase):
         # Check that add_table normalizes both the table and the column names to be added / updated
         schema = MappingSchema()
         schema.add_table("Foo", {"SomeColumn": "INT", '"SomeColumn"': "DOUBLE"})
-        self.assertEqual(
-            schema.column_names(exp.table_("fOO")), ["somecolumn", "SomeColumn"]
-        )
+        self.assertEqual(schema.column_names(exp.table_("fOO")), ["somecolumn", "SomeColumn"])
 
         # Check that names are normalized to uppercase for Snowflake
-        schema = MappingSchema(
-            schema={"x": {"foo": "int", '"bLa"': "int"}}, dialect="snowflake"
-        )
+        schema = MappingSchema(schema={"x": {"foo": "int", '"bLa"': "int"}}, dialect="snowflake")
         self.assertEqual(schema.column_names(exp.table_("x")), ["FOO", "bLa"])
 
         # Check that switching off the normalization logic works as expected
-        schema = MappingSchema(
-            schema={"x": {"foo": "int"}}, normalize=False, dialect="snowflake"
-        )
+        schema = MappingSchema(schema={"x": {"foo": "int"}}, normalize=False, dialect="snowflake")
         self.assertEqual(schema.column_names(exp.table_("x")), ["foo"])
 
         # Check that the correct dialect is used when calling schema methods
@@ -254,9 +240,7 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(schema.column_names("foo"), [])
 
         # Check that the schema's normalization setting can be overridden
-        schema = MappingSchema(
-            schema={"X": {"y": "int"}}, normalize=False, dialect="snowflake"
-        )
+        schema = MappingSchema(schema={"X": {"y": "int"}}, normalize=False, dialect="snowflake")
         self.assertEqual(schema.column_names("x", normalize=True), ["y"])
 
     def test_same_number_of_qualifiers(self):

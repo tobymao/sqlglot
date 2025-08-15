@@ -57,9 +57,7 @@ def execute(
 
     if not schema:
         schema = {}
-        flattened_tables = flatten_schema(
-            tables_.mapping, depth=dict_depth(tables_.mapping)
-        )
+        flattened_tables = flatten_schema(tables_.mapping, depth=dict_depth(tables_.mapping))
 
         for keys in flattened_tables:
             table = nested_get(tables_.mapping, *zip(keys, keys))
@@ -68,17 +66,13 @@ def execute(
             for column in table.columns:
                 value = table[0][column]
                 column_type = (
-                    annotate_types(exp.convert(value), dialect=read).type
-                    or type(value).__name__
+                    annotate_types(exp.convert(value), dialect=read).type or type(value).__name__
                 )
                 nested_set(schema, [*keys, column], column_type)
 
     schema = ensure_schema(schema, dialect=read)
 
-    if (
-        tables_.supported_table_args
-        and tables_.supported_table_args != schema.supported_table_args
-    ):
+    if tables_.supported_table_args and tables_.supported_table_args != schema.supported_table_args:
         raise ExecuteError("Tables must support the same table args as schema")
 
     now = time.time()

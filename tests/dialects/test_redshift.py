@@ -330,9 +330,7 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT CAST(value AS FLOAT(8))")
         self.validate_identity("1 div", "1 AS div")
         self.validate_identity("LISTAGG(DISTINCT foo, ', ')")
-        self.validate_identity(
-            "CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1"
-        )
+        self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
         self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
         self.validate_identity("SELECT * FROM #x")
         self.validate_identity("SELECT INTERVAL '5 DAY'")
@@ -341,9 +339,7 @@ class TestRedshift(Validator):
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")
         self.validate_identity("'abc' SIMILAR TO '(b|c)%'")
-        self.validate_identity(
-            "CREATE TABLE datetable (start_date DATE, end_date DATE)"
-        )
+        self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
         self.validate_identity(
@@ -463,17 +459,11 @@ ORDER BY
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
         values = [str(v) for v in range(0, 10000)]
-        values_query = (
-            f"SELECT * FROM (VALUES {', '.join('(' + v + ')' for v in values)})"
-        )
-        union_query = (
-            f"SELECT * FROM ({' UNION ALL '.join('SELECT ' + v for v in values)})"
-        )
+        values_query = f"SELECT * FROM (VALUES {', '.join('(' + v + ')' for v in values)})"
+        union_query = f"SELECT * FROM ({' UNION ALL '.join('SELECT ' + v for v in values)})"
         self.assertEqual(transpile(values_query, write="redshift")[0], union_query)
 
-        values_sql = transpile(
-            "SELECT * FROM (VALUES (1), (2))", write="redshift", pretty=True
-        )[0]
+        values_sql = transpile("SELECT * FROM (VALUES (1), (2))", write="redshift", pretty=True)[0]
         self.assertEqual(
             values_sql,
             """SELECT
@@ -530,18 +520,10 @@ FROM (
                 "": "INSERT INTO t(a, b) SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
             },
         )
-        self.validate_identity(
-            "CREATE TABLE table_backup BACKUP NO AS SELECT * FROM event"
-        )
-        self.validate_identity(
-            "CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event"
-        )
-        self.validate_identity(
-            "CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP NO"
-        )
-        self.validate_identity(
-            "CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP YES"
-        )
+        self.validate_identity("CREATE TABLE table_backup BACKUP NO AS SELECT * FROM event")
+        self.validate_identity("CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event")
+        self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP NO")
+        self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP YES")
         self.validate_identity(
             "select foo, bar from table_1 minus select foo, bar from table_2",
             "SELECT foo, bar FROM table_1 EXCEPT SELECT foo, bar FROM table_2",
@@ -582,9 +564,7 @@ FROM (
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE EVEN")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE AUTO")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c")
-        self.validate_identity(
-            "ALTER TABLE t SET TABLE PROPERTIES ('a' = '5', 'b' = 'c')"
-        )
+        self.validate_identity("ALTER TABLE t SET TABLE PROPERTIES ('a' = '5', 'b' = 'c')")
         self.validate_identity("ALTER TABLE t SET LOCATION 's3://bucket/folder/'")
         self.validate_identity("ALTER TABLE t SET FILE FORMAT AVRO")
         self.validate_identity(
@@ -630,9 +610,7 @@ FROM (
         ast = parse_one("SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3", read="redshift")
         ast.args["from"].this.assert_is(exp.Table)
         ast.args["joins"][0].this.assert_is(exp.Table)
-        self.assertEqual(
-            ast.sql("redshift"), "SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3"
-        )
+        self.assertEqual(ast.sql("redshift"), "SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3")
 
         ast = parse_one("SELECT * FROM t AS t CROSS JOIN t.c1", read="redshift")
         ast.args["from"].this.assert_is(exp.Table)
@@ -695,12 +673,8 @@ FROM (
             "GRANT ALL(cust_name, cust_phone, cust_contact_preference) ON cust_profile TO GROUP sales_admin"
         )
         self.validate_identity("GRANT USAGE ON DATABASE sales_db TO Bob")
-        self.validate_identity(
-            "GRANT USAGE ON SCHEMA sales_schema TO ROLE Analyst_role"
-        )
-        self.validate_identity(
-            "GRANT SELECT ON sales_db.sales_schema.tickit_sales_redshift TO Bob"
-        )
+        self.validate_identity("GRANT USAGE ON SCHEMA sales_schema TO ROLE Analyst_role")
+        self.validate_identity("GRANT SELECT ON sales_db.sales_schema.tickit_sales_redshift TO Bob")
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TBL(col1, col2)")

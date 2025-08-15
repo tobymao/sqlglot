@@ -73,9 +73,7 @@ pretty = False
 """Whether to format generated SQL by default."""
 
 
-def tokenize(
-    sql: str, read: DialectType = None, dialect: DialectType = None
-) -> t.List[Token]:
+def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> t.List[Token]:
     """
     Tokenizes the given SQL string.
 

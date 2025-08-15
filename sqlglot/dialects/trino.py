@@ -40,8 +40,7 @@ class Trino(Presto):
 
         def _parse_json_query_quote(self) -> t.Optional[exp.JSONExtractQuote]:
             if not (
-                self._match_text_seq("KEEP", "QUOTES")
-                or self._match_text_seq("OMIT", "QUOTES")
+                self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES")
             ):
                 return None
 
@@ -56,9 +55,7 @@ class Trino(Presto):
                 exp.JSONExtract,
                 this=self._parse_bitwise(),
                 expression=self._match(TokenType.COMMA) and self._parse_bitwise(),
-                option=self._parse_var_from_options(
-                    self.JSON_QUERY_OPTIONS, raise_unmatched=False
-                ),
+                option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
                 json_query=True,
                 quote=self._parse_json_query_quote(),
                 on_condition=self._parse_on_condition(),
@@ -74,8 +71,7 @@ class Trino(Presto):
             **Presto.Generator.TRANSFORMS,
             exp.ArraySum: lambda self,
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
-            exp.ArrayUniqueAgg: lambda self,
-            e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
+            exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
             exp.LocationProperty: lambda self, e: self.property_sql(e),
             exp.Merge: merge_without_target_sql,
@@ -88,9 +84,7 @@ class Trino(Presto):
                     amend_exploded_column_table,
                 ]
             ),
-            exp.TimeStrToTime: lambda self, e: timestrtotime_sql(
-                self, e, include_precision=True
-            ),
+            exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
         }
 

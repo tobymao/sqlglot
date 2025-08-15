@@ -4,7 +4,6 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 
-from sqlglot.expressions import DATA_TYPE
 from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
@@ -16,6 +15,7 @@ from sqlglot.dialects.dialect import (
     bool_xor_sql,
     build_default_decimal_type,
     count_if_to_sum,
+    date_delta_to_binary_interval_op,
     date_trunc_to_time,
     datestrtodate_sql,
     no_datetime_sql,
@@ -32,7 +32,6 @@ from sqlglot.dialects.dialect import (
     str_to_time_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
-    unit_to_var,
     unit_to_str,
     sha256_sql,
     build_regexp_extract,
@@ -44,38 +43,6 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
-
-DATETIME_DELTA = t.Union[
-    exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.DateSub, exp.DatetimeSub
-]
-
-
-def _date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
-    this = expression.this
-    unit = unit_to_var(expression)
-    op = (
-        "+"
-        if isinstance(expression, (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd))
-        else "-"
-    )
-
-    to_type: t.Optional[DATA_TYPE] = None
-    if isinstance(expression, exp.TsOrDsAdd):
-        to_type = expression.return_type
-    elif this.is_string:
-        # Cast string literals (i.e function parameters) to the appropriate type for +/- interval to work
-        to_type = (
-            exp.DataType.Type.DATETIME
-            if isinstance(expression, (exp.DatetimeAdd, exp.DatetimeSub))
-            else exp.DataType.Type.DATE
-        )
-
-    this = exp.cast(this, to_type) if to_type else this
-
-    expr = expression.expression
-    interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
-
-    return f"{self.sql(this)} {op} {self.sql(interval)}"
 
 
 # BigQuery -> DuckDB conversion for the DATE function
@@ -396,6 +363,7 @@ class DuckDB(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "DATEDIFF": _build_date_diff,
@@ -686,14 +654,14 @@ class DuckDB(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
-            exp.DateAdd: _date_delta_sql,
+            exp.DateAdd: date_delta_to_binary_interval_op(),
             exp.DateFromParts: rename_func("MAKE_DATE"),
-            exp.DateSub: _date_delta_sql,
+            exp.DateSub: date_delta_to_binary_interval_op(),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.Datetime: no_datetime_sql,
-            exp.DatetimeSub: _date_delta_sql,
-            exp.DatetimeAdd: _date_delta_sql,
+            exp.DatetimeSub: date_delta_to_binary_interval_op(),
+            exp.DatetimeAdd: date_delta_to_binary_interval_op(),
             exp.DateToDi: lambda self,
             e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
@@ -755,7 +723,7 @@ class DuckDB(Dialect):
             ),
             exp.Struct: _struct_sql,
             exp.Transform: rename_func("LIST_TRANSFORM"),
-            exp.TimeAdd: _date_delta_sql,
+            exp.TimeAdd: date_delta_to_binary_interval_op(),
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
             exp.Timestamp: no_timestamp_sql,
@@ -772,7 +740,7 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: _date_delta_sql,
+            exp.TsOrDsAdd: date_delta_to_binary_interval_op(),
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",
@@ -920,6 +888,7 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
         PROPERTIES_LOCATION[exp.ReturnsProperty] = exp.Properties.Location.POST_ALIAS
+        PROPERTIES_LOCATION[exp.SequenceProperties] = exp.Properties.Location.POST_EXPRESSION
 
         IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
             exp.FirstValue,
@@ -1136,9 +1105,10 @@ class DuckDB(Dialect):
 
                 # If BQ's UNNEST is aliased, we transform it from a column alias to a table alias in DDB
                 alias = expression.args.get("alias")
-                if alias:
+                if isinstance(alias, exp.TableAlias):
                     expression.set("alias", None)
-                    alias = exp.TableAlias(this=seq_get(alias.args.get("columns"), 0))
+                    if alias.columns:
+                        alias = exp.TableAlias(this=seq_get(alias.columns, 0))
 
                 unnest_sql = super().unnest_sql(expression)
                 select = exp.Select(expressions=[unnest_sql]).subquery(alias)
@@ -1152,7 +1122,9 @@ class DuckDB(Dialect):
                 # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
                 return super().ignorenulls_sql(expression)
 
-            self.unsupported("IGNORE NULLS is not supported for non-window functions.")
+            if not isinstance(expression.this, exp.AnyValue):
+                self.unsupported("IGNORE NULLS is not supported for non-window functions.")
+
             return self.sql(expression, "this")
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:

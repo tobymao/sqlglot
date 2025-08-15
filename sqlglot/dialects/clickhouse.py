@@ -2,6 +2,7 @@ from __future__ import annotations
 import typing as t
 import datetime
 from sqlglot import exp, generator, parser, tokens
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -31,14 +32,19 @@ from sqlglot.generator import unsupported_args
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
 
-def _build_date_format(args: t.List) -> exp.TimeToStr:
-    expr = build_formatted_time(exp.TimeToStr, "clickhouse")(args)
+def _build_datetime_format(
+    expr_type: t.Type[E],
+) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
+        expr = build_formatted_time(expr_type, "clickhouse")(args)
 
-    timezone = seq_get(args, 2)
-    if timezone:
-        expr.set("zone", timezone)
+        timezone = seq_get(args, 2)
+        if timezone:
+            expr.set("zone", timezone)
 
-    return expr
+        return expr
+
+    return _builder
 
 
 def _unix_to_time_sql(self: ClickHouse.Generator, expression: exp.UnixToTime) -> str:
@@ -310,16 +316,17 @@ class ClickHouse(Dialect):
             "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None, supports_timezone=True),
             "DATEDIFF": build_date_delta(exp.DateDiff, default_unit=None, supports_timezone=True),
-            "DATE_FORMAT": _build_date_format,
+            "DATE_FORMAT": _build_datetime_format(exp.TimeToStr),
             "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
-            "FORMATDATETIME": _build_date_format,
+            "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
+            "PARSEDATETIME": _build_datetime_format(exp.ParseDatetime),
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "STR_TO_DATE": _build_str_to_date,
             "TUPLE": exp.Struct.from_arg_list,
@@ -1141,6 +1148,7 @@ class ClickHouse(Dialect):
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("editDistance")
             ),
+            exp.ParseDatetime: rename_func("parseDateTime"),
         }
 
         PROPERTIES_LOCATION = {
@@ -1176,6 +1184,17 @@ class ClickHouse(Dialect):
             exp.DataType.Type.POLYGON,
             exp.DataType.Type.MULTIPOLYGON,
         }
+
+        def offset_sql(self, expression: exp.Offset) -> str:
+            offset = super().offset_sql(expression)
+
+            # OFFSET ... FETCH syntax requires a "ROW" or "ROWS" keyword
+            # https://clickhouse.com/docs/sql-reference/statements/select/offset
+            parent = expression.parent
+            if isinstance(parent, exp.Select) and isinstance(parent.args.get("limit"), exp.Fetch):
+                offset = f"{offset} ROWS"
+
+            return offset
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             strtodate_sql = self.function_fallback_sql(expression)

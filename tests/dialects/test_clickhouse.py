@@ -113,6 +113,9 @@ class TestClickhouse(Validator):
         self.validate_identity("EXCHANGE TABLES x.a AND y.b", check_command_warning=True)
         self.validate_identity("CREATE TABLE test (id UInt8) ENGINE=Null()")
         self.validate_identity(
+            "SELECT * FROM foo ORDER BY bar OFFSET 0 ROWS FETCH NEXT 10 ROWS WITH TIES"
+        )
+        self.validate_identity(
             "SELECT DATE_BIN(toDateTime('2023-01-01 14:45:00'), INTERVAL '1' MINUTE, toDateTime('2023-01-01 14:35:30'), 'UTC')",
         )
         self.validate_identity(
@@ -633,6 +636,11 @@ class TestClickhouse(Validator):
             "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"
         )
         self.validate_identity("SELECT arrayConcat([1, 2], [3, 4])")
+
+        self.validate_identity("SELECT parseDateTime('2021-01-04+23:00:00', '%Y-%m-%d+%H:%i:%s')")
+        self.validate_identity(
+            "SELECT parseDateTime('2021-01-04+23:00:00', '%Y-%m-%d+%H:%i:%s', 'Asia/Istanbul')"
+        )
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")

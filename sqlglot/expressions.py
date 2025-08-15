@@ -1689,7 +1689,7 @@ class ProjectionDef(Expression):
 
 
 class TableAlias(Expression):
-    arg_types = {"this": False, "columns": False, "column_only": False}
+    arg_types = {"this": False, "columns": False}
 
     @property
     def columns(self):
@@ -5425,6 +5425,10 @@ class BitwiseCountAgg(AggFunc):
     _sql_names = ["BIT_COUNT"]
 
 
+class ByteLength(Func):
+    pass
+
+
 class ArrayRemove(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -5458,6 +5462,15 @@ class Flatten(Func):
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Translate(Func):
+    arg_types = {"this": True, "from": True, "to": True}
+
+
+class Grouping(AggFunc):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
 
 
 class Anonymous(Func):
@@ -5571,6 +5584,10 @@ class ConvertTimezone(Func):
         "timestamp": True,
         "options": False,
     }
+
+
+class CodePointsToString(Func):
+    pass
 
 
 class GenerateSeries(Func):
@@ -6541,6 +6558,14 @@ class ParseJSON(Func):
     arg_types = {"this": True, "expression": False, "safe": False}
 
 
+class ParseTime(Func):
+    arg_types = {"this": True, "format": True}
+
+
+class ParseDatetime(Func):
+    arg_types = {"this": True, "format": False, "zone": False}
+
+
 class Least(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
@@ -6552,6 +6577,10 @@ class Left(Func):
 
 class Right(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Reverse(Func):
+    pass
 
 
 class Length(Func):
@@ -6826,6 +6855,10 @@ class Sign(Func):
 
 class SortArray(Func):
     arg_types = {"this": True, "asc": False}
+
+
+class Soundex(Func):
+    pass
 
 
 class Split(Func):
@@ -7134,6 +7167,10 @@ class CovarPop(Binary, AggFunc):
 
 class Week(Func):
     arg_types = {"this": True, "mode": False}
+
+
+class WeekStart(Expression):
+    pass
 
 
 class XMLElement(Func):

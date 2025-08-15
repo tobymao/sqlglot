@@ -330,6 +330,10 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
             if isinstance(column.parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
                 expression = exp.paren(expression, copy=False)
 
+            # make sure we do not accidentally change the name of the column
+            if isinstance(column.parent, exp.Select) and column.name != expression.name:
+                expression = exp.alias_(expression, column.name)
+
             column.replace(expression.copy())
 
 

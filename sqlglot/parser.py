@@ -2084,7 +2084,24 @@ class Parser(metaclass=_Parser):
 
             if create_token.token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
-                extend_props(self._parse_properties())
+                props = self._parse_properties()
+                if props:
+                    sequence_props = exp.SequenceProperties()
+                    options = []
+                    for prop in props:
+                        if isinstance(prop, exp.SequenceProperties):
+                            for arg, value in prop.args.items():
+                                if arg == "options":
+                                    options.extend(value)
+                                else:
+                                    sequence_props.set(arg, value)
+                            prop.pop()
+
+                    if options:
+                        sequence_props.set("options", options)
+
+                    props.append("expressions", sequence_props)
+                    extend_props(props)
             else:
                 expression = self._parse_ddl_select()
 
@@ -2222,11 +2239,17 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
         index = self._index
+
+        seq_props = self._parse_sequence_properties()
+        if seq_props:
+            return seq_props
+
+        self._retreat(index)
         key = self._parse_column()
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
-            return self._parse_sequence_properties()
+            return None
 
         # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
         if isinstance(key, exp.Column):
@@ -5256,7 +5279,7 @@ class Parser(metaclass=_Parser):
         while self._match(TokenType.DOT):
             type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
 
-        return exp.DataType.build(type_name, udt=True)
+        return exp.DataType.build(type_name, dialect=self.dialect, udt=True)
 
     def _parse_types(
         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
@@ -6557,7 +6580,7 @@ class Parser(metaclass=_Parser):
         elif not to:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
-            to = exp.DataType.build(to.name, udt=True)
+            to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())

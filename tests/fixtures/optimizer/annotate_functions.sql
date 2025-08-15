@@ -705,6 +705,94 @@ TIMESTAMP;
 TIMESTAMP_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
 DATETIME;
 
+# dialect: bigquery
+PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008');
+DATETIME;
+
+# dialect: bigquery
+FORMAT_TIME("%R", TIME "15:30:00");
+STRING;
+
+# dialect: bigquery
+PARSE_TIME("%I:%M:%S", "07:30:00");
+TIME;
+
+# dialect: bigquery
+BYTE_LENGTH("foo");
+BIGINT;
+
+# dialect: bigquery
+CODE_POINTS_TO_STRING([65, 255, 513, 1024]);
+STRING;
+
+# dialect: bigquery
+REVERSE("abc");
+STRING;
+
+# dialect: bigquery
+REVERSE(tbl.bin_col);
+BINARY;
+
+# dialect: bigquery
+REVERSE(b'1a3');
+BINARY;
+
+# dialect: bigquery
+REGEXP_EXTRACT_ALL('Try `func(x)` or `func(y)`', '`(.+?)`');
+ARRAY<STRING>;
+
+# dialect: bigquery
+REGEXP_EXTRACT_ALL(b'\x48\x65\x6C\x6C\x6F', b'(\x6C+)');
+ARRAY<BINARY>;
+
+# dialect: bigquery
+REPLACE ('cherry', 'pie', 'cobbler');
+STRING;
+
+# dialect: bigquery
+REPLACE(b'\x48\x65\x6C\x6C\x6F', b'\x6C\x6C', b'\x59\x59');
+BINARY;
+
+# dialect: bigquery
+TRANSLATE('AaBbCc', 'abc', '1');
+STRING;
+
+# dialect: bigquery
+TRANSLATE(b'AaBbCc', b'abc', b'123');
+BINARY;
+
+# dialect: bigquery
+SOUNDEX('foo');
+STRING;
+
+# dialect: bigquery
+MD5('foo');
+BINARY;
+
+# dialect: bigquery
+MAX_BY(tbl.str_col, tbl.bigint_col);
+STRING;
+
+# dialect: bigquery
+MAX_BY(tbl.bigint_col, tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+MIN_BY(tbl.str_col, tbl.bigint_col);
+STRING;
+
+# dialect: bigquery
+MIN_BY(tbl.bigint_col, tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+GROUPING(tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+GROUPING(tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

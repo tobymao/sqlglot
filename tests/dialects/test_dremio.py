@@ -99,15 +99,15 @@ class TestDremio(Validator):
         ts = "CAST('2025-06-24 12:34:56' AS TIMESTAMP)"
 
         self.validate_all(
-            f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
+            f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
             read={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%Y-%m-%d %H:%M:%S')",
             },
             write={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%Y-%m-%d %H:%M:%S')",
@@ -115,20 +115,25 @@ class TestDremio(Validator):
         )
 
         self.validate_all(
-            f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FFF TZD')",
+            f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
             read={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FFF TZD')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FF6 %Z')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
             write={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FFF TZD')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FF6 %Z')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
         )
+
+    def test_to_char_special(self):
+        self.validate_identity("SELECT TO_CHAR(5555, '#')").selects[0].assert_is(exp.ToChar)
+        self.validate_identity("SELECT TO_CHAR(3.14, '#.#')").selects[0].assert_is(exp.ToChar)
+        self.validate_identity("SELECT TO_CHAR(3.14, columnname)").selects[0].assert_is(exp.ToChar)
 
     def test_time_diff(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")

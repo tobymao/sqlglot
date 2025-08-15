@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
-    build_timestamp_trunc,
     property_sql,
     rename_func,
     time_format,
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -22,6 +24,22 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     )
 
 
+# Accept both DATE_TRUNC(datetime, unit) and DATE_TRUNC(unit, datetime)
+def _build_date_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+    a0, a1 = seq_get(args, 0), seq_get(args, 1)
+
+    def _is_unit_like(e: exp.Expression | None) -> bool:
+        if not (isinstance(e, exp.Literal) and e.is_string):
+            return False
+        text = e.this
+        return not any(ch.isdigit() for ch in text)
+
+    # Determine which argument is the unit
+    unit, this = (a0, a1) if _is_unit_like(a0) else (a1, a0)
+
+    return exp.TimestampTrunc(this=this, unit=unit)
+
+
 class Doris(MySQL):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
@@ -31,7 +49,7 @@ class Doris(MySQL):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
-            "DATE_TRUNC": build_timestamp_trunc,
+            "DATE_TRUNC": _build_date_trunc,
             "MONTHS_ADD": exp.AddMonths.from_arg_list,
             "REGEXP": exp.RegexpLike.from_arg_list,
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
@@ -39,6 +57,9 @@ class Doris(MySQL):
 
         FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
+
+        NO_PAREN_FUNCTIONS = MySQL.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_DATE)
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
@@ -111,6 +132,7 @@ class Doris(MySQL):
         LAST_DAY_SUPPORTS_DATE_PART = False
         VARCHAR_REQUIRES_SIZE = False
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
+        RENAME_TABLE_WITH_DB = False
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
@@ -123,6 +145,7 @@ class Doris(MySQL):
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -137,6 +160,7 @@ class Doris(MySQL):
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
+            exp.CurrentDate: lambda self, _: self.func("CURRENT_DATE"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(
@@ -684,9 +708,19 @@ class Doris(MySQL):
             create_sql = ", ".join(self.sql(e) for e in create_expressions)
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
 
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            node = expression.this
+            if isinstance(node, exp.Schema):
+                parts = ", ".join(self.sql(e) for e in node.expressions)
+                return f"PARTITION BY ({parts})"
+            return f"PARTITION BY ({self.sql(node)})"
+
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""
             ancestor = expression.find_ancestor(exp.Update, exp.Delete, exp.Select)
             if not isinstance(ancestor, exp.Select):
                 sep = " "
             return super().table_sql(expression, sep=sep)
+
+        def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
+            return super().alterrename_sql(expression, include_to=False)

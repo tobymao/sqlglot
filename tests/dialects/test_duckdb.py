@@ -444,6 +444,13 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "SELECT ANY_VALUE(sample_column) FROM sample_table",
+            write={
+                "duckdb": "SELECT ANY_VALUE(sample_column) FROM sample_table",
+                "spark": "SELECT ANY_VALUE(sample_column) IGNORE NULLS FROM sample_table",
+            },
+        )
+        self.validate_all(
             "COUNT_IF(x)",
             write={
                 "duckdb": "COUNT_IF(x)",
@@ -1737,3 +1744,12 @@ class TestDuckDB(Validator):
         self.validate_identity("MAP {1: 'a', 2: 'b'}")
         self.validate_identity("MAP {'1': 'a', '2': 'b'}")
         self.validate_identity("MAP {[1, 2]: 'a', [3, 4]: 'b'}")
+
+    def test_create_sequence(self):
+        self.validate_identity(
+            "CREATE SEQUENCE serial START 101", "CREATE SEQUENCE serial START WITH 101"
+        )
+        self.validate_identity("CREATE SEQUENCE serial START WITH 1 INCREMENT BY 2")
+        self.validate_identity("CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99")
+        self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 NO CYCLE")
+        self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE")

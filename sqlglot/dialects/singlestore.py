@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     json_extract_segments,
     json_path_key_only_name,
+    rename_func,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import unsupported_args
@@ -70,6 +71,8 @@ class SingleStore(MySQL):
                 ),
                 format=MySQL.format_time(seq_get(args, 1)),
             ),
+            "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
+            "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "BSON_EXTRACT_BSON": build_json_extract_path(exp.JSONBExtract),
             "BSON_EXTRACT_STRING": build_json_extract_path(
                 exp.JSONBExtractScalar, json_type="STRING"
@@ -152,6 +155,31 @@ class SingleStore(MySQL):
             exp.TryCast: unsupported_args("format", "action", "default")(
                 lambda self, e: f"{self.sql(e, 'this')} !:> {self.sql(e, 'to')}"
             ),
+            exp.StrToUnix: unsupported_args("format")(rename_func("UNIX_TIMESTAMP")),
+            exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.UnixSeconds: rename_func("UNIX_TIMESTAMP"),
+            exp.UnixToStr: lambda self, e: self.func(
+                "FROM_UNIXTIME",
+                e.this,
+                self.format_time(
+                    e,
+                    inverse_time_mapping=MySQL.INVERSE_TIME_MAPPING,
+                    inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
+                ),
+            ),
+            exp.UnixToTime: unsupported_args("scale", "zone", "hours", "minutes")(
+                lambda self, e: self.func(
+                    "FROM_UNIXTIME",
+                    e.this,
+                    self.format_time(
+                        e,
+                        inverse_time_mapping=MySQL.INVERSE_TIME_MAPPING,
+                        inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
+                    ),
+                ),
+            ),
+            exp.UnixToTimeStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}) :> TEXT",
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",

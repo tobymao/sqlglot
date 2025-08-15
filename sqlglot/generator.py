@@ -219,6 +219,7 @@ class Generator(metaclass=_Generator):
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
+        exp.WeekStart: lambda self, e: f"WEEK({self.sql(e, 'this')})",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.WithProcedureOptions: lambda self, e: f"WITH {self.expressions(e, flat=True)}",
         exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
@@ -690,6 +691,8 @@ class Generator(metaclass=_Generator):
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
 
     RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = ()
+
+    SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
@@ -3487,14 +3490,15 @@ class Generator(metaclass=_Generator):
         expressions = f"({expressions})" if expressions else ""
         return f"ALTER{compound} SORTKEY {this or expressions}"
 
-    def alterrename_sql(self, expression: exp.AlterRename) -> str:
+    def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
         if not self.RENAME_TABLE_WITH_DB:
             # Remove db from tables
             expression = expression.transform(
                 lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
             ).assert_is(exp.AlterRename)
         this = self.sql(expression, "this")
-        return f"RENAME TO {this}"
+        to_kw = " TO" if include_to else ""
+        return f"RENAME{to_kw} {this}"
 
     def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
         exists = " IF EXISTS" if expression.args.get("exists") else ""
@@ -4360,7 +4364,7 @@ class Generator(metaclass=_Generator):
             this = self.json_path_part(this)
             return f".{this}" if this else ""
 
-        if exp.SAFE_IDENTIFIER_RE.match(this):
+        if self.SAFE_JSON_PATH_KEY_RE.match(this):
             return f".{this}"
 
         this = self.json_path_part(this)

@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
-from sqlglot.dialects.dialect import Dialect, build_formatted_time, unit_to_var
+from sqlglot.dialects.dialect import (
+    Dialect,
+    build_formatted_time,
+    rename_func,
+    unit_to_var,
+)
 import typing as t
 
 DATE_DELTA = t.Union[
@@ -42,30 +47,51 @@ class Dremio(Dialect):
     TIME_MAPPING = {
         # year
         "YYYY": "%Y",
+        "yyyy": "%Y",
         "YY": "%y",
+        "yy": "%y",
         # month / day
         "MM": "%m",
+        "mm": "%m",
         "MON": "%b",
+        "mon": "%b",
         "MONTH": "%B",
+        "month": "%B",
         "DDD": "%j",
+        "ddd": "%j",
         "DD": "%d",
+        "dd": "%d",
         "DY": "%a",
+        "dy": "%a",
         "DAY": "%A",
+        "day": "%A",
         # hours / minutes / seconds
         "HH24": "%H",
+        "hh24": "%H",
         "HH12": "%I",
-        "HH": "%I",  # 24- / 12-hour
+        "hh12": "%I",
+        "HH": "%I",
+        "hh": "%I",  # 24- / 12-hour
         "MI": "%M",
+        "mi": "%M",
         "SS": "%S",
+        "ss": "%S",
         "FFF": "%f",
+        "fff": "%f",
         "AMPM": "%p",
+        "ampm": "%p",
         # ISO week / century etc.
         "WW": "%W",
+        "ww": "%W",
         "D": "%w",
+        "d": "%w",
         "CC": "%C",
+        "cc": "%C",
         # timezone
-        "TZD": "%Z",  # abbreviation  (UTC, PST, ...)
-        "TZO": "%z",  # numeric offset (+0200)
+        "TZD": "%Z",
+        "tzd": "%Z",  # abbreviation (UTC, PST, ...)
+        "TZO": "%z",
+        "tzo": "%z",  # numeric offset (+0200)
     }
 
     class Parser(parser.Parser):
@@ -73,7 +99,11 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_CHAR": lambda args: (
+                exp.ToChar(this=args[0], format=args[1])
+                if len(args) == 2 and (not isinstance(args[1], exp.Literal) or "#" in args[1].name)
+                else build_formatted_time(exp.TimeToStr, "dremio")(args)
+            ),
         }
 
     class Generator(generator.Generator):
@@ -102,8 +132,8 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ToChar: rename_func("TO_CHAR"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
-            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
         }

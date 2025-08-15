@@ -6504,8 +6504,8 @@ class JSONExtractScalar(Binary, Func):
         "this": True,
         "expression": True,
         "only_json_types": False,
-        "json_type": False,
         "expressions": False,
+        "json_type": False,
     }
     _sql_names = ["JSON_EXTRACT_SCALAR"]
     is_var_len_args = True

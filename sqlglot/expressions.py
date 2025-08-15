@@ -5535,7 +5535,12 @@ class Pad(Func):
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):
-    arg_types = {"this": True, "format": False, "nlsparam": False}
+    arg_types = {
+        "this": True,
+        "format": False,
+        "nlsparam": False,
+        "is_numeric": False,
+    }
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_decimal

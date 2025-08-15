@@ -35,7 +35,9 @@ DATE_ADD_OR_DIFF = t.Union[
     exp.TsOrDsDiff,
 ]
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
-JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
+JSON_EXTRACT_TYPE = t.Union[
+    exp.JSONExtract, exp.JSONExtractScalar, exp.JSONBExtract, exp.JSONBExtractScalar
+]
 DATETIME_DELTA = t.Union[
     exp.DateAdd,
     exp.DatetimeAdd,
@@ -45,7 +47,6 @@ DATETIME_DELTA = t.Union[
     exp.TimestampSub,
     exp.TsOrDsAdd,
 ]
-
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
@@ -1773,7 +1774,10 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
 
 
 def build_json_extract_path(
-    expr_type: t.Type[F], zero_based_indexing: bool = True, arrow_req_json_type: bool = False
+    expr_type: t.Type[F],
+    zero_based_indexing: bool = True,
+    arrow_req_json_type: bool = False,
+    json_type: t.Optional[str] = None,
 ) -> t.Callable[[t.List], F]:
     def _builder(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
@@ -1793,11 +1797,19 @@ def build_json_extract_path(
 
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]
-        return expr_type(
-            this=seq_get(args, 0),
-            expression=exp.JSONPath(expressions=segments),
-            only_json_types=arrow_req_json_type,
-        )
+        kwargs = {
+            "this": seq_get(args, 0),
+            "expression": exp.JSONPath(expressions=segments),
+        }
+
+        is_jsonb = issubclass(expr_type, (exp.JSONBExtract, exp.JSONBExtractScalar))
+        if not is_jsonb:
+            kwargs["only_json_types"] = arrow_req_json_type
+
+        if json_type is not None:
+            kwargs["json_type"] = json_type
+
+        return expr_type(**kwargs)
 
     return _builder
 

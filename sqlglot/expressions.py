@@ -6517,7 +6517,13 @@ class JSONExtractArray(Func):
 
 
 class JSONExtractScalar(Binary, Func):
-    arg_types = {"this": True, "expression": True, "only_json_types": False, "expressions": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "only_json_types": False,
+        "expressions": False,
+        "json_type": False,
+    }
     _sql_names = ["JSON_EXTRACT_SCALAR"]
     is_var_len_args = True
 
@@ -6531,6 +6537,7 @@ class JSONBExtract(Binary, Func):
 
 
 class JSONBExtractScalar(Binary, Func):
+    arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 

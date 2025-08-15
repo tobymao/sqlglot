@@ -741,6 +741,7 @@ LANGUAGE js AS
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
                     "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) + INTERVAL '1' MILLISECOND",
                     "snowflake": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
+                    "spark": "SELECT '2023-01-01T00:00:00' + INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -751,6 +752,7 @@ LANGUAGE js AS
                     "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1' * -1, '2023-01-01T00:00:00')",
                     "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) - INTERVAL '1' MILLISECOND",
+                    "spark": "SELECT '2023-01-01T00:00:00' - INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -781,6 +783,7 @@ LANGUAGE js AS
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
                 "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
                 "snowflake": "SELECT TIMESTAMPADD(MINUTE, '10' * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) - INTERVAL '10' MINUTE",
             },
         )
         self.validate_all(

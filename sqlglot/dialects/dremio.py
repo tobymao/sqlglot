@@ -4,7 +4,7 @@ from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
-    build_formatted_time,
+    build_timetostr_or_tochar,
     rename_func,
     unit_to_var,
 )
@@ -34,6 +34,19 @@ def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str
         return self.func("TIMESTAMPADD", unit_to_var(expression), increment, expression.this)
 
     return _delta_sql
+
+
+def to_char_is_numeric_handler(args, dialect=None):
+    if len(args) == 2:
+        format_ = args[1]
+        # Only mark as numeric if format is a literal containing #
+        if isinstance(format_, exp.Literal) and "#" in format_.this:
+            expression = build_timetostr_or_tochar(args, dialect)
+            if isinstance(expression, exp.ToChar):
+                expression.set("is_numeric", True)
+            return expression
+
+    return build_timetostr_or_tochar(args, dialect)
 
 
 class Dremio(Dialect):
@@ -99,11 +112,7 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": lambda args: (
-                exp.ToChar(this=args[0], format=args[1])
-                if len(args) == 2 and (not isinstance(args[1], exp.Literal) or "#" in args[1].name)
-                else build_formatted_time(exp.TimeToStr, "dremio")(args)
-            ),
+            "TO_CHAR": lambda args, dialect=None: to_char_is_numeric_handler(args, dialect=dialect),
         }
 
     class Generator(generator.Generator):

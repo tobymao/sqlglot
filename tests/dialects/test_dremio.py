@@ -131,15 +131,31 @@ class TestDremio(Validator):
         )
 
     def test_to_char_special(self):
-        self.validate_identity("SELECT TO_CHAR(5555, '#')", "SELECT CAST(5555 AS VARCHAR)").selects[
-            0
-        ].assert_is(exp.Cast)
         self.validate_identity(
-            "SELECT TO_CHAR(3.14, '#.#')", "SELECT CAST(3.14 AS VARCHAR)"
-        ).selects[0].assert_is(exp.Cast)
+            "SELECT TO_CHAR(5555, '#')", "SELECT TO_CHAR(5555, 'FM999999999999999999999999999999')"
+        ).selects[0].assert_is(exp.ToChar)
         self.validate_identity(
-            "SELECT TO_CHAR(3.14, columnname)", "SELECT CAST(3.14 AS VARCHAR)"
-        ).selects[0].assert_is(exp.Cast)
+            "SELECT TO_CHAR(3.14, '#.#')",
+            "SELECT TO_CHAR(3.14, 'FM999999999999999999999999999999.9')",
+        ).selects[0].assert_is(exp.ToChar)
+        self.validate_identity(
+            "SELECT TO_CHAR(3.1415, '#.##')",
+            "SELECT TO_CHAR(3.1415, 'FM999999999999999999999999999999.99')",
+        ).selects[0].assert_is(exp.ToChar)
+        self.validate_identity(
+            "SELECT TO_CHAR(3.14159, '#.###')",
+            "SELECT TO_CHAR(3.14159, 'FM999999999999999999999999999999.999')",
+        ).selects[0].assert_is(exp.ToChar)
+        self.validate_identity("SELECT TO_CHAR(3.14, columnname)").selects[0].assert_is(exp.ToChar)
+        self.validate_identity("SELECT TO_CHAR(5555)").selects[0].assert_is(exp.ToChar)
+        self.validate_identity("SELECT TO_CHAR(123, 'abcd')").selects[0].assert_is(exp.ToChar)
+        self.validate_identity("SELECT TO_CHAR(3.14, UPPER('abcd'))").selects[0].assert_is(
+            exp.ToChar
+        )
+        self.validate_identity(
+            "SELECT TO_CHAR(columnname, '#.##')",
+            "SELECT TO_CHAR(columnname, 'FM999999999999999999999999999999.99')",
+        ).selects[0].assert_is(exp.ToChar)
 
     def test_time_diff(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")

@@ -5,7 +5,7 @@ from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     build_formatted_time,
-    rename_func,
+    build_timetostr_or_tochar,
     unit_to_var,
 )
 import typing as t
@@ -34,6 +34,28 @@ def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str
         return self.func("TIMESTAMPADD", unit_to_var(expression), increment, expression.this)
 
     return _delta_sql
+
+
+def translate_numeric_format_to_canonical(format_str: str) -> str:
+    """
+    Translate Dremio-style numeric format strings like "#.##" to canonical SQL formats like "FM9.99".
+    """
+    basefm = (
+        "FM" + "9" * 30
+    )  # dremio does not round here but FM format does so lets set something really high.
+
+    if not format_str or not isinstance(format_str, str):
+        return format_str
+
+    if format_str.startswith("#"):
+        parts = format_str.split(".")
+        if len(parts) == 1:
+            return basefm
+        elif len(parts) == 2 and all(p == "#" * len(p) for p in parts):
+            decimals = len(parts[1])
+            return f"{basefm}.{''.join(['9' for _ in range(decimals)])}"
+
+    return format_str
 
 
 class Dremio(Dialect):
@@ -99,10 +121,16 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": lambda args: (
-                exp.Cast(this=args[0], to=exp.DataType.build("VARCHAR"))
-                if len(args) == 2 and (not isinstance(args[1], exp.Literal) or "#" in args[1].name)
-                else build_formatted_time(exp.TimeToStr, "dremio")(args)
+            "TO_CHAR": lambda args, dialect=None: (
+                build_timetostr_or_tochar(
+                    [
+                        args[0],
+                        exp.Literal.string(translate_numeric_format_to_canonical(args[1].this)),
+                    ]
+                    if len(args) == 2 and isinstance(args[1], exp.Literal) and "#" in args[1].this
+                    else args,
+                    dialect,
+                )
             ),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
@@ -135,7 +163,7 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.ToChar: rename_func("TO_CHAR"),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),

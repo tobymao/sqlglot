@@ -58,6 +58,9 @@ class Doris(MySQL):
         FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
 
+        NO_PAREN_FUNCTIONS = MySQL.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_DATE)
+
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
@@ -159,6 +162,7 @@ class Doris(MySQL):
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
+            exp.CurrentDate: lambda self, _: self.func("CURRENT_DATE"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(

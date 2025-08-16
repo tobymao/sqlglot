@@ -168,7 +168,9 @@ def _coerce_date(
                 b_type = exp.DataType.Type.DATETIME
 
             target_type = (
-                b_type if b_type in TypeAnnotator.COERCES_TO.get(a_type.this, {}) else a_type
+                exp.DataType.build(b_type)
+                if b_type in TypeAnnotator.COERCES_TO.get(a_type.this, {})
+                else a_type
             )
         else:
             target_type = a_type

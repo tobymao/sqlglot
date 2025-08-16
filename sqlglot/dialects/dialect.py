@@ -35,8 +35,18 @@ DATE_ADD_OR_DIFF = t.Union[
     exp.TsOrDsDiff,
 ]
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
-JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
-
+JSON_EXTRACT_TYPE = t.Union[
+    exp.JSONExtract, exp.JSONExtractScalar, exp.JSONBExtract, exp.JSONBExtractScalar
+]
+DATETIME_DELTA = t.Union[
+    exp.DateAdd,
+    exp.DatetimeAdd,
+    exp.DatetimeSub,
+    exp.TimeAdd,
+    exp.TimeSub,
+    exp.TimestampSub,
+    exp.TsOrDsAdd,
+]
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
@@ -1660,6 +1670,40 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
     return _delta_sql
 
 
+def date_delta_to_binary_interval_op(
+    cast: bool = True,
+) -> t.Callable[[Generator, DATETIME_DELTA], str]:
+    def date_delta_to_binary_interval_op_sql(self: Generator, expression: DATETIME_DELTA) -> str:
+        this = expression.this
+        unit = unit_to_var(expression)
+        op = (
+            "+"
+            if isinstance(expression, (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd))
+            else "-"
+        )
+
+        to_type: t.Optional[exp.DATA_TYPE] = None
+        if cast:
+            if isinstance(expression, exp.TsOrDsAdd):
+                to_type = expression.return_type
+            elif this.is_string:
+                # Cast string literals (i.e function parameters) to the appropriate type for +/- interval to work
+                to_type = (
+                    exp.DataType.Type.DATETIME
+                    if isinstance(expression, (exp.DatetimeAdd, exp.DatetimeSub))
+                    else exp.DataType.Type.DATE
+                )
+
+        this = exp.cast(this, to_type) if to_type else this
+
+        expr = expression.expression
+        interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
+
+        return f"{self.sql(this)} {op} {self.sql(interval)}"
+
+    return date_delta_to_binary_interval_op_sql
+
+
 def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
     unit = expression.args.get("unit")
 
@@ -1750,6 +1794,7 @@ def build_json_extract_path(
     expr_type: t.Type[F],
     zero_based_indexing: bool = True,
     arrow_req_json_type: bool = False,
+    json_type: t.Optional[str] = None,
 ) -> t.Callable[[t.List], F]:
     def _builder(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
@@ -1769,11 +1814,19 @@ def build_json_extract_path(
 
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]
-        return expr_type(
-            this=seq_get(args, 0),
-            expression=exp.JSONPath(expressions=segments),
-            only_json_types=arrow_req_json_type,
-        )
+        kwargs = {
+            "this": seq_get(args, 0),
+            "expression": exp.JSONPath(expressions=segments),
+        }
+
+        is_jsonb = issubclass(expr_type, (exp.JSONBExtract, exp.JSONBExtractScalar))
+        if not is_jsonb:
+            kwargs["only_json_types"] = arrow_req_json_type
+
+        if json_type is not None:
+            kwargs["json_type"] = json_type
+
+        return expr_type(**kwargs)
 
     return _builder
 

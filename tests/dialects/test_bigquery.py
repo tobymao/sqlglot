@@ -145,6 +145,9 @@ class TestBigQuery(Validator):
         self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
         self.validate_identity("SELECT * FROM x WHERE x.y >= (SELECT MAX(a) FROM b-c) - 20")
         self.validate_identity(
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT JSON_EXTRACT(c, '$.x-y') FROM t"""
+        ).selects[0].expression.assert_is(exp.JSONPath)
+        self.validate_identity(
             "SELECT FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', CURRENT_TIMESTAMP(), 'Europe/Berlin') AS ts"
         )
         self.validate_identity(
@@ -738,6 +741,7 @@ LANGUAGE js AS
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
                     "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) + INTERVAL '1' MILLISECOND",
                     "snowflake": "SELECT TIMESTAMPADD(MILLISECOND, '1', '2023-01-01T00:00:00')",
+                    "spark": "SELECT '2023-01-01T00:00:00' + INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -748,6 +752,7 @@ LANGUAGE js AS
                     "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL '1' MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPADD(MILLISECOND, '1' * -1, '2023-01-01T00:00:00')",
                     "duckdb": "SELECT CAST('2023-01-01T00:00:00' AS TIMESTAMP) - INTERVAL '1' MILLISECOND",
+                    "spark": "SELECT '2023-01-01T00:00:00' - INTERVAL '1' MILLISECOND",
                 },
             ),
         )
@@ -778,6 +783,7 @@ LANGUAGE js AS
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
                 "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
                 "snowflake": "SELECT TIMESTAMPADD(MINUTE, '10' * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) - INTERVAL '10' MINUTE",
             },
         )
         self.validate_all(
@@ -1773,6 +1779,9 @@ WHERE
         )
         self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
+        self.validate_identity("BYTE_LENGTH('foo')")
+        self.validate_identity("BYTE_LENGTH(b'foo')")
+        self.validate_identity("CODE_POINTS_TO_STRING([65, 255])")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

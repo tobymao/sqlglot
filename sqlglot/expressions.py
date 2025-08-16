@@ -327,7 +327,7 @@ class Expression(metaclass=_Expression):
                     for kv in "".join(meta).split(","):
                         k, *v = kv.split("=")
                         value = v[0].strip() if v else True
-                        self.meta[k.strip()] = to_bool(value)
+                        self.meta[k.strip()] = to_bool(value) if isinstance(value, str) else value
 
                 if not prepend:
                     self.comments.append(comment)
@@ -5470,6 +5470,10 @@ class BitwiseCountAgg(AggFunc):
     _sql_names = ["BIT_COUNT"]
 
 
+class ByteLength(Func):
+    pass
+
+
 class ArrayRemove(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -5503,6 +5507,15 @@ class Flatten(Func):
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Translate(Func):
+    arg_types = {"this": True, "from": True, "to": True}
+
+
+class Grouping(AggFunc):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
 
 
 class Anonymous(Func):
@@ -5659,6 +5672,10 @@ class ConvertTimezone(Func):
         "timestamp": True,
         "options": False,
     }
+
+
+class CodePointsToString(Func):
+    pass
 
 
 class GenerateSeries(Func):
@@ -6598,6 +6615,7 @@ class JSONExtractScalar(Binary, Func):
         "expression": True,
         "only_json_types": False,
         "expressions": False,
+        "json_type": False,
     }
     _sql_names = ["JSON_EXTRACT_SCALAR"]
     is_var_len_args = True
@@ -6612,6 +6630,7 @@ class JSONBExtract(Binary, Func):
 
 
 class JSONBExtractScalar(Binary, Func):
+    arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 
@@ -6651,6 +6670,10 @@ class Left(Func):
 
 class Right(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Reverse(Func):
+    pass
 
 
 class Length(Func):
@@ -6925,6 +6948,10 @@ class Sign(Func):
 
 class SortArray(Func):
     arg_types = {"this": True, "asc": False}
+
+
+class Soundex(Func):
+    pass
 
 
 class Split(Func):

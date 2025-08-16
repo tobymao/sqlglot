@@ -4,7 +4,7 @@ import logging
 import re
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -487,6 +487,8 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
+        exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
@@ -494,6 +496,11 @@ class BigQuery(Dialect):
         exp.BitwiseOrAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseXorAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseCountAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.ByteLength: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.ByteString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
+        exp.CodePointsToString: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.VARCHAR
+        ),
         exp.Concat: _annotate_concat,
         exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
@@ -503,6 +510,7 @@ class BigQuery(Dialect):
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
+        exp.Grouping: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
@@ -512,8 +520,13 @@ class BigQuery(Dialect):
         ),
         exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
+        exp.MD5Digest: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
+        exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
+        exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Reverse: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Soundex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
@@ -525,6 +538,7 @@ class BigQuery(Dialect):
         exp.TimeFromParts: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
+        exp.Translate: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }
 
@@ -556,6 +570,12 @@ class BigQuery(Dialect):
             return t.cast(E, expression)
 
         return super().normalize_identifier(expression)
+
+    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+        VAR_TOKENS = {
+            TokenType.DASH,
+            TokenType.VAR,
+        }
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"', '"""', "'''"]
@@ -1044,6 +1064,8 @@ class BigQuery(Dialect):
         SUPPORTS_EXPLODING_PROJECTIONS = False
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_UNIX_SECONDS = True
+
+        SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
 
         TS_OR_DS_TYPES = (
             exp.TsOrDsToDatetime,

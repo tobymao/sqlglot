@@ -108,6 +108,8 @@ class Oracle(Dialect):
             **parser.Parser.FUNCTIONS,
             "CONVERT": exp.ConvertToCharset.from_arg_list,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
+            "NUMTODSINTERVAL": exp.NumTodsinterval.from_arg_list,
+            "NUMTOYMINTERVAL": exp.NumToyminterval.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_TIMESTAMP": _build_to_timestamp,
@@ -310,6 +312,8 @@ class Oracle(Dialect):
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Mod: rename_func("MOD"),
+            exp.NumTodsinterval: lambda self, e: self.func("NUMTODSINTERVAL", e.this, e.expression),
+            exp.NumToyminterval: lambda self, e: self.func("NUMTOYMINTERVAL", e.this, e.expression),
             exp.Rand: rename_func("DBMS_RANDOM.VALUE"),
             exp.Select: transforms.preprocess(
                 [

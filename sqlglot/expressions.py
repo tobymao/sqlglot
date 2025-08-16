@@ -5563,6 +5563,34 @@ class ToDouble(Func):
     }
 
 
+# https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/NUMTODSINTERVAL.html
+class NumTodsinterval(Func):
+    """
+    Oracle NUMTODSINTERVAL function - converts a number to an INTERVAL DAY TO SECOND literal.
+
+    Syntax: NUMTODSINTERVAL(n, 'interval_unit')
+    Examples:
+        NUMTODSINTERVAL(1, 'DAY') -> creates 1-day interval
+        NUMTODSINTERVAL(30, 'MINUTE') -> creates 30-minute interval
+    """
+
+    arg_types = {"this": True, "expression": True}
+
+
+# https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/NUMTOYMINTERVAL.html
+class NumToyminterval(Func):
+    """
+    Oracle NUMTOYMINTERVAL function - converts a number to an INTERVAL YEAR TO MONTH literal.
+
+    Syntax: NUMTOYMINTERVAL(n, 'interval_unit')
+    Examples:
+        NUMTOYMINTERVAL(2, 'YEAR') -> creates 2-year interval
+        NUMTOYMINTERVAL(6, 'MONTH') -> creates 6-month interval
+    """
+
+    arg_types = {"this": True, "expression": True}
+
+
 class Columns(Func):
     arg_types = {"this": True, "unpack": False}
 

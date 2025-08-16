@@ -21,6 +21,7 @@ class Trino(Presto):
             **Presto.Parser.FUNCTION_PARSERS,
             "TRIM": lambda self: self._parse_trim(),
             "JSON_QUERY": lambda self: self._parse_json_query(),
+            "JSON_VALUE": lambda self: self._parse_json_value(),
             "LISTAGG": lambda self: self._parse_string_agg(),
         }
 
@@ -58,6 +59,21 @@ class Trino(Presto):
                 option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
                 json_query=True,
                 quote=self._parse_json_query_quote(),
+                on_condition=self._parse_on_condition(),
+            )
+
+        def _parse_json_value(self) -> exp.JSONValue:
+            this = self._parse_bitwise()
+            self._match(TokenType.COMMA)
+            path = self._parse_bitwise()
+
+            returning = self._match(TokenType.RETURNING) and self._parse_type()
+
+            return self.expression(
+                exp.JSONValue,
+                this=this,
+                path=path,  # Keep as literal string for Trino's JSON path syntax
+                returning=returning,
                 on_condition=self._parse_on_condition(),
             )
 

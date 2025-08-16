@@ -735,6 +735,39 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "ANALYZE TABLE tbl VALIDATE STRUCTURE CASCADE COMPLETE OFFLINE INTO db.tbl"
         )
 
+    def test_interval_functions(self):
+        self.validate_all(
+            "NUMTODSINTERVAL(100, 'HOUR')",
+            write={
+                "oracle": "NUMTODSINTERVAL(100, 'HOUR')",
+                "": "NUM_TODSINTERVAL(100, 'HOUR')",
+            },
+        )
+
+        self.validate_all(
+            "NUMTOYMINTERVAL(15, 'MONTH')",
+            write={
+                "oracle": "NUMTOYMINTERVAL(15, 'MONTH')",
+                "": "NUM_TOYMINTERVAL(15, 'MONTH')",
+            },
+        )
+
+        self.validate_all(
+            "NUMTODSINTERVAL(1.5, 'DAY')",
+            write={
+                "oracle": "NUMTODSINTERVAL(1.5, 'DAY')",
+                "": "NUM_TODSINTERVAL(1.5, 'DAY')",
+            },
+        )
+
+        self.validate_all(
+            "NUMTOYMINTERVAL(2.5, 'YEAR')",
+            write={
+                "oracle": "NUMTOYMINTERVAL(2.5, 'YEAR')",
+                "": "NUM_TOYMINTERVAL(2.5, 'YEAR')",
+            },
+        )
+
     def test_prior(self):
         self.validate_identity(
             "SELECT id, PRIOR name AS parent_name, name FROM tree CONNECT BY NOCYCLE PRIOR id = parent_id"

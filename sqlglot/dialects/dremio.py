@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
@@ -8,12 +10,12 @@ from sqlglot.dialects.dialect import (
     rename_func,
     unit_to_var,
 )
-import typing as t
+from sqlglot.helper import seq_get
 
-DATE_DELTA = t.Union[
-    exp.DateAdd,
-    exp.DateSub,
-]
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
+DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 
 def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str]:
@@ -36,17 +38,15 @@ def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str
     return _delta_sql
 
 
-def to_char_is_numeric_handler(args, dialect=None):
-    if len(args) == 2:
-        format_ = args[1]
-        # Only mark as numeric if format is a literal containing #
-        if isinstance(format_, exp.Literal) and "#" in format_.this:
-            expression = build_timetostr_or_tochar(args, dialect)
-            if isinstance(expression, exp.ToChar):
-                expression.set("is_numeric", True)
-            return expression
+def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
+    expression = build_timetostr_or_tochar(args, dialect)
+    fmt = seq_get(args, 1)
 
-    return build_timetostr_or_tochar(args, dialect)
+    if fmt and isinstance(expression, exp.ToChar) and fmt.is_string and "#" in fmt.name:
+        # Only mark as numeric if format is a literal containing #
+        expression.set("is_numeric", True)
+
+    return expression
 
 
 class Dremio(Dialect):
@@ -112,7 +112,7 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": lambda args, dialect=None: to_char_is_numeric_handler(args, dialect=dialect),
+            "TO_CHAR": to_char_is_numeric_handler,
         }
 
     class Generator(generator.Generator):

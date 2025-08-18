@@ -149,8 +149,6 @@ class Dremio(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
-            exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
-            exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

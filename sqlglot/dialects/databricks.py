@@ -100,7 +100,7 @@ class Databricks(Spark):
             exp.JSONExtractScalar: _jsonextract_sql,
             exp.JSONPathRoot: lambda *_: "",
             exp.ToChar: lambda self, e: (
-                self.cast_sql(e.this, exp.DataType.build("STRING"))
+                self.cast_sql(exp.Cast(this=e.this, to=exp.DataType(this="STRING")))
                 if e.args.get("is_numeric")
                 else self.function_fallback_sql(e)
             ),

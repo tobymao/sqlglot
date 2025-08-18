@@ -577,7 +577,6 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.ANTI,
-        TokenType.APPLY,
         TokenType.ASOF,
         TokenType.FULL,
         TokenType.LEFT,

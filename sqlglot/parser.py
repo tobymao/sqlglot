@@ -8707,3 +8707,18 @@ class Parser(metaclass=_Parser):
             kwargs["requires_string"] = self.dialect.TRY_CAST_REQUIRES_STRING
 
         return self.expression(exp_class, **kwargs)
+
+    def _parse_json_value(self) -> exp.JSONValue:
+        this = self._parse_bitwise()
+        self._match(TokenType.COMMA)
+        path = self._parse_bitwise()
+
+        returning = self._match(TokenType.RETURNING) and self._parse_type()
+
+        return self.expression(
+            exp.JSONValue,
+            this=this,
+            path=self.dialect.to_json_path(path),
+            returning=returning,
+            on_condition=self._parse_on_condition(),
+        )

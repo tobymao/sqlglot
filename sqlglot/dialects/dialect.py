@@ -2017,7 +2017,7 @@ def groupconcat_sql(
     return self.sql(listagg)
 
 
-def build_timetostr_or_tochar(args: t.List, dialect: Dialect) -> exp.TimeToStr | exp.ToChar:
+def build_timetostr_or_tochar(args: t.List, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
     if len(args) == 2:
         this = args[0]
         if not this.type:

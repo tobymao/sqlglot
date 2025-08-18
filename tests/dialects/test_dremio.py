@@ -132,51 +132,27 @@ class TestDremio(Validator):
 
     def test_to_char_special(self):
         # Numeric formats should have is_numeric=True
-        expr = self.validate_identity("SELECT TO_CHAR(5555, '#')").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is True
+        to_char = self.validate_identity("TO_CHAR(5555, '#')").assert_is(exp.ToChar)
+        assert to_char.args["is_numeric"] is True
 
-        expr = self.validate_identity("SELECT TO_CHAR(3.14, '#.#')").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is True
+        to_char = self.validate_identity("TO_CHAR(3.14, '#.#')").assert_is(exp.ToChar)
+        assert to_char.args["is_numeric"] is True
 
-        expr = self.validate_identity("SELECT TO_CHAR(3.1415, '#.##')").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is True
-
-        expr = self.validate_identity("SELECT TO_CHAR(3.14159, '#.###')").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is True
-
-        expr = self.validate_identity("SELECT TO_CHAR(columnname, '#.##')").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is True
+        to_char = self.validate_identity("TO_CHAR(columnname, '#.##')").assert_is(exp.ToChar)
+        assert to_char.args["is_numeric"] is True
 
         # Non-numeric formats or columns should have is_numeric=None or False
-        expr = self.validate_identity("SELECT TO_CHAR(3.14, columnname)").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is None or to_char.args.get("is_numeric") is False
+        to_char = self.validate_identity("TO_CHAR(5555)").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
 
-        expr = self.validate_identity("SELECT TO_CHAR(5555)").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is None or to_char.args.get("is_numeric") is False
+        to_char = self.validate_identity("TO_CHAR(3.14, columnname)").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
 
-        expr = self.validate_identity("SELECT TO_CHAR(123, 'abcd')").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is None or to_char.args.get("is_numeric") is False
+        to_char = self.validate_identity("TO_CHAR(123, 'abcd')").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
 
-        expr = self.validate_identity("SELECT TO_CHAR(3.14, UPPER('abcd'))").selects[0]
-        expr.assert_is(exp.ToChar)
-        to_char = expr.find(exp.ToChar)
-        assert to_char.args.get("is_numeric") is None or to_char.args.get("is_numeric") is False
+        to_char = self.validate_identity("TO_CHAR(3.14, UPPER('abcd'))").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
 
     def test_time_diff(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")

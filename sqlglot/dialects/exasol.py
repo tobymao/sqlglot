@@ -284,6 +284,7 @@ class Exasol(Dialect):
             exp.MD5Digest: rename_func("HASHTYPE_MD5"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
+            exp.WeekOfYear: rename_func("WEEK"),
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

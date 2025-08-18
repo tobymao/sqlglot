@@ -218,7 +218,7 @@ sqlglot.errors.ParseError: Expecting ). Line 1, Col: 34.
 Structured syntax errors are accessible for programmatic use:
 
 ```python
-import sqlglot
+import sqlglot.errors
 try:
     sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 except sqlglot.errors.ParseError as e:

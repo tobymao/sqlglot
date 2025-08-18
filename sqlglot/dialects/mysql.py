@@ -709,21 +709,6 @@ class MySQL(Dialect):
 
             return self.expression(exp.GroupConcat, this=this, separator=separator)
 
-        def _parse_json_value(self) -> exp.JSONValue:
-            this = self._parse_bitwise()
-            self._match(TokenType.COMMA)
-            path = self._parse_bitwise()
-
-            returning = self._match(TokenType.RETURNING) and self._parse_type()
-
-            return self.expression(
-                exp.JSONValue,
-                this=this,
-                path=self.dialect.to_json_path(path),
-                returning=returning,
-                on_condition=self._parse_on_condition(),
-            )
-
         def _parse_alter_table_alter_index(self) -> exp.AlterIndex:
             index = self._parse_field(any_token=True)
 

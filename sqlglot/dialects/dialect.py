@@ -1069,7 +1069,9 @@ class Dialect(metaclass=_Dialect):
             try:
                 return parse_json_path(path_text, self)
             except ParseError as e:
-                if self.STRICT_JSON_PATH_SYNTAX:
+                if self.STRICT_JSON_PATH_SYNTAX and not path_text.lstrip().startswith(
+                    ("lax", "strict")
+                ):
                     logger.warning(f"Invalid JSON path syntax. {str(e)}")
 
         return path
@@ -2037,13 +2039,4 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
-    )
-
-
-def space_sql(self: Generator, expression: exp.Space) -> str:
-    return self.sql(
-        exp.Repeat(
-            this=exp.Literal.string(" "),
-            times=expression.this,
-        )
     )

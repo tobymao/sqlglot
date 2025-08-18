@@ -62,21 +62,6 @@ class Trino(Presto):
                 on_condition=self._parse_on_condition(),
             )
 
-        def _parse_json_value(self) -> exp.JSONValue:
-            this = self._parse_bitwise()
-            self._match(TokenType.COMMA)
-            path = self._parse_bitwise()
-
-            returning = self._match(TokenType.RETURNING) and self._parse_type()
-
-            return self.expression(
-                exp.JSONValue,
-                this=this,
-                path=path,  # Keep as literal string for Trino's JSON path syntax
-                returning=returning,
-                on_condition=self._parse_on_condition(),
-            )
-
     class Generator(Presto.Generator):
         PROPERTIES_LOCATION = {
             **Presto.Generator.PROPERTIES_LOCATION,

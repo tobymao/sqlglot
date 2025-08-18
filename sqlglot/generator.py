@@ -5148,3 +5148,6 @@ class Generator(metaclass=_Generator):
                 unit=exp.var("DAY"),
             )
         )
+
+    def space_sql(self: Generator, expression: exp.Space) -> str:
+        return self.sql(exp.Repeat(this=exp.Literal.string(" "), times=expression.this))

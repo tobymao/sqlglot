@@ -109,6 +109,7 @@ class Exasol(Dialect):
             "ENDIF": TokenType.END,
             "LONG VARCHAR": TokenType.TEXT,
         }
+        KEYWORDS.pop("DIV")
 
     class Parser(parser.Parser):
         FUNCTIONS = {
@@ -131,6 +132,7 @@ class Exasol(Dialect):
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "DIV": binary_from_function(exp.IntDiv),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
             "HASH_SHA": exp.SHA.from_arg_list,
@@ -228,6 +230,8 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
             exp.DateDiff: _date_diff_sql,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
+            exp.IntDiv: rename_func("DIV"),
             exp.TsOrDsDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),

@@ -2527,6 +2527,23 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT * FROM (SELECT 1 AS col) AS apply",
+            read={
+                "": "SELECT * FROM (SELECT 1 AS col) apply",
+                "hive": "SELECT * FROM (SELECT 1 AS col) apply",
+                "postgres": "SELECT * FROM (SELECT 1 AS col) apply",
+                "duckdb": "SELECT * FROM (SELECT 1 AS col) apply",
+                "presto": "SELECT * FROM (SELECT 1 AS col) apply",
+                "spark": "SELECT * FROM (SELECT 1 AS col) apply",
+                "spark2": "SELECT * FROM (SELECT 1 AS col) apply",
+                "trino": "SELECT * FROM (SELECT 1 AS col) apply",
+                "snowflake": "SELECT * FROM (SELECT 1 AS col) apply",
+                "bigquery": "SELECT * FROM (SELECT 1 AS col) apply",
+                "athena": "SELECT * FROM (SELECT 1 AS col) apply",
+            },
+        )
+
     def test_nullsafe_eq(self):
         self.validate_all(
             "SELECT a IS NOT DISTINCT FROM b",

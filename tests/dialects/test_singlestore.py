@@ -194,34 +194,58 @@ class TestSingleStore(Validator):
         )
 
     def test_date_parts_functions(self):
-        self.validate_identity("SELECT DAYNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%W')")
-        self.validate_identity("SELECT HOUR('2009-02-13 23:31:30')", "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%k') :> INT")
-        self.validate_identity("SELECT MICROSECOND('2019-03-25 10:15:21.000423')", "SELECT DATE_FORMAT('2019-03-25 10:15:21.000423', '%f') :> INT")
-        self.validate_identity("SELECT MINUTE('2009-02-13 23:31:30')", "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%i') :> INT")
-        self.validate_identity("SELECT MONTHNAME('2009-02-13 23:31:30')", "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%M')")
-        self.validate_identity("SELECT SECOND('2009-02-13 23:31:30')", "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%s') :> INT")
-        self.validate_identity("SELECT WEEKDAY('2014-04-18')", "SELECT (DAYOFWEEK('2014-04-18') + 5) % 7")
+        self.validate_identity(
+            "SELECT DAYNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%W')"
+        )
+        self.validate_identity(
+            "SELECT HOUR('2009-02-13 23:31:30')",
+            "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%k') :> INT",
+        )
+        self.validate_identity(
+            "SELECT MICROSECOND('2019-03-25 10:15:21.000423')",
+            "SELECT DATE_FORMAT('2019-03-25 10:15:21.000423', '%f') :> INT",
+        )
+        self.validate_identity(
+            "SELECT MINUTE('2009-02-13 23:31:30')",
+            "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%i') :> INT",
+        )
+        self.validate_identity(
+            "SELECT MONTHNAME('2009-02-13 23:31:30')",
+            "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%M')",
+        )
+        self.validate_identity(
+            "SELECT SECOND('2009-02-13 23:31:30')",
+            "SELECT DATE_FORMAT('2009-02-13 23:31:30', '%s') :> INT",
+        )
+        self.validate_identity(
+            "SELECT WEEKDAY('2014-04-18')", "SELECT (DAYOFWEEK('2014-04-18') + 5) % 7"
+        )
         self.validate_identity("SELECT DAYOFWEEK('2014-04-18')")
-        self.validate_all("SELECT ((DAYOFWEEK('2014-04-18') % 7) + 1)",
-                          read={
-            "singlestore": "SELECT ((DAYOFWEEK('2014-04-18') % 7) + 1)",
-            "": "SELECT DAYOFWEEK_ISO('2014-04-18')"
-        })
-        self.validate_all("SELECT DAY('2014-04-18')",
-                          read={
-            "singlestore": "SELECT DAY('2014-04-18')",
-            "": "SELECT DAY_OF_MONTH('2014-04-18')"
-        }
+        self.validate_all(
+            "SELECT ((DAYOFWEEK('2014-04-18') % 7) + 1)",
+            read={
+                "singlestore": "SELECT ((DAYOFWEEK('2014-04-18') % 7) + 1)",
+                "": "SELECT DAYOFWEEK_ISO('2014-04-18')",
+            },
         )
-        self.validate_all("SELECT DAYOFYEAR('2014-04-18')",
-                          read={
-            "singlestore": "SELECT DAYOFYEAR('2014-04-18')",
-            "": "SELECT DAY_OF_YEAR('2014-04-18')"
-        }
+        self.validate_all(
+            "SELECT DAY('2014-04-18')",
+            read={
+                "singlestore": "SELECT DAY('2014-04-18')",
+                "": "SELECT DAY_OF_MONTH('2014-04-18')",
+            },
         )
-        self.validate_all("SELECT WEEKOFYEAR('2014-04-18')",
-                          read={
-            "singlestore": "SELECT WEEKOFYEAR('2014-04-18')",
-            "": "SELECT WEEK_OF_YEAR('2014-04-18')"
-        }
+        self.validate_all(
+            "SELECT DAYOFYEAR('2014-04-18')",
+            read={
+                "singlestore": "SELECT DAYOFYEAR('2014-04-18')",
+                "": "SELECT DAY_OF_YEAR('2014-04-18')",
+            },
+        )
+        self.validate_all(
+            "SELECT WEEKOFYEAR('2014-04-18')",
+            read={
+                "singlestore": "SELECT WEEKOFYEAR('2014-04-18')",
+                "": "SELECT WEEK_OF_YEAR('2014-04-18')",
+            },
         )

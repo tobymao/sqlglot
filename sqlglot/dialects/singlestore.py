@@ -98,12 +98,12 @@ class SingleStore(MySQL):
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
             "HOUR": lambda args: exp.cast(
-                    exp.TimeToStr(
-                        this=seq_get(args, 0),
-                        format=MySQL.format_time(exp.Literal.string("%k")),
-                    ),
-                    DataType.Type.INT,
+                exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=MySQL.format_time(exp.Literal.string("%k")),
                 ),
+                DataType.Type.INT,
+            ),
             "MICROSECOND": lambda args: exp.cast(
                 exp.TimeToStr(
                     this=seq_get(args, 0),
@@ -130,8 +130,12 @@ class SingleStore(MySQL):
                 DataType.Type.INT,
             ),
             "WEEKDAY": lambda args: exp.Mod(
-                this=exp.Paren(this=exp.Add(this=exp.DayOfWeek(this=seq_get(args, 0)), expression=exp.Literal.number(5))),
-                expression=exp.Literal.number(7)
+                this=exp.Paren(
+                    this=exp.Add(
+                        this=exp.DayOfWeek(this=seq_get(args, 0)), expression=exp.Literal.number(5)
+                    )
+                ),
+                expression=exp.Literal.number(7),
             ),
             "DAY": lambda args: exp.Day(this=seq_get(args, 0)),
         }

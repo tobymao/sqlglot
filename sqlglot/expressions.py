@@ -5301,7 +5301,7 @@ class TimeUnit(Expression):
 
     def __init__(self, **args):
         unit = args.get("unit")
-        if isinstance(unit, self.VAR_LIKE):
+        if type(unit) in self.VAR_LIKE:
             args["unit"] = Var(
                 this=(self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper()
             )

@@ -48,6 +48,7 @@ class TestSingleStore(Validator):
             "SELECT TIME_FORMAT('12:05:47', '%s, %i, %h')",
             "SELECT DATE_FORMAT('12:05:47' :> TIME(6), '%s, %i, %h')",
         )
+        self.validate_identity("SELECT DATE('2019-01-01 05:06')")
 
     def test_cast(self):
         self.validate_all(

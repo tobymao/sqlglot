@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
@@ -50,7 +51,6 @@ class SingleStore(MySQL):
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
@@ -92,6 +92,48 @@ class SingleStore(MySQL):
             "JSON_EXTRACT_BIGINT": build_json_extract_path(
                 exp.JSONExtractScalar, json_type="BIGINT"
             ),
+            "DATE": exp.Date.from_arg_list,
+            "DAYNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=MySQL.format_time(exp.Literal.string("%W")),
+            ),
+            "HOUR": lambda args: exp.cast(
+                    exp.TimeToStr(
+                        this=seq_get(args, 0),
+                        format=MySQL.format_time(exp.Literal.string("%k")),
+                    ),
+                    DataType.Type.INT,
+                ),
+            "MICROSECOND": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=MySQL.format_time(exp.Literal.string("%f")),
+                ),
+                DataType.Type.INT,
+            ),
+            "MINUTE": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=MySQL.format_time(exp.Literal.string("%i")),
+                ),
+                DataType.Type.INT,
+            ),
+            "MONTHNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=MySQL.format_time(exp.Literal.string("%M")),
+            ),
+            "SECOND": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=MySQL.format_time(exp.Literal.string("%s")),
+                ),
+                DataType.Type.INT,
+            ),
+            "WEEKDAY": lambda args: exp.Mod(
+                this=exp.Paren(this=exp.Add(this=exp.DayOfWeek(this=seq_get(args, 0)), expression=exp.Literal.number(5))),
+                expression=exp.Literal.number(7)
+            ),
+            "DAY": lambda args: exp.Day(this=seq_get(args, 0)),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -193,6 +235,11 @@ class SingleStore(MySQL):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
+            exp.DayOfMonth: rename_func("DAY"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.JSONPathFilter)

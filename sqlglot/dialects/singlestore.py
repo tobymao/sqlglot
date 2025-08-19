@@ -1,4 +1,4 @@
-from sqlglot import TokenType
+from sqlglot import TokenType, parser
 import typing as t
 
 from sqlglot import exp
@@ -51,6 +51,7 @@ class SingleStore(MySQL):
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),

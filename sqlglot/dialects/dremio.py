@@ -7,6 +7,7 @@ from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     build_timetostr_or_tochar,
+    build_formatted_time,
     rename_func,
     unit_to_var,
 )
@@ -113,6 +114,8 @@ class Dremio(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "TO_CHAR": to_char_is_numeric_handler,
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
         }
 
     class Generator(generator.Generator):

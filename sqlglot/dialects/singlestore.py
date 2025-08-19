@@ -149,6 +149,7 @@ class SingleStore(MySQL):
                     inverse_time_trie=MySQL.INVERSE_TIME_TRIE,
                 ),
             ),
+            exp.Date: unsupported_args("zone", "expressions")(rename_func("DATE")),
             exp.Cast: unsupported_args("format", "action", "default")(
                 lambda self, e: f"{self.sql(e, 'this')} :> {self.sql(e, 'to')}"
             ),

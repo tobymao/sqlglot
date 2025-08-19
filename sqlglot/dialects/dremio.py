@@ -116,7 +116,6 @@ class Dremio(Dialect):
             "TO_CHAR": to_char_is_numeric_handler,
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
-            "TO_TIMESTAMP": build_formatted_time(exp.TimeStrToTime, "dremio"),
         }
 
     class Generator(generator.Generator):

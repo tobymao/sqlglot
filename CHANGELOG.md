@@ -1,6 +1,74 @@
 Changelog
 =========
 
+## [v27.8.0] - 2025-08-19
+### :boom: BREAKING CHANGES
+- due to [`2a33339`](https://github.com/tobymao/sqlglot/commit/2a333395cde71936df911488afcff92cae735e11) - annotate type for bigquery REPLACE *(PR [#5572](https://github.com/tobymao/sqlglot/pull/5572) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery REPLACE (#5572)
+
+- due to [`1e6f813`](https://github.com/tobymao/sqlglot/commit/1e6f81343de641e588f1a05ce7dc01bed72bd849) - annotate type for bigquery REGEXP_EXTRACT_ALL *(PR [#5573](https://github.com/tobymao/sqlglot/pull/5573) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery REGEXP_EXTRACT_ALL (#5573)
+
+- due to [`d0d62ed`](https://github.com/tobymao/sqlglot/commit/d0d62ede6320b3fd0eee04b7073f5708676dc58c) - support `TO_CHAR` with numeric inputs *(PR [#5570](https://github.com/tobymao/sqlglot/pull/5570) by [@jasonthomassql](https://github.com/jasonthomassql))*:
+
+  support `TO_CHAR` with numeric inputs (#5570)
+
+- due to [`7928985`](https://github.com/tobymao/sqlglot/commit/7928985a655c3d0244bc9175a37f502b19a5c5f0) - allow dashes in JSONPath keys *(PR [#5574](https://github.com/tobymao/sqlglot/pull/5574) by [@georgesittas](https://github.com/georgesittas))*:
+
+  allow dashes in JSONPath keys (#5574)
+
+- due to [`eb09e6e`](https://github.com/tobymao/sqlglot/commit/eb09e6e32491a05846488de7b72b1dca0e0a2669) - parse and annotate type for bigquery TRANSLATE *(PR [#5575](https://github.com/tobymao/sqlglot/pull/5575) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery TRANSLATE (#5575)
+
+- due to [`f9a522b`](https://github.com/tobymao/sqlglot/commit/f9a522b26cd5d643b8b18fa64d70f2a3f0ff2d2c) - parse and annotate type for bigquery SOUNDEX *(PR [#5576](https://github.com/tobymao/sqlglot/pull/5576) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery SOUNDEX (#5576)
+
+- due to [`51da41b`](https://github.com/tobymao/sqlglot/commit/51da41b90ce421b154e45add28353ac044640a1c) - annotate type for bigquery MD5 *(PR [#5577](https://github.com/tobymao/sqlglot/pull/5577) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery MD5 (#5577)
+
+- due to [`bcf302f`](https://github.com/tobymao/sqlglot/commit/bcf302ff6ad2d0adfc29f708a8b53b5c0e547619) - annotate type for bigquery MIN/MAX BY *(PR [#5579](https://github.com/tobymao/sqlglot/pull/5579) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bigquery MIN/MAX BY (#5579)
+
+- due to [`c501d9e`](https://github.com/tobymao/sqlglot/commit/c501d9e6f58e4880e4d23f21f53f72dcb5fdaa8c) - parse and annotate type for bigquery GROUPING *(PR [#5581](https://github.com/tobymao/sqlglot/pull/5581) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bigquery GROUPING (#5581)
+
+
+### :sparkles: New Features
+- [`2a33339`](https://github.com/tobymao/sqlglot/commit/2a333395cde71936df911488afcff92cae735e11) - **optimizer**: annotate type for bigquery REPLACE *(PR [#5572](https://github.com/tobymao/sqlglot/pull/5572) by [@geooo109](https://github.com/geooo109))*
+- [`1e6f813`](https://github.com/tobymao/sqlglot/commit/1e6f81343de641e588f1a05ce7dc01bed72bd849) - **optimizer**: annotate type for bigquery REGEXP_EXTRACT_ALL *(PR [#5573](https://github.com/tobymao/sqlglot/pull/5573) by [@geooo109](https://github.com/geooo109))*
+- [`eb09e6e`](https://github.com/tobymao/sqlglot/commit/eb09e6e32491a05846488de7b72b1dca0e0a2669) - **optimizer**: parse and annotate type for bigquery TRANSLATE *(PR [#5575](https://github.com/tobymao/sqlglot/pull/5575) by [@geooo109](https://github.com/geooo109))*
+- [`f9a522b`](https://github.com/tobymao/sqlglot/commit/f9a522b26cd5d643b8b18fa64d70f2a3f0ff2d2c) - **optimizer**: parse and annotate type for bigquery SOUNDEX *(PR [#5576](https://github.com/tobymao/sqlglot/pull/5576) by [@geooo109](https://github.com/geooo109))*
+- [`51da41b`](https://github.com/tobymao/sqlglot/commit/51da41b90ce421b154e45add28353ac044640a1c) - **optimizer**: annotate type for bigquery MD5 *(PR [#5577](https://github.com/tobymao/sqlglot/pull/5577) by [@geooo109](https://github.com/geooo109))*
+- [`bcf302f`](https://github.com/tobymao/sqlglot/commit/bcf302ff6ad2d0adfc29f708a8b53b5c0e547619) - **optimizer**: annotate type for bigquery MIN/MAX BY *(PR [#5579](https://github.com/tobymao/sqlglot/pull/5579) by [@geooo109](https://github.com/geooo109))*
+- [`c501d9e`](https://github.com/tobymao/sqlglot/commit/c501d9e6f58e4880e4d23f21f53f72dcb5fdaa8c) - **optimizer**: parse and annotate type for bigquery GROUPING *(PR [#5581](https://github.com/tobymao/sqlglot/pull/5581) by [@geooo109](https://github.com/geooo109))*
+- [`8612825`](https://github.com/tobymao/sqlglot/commit/86128253f911b733d45b073356e3b8ddf261c22b) - **spark**: generate date/time ops as interval binary ops *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`8fda774`](https://github.com/tobymao/sqlglot/commit/8fda774b7a9b0c66948349dfe030d3c122ff6eee) - **singlestore**: Added parsing and generation of JSON_EXTRACT *(PR [#5555](https://github.com/tobymao/sqlglot/pull/5555) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`82cc954`](https://github.com/tobymao/sqlglot/commit/82cc9549a875211a400e5c4e818b05ca48a0a9f4) - **exasol**: map div function to IntDiv in exasol dialect *(PR [#5593](https://github.com/tobymao/sqlglot/pull/5593) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`eb0fe68`](https://github.com/tobymao/sqlglot/commit/eb0fe68d6b5977053c871badf2f5c1895b3e1c66) - **trino**: add JSON_VALUE function support with RETURNING clause *(PR [#5590](https://github.com/tobymao/sqlglot/pull/5590) by [@rev-rwasilewski](https://github.com/rev-rwasilewski))*
+- [`9e95c11`](https://github.com/tobymao/sqlglot/commit/9e95c115ea0304d9ccb4cb0be8389f5ff5f2a952) - **exasol**: mapped weekofyear to week in Exasol dialect *(PR [#5594](https://github.com/tobymao/sqlglot/pull/5594) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`8f013c3`](https://github.com/tobymao/sqlglot/commit/8f013c37a412ca5978889c1e47b0c6f7add0715d) - **singlestore**: Fixed parsing of DATE function *(PR [#5601](https://github.com/tobymao/sqlglot/pull/5601) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`a4a299a`](https://github.com/tobymao/sqlglot/commit/a4a299acbaf4461f0c2b470bc4e9e9590515eda7) - transpile `TO_CHAR` from Dremio to Databricks *(PR [#5598](https://github.com/tobymao/sqlglot/pull/5598) by [@jasonthomassql](https://github.com/jasonthomassql))*
+- [`093f35c`](https://github.com/tobymao/sqlglot/commit/093f35c201c3c22c3a14c6f8de26c06246bdf19c) - **dremio**: handle `DATE_FORMAT`, `TO_DATE`, and `TO_TIMESTAMP` *(PR [#5597](https://github.com/tobymao/sqlglot/pull/5597) by [@jasonthomassql](https://github.com/jasonthomassql))*
+
+### :bug: Bug Fixes
+- [`d0d62ed`](https://github.com/tobymao/sqlglot/commit/d0d62ede6320b3fd0eee04b7073f5708676dc58c) - **dremio**: support `TO_CHAR` with numeric inputs *(PR [#5570](https://github.com/tobymao/sqlglot/pull/5570) by [@jasonthomassql](https://github.com/jasonthomassql))*
+- [`7928985`](https://github.com/tobymao/sqlglot/commit/7928985a655c3d0244bc9175a37f502b19a5c5f0) - **bigquery**: allow dashes in JSONPath keys *(PR [#5574](https://github.com/tobymao/sqlglot/pull/5574) by [@georgesittas](https://github.com/georgesittas))*
+- [`866042d`](https://github.com/tobymao/sqlglot/commit/866042d0268da0cebce042c0868878c0fb39c3d1) - Remove TokenType.APPLY from table alias tokens *(PR [#5592](https://github.com/tobymao/sqlglot/pull/5592) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5591](https://github.com/tobymao/sqlglot/issues/5591) opened by [@saadbelgi](https://github.com/saadbelgi)*
+- [`b485f66`](https://github.com/tobymao/sqlglot/commit/b485f6666fa8625b7da45ef832b5d666fbb707ea) - **dremio**: improve `TO_CHAR` transpilability *(PR [#5580](https://github.com/tobymao/sqlglot/pull/5580) by [@jasonthomassql](https://github.com/jasonthomassql))*
+- [`81874e9`](https://github.com/tobymao/sqlglot/commit/81874e9c3aafcc2cf8fb443f65146c5b3598b9b3) - handle unknown types in `unit_to_str` *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`173e442`](https://github.com/tobymao/sqlglot/commit/173e4425b692728abffa8542324690823f984303) - refactor JSON_VALUE handling for MySQL and Trino *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.7.0] - 2025-08-13
 ### :boom: BREAKING CHANGES
 - due to [`938f4b6`](https://github.com/tobymao/sqlglot/commit/938f4b6ebc1c0d26bd3c1400883978c79a435189) - annotate type for LAST_DAY *(PR [#5528](https://github.com/tobymao/sqlglot/pull/5528) by [@geooo109](https://github.com/geooo109))*:
@@ -8702,3 +8770,4 @@ Changelog
 [v27.5.1]: https://github.com/tobymao/sqlglot/compare/v27.5.0...v27.5.1
 [v27.6.0]: https://github.com/tobymao/sqlglot/compare/v27.5.1...v27.6.0
 [v27.7.0]: https://github.com/tobymao/sqlglot/compare/v27.6.0...v27.7.0
+[v27.8.0]: https://github.com/tobymao/sqlglot/compare/v27.7.0...v27.8.0

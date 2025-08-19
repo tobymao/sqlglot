@@ -334,7 +334,7 @@
 <p>Structured syntax errors are accessible for programmatic use:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn"><a href="sqlglot/errors.html">sqlglot.errors</a></span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n"><a href="#transpile">sqlglot.transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT foo FROM (SELECT baz FROM t&quot;</span><span class="p">)</span>
 <span class="k">except</span> <span class="n"><a href="sqlglot/errors.html#ParseError">sqlglot.errors.ParseError</a></span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>

@@ -1691,12 +1691,13 @@ def date_delta_to_binary_interval_op(
 
 def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
     unit = expression.args.get("unit")
+    if not unit:
+        return exp.Literal.string(default) if default else None
 
-    if isinstance(unit, exp.Placeholder):
+    if isinstance(unit, exp.Placeholder) or type(unit) not in (exp.Var, exp.Literal):
         return unit
-    if unit:
-        return exp.Literal.string(unit.name)
-    return exp.Literal.string(default) if default else None
+
+    return exp.Literal.string(unit.name)
 
 
 def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:

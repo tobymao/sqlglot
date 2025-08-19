@@ -1,4 +1,4 @@
-from sqlglot import exp, transpile
+from sqlglot import exp, transpile, parse_one
 from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
@@ -385,3 +385,15 @@ class TestDatabricks(Validator):
         self.validate_identity(
             """CREATE FUNCTION a() ENVIRONMENT (dependencies = '["foo1==1", "foo2==2"]', environment_version = 'None')"""
         )
+
+    def test_to_char_is_numeric_transpile_to_cast(self):
+        # The input SQL simulates a TO_CHAR with is_numeric flag set (from dremio dialect)
+        sql = "SELECT TO_CHAR(12345, '#')"
+        expression = parse_one(sql, read="dremio")
+
+        to_char_exp = expression.find(exp.ToChar)
+        assert to_char_exp is not None
+        assert to_char_exp.args.get("is_numeric") is True
+
+        result = transpile(sql, read="dremio", write="databricks")[0]
+        assert "CAST(12345 AS STRING)" in result

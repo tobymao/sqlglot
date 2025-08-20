@@ -1016,3 +1016,16 @@ class TestParser(unittest.TestCase):
             parse_one("select * from tbl pivot(col1 for col2 in (val1, val1))")
 
         self.assertIn("Expecting an aggregation function in PIVOT", str(ctx.exception))
+
+    def test_multiple_query_modifiers(self):
+        sql = "SELECT * FROM a WHERE b = 'true' AND c > 50 WHERE c = 'false'"
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql)
+
+        self.assertIn("Found multiple 'WHERE' clauses. Line 1, Col: 49.", str(ctx.exception))
+
+        self.assertEqual(
+            parse_one(sql, error_level=ErrorLevel.IGNORE).sql(),
+            "SELECT * FROM a WHERE c = 'false'",
+        )

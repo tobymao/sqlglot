@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
@@ -96,6 +97,13 @@ class SingleStore(MySQL):
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%W")),
+            ),
+            "HOUR": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=seq_get(args, 0),
+                    format=MySQL.format_time(exp.Literal.string("%k")),
+                ),
+                DataType.Type.INT,
             ),
         }
 

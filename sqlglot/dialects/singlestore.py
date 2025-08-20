@@ -1,4 +1,4 @@
-from sqlglot import TokenType, parser
+from sqlglot import TokenType
 import typing as t
 
 from sqlglot import exp
@@ -51,7 +51,7 @@ class SingleStore(MySQL):
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **MySQL.Parser.FUNCTIONS,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
@@ -139,6 +139,13 @@ class SingleStore(MySQL):
                 expression=exp.Literal.number(7),
             ),
             "DAY": lambda args: exp.Day(this=seq_get(args, 0)),
+            "TO_DAYS": exp.ToDays.from_arg_list,
+            "WEEK": exp.Week.from_arg_list,
+            "WEEKOFYEAR": exp.WeekOfYear.from_arg_list,
+            "YEAR": exp.Year.from_arg_list,
+            "MONTH": exp.Month.from_arg_list,
+            "DAYOFWEEK": exp.DayOfWeek.from_arg_list,
+            "DAYOFYEAR": exp.DayOfYear.from_arg_list,
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}

@@ -249,3 +249,10 @@ class TestSingleStore(Validator):
                 "": "SELECT WEEK_OF_YEAR('2014-04-18')",
             },
         )
+        self.validate_identity("SELECT TO_DAYS('1901-01-01')")
+        self.validate_identity("SELECT WEEK('2009-02-13 23:31:30', 7)")
+        self.validate_identity("SELECT WEEKOFYEAR('2009-02-13 23:31:30')")
+        self.validate_identity("SELECT YEAR('2009-02-13')")
+        self.validate_identity("SELECT MONTH('2009-02-13')")
+        self.validate_identity("SELECT DAYOFWEEK('2014-04-18')")
+        self.validate_identity("SELECT DAYOFYEAR('2014-04-18')")

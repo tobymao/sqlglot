@@ -100,7 +100,17 @@ class SingleStore(MySQL):
             ),
             "HOUR": lambda args: exp.cast(
                 exp.TimeToStr(
-                    this=seq_get(args, 0),
+                    # The first argument is converted to TIME(6)
+                    # This is needed because exp.TimeToStr is converted to DATE_FORMAT
+                    # which interprets the first argument as DATETIME and fails to parse
+                    # string literals like '12:05:47' without a date part.
+                    this=exp.Cast(
+                        this=seq_get(args, 0),
+                        to=exp.DataType.build(
+                            exp.DataType.Type.TIME,
+                            expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
+                        ),
+                    ),
                     format=MySQL.format_time(exp.Literal.string("%k")),
                 ),
                 DataType.Type.INT,

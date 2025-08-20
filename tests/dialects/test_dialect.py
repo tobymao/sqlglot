@@ -978,7 +978,7 @@ class TestDialect(Validator):
             "DATE_ADD(x, 1, 'DAY')",
             read={
                 "snowflake": "DATEADD('DAY', 1, x)",
-                "dremio": "DATE_ADD(x, 1)",
+                "dremio": "DATE_ADD(x, CAST(1 AS INTERVAL DAY))",
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -995,7 +995,7 @@ class TestDialect(Validator):
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "tsql": "DATEADD(DAY, 1, x)",
                 "doris": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "dremio": "DATE_ADD(x, 1)",
+                "dremio": "DATE_ADD(x, CAST(1 AS INTERVAL DAY))",
             },
         )
         self.validate_all(

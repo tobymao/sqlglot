@@ -8,8 +8,8 @@ from sqlglot.dialects.dialect import (
     Dialect,
     build_timetostr_or_tochar,
     build_formatted_time,
+    build_date_delta,
     rename_func,
-    unit_to_var,
 )
 from sqlglot.helper import seq_get
 
@@ -20,21 +20,19 @@ DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 
 def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str]:
-    def _delta_sql(self: Dremio.Generator, expression: DATE_DELTA) -> str:
-        unit = expression.text("unit")
+    def _delta_sql(self, expression):
+        this_sql = self.sql(expression, "this")
 
-        if not unit or unit.upper() == "DAY":
-            return self.func(name, expression.this, expression.expression)
+        # If there is a 'unit' argument, serialize as CAST(expression AS INTERVAL unit)
+        unit = expression.args.get("unit")
+        expr = expression.args.get("expression")
 
-        # to support units we need to use TIMESTAMPADD function
-        increment = expression.expression
-        if isinstance(expression, exp.DateSub):
-            if isinstance(increment, exp.Literal):
-                value = increment.to_py() if increment.is_number else int(increment.name)
-                increment = exp.Literal.number(value * -1)
-            else:
-                increment *= exp.Literal.number(-1)
-        return self.func("TIMESTAMPADD", unit_to_var(expression), increment, expression.this)
+        if unit:
+            interval_sql = f"CAST({self.sql(expr)} AS INTERVAL {unit.name.upper()})"
+        else:
+            interval_sql = self.sql(expr)
+
+        return f"{name}({this_sql}, {interval_sql})"
 
     return _delta_sql
 
@@ -51,34 +49,40 @@ def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeTo
 
 
 def build_date_delta_with_cast_interval(expression_class: t.Type[DATE_DELTA]):
+    fallback_builder = build_date_delta(expression_class)  # existing 3-arg handler
+
     def _builder(args):
-        date_arg, interval_arg = args
+        if len(args) == 2:
+            date_arg, interval_arg = args
 
-        if isinstance(interval_arg, exp.Cast):
-            to_type = interval_arg.args.get("to")
-            if isinstance(to_type, exp.DataType):
-                type_str = str(to_type).upper()
-                if type_str.startswith("INTERVAL"):
-                    parts = type_str.split()
-                    if len(parts) < 2:
-                        raise ParseError(f"Missing unit in interval cast: {type_str}")
-                    unit = parts[1]
-                    return expression_class(
-                        this=date_arg,
-                        expression=interval_arg.this,
-                        unit=exp.var(unit),
-                    )
-                raise ParseError(f"Expected INTERVAL cast but got: {type_str}")
-            raise ParseError(f"Unexpected cast type: {to_type}")
+            if isinstance(interval_arg, exp.Cast):
+                to_type = interval_arg.args.get("to")
+                if isinstance(to_type, exp.DataType):
+                    type_str = str(to_type).upper()
+                    if type_str.startswith("INTERVAL"):
+                        parts = type_str.split()
+                        if len(parts) < 2:
+                            raise ParseError(f"Missing unit in interval cast: {type_str}")
+                        unit = parts[1]
+                        return expression_class(
+                            this=date_arg,
+                            expression=interval_arg.this,
+                            unit=exp.var(unit),
+                        )
+                    raise ParseError(f"Expected INTERVAL cast but got: {type_str}")
+                raise ParseError(f"Unexpected cast type: {to_type}")
 
-        if isinstance(interval_arg, exp.Interval):
-            return expression_class(
-                this=date_arg,
-                expression=interval_arg.args["this"],
-                unit=interval_arg.args["unit"],
-            )
+            if isinstance(interval_arg, exp.Interval):
+                return expression_class(
+                    this=date_arg,
+                    expression=interval_arg.args["this"],
+                    unit=interval_arg.args["unit"],
+                )
 
-        return expression_class(this=date_arg, expression=interval_arg)
+            return expression_class(this=date_arg, expression=interval_arg)
+
+        # fallback for 3 or more args
+        return fallback_builder(args)
 
     return _builder
 
@@ -184,6 +188,7 @@ class Dremio(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
+            # exp.DateSub: _date_delta_sql("TIMESTAMPADD"),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

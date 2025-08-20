@@ -658,6 +658,8 @@ class TSQL(Dialect):
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
 
+        SET_OP_MODIFIERS = {"order", "offset"}
+
         def _parse_alter_table_set(self) -> exp.AlterSet:
             return self._parse_wrapped(super()._parse_alter_table_set)
 

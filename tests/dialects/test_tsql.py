@@ -8,9 +8,11 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
-        self.validate_identity(
-            "with x as (select 1) select * from x union select * from x order by 1 limit 0",
+        self.validate_all(
             "WITH x AS (SELECT 1 AS [1]) SELECT TOP 0 * FROM (SELECT * FROM x UNION SELECT * FROM x) AS _l_0 ORDER BY 1",
+            read={
+                "": "WITH x AS (SELECT 1) SELECT * FROM x UNION SELECT * FROM x ORDER BY 1 LIMIT 0",
+            },
         )
 
         # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
@@ -40,6 +42,9 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
         self.validate_identity(
+            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2"
+        )
+        self.validate_identity(
             "SELECT TOP 10 s.RECORDID, n.c.VALUE('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s(nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)"
         )
         self.validate_identity(
@@ -53,6 +58,10 @@ class TestTSQL(Validator):
         )
         self.validate_identity(
             "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
+        )
+        self.validate_identity(
+            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2 ORDER BY a DESC",
+            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT * FROM (SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2) AS _l_0 ORDER BY a DESC",
         )
         self.validate_identity(
             'SELECT 1 AS "[x]"',

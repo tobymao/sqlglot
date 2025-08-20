@@ -160,10 +160,11 @@ class Doris(MySQL):
             method = self._parse_var(upper=True)
 
             trigger = None
-            if self._match_text_seq("ON"):
-                if self._match_text_seq("MANUAL"):
-                    trigger = self.expression(exp.RefreshTrigger, kind=exp.var("MANUAL"))
-                elif self._match_text_seq("COMMIT"):
+            # MANUAL has no leading ON
+            if self._match_text_seq("MANUAL"):
+                trigger = self.expression(exp.RefreshTrigger, kind=exp.var("MANUAL"))
+            elif self._match_text_seq("ON"):
+                if self._match_text_seq("COMMIT"):
                     trigger = self.expression(exp.RefreshTrigger, kind=exp.var("COMMIT"))
                 elif self._match_text_seq("SCHEDULE"):
                     self._match_text_seq("EVERY")
@@ -788,6 +789,9 @@ class Doris(MySQL):
             if not kind:
                 return ""
             kind_text = kind.name
+            if kind_text == "MANUAL":
+                # MANUAL has no ON prefix
+                return "MANUAL"
             if kind_text == "SCHEDULE":
                 every = self.sql(expression, "every")
                 unit = self.sql(expression, "unit")

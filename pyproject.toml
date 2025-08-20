@@ -4,6 +4,7 @@ dynamic = ["version", "optional-dependencies"]
 description = "An easily customizable SQL parser and transpiler"
 readme = "README.md"
 authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
+license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">= 3.9"
 classifiers = [

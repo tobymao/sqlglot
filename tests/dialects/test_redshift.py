@@ -325,6 +325,14 @@ class TestRedshift(Validator):
             },
         )
 
+        self.validate_all(
+            "CREATE TABLE t1 (col BIT, id UUID, tiny TINYINT)",
+            write={
+                "redshift": "CREATE TABLE t1 (col BOOLEAN, id CHAR(36), tiny SMALLINT)",
+                "tsql": "CREATE TABLE t1 (col BIT, id UNIQUEIDENTIFIER, tiny TINYINT)"
+            }
+        )
+
     def test_identity(self):
         self.validate_identity("ALTER TABLE table_name ALTER COLUMN bla TYPE VARCHAR")
         self.validate_identity("SELECT CAST(value AS FLOAT(8))")

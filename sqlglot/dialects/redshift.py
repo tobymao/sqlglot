@@ -166,15 +166,21 @@ class Redshift(Postgres):
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "
 
+        # https://docs.aws.amazon.com/redshift/latest/dg/c_Supported_data_types.html
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
+            exp.DataType.Type.BIT: "BOOLEAN",
             exp.DataType.Type.BINARY: "VARBYTE",
             exp.DataType.Type.BLOB: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.TINYINT: "SMALLINT", # The smallest numeric data type in Redshift is SMALLINT
+            exp.DataType.Type.UTINYINT: "SMALLINT",
+            exp.DataType.Type.FLOAT: "FLOAT",
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.ROWVERSION: "VARBYTE",
+            exp.DataType.Type.UUID: "CHAR(36)", # There is no equivalent UUID type so just use the 36 chars directly
         }
 
         TRANSFORMS = {

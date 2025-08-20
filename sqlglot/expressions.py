@@ -2790,6 +2790,13 @@ class BackupProperty(Property):
     arg_types = {"this": True}
 
 
+# https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW/
+# Doris MATERIALIZED VIEW: BUILD <build_mode>
+class BuildProperty(Property):
+    # this -> build_mode: IMMEDIATE | DEFERRED
+    arg_types = {"this": True}
+
+
 class BlockCompressionProperty(Property):
     arg_types = {
         "autotemp": False,
@@ -3029,6 +3036,17 @@ class PartitionByRangeProperty(Property):
 # https://docs.starrocks.io/docs/table_design/data_distribution/#range-partitioning
 class PartitionByRangePropertyDynamic(Expression):
     arg_types = {"this": False, "start": True, "end": True, "every": True}
+
+
+# https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
+class RefreshTrigger(Expression):
+    # kind: MANUAL | COMMIT | SCHEDULE, every: int, unit: var, starts: string
+    arg_types = {"kind": True, "every": False, "unit": False, "starts": False}
+
+
+class RefreshProperty(Property):
+    # method: COMPLETE | AUTO, trigger: RefreshTrigger
+    arg_types = {"method": True, "trigger": False}
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/

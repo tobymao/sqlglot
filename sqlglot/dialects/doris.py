@@ -66,6 +66,8 @@ class Doris(MySQL):
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
+            "BUILD": lambda self: self._parse_build_property(),
+            "REFRESH": lambda self: self._parse_refresh_property(),
         }
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
@@ -128,6 +130,37 @@ class Doris(MySQL):
                 create_expressions=create_expressions,
             )
 
+        def _parse_build_property(self) -> exp.BuildProperty:
+            mode = self._parse_var(upper=True)
+            return self.expression(exp.BuildProperty, this=mode)
+
+        def _parse_refresh_property(self) -> exp.RefreshProperty:
+            method = self._parse_var(upper=True)
+
+            trigger = None
+            # MANUAL has no leading ON
+            if self._match_text_seq("MANUAL"):
+                trigger = self.expression(exp.RefreshTrigger, kind=exp.var("MANUAL"))
+            elif self._match_text_seq("ON"):
+                if self._match_text_seq("COMMIT"):
+                    trigger = self.expression(exp.RefreshTrigger, kind=exp.var("COMMIT"))
+                elif self._match_text_seq("SCHEDULE"):
+                    self._match_text_seq("EVERY")
+                    every = self._parse_number()
+                    unit = self._parse_var(any_token=True)
+                    starts = None
+                    if self._match_text_seq("STARTS"):
+                        starts = self._parse_string()
+                    trigger = self.expression(
+                        exp.RefreshTrigger,
+                        kind=exp.var("SCHEDULE"),
+                        every=every,
+                        unit=unit,
+                        starts=starts,
+                    )
+
+            return self.expression(exp.RefreshProperty, method=method, trigger=trigger)
+
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
         VARCHAR_REQUIRES_SIZE = False
@@ -146,6 +179,8 @@ class Doris(MySQL):
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RefreshProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -724,3 +759,28 @@ class Doris(MySQL):
 
         def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
             return super().alterrename_sql(expression, include_to=False)
+
+        def buildproperty_sql(self, expression: exp.BuildProperty) -> str:
+            return f"BUILD {self.sql(expression, 'this')}"
+
+        def refreshtrigger_sql(self, expression: exp.RefreshTrigger) -> str:
+            kind = expression.args.get("kind")
+            if not kind:
+                return ""
+            kind_text = kind.name
+            if kind_text == "MANUAL":
+                # MANUAL has no ON prefix
+                return "MANUAL"
+            if kind_text == "SCHEDULE":
+                every = self.sql(expression, "every")
+                unit = self.sql(expression, "unit")
+                starts = self.sql(expression, "starts")
+                starts = f" STARTS {starts}" if starts else ""
+                return f"ON SCHEDULE EVERY {every} {unit}{starts}"
+            return f"ON {kind_text}"
+
+        def refreshproperty_sql(self, expression: exp.RefreshProperty) -> str:
+            method = self.sql(expression, "method")
+            trigger = self.sql(expression, "trigger")
+            trigger = f" {trigger}" if trigger else ""
+            return f"REFRESH {method}{trigger}"

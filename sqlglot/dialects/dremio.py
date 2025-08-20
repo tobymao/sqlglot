@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing as t
-
+from sqlglot.errors import ParseError
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
@@ -48,6 +48,39 @@ def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeTo
         expression.set("is_numeric", True)
 
     return expression
+
+
+def build_date_delta_with_cast_interval(expression_class: t.Type[DATE_DELTA]):
+    def _builder(args):
+        date_arg, interval_arg = args
+
+        if isinstance(interval_arg, exp.Cast):
+            to_type = interval_arg.args.get("to")
+            if isinstance(to_type, exp.DataType):
+                type_str = str(to_type).upper()
+                if type_str.startswith("INTERVAL"):
+                    parts = type_str.split()
+                    if len(parts) < 2:
+                        raise ParseError(f"Missing unit in interval cast: {type_str}")
+                    unit = parts[1]
+                    return expression_class(
+                        this=date_arg,
+                        expression=interval_arg.this,
+                        unit=exp.var(unit),
+                    )
+                raise ParseError(f"Expected INTERVAL cast but got: {type_str}")
+            raise ParseError(f"Unexpected cast type: {to_type}")
+
+        if isinstance(interval_arg, exp.Interval):
+            return expression_class(
+                this=date_arg,
+                expression=interval_arg.args["this"],
+                unit=interval_arg.args["unit"],
+            )
+
+        return expression_class(this=date_arg, expression=interval_arg)
+
+    return _builder
 
 
 class Dremio(Dialect):
@@ -116,6 +149,9 @@ class Dremio(Dialect):
             "TO_CHAR": to_char_is_numeric_handler,
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
+            "TO_TIMESTAMP": build_formatted_time(exp.TimeStrToTime, "dremio"),
+            "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
+            "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
         }
 
     class Generator(generator.Generator):

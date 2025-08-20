@@ -2790,6 +2790,24 @@ class BackupProperty(Property):
     arg_types = {"this": True}
 
 
+# https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW/
+# Doris MATERIALIZED VIEW: BUILD <build_mode>
+class BuildProperty(Property):
+    # this -> build_mode: IMMEDIATE | DEFERRED
+    arg_types = {"this": True}
+
+
+# Doris MATERIALIZED VIEW: REFRESH <refresh_method> [<refresh_trigger>]
+class RefreshTrigger(Expression):
+    # kind: MANUAL | COMMIT | SCHEDULE, every: int, unit: var, starts: string
+    arg_types = {"kind": True, "every": False, "unit": False, "starts": False}
+
+
+class RefreshProperty(Property):
+    # method: COMPLETE | AUTO, trigger: RefreshTrigger
+    arg_types = {"method": True, "trigger": False}
+
+
 class BlockCompressionProperty(Property):
     arg_types = {
         "autotemp": False,
@@ -3033,7 +3051,17 @@ class PartitionByRangePropertyDynamic(Expression):
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
 class UniqueKeyProperty(Property):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "unique": False}
+
+
+# Doris: PARTITION BY LIST
+class PartitionByListProperty(Property):
+    arg_types = {"partition_expressions": True, "create_expressions": True}
+
+
+class PartitionList(Expression):
+    # this -> partition name, expressions -> list of values/groups
+    arg_types = {"this": True, "expressions": True}
 
 
 # https://www.postgresql.org/docs/current/sql-createtable.html

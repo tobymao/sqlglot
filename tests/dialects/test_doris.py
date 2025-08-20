@@ -144,6 +144,10 @@ class TestDoris(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (DATE_TRUNC(c2, 'MONTH'))"
         )
+        # LIST partitioning
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT) PARTITION BY LIST (`c1`) (PARTITION p1 VALUES IN (1, 2), PARTITION p2 VALUES IN (3))"
+        )
 
     def test_table_alias_conversion(self):
         """Test conversion from postgres to Doris for DELETE/UPDATE statements with table aliases."""
@@ -228,4 +232,21 @@ class TestDoris(Validator):
                 "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
                 "doris": "ALTER TABLE db.t1 RENAME t2",
             },
+        )
+
+    def test_materialized_view_properties(self):
+        # BUILD modes
+        self.validate_identity("CREATE MATERIALIZED VIEW mv BUILD IMMEDIATE AS SELECT 1")
+        self.validate_identity("CREATE MATERIALIZED VIEW mv BUILD DEFERRED AS SELECT 1")
+
+        # REFRESH methods with triggers
+        self.validate_identity("CREATE MATERIALIZED VIEW mv REFRESH COMPLETE ON MANUAL AS SELECT 1")
+        self.validate_identity("CREATE MATERIALIZED VIEW mv REFRESH AUTO ON COMMIT AS SELECT 1")
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW mv REFRESH AUTO ON SCHEDULE EVERY 5 MINUTE STARTS '2025-01-01 00:00:00' AS SELECT 1"
+        )
+
+        # Combined BUILD and REFRESH
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW mv BUILD DEFERRED REFRESH AUTO ON SCHEDULE EVERY 10 MINUTE AS SELECT 1"
         )

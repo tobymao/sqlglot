@@ -66,6 +66,8 @@ class Doris(MySQL):
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
+            "BUILD": lambda self: self._parse_build_property(),
+            "REFRESH": lambda self: self._parse_refresh_property(),
         }
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
@@ -104,10 +106,32 @@ class Doris(MySQL):
             part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
             return self.expression(exp.Partition, expressions=[part_range])
 
+        def _parse_partition_definition_list(self) -> exp.Partition:
+            # PARTITION <name> VALUES IN (<value_csv>)
+            self._match_text_seq("PARTITION")
+            name = self._parse_id_var()
+            self._match_text_seq("VALUES")
+            self._match(TokenType.IN)
+            values = self._parse_wrapped_csv(self._parse_expression)
+            part_list = self.expression(exp.PartitionList, this=name, expressions=values)
+            return self.expression(exp.Partition, expressions=[part_list])
+
         def _parse_partition_by_opt_range(
             self,
-        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
+        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty:
             if not self._match_text_seq("RANGE"):
+                # Support LIST
+                if self._match_text_seq("LIST"):
+                    partition_expressions = self._parse_wrapped_id_vars()
+                    # Parse a list of PARTITION ... VALUES IN (...)
+                    create_expressions = self._parse_wrapped_csv(
+                        self._parse_partition_definition_list
+                    )
+                    return self.expression(
+                        exp.PartitionByListProperty,
+                        partition_expressions=partition_expressions,
+                        create_expressions=create_expressions,
+                    )
                 return super()._parse_partitioned_by()
 
             partition_expressions = self._parse_wrapped_id_vars()
@@ -118,7 +142,7 @@ class Doris(MySQL):
             elif self._match_text_seq("PARTITION", advance=False):
                 create_expressions = self._parse_csv(self._parse_partition_definition)
             else:
-                create_expressions = None
+                create_expressions = []
 
             self._match_r_paren()
 
@@ -127,6 +151,36 @@ class Doris(MySQL):
                 partition_expressions=partition_expressions,
                 create_expressions=create_expressions,
             )
+
+        def _parse_build_property(self) -> exp.BuildProperty:
+            mode = self._parse_var(upper=True)
+            return self.expression(exp.BuildProperty, this=mode)
+
+        def _parse_refresh_property(self) -> exp.RefreshProperty:
+            method = self._parse_var(upper=True)
+
+            trigger = None
+            if self._match_text_seq("ON"):
+                if self._match_text_seq("MANUAL"):
+                    trigger = self.expression(exp.RefreshTrigger, kind=exp.var("MANUAL"))
+                elif self._match_text_seq("COMMIT"):
+                    trigger = self.expression(exp.RefreshTrigger, kind=exp.var("COMMIT"))
+                elif self._match_text_seq("SCHEDULE"):
+                    self._match_text_seq("EVERY")
+                    every = self._parse_number()
+                    unit = self._parse_var(any_token=True)
+                    starts = None
+                    if self._match_text_seq("STARTS"):
+                        starts = self._parse_string()
+                    trigger = self.expression(
+                        exp.RefreshTrigger,
+                        kind=exp.var("SCHEDULE"),
+                        every=every,
+                        unit=unit,
+                        starts=starts,
+                    )
+
+            return self.expression(exp.RefreshProperty, method=method, trigger=trigger)
 
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
@@ -146,6 +200,9 @@ class Doris(MySQL):
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RefreshProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -664,7 +721,7 @@ class Doris(MySQL):
 
         def partition_sql(self, expression: exp.Partition) -> str:
             parent = expression.parent
-            if isinstance(parent, exp.PartitionByRangeProperty):
+            if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
                 return ", ".join(self.sql(e) for e in expression.expressions)
             return super().partition_sql(expression)
 
@@ -685,7 +742,9 @@ class Doris(MySQL):
 
             return f"PARTITION {name} VALUES LESS THAN ({self.sql(values[0])})"
 
-        def partitionbyrangepropertydynamic_sql(self, expression):
+        def partitionbyrangepropertydynamic_sql(
+            self, expression: exp.PartitionByRangePropertyDynamic
+        ):
             # Generates: FROM ("start") TO ("end") INTERVAL N UNIT
             start = self.sql(expression, "start")
             end = self.sql(expression, "end")
@@ -699,7 +758,7 @@ class Doris(MySQL):
 
             return f"FROM ({start}) TO ({end}) {interval}"
 
-        def partitionbyrangeproperty_sql(self, expression):
+        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty):
             partition_expressions = ", ".join(
                 self.sql(e) for e in expression.args.get("partition_expressions") or []
             )
@@ -707,6 +766,41 @@ class Doris(MySQL):
             # Handle both static and dynamic partition definitions
             create_sql = ", ".join(self.sql(e) for e in create_expressions)
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
+
+        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty):
+            partition_expressions = ", ".join(
+                self.sql(e) for e in expression.args.get("partition_expressions") or []
+            )
+            create_expressions = expression.args.get("create_expressions") or []
+            create_sql = ", ".join(self.sql(e) for e in create_expressions)
+            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
+
+        def partitionlist_sql(self, expression: exp.PartitionList) -> str:
+            name = self.sql(expression, "this")
+            values = ", ".join(self.sql(v) for v in expression.expressions)
+            return f"PARTITION {name} VALUES IN ({values})"
+
+        def buildproperty_sql(self, expression: exp.BuildProperty) -> str:
+            return f"BUILD {self.sql(expression, 'this')}"
+
+        def refreshtrigger_sql(self, expression: exp.RefreshTrigger) -> str:
+            kind = expression.args.get("kind")
+            if not kind:
+                return ""
+            kind_text = kind.name
+            if kind_text == "SCHEDULE":
+                every = self.sql(expression, "every")
+                unit = self.sql(expression, "unit")
+                starts = self.sql(expression, "starts")
+                starts = f" STARTS {starts}" if starts else ""
+                return f"ON SCHEDULE EVERY {every} {unit}{starts}"
+            return f"ON {kind_text}"
+
+        def refreshproperty_sql(self, expression: exp.RefreshProperty) -> str:
+            method = self.sql(expression, "method")
+            trigger = self.sql(expression, "trigger")
+            trigger = f" {trigger}" if trigger else ""
+            return f"REFRESH {method}{trigger}"
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             node = expression.this

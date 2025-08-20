@@ -3533,10 +3533,17 @@ class Parser(metaclass=_Parser):
 
             while True:
                 if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
-                    parser = self.QUERY_MODIFIER_PARSERS[self._curr.token_type]
+                    modifier_token = self._curr
+                    parser = self.QUERY_MODIFIER_PARSERS[modifier_token.token_type]
                     key, expression = parser(self)
 
                     if expression:
+                        if this.args.get(key):
+                            self.raise_error(
+                                f"Found multiple '{modifier_token.text.upper()}' clauses",
+                                token=modifier_token,
+                            )
+
                         this.set(key, expression)
                         if key == "limit":
                             offset = expression.args.pop("offset", None)

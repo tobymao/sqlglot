@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
@@ -96,6 +97,23 @@ class SingleStore(MySQL):
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%W")),
+            ),
+            "HOUR": lambda args: exp.cast(
+                exp.TimeToStr(
+                    # The first argument is converted to TIME(6)
+                    # This is needed because exp.TimeToStr is converted to DATE_FORMAT
+                    # which interprets the first argument as DATETIME and fails to parse
+                    # string literals like '12:05:47' without a date part.
+                    this=exp.Cast(
+                        this=seq_get(args, 0),
+                        to=exp.DataType.build(
+                            exp.DataType.Type.TIME,
+                            expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
+                        ),
+                    ),
+                    format=MySQL.format_time(exp.Literal.string("%k")),
+                ),
+                DataType.Type.INT,
             ),
         }
 

@@ -3533,24 +3533,16 @@ class Parser(metaclass=_Parser):
 
             while True:
                 if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
-                    modifier_index = self._index
-                    modifier_name = self._curr.text.upper()
-
-                    parser = self.QUERY_MODIFIER_PARSERS[self._curr.token_type]
+                    modifier_token = self._curr
+                    parser = self.QUERY_MODIFIER_PARSERS[modifier_token.token_type]
                     key, expression = parser(self)
 
                     if expression:
                         if this.args.get(key):
-                            curr_index = self._index
-
-                            # Temporarily move the index back to highlight the modifier
-                            self._retreat(modifier_index)
-                            self.raise_error(f"Found multiple '{modifier_name}' clauses")
-
-                            # This resets it in case errors are being ignored. Not a common pattern,
-                            # but modifiers are used everywhere so making a bit more effort to ensure
-                            # things behave as expected in various code paths
-                            self._advance(curr_index - modifier_index)
+                            self.raise_error(
+                                f"Found multiple '{modifier_token.text.upper()}' clauses",
+                                token=modifier_token,
+                            )
 
                         this.set(key, expression)
                         if key == "limit":

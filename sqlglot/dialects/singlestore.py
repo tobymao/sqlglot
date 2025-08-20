@@ -93,6 +93,10 @@ class SingleStore(MySQL):
                 exp.JSONExtractScalar, json_type="BIGINT"
             ),
             "DATE": exp.Date.from_arg_list,
+            "DAYNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=MySQL.format_time(exp.Literal.string("%W")),
+            ),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}

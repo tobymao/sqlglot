@@ -193,3 +193,8 @@ class TestSingleStore(Validator):
                 "mysql": 'SELECT JSON_VALUE(\'{"item": "shoes", "price": "49.95"}\', \'$.price\' RETURNING DECIMAL(4, 2))'
             },
         )
+
+    def test_date_parts_functions(self):
+        self.validate_identity(
+            "SELECT DAYNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%W')"
+        )

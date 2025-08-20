@@ -198,3 +198,7 @@ class TestSingleStore(Validator):
         self.validate_identity(
             "SELECT DAYNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%W')"
         )
+        self.validate_identity(
+            "SELECT HOUR('2009-02-13 23:31:30')",
+            "SELECT DATE_FORMAT('2009-02-13 23:31:30' :> TIME(6), '%k') :> INT",
+        )

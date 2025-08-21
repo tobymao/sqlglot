@@ -14,6 +14,14 @@ from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
+def cast_to_time6(expression: exp.Expression):
+    return exp.Cast(
+        this=expression,
+        to=exp.DataType.build(
+            exp.DataType.Type.TIME,
+            expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
+        ),
+    )
 
 class SingleStore(MySQL):
     SUPPORTS_ORDER_BY_ALL = True
@@ -57,19 +65,27 @@ class SingleStore(MySQL):
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
             "STR_TO_DATE": build_formatted_time(exp.StrToDate, "mysql"),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
+            # The first argument of following functions is converted to TIME(6)
+            # This is needed because exp.TimeToStr is converted to DATE_FORMAT
+            # which interprets the first argument as DATETIME and fails to parse
+            # string literals like '12:05:47' without a date part.
             "TIME_FORMAT": lambda args: exp.TimeToStr(
-                # The first argument is converted to TIME(6)
-                # This is needed because exp.TimeToStr is converted to DATE_FORMAT
-                # which interprets the first argument as DATETIME and fails to parse
-                # string literals like '12:05:47' without a date part.
-                this=exp.Cast(
-                    this=seq_get(args, 0),
-                    to=exp.DataType.build(
-                        exp.DataType.Type.TIME,
-                        expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
-                    ),
-                ),
+                this=cast_to_time6(seq_get(args, 0)),
                 format=MySQL.format_time(seq_get(args, 1)),
+            ),
+            "HOUR": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=cast_to_time6(seq_get(args, 0)),
+                    format=MySQL.format_time(exp.Literal.string("%k")),
+                ),
+                DataType.Type.INT,
+            ),
+            "MICROSECOND": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=cast_to_time6(seq_get(args, 0)),
+                    format=MySQL.format_time(exp.Literal.string("%f")),
+                ),
+                DataType.Type.INT,
             ),
             "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
@@ -97,23 +113,6 @@ class SingleStore(MySQL):
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%W")),
-            ),
-            "HOUR": lambda args: exp.cast(
-                exp.TimeToStr(
-                    # The first argument is converted to TIME(6)
-                    # This is needed because exp.TimeToStr is converted to DATE_FORMAT
-                    # which interprets the first argument as DATETIME and fails to parse
-                    # string literals like '12:05:47' without a date part.
-                    this=exp.Cast(
-                        this=seq_get(args, 0),
-                        to=exp.DataType.build(
-                            exp.DataType.Type.TIME,
-                            expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
-                        ),
-                    ),
-                    format=MySQL.format_time(exp.Literal.string("%k")),
-                ),
-                DataType.Type.INT,
             ),
         }
 

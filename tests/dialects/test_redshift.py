@@ -329,8 +329,8 @@ class TestRedshift(Validator):
             "CREATE TABLE t1 (col BIT, id UUID, tiny TINYINT)",
             write={
                 "redshift": "CREATE TABLE t1 (col BOOLEAN, id CHAR(36), tiny SMALLINT)",
-                "tsql": "CREATE TABLE t1 (col BIT, id UNIQUEIDENTIFIER, tiny TINYINT)"
-            }
+                "tsql": "CREATE TABLE t1 (col BIT, id UNIQUEIDENTIFIER, tiny TINYINT)",
+            },
         )
 
     def test_identity(self):

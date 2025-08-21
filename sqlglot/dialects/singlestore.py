@@ -96,6 +96,8 @@ class SingleStore(MySQL):
                 ),
                 DataType.Type.INT,
             ),
+            "WEEKDAY": lambda args: exp.paren(exp.DayOfWeek(this=seq_get(args, 0)) + 5, copy=False)
+            % 7,
             "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
             "BSON_EXTRACT_BSON": build_json_extract_path(exp.JSONBExtract),

@@ -96,6 +96,10 @@ class SingleStore(MySQL):
                 ),
                 DataType.Type.INT,
             ),
+            "MONTHNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=MySQL.format_time(exp.Literal.string("%M")),
+            ),
             "WEEKDAY": lambda args: exp.paren(exp.DayOfWeek(this=seq_get(args, 0)) + 5, copy=False)
             % 7,
             "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,

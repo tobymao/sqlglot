@@ -3033,7 +3033,7 @@ class PartitionByRangePropertyDynamic(Expression):
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
 class UniqueKeyProperty(Property):
-    arg_types = {"expressions": True, "unique": False}
+    arg_types = {"expressions": True}
 
 
 # https://www.postgresql.org/docs/current/sql-createtable.html

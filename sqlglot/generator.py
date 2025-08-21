@@ -1137,14 +1137,14 @@ class Generator(metaclass=_Generator):
         if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
             exp.Properties.Location.POST_WITH
         ):
-            properties_sql = self.sql(
-                exp.Properties(
-                    expressions=[
-                        *properties_locs[exp.Properties.Location.POST_SCHEMA],
-                        *properties_locs[exp.Properties.Location.POST_WITH],
-                    ]
-                )
+            props_ast = exp.Properties(
+                expressions=[
+                    *properties_locs[exp.Properties.Location.POST_SCHEMA],
+                    *properties_locs[exp.Properties.Location.POST_WITH],
+                ]
             )
+            props_ast.parent = expression
+            properties_sql = self.sql(props_ast)
 
             if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
                 properties_sql = self.sep() + properties_sql
@@ -1670,8 +1670,14 @@ class Generator(metaclass=_Generator):
             elif p_loc == exp.Properties.Location.POST_SCHEMA:
                 root_properties.append(p)
 
-        root_props = self.root_properties(exp.Properties(expressions=root_properties))
-        with_props = self.with_properties(exp.Properties(expressions=with_properties))
+        root_props_ast = exp.Properties(expressions=root_properties)
+        root_props_ast.parent = expression.parent
+
+        with_props_ast = exp.Properties(expressions=with_properties)
+        with_props_ast.parent = expression.parent
+
+        root_props = self.root_properties(root_props_ast)
+        with_props = self.with_properties(with_props_ast)
 
         if root_props and with_props and not self.pretty:
             with_props = " " + with_props
@@ -4029,9 +4035,10 @@ class Generator(metaclass=_Generator):
         return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
-    def uniquekeyproperty_sql(self, expression: exp.UniqueKeyProperty) -> str:
-        key_word = "UNIQUE KEY" if expression.args.get("unique", True) else "KEY"
-        return f"{key_word} ({self.expressions(expression, flat=True)})"
+    def uniquekeyproperty_sql(
+        self, expression: exp.UniqueKeyProperty, prefix: str = "UNIQUE KEY"
+    ) -> str:
+        return f"{prefix} ({self.expressions(expression, flat=True)})"
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
     def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

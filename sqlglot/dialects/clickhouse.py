@@ -100,6 +100,10 @@ def _build_str_to_date(args: t.List) -> exp.Cast | exp.Anonymous:
     return exp.cast(strtodate, exp.DataType.build(exp.DataType.Type.DATETIME))
 
 
+def _build_type_conversion(to_type: exp.DataType.Type) -> t.Callable[[t.List], exp.Cast]:
+    return lambda args: exp.cast(seq_get(args, 0) or exp.Var(this=""), to_type)
+
+
 def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA], str]:
     def _delta_sql(self: Generator, expression: DATEΤΙΜΕ_DELTA) -> str:
         if not expression.unit:
@@ -305,8 +309,36 @@ class ClickHouse(Dialect):
         OPTIONAL_ALIAS_TOKEN_CTE = False
         JOINS_HAVE_EQUAL_PRECEDENCE = True
 
+        # https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions
+        TYPE_CONVERSION_FUNCTIONS = {
+            "TOBOOL": _build_type_conversion(exp.DataType.Type.BOOLEAN),
+            "TOINT8": _build_type_conversion(exp.DataType.Type.TINYINT),
+            "TOINT16": _build_type_conversion(exp.DataType.Type.SMALLINT),
+            "TOINT32": _build_type_conversion(exp.DataType.Type.INT),
+            "TOINT64": _build_type_conversion(exp.DataType.Type.BIGINT),
+            "TOINT128": _build_type_conversion(exp.DataType.Type.INT128),
+            "TOINT256": _build_type_conversion(exp.DataType.Type.INT256),
+            "TOUINT8": _build_type_conversion(exp.DataType.Type.UTINYINT),
+            "TOUINT16": _build_type_conversion(exp.DataType.Type.USMALLINT),
+            "TOUINT32": _build_type_conversion(exp.DataType.Type.UINT),
+            "TOUINT64": _build_type_conversion(exp.DataType.Type.UBIGINT),
+            "TOUINT128": _build_type_conversion(exp.DataType.Type.UINT128),
+            "TOUINT256": _build_type_conversion(exp.DataType.Type.UINT256),
+            "TOFLOAT32": _build_type_conversion(exp.DataType.Type.FLOAT),
+            "TOFLOAT64": _build_type_conversion(exp.DataType.Type.DOUBLE),
+            "TODATE": _build_type_conversion(exp.DataType.Type.DATE),
+            "TODATETIME": _build_type_conversion(exp.DataType.Type.DATETIME),
+            "TODATE32": _build_type_conversion(exp.DataType.Type.DATE32),
+            "TODATETIME64": _build_type_conversion(exp.DataType.Type.DATETIME64),
+            "TODECIMAL32": _build_type_conversion(exp.DataType.Type.DECIMAL32),
+            "TODECIMAL64": _build_type_conversion(exp.DataType.Type.DECIMAL64),
+            "TODECIMAL128": _build_type_conversion(exp.DataType.Type.DECIMAL128),
+            "TODECIMAL256": _build_type_conversion(exp.DataType.Type.DECIMAL256),
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            **TYPE_CONVERSION_FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,

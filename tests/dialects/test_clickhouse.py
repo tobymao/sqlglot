@@ -1428,3 +1428,35 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
         )
+
+    def test_type_conversion_functions(self):
+        self.assertTrue(
+            parse_one("toBool(x)", read="clickhouse")
+            .assert_is(exp.Cast)
+            .to.is_type(exp.DataType.Type.BOOLEAN)
+        )
+        self.assertTrue(
+            parse_one("toInt8(x)", read="clickhouse")
+            .assert_is(exp.Cast)
+            .to.is_type(exp.DataType.Type.TINYINT)
+        )
+        self.assertTrue(
+            parse_one("toUInt8(x)", read="clickhouse")
+            .assert_is(exp.Cast)
+            .to.is_type(exp.DataType.Type.UTINYINT)
+        )
+        self.assertTrue(
+            parse_one("toDate(x)", read="clickhouse")
+            .assert_is(exp.Cast)
+            .to.is_type(exp.DataType.Type.DATE)
+        )
+        self.assertTrue(
+            parse_one("toDateTime(x)", read="clickhouse")
+            .assert_is(exp.Cast)
+            .to.is_type(exp.DataType.Type.DATETIME)
+        )
+        self.assertTrue(
+            parse_one("toDecimal32(x)", read="clickhouse")
+            .assert_is(exp.Cast)
+            .to.is_type(exp.DataType.Type.DECIMAL32)
+        )

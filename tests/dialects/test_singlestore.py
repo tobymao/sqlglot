@@ -207,6 +207,9 @@ class TestSingleStore(Validator):
             "SELECT DATE_FORMAT('2009-02-13 23:31:30.123456' :> TIME(6), '%f') :> INT",
         )
         self.validate_identity(
+            "SELECT MONTHNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%M')"
+        )
+        self.validate_identity(
             "SELECT WEEKDAY('2014-04-18')", "SELECT (DAYOFWEEK('2014-04-18') + 5) % 7"
         )
         self.validate_identity(

@@ -206,3 +206,6 @@ class TestSingleStore(Validator):
             "SELECT MICROSECOND('2009-02-13 23:31:30.123456')",
             "SELECT DATE_FORMAT('2009-02-13 23:31:30.123456' :> TIME(6), '%f') :> INT",
         )
+        self.validate_identity(
+            "SELECT MONTHNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%M')"
+        )

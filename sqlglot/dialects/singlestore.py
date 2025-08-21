@@ -14,7 +14,8 @@ from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
-def cast_to_time6(expression: exp.Expression):
+
+def cast_to_time6(expression: t.Optional[exp.Expression]):
     return exp.Cast(
         this=expression,
         to=exp.DataType.build(
@@ -22,6 +23,7 @@ def cast_to_time6(expression: exp.Expression):
             expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
         ),
     )
+
 
 class SingleStore(MySQL):
     SUPPORTS_ORDER_BY_ALL = True

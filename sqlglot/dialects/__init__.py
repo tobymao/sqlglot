@@ -78,6 +78,7 @@ DIALECTS = [
     "Fabric",
     "Hive",
     "Materialize",
+    "Netezza",
     "MySQL",
     "Oracle",
     "Postgres",

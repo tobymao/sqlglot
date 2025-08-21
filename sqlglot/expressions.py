@@ -3143,6 +3143,10 @@ class SortKeyProperty(Property):
     arg_types = {"this": True, "compound": False}
 
 
+class OrganizeOnProperty(Property):
+    arg_types = {"expressions": True}
+
+
 class SqlReadWriteProperty(Property):
     arg_types = {"this": True}
 
@@ -3187,6 +3191,11 @@ class UnloggedProperty(Property):
 # https://docs.snowflake.com/en/sql-reference/sql/create-table#create-table-using-template
 class UsingTemplateProperty(Property):
     arg_types = {"this": True}
+
+
+# Netezza external table USING options, e.g., USING (DELIMITER '|', ENCODING 'UTF8')
+class UsingOptionsProperty(Property):
+    arg_types = {"expressions": True}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql?view=sql-server-ver16

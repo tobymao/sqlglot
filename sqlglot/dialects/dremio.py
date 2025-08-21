@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import typing as t
-
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     build_timetostr_or_tochar,
     build_formatted_time,
+    build_date_delta,
     rename_func,
-    unit_to_var,
 )
 from sqlglot.helper import seq_get
 
@@ -21,20 +20,17 @@ DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str]:
     def _delta_sql(self: Dremio.Generator, expression: DATE_DELTA) -> str:
-        unit = expression.text("unit")
+        unit = expression.text("unit").upper()
 
-        if not unit or unit.upper() == "DAY":
+        # Fallback to default behavior if unit is missing or 'DAY'
+        if not unit or unit == "DAY":
             return self.func(name, expression.this, expression.expression)
 
-        # to support units we need to use TIMESTAMPADD function
-        increment = expression.expression
-        if isinstance(expression, exp.DateSub):
-            if isinstance(increment, exp.Literal):
-                value = increment.to_py() if increment.is_number else int(increment.name)
-                increment = exp.Literal.number(value * -1)
-            else:
-                increment *= exp.Literal.number(-1)
-        return self.func("TIMESTAMPADD", unit_to_var(expression), increment, expression.this)
+        this_sql = self.sql(expression, "this")
+        expr_sql = self.sql(expression, "expression")
+
+        interval_sql = f"CAST({expr_sql} AS INTERVAL {unit})"
+        return f"{name}({this_sql}, {interval_sql})"
 
     return _delta_sql
 
@@ -48,6 +44,33 @@ def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeTo
         expression.set("is_numeric", True)
 
     return expression
+
+
+def build_date_delta_with_cast_interval(
+    expression_class: t.Type[DATE_DELTA],
+) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
+    fallback_builder = build_date_delta(expression_class)
+
+    def _builder(args):
+        if len(args) == 2:
+            date_arg, interval_arg = args
+
+            if (
+                isinstance(interval_arg, exp.Cast)
+                and isinstance(interval_arg.to, exp.DataType)
+                and isinstance(interval_arg.to.this, exp.Interval)
+            ):
+                return expression_class(
+                    this=date_arg,
+                    expression=interval_arg.this,
+                    unit=interval_arg.to.this.unit,
+                )
+
+            return expression_class(this=date_arg, expression=interval_arg)
+
+        return fallback_builder(args)
+
+    return _builder
 
 
 class Dremio(Dialect):
@@ -116,6 +139,8 @@ class Dremio(Dialect):
             "TO_CHAR": to_char_is_numeric_handler,
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
+            "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
+            "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
         }
 
     class Generator(generator.Generator):

@@ -386,6 +386,7 @@ class DuckDB(Dialect):
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+            "LIST_FILTER": exp.ArrayFilter.from_arg_list,
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
             "LIST_REVERSE_SORT": _build_sort_array_desc,

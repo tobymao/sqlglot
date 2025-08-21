@@ -444,6 +444,13 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
+            write={
+                "duckdb": "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
+                "spark": "SELECT FILTER(ARRAY(4, 5, 6), x -> x > 4)",
+            },
+        )
+        self.validate_all(
             "SELECT ANY_VALUE(sample_column) FROM sample_table",
             write={
                 "duckdb": "SELECT ANY_VALUE(sample_column) FROM sample_table",

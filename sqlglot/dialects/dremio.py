@@ -20,14 +20,16 @@ DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str]:
     def _delta_sql(self: Dremio.Generator, expression: DATE_DELTA) -> str:
-        this_sql = self.sql(expression, "this")
-
-        # If there is a 'unit' argument, serialize as CAST(expression AS INTERVAL unit)
         unit = expression.text("unit").upper()
-        expr = self.sql(expression, "expression")
 
-        interval_sql = f"CAST({expr} AS INTERVAL {unit})" if unit else expr
+        # Fallback to default behavior if unit is missing or 'DAY'
+        if not unit or unit == "DAY":
+            return self.func(name, expression.this, expression.expression)
 
+        this_sql = self.sql(expression, "this")
+        expr_sql = self.sql(expression, "expression")
+
+        interval_sql = f"CAST({expr_sql} AS INTERVAL {unit})"
         return f"{name}({this_sql}, {interval_sql})"
 
     return _delta_sql

@@ -242,13 +242,6 @@ class SingleStore(MySQL):
             exp.DayOfMonth: rename_func("DAY"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
-        TRANSFORMS.pop(exp.JSONPathFilter)
-        TRANSFORMS.pop(exp.JSONPathRecursive)
-        TRANSFORMS.pop(exp.JSONPathScript)
-        TRANSFORMS.pop(exp.JSONPathSelector)
-        TRANSFORMS.pop(exp.JSONPathSlice)
-        TRANSFORMS.pop(exp.JSONPathUnion)
-        TRANSFORMS.pop(exp.JSONPathWildcard)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {

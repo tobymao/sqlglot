@@ -65,6 +65,8 @@ class Doris(MySQL):
             **MySQL.Parser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+            # Plain KEY without UNIQUE/DUPLICATE/AGGREGATE prefixes should be treated as UniqueKeyProperty with unique=False
+            "KEY": lambda self: self._parse_key_property(),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
         }
 
@@ -103,6 +105,12 @@ class Doris(MySQL):
 
             part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
             return self.expression(exp.Partition, expressions=[part_range])
+
+        def _parse_key_property(self) -> exp.UniqueKeyProperty:
+            # Parses: KEY (<cols>) and marks as no-unique for generation as KEY (...), used for materialized views
+            key = self._parse_composite_key_property(exp.UniqueKeyProperty)
+            key.set("unique", False)
+            return key
 
         def _parse_partition_by_opt_range(
             self,

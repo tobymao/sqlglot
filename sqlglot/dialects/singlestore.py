@@ -89,6 +89,13 @@ class SingleStore(MySQL):
                 ),
                 DataType.Type.INT,
             ),
+            "MINUTE": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=cast_to_time6(seq_get(args, 0)),
+                    format=MySQL.format_time(exp.Literal.string("%i")),
+                ),
+                DataType.Type.INT,
+            ),
             "MONTHNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%M")),
@@ -222,6 +229,7 @@ class SingleStore(MySQL):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
+            exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.JSONPathFilter)

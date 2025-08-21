@@ -89,6 +89,13 @@ class SingleStore(MySQL):
                 ),
                 DataType.Type.INT,
             ),
+            "SECOND": lambda args: exp.cast(
+                exp.TimeToStr(
+                    this=cast_to_time6(seq_get(args, 0)),
+                    format=MySQL.format_time(exp.Literal.string("%s")),
+                ),
+                DataType.Type.INT,
+            ),
             "MINUTE": lambda args: exp.cast(
                 exp.TimeToStr(
                     this=cast_to_time6(seq_get(args, 0)),

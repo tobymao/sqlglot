@@ -211,6 +211,16 @@ class TestSingleStore(Validator):
             "SELECT DATE_FORMAT('2009-02-13 23:31:30.123456' :> TIME(6), '%s') :> INT",
         )
         self.validate_identity(
+            "SELECT WEEKDAY('2014-04-18')", "SELECT (DAYOFWEEK('2014-04-18') + 5) % 7"
+        )
+        self.validate_identity(
             "SELECT MINUTE('2009-02-13 23:31:30.123456')",
             "SELECT DATE_FORMAT('2009-02-13 23:31:30.123456' :> TIME(6), '%i') :> INT",
+        )
+        self.validate_all(
+            "SELECT ((DAYOFWEEK('2014-04-18') % 7) + 1)",
+            read={
+                "singlestore": "SELECT ((DAYOFWEEK('2014-04-18') % 7) + 1)",
+                "": "SELECT DAYOFWEEK_ISO('2014-04-18')",
+            },
         )

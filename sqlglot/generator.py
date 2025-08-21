@@ -4030,7 +4030,8 @@ class Generator(metaclass=_Generator):
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
     def uniquekeyproperty_sql(self, expression: exp.UniqueKeyProperty) -> str:
-        return f"UNIQUE KEY ({self.expressions(expression, flat=True)})"
+        key_word = "UNIQUE KEY" if expression.args.get("unique", True) else "KEY"
+        return f"{key_word} ({self.expressions(expression, flat=True)})"
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
     def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:

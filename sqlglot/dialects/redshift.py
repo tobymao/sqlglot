@@ -173,7 +173,6 @@ class Redshift(Postgres):
             exp.DataType.Type.BINARY: "VARBYTE",
             exp.DataType.Type.BLOB: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.TINYINT: "SMALLINT",  # The smallest numeric data type in Redshift is SMALLINT
             exp.DataType.Type.UTINYINT: "SMALLINT",
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",

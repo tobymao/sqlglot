@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from sqlglot.errors import ParseError
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
@@ -20,17 +19,14 @@ DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 
 def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str]:
-    def _delta_sql(self, expression):
+    def _delta_sql(self: Dremio.Generator, expression: DATE_DELTA) -> str:
         this_sql = self.sql(expression, "this")
 
         # If there is a 'unit' argument, serialize as CAST(expression AS INTERVAL unit)
-        unit = expression.args.get("unit")
-        expr = expression.args.get("expression")
+        unit = expression.text("unit").upper()
+        expr = self.sql(expression, "expression")
 
-        if unit:
-            interval_sql = f"CAST({self.sql(expr)} AS INTERVAL {unit.name.upper()})"
-        else:
-            interval_sql = self.sql(expr)
+        interval_sql = f"CAST({expr} AS INTERVAL {unit})" if unit else expr
 
         return f"{name}({this_sql}, {interval_sql})"
 
@@ -48,40 +44,28 @@ def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeTo
     return expression
 
 
-def build_date_delta_with_cast_interval(expression_class: t.Type[DATE_DELTA]):
-    fallback_builder = build_date_delta(expression_class)  # existing 3-arg handler
+def build_date_delta_with_cast_interval(
+    expression_class: t.Type[DATE_DELTA],
+) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
+    fallback_builder = build_date_delta(expression_class)
 
     def _builder(args):
         if len(args) == 2:
             date_arg, interval_arg = args
 
-            if isinstance(interval_arg, exp.Cast):
-                to_type = interval_arg.args.get("to")
-                if isinstance(to_type, exp.DataType):
-                    type_str = str(to_type).upper()
-                    if type_str.startswith("INTERVAL"):
-                        parts = type_str.split()
-                        if len(parts) < 2:
-                            raise ParseError(f"Missing unit in interval cast: {type_str}")
-                        unit = parts[1]
-                        return expression_class(
-                            this=date_arg,
-                            expression=interval_arg.this,
-                            unit=exp.var(unit),
-                        )
-                    raise ParseError(f"Expected INTERVAL cast but got: {type_str}")
-                raise ParseError(f"Unexpected cast type: {to_type}")
-
-            if isinstance(interval_arg, exp.Interval):
+            if (
+                isinstance(interval_arg, exp.Cast)
+                and isinstance(interval_arg.to, exp.DataType)
+                and isinstance(interval_arg.to.this, exp.Interval)
+            ):
                 return expression_class(
                     this=date_arg,
-                    expression=interval_arg.args["this"],
-                    unit=interval_arg.args["unit"],
+                    expression=interval_arg.this,
+                    unit=interval_arg.to.this.unit,
                 )
 
             return expression_class(this=date_arg, expression=interval_arg)
 
-        # fallback for 3 or more args
         return fallback_builder(args)
 
     return _builder
@@ -153,7 +137,6 @@ class Dremio(Dialect):
             "TO_CHAR": to_char_is_numeric_handler,
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
-            "TO_TIMESTAMP": build_formatted_time(exp.TimeStrToTime, "dremio"),
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
         }
@@ -188,7 +171,6 @@ class Dremio(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
-            # exp.DateSub: _date_delta_sql("TIMESTAMPADD"),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

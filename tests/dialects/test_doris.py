@@ -119,6 +119,7 @@ class TestDoris(Validator):
     def test_key(self):
         self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) UNIQUE KEY (c1)")
         self.validate_identity("CREATE TABLE test_table (c1 INT, c2 INT) DUPLICATE KEY (c1)")
+        self.validate_identity("CREATE MATERIALIZED VIEW test_table (c1 INT, c2 INT) KEY (c1)")
 
     def test_distributed(self):
         self.validate_identity(

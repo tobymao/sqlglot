@@ -60,8 +60,10 @@ class TestTSQL(Validator):
             "COPY INTO test_1 FROM 'path' WITH (FORMAT_NAME = test, FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY='Shared Access Signature', SECRET='token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
         )
         self.validate_identity(
-            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2 ORDER BY a DESC",
-            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT * FROM (SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2) AS _l_0 ORDER BY a DESC",
+            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2 ORDER BY a DESC"
+        )
+        self.validate_identity(
+            "WITH t1 AS (SELECT 1 AS a), t2 AS (SELECT 1 AS a) SELECT COUNT(*) FROM (SELECT TOP 10 a FROM t1 UNION ALL SELECT TOP 10 a FROM t2 ORDER BY a DESC) AS t"
         )
         self.validate_identity(
             'SELECT 1 AS "[x]"',

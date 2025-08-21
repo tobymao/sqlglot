@@ -233,4 +233,8 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DAY('2014-04-18')",
                 "": "SELECT DAY_OF_MONTH('2014-04-18')",
             },
+            write={
+                "singlestore": "SELECT DAY('2014-04-18')",
+                "": "SELECT DAY('2014-04-18')",
+            },
         )

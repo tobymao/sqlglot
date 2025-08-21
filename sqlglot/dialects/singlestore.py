@@ -136,6 +136,7 @@ class SingleStore(MySQL):
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
+            "DAY": lambda args: exp.Day(this=seq_get(args, 0)),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}

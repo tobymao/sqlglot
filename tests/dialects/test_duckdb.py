@@ -444,6 +444,13 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+            write={
+                "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+                "spark": "SELECT TRANSFORM(SPLIT('abc , dfg ', ','), x -> TRIM(x))",
+            },
+        )
+        self.validate_all(
             "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
             write={
                 "duckdb": "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",

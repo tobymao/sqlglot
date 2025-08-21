@@ -225,6 +225,7 @@ class SingleStore(MySQL):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
+            exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.JSONPathFilter)

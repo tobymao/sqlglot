@@ -202,3 +202,7 @@ class TestSingleStore(Validator):
             "SELECT HOUR('2009-02-13 23:31:30')",
             "SELECT DATE_FORMAT('2009-02-13 23:31:30' :> TIME(6), '%k') :> INT",
         )
+        self.validate_identity(
+            "SELECT MICROSECOND('2009-02-13 23:31:30.123456')",
+            "SELECT DATE_FORMAT('2009-02-13 23:31:30.123456' :> TIME(6), '%f') :> INT",
+        )

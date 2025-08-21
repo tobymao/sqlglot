@@ -220,3 +220,10 @@ class TestSingleStore(Validator):
                 "": "SELECT DAYOFWEEK_ISO('2014-04-18')",
             },
         )
+        self.validate_all(
+            "SELECT DAY('2014-04-18')",
+            read={
+                "singlestore": "SELECT DAY('2014-04-18')",
+                "": "SELECT DAY_OF_MONTH('2014-04-18')",
+            },
+        )

@@ -3044,7 +3044,8 @@ class PartitionByListProperty(Property):
 # https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning
 class PartitionList(Expression):
     arg_types = {"this": True, "expressions": True}
-    
+
+
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
 class RefreshTriggerProperty(Property):
     arg_types = {

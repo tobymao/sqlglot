@@ -121,12 +121,12 @@ class Doris(MySQL):
             self,
         ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty:
             if self._match_text_seq("LIST"):
-                partition_expressions = self._parse_wrapped_id_vars()
-                create_expressions = self._parse_wrapped_csv(self._parse_partition_definition_list)
                 return self.expression(
                     exp.PartitionByListProperty,
-                    partition_expressions=partition_expressions,
-                    create_expressions=create_expressions,
+                    partition_expressions=self._parse_wrapped_id_vars(),
+                    create_expressions=self._parse_wrapped_csv(
+                        self._parse_partition_definition_list
+                    ),
                 )
 
             if not self._match_text_seq("RANGE"):
@@ -189,6 +189,7 @@ class Doris(MySQL):
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
@@ -719,7 +720,7 @@ class Doris(MySQL):
 
         def partition_sql(self, expression: exp.Partition) -> str:
             parent = expression.parent
-            if isinstance(parent, exp.PartitionByRangeProperty):
+            if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
                 return ", ".join(self.sql(e) for e in expression.expressions)
             return super().partition_sql(expression)
 

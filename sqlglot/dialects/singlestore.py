@@ -171,7 +171,9 @@ class SingleStore(MySQL):
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
-            exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+            exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))
+            if e.args.get("format")
+            else self.func("DATE", e.this),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.StrToDate: lambda self, e: self.func(

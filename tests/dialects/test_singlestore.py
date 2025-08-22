@@ -49,6 +49,13 @@ class TestSingleStore(Validator):
             "SELECT DATE_FORMAT('12:05:47' :> TIME(6), '%s, %i, %h')",
         )
         self.validate_identity("SELECT DATE('2019-01-01 05:06')")
+        self.validate_all(
+            "SELECT DATE('2019-01-01 05:06')",
+            read={
+                "": "SELECT TS_OR_DS_TO_DATE('2019-01-01 05:06')",
+                "singlestore": "SELECT DATE('2019-01-01 05:06')",
+            },
+        )
 
     def test_cast(self):
         self.validate_all(

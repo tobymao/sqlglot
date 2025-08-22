@@ -227,6 +227,17 @@ class TestExasol(Validator):
         )
         self.validate_identity("SELECT TO_CHAR(12345.6789) AS TO_CHAR")
         self.validate_identity("SELECT TO_CHAR(-12345.67890, '000G000G000D000000MI') AS TO_CHAR")
+
+        self.validate_all(
+            "SELECT id, department, hire_date, GROUP_CONCAT(id ORDER BY hire_date SEPARATOR ',') OVER (PARTITION BY department rows between 1 preceding and 1 following) GROUP_CONCAT_RESULT from employee_table ORDER BY department, hire_date",
+            write={
+                "exasol": "SELECT id, department, hire_date, LISTAGG(id, ',') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+                "mysql": "SELECT id, department, hire_date, GROUP_CONCAT(id ORDER BY hire_date SEPARATOR ',') OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+                "tsql": "SELECT id, department, hire_date, STRING_AGG(id, ',') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+                "databricks": "SELECT id, department, hire_date, LISTAGG(id, ',') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+                "postgres": "SELECT id, department, hire_date, STRING_AGG(id, ',' ORDER BY hire_date NULLS FIRST) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department NULLS FIRST, hire_date NULLS FIRST",
+            },
+        )
         self.validate_all(
             "EDIT_DISTANCE(col1, col2)",
             read={

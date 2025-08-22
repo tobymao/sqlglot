@@ -2998,14 +2998,19 @@ class Generator(metaclass=_Generator):
             args = [exp.cast(e, exp.DataType.Type.TEXT) for e in args]
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
-            # Wrap with COALESCE if the arg could be NULL i.e is already exp.Null or an expression with columns
-            # that could be evaluated to NULL
-            args = [
-                exp.func("coalesce", e, exp.Literal.string(""))
-                if (isinstance(e, exp.Null) or e.find(exp.Column))
-                else e
-                for e in args
-            ]
+
+            def _wrap_with_coalesce(e: exp.Expression) -> exp.Expression:
+                if not e.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    e = annotate_types(e, dialect=self.dialect)
+
+                if e.is_type(exp.DataType.Type.ARRAY) or e.is_string:
+                    return e
+
+                return exp.func("coalesce", e, exp.Literal.string(""))
+
+            args = [_wrap_with_coalesce(e) for e in args]
 
         return args
 

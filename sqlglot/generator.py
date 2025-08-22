@@ -3005,7 +3005,7 @@ class Generator(metaclass=_Generator):
 
                     e = annotate_types(e, dialect=self.dialect)
 
-                if e.is_type(exp.DataType.Type.ARRAY) or e.is_string:
+                if e.is_string or e.is_type(exp.DataType.Type.ARRAY):
                     return e
 
                 return exp.func("coalesce", e, exp.Literal.string(""))

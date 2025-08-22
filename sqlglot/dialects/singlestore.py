@@ -1324,3 +1324,7 @@ class SingleStore(MySQL):
                 res = exp.Cast(this=res, to=returning)
 
             return self.sql(res)
+
+        def all_sql(self, expression: exp.All) -> str:
+            self.unsupported("ALL subquery predicate is not supported in SingleStore")
+            return super().all_sql(expression)

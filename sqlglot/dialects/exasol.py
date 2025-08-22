@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     binary_from_function,
     build_formatted_time,
     rename_func,
@@ -73,6 +74,17 @@ DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
 class Exasol(Dialect):
+    # https://docs.exasol.com/db/latest/sql_references/basiclanguageelements.htm#SQLidentifier
+    NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
+    # https://docs.exasol.com/db/latest/sql_references/data_types/datatypesoverview.htm
+    SUPPORTS_USER_DEFINED_TYPES = False
+    # https://docs.exasol.com/db/latest/sql/select.htm
+    SUPPORTS_SEMI_ANTI_JOIN = False
+    SUPPORTS_COLUMN_JOIN_MARKS = True
+    NULL_ORDERING = "nulls_are_last"
+    # https://docs.exasol.com/db/latest/sql_references/literals.htm#StringLiterals
+    CONCAT_COALESCE = True
+
     TIME_MAPPING = {
         "yyyy": "%Y",
         "YYYY": "%Y",

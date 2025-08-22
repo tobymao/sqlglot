@@ -885,6 +885,19 @@ class TestHive(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT FIRST(sample_col) IGNORE NULLS",
+            read={
+                "hive": "SELECT FIRST(sample_col, TRUE)",
+                "spark2": "SELECT FIRST(sample_col, TRUE)",
+                "spark": "SELECT FIRST(sample_col, TRUE)",
+                "databricks": "SELECT FIRST(sample_col, TRUE)",
+            },
+            write={
+                "duckdb": "SELECT ANY_VALUE(sample_col)",
+            },
+        )
+
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")

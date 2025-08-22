@@ -236,7 +236,7 @@ class TestDoris(Validator):
         self.validate_identity("CREATE MATERIALIZED VIEW mv BUILD DEFERRED AS SELECT 1")
 
         # REFRESH methods with triggers
-        self.validate_identity("CREATE MATERIALIZED VIEW mv REFRESH COMPLETE MANUAL AS SELECT 1")
+        self.validate_identity("CREATE MATERIALIZED VIEW mv REFRESH COMPLETE ON MANUAL AS SELECT 1")
         self.validate_identity("CREATE MATERIALIZED VIEW mv REFRESH AUTO ON COMMIT AS SELECT 1")
         self.validate_identity(
             "CREATE MATERIALIZED VIEW mv REFRESH AUTO ON SCHEDULE EVERY 5 MINUTE STARTS '2025-01-01 00:00:00' AS SELECT 1"

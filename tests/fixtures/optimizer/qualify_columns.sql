@@ -283,6 +283,10 @@ WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) AS _col_0 FROM t AS t;
 SELECT DATE_TRUNC(col1, WEEK(MONDAY)), col2 FROM t;
 SELECT DATE_TRUNC(t.col1, WEEK(MONDAY)) AS _col_0, t.col2 AS col2 FROM t AS t;
 
+# execute: false
+SELECT first FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
+SELECT tbl.first AS first FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

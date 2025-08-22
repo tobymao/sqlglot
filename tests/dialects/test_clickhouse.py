@@ -1222,6 +1222,35 @@ LIFETIME(MIN 0 MAX 0)""",
             )
         )
 
+        self.validate_all(
+            """
+            CREATE TABLE session_log
+            (
+                UserID UInt64,
+                SessionID UUID
+            )
+            ENGINE = MergeTree
+            PARTITION BY sipHash64(UserID) % 16
+            ORDER BY tuple();
+            """,
+            pretty=True,
+        )
+
+        self.validate_all(
+            """
+            CREATE TABLE visits
+            (
+                VisitDate Date,
+                Hour UInt8,
+                ClientID UUID
+            )
+            ENGINE = MergeTree()
+            PARTITION BY (toYYYYMM(VisitDate), Hour)
+            ORDER BY Hour;
+            """,
+            pretty=True,
+        )
+
     def test_agg_functions(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this

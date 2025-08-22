@@ -977,6 +977,14 @@ class ClickHouse(Dialect):
 
             return value
 
+        def _parse_partitioned_by(self) -> exp.PartitionedByProperty:
+            # ClickHouse allows custom expressions as partition key
+            # https://clickhouse.com/docs/engines/table-engines/mergetree-family/custom-partitioning-key
+            return self.expression(
+                exp.PartitionedByProperty,
+                this=self._parse_assignment(),
+            )
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")

@@ -40,7 +40,7 @@ class TestDremio(Validator):
             "SELECT CONCAT('a', NULL)",
             write={
                 "dremio": "SELECT CONCAT('a', NULL)",
-                "": "SELECT CONCAT(COALESCE('a', ''), COALESCE(NULL, ''))",
+                "": "SELECT CONCAT('a', COALESCE(NULL, ''))",
             },
         )
 

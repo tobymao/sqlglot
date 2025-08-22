@@ -2998,7 +2998,14 @@ class Generator(metaclass=_Generator):
             args = [exp.cast(e, exp.DataType.Type.TEXT) for e in args]
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
-            args = [exp.func("coalesce", e, exp.Literal.string("")) for e in args]
+            # Wrap with COALESCE if the arg could be NULL i.e is already exp.Null or an expression with columns
+            # that could be evaluated to NULL
+            args = [
+                exp.func("coalesce", e, exp.Literal.string(""))
+                if (isinstance(e, exp.Null) or e.find(exp.Column))
+                else e
+                for e in args
+            ]
 
         return args
 

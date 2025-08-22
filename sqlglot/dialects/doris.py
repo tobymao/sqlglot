@@ -138,21 +138,12 @@ class Doris(MySQL):
         def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
             method = self._parse_var(upper=True)
 
-            kind = None
-            every = None
-            unit = None
-            starts = None
-            if self._match_text_seq("ON"):
-                if self._match_text_seq("MANUAL"):
-                    kind = exp.var("MANUAL")
-                elif self._match_text_seq("COMMIT"):
-                    kind = exp.var("COMMIT")
-                elif self._match_text_seq("SCHEDULE"):
-                    kind = exp.var("SCHEDULE")
-                    self._match_text_seq("EVERY")
-                    every = self._parse_number()
-                    unit = self._parse_var(any_token=True)
-                    starts = self._match_text_seq("STARTS") and self._parse_string()
+            self._match(TokenType.ON)
+
+            kind = self._match_texts(("MANUAL", "COMMIT", "SCHEDULE")) and self._prev.text.upper()
+            every = self._match_text_seq("EVERY") and self._parse_number()
+            unit = self._parse_var(any_token=True) if every else None
+            starts = self._match_text_seq("STARTS") and self._parse_string()
 
             return self.expression(
                 exp.RefreshTriggerProperty,
@@ -770,20 +761,3 @@ class Doris(MySQL):
 
         def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
             return super().alterrename_sql(expression, include_to=False)
-
-        def buildproperty_sql(self, expression: exp.BuildProperty) -> str:
-            return f"BUILD {self.sql(expression, 'this')}"
-
-        def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
-            method = self.sql(expression, "method")
-            kind = expression.args.get("kind")
-            if not kind:
-                return f"REFRESH {method}"
-            kind_text = kind.name
-            if kind_text == "SCHEDULE":
-                every = self.sql(expression, "every")
-                unit = self.sql(expression, "unit")
-                starts = self.sql(expression, "starts")
-                starts = f" STARTS {starts}" if starts else ""
-                return f"REFRESH {method} ON SCHEDULE EVERY {every} {unit}{starts}"
-            return f"REFRESH {method} ON {kind_text}"

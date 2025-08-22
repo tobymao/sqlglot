@@ -5171,3 +5171,20 @@ class Generator(metaclass=_Generator):
 
     def space_sql(self: Generator, expression: exp.Space) -> str:
         return self.sql(exp.Repeat(this=exp.Literal.string(" "), times=expression.this))
+
+    def buildproperty_sql(self, expression: exp.BuildProperty) -> str:
+        return f"BUILD {self.sql(expression, 'this')}"
+
+    def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
+        method = self.sql(expression, "method")
+        kind = expression.args.get("kind")
+        if not kind:
+            return f"REFRESH {method}"
+
+        every = self.sql(expression, "every")
+        unit = self.sql(expression, "unit")
+        every = f" EVERY {every} {unit}" if every else ""
+        starts = self.sql(expression, "starts")
+        starts = f" STARTS {starts}" if starts else ""
+
+        return f"REFRESH {method} ON {kind}{every}{starts}"

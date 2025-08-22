@@ -131,10 +131,9 @@ class Doris(MySQL):
             )
 
         def _parse_build_property(self) -> exp.BuildProperty:
-            mode = self._parse_var(upper=True)
-            return self.expression(exp.BuildProperty, this=mode)
+            return self.expression(exp.BuildProperty, this=self._parse_var(upper=True))
 
-        def _parse_refresh_property(self) -> exp.RefreshProperty:
+        def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
             method = self._parse_var(upper=True)
 
             trigger = None
@@ -146,20 +145,15 @@ class Doris(MySQL):
                     trigger = self.expression(exp.RefreshTrigger, kind=exp.var("COMMIT"))
                 elif self._match_text_seq("SCHEDULE"):
                     self._match_text_seq("EVERY")
-                    every = self._parse_number()
-                    unit = self._parse_var(any_token=True)
-                    starts = None
-                    if self._match_text_seq("STARTS"):
-                        starts = self._parse_string()
                     trigger = self.expression(
                         exp.RefreshTrigger,
                         kind=exp.var("SCHEDULE"),
-                        every=every,
-                        unit=unit,
-                        starts=starts,
+                        every=self._parse_number(),
+                        unit=self._parse_var(any_token=True),
+                        starts=self._match_text_seq("STARTS") and self._parse_string(),
                     )
 
-            return self.expression(exp.RefreshProperty, method=method, trigger=trigger)
+            return self.expression(exp.RefreshTriggerProperty, method=method, trigger=trigger)
 
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
@@ -180,7 +174,7 @@ class Doris(MySQL):
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.RefreshProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -779,7 +773,7 @@ class Doris(MySQL):
                 return f"ON SCHEDULE EVERY {every} {unit}{starts}"
             return f"ON {kind_text}"
 
-        def refreshproperty_sql(self, expression: exp.RefreshProperty) -> str:
+        def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
             method = self.sql(expression, "method")
             trigger = self.sql(expression, "trigger")
             trigger = f" {trigger}" if trigger else ""

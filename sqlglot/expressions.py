@@ -2791,9 +2791,7 @@ class BackupProperty(Property):
 
 
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW/
-# Doris MATERIALIZED VIEW: BUILD <build_mode>
 class BuildProperty(Property):
-    # this -> build_mode: IMMEDIATE | DEFERRED
     arg_types = {"this": True}
 
 
@@ -3040,12 +3038,11 @@ class PartitionByRangePropertyDynamic(Expression):
 
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
 class RefreshTrigger(Expression):
-    # kind: MANUAL | COMMIT | SCHEDULE, every: int, unit: var, starts: string
     arg_types = {"kind": True, "every": False, "unit": False, "starts": False}
 
 
-class RefreshProperty(Property):
-    # method: COMPLETE | AUTO, trigger: RefreshTrigger
+# https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
+class RefreshTriggerProperty(Property):
     arg_types = {"method": True, "trigger": False}
 
 

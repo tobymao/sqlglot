@@ -141,6 +141,7 @@ class Dremio(Dialect):
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
+            "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
         }
 
     class Generator(generator.Generator):
@@ -173,6 +174,7 @@ class Dremio(Dialect):
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
+            exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

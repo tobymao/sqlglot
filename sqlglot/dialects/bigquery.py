@@ -700,6 +700,7 @@ class BigQuery(Dialect):
             ),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
+            "PREDICT": lambda self: self._parse_predict(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -1004,6 +1005,42 @@ class BigQuery(Dialect):
                 connection=self._match_text_seq("WITH", "CONNECTION") and self._parse_table_parts(),
                 options=self._parse_properties(),
                 this=self._match_text_seq("AS") and self._parse_select(),
+            )
+
+        def _parse_predict(self) -> exp.Predict:
+            self._match_text_seq("MODEL")
+            this = self._parse_table()
+
+            self._match(TokenType.COMMA)
+            self._match_text_seq("TABLE")
+            expression = self._parse_table() or self._parse_paren()
+
+            params_struct = None
+            if self._match(TokenType.COMMA):
+                if self._match_text_seq("STRUCT"):
+                    self._match(TokenType.L_PAREN)
+                    expressions = self._parse_csv(lambda: self._parse_lambda(alias=True))
+                    self._match(TokenType.R_PAREN)
+                    # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#syntax
+                    allowed_params = {"THRESHOLD", "KEEP_ORIGINAL_COLUMNS", "TRIAL_ID"}
+                    for expr in expressions:
+                        if isinstance(expr, exp.Alias) and expr.alias.upper() not in allowed_params:
+                            self.raise_error(
+                                f"Invalid PREDICT parameter: {expr.alias}. "
+                                "Only THRESHOLD, KEEP_ORIGINAL_COLUMNS, and TRIAL_ID are allowed."
+                            )
+
+                    params_struct = self.expression(exp.Struct, expressions=expressions)
+                else:
+                    self.raise_error(
+                        "PREDICT function expects a STRUCT for the third parameter with THRESHOLD, KEEP_ORIGINAL_COLUMNS, and/or TRIAL_ID"
+                    )
+
+            return self.expression(
+                exp.Predict,
+                this=this,
+                expression=expression,
+                params_struct=params_struct,
             )
 
     class Generator(generator.Generator):

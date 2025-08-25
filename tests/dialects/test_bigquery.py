@@ -1718,10 +1718,23 @@ WHERE
             },
         )
 
+        # ML functions
+        self.validate_identity(
+            "SELECT * FROM ML.PREDICT(MODEL myproject.mydataset.mymodel, TABLE myproject.mydataset.mytable)"
+        ).find(exp.From).this.this.assert_is(exp.Predict)
+        self.validate_identity(
+            "SELECT * FROM ML.PREDICT(MODEL myproject.mydataset.mymodel, (SELECT * FROM mytable))"
+        ).find(exp.From).this.this.assert_is(exp.Predict)
+        self.validate_identity(
+            "SELECT * FROM ML.PREDICT(MODEL myproject.mydataset.mymodel, TABLE myproject.mydataset.mytable, STRUCT(0.5 AS threshold, TRUE AS keep_original_columns))"
+        ).find(exp.From).this.this.assert_is(exp.Predict)
+
         self.validate_identity(
             "SELECT * FROM ML.FEATURES_AT_TIME(TABLE mydataset.feature_table, time => '2022-06-11 10:00:00+00', num_rows => 1, ignore_feature_nulls => TRUE)"
-        )
-        self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
+        ).find(exp.From).this.this.assert_is(exp.FeaturesAtTime)
+        self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)").find(
+            exp.From
+        ).this.this.assert_is(exp.FeaturesAtTime)
 
         self.validate_identity(
             "EXPORT DATA OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') AS SELECT * FROM all_rows"

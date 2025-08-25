@@ -1719,11 +1719,6 @@ WHERE
         )
 
         self.validate_identity(
-            "SELECT * FROM ML.FEATURES_AT_TIME(TABLE mydataset.feature_table, time => '2022-06-11 10:00:00+00', num_rows => 1, ignore_feature_nulls => TRUE)"
-        )
-        self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
-
-        self.validate_identity(
             "EXPORT DATA OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') AS SELECT * FROM all_rows"
         )
         self.validate_identity(
@@ -2044,6 +2039,21 @@ OPTIONS (
   ENDPOINT='https://us-central1-aiplatform.googleapis.com/v1/projects/myproject/locations/us-central1/endpoints/1234'
 )""",
             pretty=True,
+        )
+
+    def test_ml_functions(self):
+        ast = self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
+        assert ast.find(exp.FeaturesAtTime)
+        self.validate_identity(
+            "SELECT * FROM ML.FEATURES_AT_TIME(TABLE mydataset.feature_table, time => '2022-06-11 10:00:00+00', num_rows => 1, ignore_feature_nulls => TRUE)"
+        )
+
+        ast = self.validate_identity(
+            "SELECT * FROM ML.GENERATE_EMBEDDING(MODEL mydataset.mymodel, (SELECT label, column1, column2 FROM mydataset.mytable))"
+        )
+        assert ast.find(exp.GenerateEmbedding)
+        self.validate_identity(
+            "SELECT * FROM ML.GENERATE_EMBEDDING(MODEL mydataset.mymodel, TABLE mydataset.mytable, STRUCT(TRUE AS flatten_json_output))"
         )
 
     def test_merge(self):

@@ -6231,10 +6231,6 @@ class FromBase64(Func):
     pass
 
 
-class FeaturesAtTime(Func):
-    arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
-
-
 class ToBase64(Func):
     pass
 
@@ -6757,6 +6753,16 @@ class Overlay(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function
 class Predict(Func):
+    arg_types = {"this": True, "expression": True, "params_struct": False}
+
+
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-feature-time
+class FeaturesAtTime(Func):
+    arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
+
+
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding
+class GenerateEmbedding(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 

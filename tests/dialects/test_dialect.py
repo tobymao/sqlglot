@@ -845,6 +845,8 @@ class TestDialect(Validator):
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
                 "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "doris": "DATE_FORMAT(x, '%Y-%m-%d')",
+                "dremio": "TO_CHAR(x, 'yyyy-mm-dd')",
+                "databricks": "DATE_FORMAT(x, 'yyyy-MM-dd')",
             },
         )
         self.validate_all(

@@ -36,14 +36,14 @@ def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str
 
 
 def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
-    expression = build_timetostr_or_tochar(args, dialect)
     fmt = seq_get(args, 1)
 
-    if fmt and isinstance(expression, exp.ToChar) and fmt.is_string and "#" in fmt.name:
-        # Only mark as numeric if format is a literal containing #
-        expression.set("is_numeric", True)
+    if fmt and isinstance(fmt, exp.Literal) and fmt.is_string and "#" in fmt.name:
+        expr = exp.ToChar.from_arg_list(args)
+        expr.set("is_numeric", True)
+        return expr
 
-    return expression
+    return build_timetostr_or_tochar(args, dialect)
 
 
 def build_date_delta_with_cast_interval(

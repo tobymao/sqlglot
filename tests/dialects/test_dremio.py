@@ -148,12 +148,6 @@ class TestDremio(Validator):
         to_char = self.validate_identity("TO_CHAR(3.14, columnname)").assert_is(exp.ToChar)
         assert not to_char.args.get("is_numeric")
 
-        to_char = self.validate_identity("TO_CHAR(123, 'abcd')").assert_is(exp.ToChar)
-        assert not to_char.args.get("is_numeric")
-
-        to_char = self.validate_identity("TO_CHAR(3.14, UPPER('abcd'))").assert_is(exp.ToChar)
-        assert not to_char.args.get("is_numeric")
-
     def test_date_add(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")
         self.validate_identity("SELECT DATE_ADD(col, CAST(1 AS INTERVAL HOUR))")

@@ -2022,15 +2022,22 @@ def groupconcat_sql(
 
 def build_timetostr_or_tochar(args: t.List, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
     if len(args) == 2:
-        this = args[0]
+        this, format_str = args
+
         if not this.type:
             from sqlglot.optimizer.annotate_types import annotate_types
 
             annotate_types(this, dialect=dialect)
 
-        if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            dialect_name = dialect.__class__.__name__.lower()
-            return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
+        is_temporal = this.is_type(*exp.DataType.TEMPORAL_TYPES)
+        is_string_literal = isinstance(format_str, exp.Literal) and isinstance(format_str.this, str)
+
+        if is_temporal or is_string_literal:
+            try:
+                dialect_name = dialect.__class__.__name__.lower()
+                return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
+            except Exception:
+                pass  # If format isn't valid, fall back to ToChar
 
     return exp.ToChar.from_arg_list(args)
 

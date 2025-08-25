@@ -2030,7 +2030,7 @@ def build_timetostr_or_tochar(args: t.List, dialect: DialectType) -> exp.TimeToS
             annotate_types(this, dialect=dialect)
 
         is_temporal = this.is_type(*exp.DataType.TEMPORAL_TYPES)
-        is_string_literal = isinstance(format_str, exp.Literal) and isinstance(format_str.this, str)
+        is_string_literal = format_str.is_string
 
         if is_temporal or is_string_literal:
             try:

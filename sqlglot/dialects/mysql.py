@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     unit_to_var,
     trim_sql,
     timestrtotime_sql,
+    build_group_concat,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -349,7 +350,7 @@ class MySQL(Dialect):
                 expressions=self._parse_csv(self._parse_assignment),
                 charset=self._match(TokenType.USING) and self._parse_var(),
             ),
-            "GROUP_CONCAT": lambda self: self._parse_group_concat(),
+            "GROUP_CONCAT": build_group_concat,
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]

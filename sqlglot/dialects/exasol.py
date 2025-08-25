@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     timestamptrunc_sql,
     build_date_delta,
+    build_group_concat,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -182,7 +183,7 @@ class Exasol(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
-            **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
+            **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), build_group_concat),
         }
 
         def _parse_group_concat(self) -> t.Optional[exp.Expression]:

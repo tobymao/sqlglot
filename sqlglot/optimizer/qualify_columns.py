@@ -853,7 +853,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
-        elif not isinstance(selection, exp.Alias) and not selection.is_star:
+        elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
             selection = alias(
                 selection,
                 alias=selection.output_name or f"_col_{i}",

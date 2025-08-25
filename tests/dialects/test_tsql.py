@@ -1013,6 +1013,9 @@ FOR XML
         self.validate_identity("ALTER TABLE tbl SET (DATA_DELETION=ON)")
         self.validate_identity("ALTER TABLE tbl SET (DATA_DELETION=OFF)")
         self.validate_identity(
+            "ALTER TABLE t1 WITH CHECK ADD CONSTRAINT ctr FOREIGN KEY (c1) REFERENCES t2 (c2)"
+        )
+        self.validate_identity(
             "ALTER TABLE tbl SET (SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS))"
         )
         self.validate_identity(

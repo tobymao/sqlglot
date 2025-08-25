@@ -2029,15 +2029,15 @@ def build_timetostr_or_tochar(args: t.List, dialect: DialectType) -> exp.TimeToS
 
             annotate_types(this, dialect=dialect)
 
-        is_temporal = this.is_type(*exp.DataType.TEMPORAL_TYPES)
-        is_string_literal = format_str.is_string
+        dialect_name = dialect.__class__.__name__.lower()
 
-        if is_temporal or is_string_literal:
-            format_str_value = format_str.name
-            if is_valid_time_format(format_str_value, dialect.__class__.__name__.lower()):
-                return build_formatted_time(
-                    exp.TimeToStr, dialect.__class__.__name__.lower(), default=True
-                )(args)
+        is_temporal = this.is_type(*exp.DataType.TEMPORAL_TYPES)
+        is_valid_format = format_str.is_string and is_valid_time_format(
+            format_str.name, dialect_name
+        )
+
+        if is_temporal or is_valid_format:
+            return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
 
     return exp.ToChar.from_arg_list(args)
 

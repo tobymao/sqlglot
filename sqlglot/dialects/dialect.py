@@ -2041,3 +2041,35 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
     )
+
+
+def build_group_concat(self) -> t.Optional[exp.Expression]:
+    def concat_exprs(
+        node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
+    ) -> exp.Expression:
+        if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
+            concat_exprs = [self.expression(exp.Concat, expressions=node.expressions, safe=True)]
+            node.set("expressions", concat_exprs)
+            return node
+        if len(exprs) == 1:
+            return exprs[0]
+        return self.expression(exp.Concat, expressions=args, safe=True)
+
+    args = self._parse_csv(self._parse_lambda)
+
+    if args:
+        order = args[-1] if isinstance(args[-1], exp.Order) else None
+
+        if order:
+            # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
+            # remove 'expr' from exp.Order and add it back to args
+            args[-1] = order.this
+            order.set("this", concat_exprs(order.this, args))
+
+        this = order or concat_exprs(args[0], args)
+    else:
+        this = None
+
+    separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
+
+    return self.expression(exp.GroupConcat, this=this, separator=separator)

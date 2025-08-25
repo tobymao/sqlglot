@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     unit_to_var,
     trim_sql,
     timestrtotime_sql,
+    build_group_concat,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -349,7 +350,7 @@ class MySQL(Dialect):
                 expressions=self._parse_csv(self._parse_assignment),
                 charset=self._match(TokenType.USING) and self._parse_var(),
             ),
-            "GROUP_CONCAT": lambda self: self._parse_group_concat(),
+            "GROUP_CONCAT": build_group_concat,
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
@@ -675,39 +676,6 @@ class MySQL(Dialect):
             return super()._parse_type(
                 parse_interval=parse_interval, fallback_to_identifier=fallback_to_identifier
             )
-
-        def _parse_group_concat(self) -> t.Optional[exp.Expression]:
-            def concat_exprs(
-                node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
-            ) -> exp.Expression:
-                if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
-                    concat_exprs = [
-                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
-                    ]
-                    node.set("expressions", concat_exprs)
-                    return node
-                if len(exprs) == 1:
-                    return exprs[0]
-                return self.expression(exp.Concat, expressions=args, safe=True)
-
-            args = self._parse_csv(self._parse_lambda)
-
-            if args:
-                order = args[-1] if isinstance(args[-1], exp.Order) else None
-
-                if order:
-                    # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
-                    # remove 'expr' from exp.Order and add it back to args
-                    args[-1] = order.this
-                    order.set("this", concat_exprs(order.this, args))
-
-                this = order or concat_exprs(args[0], args)
-            else:
-                this = None
-
-            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
-
-            return self.expression(exp.GroupConcat, this=this, separator=separator)
 
         def _parse_alter_table_alter_index(self) -> exp.AlterIndex:
             index = self._parse_field(any_token=True)

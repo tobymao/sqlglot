@@ -8,12 +8,14 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     binary_from_function,
     build_formatted_time,
+    groupconcat_sql,
     rename_func,
     strposition_sql,
     timestrtotime_sql,
     unit_to_str,
     timestamptrunc_sql,
     build_date_delta,
+    build_group_concat,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -120,6 +122,7 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
             "LONG VARCHAR": TokenType.TEXT,
+            "SEPARATOR": TokenType.SEPARATOR,
         }
         KEYWORDS.pop("DIV")
 
@@ -188,6 +191,45 @@ class Exasol(Dialect):
                 this=self._match(TokenType.IS) and self._parse_string(),
             ),
         }
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
+            **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), build_group_concat),
+        }
+
+        def _parse_group_concat(self) -> t.Optional[exp.Expression]:
+            def concat_exprs(
+                node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
+            ) -> exp.Expression:
+                if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
+                    concat_exprs = [
+                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
+                    ]
+                    node.set("expressions", concat_exprs)
+                    return node
+                if len(exprs) == 1:
+                    return exprs[0]
+                return self.expression(exp.Concat, expressions=args, safe=True)
+
+            args = self._parse_csv(self._parse_lambda)
+
+            if args:
+                order = args[-1] if isinstance(args[-1], exp.Order) else None
+
+                if order:
+                    # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
+                    # remove 'expr' from exp.Order and add it back to args
+                    args[-1] = order.this
+                    order.set("this", concat_exprs(order.this, args))
+
+                this = order or concat_exprs(args[0], args)
+            else:
+                this = None
+
+            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
+
+            return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
@@ -247,6 +289,9 @@ class Exasol(Dialect):
             exp.TsOrDsDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DatetimeTrunc: timestamptrunc_sql(),
+            exp.GroupConcat: lambda self, e: groupconcat_sql(
+                self, e, func_name="LISTAGG", within_group=True
+            ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDIT_DISTANCE")

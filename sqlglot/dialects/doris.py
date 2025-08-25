@@ -761,7 +761,7 @@ class Doris(MySQL):
             partition_expressions = self.expressions(
                 expression, key="partition_expressions", indent=False
             )
-            create_sql = self.expressions(expression, "create_expressions", indent=False)
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
 
         def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:

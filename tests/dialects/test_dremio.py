@@ -175,3 +175,10 @@ class TestDremio(Validator):
             "SELECT DATE_FORMAT(CAST('2025-08-18 15:30:00' AS TIMESTAMP), 'yyyy-mm-dd')",
             "SELECT TO_CHAR(CAST('2025-08-18 15:30:00' AS TIMESTAMP), 'yyyy-mm-dd')",
         )
+
+    def test_array_generate_range(self):
+        self.validate_all(
+            "ARRAY_GENERATE_RANGE(1, 4)",
+            read={"dremio": "ARRAY_GENERATE_RANGE(1, 4)"},
+            write={"duckdb": "GENERATE_SERIES(1, 4)"},
+        )

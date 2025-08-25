@@ -145,6 +145,9 @@ class TestDoris(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (c1 INT, c2 DATE) PARTITION BY (DATE_TRUNC(c2, 'MONTH'))"
         )
+        self.validate_identity(
+            "CREATE TABLE test_table (c1 INT) PARTITION BY LIST (`c1`) (PARTITION p1 VALUES IN (1, 2), PARTITION p2 VALUES IN (3))"
+        )
 
     def test_table_alias_conversion(self):
         """Test conversion from postgres to Doris for DELETE/UPDATE statements with table aliases."""

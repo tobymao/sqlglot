@@ -119,7 +119,6 @@ class TestDremio(Validator):
             read={
                 "dremio": f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
-                "oracle": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FF6 %Z')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
             write={
@@ -127,6 +126,7 @@ class TestDremio(Validator):
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FF6 %Z')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
+                "databricks": "SELECT DATE_FORMAT(CAST('2025-06-24 12:34:56' AS TIMESTAMP), 'yy-DD HH:mm:ss.SSSSSS z')",
             },
         )
 

@@ -25,7 +25,7 @@ from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
-from sqlglot.trie import new_trie
+from sqlglot.trie import new_trie, in_trie, TrieResult
 
 DATE_ADD_OR_DIFF = t.Union[
     exp.DateAdd,
@@ -2033,11 +2033,11 @@ def build_timetostr_or_tochar(args: t.List, dialect: DialectType) -> exp.TimeToS
         is_string_literal = format_str.is_string
 
         if is_temporal or is_string_literal:
-            try:
-                dialect_name = dialect.__class__.__name__.lower()
-                return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
-            except Exception:
-                pass  # If format isn't valid, fall back to ToChar
+            format_str_value = format_str.name
+            if is_valid_time_format(format_str_value, dialect.__class__.__name__.lower()):
+                return build_formatted_time(
+                    exp.TimeToStr, dialect.__class__.__name__.lower(), default=True
+                )(args)
 
     return exp.ToChar.from_arg_list(args)
 
@@ -2048,3 +2048,47 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
     )
+
+
+def is_valid_time_format(format_str: str, dialect: str) -> bool:
+    if not format_str:
+        return False
+
+    dialect_cls = Dialect.get_or_raise(dialect)
+    mapping = getattr(dialect_cls, "TIME_MAPPING", None)
+    if not mapping:
+        return False
+
+    # Normalize keys for case-insensitive matching
+    normalized_keys = {key.lower(): val for key, val in mapping.items()}
+    trie = new_trie(normalized_keys)
+    size = len(format_str)
+    start = 0
+
+    while start < size:
+        end = start + 1
+        current = trie
+        last_match = None
+        last_end = None  # Initialize as None, meaning no match yet
+
+        while end <= size:
+            chunk = format_str[start:end]
+            result, current = in_trie(current, chunk[-1].lower())
+            if result == TrieResult.FAILED:
+                break
+            if result == TrieResult.EXISTS:
+                last_match = chunk
+                last_end = end
+            end += 1
+
+        if last_match is not None and last_end is not None:
+            start = last_end
+        else:
+            char = format_str[start]
+            if not char.isalnum():  # allow literal symbols like '-', ':', ' '
+                start += 1
+            else:
+                return False
+
+    # valid datetime format string for this dialect
+    return True

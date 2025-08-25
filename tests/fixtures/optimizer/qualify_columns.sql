@@ -284,8 +284,8 @@ SELECT DATE_TRUNC(col1, WEEK(MONDAY)), col2 FROM t;
 SELECT DATE_TRUNC(t.col1, WEEK(MONDAY)) AS _col_0, t.col2 AS col2 FROM t AS t;
 
 # execute: false
-SELECT first FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
-SELECT tbl.first AS first FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
+SELECT first, second FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
+SELECT tbl.first AS first, tbl.second AS second FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
 
 --------------------------------------
 -- Derived tables

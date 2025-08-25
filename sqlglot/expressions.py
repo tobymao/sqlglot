@@ -4909,6 +4909,7 @@ class Alter(Expression):
         "options": False,
         "cluster": False,
         "not_valid": False,
+        "check": False,
     }
 
     @property

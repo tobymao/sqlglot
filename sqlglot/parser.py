@@ -7604,6 +7604,7 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists()
         only = self._match_text_seq("ONLY")
         this = self._parse_table(schema=True)
+        check = self._match_text_seq("WITH", "CHECK")
         cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
         if self._next:
@@ -7626,6 +7627,7 @@ class Parser(metaclass=_Parser):
                     options=options,
                     cluster=cluster,
                     not_valid=not_valid,
+                    check=check,
                 )
 
         return self._parse_as_command(start)

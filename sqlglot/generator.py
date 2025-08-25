@@ -3561,8 +3561,9 @@ class Generator(metaclass=_Generator):
         options = f", {options}" if options else ""
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
+        check = " WITH CHECK" if expression.args.get("check") else ""
 
-        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{self.sep()}{actions_sql}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
 
     def add_column_sql(self, expression: exp.Expression) -> str:
         sql = self.sql(expression)

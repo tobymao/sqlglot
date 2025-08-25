@@ -15,7 +15,6 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     timestamptrunc_sql,
     build_date_delta,
-    build_group_concat,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -195,41 +194,8 @@ class Exasol(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
-            **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), build_group_concat),
+            **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
         }
-
-        def _parse_group_concat(self) -> t.Optional[exp.Expression]:
-            def concat_exprs(
-                node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
-            ) -> exp.Expression:
-                if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
-                    concat_exprs = [
-                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
-                    ]
-                    node.set("expressions", concat_exprs)
-                    return node
-                if len(exprs) == 1:
-                    return exprs[0]
-                return self.expression(exp.Concat, expressions=args, safe=True)
-
-            args = self._parse_csv(self._parse_lambda)
-
-            if args:
-                order = args[-1] if isinstance(args[-1], exp.Order) else None
-
-                if order:
-                    # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
-                    # remove 'expr' from exp.Order and add it back to args
-                    args[-1] = order.this
-                    order.set("this", concat_exprs(order.this, args))
-
-                this = order or concat_exprs(args[0], args)
-            else:
-                this = None
-
-            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
-
-            return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType

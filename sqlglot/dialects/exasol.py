@@ -186,33 +186,37 @@ class Exasol(Dialect):
         }
 
         def _parse_group_concat(self) -> t.Optional[exp.Expression]:
+            def concat_exprs(
+                node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
+            ) -> exp.Expression:
+                if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
+                    concat_exprs = [
+                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
+                    ]
+                    node.set("expressions", concat_exprs)
+                    return node
+                if len(exprs) == 1:
+                    return exprs[0]
+                return self.expression(exp.Concat, expressions=args, safe=True)
+
             args = self._parse_csv(self._parse_lambda)
-            core: t.Optional[exp.Expression] = None
 
             if args:
-                order = args.pop() if isinstance(args[-1], exp.Order) else None
-                if isinstance(order, exp.Order):
-                    args.append(order.this)
-
-                def concat_expr(expressions: t.List[exp.Expression]) -> exp.Expression:
-                    return (
-                        expressions[0]
-                        if len(expressions) == 1
-                        else self.expression(exp.Concat, expressions=expressions, safe=True)
-                    )
-
-                if args and isinstance(args[0], exp.Distinct) and len(args[0].expressions) > 1:
-                    args[0].set("expressions", [concat_expr(args[0].expressions)])
-                    core = args[0]
-                else:
-                    core = concat_expr(args)
+                order = args[-1] if isinstance(args[-1], exp.Order) else None
 
                 if order:
-                    order.set("this", core)
-                    core = order
+                    # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
+                    # remove 'expr' from exp.Order and add it back to args
+                    args[-1] = order.this
+                    order.set("this", concat_exprs(order.this, args))
 
-            sep = self._parse_field() if self._match(TokenType.SEPARATOR) else None
-            return self.expression(exp.GroupConcat, this=core, separator=sep)
+                this = order or concat_exprs(args[0], args)
+            else:
+                this = None
+
+            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
+
+            return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType

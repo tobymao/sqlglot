@@ -4182,6 +4182,14 @@ class Generator(metaclass=_Generator):
         parameters = self.sql(expression, "params_struct")
         return self.func("PREDICT", model, table, parameters or None)
 
+    def generateembedding_sql(self, expression: exp.GenerateEmbedding) -> str:
+        model = self.sql(expression, "this")
+        model = f"MODEL {model}"
+        table = self.sql(expression, "expression")
+        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
+        parameters = self.sql(expression, "params_struct")
+        return self.func("GENERATE_EMBEDDING", model, table, parameters or None)
+
     def forin_sql(self, expression: exp.ForIn) -> str:
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")

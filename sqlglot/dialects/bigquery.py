@@ -700,6 +700,7 @@ class BigQuery(Dialect):
             ),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
+            "GENERATE_EMBEDDING": lambda self: self._parse_generate_embedding(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -995,6 +996,20 @@ class BigQuery(Dialect):
                     expr.set(arg.this.name, arg)
 
             return expr
+
+        def _parse_generate_embedding(self) -> exp.GenerateEmbedding:
+            self._match_text_seq("MODEL")
+            this = self._parse_table()
+
+            self._match(TokenType.COMMA)
+            self._match_text_seq("TABLE")
+
+            return self.expression(
+                exp.GenerateEmbedding,
+                this=this,
+                expression=self._parse_table(),
+                params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
+            )
 
         def _parse_export_data(self) -> exp.Export:
             self._match_text_seq("DATA")

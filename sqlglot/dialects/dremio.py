@@ -11,6 +11,10 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
+
+# Add CURRENT_DATE_UTC as a COMMAND keyword in the tokenizer
+
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -131,6 +135,16 @@ class Dremio(Dialect):
         "tzo": "%z",  # numeric offset (+0200)
     }
 
+    @staticmethod
+    def _current_date_utc_expr() -> exp.Expression:
+        return exp.Cast(
+            this=exp.AtTimeZone(
+                this=exp.CurrentTimestamp(),
+                zone=exp.Literal.string("UTC"),
+            ),
+            to=exp.DataType.build("DATE"),
+        )
+
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
 
@@ -142,7 +156,21 @@ class Dremio(Dialect):
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
+            "CURRENT_DATE_UTC": lambda args: Dremio._current_date_utc_expr(),
         }
+
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "CURRENT_DATE_UTC": TokenType.COMMAND,
+        }
+
+        def _parse_primary(self) -> t.Optional[exp.Expression]:
+            if self._match(TokenType.COMMAND) and self._prev.text.upper() == "CURRENT_DATE_UTC":
+                if self._match(TokenType.L_PAREN):
+                    self._match(TokenType.R_PAREN)
+                return Dremio._current_date_utc_expr()
+
+            return super()._parse_primary()
 
     class Generator(generator.Generator):
         NVL2_SUPPORTED = False
@@ -189,5 +217,17 @@ class Dremio(Dialect):
 
             return super().datatype_sql(expression)
 
-    class Tokenizer(tokens.Tokenizer):
-        COMMENTS = ["--", "//", ("/*", "*/")]
+        def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
+            # Match: CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE)
+            if expression.is_type(exp.DataType.Type.DATE):
+                at_time_zone = expression.this
+
+                if (
+                    isinstance(at_time_zone, exp.AtTimeZone)
+                    and isinstance(at_time_zone.this, exp.CurrentTimestamp)
+                    and isinstance(at_time_zone.args.get("zone"), exp.Literal)
+                    and at_time_zone.args["zone"].this.upper() == "UTC"
+                ):
+                    return "CURRENT_DATE_UTC"
+
+            return super().cast_sql(expression, safe_prefix)

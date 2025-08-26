@@ -251,3 +251,22 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(asset_id1, asset_id2) AS approx_distinct_asset_id FROM acd_assets")
+
+    def test_logical(self):
+        self.validate_all(
+            "SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",
+            read={
+                "mysql": "SELECT TRUE XOR FALSE",
+                "singlestore": "SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",
+            },
+        )
+
+    def test_string_functions(self):
+        self.validate_all(
+            "SELECT 'a' RLIKE 'b'",
+            read={
+                "bigquery": "SELECT REGEXP_CONTAINS('a', 'b')",
+                "singlestore": "SELECT 'a' RLIKE 'b'",
+            },
+        )
+        self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")

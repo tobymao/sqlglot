@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     json_extract_segments,
     json_path_key_only_name,
     rename_func,
+    bool_xor_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.expressions import DataType
@@ -244,6 +245,8 @@ class SingleStore(MySQL):
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),
+            exp.Xor: bool_xor_sql,
+            exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

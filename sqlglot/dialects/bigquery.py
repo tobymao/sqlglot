@@ -295,6 +295,22 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     return expression
 
 
+def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
+    self._annotate_args(expression)
+
+    struct_type = exp.DataType(
+        this=exp.DataType.Type.STRUCT,
+        expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
+        nested=True,
+    )
+    self._set_type(
+        expression,
+        exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
+    )
+
+    return expression
+
+
 @unsupported_args("ins_cost", "del_cost", "sub_cost")
 def _levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein) -> str:
     max_dist = expression.args.get("max_dist")
@@ -473,6 +489,7 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
+        exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,
@@ -624,6 +641,7 @@ class BigQuery(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
@@ -1105,6 +1123,7 @@ class BigQuery(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ApproxTopK: rename_func("APPROX_TOP_COUNT"),
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),

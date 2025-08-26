@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from sqlglot import expressions as exp
-from sqlglot import parser, generator, tokens
+from sqlglot import parser, generator
 from sqlglot.dialects.dialect import (
     Dialect,
     build_timetostr_or_tochar,
@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -74,6 +73,16 @@ def build_date_delta_with_cast_interval(
     return _builder
 
 
+def build_current_date_utc(args=None) -> exp.Expression:
+    return exp.Cast(
+        this=exp.AtTimeZone(
+            this=exp.CurrentTimestamp(),
+            zone=exp.Literal.string("UTC"),
+        ),
+        to=exp.DataType.build("DATE"),
+    )
+
+
 class Dremio(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     CONCAT_COALESCE = True
@@ -132,16 +141,6 @@ class Dremio(Dialect):
         "tzo": "%z",  # numeric offset (+0200)
     }
 
-    @staticmethod
-    def _current_date_utc_expr() -> exp.Expression:
-        return exp.Cast(
-            this=exp.AtTimeZone(
-                this=exp.CurrentTimestamp(),
-                zone=exp.Literal.string("UTC"),
-            ),
-            to=exp.DataType.build("DATE"),
-        )
-
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
 
@@ -153,21 +152,8 @@ class Dremio(Dialect):
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
-            "CURRENT_DATE_UTC": lambda args: Dremio._current_date_utc_expr(),
+            "CURRENT_DATE_UTC": build_current_date_utc,
         }
-
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            "CURRENT_DATE_UTC": TokenType.COMMAND,
-        }
-
-        def _parse_primary(self) -> t.Optional[exp.Expression]:
-            if self._match(TokenType.COMMAND) and self._prev.text.upper() == "CURRENT_DATE_UTC":
-                if self._match(TokenType.L_PAREN):
-                    self._match(TokenType.R_PAREN)
-                return Dremio._current_date_utc_expr()
-
-            return super()._parse_primary()
 
     class Generator(generator.Generator):
         NVL2_SUPPORTED = False
@@ -223,7 +209,7 @@ class Dremio(Dialect):
                     isinstance(at_time_zone, exp.AtTimeZone)
                     and isinstance(at_time_zone.this, exp.CurrentTimestamp)
                     and isinstance(at_time_zone.args.get("zone"), exp.Literal)
-                    and at_time_zone.args["zone"].this.upper() == "UTC"
+                    and at_time_zone.text("zone").upper() == "UTC"
                 ):
                     return "CURRENT_DATE_UTC"
 

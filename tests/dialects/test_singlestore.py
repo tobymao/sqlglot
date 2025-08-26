@@ -250,3 +250,4 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT 'a' RLIKE 'b'",
             },
         )
+        self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")

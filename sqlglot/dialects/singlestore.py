@@ -57,6 +57,7 @@ class SingleStore(MySQL):
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,
             "::%": TokenType.DCOLONPERCENT,
+            "REGEXP": TokenType.RLIKE,
         }
 
     class Parser(MySQL.Parser):

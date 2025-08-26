@@ -242,6 +242,18 @@ class TestSingleStore(Validator):
             },
         )
 
+    def test_math_functions(self):
+        self.validate_all(
+            "SELECT APPROX_COUNT_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+            read={
+                "singlestore": "SELECT APPROX_COUNT_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+                "": "SELECT HLL(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+            },
+        )
+        self.validate_identity(
+            "SELECT APPROX_COUNT_DISTINCT(asset_id1, asset_id2) AS approx_distinct_asset_id FROM acd_assets"
+        )
+
     def test_logical(self):
         self.validate_all(
             "SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",

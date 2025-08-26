@@ -473,6 +473,7 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
+        exp.ApproxTopK: lambda self, e: self._annotate_by_agg_func_arg(e),
         exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,
@@ -624,6 +625,7 @@ class BigQuery(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
@@ -1059,6 +1061,7 @@ class BigQuery(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ApproxTopK: rename_func("APPROX_TOP_COUNT"),
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),

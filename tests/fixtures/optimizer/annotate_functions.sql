@@ -801,6 +801,13 @@ BIGINT;
 FARM_FINGERPRINT(b'foo');
 BIGINT;
 
+# dialect: bigquery
+APPROX_TOP_COUNT(tbl.str_col, 2);
+ARRAY<STRUCT<STRING, BIGINT>>;
+
+# dialect: bigquery
+APPROX_TOP_COUNT(tbl.bigint_col, 2);
+ARRAY<STRUCT<BIGINT, BIGINT>>;
 
 --------------------------------------
 -- Snowflake

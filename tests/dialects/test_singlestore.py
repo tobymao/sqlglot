@@ -307,6 +307,16 @@ class TestSingleStore(Validator):
                 "": "SELECT APPROX_QUANTILE(test1, 0.3, 0.4) FROM test_scores",
             },
         )
+        self.validate_all(
+            "SELECT VAR_SAMP(yearly_total) FROM player_scores",
+            read={
+                "singlestore": "SELECT VAR_SAMP(yearly_total) FROM player_scores",
+                "": "SELECT VARIANCE(yearly_total) FROM player_scores",
+            },
+            write={
+                "": "SELECT VARIANCE(yearly_total) FROM player_scores",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

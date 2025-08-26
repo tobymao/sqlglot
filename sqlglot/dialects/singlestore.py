@@ -278,6 +278,7 @@ class SingleStore(MySQL):
                     e.args.get("error_tolerance"),
                 )
             ),
+            exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }

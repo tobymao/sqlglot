@@ -5489,6 +5489,12 @@ class ApproxTopK(AggFunc):
     arg_types = {"this": True, "expression": False, "counters": False}
 
 
+class FarmFingerprint(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["FARM_FINGERPRINT", "FARMFINGERPRINT64"]
+
+
 class Flatten(Func):
     pass
 

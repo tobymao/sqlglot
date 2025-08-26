@@ -286,6 +286,13 @@ class TestSingleStore(Validator):
                 "": "SELECT LOGICAL_OR(age > 18) FROM users",
             },
         )
+        self.validate_all(
+            "SELECT MIN(ABS(age > 18)) FROM `users`",
+            read={
+                "singlestore": "SELECT MIN(ABS(age > 18)) FROM `users`",
+                "": "SELECT LOGICAL_AND(age > 18) FROM users",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

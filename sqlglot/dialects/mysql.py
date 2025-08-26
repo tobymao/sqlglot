@@ -676,54 +676,6 @@ class MySQL(Dialect):
                 parse_interval=parse_interval, fallback_to_identifier=fallback_to_identifier
             )
 
-        def _parse_group_concat(self) -> t.Optional[exp.Expression]:
-            def concat_exprs(
-                node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
-            ) -> exp.Expression:
-                if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
-                    concat_exprs = [
-                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
-                    ]
-                    node.set("expressions", concat_exprs)
-                    return node
-                if len(exprs) == 1:
-                    return exprs[0]
-                return self.expression(exp.Concat, expressions=args, safe=True)
-
-            args = self._parse_csv(self._parse_lambda)
-
-            if args:
-                order = args[-1] if isinstance(args[-1], exp.Order) else None
-
-                if order:
-                    # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
-                    # remove 'expr' from exp.Order and add it back to args
-                    args[-1] = order.this
-                    order.set("this", concat_exprs(order.this, args))
-
-                this = order or concat_exprs(args[0], args)
-            else:
-                this = None
-
-            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
-
-            return self.expression(exp.GroupConcat, this=this, separator=separator)
-
-        def _parse_json_value(self) -> exp.JSONValue:
-            this = self._parse_bitwise()
-            self._match(TokenType.COMMA)
-            path = self._parse_bitwise()
-
-            returning = self._match(TokenType.RETURNING) and self._parse_type()
-
-            return self.expression(
-                exp.JSONValue,
-                this=this,
-                path=self.dialect.to_json_path(path),
-                returning=returning,
-                on_condition=self._parse_on_condition(),
-            )
-
         def _parse_alter_table_alter_index(self) -> exp.AlterIndex:
             index = self._parse_field(any_token=True)
 

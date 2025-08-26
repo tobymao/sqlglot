@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
-    build_timestamp_trunc,
     property_sql,
     rename_func,
     time_format,
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -44,6 +46,22 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     )
 
 
+# Accept both DATE_TRUNC(datetime, unit) and DATE_TRUNC(unit, datetime)
+def _build_date_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+    a0, a1 = seq_get(args, 0), seq_get(args, 1)
+
+    def _is_unit_like(e: exp.Expression | None) -> bool:
+        if not (isinstance(e, exp.Literal) and e.is_string):
+            return False
+        text = e.this
+        return not any(ch.isdigit() for ch in text)
+
+    # Determine which argument is the unit
+    unit, this = (a0, a1) if _is_unit_like(a0) else (a1, a0)
+
+    return exp.TimestampTrunc(this=this, unit=unit)
+
+
 class Doris(MySQL):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
@@ -53,7 +71,7 @@ class Doris(MySQL):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
-            "DATE_TRUNC": build_timestamp_trunc,
+            "DATE_TRUNC": _build_date_trunc,
             "MONTHS_ADD": exp.AddMonths.from_arg_list,
             "REGEXP": exp.RegexpLike.from_arg_list,
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
@@ -62,11 +80,18 @@ class Doris(MySQL):
         FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
 
+        NO_PAREN_FUNCTIONS = MySQL.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_DATE)
+
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+            # Plain KEY without UNIQUE/DUPLICATE/AGGREGATE prefixes should be treated as UniqueKeyProperty with unique=False
+            "KEY": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
+            "BUILD": lambda self: self._parse_build_property(),
+            "REFRESH": lambda self: self._parse_refresh_property(),
         }
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
@@ -105,9 +130,27 @@ class Doris(MySQL):
             part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
             return self.expression(exp.Partition, expressions=[part_range])
 
+        def _parse_partition_definition_list(self) -> exp.Partition:
+            # PARTITION <name> VALUES IN (<value_csv>)
+            self._match_text_seq("PARTITION")
+            name = self._parse_id_var()
+            self._match_text_seq("VALUES", "IN")
+            values = self._parse_wrapped_csv(self._parse_expression)
+            part_list = self.expression(exp.PartitionList, this=name, expressions=values)
+            return self.expression(exp.Partition, expressions=[part_list])
+
         def _parse_partition_by_opt_range(
             self,
-        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty:
+        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty:
+            if self._match_text_seq("LIST"):
+                return self.expression(
+                    exp.PartitionByListProperty,
+                    partition_expressions=self._parse_wrapped_id_vars(),
+                    create_expressions=self._parse_wrapped_csv(
+                        self._parse_partition_definition_list
+                    ),
+                )
+
             if not self._match_text_seq("RANGE"):
                 return super()._parse_partitioned_by()
 
@@ -129,10 +172,33 @@ class Doris(MySQL):
                 create_expressions=create_expressions,
             )
 
+        def _parse_build_property(self) -> exp.BuildProperty:
+            return self.expression(exp.BuildProperty, this=self._parse_var(upper=True))
+
+        def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
+            method = self._parse_var(upper=True)
+
+            self._match(TokenType.ON)
+
+            kind = self._match_texts(("MANUAL", "COMMIT", "SCHEDULE")) and self._prev.text.upper()
+            every = self._match_text_seq("EVERY") and self._parse_number()
+            unit = self._parse_var(any_token=True) if every else None
+            starts = self._match_text_seq("STARTS") and self._parse_string()
+
+            return self.expression(
+                exp.RefreshTriggerProperty,
+                method=method,
+                kind=kind,
+                every=every,
+                unit=unit,
+                starts=starts,
+            )
+
     class Generator(MySQL.Generator):
         LAST_DAY_SUPPORTS_DATE_PART = False
         VARCHAR_REQUIRES_SIZE = False
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
+        RENAME_TABLE_WITH_DB = False
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
@@ -145,6 +211,10 @@ class Doris(MySQL):
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}
@@ -160,6 +230,7 @@ class Doris(MySQL):
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.Cast: cast_sql_with_alias,
+            exp.CurrentDate: lambda self, _: self.func("CURRENT_DATE"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(
@@ -661,9 +732,18 @@ class Doris(MySQL):
             "year",
         }
 
+        def uniquekeyproperty_sql(
+            self, expression: exp.UniqueKeyProperty, prefix: str = "UNIQUE KEY"
+        ) -> str:
+            create_stmt = expression.find_ancestor(exp.Create)
+            if create_stmt and create_stmt.args["properties"].find(exp.MaterializedProperty):
+                return super().uniquekeyproperty_sql(expression, prefix="KEY")
+
+            return super().uniquekeyproperty_sql(expression)
+
         def partition_sql(self, expression: exp.Partition) -> str:
             parent = expression.parent
-            if isinstance(parent, exp.PartitionByRangeProperty):
+            if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
                 return ", ".join(self.sql(e) for e in expression.expressions)
             return super().partition_sql(expression)
 
@@ -684,7 +764,9 @@ class Doris(MySQL):
 
             return f"PARTITION {name} VALUES LESS THAN ({self.sql(values[0])})"
 
-        def partitionbyrangepropertydynamic_sql(self, expression):
+        def partitionbyrangepropertydynamic_sql(
+            self, expression: exp.PartitionByRangePropertyDynamic
+        ) -> str:
             # Generates: FROM ("start") TO ("end") INTERVAL N UNIT
             start = self.sql(expression, "start")
             end = self.sql(expression, "end")
@@ -698,11 +780,38 @@ class Doris(MySQL):
 
             return f"FROM ({start}) TO ({end}) {interval}"
 
-        def partitionbyrangeproperty_sql(self, expression):
-            partition_expressions = ", ".join(
-                self.sql(e) for e in expression.args.get("partition_expressions") or []
+        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
+            partition_expressions = self.expressions(
+                expression, key="partition_expressions", indent=False
             )
-            create_expressions = expression.args.get("create_expressions") or []
-            # Handle both static and dynamic partition definitions
-            create_sql = ", ".join(self.sql(e) for e in create_expressions)
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
             return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
+
+        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
+            partition_expressions = self.expressions(
+                expression, key="partition_expressions", indent=False
+            )
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
+            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
+
+        def partitionlist_sql(self, expression: exp.PartitionList) -> str:
+            name = self.sql(expression, "this")
+            values = self.expressions(expression, indent=False)
+            return f"PARTITION {name} VALUES IN ({values})"
+
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            node = expression.this
+            if isinstance(node, exp.Schema):
+                parts = ", ".join(self.sql(e) for e in node.expressions)
+                return f"PARTITION BY ({parts})"
+            return f"PARTITION BY ({self.sql(node)})"
+
+        def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+            """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""
+            ancestor = expression.find_ancestor(exp.Update, exp.Delete, exp.Select)
+            if not isinstance(ancestor, exp.Select):
+                sep = " "
+            return super().table_sql(expression, sep=sep)
+
+        def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
+            return super().alterrename_sql(expression, include_to=False)

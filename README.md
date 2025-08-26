@@ -34,6 +34,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 * [Run Tests and Lint](#run-tests-and-lint)
 * [Benchmarks](#benchmarks)
 * [Optional Dependencies](#optional-dependencies)
+* [Supported Dialects](#supported-dialects)
 
 ## Install
 
@@ -218,7 +219,7 @@ sqlglot.errors.ParseError: Expecting ). Line 1, Col: 34.
 Structured syntax errors are accessible for programmatic use:
 
 ```python
-import sqlglot
+import sqlglot.errors
 try:
     sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 except sqlglot.errors.ParseError as e:
@@ -546,3 +547,41 @@ SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify litera
 ```sql
 x + interval '1' month
 ```
+
+## Supported Dialects
+
+| Dialect | Support Level |
+|---------|---------------|
+| Athena | Official |
+| BigQuery | Official |
+| ClickHouse | Official |
+| Databricks | Official |
+| Doris | Community |
+| Dremio | Community |
+| Drill | Community |
+| Druid | Community |
+| DuckDB | Official |
+| Exasol | Community |
+| Fabric | Community |
+| Hive | Official |
+| Materialize | Community |
+| MySQL | Official |
+| Oracle | Official |
+| Postgres | Official |
+| Presto | Official |
+| PRQL | Community |
+| Redshift | Official |
+| RisingWave | Community |
+| SingleStore | Community |
+| Snowflake | Official |
+| Spark | Official |
+| SQLite | Official |
+| StarRocks | Official |
+| Tableau | Official |
+| Teradata | Community |
+| Trino | Official |
+| TSQL | Official |
+
+**Official Dialects** are maintained by the core SQLGlot team with higher priority for bug fixes and feature additions.
+
+**Community Dialects** are developed and maintained primarily through community contributions. These are fully functional but may receive lower priority for issue resolution compared to officially supported dialects. We welcome and encourage community contributions to improve these dialects.

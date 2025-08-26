@@ -786,6 +786,7 @@ class TestParser(unittest.TestCase):
         warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN b ON a.id = b.id " * 38))
         warn_over_threshold("SELECT * FROM a " + ("LEFT JOIN UNNEST(ARRAY[]) " * 15))
         warn_over_threshold("SELECT * FROM a " + ("OUTER APPLY (SELECT * FROM b) " * 30))
+        warn_over_threshold("SELECT * FROM a " + ("NATURAL FULL OUTER JOIN x " * 30))
 
     def test_parse_properties(self):
         self.assertEqual(
@@ -1015,3 +1016,16 @@ class TestParser(unittest.TestCase):
             parse_one("select * from tbl pivot(col1 for col2 in (val1, val1))")
 
         self.assertIn("Expecting an aggregation function in PIVOT", str(ctx.exception))
+
+    def test_multiple_query_modifiers(self):
+        sql = "SELECT * FROM a WHERE b = 'true' AND c > 50 WHERE c = 'false'"
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql)
+
+        self.assertIn("Found multiple 'WHERE' clauses. Line 1, Col: 49.", str(ctx.exception))
+
+        self.assertEqual(
+            parse_one(sql, error_level=ErrorLevel.IGNORE).sql(),
+            "SELECT * FROM a WHERE c = 'false'",
+        )

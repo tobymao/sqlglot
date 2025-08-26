@@ -1458,6 +1458,11 @@ class DDL(Expression):
         return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
+# https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/Statement-Syntax/LOCKING-Request-Modifier/LOCKING-Request-Modifier-Syntax
+class LockingStatement(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class DML(Expression):
     def returning(
         self,
@@ -1613,6 +1618,10 @@ class SetItem(Expression):
     }
 
 
+class QueryBand(Expression):
+    arg_types = {"this": True, "scope": False, "update": False}
+
+
 class Show(Expression):
     arg_types = {
         "this": True,
@@ -1680,7 +1689,7 @@ class ProjectionDef(Expression):
 
 
 class TableAlias(Expression):
-    arg_types = {"this": False, "columns": False, "column_only": False}
+    arg_types = {"this": False, "columns": False}
 
     @property
     def columns(self):
@@ -2781,6 +2790,11 @@ class BackupProperty(Property):
     arg_types = {"this": True}
 
 
+# https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW/
+class BuildProperty(Property):
+    arg_types = {"this": True}
+
+
 class BlockCompressionProperty(Property):
     arg_types = {
         "autotemp": False,
@@ -3020,6 +3034,27 @@ class PartitionByRangeProperty(Property):
 # https://docs.starrocks.io/docs/table_design/data_distribution/#range-partitioning
 class PartitionByRangePropertyDynamic(Expression):
     arg_types = {"this": False, "start": True, "end": True, "every": True}
+
+
+# https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning
+class PartitionByListProperty(Property):
+    arg_types = {"partition_expressions": True, "create_expressions": True}
+
+
+# https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning
+class PartitionList(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
+# https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
+class RefreshTriggerProperty(Property):
+    arg_types = {
+        "method": True,
+        "kind": False,
+        "every": False,
+        "unit": False,
+        "starts": False,
+    }
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
@@ -4295,7 +4330,14 @@ class Select(Query):
 
     @property
     def named_selects(self) -> t.List[str]:
-        return [e.output_name for e in self.expressions if e.alias_or_name]
+        selects = []
+
+        for e in self.expressions:
+            if e.alias_or_name:
+                selects.append(e.output_name)
+            elif isinstance(e, Aliases):
+                selects.extend([a.name for a in e.aliases])
+        return selects
 
     @property
     def is_star(self) -> bool:
@@ -4867,6 +4909,7 @@ class Alter(Expression):
         "options": False,
         "cluster": False,
         "not_valid": False,
+        "check": False,
     }
 
     @property
@@ -5292,7 +5335,7 @@ class TimeUnit(Expression):
 
     def __init__(self, **args):
         unit = args.get("unit")
-        if isinstance(unit, self.VAR_LIKE):
+        if type(unit) in self.VAR_LIKE:
             args["unit"] = Var(
                 this=(self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper()
             )
@@ -5416,6 +5459,10 @@ class BitwiseCountAgg(AggFunc):
     _sql_names = ["BIT_COUNT"]
 
 
+class ByteLength(Func):
+    pass
+
+
 class ArrayRemove(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -5449,6 +5496,15 @@ class Flatten(Func):
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Translate(Func):
+    arg_types = {"this": True, "from": True, "to": True}
+
+
+class Grouping(AggFunc):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
 
 
 class Anonymous(Func):
@@ -5518,7 +5574,12 @@ class Pad(Func):
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):
-    arg_types = {"this": True, "format": False, "nlsparam": False}
+    arg_types = {
+        "this": True,
+        "format": False,
+        "nlsparam": False,
+        "is_numeric": False,
+    }
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_decimal
@@ -5562,6 +5623,10 @@ class ConvertTimezone(Func):
         "timestamp": True,
         "options": False,
     }
+
+
+class CodePointsToString(Func):
+    pass
 
 
 class GenerateSeries(Func):
@@ -5791,6 +5856,18 @@ class JSONCast(Cast):
     pass
 
 
+class JustifyDays(Func):
+    pass
+
+
+class JustifyHours(Func):
+    pass
+
+
+class JustifyInterval(Func):
+    pass
+
+
 class Try(Func):
     pass
 
@@ -5945,6 +6022,10 @@ class DatetimeDiff(Func, TimeUnit):
 
 class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DateFromUnixDate(Func):
+    pass
 
 
 class DayOfWeek(Func):
@@ -6148,10 +6229,6 @@ class Floor(Func):
 
 class FromBase64(Func):
     pass
-
-
-class FeaturesAtTime(Func):
-    arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
 
 
 class ToBase64(Func):
@@ -6475,7 +6552,13 @@ class JSONExtractArray(Func):
 
 
 class JSONExtractScalar(Binary, Func):
-    arg_types = {"this": True, "expression": True, "only_json_types": False, "expressions": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "only_json_types": False,
+        "expressions": False,
+        "json_type": False,
+    }
     _sql_names = ["JSON_EXTRACT_SCALAR"]
     is_var_len_args = True
 
@@ -6489,6 +6572,7 @@ class JSONBExtract(Binary, Func):
 
 
 class JSONBExtractScalar(Binary, Func):
+    arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 
@@ -6509,6 +6593,14 @@ class ParseJSON(Func):
     arg_types = {"this": True, "expression": False, "safe": False}
 
 
+class ParseTime(Func):
+    arg_types = {"this": True, "format": True}
+
+
+class ParseDatetime(Func):
+    arg_types = {"this": True, "format": False, "zone": False}
+
+
 class Least(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
@@ -6520,6 +6612,10 @@ class Left(Func):
 
 class Right(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Reverse(Func):
+    pass
 
 
 class Length(Func):
@@ -6660,6 +6756,16 @@ class Predict(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-feature-time
+class FeaturesAtTime(Func):
+    arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
+
+
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding
+class GenerateEmbedding(Func):
+    arg_types = {"this": True, "expression": True, "params_struct": False}
+
+
 class Pow(Binary, Func):
     _sql_names = ["POWER", "POW"]
 
@@ -6794,6 +6900,10 @@ class Sign(Func):
 
 class SortArray(Func):
     arg_types = {"this": True, "asc": False}
+
+
+class Soundex(Func):
+    pass
 
 
 class Split(Func):
@@ -7047,6 +7157,14 @@ class UnixSeconds(Func):
     pass
 
 
+class UnixMicros(Func):
+    pass
+
+
+class UnixMillis(Func):
+    pass
+
+
 class Uuid(Func):
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 
@@ -7094,6 +7212,10 @@ class CovarPop(Binary, AggFunc):
 
 class Week(Func):
     arg_types = {"this": True, "mode": False}
+
+
+class WeekStart(Expression):
+    pass
 
 
 class XMLElement(Func):

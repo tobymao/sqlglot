@@ -13,7 +13,10 @@ class TestExasol(Validator):
         self.validate_identity("CAST(x AS MEDIUMTEXT)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS TINYBLOB)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS TINYTEXT)", "CAST(x AS VARCHAR)")
-        self.validate_identity("CAST(x AS TEXT)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS TEXT)", "CAST(x AS LONG VARCHAR)")
+        self.validate_identity(
+            "SELECT CAST((CAST(202305 AS INT) - 100) AS LONG VARCHAR) AS CAL_YEAR_WEEK_ADJUSTED"
+        )
         self.validate_identity("CAST(x AS VARBINARY)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS VARCHAR)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS CHAR)", "CAST(x AS CHAR)")
@@ -224,6 +227,20 @@ class TestExasol(Validator):
         )
         self.validate_identity("SELECT TO_CHAR(12345.6789) AS TO_CHAR")
         self.validate_identity("SELECT TO_CHAR(-12345.67890, '000G000G000D000000MI') AS TO_CHAR")
+
+        self.validate_identity(
+            "SELECT id, department, hire_date, GROUP_CONCAT(id ORDER BY hire_date SEPARATOR ',') OVER (PARTITION BY department rows between 1 preceding and 1 following) GROUP_CONCAT_RESULT from employee_table ORDER BY department, hire_date",
+            "SELECT id, department, hire_date, LISTAGG(id, ',') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+        )
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+            write={
+                "exasol": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
+                "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
+                "tsql": "STRING_AGG(x, ',') WITHIN GROUP (ORDER BY y DESC)",
+                "databricks": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
+            },
+        )
         self.validate_all(
             "EDIT_DISTANCE(col1, col2)",
             read={
@@ -320,6 +337,7 @@ class TestExasol(Validator):
         )
         self.validate_identity("SELECT TO_DATE('31-DECEMBER-1999', 'DD-MONTH-YYYY') AS TO_DATE")
         self.validate_identity("SELECT TO_DATE('31-DEC-1999', 'DD-MON-YYYY') AS TO_DATE")
+        self.validate_identity("SELECT WEEKOFYEAR('2024-05-22')", "SELECT WEEK('2024-05-22')")
 
         for fmt, alias in formats.items():
             with self.subTest(f"Testing TO_CHAR with format '{fmt}'"):
@@ -401,8 +419,40 @@ class TestExasol(Validator):
             },
         )
 
+        from sqlglot.dialects.exasol import DATE_UNITS
+
+        for unit in DATE_UNITS:
+            with self.subTest(f"Testing ADD_{unit}S"):
+                self.validate_all(
+                    f"SELECT ADD_{unit}S(DATE '2000-02-28', 1)",
+                    write={
+                        "exasol": f"SELECT ADD_{unit}S(CAST('2000-02-28' AS DATE), 1)",
+                        "bigquery": f"SELECT DATE_ADD(CAST('2000-02-28' AS DATE), INTERVAL 1 {unit})",
+                        "duckdb": f"SELECT CAST('2000-02-28' AS DATE) + INTERVAL 1 {unit}",
+                        "presto": f"SELECT DATE_ADD('{unit}', 1, CAST('2000-02-28' AS DATE))",
+                        "redshift": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                        "snowflake": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                        "tsql": f"SELECT DATEADD({unit}, 1, CAST('2000-02-28' AS DATE))",
+                    },
+                )
+
+            with self.subTest(f"Testing {unit}S_BETWEEN"):
+                self.validate_all(
+                    f"SELECT {unit}S_BETWEEN(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP)",
+                    write={
+                        "exasol": f"SELECT {unit}S_BETWEEN(CAST('2000-02-28 00:00:00' AS TIMESTAMP), CURRENT_TIMESTAMP())",
+                        "bigquery": f"SELECT DATE_DIFF(CAST('2000-02-28 00:00:00' AS DATETIME), CURRENT_TIMESTAMP(), {unit})",
+                        "duckdb": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "presto": f"SELECT DATE_DIFF('{unit}', CURRENT_TIMESTAMP, CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "redshift": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "snowflake": f"SELECT DATEDIFF({unit}, CURRENT_TIMESTAMP(), CAST('2000-02-28 00:00:00' AS TIMESTAMP))",
+                        "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2))",
+                    },
+                )
+
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
+        self.validate_identity("SELECT DIV(1234, 2) AS DIV")
 
     def test_scalar(self):
         self.validate_all(

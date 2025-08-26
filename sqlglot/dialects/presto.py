@@ -31,7 +31,6 @@ from sqlglot.dialects.dialect import (
     sequence_sql,
     build_regexp_extract,
     explode_to_unnest_sql,
-    space_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -506,7 +505,6 @@ class Presto(Dialect):
                     amend_exploded_column_table,
                 ]
             ),
-            exp.Space: space_sql,
             exp.SortArray: _no_sort_array,
             exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",

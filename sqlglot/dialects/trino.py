@@ -21,6 +21,7 @@ class Trino(Presto):
             **Presto.Parser.FUNCTION_PARSERS,
             "TRIM": lambda self: self._parse_trim(),
             "JSON_QUERY": lambda self: self._parse_json_query(),
+            "JSON_VALUE": lambda self: self._parse_json_value(),
             "LISTAGG": lambda self: self._parse_string_agg(),
         }
 

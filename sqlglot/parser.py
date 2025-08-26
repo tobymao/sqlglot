@@ -577,7 +577,6 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.ANTI,
-        TokenType.APPLY,
         TokenType.ASOF,
         TokenType.FULL,
         TokenType.LEFT,
@@ -790,6 +789,11 @@ class Parser(metaclass=_Parser):
             this=this,
             expression=key,
         ),
+    }
+
+    CAST_COLUMN_OPERATORS = {
+        TokenType.DOTCOLON,
+        TokenType.DCOLON,
     }
 
     EXPRESSION_PARSERS = {
@@ -2079,7 +2083,24 @@ class Parser(metaclass=_Parser):
 
             if create_token.token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
-                extend_props(self._parse_properties())
+                props = self._parse_properties()
+                if props:
+                    sequence_props = exp.SequenceProperties()
+                    options = []
+                    for prop in props:
+                        if isinstance(prop, exp.SequenceProperties):
+                            for arg, value in prop.args.items():
+                                if arg == "options":
+                                    options.extend(value)
+                                else:
+                                    sequence_props.set(arg, value)
+                            prop.pop()
+
+                    if options:
+                        sequence_props.set("options", options)
+
+                    props.append("expressions", sequence_props)
+                    extend_props(props)
             else:
                 expression = self._parse_ddl_select()
 
@@ -2217,11 +2238,17 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
         index = self._index
+
+        seq_props = self._parse_sequence_properties()
+        if seq_props:
+            return seq_props
+
+        self._retreat(index)
         key = self._parse_column()
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
-            return self._parse_sequence_properties()
+            return None
 
         # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
         if isinstance(key, exp.Column):
@@ -3506,10 +3533,17 @@ class Parser(metaclass=_Parser):
 
             while True:
                 if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
-                    parser = self.QUERY_MODIFIER_PARSERS[self._curr.token_type]
+                    modifier_token = self._curr
+                    parser = self.QUERY_MODIFIER_PARSERS[modifier_token.token_type]
                     key, expression = parser(self)
 
                     if expression:
+                        if this.args.get(key):
+                            self.raise_error(
+                                f"Found multiple '{modifier_token.text.upper()}' clauses",
+                                token=modifier_token,
+                            )
+
                         this.set(key, expression)
                         if key == "limit":
                             offset = expression.args.pop("offset", None)
@@ -3815,7 +3849,8 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.USING):
             kwargs["using"] = self._parse_using_identifiers()
         elif (
-            not (outer_apply or cross_apply)
+            not method
+            and not (outer_apply or cross_apply)
             and not isinstance(kwargs["this"], exp.Unnest)
             and not (kind and kind.token_type in (TokenType.CROSS, TokenType.ARRAY))
         ):
@@ -5250,7 +5285,7 @@ class Parser(metaclass=_Parser):
         while self._match(TokenType.DOT):
             type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
 
-        return exp.DataType.build(type_name, udt=True)
+        return exp.DataType.build(type_name, dialect=self.dialect, udt=True)
 
     def _parse_types(
         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
@@ -5621,7 +5656,7 @@ class Parser(metaclass=_Parser):
             op_token = self._prev.token_type
             op = self.COLUMN_OPERATORS.get(op_token)
 
-            if op_token in (TokenType.DCOLON, TokenType.DOTCOLON):
+            if op_token in self.CAST_COLUMN_OPERATORS:
                 field = self._parse_dcolon()
                 if not field:
                     self.raise_error("Expected type")
@@ -6551,7 +6586,7 @@ class Parser(metaclass=_Parser):
         elif not to:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
-            to = exp.DataType.build(to.name, udt=True)
+            to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
@@ -7569,6 +7604,7 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists()
         only = self._match_text_seq("ONLY")
         this = self._parse_table(schema=True)
+        check = self._match_text_seq("WITH", "CHECK")
         cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
         if self._next:
@@ -7591,6 +7627,7 @@ class Parser(metaclass=_Parser):
                     options=options,
                     cluster=cluster,
                     not_valid=not_valid,
+                    check=check,
                 )
 
         return self._parse_as_command(start)
@@ -8679,3 +8716,51 @@ class Parser(metaclass=_Parser):
             kwargs["requires_string"] = self.dialect.TRY_CAST_REQUIRES_STRING
 
         return self.expression(exp_class, **kwargs)
+
+    def _parse_json_value(self) -> exp.JSONValue:
+        this = self._parse_bitwise()
+        self._match(TokenType.COMMA)
+        path = self._parse_bitwise()
+
+        returning = self._match(TokenType.RETURNING) and self._parse_type()
+
+        return self.expression(
+            exp.JSONValue,
+            this=this,
+            path=self.dialect.to_json_path(path),
+            returning=returning,
+            on_condition=self._parse_on_condition(),
+        )
+
+    def _parse_group_concat(self) -> t.Optional[exp.Expression]:
+        def concat_exprs(
+            node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
+        ) -> exp.Expression:
+            if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
+                concat_exprs = [
+                    self.expression(exp.Concat, expressions=node.expressions, safe=True)
+                ]
+                node.set("expressions", concat_exprs)
+                return node
+            if len(exprs) == 1:
+                return exprs[0]
+            return self.expression(exp.Concat, expressions=args, safe=True)
+
+        args = self._parse_csv(self._parse_lambda)
+
+        if args:
+            order = args[-1] if isinstance(args[-1], exp.Order) else None
+
+            if order:
+                # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
+                # remove 'expr' from exp.Order and add it back to args
+                args[-1] = order.this
+                order.set("this", concat_exprs(order.this, args))
+
+            this = order or concat_exprs(args[0], args)
+        else:
+            this = None
+
+        separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
+
+        return self.expression(exp.GroupConcat, this=this, separator=separator)

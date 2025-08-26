@@ -39,6 +39,10 @@ to share any relevant context and increase its chances of getting merged.
 
 Note: make sure to follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) guidelines when creating a PR.
 
+## IMPORTANT: Keep PRs minimal in scope
+
+Each pull request should focus on a single, well-defined change. Avoid bundling multiple unrelated fixes or features in one PR. This makes code review faster and more effective, increases the likelihood of acceptance, and helps maintain a clean git history.
+
 ## Report bugs using GitHub's [issues](https://github.com/tobymao/sqlglot/issues)
 
 We use GitHub issues to track public bugs. Report a bug by opening a new issue.

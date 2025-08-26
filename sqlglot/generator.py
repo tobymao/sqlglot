@@ -219,6 +219,7 @@ class Generator(metaclass=_Generator):
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
+        exp.WeekStart: lambda self, e: f"WEEK({self.sql(e, 'this')})",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.WithProcedureOptions: lambda self, e: f"WITH {self.expressions(e, flat=True)}",
         exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
@@ -691,6 +692,8 @@ class Generator(metaclass=_Generator):
 
     RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = ()
 
+    SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
+
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -1134,14 +1137,14 @@ class Generator(metaclass=_Generator):
         if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
             exp.Properties.Location.POST_WITH
         ):
-            properties_sql = self.sql(
-                exp.Properties(
-                    expressions=[
-                        *properties_locs[exp.Properties.Location.POST_SCHEMA],
-                        *properties_locs[exp.Properties.Location.POST_WITH],
-                    ]
-                )
+            props_ast = exp.Properties(
+                expressions=[
+                    *properties_locs[exp.Properties.Location.POST_SCHEMA],
+                    *properties_locs[exp.Properties.Location.POST_WITH],
+                ]
             )
+            props_ast.parent = expression
+            properties_sql = self.sql(props_ast)
 
             if properties_locs.get(exp.Properties.Location.POST_SCHEMA):
                 properties_sql = self.sep() + properties_sql
@@ -1667,8 +1670,14 @@ class Generator(metaclass=_Generator):
             elif p_loc == exp.Properties.Location.POST_SCHEMA:
                 root_properties.append(p)
 
-        root_props = self.root_properties(exp.Properties(expressions=root_properties))
-        with_props = self.with_properties(exp.Properties(expressions=with_properties))
+        root_props_ast = exp.Properties(expressions=root_properties)
+        root_props_ast.parent = expression.parent
+
+        with_props_ast = exp.Properties(expressions=with_properties)
+        with_props_ast.parent = expression.parent
+
+        root_props = self.root_properties(root_props_ast)
+        with_props = self.with_properties(with_props_ast)
 
         if root_props and with_props and not self.pretty:
             with_props = " " + with_props
@@ -2405,6 +2414,14 @@ class Generator(metaclass=_Generator):
         tag = " TAG" if expression.args.get("tag") else ""
         return f"{'UNSET' if expression.args.get('unset') else 'SET'}{tag}{expressions}"
 
+    def queryband_sql(self, expression: exp.QueryBand) -> str:
+        this = self.sql(expression, "this")
+        update = " UPDATE" if expression.args.get("update") else ""
+        scope = self.sql(expression, "scope")
+        scope = f" FOR {scope}" if scope else ""
+
+        return f"QUERY_BAND = {this}{update}{scope}"
+
     def pragma_sql(self, expression: exp.Pragma) -> str:
         return f"PRAGMA {self.sql(expression, 'this')}"
 
@@ -2981,7 +2998,19 @@ class Generator(metaclass=_Generator):
             args = [exp.cast(e, exp.DataType.Type.TEXT) for e in args]
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
-            args = [exp.func("coalesce", e, exp.Literal.string("")) for e in args]
+
+            def _wrap_with_coalesce(e: exp.Expression) -> exp.Expression:
+                if not e.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    e = annotate_types(e, dialect=self.dialect)
+
+                if e.is_string or e.is_type(exp.DataType.Type.ARRAY):
+                    return e
+
+                return exp.func("coalesce", e, exp.Literal.string(""))
+
+            args = [_wrap_with_coalesce(e) for e in args]
 
         return args
 
@@ -3479,14 +3508,15 @@ class Generator(metaclass=_Generator):
         expressions = f"({expressions})" if expressions else ""
         return f"ALTER{compound} SORTKEY {this or expressions}"
 
-    def alterrename_sql(self, expression: exp.AlterRename) -> str:
+    def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
         if not self.RENAME_TABLE_WITH_DB:
             # Remove db from tables
             expression = expression.transform(
                 lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
             ).assert_is(exp.AlterRename)
         this = self.sql(expression, "this")
-        return f"RENAME TO {this}"
+        to_kw = " TO" if include_to else ""
+        return f"RENAME{to_kw} {this}"
 
     def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
         exists = " IF EXISTS" if expression.args.get("exists") else ""
@@ -3531,8 +3561,9 @@ class Generator(metaclass=_Generator):
         options = f", {options}" if options else ""
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
+        check = " WITH CHECK" if expression.args.get("check") else ""
 
-        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{self.sep()}{actions_sql}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
 
     def add_column_sql(self, expression: exp.Expression) -> str:
         sql = self.sql(expression)
@@ -4017,8 +4048,10 @@ class Generator(metaclass=_Generator):
         return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
-    def uniquekeyproperty_sql(self, expression: exp.UniqueKeyProperty) -> str:
-        return f"UNIQUE KEY ({self.expressions(expression, flat=True)})"
+    def uniquekeyproperty_sql(
+        self, expression: exp.UniqueKeyProperty, prefix: str = "UNIQUE KEY"
+    ) -> str:
+        return f"{prefix} ({self.expressions(expression, flat=True)})"
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
     def distributedbyproperty_sql(self, expression: exp.DistributedByProperty) -> str:
@@ -4149,6 +4182,14 @@ class Generator(metaclass=_Generator):
         table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
         parameters = self.sql(expression, "params_struct")
         return self.func("PREDICT", model, table, parameters or None)
+
+    def generateembedding_sql(self, expression: exp.GenerateEmbedding) -> str:
+        model = self.sql(expression, "this")
+        model = f"MODEL {model}"
+        table = self.sql(expression, "expression")
+        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
+        parameters = self.sql(expression, "params_struct")
+        return self.func("GENERATE_EMBEDDING", model, table, parameters or None)
 
     def forin_sql(self, expression: exp.ForIn) -> str:
         this = self.sql(expression, "this")
@@ -4352,7 +4393,7 @@ class Generator(metaclass=_Generator):
             this = self.json_path_part(this)
             return f".{this}" if this else ""
 
-        if exp.SAFE_IDENTIFIER_RE.match(this):
+        if self.SAFE_JSON_PATH_KEY_RE.match(this):
             return f".{this}"
 
         this = self.json_path_part(this)
@@ -5127,3 +5168,32 @@ class Generator(metaclass=_Generator):
             return self.sql(exp.Bracket(this=this, expressions=[expr]))
 
         return self.sql(exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expr)))
+
+    def datefromunixdate_sql(self, expression: exp.DateFromUnixDate) -> str:
+        return self.sql(
+            exp.DateAdd(
+                this=exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
+                expression=expression.this,
+                unit=exp.var("DAY"),
+            )
+        )
+
+    def space_sql(self: Generator, expression: exp.Space) -> str:
+        return self.sql(exp.Repeat(this=exp.Literal.string(" "), times=expression.this))
+
+    def buildproperty_sql(self, expression: exp.BuildProperty) -> str:
+        return f"BUILD {self.sql(expression, 'this')}"
+
+    def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
+        method = self.sql(expression, "method")
+        kind = expression.args.get("kind")
+        if not kind:
+            return f"REFRESH {method}"
+
+        every = self.sql(expression, "every")
+        unit = self.sql(expression, "unit")
+        every = f" EVERY {every} {unit}" if every else ""
+        starts = self.sql(expression, "starts")
+        starts = f" STARTS {starts}" if starts else ""
+
+        return f"REFRESH {method} ON {kind}{every}{starts}"

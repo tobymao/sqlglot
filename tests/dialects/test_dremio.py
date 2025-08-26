@@ -40,7 +40,7 @@ class TestDremio(Validator):
             "SELECT CONCAT('a', NULL)",
             write={
                 "dremio": "SELECT CONCAT('a', NULL)",
-                "": "SELECT CONCAT(COALESCE('a', ''), COALESCE(NULL, ''))",
+                "": "SELECT CONCAT('a', COALESCE(NULL, ''))",
             },
         )
 
@@ -99,15 +99,15 @@ class TestDremio(Validator):
         ts = "CAST('2025-06-24 12:34:56' AS TIMESTAMP)"
 
         self.validate_all(
-            f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
+            f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
             read={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%Y-%m-%d %H:%M:%S')",
             },
             write={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yyyy-mm-dd hh24:mi:ss')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YYYY-MM-DD HH24:MI:SS')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%Y-%m-%d %H:%M:%S')",
@@ -115,44 +115,70 @@ class TestDremio(Validator):
         )
 
         self.validate_all(
-            f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FFF TZD')",
+            f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
             read={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FFF TZD')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FF6 %Z')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
             write={
-                "dremio": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FFF TZD')",
+                "dremio": f"SELECT TO_CHAR({ts}, 'yy-ddd hh24:mi:ss.fff tzd')",
                 "postgres": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.US TZ')",
                 "oracle": f"SELECT TO_CHAR({ts}, 'YY-DDD HH24:MI:SS.FF6 %Z')",
                 "duckdb": f"SELECT STRFTIME({ts}, '%y-%j %H:%M:%S.%f %Z')",
             },
         )
 
-    def test_time_diff(self):
+    def test_to_char_special(self):
+        # Numeric formats should have is_numeric=True
+        to_char = self.validate_identity("TO_CHAR(5555, '#')").assert_is(exp.ToChar)
+        assert to_char.args["is_numeric"] is True
+
+        to_char = self.validate_identity("TO_CHAR(3.14, '#.#')").assert_is(exp.ToChar)
+        assert to_char.args["is_numeric"] is True
+
+        to_char = self.validate_identity("TO_CHAR(columnname, '#.##')").assert_is(exp.ToChar)
+        assert to_char.args["is_numeric"] is True
+
+        # Non-numeric formats or columns should have is_numeric=None or False
+        to_char = self.validate_identity("TO_CHAR(5555)").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
+
+        to_char = self.validate_identity("TO_CHAR(3.14, columnname)").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
+
+        to_char = self.validate_identity("TO_CHAR(123, 'abcd')").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
+
+        to_char = self.validate_identity("TO_CHAR(3.14, UPPER('abcd'))").assert_is(exp.ToChar)
+        assert not to_char.args.get("is_numeric")
+
+    def test_date_add(self):
         self.validate_identity("SELECT DATE_ADD(col, 1)")
         self.validate_identity("SELECT DATE_ADD(col, CAST(1 AS INTERVAL HOUR))")
         self.validate_identity(
             "SELECT DATE_ADD(TIMESTAMP '2022-01-01 12:00:00', CAST(-1 AS INTERVAL HOUR))",
             "SELECT DATE_ADD(CAST('2022-01-01 12:00:00' AS TIMESTAMP), CAST(-1 AS INTERVAL HOUR))",
         )
-        self.validate_identity(
-            "SELECT DATE_ADD(col, 2, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, 2, col)"
-        )
 
+    def test_date_sub(self):
         self.validate_identity("SELECT DATE_SUB(col, 1)")
         self.validate_identity("SELECT DATE_SUB(col, CAST(1 AS INTERVAL HOUR))")
         self.validate_identity(
             "SELECT DATE_SUB(TIMESTAMP '2022-01-01 12:00:00', CAST(-1 AS INTERVAL HOUR))",
             "SELECT DATE_SUB(CAST('2022-01-01 12:00:00' AS TIMESTAMP), CAST(-1 AS INTERVAL HOUR))",
         )
+
+    def test_datetime_parsing(self):
         self.validate_identity(
-            "SELECT DATE_SUB(col, 2, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, -2, col)"
+            "SELECT DATE_FORMAT(CAST('2025-08-18 15:30:00' AS TIMESTAMP), 'yyyy-mm-dd')",
+            "SELECT TO_CHAR(CAST('2025-08-18 15:30:00' AS TIMESTAMP), 'yyyy-mm-dd')",
         )
 
-        self.validate_identity("SELECT DATE_ADD(col, 2, 'DAY')", "SELECT DATE_ADD(col, 2)")
-
-        self.validate_identity(
-            "SELECT DATE_SUB(col, a, 'HOUR')", "SELECT TIMESTAMPADD(HOUR, a * -1, col)"
+    def test_array_generate_range(self):
+        self.validate_all(
+            "ARRAY_GENERATE_RANGE(1, 4)",
+            read={"dremio": "ARRAY_GENERATE_RANGE(1, 4)"},
+            write={"duckdb": "GENERATE_SERIES(1, 4)"},
         )

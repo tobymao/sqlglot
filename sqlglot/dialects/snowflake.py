@@ -461,7 +461,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
             unnest_alias = unnest.args.get("alias")
             if (
                 isinstance(unnest_alias, exp.TableAlias)
-                and (unnest_alias.args.get("column_only") or not unnest_alias.this)
+                and not unnest_alias.this
                 and len(unnest_alias.columns) == 1
             ):
                 unnest_aliases.add(unnest_alias.columns[0].name)

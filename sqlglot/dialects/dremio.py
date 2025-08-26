@@ -1,34 +1,76 @@
 from __future__ import annotations
 
+import typing as t
 from sqlglot import expressions as exp
 from sqlglot import parser, generator, tokens
-from sqlglot.dialects.dialect import Dialect, build_formatted_time, unit_to_var
-import typing as t
+from sqlglot.dialects.dialect import (
+    Dialect,
+    build_timetostr_or_tochar,
+    build_formatted_time,
+    build_date_delta,
+    rename_func,
+)
+from sqlglot.helper import seq_get
 
-DATE_DELTA = t.Union[
-    exp.DateAdd,
-    exp.DateSub,
-]
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
+DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 
 def _date_delta_sql(name: str) -> t.Callable[[Dremio.Generator, DATE_DELTA], str]:
     def _delta_sql(self: Dremio.Generator, expression: DATE_DELTA) -> str:
-        unit = expression.text("unit")
+        unit = expression.text("unit").upper()
 
-        if not unit or unit.upper() == "DAY":
+        # Fallback to default behavior if unit is missing or 'DAY'
+        if not unit or unit == "DAY":
             return self.func(name, expression.this, expression.expression)
 
-        # to support units we need to use TIMESTAMPADD function
-        increment = expression.expression
-        if isinstance(expression, exp.DateSub):
-            if isinstance(increment, exp.Literal):
-                value = increment.to_py() if increment.is_number else int(increment.name)
-                increment = exp.Literal.number(value * -1)
-            else:
-                increment *= exp.Literal.number(-1)
-        return self.func("TIMESTAMPADD", unit_to_var(expression), increment, expression.this)
+        this_sql = self.sql(expression, "this")
+        expr_sql = self.sql(expression, "expression")
+
+        interval_sql = f"CAST({expr_sql} AS INTERVAL {unit})"
+        return f"{name}({this_sql}, {interval_sql})"
 
     return _delta_sql
+
+
+def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
+    expression = build_timetostr_or_tochar(args, dialect)
+    fmt = seq_get(args, 1)
+
+    if fmt and isinstance(expression, exp.ToChar) and fmt.is_string and "#" in fmt.name:
+        # Only mark as numeric if format is a literal containing #
+        expression.set("is_numeric", True)
+
+    return expression
+
+
+def build_date_delta_with_cast_interval(
+    expression_class: t.Type[DATE_DELTA],
+) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
+    fallback_builder = build_date_delta(expression_class)
+
+    def _builder(args):
+        if len(args) == 2:
+            date_arg, interval_arg = args
+
+            if (
+                isinstance(interval_arg, exp.Cast)
+                and isinstance(interval_arg.to, exp.DataType)
+                and isinstance(interval_arg.to.this, exp.Interval)
+            ):
+                return expression_class(
+                    this=date_arg,
+                    expression=interval_arg.this,
+                    unit=interval_arg.to.this.unit,
+                )
+
+            return expression_class(this=date_arg, expression=interval_arg)
+
+        return fallback_builder(args)
+
+    return _builder
 
 
 class Dremio(Dialect):
@@ -42,30 +84,51 @@ class Dremio(Dialect):
     TIME_MAPPING = {
         # year
         "YYYY": "%Y",
+        "yyyy": "%Y",
         "YY": "%y",
+        "yy": "%y",
         # month / day
         "MM": "%m",
+        "mm": "%m",
         "MON": "%b",
+        "mon": "%b",
         "MONTH": "%B",
+        "month": "%B",
         "DDD": "%j",
+        "ddd": "%j",
         "DD": "%d",
+        "dd": "%d",
         "DY": "%a",
+        "dy": "%a",
         "DAY": "%A",
+        "day": "%A",
         # hours / minutes / seconds
         "HH24": "%H",
+        "hh24": "%H",
         "HH12": "%I",
-        "HH": "%I",  # 24- / 12-hour
+        "hh12": "%I",
+        "HH": "%I",
+        "hh": "%I",  # 24- / 12-hour
         "MI": "%M",
+        "mi": "%M",
         "SS": "%S",
+        "ss": "%S",
         "FFF": "%f",
+        "fff": "%f",
         "AMPM": "%p",
+        "ampm": "%p",
         # ISO week / century etc.
         "WW": "%W",
+        "ww": "%W",
         "D": "%w",
+        "d": "%w",
         "CC": "%C",
+        "cc": "%C",
         # timezone
-        "TZD": "%Z",  # abbreviation  (UTC, PST, ...)
-        "TZO": "%z",  # numeric offset (+0200)
+        "TZD": "%Z",
+        "tzd": "%Z",  # abbreviation (UTC, PST, ...)
+        "TZO": "%z",
+        "tzo": "%z",  # numeric offset (+0200)
     }
 
     class Parser(parser.Parser):
@@ -73,7 +136,12 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_CHAR": to_char_is_numeric_handler,
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
+            "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
+            "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
+            "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
         }
 
     class Generator(generator.Generator):
@@ -102,10 +170,11 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ToChar: rename_func("TO_CHAR"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
-            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
+            exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

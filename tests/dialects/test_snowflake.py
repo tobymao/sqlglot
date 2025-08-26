@@ -11,6 +11,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        ast = self.parse_one("DATEADD(DAY, n, d)")
+        ast.set("unit", exp.Literal.string("MONTH"))
+        self.assertEqual(ast.sql("snowflake"), "DATEADD(MONTH, n, d)")
+
         self.validate_identity("SELECT GET(a, b)")
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
@@ -1240,6 +1244,27 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE foo ADD col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE IF EXISTS foo ADD IF NOT EXISTS col1 INT")
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31', 1)",
+            write={
+                "duckdb": "SELECT DATE_ADD(CAST('2023-01-31' AS TIMESTAMP), INTERVAL 1 MONTH)",
+                "snowflake": "SELECT ADD_MONTHS('2023-01-31', 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31'::date, 1)",
+            write={
+                "duckdb": "SELECT CAST(DATE_ADD(CAST('2023-01-31' AS DATE), INTERVAL 1 MONTH) AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS DATE), 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2023-01-31'::timestamptz, 1)",
+            write={
+                "duckdb": "SELECT CAST(DATE_ADD(CAST('2023-01-31' AS TIMESTAMPTZ), INTERVAL 1 MONTH) AS TIMESTAMPTZ)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(
@@ -1781,11 +1806,11 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "CREATE SEQUENCE seq1 WITH START=1, INCREMENT=1 ORDER",
-            "CREATE SEQUENCE seq1 START=1 INCREMENT BY 1 ORDER",
+            "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1 ORDER",
         )
         self.validate_identity(
             "CREATE SEQUENCE seq1 WITH START=1 INCREMENT=1 ORDER",
-            "CREATE SEQUENCE seq1 START=1 INCREMENT=1 ORDER",
+            "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1 ORDER",
         )
         self.validate_identity(
             """create external table et2(
@@ -2977,3 +3002,16 @@ FROM SEMANTIC_VIEW(
         )
 
         self.validate_identity("GET(foo, bar)").assert_is(exp.GetExtract)
+
+    def test_create_sequence(self):
+        self.validate_identity(
+            "CREATE SEQUENCE seq  START=5 comment = 'foo' INCREMENT=10",
+            "CREATE SEQUENCE seq COMMENT='foo' START WITH 5 INCREMENT BY 10",
+        )
+        self.validate_all(
+            "CREATE SEQUENCE seq WITH START=1 INCREMENT=1",
+            write={
+                "snowflake": "CREATE SEQUENCE seq START WITH 1 INCREMENT BY 1",
+                "duckdb": "CREATE SEQUENCE seq START WITH 1 INCREMENT BY 1",
+            },
+        )

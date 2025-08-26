@@ -794,7 +794,6 @@ class TestPresto(Validator):
                 "databricks": "ANY_VALUE(x)",
                 "doris": "ANY_VALUE(x)",
                 "drill": "ANY_VALUE(x)",
-                "duckdb": "ANY_VALUE(x)",
                 "hive": "FIRST(x)",
                 "mysql": "ANY_VALUE(x)",
                 "oracle": "ANY_VALUE(x)",

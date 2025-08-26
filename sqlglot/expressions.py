@@ -6773,6 +6773,19 @@ class GenerateEmbedding(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search
+class VectorSearch(Func):
+    arg_types = {
+        "this": True,
+        "column_to_search": True,
+        "query_table": True,
+        "query_column_to_search": False,
+        "top_k": False,
+        "distance_type": False,
+        "options": False,
+    }
+
+
 class Pow(Binary, Func):
     _sql_names = ["POWER", "POW"]
 

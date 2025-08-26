@@ -1349,16 +1349,10 @@ class SingleStore(MySQL):
         def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
             json_type = expression.args.get("json_type")
 
-            if json_type == "STRING":
+            if json_type is not None:
                 return self.func(
-                    "JSON_ARRAY_CONTAINS_STRING", expression.expression, expression.this
+                    f"JSON_ARRAY_CONTAINS_{json_type}", expression.expression, expression.this
                 )
-            elif json_type == "DOUBLE":
-                return self.func(
-                    "JSON_ARRAY_CONTAINS_DOUBLE", expression.expression, expression.this
-                )
-            elif json_type == "JSON":
-                return self.func("JSON_ARRAY_CONTAINS_JSON", expression.expression, expression.this)
 
             return self.func(
                 "JSON_ARRAY_CONTAINS_JSON",

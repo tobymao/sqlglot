@@ -52,6 +52,9 @@ ARRAY<DOUBLE>;
 ARRAY_SLICE([1, 1.5], 1, 2);
 ARRAY<DOUBLE>;
 
+FROM_BASE32(tbl.str_col);
+BINARY;
+
 FROM_BASE64(tbl.str_col);
 BINARY;
 
@@ -69,6 +72,9 @@ BIGINT;
 
 LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
+
+TO_BASE32(tbl.bytes_col);
+VARCHAR;
 
 TO_BASE64(tbl.bytes_col);
 VARCHAR;

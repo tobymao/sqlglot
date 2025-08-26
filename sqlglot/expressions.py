@@ -6237,7 +6237,15 @@ class Floor(Func):
     arg_types = {"this": True, "decimals": False, "to": False}
 
 
+class FromBase32(Func):
+    pass
+
+
 class FromBase64(Func):
+    pass
+
+
+class ToBase32(Func):
     pass
 
 

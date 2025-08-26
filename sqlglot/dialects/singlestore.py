@@ -242,6 +242,7 @@ class SingleStore(MySQL):
             exp.JSONPathRoot: lambda *_: "",
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
+            exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

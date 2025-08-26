@@ -6803,7 +6803,13 @@ class Quantile(AggFunc):
 
 
 class ApproxQuantile(Quantile):
-    arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
+    arg_types = {
+        "this": True,
+        "quantile": True,
+        "accuracy": False,
+        "weight": False,
+        "error_tolerance": False,
+    }
 
 
 class Quarter(Func):

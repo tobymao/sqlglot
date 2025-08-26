@@ -1011,11 +1011,10 @@ class BigQuery(Dialect):
             )
 
         def _parse_features_at_time(self) -> exp.FeaturesAtTime:
-            expr = self.expression(
-                exp.FeaturesAtTime,
-                this=(self._match(TokenType.TABLE) and self._parse_table())
-                or self._parse_select(nested=True),
-            )
+            self._match(TokenType.TABLE)
+            this = self._parse_table()
+
+            expr = self.expression(exp.FeaturesAtTime, this=this)
 
             while self._match(TokenType.COMMA):
                 arg = self._parse_lambda()

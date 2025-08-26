@@ -809,6 +809,14 @@ ARRAY<STRUCT<STRING, BIGINT>>;
 APPROX_TOP_COUNT(tbl.bigint_col, 2);
 ARRAY<STRUCT<BIGINT, BIGINT>>;
 
+# dialect: bigquery
+APPROX_TOP_SUM(tbl.str_col, 1.5, 2);
+ARRAY<STRUCT<STRING, BIGINT>>;
+
+# dialect: bigquery
+APPROX_TOP_SUM(tbl.bigint_col, 1.5, 2);
+ARRAY<STRUCT<BIGINT, BIGINT>>;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

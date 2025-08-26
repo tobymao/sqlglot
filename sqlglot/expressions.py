@@ -5489,6 +5489,10 @@ class ApproxTopK(AggFunc):
     arg_types = {"this": True, "expression": False, "counters": False}
 
 
+class ApproxTopSum(AggFunc):
+    arg_types = {"this": True, "expression": True, "count": True}
+
+
 class FarmFingerprint(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

@@ -1280,6 +1280,23 @@ LIFETIME(MIN 0 MAX 0)""",
 
         parse_one("foobar(x)").assert_is(exp.Anonymous)
 
+    def test_approx_top_sum(self):
+        def extract_agg_func(query):
+            return parse_one(query, read="clickhouse").selects[0]
+        
+        self.assertIsInstance(
+            extract_agg_func(
+                "SELECT approx_top_sum(N)(column, weight) FROM t"
+            ),
+            exp.ParameterizedAgg,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "SELECT approx_top_sum(N, reserved)(column, weight) FROM t"
+            ),
+            exp.ParameterizedAgg,
+        )
+
     def test_drop_on_cluster(self):
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):

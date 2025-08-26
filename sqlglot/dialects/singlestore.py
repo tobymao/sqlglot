@@ -154,7 +154,6 @@ class SingleStore(MySQL):
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
             "APPROX_COUNT_DISTINCT": exp.Hll.from_arg_list,
-            "VAR_SAMP": exp.Variance.from_arg_list,
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}

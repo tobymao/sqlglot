@@ -293,6 +293,20 @@ class TestSingleStore(Validator):
                 "": "SELECT LOGICAL_AND(age > 18) FROM users",
             },
         )
+        self.validate_identity(
+            "SELECT `class`, student_id, test1, APPROX_PERCENTILE(test1, 0.3) OVER (PARTITION BY `class`) AS percentile FROM test_scores"
+        )
+        self.validate_identity(
+            "SELECT `class`, student_id, test1, APPROX_PERCENTILE(test1, 0.3, 0.4) OVER (PARTITION BY `class`) AS percentile FROM test_scores"
+        )
+        self.validate_all(
+            "SELECT APPROX_PERCENTILE(test1, 0.3) FROM test_scores",
+            read={
+                "singlestore": "SELECT APPROX_PERCENTILE(test1, 0.3) FROM test_scores",
+                # accuracy parameter is not supported in SingleStore, so it is ignored
+                "": "SELECT APPROX_QUANTILE(test1, 0.3, 0.4) FROM test_scores",
+            },
+        )
         self.validate_all(
             "SELECT VAR_SAMP(yearly_total) FROM player_scores",
             read={

@@ -154,6 +154,11 @@ class SingleStore(MySQL):
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
             "APPROX_COUNT_DISTINCT": exp.Hll.from_arg_list,
+            "APPROX_PERCENTILE": lambda args, dialect: exp.ApproxQuantile(
+                this=seq_get(args, 0),
+                quantile=seq_get(args, 1),
+                error_tolerance=seq_get(args, 2),
+            ),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -265,6 +270,14 @@ class SingleStore(MySQL):
             exp.CountIf: count_if_to_sum,
             exp.LogicalOr: lambda self, e: f"MAX(ABS({self.sql(e, 'this')}))",
             exp.LogicalAnd: lambda self, e: f"MIN(ABS({self.sql(e, 'this')}))",
+            exp.ApproxQuantile: unsupported_args("accuracy", "weight")(
+                lambda self, e: self.func(
+                    "APPROX_PERCENTILE",
+                    e.this,
+                    e.args.get("quantile"),
+                    e.args.get("error_tolerance"),
+                )
+            ),
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),

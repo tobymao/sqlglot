@@ -8,7 +8,8 @@ from sqlglot.dialects.dialect import (
     json_extract_segments,
     json_path_key_only_name,
     rename_func,
-    bool_xor_sql, count_if_to_sum,
+    bool_xor_sql,
+    count_if_to_sum,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.expressions import DataType

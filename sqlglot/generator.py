@@ -4191,6 +4191,39 @@ class Generator(metaclass=_Generator):
         parameters = self.sql(expression, "params_struct")
         return self.func("GENERATE_EMBEDDING", model, table, parameters or None)
 
+    def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
+        this_sql = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Table):
+            this_sql = f"TABLE {this_sql}"
+
+        return self.func(
+            "FEATURES_AT_TIME",
+            this_sql,
+            expression.args.get("time"),
+            expression.args.get("num_rows"),
+            expression.args.get("ignore_feature_nulls"),
+        )
+
+    def vectorsearch_sql(self, expression: exp.VectorSearch) -> str:
+        this_sql = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Table):
+            this_sql = f"TABLE {this_sql}"
+
+        query_table = self.sql(expression, "query_table")
+        if isinstance(expression.args["query_table"], exp.Table):
+            query_table = f"TABLE {query_table}"
+
+        return self.func(
+            "VECTOR_SEARCH",
+            this_sql,
+            expression.args.get("column_to_search"),
+            query_table,
+            expression.args.get("query_column_to_search"),
+            expression.args.get("top_k"),
+            expression.args.get("distance_type"),
+            expression.args.get("options"),
+        )
+
     def forin_sql(self, expression: exp.ForIn) -> str:
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")
@@ -4897,19 +4930,6 @@ class Generator(metaclass=_Generator):
         value = self.sql(expression, "expression")
         value = f" {value}" if value else ""
         return f"{this}{value}"
-
-    def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
-        this_sql = self.sql(expression, "this")
-        if isinstance(expression.this, exp.Table):
-            this_sql = f"TABLE {this_sql}"
-
-        return self.func(
-            "FEATURES_AT_TIME",
-            this_sql,
-            expression.args.get("time"),
-            expression.args.get("num_rows"),
-            expression.args.get("ignore_feature_nulls"),
-        )
 
     def watermarkcolumnconstraint_sql(self, expression: exp.WatermarkColumnConstraint) -> str:
         return (

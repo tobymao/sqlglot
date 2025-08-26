@@ -700,8 +700,10 @@ class BigQuery(Dialect):
                 exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
             ),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
+            "PREDICT": lambda self: self._parse_predict(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
             "GENERATE_EMBEDDING": lambda self: self._parse_generate_embedding(),
+            "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -981,22 +983,19 @@ class BigQuery(Dialect):
 
             return expr
 
-        def _parse_features_at_time(self) -> exp.FeaturesAtTime:
-            expr = self.expression(
-                exp.FeaturesAtTime,
-                this=(self._match(TokenType.TABLE) and self._parse_table())
-                or self._parse_select(nested=True),
+        def _parse_predict(self) -> exp.Predict:
+            self._match_text_seq("MODEL")
+            this = self._parse_table()
+
+            self._match(TokenType.COMMA)
+            self._match_text_seq("TABLE")
+
+            return self.expression(
+                exp.Predict,
+                this=this,
+                expression=self._parse_table(),
+                params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
             )
-
-            while self._match(TokenType.COMMA):
-                arg = self._parse_lambda()
-
-                # Get the LHS of the Kwarg and set the arg to that value, e.g
-                # "num_rows => 1" sets the expr's `num_rows` arg
-                if arg:
-                    expr.set(arg.this.name, arg)
-
-            return expr
 
         def _parse_generate_embedding(self) -> exp.GenerateEmbedding:
             self._match_text_seq("MODEL")
@@ -1011,6 +1010,53 @@ class BigQuery(Dialect):
                 expression=self._parse_table(),
                 params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
             )
+
+        def _parse_features_at_time(self) -> exp.FeaturesAtTime:
+            self._match(TokenType.TABLE)
+            this = self._parse_table()
+
+            expr = self.expression(exp.FeaturesAtTime, this=this)
+
+            while self._match(TokenType.COMMA):
+                arg = self._parse_lambda()
+
+                # Get the LHS of the Kwarg and set the arg to that value, e.g
+                # "num_rows => 1" sets the expr's `num_rows` arg
+                if arg:
+                    expr.set(arg.this.name, arg)
+
+            return expr
+
+        def _parse_vector_search(self) -> exp.VectorSearch:
+            self._match(TokenType.TABLE)
+            base_table = self._parse_table()
+
+            self._match(TokenType.COMMA)
+
+            column_to_search = self._parse_bitwise()
+            self._match(TokenType.COMMA)
+
+            self._match(TokenType.TABLE)
+            query_table = self._parse_table()
+
+            expr = self.expression(
+                exp.VectorSearch,
+                this=base_table,
+                column_to_search=column_to_search,
+                query_table=query_table,
+            )
+
+            while self._match(TokenType.COMMA):
+                # query_column_to_search can be named argument or positional
+                if self._match(TokenType.STRING, advance=False):
+                    query_column = self._parse_string()
+                    expr.set("query_column_to_search", query_column)
+                else:
+                    arg = self._parse_lambda()
+                    if arg:
+                        expr.set(arg.this.name, arg)
+
+            return expr
 
         def _parse_export_data(self) -> exp.Export:
             self._match_text_seq("DATA")

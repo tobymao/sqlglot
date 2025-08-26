@@ -1244,7 +1244,6 @@ class Parser(metaclass=_Parser):
         "OPENJSON": lambda self: self._parse_open_json(),
         "OVERLAY": lambda self: self._parse_overlay(),
         "POSITION": lambda self: self._parse_position(),
-        "PREDICT": lambda self: self._parse_predict(),
         "SAFE_CAST": lambda self: self._parse_cast(False, safe=True),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
@@ -6919,20 +6918,6 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.StrPosition, this=haystack, substr=needle, position=seq_get(args, 2)
-        )
-
-    def _parse_predict(self) -> exp.Predict:
-        self._match_text_seq("MODEL")
-        this = self._parse_table()
-
-        self._match(TokenType.COMMA)
-        self._match_text_seq("TABLE")
-
-        return self.expression(
-            exp.Predict,
-            this=this,
-            expression=self._parse_table(),
-            params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
         )
 
     def _parse_join_hint(self, func_name: str) -> exp.JoinHint:

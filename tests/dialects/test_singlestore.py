@@ -242,6 +242,15 @@ class TestSingleStore(Validator):
             },
         )
 
+    def test_logical(self):
+        self.validate_all(
+            "SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",
+            read={
+                "mysql": "SELECT TRUE XOR FALSE",
+                "singlestore": "SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",
+            },
+        )
+
     def test_string_functions(self):
         self.validate_all(
             "SELECT 'a' RLIKE 'b'",

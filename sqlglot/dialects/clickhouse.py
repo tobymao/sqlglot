@@ -1102,6 +1102,7 @@ class ClickHouse(Dialect):
             exp.DateStrToDate: rename_func("toDate"),
             exp.DateSub: _datetime_delta_sql("DATE_SUB"),
             exp.Explode: rename_func("arrayJoin"),
+            exp.FarmFingerprint: rename_func("farmFingerprint64"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
             exp.JSONCast: lambda self, e: f"{self.sql(e, 'this')}.:{self.sql(e, 'to')}",

@@ -4037,3 +4037,19 @@ FROM subquery2""",
                 "redshift": "GROUPING(col1, col2, col3)",
             },
         )
+
+    def test_farm_fingerprint(self):
+        self.validate_all(
+            "FARM_FINGERPRINT(x)",
+            read={
+                "": "FARM_FINGERPRINT(x)",
+                "bigquery": "FARM_FINGERPRINT(x)",
+                "clickhouse": "farmFingerprint64(x)",
+                "redshift": "FARMFINGERPRINT64(x)",
+            },
+            write={
+                "bigquery": "FARM_FINGERPRINT(x)",
+                "clickhouse": "farmFingerprint64(x)",
+                "redshift": "FARMFINGERPRINT64(x)",
+            },
+        )

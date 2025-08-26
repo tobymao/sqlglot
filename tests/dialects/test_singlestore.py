@@ -241,3 +241,12 @@ class TestSingleStore(Validator):
                 "": "SELECT DAY_OF_MONTH('2014-04-18')",
             },
         )
+
+    def test_string_functions(self):
+        self.validate_all(
+            "SELECT 'a' RLIKE 'b'",
+            read={
+                "bigquery": "SELECT REGEXP_CONTAINS('a', 'b')",
+                "singlestore": "SELECT 'a' RLIKE 'b'",
+            },
+        )

@@ -265,6 +265,13 @@ class TestSingleStore(Validator):
         self.validate_identity(
             "SELECT APPROX_COUNT_DISTINCT(asset_id1, asset_id2) AS approx_distinct_asset_id FROM acd_assets"
         )
+        self.validate_all(
+            "SELECT APPROX_COUNT_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+            read={
+                "singlestore": "SELECT APPROX_COUNT_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+                "": "SELECT APPROX_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

@@ -244,6 +244,7 @@ class SingleStore(MySQL):
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Xor: bool_xor_sql,
+            exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

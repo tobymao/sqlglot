@@ -250,3 +250,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT (TRUE AND (NOT FALSE)) OR ((NOT TRUE) AND FALSE)",
             },
         )
+
+    def test_string_functions(self):
+        self.validate_all(
+            "SELECT 'a' RLIKE 'b'",
+            read={
+                "bigquery": "SELECT REGEXP_CONTAINS('a', 'b')",
+                "singlestore": "SELECT 'a' RLIKE 'b'",
+            },
+        )
+        self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")

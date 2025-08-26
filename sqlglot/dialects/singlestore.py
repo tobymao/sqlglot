@@ -264,6 +264,7 @@ class SingleStore(MySQL):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.CountIf: count_if_to_sum,
             exp.LogicalOr: lambda self, e: f"MAX(ABS({self.sql(e, 'this')}))",
+            exp.LogicalAnd: lambda self, e: f"MIN(ABS({self.sql(e, 'this')}))",
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from sqlglot import expressions as exp
-from sqlglot import parser, generator
+from sqlglot import parser, generator, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     build_timetostr_or_tochar,
@@ -222,3 +222,6 @@ class Dremio(Dialect):
                     return "CURRENT_DATE_UTC"
 
             return super().cast_sql(expression, safe_prefix)
+
+    class Tokenizer(tokens.Tokenizer):
+        COMMENTS = ["--", "//", ("/*", "*/")]

@@ -295,6 +295,22 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     return expression
 
 
+def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
+    self._annotate_args(expression)
+
+    struct_type = exp.DataType(
+        this=exp.DataType.Type.STRUCT,
+        expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
+        nested=True,
+    )
+    self._set_type(
+        expression,
+        exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
+    )
+
+    return expression
+
+
 @unsupported_args("ins_cost", "del_cost", "sub_cost")
 def _levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein) -> str:
     max_dist = expression.args.get("max_dist")
@@ -473,7 +489,7 @@ class BigQuery(Dialect):
                 exp.Substring,
             )
         },
-        exp.ApproxTopK: lambda self, e: self._annotate_by_agg_func_arg(e),
+        exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,

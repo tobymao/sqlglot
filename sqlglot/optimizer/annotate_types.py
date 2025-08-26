@@ -651,18 +651,3 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.UNKNOWN)
 
         return expression
-
-    def _annotate_by_agg_func_arg(self, expression: exp.AggFunc) -> exp.AggFunc:
-        self._annotate_args(expression)
-
-        struct_type = exp.DataType(
-            this=exp.DataType.Type.STRUCT,
-            expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
-            nested=True,
-        )
-        self._set_type(
-            expression,
-            exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
-        )
-
-        return expression

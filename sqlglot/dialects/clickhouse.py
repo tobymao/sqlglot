@@ -345,6 +345,7 @@ class ClickHouse(Dialect):
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
         }
         FUNCTIONS.pop("TRANSFORM")
+        FUNCTIONS.pop("APPROX_TOP_SUM")
 
         AGG_FUNCTIONS = {
             "count",
@@ -379,6 +380,7 @@ class ClickHouse(Dialect):
             "argMax",
             "avgWeighted",
             "topK",
+            "approx_top_sum",
             "topKWeighted",
             "deltaSum",
             "deltaSumTimestamp",

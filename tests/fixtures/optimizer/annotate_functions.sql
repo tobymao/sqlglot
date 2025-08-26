@@ -793,6 +793,15 @@ BIGINT;
 GROUPING(tbl.bigint_col);
 BIGINT;
 
+# dialect: bigquery
+FARM_FINGERPRINT('foo');
+BIGINT;
+
+# dialect: bigquery
+FARM_FINGERPRINT(b'foo');
+BIGINT;
+
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

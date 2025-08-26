@@ -642,6 +642,8 @@ class TestClickhouse(Validator):
             "SELECT parseDateTime('2021-01-04+23:00:00', '%Y-%m-%d+%H:%i:%s', 'Asia/Istanbul')"
         )
 
+        self.validate_identity("farmFingerprint64(x1, x2, x3)")
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

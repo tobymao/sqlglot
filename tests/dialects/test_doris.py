@@ -86,6 +86,57 @@ class TestDoris(Validator):
         )
         self.validate_identity("""JSON_TYPE('{"foo": "1" }', '$.foo')""")
 
+    def test_cast_alias_in_subquery(self):
+        """Test CAST expressions require aliases in subqueries and CTEs"""
+        # Test CAST AS with alias requirement in subquery
+        self.validate_all(
+            "SELECT a FROM (SELECT CAST(a AS INT) AS a FROM t) AS t1",
+            read={
+                "postgres": "SELECT a FROM (SELECT CAST(a AS INT) FROM t) AS t1",
+            },
+            write={
+                "postgres": "SELECT a FROM (SELECT CAST(a AS INT) AS a FROM t) AS t1",
+                "doris": "SELECT a FROM (SELECT CAST(a AS INT) AS a FROM t) AS t1",
+            },
+        )
+        
+        # Test CAST AS with alias requirement in CTE
+        self.validate_all(
+            "WITH cte AS (SELECT CAST(a AS INT) AS a FROM t) SELECT a FROM cte",
+            read={
+                "postgres": "WITH cte AS (SELECT CAST(a AS INT) FROM t) SELECT a FROM cte",
+            },
+            write={
+                "postgres": "WITH cte AS (SELECT CAST(a AS INT) AS a FROM t) SELECT a FROM cte",
+                "doris": "WITH cte AS (SELECT CAST(a AS INT) AS a FROM t) SELECT a FROM cte",
+            },
+        )
+        
+        # Test multiple CAST expressions in CTE
+        self.validate_all(
+            "WITH cte AS (SELECT CAST(a AS INT) AS a, CAST(b AS VARCHAR) AS b FROM t) SELECT a, b FROM cte",
+            read={
+                "postgres": "WITH cte AS (SELECT CAST(a AS INT), CAST(b AS VARCHAR) FROM t) SELECT a, b FROM cte",
+            },
+            write={
+                "postgres": "WITH cte AS (SELECT CAST(a AS INT) AS a, CAST(b AS VARCHAR) AS b FROM t) SELECT a, b FROM cte",
+                "doris": "WITH cte AS (SELECT CAST(a AS INT) AS a, CAST(b AS VARCHAR) AS b FROM t) SELECT a, b FROM cte",
+            },
+        )
+        
+        # Test CAST with expression (should not add alias)
+        self.validate_all(
+            "SELECT result FROM (SELECT CAST(1 + 2 AS INT) FROM t) AS t1",
+            read={
+                "postgres": "SELECT result FROM (SELECT CAST(1+2 AS INT) FROM t) AS t1",
+            },
+            write={
+                "postgres": "SELECT result FROM (SELECT CAST(1 + 2 AS INT) FROM t) AS t1",
+                "doris": "SELECT result FROM (SELECT CAST(1 + 2 AS INT) FROM t) AS t1",
+            },
+        )
+  
+
     def test_identity(self):
         self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

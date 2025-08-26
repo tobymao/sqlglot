@@ -13,6 +13,28 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.tokens import TokenType
 
 
+def cast_sql_with_alias(self, expression: exp.Cast) -> str:
+    """Generate CAST SQL with automatic alias when in derived table context."""
+    # Check if this CAST is within a CTE or Subquery
+    derived_table_parent = expression.find_ancestor(exp.CTE, exp.Subquery)
+    if derived_table_parent:
+        # Find the SELECT that contains this CAST
+        select_parent = expression.find_ancestor(exp.Select)
+        if select_parent:
+            # Check if this CAST expression is a direct child of the SELECT expressions
+            for select_expr in select_parent.expressions:
+                if select_expr is expression and not isinstance(expression.parent, exp.Alias):
+                    # Only add alias if CAST expression contains a simple column
+                    if isinstance(expression.this, exp.Column):
+                        alias_name = expression.this.name
+                        # Create alias and return its SQL
+                        aliased = exp.alias_(expression, alias_name, copy=False)
+                        return self.sql(aliased)
+    
+    # Default CAST SQL generation
+    return f"CAST({self.sql(expression.this)} AS {self.sql(expression.to)})"
+
+
 def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     return self.func(
         "LAG" if isinstance(expression, exp.Lag) else "LEAD",
@@ -137,6 +159,7 @@ class Doris(MySQL):
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
+            exp.Cast: cast_sql_with_alias,
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
             exp.GroupConcat: lambda self, e: self.func(

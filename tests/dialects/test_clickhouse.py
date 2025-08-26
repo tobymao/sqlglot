@@ -1280,6 +1280,16 @@ LIFETIME(MIN 0 MAX 0)""",
 
         parse_one("foobar(x)").assert_is(exp.Anonymous)
 
+        self.validate_identity("SELECT approx_top_sum(column, weight) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+        self.validate_identity("SELECT approx_top_sum(N)(column, weight) FROM t").selects[
+            0
+        ].assert_is(exp.ParameterizedAgg)
+        self.validate_identity("SELECT approx_top_sum(N, reserved)(column, weight) FROM t").selects[
+            0
+        ].assert_is(exp.ParameterizedAgg)
+
     def test_drop_on_cluster(self):
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):

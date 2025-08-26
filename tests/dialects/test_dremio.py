@@ -182,3 +182,10 @@ class TestDremio(Validator):
             read={"dremio": "ARRAY_GENERATE_RANGE(1, 4)"},
             write={"duckdb": "GENERATE_SERIES(1, 4)"},
         )
+
+    def test_current_date_utc(self):
+        self.validate_identity("SELECT CURRENT_DATE_UTC")
+        self.validate_identity(
+            "SELECT CURRENT_DATE_UTC()",
+            "SELECT CURRENT_DATE_UTC",
+        )

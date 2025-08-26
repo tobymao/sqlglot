@@ -702,6 +702,7 @@ class BigQuery(Dialect):
             "PREDICT": lambda self: self._parse_predict(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
             "GENERATE_EMBEDDING": lambda self: self._parse_generate_embedding(),
+            "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -1023,6 +1024,38 @@ class BigQuery(Dialect):
                 # "num_rows => 1" sets the expr's `num_rows` arg
                 if arg:
                     expr.set(arg.this.name, arg)
+
+            return expr
+
+        def _parse_vector_search(self) -> exp.VectorSearch:
+            base_table = (
+                self._match(TokenType.TABLE) and self._parse_table()
+            ) or self._parse_select(nested=True)
+            self._match(TokenType.COMMA)
+
+            column_to_search = self._parse_bitwise()
+            self._match(TokenType.COMMA)
+
+            query_table = (
+                self._match(TokenType.TABLE) and self._parse_table()
+            ) or self._parse_select(nested=True)
+
+            expr = self.expression(
+                exp.VectorSearch,
+                this=base_table,
+                column_to_search=column_to_search,
+                query_table=query_table,
+            )
+
+            while self._match(TokenType.COMMA):
+                # query_column_to_search can be named argument or positional
+                if self._curr.token_type == TokenType.STRING:
+                    query_column = self._parse_string()
+                    expr.set("query_column_to_search", query_column)
+                else:
+                    arg = self._parse_lambda()
+                    if arg:
+                        expr.set(arg.this.name, arg)
 
             return expr
 

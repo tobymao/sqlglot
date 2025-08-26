@@ -2059,6 +2059,20 @@ OPTIONS (
             "SELECT * FROM ML.FEATURES_AT_TIME(TABLE mydataset.feature_table, time => '2022-06-11 10:00:00+00', num_rows => 1, ignore_feature_nulls => TRUE)"
         )
 
+        ast = self.validate_identity(
+            "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table, 'query_column_to_search', top_k => 2, distance_type => 'cosine', options => '{\"fraction_lists_to_search\":0.15}')"
+        )
+        assert ast.find(exp.VectorSearch)
+        self.validate_identity(
+            "SELECT * FROM VECTOR_SEARCH((SELECT * FROM mydataset.base_table), 'column_to_search', (SELECT * FROM mydataset.query_table), 'query_column_to_search')"
+        )
+        self.validate_identity(
+            "SELECT * FROM VECTOR_SEARCH((SELECT * FROM mydataset.base_table), 'column_to_search', (SELECT * FROM mydataset.query_table), query_column_to_search => 'query_column_to_search')"
+        )
+        self.validate_identity(
+            "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table)"
+        )
+
     def test_merge(self):
         self.validate_all(
             """

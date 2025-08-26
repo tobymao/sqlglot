@@ -201,6 +201,18 @@ class TestSingleStore(Validator):
             },
         )
 
+    def test_json(self):
+        self.validate_identity("SELECT JSON_ARRAY_CONTAINS_STRING('[\"a\", \"b\"]', 'b')")
+        self.validate_identity("SELECT JSON_ARRAY_CONTAINS_DOUBLE('[1, 2]', 1)")
+        self.validate_identity('SELECT JSON_ARRAY_CONTAINS_JSON(\'["{"a": 1}"]\', \'{"a":   1}\')')
+        self.validate_all(
+            "SELECT JSON_ARRAY_CONTAINS_JSON('[\"a\"]', TO_JSON('a'))",
+            read={
+                "mysql": "SELECT 'a' MEMBER OF ('[\"a\"]')",
+                "singlestore": "SELECT JSON_ARRAY_CONTAINS_JSON('[\"a\"]', TO_JSON('a'))",
+            },
+        )
+
     def test_date_parts_functions(self):
         self.validate_identity(
             "SELECT DAYNAME('2014-04-18')", "SELECT DATE_FORMAT('2014-04-18', '%W')"

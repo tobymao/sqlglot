@@ -4210,7 +4210,7 @@ class Generator(metaclass=_Generator):
             this_sql = f"TABLE {this_sql}"
 
         query_table = self.sql(expression, "query_table")
-        if isinstance(expression.args.get("query_table"), exp.Table):
+        if isinstance(expression.args["query_table"], exp.Table):
             query_table = f"TABLE {query_table}"
 
         return self.func(

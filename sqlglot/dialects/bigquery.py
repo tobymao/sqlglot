@@ -1028,17 +1028,16 @@ class BigQuery(Dialect):
             return expr
 
         def _parse_vector_search(self) -> exp.VectorSearch:
-            base_table = (
-                self._match(TokenType.TABLE) and self._parse_table()
-            ) or self._parse_select(nested=True)
+            self._match(TokenType.TABLE)
+            base_table = self._parse_table()
+
             self._match(TokenType.COMMA)
 
             column_to_search = self._parse_bitwise()
             self._match(TokenType.COMMA)
 
-            query_table = (
-                self._match(TokenType.TABLE) and self._parse_table()
-            ) or self._parse_select(nested=True)
+            self._match(TokenType.TABLE)
+            query_table = self._parse_table()
 
             expr = self.expression(
                 exp.VectorSearch,
@@ -1049,7 +1048,7 @@ class BigQuery(Dialect):
 
             while self._match(TokenType.COMMA):
                 # query_column_to_search can be named argument or positional
-                if self._curr.token_type == TokenType.STRING:
+                if self._match(TokenType.STRING, advance=False):
                     query_column = self._parse_string()
                     expr.set("query_column_to_search", query_column)
                 else:

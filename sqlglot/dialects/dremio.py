@@ -13,9 +13,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
-# Add CURRENT_DATE_UTC as a COMMAND keyword in the tokenizer
-
-
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 

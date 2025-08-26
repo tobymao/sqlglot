@@ -132,6 +132,21 @@ class SingleStore(MySQL):
             "JSON_EXTRACT_BIGINT": build_json_extract_path(
                 exp.JSONExtractScalar, json_type="BIGINT"
             ),
+            "JSON_ARRAY_CONTAINS_STRING": lambda args: exp.JSONArrayContains(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                json_type="STRING",
+            ),
+            "JSON_ARRAY_CONTAINS_DOUBLE": lambda args: exp.JSONArrayContains(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                json_type="DOUBLE",
+            ),
+            "JSON_ARRAY_CONTAINS_JSON": lambda args: exp.JSONArrayContains(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                json_type="JSON",
+            ),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -1335,3 +1350,17 @@ class SingleStore(MySQL):
         def all_sql(self, expression: exp.All) -> str:
             self.unsupported("ALL subquery predicate is not supported in SingleStore")
             return super().all_sql(expression)
+
+        def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
+            json_type = expression.args.get("json_type")
+
+            if json_type is not None:
+                return self.func(
+                    f"JSON_ARRAY_CONTAINS_{json_type}", expression.expression, expression.this
+                )
+
+            return self.func(
+                "JSON_ARRAY_CONTAINS_JSON",
+                expression.expression,
+                self.func("TO_JSON", expression.this),
+            )

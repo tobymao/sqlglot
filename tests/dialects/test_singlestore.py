@@ -272,6 +272,13 @@ class TestSingleStore(Validator):
                 "": "SELECT APPROX_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
             },
         )
+        self.validate_all(
+            "SELECT SUM(CASE WHEN age > 18 THEN 1 ELSE 0 END) FROM `users`",
+            read={
+                "singlestore": "SELECT SUM(CASE WHEN age > 18 THEN 1 ELSE 0 END) FROM `users`",
+                "": "SELECT COUNT_IF(age > 18) FROM users",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

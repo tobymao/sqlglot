@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
     json_extract_segments,
     json_path_key_only_name,
     rename_func,
-    bool_xor_sql,
+    bool_xor_sql, count_if_to_sum,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.expressions import DataType
@@ -261,6 +261,7 @@ class SingleStore(MySQL):
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
+            exp.CountIf: count_if_to_sum,
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }

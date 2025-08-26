@@ -250,3 +250,4 @@ class TestSingleStore(Validator):
                 "": "SELECT HLL(asset_id) AS approx_distinct_asset_id FROM acd_assets",
             },
         )
+        self.validate_identity("SELECT APPROX_COUNT_DISTINCT(asset_id1, asset_id2) AS approx_distinct_asset_id FROM acd_assets")

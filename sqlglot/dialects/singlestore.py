@@ -136,7 +136,7 @@ class SingleStore(MySQL):
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
-            "APPROX_COUNT_DISTINCT": lambda args, dialect: exp.Hll(this=seq_get(args, 0)),
+            "APPROX_COUNT_DISTINCT": exp.Hll.from_arg_list,
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}

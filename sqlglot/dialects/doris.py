@@ -32,7 +32,7 @@ def cast_sql_with_alias(self, expression: exp.Cast) -> str:
                         # Create alias and return its SQL
                         aliased = exp.alias_(expression, alias_name, copy=False)
                         return self.sql(aliased)
-    
+
     # Default CAST SQL generation
     return f"CAST({self.sql(expression.this)} AS {self.sql(expression.to)})"
 

@@ -99,7 +99,7 @@ class TestDoris(Validator):
                 "doris": "SELECT a FROM (SELECT CAST(a AS INT) AS a FROM t) AS t1",
             },
         )
-        
+
         # Test CAST AS with alias requirement in CTE
         self.validate_all(
             "WITH cte AS (SELECT CAST(a AS INT) AS a FROM t) SELECT a FROM cte",
@@ -111,7 +111,7 @@ class TestDoris(Validator):
                 "doris": "WITH cte AS (SELECT CAST(a AS INT) AS a FROM t) SELECT a FROM cte",
             },
         )
-        
+
         # Test multiple CAST expressions in CTE
         self.validate_all(
             "WITH cte AS (SELECT CAST(a AS INT) AS a, CAST(b AS VARCHAR) AS b FROM t) SELECT a, b FROM cte",
@@ -123,7 +123,7 @@ class TestDoris(Validator):
                 "doris": "WITH cte AS (SELECT CAST(a AS INT) AS a, CAST(b AS VARCHAR) AS b FROM t) SELECT a, b FROM cte",
             },
         )
-        
+
         # Test CAST with expression (should not add alias)
         self.validate_all(
             "SELECT result FROM (SELECT CAST(1 + 2 AS INT) FROM t) AS t1",
@@ -135,7 +135,6 @@ class TestDoris(Validator):
                 "doris": "SELECT result FROM (SELECT CAST(1 + 2 AS INT) FROM t) AS t1",
             },
         )
-  
 
     def test_identity(self):
         self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")

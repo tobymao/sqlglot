@@ -136,6 +136,7 @@ class SingleStore(MySQL):
                 this=seq_get(args, 0),
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
+            "APPROX_COUNT_DISTINCT": lambda args, dialect: exp.Hll(this=seq_get(args, 0)),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -242,6 +243,7 @@ class SingleStore(MySQL):
             exp.JSONPathRoot: lambda *_: "",
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
+            exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

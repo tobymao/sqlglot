@@ -241,3 +241,12 @@ class TestSingleStore(Validator):
                 "": "SELECT DAY_OF_MONTH('2014-04-18')",
             },
         )
+
+    def test_math_functions(self):
+        self.validate_all(
+            "SELECT APPROX_COUNT_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+            read={
+                "singlestore": "SELECT APPROX_COUNT_DISTINCT(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+                "": "SELECT HLL(asset_id) AS approx_distinct_asset_id FROM acd_assets",
+            },
+        )

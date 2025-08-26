@@ -1283,17 +1283,13 @@ LIFETIME(MIN 0 MAX 0)""",
     def test_approx_top_sum(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0]
-        
+
         self.assertIsInstance(
-            extract_agg_func(
-                "SELECT approx_top_sum(N)(column, weight) FROM t"
-            ),
+            extract_agg_func("SELECT approx_top_sum(N)(column, weight) FROM t"),
             exp.ParameterizedAgg,
         )
         self.assertIsInstance(
-            extract_agg_func(
-                "SELECT approx_top_sum(N, reserved)(column, weight) FROM t"
-            ),
+            extract_agg_func("SELECT approx_top_sum(N, reserved)(column, weight) FROM t"),
             exp.ParameterizedAgg,
         )
 

@@ -16,12 +16,23 @@ from sqlglot.tokens import TokenType
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
+class IsNumeric(exp.Expression):
+    arg_types = {"this": True}
+    sql_name = "ISNUMERIC"
+    dialect = "databricks"
+
+
 def _jsonextract_sql(
     self: Databricks.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
     this = self.sql(expression, "this")
     expr = self.sql(expression, "expression")
     return f"{this}:{expr}"
+
+
+def _isnumeric_sql(self, expression: IsNumeric) -> str:
+    column_sql = self.sql(expression.this)
+    return f"TRY_CAST({column_sql} AS DOUBLE) IS NOT NULL"
 
 
 class Databricks(Spark):
@@ -59,6 +70,7 @@ class Databricks(Spark):
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
+            "ISNUMERIC": lambda args: IsNumeric(this=args[0]),
         }
 
         FACTOR = {
@@ -104,6 +116,7 @@ class Databricks(Spark):
                 if e.args.get("is_numeric")
                 else self.function_fallback_sql(e)
             ),
+            IsNumeric: _isnumeric_sql,
         }
 
         TRANSFORMS.pop(exp.TryCast)

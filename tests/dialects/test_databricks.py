@@ -397,3 +397,6 @@ class TestDatabricks(Validator):
 
         result = transpile(sql, read="dremio", write="databricks")[0]
         assert "CAST(12345 AS STRING)" in result
+
+    def test_isnumeric_function(self):
+        self.validate_identity("SELECT ISNUMERIC(5)", "SELECT TRY_CAST(5 AS DOUBLE) IS NOT NULL")

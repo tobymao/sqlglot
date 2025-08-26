@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -73,7 +74,10 @@ def build_date_delta_with_cast_interval(
     return _builder
 
 
-def build_current_date_utc(args=None) -> exp.Expression:
+def parse_current_date_utc(self=None) -> exp.Expression:
+    if self and self._match(TokenType.L_PAREN):
+        self._match(TokenType.R_PAREN)
+
     return exp.Cast(
         this=exp.AtTimeZone(
             this=exp.CurrentTimestamp(),
@@ -144,6 +148,11 @@ class Dremio(Dialect):
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
 
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "CURRENT_DATE_UTC": parse_current_date_utc,
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "TO_CHAR": to_char_is_numeric_handler,
@@ -152,7 +161,6 @@ class Dremio(Dialect):
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
-            "CURRENT_DATE_UTC": build_current_date_utc,
         }
 
     class Generator(generator.Generator):

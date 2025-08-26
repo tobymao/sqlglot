@@ -293,6 +293,14 @@ class TestSingleStore(Validator):
                 "": "SELECT LOGICAL_AND(age > 18) FROM users",
             },
         )
+        self.validate_all(
+            "SELECT VAR_SAMP(yearly_total) FROM player_scores",
+            read={
+                "singlestore": "SELECT VAR_SAMP(yearly_total) FROM player_scores",
+                "": "SELECT VARIANCE(yearly_total) FROM player_scores",
+            },
+            write={"": "SELECT VARIANCE(yearly_total) FROM player_scores"},
+        )
 
     def test_logical(self):
         self.validate_all(

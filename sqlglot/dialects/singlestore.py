@@ -154,6 +154,7 @@ class SingleStore(MySQL):
                 format=MySQL.format_time(exp.Literal.string("%W")),
             ),
             "APPROX_COUNT_DISTINCT": exp.Hll.from_arg_list,
+            "VAR_SAMP": exp.Variance.from_arg_list,
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -265,6 +266,7 @@ class SingleStore(MySQL):
             exp.CountIf: count_if_to_sum,
             exp.LogicalOr: lambda self, e: f"MAX(ABS({self.sql(e, 'this')}))",
             exp.LogicalAnd: lambda self, e: f"MIN(ABS({self.sql(e, 'this')}))",
+            exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         }

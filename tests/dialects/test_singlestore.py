@@ -279,6 +279,13 @@ class TestSingleStore(Validator):
                 "": "SELECT COUNT_IF(age > 18) FROM users",
             },
         )
+        self.validate_all(
+            "SELECT MAX(ABS(age > 18)) FROM `users`",
+            read={
+                "singlestore": "SELECT MAX(ABS(age > 18)) FROM `users`",
+                "": "SELECT LOGICAL_OR(age > 18) FROM users",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

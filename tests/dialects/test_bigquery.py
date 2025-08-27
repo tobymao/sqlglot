@@ -1786,6 +1786,8 @@ WHERE
         self.validate_identity("PARSE_BIGNUMERIC('1.2')")
         self.validate_identity("PARSE_NUMERIC('1.2')")
         self.validate_identity("BOOL(PARSE_JSON('true'))")
+        self.validate_identity("FLOAT64(PARSE_JSON('9.8'))")
+        self.validate_identity("FLOAT64(PARSE_JSON('9.8'), wide_number_mode => 'round')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

@@ -6915,6 +6915,10 @@ class SafeDivide(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class SafeConvertBytesToString(Func):
+    pass
+
+
 class SHA(Func):
     _sql_names = ["SHA", "SHA1"]
 

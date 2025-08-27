@@ -817,6 +817,10 @@ ARRAY<STRUCT<STRING, BIGINT>>;
 APPROX_TOP_SUM(tbl.bigint_col, 1.5, 2);
 ARRAY<STRUCT<BIGINT, BIGINT>>;
 
+# dialect: bigquery
+SAFE_CONVERT_BYTES_TO_STRING(b'\xc2');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

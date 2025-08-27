@@ -317,6 +317,16 @@ class TestSingleStore(Validator):
                 "": "SELECT VARIANCE(yearly_total) FROM player_scores",
             },
         )
+        self.validate_all(
+            "SELECT VAR_POP(yearly_total) FROM player_scores",
+            read={
+                "singlestore": "SELECT VARIANCE(yearly_total) FROM player_scores",
+                "": "SELECT VARIANCE_POP(yearly_total) FROM player_scores",
+            },
+            write={
+                "": "SELECT VARIANCE_POP(yearly_total) FROM player_scores",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

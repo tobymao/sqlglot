@@ -281,6 +281,7 @@ class SingleStore(MySQL):
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

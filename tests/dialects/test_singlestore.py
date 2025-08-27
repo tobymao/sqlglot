@@ -336,3 +336,10 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")
+        self.validate_all(
+            "SELECT UNHEX(MD5('data'))",
+            read={
+                "singlestore": "SELECT UNHEX(MD5('data'))",
+                "": "SELECT MD5_DIGEST('data')",
+            },
+        )

@@ -645,6 +645,9 @@ class DuckDB(Dialect):
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.ArrayUniqueAgg: lambda self, e: self.func(
+                "LIST", exp.Distinct(expressions=[e.this])
+            ),
             exp.BitwiseXor: rename_func("XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CurrentDate: lambda *_: "CURRENT_DATE",

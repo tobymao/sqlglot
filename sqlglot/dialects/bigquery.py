@@ -497,7 +497,7 @@ class BigQuery(Dialect):
         exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.Bool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
+        exp.JSONBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.BitwiseAndAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseOrAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseXorAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
@@ -660,6 +660,7 @@ class BigQuery(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
+            "BOOL": exp.JSONBool.from_arg_list,
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),

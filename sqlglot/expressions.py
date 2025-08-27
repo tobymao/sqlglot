@@ -5464,7 +5464,7 @@ class ByteLength(Func):
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#bool_for_json
-class Bool(Func):
+class JSONBool(Func):
     pass
 
 

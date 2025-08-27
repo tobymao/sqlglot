@@ -340,6 +340,13 @@ class TestSingleStore(Validator):
             "SELECT CHAR(101)", read={"": "SELECT CHR(101)", "singlestore": "SELECT CHAR(101)"}
         )
         self.validate_all(
+            "SELECT INSTR('ohai', 'i')",
+            read={
+                "": "SELECT CONTAINS('ohai', 'i')",
+                "singlestore": "SELECT INSTR('ohai', 'i')",
+            },
+        )
+        self.validate_all(
             "SELECT REGEXP_MATCH('adog', 'O', 'c')",
             read={
                 # group, position, occurrence parameters are not supported in SingleStore, so they are ignored

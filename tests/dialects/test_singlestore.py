@@ -398,3 +398,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             },
         )
+        self.validate_all(
+            "SELECT REGEXP_INSTR('abcd', CONCAT('^', 'ab'))",
+            read={
+                "": "SELECT STARTS_WITH('abcd', 'ab')",
+                "singlestore": "SELECT REGEXP_INSTR('abcd', CONCAT('^', 'ab'))",
+            },
+        )

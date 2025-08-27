@@ -518,6 +518,7 @@ class BigQuery(Dialect):
         exp.DateTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
+        exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),

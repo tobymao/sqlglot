@@ -5512,6 +5512,10 @@ class Flatten(Func):
     pass
 
 
+class Float64(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
     arg_types = {"this": True, "expression": True}

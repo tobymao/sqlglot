@@ -875,6 +875,14 @@ DECIMAL;
 BOOL(PARSE_JSON('true'));
 BOOLEAN;
 
+# dialect: bigquery
+FLOAT64(PARSE_JSON('9.8'));
+FLOAT64;
+
+# dialect: bigquery
+FLOAT64(PARSE_JSON('9.8'), wide_number_mode => 'round');
+FLOAT64;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

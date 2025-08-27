@@ -831,6 +831,14 @@ BINARY;
 TO_HEX(b'foo');
 STRING;
 
+# dialect: bigquery
+PARSE_BIGNUMERIC('1.2');
+BIGDECIMAL;
+
+# dialect: bigquery
+PARSE_NUMERIC('1.2');
+DECIMAL;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

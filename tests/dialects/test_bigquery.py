@@ -1780,6 +1780,8 @@ WHERE
         self.validate_identity("APPROX_TOP_COUNT(col, 2)")
         self.validate_identity("ARPOX_TOP_SUM(col, 1.5, 2)")
         self.validate_identity("FROM_HEX('foo')")
+        self.validate_identity("PARSE_BIGNUMERIC('1.2')")
+        self.validate_identity("PARSE_NUMERIC('1.2')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

@@ -166,6 +166,13 @@ class SingleStore(MySQL):
                 expression=seq_get(args, 1),
                 parameters=seq_get(args, 2),
             ),
+            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                position=seq_get(args, 2),
+                occurrence=seq_get(args, 3),
+                parameters=seq_get(args, 4),
+            ),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -298,6 +305,16 @@ class SingleStore(MySQL):
                     "REGEXP_MATCH",
                     e.this,
                     e.expression,
+                    e.args.get("parameters"),
+                )
+            ),
+            exp.RegexpExtract: unsupported_args("group")(
+                lambda self, e: self.func(
+                    "REGEXP_SUBSTR",
+                    e.this,
+                    e.expression,
+                    e.args.get("position"),
+                    e.args.get("occurrence"),
                     e.args.get("parameters"),
                 )
             ),

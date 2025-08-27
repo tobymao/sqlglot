@@ -347,6 +347,14 @@ class TestSingleStore(Validator):
         )
         self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")
         self.validate_all(
+            "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
+            read={
+                # group parameter is not supported in SingleStore, so it is ignored
+                "": "SELECT REGEXP_EXTRACT('adog', 'O', 1, 1, 'c', 'gr1')",
+                "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
+            },
+        )
+        self.validate_all(
             "SELECT ('a' RLIKE '^[\x00-\x7f]*$')",
             read={"singlestore": "SELECT ('a' RLIKE '^[\x00-\x7f]*$')", "": "SELECT IS_ASCII('a')"},
         )
@@ -373,5 +381,13 @@ class TestSingleStore(Validator):
                 # group, position, occurrence parameters are not supported in SingleStore, so they are ignored
                 "": "SELECT REGEXP_EXTRACT_ALL('adog', 'O', 1, 1, 'c', 'gr1')",
                 "singlestore": "SELECT REGEXP_MATCH('adog', 'O', 'c')",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
+            read={
+                # group parameter is not supported in SingleStore, so it is ignored
+                "": "SELECT REGEXP_EXTRACT('adog', 'O', 1, 1, 'c', 'gr1')",
+                "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             },
         )

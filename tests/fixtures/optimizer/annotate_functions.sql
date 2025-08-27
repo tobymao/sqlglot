@@ -827,6 +827,10 @@ ARRAY<STRUCT<BIGINT, BIGINT>>;
 FROM_HEX('foo');
 BINARY;
 
+# dialect: bigquery
+TO_HEX(b'foo');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -1785,6 +1785,7 @@ WHERE
         self.validate_identity("CODE_POINTS_TO_BYTES([65, 98])")
         self.validate_identity("PARSE_BIGNUMERIC('1.2')")
         self.validate_identity("PARSE_NUMERIC('1.2')")
+        self.validate_identity("BOOL(PARSE_JSON('true'))")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

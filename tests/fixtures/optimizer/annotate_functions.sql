@@ -871,6 +871,10 @@ BIGDECIMAL;
 PARSE_NUMERIC('1.2');
 DECIMAL;
 
+# dialect: bigquery
+BOOL(PARSE_JSON('true'));
+BOOLEAN;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

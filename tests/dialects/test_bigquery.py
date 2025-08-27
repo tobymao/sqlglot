@@ -1780,6 +1780,7 @@ WHERE
         self.validate_identity("APPROX_TOP_COUNT(col, 2)")
         self.validate_identity("ARPOX_TOP_SUM(col, 1.5, 2)")
         self.validate_identity("FROM_HEX('foo')")
+        self.validate_identity("TO_CODE_POINTS('foo')")
         self.validate_identity("CODE_POINTS_TO_BYTES([65, 98])")
         self.validate_identity("PARSE_BIGNUMERIC('1.2')")
         self.validate_identity("PARSE_NUMERIC('1.2')")

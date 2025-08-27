@@ -832,6 +832,14 @@ TO_HEX(b'foo');
 STRING;
 
 # dialect: bigquery
+TO_CODE_POINTS('foo');
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+TO_CODE_POINTS(b'\x66\x6f\x6f');
+ARRAY<BIGINT>;
+
+# dialect: bigquery
 CODE_POINTS_TO_BYTES([65, 98]);
 BINARY;
 

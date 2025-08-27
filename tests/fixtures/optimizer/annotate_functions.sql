@@ -835,6 +835,14 @@ STRING;
 CODE_POINTS_TO_BYTES([65, 98]);
 BINARY;
 
+# dialect: bigquery
+PARSE_BIGNUMERIC('1.2');
+BIGDECIMAL;
+
+# dialect: bigquery
+PARSE_NUMERIC('1.2');
+DECIMAL;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

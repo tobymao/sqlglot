@@ -668,6 +668,7 @@ class Dialect(metaclass=_Dialect):
             exp.UnixMillis,
         },
         exp.DataType.Type.BINARY: {
+            exp.FromBase32,
             exp.FromBase64,
         },
         exp.DataType.Type.BOOLEAN: {
@@ -779,6 +780,7 @@ class Dialect(metaclass=_Dialect):
             exp.TimeToStr,
             exp.TimeToTimeStr,
             exp.Trim,
+            exp.ToBase32,
             exp.ToBase64,
             exp.TsOrDsToDateStr,
             exp.UnixToStr,

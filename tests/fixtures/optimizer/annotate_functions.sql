@@ -52,6 +52,9 @@ ARRAY<DOUBLE>;
 ARRAY_SLICE([1, 1.5], 1, 2);
 ARRAY<DOUBLE>;
 
+FROM_BASE32(tbl.str_col);
+BINARY;
+
 FROM_BASE64(tbl.str_col);
 BINARY;
 
@@ -69,6 +72,9 @@ BIGINT;
 
 LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
+
+TO_BASE32(tbl.bytes_col);
+VARCHAR;
 
 TO_BASE64(tbl.bytes_col);
 VARCHAR;
@@ -816,6 +822,54 @@ ARRAY<STRUCT<STRING, BIGINT>>;
 # dialect: bigquery
 APPROX_TOP_SUM(tbl.bigint_col, 1.5, 2);
 ARRAY<STRUCT<BIGINT, BIGINT>>;
+
+# dialect: bigquery
+APPROX_QUANTILES(tbl.bigint_col, 2);
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+APPROX_QUANTILES(tbl.str_col, 2);
+ARRAY<STRING>;
+
+# dialect: bigquery
+APPROX_QUANTILES(DISTINCT tbl.bigint_col, 2);
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+APPROX_QUANTILES(DISTINCT tbl.str_col, 2);
+ARRAY<STRING>;
+
+# dialect: bigquery
+SAFE_CONVERT_BYTES_TO_STRING(b'\xc2');
+STRING;
+
+# dialect: bigquery
+FROM_HEX('foo');
+BINARY;
+
+# dialect: bigquery
+TO_HEX(b'foo');
+STRING;
+
+# dialect: bigquery
+TO_CODE_POINTS('foo');
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+TO_CODE_POINTS(b'\x66\x6f\x6f');
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+CODE_POINTS_TO_BYTES([65, 98]);
+BINARY;
+
+# dialect: bigquery
+PARSE_BIGNUMERIC('1.2');
+BIGDECIMAL;
+
+# dialect: bigquery
+PARSE_NUMERIC('1.2');
+DECIMAL;
 
 --------------------------------------
 -- Snowflake

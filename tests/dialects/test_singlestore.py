@@ -405,3 +405,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT REGEXP_INSTR('abcd', CONCAT('^', 'ab'))",
             },
         )
+        self.validate_all(
+            "SELECT CONV('f', 16, 10)",
+            read={
+                "redshift": "SELECT STRTOL('f',16)",
+                "singlestore": "SELECT CONV('f', 16, 10)",
+            },
+        )

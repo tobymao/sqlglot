@@ -831,6 +831,10 @@ BINARY;
 TO_HEX(b'foo');
 STRING;
 
+# dialect: bigquery
+CODE_POINTS_TO_BYTES([65, 98]);
+BINARY;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

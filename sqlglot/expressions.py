@@ -5612,6 +5612,10 @@ class ToDouble(Func):
     }
 
 
+class CodePointsToBytes(Func):
+    pass
+
+
 class Columns(Func):
     arg_types = {"this": True, "unpack": False}
 

@@ -1779,6 +1779,7 @@ WHERE
         self.validate_identity("CODE_POINTS_TO_STRING([65, 255])")
         self.validate_identity("APPROX_TOP_COUNT(col, 2)")
         self.validate_identity("ARPOX_TOP_SUM(col, 1.5, 2)")
+        self.validate_identity("SAFE_CONVERT_BYTES_TO_STRING(b'\xc2')")
         self.validate_identity("FROM_HEX('foo')")
         self.validate_identity("TO_CODE_POINTS('foo')")
         self.validate_identity("CODE_POINTS_TO_BYTES([65, 98])")

@@ -502,6 +502,9 @@ class BigQuery(Dialect):
         exp.BitwiseCountAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.ByteLength: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.ByteString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
+        exp.CodePointsToBytes: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.BINARY
+        ),
         exp.CodePointsToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),

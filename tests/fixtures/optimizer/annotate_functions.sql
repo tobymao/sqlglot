@@ -823,6 +823,10 @@ ARRAY<STRUCT<STRING, BIGINT>>;
 APPROX_TOP_SUM(tbl.bigint_col, 1.5, 2);
 ARRAY<STRUCT<BIGINT, BIGINT>>;
 
+# dialect: bigquery
+FROM_HEX('foo');
+BINARY;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

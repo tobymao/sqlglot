@@ -324,6 +324,9 @@ class SingleStore(MySQL):
                     e.args.get("parameters"),
                 )
             ),
+            exp.StartsWith: lambda self, e: self.func(
+                "REGEXP_INSTR", e.this, self.func("CONCAT", exp.Literal.string("^"), e.expression)
+            ),
             exp.FromBase: lambda self, e: self.func(
                 "CONV", e.this, e.expression, exp.Literal.number(10)
             ),

@@ -347,6 +347,13 @@ class TestSingleStore(Validator):
         )
         self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")
         self.validate_all(
+            "SELECT LPAD('', LENGTH('a') * 3, 'a')",
+            read={
+                "": "SELECT REPEAT('a', 3)",
+                "singlestore": "SELECT LPAD('', LENGTH('a') * 3, 'a')",
+            },
+        )
+        self.validate_all(
             "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             read={
                 # group parameter is not supported in SingleStore, so it is ignored

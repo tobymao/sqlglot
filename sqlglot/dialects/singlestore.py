@@ -159,6 +159,7 @@ class SingleStore(MySQL):
                 quantile=seq_get(args, 1),
                 error_tolerance=seq_get(args, 2),
             ),
+            "INSTR": exp.Contains.from_arg_list,
             "REGEXP_MATCH": lambda args: exp.RegexpExtractAll(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -286,6 +287,7 @@ class SingleStore(MySQL):
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.Contains: rename_func("INSTR"),
             exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(
                 lambda self, e: self.func(
                     "REGEXP_MATCH",

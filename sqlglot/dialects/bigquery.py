@@ -512,6 +512,7 @@ class BigQuery(Dialect):
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
         exp.DateTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
@@ -709,6 +710,7 @@ class BigQuery(Dialect):
             "FORMAT_DATETIME": _build_format_time(exp.TsOrDsToDatetime),
             "FORMAT_TIMESTAMP": _build_format_time(exp.TsOrDsToTimestamp),
             "FORMAT_TIME": _build_format_time(exp.TsOrDsToTime),
+            "FROM_HEX": exp.Unhex.from_arg_list,
             "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
         }
 

@@ -491,6 +491,7 @@ class BigQuery(Dialect):
         },
         exp.ApproxTopSum: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
+        exp.ApproxQuantiles: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,

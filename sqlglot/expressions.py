@@ -5493,6 +5493,10 @@ class ApproxTopSum(AggFunc):
     arg_types = {"this": True, "expression": True, "count": True}
 
 
+class ApproxQuantiles(AggFunc):
+    arg_types = {"this": True, "expression": False}
+
+
 class FarmFingerprint(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

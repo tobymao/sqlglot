@@ -324,6 +324,9 @@ class SingleStore(MySQL):
                     e.args.get("parameters"),
                 )
             ),
+            exp.StartsWith: lambda self, e: self.func(
+                "REGEXP_INSTR", e.this, self.func("CONCAT", exp.Literal.string("^"), e.expression)
+            ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

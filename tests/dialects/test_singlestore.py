@@ -351,6 +351,13 @@ class TestSingleStore(Validator):
             read={"singlestore": "SELECT ('a' RLIKE '^[\x00-\x7f]*$')", "": "SELECT IS_ASCII('a')"},
         )
         self.validate_all(
+            "SELECT UNHEX(MD5('data'))",
+            read={
+                "singlestore": "SELECT UNHEX(MD5('data'))",
+                "": "SELECT MD5_DIGEST('data')",
+            },
+        )
+        self.validate_all(
             "SELECT CHAR(101)", read={"": "SELECT CHR(101)", "singlestore": "SELECT CHAR(101)"}
         )
         self.validate_all(

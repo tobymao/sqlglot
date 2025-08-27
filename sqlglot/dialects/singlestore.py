@@ -290,6 +290,7 @@ class SingleStore(MySQL):
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7f]*$')",
+            exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Chr: rename_func("CHAR"),
             exp.Contains: rename_func("INSTR"),
             exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(

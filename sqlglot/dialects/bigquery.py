@@ -502,6 +502,9 @@ class BigQuery(Dialect):
         exp.BitwiseCountAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.ByteLength: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.ByteString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
+        exp.CodePointsToBytes: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.BINARY
+        ),
         exp.CodePointsToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),
@@ -512,6 +515,7 @@ class BigQuery(Dialect):
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
         exp.DateTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
@@ -525,9 +529,14 @@ class BigQuery(Dialect):
         ),
         exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
+        exp.LowerHex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.MD5Digest: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
+        exp.ParseBignumeric: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.BIGDECIMAL
+        ),
+        exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Reverse: lambda self, e: self._annotate_by_args(e, "this"),
@@ -544,8 +553,11 @@ class BigQuery(Dialect):
         ),
         exp.TimestampTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.TimeFromParts: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
+        exp.ToCodePoints: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
+        ),
+        exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.Translate: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }
@@ -712,6 +724,7 @@ class BigQuery(Dialect):
             "FORMAT_DATETIME": _build_format_time(exp.TsOrDsToDatetime),
             "FORMAT_TIMESTAMP": _build_format_time(exp.TsOrDsToTimestamp),
             "FORMAT_TIME": _build_format_time(exp.TsOrDsToTime),
+            "FROM_HEX": exp.Unhex.from_arg_list,
             "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
         }
 

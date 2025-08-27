@@ -5592,6 +5592,10 @@ class ToChar(Func):
     }
 
 
+class ToCodePoints(Func):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_decimal
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_NUMBER.html
 class ToNumber(Func):
@@ -5610,6 +5614,10 @@ class ToDouble(Func):
         "this": True,
         "format": False,
     }
+
+
+class CodePointsToBytes(Func):
+    pass
 
 
 class Columns(Func):
@@ -6237,7 +6245,15 @@ class Floor(Func):
     arg_types = {"this": True, "decimals": False, "to": False}
 
 
+class FromBase32(Func):
+    pass
+
+
 class FromBase64(Func):
+    pass
+
+
+class ToBase32(Func):
     pass
 
 
@@ -6595,6 +6611,14 @@ class JSONFormat(Func):
 class JSONArrayContains(Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSON_ARRAY_CONTAINS"]
+
+
+class ParseBignumeric(Func):
+    pass
+
+
+class ParseNumeric(Func):
+    pass
 
 
 class ParseJSON(Func):

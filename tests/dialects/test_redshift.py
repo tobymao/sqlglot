@@ -674,6 +674,25 @@ FROM (
         self.validate_identity("GRANT USAGE ON SCHEMA sales_schema TO ROLE Analyst_role")
         self.validate_identity("GRANT SELECT ON sales_db.sales_schema.tickit_sales_redshift TO Bob")
 
+    def test_revoke(self):
+        revoke_cmds = [
+            "REVOKE SELECT ON ALL TABLES IN SCHEMA qa_tickit FROM fred",
+            "REVOKE USAGE ON DATASHARE salesshare FROM NAMESPACE '13b8833d-17c6-4f16-8fe4-1a018f5ed00d'",
+            "REVOKE USAGE FOR SCHEMAS IN DATABASE Sales_db FROM ROLE Sales",
+            "REVOKE EXECUTE FOR FUNCTIONS IN SCHEMA Sales_schema FROM bob",
+            "REVOKE SELECT FOR TABLES IN DATABASE Sales_db FROM alice",
+            "REVOKE ROLE sample_role1 FROM ROLE sample_role2",
+        ]
+
+        for sql in revoke_cmds:
+            with self.subTest(f"Testing Redshift's REVOKE command statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)
+
+        self.validate_identity("REVOKE SELECT ON TABLE sales FROM fred")
+        self.validate_identity("REVOKE ALL ON SCHEMA qa_tickit FROM GROUP qa_users")
+        self.validate_identity("REVOKE USAGE ON DATABASE sales_db FROM Bob")
+        self.validate_identity("REVOKE USAGE ON SCHEMA sales_schema FROM ROLE Analyst_role")
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TBL(col1, col2)")
         self.validate_identity("ANALYZE VERBOSE TBL")

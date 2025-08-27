@@ -2468,6 +2468,17 @@ class Grant(Expression):
     }
 
 
+class Revoke(Expression):
+    arg_types = {
+        "privileges": True,
+        "kind": False,
+        "securable": True,
+        "principals": True,
+        "grant_option": False,
+        "cascade": False,
+    }
+
+
 class Group(Expression):
     arg_types = {
         "expressions": False,

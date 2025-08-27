@@ -369,6 +369,14 @@ class TestDatabricks(Validator):
         self.validate_identity("GRANT ALL PRIVILEGES ON TABLE forecasts TO finance")
         self.validate_identity("GRANT SELECT ON TABLE t TO `fab9e00e-ca35-11ec-9d64-0242ac120002`")
 
+    def test_revoke(self):
+        self.validate_identity("REVOKE CREATE ON SCHEMA my_schema FROM `alf@melmak.et`")
+        self.validate_identity("REVOKE SELECT ON TABLE sample_data FROM `alf@melmak.et`")
+        self.validate_identity("REVOKE ALL PRIVILEGES ON TABLE forecasts FROM finance")
+        self.validate_identity(
+            "REVOKE SELECT ON TABLE t FROM `fab9e00e-ca35-11ec-9d64-0242ac120002`"
+        )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS FOR ALL COLUMNS")

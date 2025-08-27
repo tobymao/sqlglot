@@ -1498,3 +1498,78 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         for key_type in ("FOR SHARE", "FOR UPDATE", "FOR NO KEY UPDATE", "FOR KEY SHARE"):
             with self.subTest(f"Test lock type {key_type}"):
                 self.validate_identity(f"SELECT 1 FROM foo AS x {key_type} OF x")
+
+    def test_grant(self):
+        grant_cmds = [
+            "GRANT SELECT ON TABLE users TO role1",
+            "GRANT INSERT, DELETE ON TABLE orders TO user1",
+            "GRANT SELECT ON employees TO manager WITH GRANT OPTION",
+            "GRANT USAGE ON SCHEMA finance TO user2",
+            "GRANT ALL PRIVILEGES ON DATABASE mydb TO PUBLIC",
+            "GRANT CREATE ON SCHEMA public TO developer",
+            "GRANT CONNECT ON DATABASE testdb TO readonly_user",
+            "GRANT TEMPORARY ON DATABASE testdb TO temp_user",
+            "GRANT TRIGGER ON orders TO audit_role",
+            "GRANT REFERENCES ON products TO foreign_key_user",
+            "GRANT TRUNCATE ON logs TO admin_role",
+            "GRANT UPDATE(salary) ON employees TO hr_manager",
+            "GRANT SELECT(id, name), UPDATE(email) ON customers TO customer_service",
+        ]
+
+        for sql in grant_cmds:
+            with self.subTest(f"Testing PostgreSQL's GRANT statement: {sql}"):
+                self.validate_identity(sql)
+
+        self.validate_identity(
+            "GRANT EXECUTE ON FUNCTION calculate_bonus(integer) TO analyst",
+            "GRANT EXECUTE ON FUNCTION CALCULATE_BONUS(integer) TO analyst",
+        )
+
+        advanced_grants = [
+            "GRANT INSERT, DELETE ON ALL TABLES IN SCHEMA myschema TO user1",
+            "GRANT developer_role TO john",
+            "GRANT admin_role TO mary WITH ADMIN OPTION",
+        ]
+
+        for sql in advanced_grants:
+            with self.subTest(f"Testing PostgreSQL's advanced GRANT statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)
+
+    def test_revoke(self):
+        revoke_cmds = [
+            "REVOKE SELECT ON TABLE users FROM role1",
+            "REVOKE INSERT, DELETE ON TABLE orders FROM user1",
+            "REVOKE USAGE ON SCHEMA finance FROM user2",
+            "REVOKE ALL PRIVILEGES ON DATABASE mydb FROM PUBLIC",
+            "REVOKE CREATE ON SCHEMA public FROM developer",
+            "REVOKE CONNECT ON DATABASE testdb FROM readonly_user",
+            "REVOKE TEMPORARY ON DATABASE testdb FROM temp_user",
+            "REVOKE TRIGGER ON orders FROM audit_role",
+            "REVOKE REFERENCES ON products FROM foreign_key_user",
+            "REVOKE TRUNCATE ON logs FROM admin_role",
+            "REVOKE USAGE ON SCHEMA finance FROM user2 CASCADE",
+            "REVOKE SELECT ON TABLE orders FROM user1 RESTRICT",
+            "REVOKE GRANT OPTION FOR SELECT ON employees FROM manager",
+            "REVOKE GRANT OPTION FOR SELECT ON employees FROM manager RESTRICT",
+            "REVOKE UPDATE(salary) ON employees FROM hr_manager",
+            "REVOKE SELECT(id, name), UPDATE(email) ON customers FROM customer_service",
+        ]
+
+        for sql in revoke_cmds:
+            with self.subTest(f"Testing PostgreSQL's REVOKE statement: {sql}"):
+                self.validate_identity(sql)
+
+        self.validate_identity(
+            "REVOKE EXECUTE ON FUNCTION calculate_bonus(integer) FROM analyst",
+            "REVOKE EXECUTE ON FUNCTION CALCULATE_BONUS(integer) FROM analyst",
+        )
+
+        advanced_revoke_cmds = [
+            "REVOKE INSERT, DELETE ON ALL TABLES IN SCHEMA myschema FROM user1",
+            "REVOKE developer_role FROM john",
+            "REVOKE admin_role FROM mary",
+        ]
+
+        for sql in advanced_revoke_cmds:
+            with self.subTest(f"Testing PostgreSQL's advanced REVOKE statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)

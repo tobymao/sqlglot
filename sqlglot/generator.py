@@ -4818,6 +4818,24 @@ class Generator(metaclass=_Generator):
 
         return f"GRANT {privileges_sql} ON{kind}{securable} TO {principals}{grant_option}"
 
+    def revoke_sql(self, expression: exp.Revoke) -> str:
+        grant_option_for = "GRANT OPTION FOR " if expression.args.get("grant_option") else ""
+
+        privileges_sql = self.expressions(expression, key="privileges", flat=True)
+
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+
+        securable = self.sql(expression, "securable")
+        securable = f" {securable}" if securable else ""
+
+        principals = self.expressions(expression, key="principals", flat=True)
+
+        cascade = self.sql(expression, "cascade")
+        cascade = f" {cascade}" if cascade else ""
+
+        return f"REVOKE {grant_option_for}{privileges_sql} ON{kind}{securable} FROM {principals}{cascade}"
+
     def grantprivilege_sql(self, expression: exp.GrantPrivilege):
         this = self.sql(expression, "this")
         columns = self.expressions(expression, flat=True)

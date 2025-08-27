@@ -398,3 +398,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             },
         )
+        self.validate_all(
+            "SELECT CONV('f', 16, 10)",
+            read={
+                "redshift": "SELECT STRTOL('f',16)",
+                "singlestore": "SELECT CONV('f', 16, 10)",
+            },
+        )

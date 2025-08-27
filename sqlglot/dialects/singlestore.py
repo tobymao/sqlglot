@@ -324,6 +324,9 @@ class SingleStore(MySQL):
                     e.args.get("parameters"),
                 )
             ),
+            exp.FromBase: lambda self, e: self.func(
+                "CONV", e.this, e.expression, exp.Literal.number(10)
+            ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

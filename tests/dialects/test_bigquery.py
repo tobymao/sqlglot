@@ -1779,6 +1779,12 @@ WHERE
         self.validate_identity("CODE_POINTS_TO_STRING([65, 255])")
         self.validate_identity("APPROX_TOP_COUNT(col, 2)")
         self.validate_identity("ARPOX_TOP_SUM(col, 1.5, 2)")
+        self.validate_identity("SAFE_CONVERT_BYTES_TO_STRING(b'\xc2')")
+        self.validate_identity("FROM_HEX('foo')")
+        self.validate_identity("TO_CODE_POINTS('foo')")
+        self.validate_identity("CODE_POINTS_TO_BYTES([65, 98])")
+        self.validate_identity("PARSE_BIGNUMERIC('1.2')")
+        self.validate_identity("PARSE_NUMERIC('1.2')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):
@@ -2789,3 +2795,8 @@ OPTIONS (
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
         )
+
+    def test_approx_qunatiles(self):
+        self.validate_identity("APPROX_QUANTILES(foo, 2)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 RESPECT NULLS)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 IGNORE NULLS)")

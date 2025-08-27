@@ -317,6 +317,16 @@ class TestSingleStore(Validator):
                 "": "SELECT VARIANCE(yearly_total) FROM player_scores",
             },
         )
+        self.validate_all(
+            "SELECT VAR_POP(yearly_total) FROM player_scores",
+            read={
+                "singlestore": "SELECT VARIANCE(yearly_total) FROM player_scores",
+                "": "SELECT VARIANCE_POP(yearly_total) FROM player_scores",
+            },
+            write={
+                "": "SELECT VARIANCE_POP(yearly_total) FROM player_scores",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(
@@ -341,5 +351,50 @@ class TestSingleStore(Validator):
             read={
                 "": "SELECT REPEAT('a', 3)",
                 "singlestore": "SELECT LPAD('', LENGTH('a') * 3, 'a')",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
+            read={
+                # group parameter is not supported in SingleStore, so it is ignored
+                "": "SELECT REGEXP_EXTRACT('adog', 'O', 1, 1, 'c', 'gr1')",
+                "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
+            },
+        )
+        self.validate_all(
+            "SELECT ('a' RLIKE '^[\x00-\x7f]*$')",
+            read={"singlestore": "SELECT ('a' RLIKE '^[\x00-\x7f]*$')", "": "SELECT IS_ASCII('a')"},
+        )
+        self.validate_all(
+            "SELECT UNHEX(MD5('data'))",
+            read={
+                "singlestore": "SELECT UNHEX(MD5('data'))",
+                "": "SELECT MD5_DIGEST('data')",
+            },
+        )
+        self.validate_all(
+            "SELECT CHAR(101)", read={"": "SELECT CHR(101)", "singlestore": "SELECT CHAR(101)"}
+        )
+        self.validate_all(
+            "SELECT INSTR('ohai', 'i')",
+            read={
+                "": "SELECT CONTAINS('ohai', 'i')",
+                "singlestore": "SELECT INSTR('ohai', 'i')",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_MATCH('adog', 'O', 'c')",
+            read={
+                # group, position, occurrence parameters are not supported in SingleStore, so they are ignored
+                "": "SELECT REGEXP_EXTRACT_ALL('adog', 'O', 1, 1, 'c', 'gr1')",
+                "singlestore": "SELECT REGEXP_MATCH('adog', 'O', 'c')",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
+            read={
+                # group parameter is not supported in SingleStore, so it is ignored
+                "": "SELECT REGEXP_EXTRACT('adog', 'O', 1, 1, 'c', 'gr1')",
+                "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             },
         )

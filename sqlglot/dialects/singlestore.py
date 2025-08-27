@@ -159,6 +159,20 @@ class SingleStore(MySQL):
                 quantile=seq_get(args, 1),
                 error_tolerance=seq_get(args, 2),
             ),
+            "VARIANCE": exp.VariancePop.from_arg_list,
+            "INSTR": exp.Contains.from_arg_list,
+            "REGEXP_MATCH": lambda args: exp.RegexpExtractAll(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                parameters=seq_get(args, 2),
+            ),
+            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                position=seq_get(args, 2),
+                occurrence=seq_get(args, 3),
+                parameters=seq_get(args, 4),
+            ),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -279,6 +293,7 @@ class SingleStore(MySQL):
                 )
             ),
             exp.Variance: rename_func("VAR_SAMP"),
+            exp.VariancePop: rename_func("VAR_POP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.Repeat: lambda self, e: self.func(
@@ -286,6 +301,28 @@ class SingleStore(MySQL):
                 exp.Literal.string(""),
                 exp.Mul(this=self.func("LENGTH", e.this), expression=e.args.get("times")),
                 e.this,
+            ),
+            exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7f]*$')",
+            exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
+            exp.Chr: rename_func("CHAR"),
+            exp.Contains: rename_func("INSTR"),
+            exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(
+                lambda self, e: self.func(
+                    "REGEXP_MATCH",
+                    e.this,
+                    e.expression,
+                    e.args.get("parameters"),
+                )
+            ),
+            exp.RegexpExtract: unsupported_args("group")(
+                lambda self, e: self.func(
+                    "REGEXP_SUBSTR",
+                    e.this,
+                    e.expression,
+                    e.args.get("position"),
+                    e.args.get("occurrence"),
+                    e.args.get("parameters"),
+                )
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)

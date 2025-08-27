@@ -5616,6 +5616,10 @@ class ToDouble(Func):
     }
 
 
+class CodePointsToBytes(Func):
+    pass
+
+
 class Columns(Func):
     arg_types = {"this": True, "unpack": False}
 
@@ -6607,6 +6611,14 @@ class JSONFormat(Func):
 class JSONArrayContains(Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSON_ARRAY_CONTAINS"]
+
+
+class ParseBignumeric(Func):
+    pass
+
+
+class ParseNumeric(Func):
+    pass
 
 
 class ParseJSON(Func):

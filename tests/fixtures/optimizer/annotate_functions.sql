@@ -824,9 +824,26 @@ APPROX_TOP_SUM(tbl.bigint_col, 1.5, 2);
 ARRAY<STRUCT<BIGINT, BIGINT>>;
 
 # dialect: bigquery
+APPROX_QUANTILES(tbl.bigint_col, 2);
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+APPROX_QUANTILES(tbl.str_col, 2);
+ARRAY<STRING>;
+
+# dialect: bigquery
+APPROX_QUANTILES(DISTINCT tbl.bigint_col, 2);
+ARRAY<BIGINT>;
+
+# dialect: bigquery
+APPROX_QUANTILES(DISTINCT tbl.str_col, 2);
+ARRAY<STRING>;
+
+# dialect: bigquery
 SAFE_CONVERT_BYTES_TO_STRING(b'\xc2');
 STRING;
 
+# dialect: bigquery
 FROM_HEX('foo');
 BINARY;
 

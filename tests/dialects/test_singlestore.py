@@ -346,3 +346,11 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")
+        self.validate_all(
+            "SELECT REGEXP_MATCH('adog', 'O', 'c')",
+            read={
+                # group, position, occurrence parameters are not supported in SingleStore, so they are ignored
+                "": "SELECT REGEXP_EXTRACT_ALL('adog', 'O', 1, 1, 'c', 'gr1')",
+                "singlestore": "SELECT REGEXP_MATCH('adog', 'O', 'c')",
+            },
+        )

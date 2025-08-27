@@ -497,6 +497,7 @@ class BigQuery(Dialect):
         exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.Bool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.BitwiseAndAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseOrAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseXorAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),

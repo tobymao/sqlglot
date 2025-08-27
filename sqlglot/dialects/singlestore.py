@@ -281,6 +281,12 @@ class SingleStore(MySQL):
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.Repeat: lambda self, e: self.func(
+                "LPAD",
+                exp.Literal.string(""),
+                exp.Mul(this=self.func("LENGTH", e.this), expression=e.args.get("times")),
+                e.this,
+            ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

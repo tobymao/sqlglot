@@ -125,6 +125,12 @@ class TestBigQuery(Validator):
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity("CAST(x AS TIMESTAMP)")
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
+        self.validate_identity("LOOP SET x = x + 1", check_command_warning=True)
+        self.validate_identity("REPEAT SET x = x + 1", check_command_warning=True)
+        self.validate_identity(
+            "WHILE i < ARRAY_LENGTH(batches) DO SET x = batches[OFFSET(i)]",
+            check_command_warning=True,
+        )
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")

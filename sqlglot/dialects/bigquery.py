@@ -633,10 +633,13 @@ class BigQuery(Dialect):
             "EXPORT": TokenType.EXPORT,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
+            "LOOP": TokenType.COMMAND,
             "MODEL": TokenType.MODEL,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "RECORD": TokenType.STRUCT,
+            "REPEAT": TokenType.COMMAND,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
+            "WHILE": TokenType.COMMAND,
         }
         KEYWORDS.pop("DIV")
         KEYWORDS.pop("VALUES")

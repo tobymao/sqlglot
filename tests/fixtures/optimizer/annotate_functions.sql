@@ -829,7 +829,7 @@ BINARY;
 
 # dialect: bigquery
 TO_HEX(b'foo');
-BINARY;
+STRING;
 
 --------------------------------------
 -- Snowflake

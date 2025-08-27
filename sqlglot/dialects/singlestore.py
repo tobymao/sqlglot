@@ -289,6 +289,7 @@ class SingleStore(MySQL):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.Chr: rename_func("CHAR"),
             exp.Contains: rename_func("INSTR"),
             exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(
                 lambda self, e: self.func(

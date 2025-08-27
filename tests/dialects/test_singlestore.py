@@ -347,6 +347,9 @@ class TestSingleStore(Validator):
         )
         self.validate_identity("SELECT 'a' REGEXP 'b'", "SELECT 'a' RLIKE 'b'")
         self.validate_all(
+            "SELECT CHAR(101)", read={"": "SELECT CHR(101)", "singlestore": "SELECT CHAR(101)"}
+        )
+        self.validate_all(
             "SELECT INSTR('ohai', 'i')",
             read={
                 "": "SELECT CONTAINS('ohai', 'i')",

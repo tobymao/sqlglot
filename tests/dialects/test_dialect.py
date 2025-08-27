@@ -4053,3 +4053,33 @@ FROM subquery2""",
                 "redshift": "FARMFINGERPRINT64(x)",
             },
         )
+
+    def test_from_to_base32(self):
+        self.validate_all(
+            "FROM_BASE32(x)",
+            read={
+                "": "FROM_BASE32(x)",
+                "bigquery": "FROM_BASE32(x)",
+                "presto": "FROM_BASE32(x)",
+                "trino": "FROM_BASE32(x)",
+            },
+            write={
+                "bigquery": "FROM_BASE32(x)",
+                "presto": "FROM_BASE32(x)",
+                "trino": "FROM_BASE32(x)",
+            },
+        )
+        self.validate_all(
+            "TO_BASE32(x)",
+            read={
+                "": "TO_BASE32(x)",
+                "bigquery": "TO_BASE32(x)",
+                "presto": "TO_BASE32(x)",
+                "trino": "TO_BASE32(x)",
+            },
+            write={
+                "bigquery": "TO_BASE32(x)",
+                "presto": "TO_BASE32(x)",
+                "trino": "TO_BASE32(x)",
+            },
+        )

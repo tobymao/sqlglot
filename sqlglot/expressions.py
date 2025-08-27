@@ -5463,6 +5463,11 @@ class ByteLength(Func):
     pass
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#bool_for_json
+class JSONBool(Func):
+    pass
+
+
 class ArrayRemove(Func):
     arg_types = {"this": True, "expression": True}
 

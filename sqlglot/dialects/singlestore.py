@@ -159,6 +159,7 @@ class SingleStore(MySQL):
                 quantile=seq_get(args, 1),
                 error_tolerance=seq_get(args, 2),
             ),
+            "INSTR": exp.Contains.from_arg_list,
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -281,6 +282,7 @@ class SingleStore(MySQL):
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.Contains: rename_func("INSTR"),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

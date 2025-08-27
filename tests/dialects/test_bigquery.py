@@ -2795,3 +2795,8 @@ OPTIONS (
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
         )
+
+    def test_approx_qunatiles(self):
+        self.validate_identity("APPROX_QUANTILES(foo, 2)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 RESPECT NULLS)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 IGNORE NULLS)")

@@ -543,8 +543,11 @@ class BigQuery(Dialect):
         ),
         exp.TimestampTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.TimeFromParts: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
+        exp.ToCodePoints: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
+        ),
+        exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.Translate: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }

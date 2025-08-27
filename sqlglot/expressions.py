@@ -5592,6 +5592,10 @@ class ToChar(Func):
     }
 
 
+class ToCodePoints(Func):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_decimal
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_NUMBER.html
 class ToNumber(Func):

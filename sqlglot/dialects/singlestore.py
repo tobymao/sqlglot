@@ -296,6 +296,12 @@ class SingleStore(MySQL):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Xor: bool_xor_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+            exp.Repeat: lambda self, e: self.func(
+                "LPAD",
+                exp.Literal.string(""),
+                exp.Mul(this=self.func("LENGTH", e.this), expression=e.args.get("times")),
+                e.this,
+            ),
             exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7f]*$')",
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Chr: rename_func("CHAR"),

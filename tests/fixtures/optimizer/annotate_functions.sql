@@ -891,6 +891,14 @@ BOOLEAN;
 CONTAINS_SUBSTR(PARSE_JSON('{"lunch":"soup"}'), 'lunch', json_scope => 'JSON_VALUES');
 BOOLEAN;
 
+# dialect: bigquery
+NORMALIZE('\u00ea');
+STRING;
+
+# dialect: bigquery
+NORMALIZE('\u00ea', NFKC);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

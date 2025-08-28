@@ -330,6 +330,7 @@ class SingleStore(MySQL):
             exp.FromBase: lambda self, e: self.func(
                 "CONV", e.this, e.expression, exp.Literal.number(10)
             ),
+            exp.Reduce: unsupported_args("finish")(rename_func("REDUCE")),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

@@ -148,6 +148,7 @@ class SingleStore(MySQL):
                 expression=seq_get(args, 0),
                 json_type="JSON",
             ),
+            "JSON_PRETTY": exp.JSONFormat.from_arg_list,
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -277,6 +278,7 @@ class SingleStore(MySQL):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
+            exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),

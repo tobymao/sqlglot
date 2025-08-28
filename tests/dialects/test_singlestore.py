@@ -212,6 +212,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT JSON_ARRAY_CONTAINS_JSON('[\"a\"]', TO_JSON('a'))",
             },
         )
+        self.validate_all(
+            'SELECT JSON_PRETTY(\'["G","alpha","20",10]\')',
+            read={
+                "singlestore": 'SELECT JSON_PRETTY(\'["G","alpha","20",10]\')',
+                "": 'SELECT JSON_FORMAT(\'["G","alpha","20",10]\')',
+            },
+        )
 
     def test_date_parts_functions(self):
         self.validate_identity(

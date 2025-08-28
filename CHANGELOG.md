@@ -1,6 +1,44 @@
 Changelog
 =========
 
+## [v27.10.0] - 2025-08-28
+### :boom: BREAKING CHANGES
+- due to [`de2fe15`](https://github.com/tobymao/sqlglot/commit/de2fe1503b5bb003431d1f0c7b9ae87932a6cc1c) - annotate type for bq CONTAINS_SUBSTR *(PR [#5705](https://github.com/tobymao/sqlglot/pull/5705) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq CONTAINS_SUBSTR (#5705)
+
+- due to [`770888f`](https://github.com/tobymao/sqlglot/commit/770888f4e9a9061329e3c416f968f7dd9639fb81) - annotate type for bq NORMALIZE *(PR [#5711](https://github.com/tobymao/sqlglot/pull/5711) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq NORMALIZE (#5711)
+
+- due to [`506033f`](https://github.com/tobymao/sqlglot/commit/506033f299f7a4c28f6efd8bf715be5dcf73e929) - parse and annotate type for bq NORMALIZE_AND_CASEFOLD *(PR [#5712](https://github.com/tobymao/sqlglot/pull/5712) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq NORMALIZE_AND_CASEFOLD (#5712)
+
+- due to [`848aea1`](https://github.com/tobymao/sqlglot/commit/848aea1dbaaeb580b633796dcca06c28314b9c3e) - parse and annotate type for bq OCTET_LENGTH *(PR [#5713](https://github.com/tobymao/sqlglot/pull/5713) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq OCTET_LENGTH (#5713)
+
+- due to [`727bf83`](https://github.com/tobymao/sqlglot/commit/727bf8378f232188d35834d980b035552999ea3b) - add support for REVOKE DDL *(PR [#5703](https://github.com/tobymao/sqlglot/pull/5703) by [@newtonapple](https://github.com/newtonapple))*:
+
+  add support for REVOKE DDL (#5703)
+
+
+### :sparkles: New Features
+- [`f6f8f56`](https://github.com/tobymao/sqlglot/commit/f6f8f56a59d550dfc7dfcab0c3b9a6885c7e758a) - **singlestore**: Fixed parsing/generation of exp.JSONFormat *(PR [#5706](https://github.com/tobymao/sqlglot/pull/5706) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`de2fe15`](https://github.com/tobymao/sqlglot/commit/de2fe1503b5bb003431d1f0c7b9ae87932a6cc1c) - **optimizer**: annotate type for bq CONTAINS_SUBSTR *(PR [#5705](https://github.com/tobymao/sqlglot/pull/5705) by [@geooo109](https://github.com/geooo109))*
+- [`a78146e`](https://github.com/tobymao/sqlglot/commit/a78146e37bfc972050b4467c39769407061e9bc3) - **singlestore**: Fixed parsing/generation of exp.DateBin *(PR [#5709](https://github.com/tobymao/sqlglot/pull/5709) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`ab0c985`](https://github.com/tobymao/sqlglot/commit/ab0c985424ae9d9340eafd15ecdc9b31bdd8837c) - **singlestore**: Marked exp.Reduce finish argument as unsupported *(PR [#5707](https://github.com/tobymao/sqlglot/pull/5707) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`770888f`](https://github.com/tobymao/sqlglot/commit/770888f4e9a9061329e3c416f968f7dd9639fb81) - **optimizer**: annotate type for bq NORMALIZE *(PR [#5711](https://github.com/tobymao/sqlglot/pull/5711) by [@geooo109](https://github.com/geooo109))*
+- [`506033f`](https://github.com/tobymao/sqlglot/commit/506033f299f7a4c28f6efd8bf715be5dcf73e929) - **optimizer**: parse and annotate type for bq NORMALIZE_AND_CASEFOLD *(PR [#5712](https://github.com/tobymao/sqlglot/pull/5712) by [@geooo109](https://github.com/geooo109))*
+- [`848aea1`](https://github.com/tobymao/sqlglot/commit/848aea1dbaaeb580b633796dcca06c28314b9c3e) - **optimizer**: parse and annotate type for bq OCTET_LENGTH *(PR [#5713](https://github.com/tobymao/sqlglot/pull/5713) by [@geooo109](https://github.com/geooo109))*
+- [`727bf83`](https://github.com/tobymao/sqlglot/commit/727bf8378f232188d35834d980b035552999ea3b) - add support for REVOKE DDL *(PR [#5703](https://github.com/tobymao/sqlglot/pull/5703) by [@newtonapple](https://github.com/newtonapple))*
+
+### :bug: Bug Fixes
+- [`0427c7b`](https://github.com/tobymao/sqlglot/commit/0427c7b7aa9f8161324085a98c5f531fa35c8b0c) - **optimizer**: qualify columns for AggFunc with DISTINCT *(PR [#5708](https://github.com/tobymao/sqlglot/pull/5708) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5698](https://github.com/tobymao/sqlglot/issues/5698) opened by [@georgesittas](https://github.com/georgesittas)*
+
+
 ## [v27.9.0] - 2025-08-27
 ### :boom: BREAKING CHANGES
 - due to [`7b180bd`](https://github.com/tobymao/sqlglot/commit/7b180bdc3da9e39946c22970bd2523f7d8beaf29) - raise if query modifier is specified multiple times *(PR [#5608](https://github.com/tobymao/sqlglot/pull/5608) by [@georgesittas](https://github.com/georgesittas))*:
@@ -8941,3 +8979,4 @@ Changelog
 [v27.7.0]: https://github.com/tobymao/sqlglot/compare/v27.6.0...v27.7.0
 [v27.8.0]: https://github.com/tobymao/sqlglot/compare/v27.7.0...v27.8.0
 [v27.9.0]: https://github.com/tobymao/sqlglot/compare/v27.8.0...v27.9.0
+[v27.10.0]: https://github.com/tobymao/sqlglot/compare/v27.9.0...v27.10.0

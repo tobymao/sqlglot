@@ -113,6 +113,11 @@ class SingleStore(MySQL):
             % 7,
             "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
+            "TIME_BUCKET": lambda args: exp.DateBin(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                origin=seq_get(args, 2),
+            ),
             "BSON_EXTRACT_BSON": build_json_extract_path(exp.JSONBExtract),
             "BSON_EXTRACT_STRING": build_json_extract_path(
                 exp.JSONBExtractScalar, json_type="STRING"
@@ -148,6 +153,7 @@ class SingleStore(MySQL):
                 expression=seq_get(args, 0),
                 json_type="JSON",
             ),
+            "JSON_PRETTY": exp.JSONFormat.from_arg_list,
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -268,6 +274,9 @@ class SingleStore(MySQL):
                 ),
             ),
             exp.UnixToTimeStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}) :> TEXT",
+            exp.DateBin: unsupported_args("unit", "zone")(
+                lambda self, e: self.func("TIME_BUCKET", e.this, e.expression, e.args.get("origin"))
+            ),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",
@@ -282,6 +291,7 @@ class SingleStore(MySQL):
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
+            exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),

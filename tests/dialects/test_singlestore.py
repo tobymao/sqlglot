@@ -212,6 +212,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT JSON_ARRAY_CONTAINS_JSON('[\"a\"]', TO_JSON('a'))",
             },
         )
+        self.validate_all(
+            'SELECT JSON_PRETTY(\'["G","alpha","20",10]\')',
+            read={
+                "singlestore": 'SELECT JSON_PRETTY(\'["G","alpha","20",10]\')',
+                "": 'SELECT JSON_FORMAT(\'["G","alpha","20",10]\')',
+            },
+        )
 
     def test_date_parts_functions(self):
         self.validate_identity(
@@ -420,5 +427,15 @@ class TestSingleStore(Validator):
                 # finish argument is not supported in SingleStore, so it is ignored
                 "": "SELECT REDUCE(JSON_TO_ARRAY('[1,2,3,4]'), 0, REDUCE_ACC() + REDUCE_VALUE(), REDUCE_ACC() + REDUCE_VALUE()) AS Result",
                 "singlestore": "SELECT REDUCE(0, JSON_TO_ARRAY('[1,2,3,4]'), REDUCE_ACC() + REDUCE_VALUE()) AS `Result`",
+            },
+        )
+
+    def test_time_functions(self):
+        self.validate_all(
+            "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12', '2019-03-13 03:00:00')",
+            read={
+                # unit and zone parameters are not supported in SingleStore, so they are ignored
+                "": "SELECT DATE_BIN('1d', '2019-03-14 06:04:12', DAY, 'UTC', '2019-03-13 03:00:00')",
+                "singlestore": "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12', '2019-03-13 03:00:00')",
             },
         )

@@ -1423,6 +1423,10 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity("GRANT SELECT(x, y) ON db.table TO john WITH GRANT OPTION")
         self.validate_identity("GRANT INSERT(x, y) ON db.table TO john")
 
+    def test_revoke(self):
+        self.validate_identity("REVOKE SELECT(x, y) ON db.table FROM john")
+        self.validate_identity("REVOKE INSERT(x, y) ON db.table FROM john")
+
     def test_array_join(self):
         expr = self.validate_identity(
             "SELECT * FROM arrays_test ARRAY JOIN arr1, arrays_test.arr2 AS foo, ['a', 'b', 'c'] AS elem"

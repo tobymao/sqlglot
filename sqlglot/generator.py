@@ -4803,7 +4803,14 @@ class Generator(metaclass=_Generator):
 
         return f"{this} APPLY({expr})"
 
-    def grant_sql(self, expression: exp.Grant) -> str:
+    def _grant_or_revoke_sql(
+        self,
+        expression: exp.Grant | exp.Revoke,
+        keyword: str,
+        preposition: str,
+        grant_option_prefix: str = "",
+        grant_option_suffix: str = "",
+    ) -> str:
         privileges_sql = self.expressions(expression, key="privileges", flat=True)
 
         kind = self.sql(expression, "kind")
@@ -4814,9 +4821,30 @@ class Generator(metaclass=_Generator):
 
         principals = self.expressions(expression, key="principals", flat=True)
 
-        grant_option = " WITH GRANT OPTION" if expression.args.get("grant_option") else ""
+        if not expression.args.get("grant_option"):
+            grant_option_prefix = grant_option_suffix = ""
 
-        return f"GRANT {privileges_sql} ON{kind}{securable} TO {principals}{grant_option}"
+        # cascade for revoke only
+        cascade = self.sql(expression, "cascade")
+        cascade = f" {cascade}" if cascade else ""
+
+        return f"{keyword} {grant_option_prefix}{privileges_sql} ON{kind}{securable} {preposition} {principals}{grant_option_suffix}{cascade}"
+
+    def grant_sql(self, expression: exp.Grant) -> str:
+        return self._grant_or_revoke_sql(
+            expression,
+            keyword="GRANT",
+            preposition="TO",
+            grant_option_suffix=" WITH GRANT OPTION",
+        )
+
+    def revoke_sql(self, expression: exp.Revoke) -> str:
+        return self._grant_or_revoke_sql(
+            expression,
+            keyword="REVOKE",
+            preposition="FROM",
+            grant_option_prefix="GRANT OPTION FOR ",
+        )
 
     def grantprivilege_sql(self, expression: exp.GrantPrivilege):
         this = self.sql(expression, "this")

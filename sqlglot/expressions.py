@@ -2468,6 +2468,10 @@ class Grant(Expression):
     }
 
 
+class Revoke(Expression):
+    arg_types = {**Grant.arg_types, "cascade": False}
+
+
 class Group(Expression):
     arg_types = {
         "expressions": False,

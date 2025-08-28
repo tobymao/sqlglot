@@ -907,6 +907,10 @@ STRING;
 NORMALIZE_AND_CASEFOLD('\u00ea', NFKC);
 STRING;
 
+# dialect: bigquery
+OCTET_LENGTH("foo");
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

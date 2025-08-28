@@ -304,6 +304,7 @@ class Scope:
                         isinstance(ancestor, (exp.Order, exp.Distinct))
                         and (
                             isinstance(ancestor.parent, (exp.Window, exp.WithinGroup))
+                            or not isinstance(ancestor.parent, exp.Select)
                             or column.name not in named_selects
                         )
                     )

@@ -930,6 +930,10 @@ WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHE
 SELECT DISTINCT ON (new_col, b + 1, 1) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 SELECT DISTINCT ON (new_col, t1.b + 1, new_col) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 
+# title: qualify columns for Aggregate Functions and DISTINCT
+SELECT COALESCE(COUNT(DISTINCT a)) AS a FROM x;
+SELECT COALESCE(COUNT(DISTINCT x.a)) AS a FROM x AS x;
+
 # title: Oracle does not support lateral alias expansion
 # dialect: oracle
 # execute: false

@@ -899,6 +899,14 @@ STRING;
 NORMALIZE('\u00ea', NFKC);
 STRING;
 
+# dialect: bigquery
+NORMALIZE_AND_CASEFOLD('\u00ea', NFKC);
+STRING;
+
+# dialect: bigquery
+NORMALIZE_AND_CASEFOLD('\u00ea', NFKC);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

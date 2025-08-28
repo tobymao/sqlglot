@@ -6793,7 +6793,7 @@ class Nvl2(Func):
 
 
 class Normalize(Func):
-    arg_types = {"this": True, "form": False}
+    arg_types = {"this": True, "form": False, "is_casefold": False}
 
 
 class Overlay(Func):

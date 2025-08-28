@@ -412,3 +412,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CONV('f', 16, 10)",
             },
         )
+
+    def test_reduce_functions(self):
+        self.validate_all(
+            "SELECT REDUCE(0, JSON_TO_ARRAY('[1,2,3,4]'), REDUCE_ACC() + REDUCE_VALUE()) AS `Result`",
+            read={
+                # finish argument is not supported in SingleStore, so it is ignored
+                "": "SELECT REDUCE(JSON_TO_ARRAY('[1,2,3,4]'), 0, REDUCE_ACC() + REDUCE_VALUE(), REDUCE_ACC() + REDUCE_VALUE()) AS Result",
+                "singlestore": "SELECT REDUCE(0, JSON_TO_ARRAY('[1,2,3,4]'), REDUCE_ACC() + REDUCE_VALUE()) AS `Result`",
+            },
+        )

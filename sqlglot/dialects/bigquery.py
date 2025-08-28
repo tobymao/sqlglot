@@ -691,6 +691,7 @@ class BigQuery(Dialect):
             "NORMALIZE_AND_CASEFOLD": lambda args: exp.Normalize(
                 this=seq_get(args, 0), form=seq_get(args, 1), is_casefold=True
             ),
+            "OCTET_LENGTH": exp.ByteLength.from_arg_list,
             "TO_HEX": _build_to_hex,
             "PARSE_DATE": lambda args: build_formatted_time(exp.StrToDate, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
@@ -1157,6 +1158,7 @@ class BigQuery(Dialect):
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArrayRemove: filter_array_using_unnest,
+            exp.ByteLength: rename_func("BYTE_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: (
                 f"DEFAULT COLLATE {self.sql(e, 'this')}"

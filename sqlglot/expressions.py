@@ -5998,7 +5998,7 @@ class DateAdd(Func, IntervalOp):
 
 
 class DateBin(Func, IntervalOp):
-    arg_types = {"this": True, "expression": True, "unit": False, "zone": False}
+    arg_types = {"this": True, "expression": True, "unit": False, "zone": False, "origin": False}
 
 
 class DateSub(Func, IntervalOp):

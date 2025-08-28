@@ -1793,6 +1793,8 @@ WHERE
         self.validate_identity("FLOAT64(PARSE_JSON('9.8'))")
         self.validate_identity("FLOAT64(PARSE_JSON('9.8'), wide_number_mode => 'round')")
         self.validate_identity("FLOAT64(PARSE_JSON('9.8'), wide_number_mode => 'exact')")
+        self.validate_identity("NORMALIZE_AND_CASEFOLD('foo')")
+        self.validate_identity("NORMALIZE_AND_CASEFOLD('foo', NFKC)")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

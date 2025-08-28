@@ -883,6 +883,14 @@ FLOAT64;
 FLOAT64(PARSE_JSON('9.8'), wide_number_mode => 'round');
 FLOAT64;
 
+# dialect: bigquery
+CONTAINS_SUBSTR('aa', 'a');
+STRING;
+
+# dialect: bigquery
+CONTAINS_SUBSTR(PARSE_JSON('{"lunch":"soup"}'), 'lunch', json_scope => 'JSON_VALUES');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -340,16 +340,13 @@ def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List]
     return _builder
 
 
-def _build_contains_substring(args: t.List) -> exp.Contains | exp.Anonymous:
-    if len(args) == 3:
-        return exp.Anonymous(this="CONTAINS_SUBSTR", expressions=args)
-
+def _build_contains_substring(args: t.List) -> exp.Contains:
     # Lowercase the operands in case of transpilation, as exp.Contains
     # is case-sensitive on other dialects
     this = exp.Lower(this=seq_get(args, 0))
     expr = exp.Lower(this=seq_get(args, 1))
 
-    return exp.Contains(this=this, expression=expr)
+    return exp.Contains(this=this, expression=expr, json_scope=seq_get(args, 2))
 
 
 def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -> str:
@@ -497,7 +494,6 @@ class BigQuery(Dialect):
         exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.JSONBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.BitwiseAndAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseOrAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.BitwiseXorAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
@@ -511,6 +507,7 @@ class BigQuery(Dialect):
             e, exp.DataType.Type.VARCHAR
         ),
         exp.Concat: _annotate_concat,
+        exp.Contains: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
@@ -524,6 +521,7 @@ class BigQuery(Dialect):
         ),
         exp.Grouping: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
+        exp.JSONBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),
@@ -1530,7 +1528,7 @@ class BigQuery(Dialect):
                 this = this.this
                 expr = expr.this
 
-            return self.func("CONTAINS_SUBSTR", this, expr)
+            return self.func("CONTAINS_SUBSTR", this, expr, expression.args.get("json_scope"))
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             this = expression.this

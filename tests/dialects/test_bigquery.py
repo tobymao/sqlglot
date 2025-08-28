@@ -1693,9 +1693,7 @@ WHERE
             },
         )
 
-        self.validate_identity(
-            "CONTAINS_SUBSTR(a, b, json_scope => 'JSON_KEYS_AND_VALUES')"
-        ).assert_is(exp.Anonymous)
+        self.validate_identity("CONTAINS_SUBSTR(a, b, json_scope => 'JSON_KEYS_AND_VALUES')")
 
         self.validate_all(
             """CONTAINS_SUBSTR(a, b)""",

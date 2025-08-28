@@ -885,11 +885,11 @@ FLOAT64;
 
 # dialect: bigquery
 CONTAINS_SUBSTR('aa', 'a');
-STRING;
+BOOLEAN;
 
 # dialect: bigquery
 CONTAINS_SUBSTR(PARSE_JSON('{"lunch":"soup"}'), 'lunch', json_scope => 'JSON_VALUES');
-STRING;
+BOOLEAN;
 
 --------------------------------------
 -- Snowflake

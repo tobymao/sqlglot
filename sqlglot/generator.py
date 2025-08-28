@@ -4825,10 +4825,8 @@ class Generator(metaclass=_Generator):
             grant_option_prefix = grant_option_suffix = ""
 
         # cascade for revoke only
-        cascade = ""
-        if hasattr(expression, "args") and "cascade" in expression.args:
-            cascade_sql = self.sql(expression, "cascade")
-            cascade = f" {cascade_sql}" if cascade_sql else ""
+        cascade = self.sql(expression, "cascade")
+        cascade = f" {cascade}" if cascade else ""
 
         return f"{keyword} {grant_option_prefix}{privileges_sql} ON{kind}{securable} {preposition} {principals}{grant_option_suffix}{cascade}"
 

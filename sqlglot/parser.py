@@ -844,6 +844,7 @@ class Parser(metaclass=_Parser):
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.GRANT: lambda self: self._parse_grant(),
+        TokenType.REVOKE: lambda self: self._parse_revoke(),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.KILL: lambda self: self._parse_kill(),
         TokenType.LOAD: lambda self: self._parse_load(),
@@ -8410,9 +8411,9 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.GrantPrincipal, this=principal, kind=kind)
 
-    def _parse_grant(self) -> exp.Grant | exp.Command:
-        start = self._prev
-
+    def _parse_grant_revoke_common(
+        self,
+    ) -> t.Tuple[t.Optional[t.List], t.Optional[str], t.Optional[exp.Expression]]:
         privileges = self._parse_csv(self._parse_grant_privilege)
 
         self._match(TokenType.ON)
@@ -8421,6 +8422,13 @@ class Parser(metaclass=_Parser):
         # Attempt to parse the securable e.g. MySQL allows names
         # such as "foo.*", "*.*" which are not easily parseable yet
         securable = self._try_parse(self._parse_table_parts)
+
+        return privileges, kind, securable
+
+    def _parse_grant(self) -> exp.Grant | exp.Command:
+        start = self._prev
+
+        privileges, kind, securable = self._parse_grant_revoke_common()
 
         if not securable or not self._match_text_seq("TO"):
             return self._parse_as_command(start)
@@ -8439,6 +8447,35 @@ class Parser(metaclass=_Parser):
             securable=securable,
             principals=principals,
             grant_option=grant_option,
+        )
+
+    def _parse_revoke(self) -> exp.Revoke | exp.Command:
+        start = self._prev
+
+        grant_option = self._match_text_seq("GRANT", "OPTION", "FOR")
+
+        privileges, kind, securable = self._parse_grant_revoke_common()
+
+        if not securable or not self._match_text_seq("FROM"):
+            return self._parse_as_command(start)
+
+        principals = self._parse_csv(self._parse_grant_principal)
+
+        cascade = None
+        if self._match_texts(("CASCADE", "RESTRICT")):
+            cascade = self._prev.text.upper()
+
+        if self._curr:
+            return self._parse_as_command(start)
+
+        return self.expression(
+            exp.Revoke,
+            privileges=privileges,
+            kind=kind,
+            securable=securable,
+            principals=principals,
+            grant_option=grant_option,
+            cascade=cascade,
         )
 
     def _parse_overlay(self) -> exp.Overlay:

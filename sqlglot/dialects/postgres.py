@@ -345,7 +345,6 @@ class Postgres(Dialect):
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,
-            "REVOKE": TokenType.COMMAND,
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,

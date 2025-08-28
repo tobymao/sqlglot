@@ -376,6 +376,7 @@ class TokenType(AutoName):
     RENAME = auto()
     REPLACE = auto()
     RETURNING = auto()
+    REVOKE = auto()
     REFERENCES = auto()
     RIGHT = auto()
     RLIKE = auto()
@@ -972,6 +973,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMENT": TokenType.COMMENT,
         "EXPLAIN": TokenType.COMMAND,
         "GRANT": TokenType.GRANT,
+        "REVOKE": TokenType.REVOKE,
         "OPTIMIZE": TokenType.COMMAND,
         "PREPARE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,

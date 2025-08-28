@@ -2281,6 +2281,10 @@ FROM OPENJSON(@json) WITH (
             "GRANT EXECUTE ON TestProc TO User2 AS TesterRole", check_command_warning=True
         )
 
+    def test_revoke(self):
+        self.validate_identity("REVOKE EXECUTE ON TestProc FROM User2")
+        self.validate_identity("REVOKE EXECUTE ON TestProc FROM TesterRole")
+
     def test_parsename(self):
         for i in range(4):
             with self.subTest("Testing PARSENAME <-> SPLIT_PART"):

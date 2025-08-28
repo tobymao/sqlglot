@@ -1400,6 +1400,21 @@ COMMENT='客户账户表'"""
             with self.subTest(f"Testing MySQL's GRANT command statement: {sql}"):
                 self.validate_identity(sql, check_command_warning=True)
 
+    def test_revoke(self):
+        revoke_cmds = [
+            "REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost'",
+            "REVOKE SELECT ON world.* FROM 'role3'",
+            "REVOKE SELECT ON db2.invoice FROM 'jeffrey'@'localhost'",
+            "REVOKE INSERT ON `d%`.* FROM u",
+            "REVOKE ALL ON test.* FROM ''@'localhost'",
+            "REVOKE SELECT (col1), INSERT (col1, col2) ON mydb.mytbl FROM 'someuser'@'somehost'",
+            "REVOKE SELECT, INSERT, UPDATE ON *.* FROM u2",
+        ]
+
+        for sql in revoke_cmds:
+            with self.subTest(f"Testing MySQL's REVOKE command statement: {sql}"):
+                self.validate_identity(sql, check_command_warning=True)
+
     def test_explain(self):
         self.validate_identity(
             "EXPLAIN ANALYZE SELECT * FROM t", "DESCRIBE ANALYZE SELECT * FROM t"

@@ -179,6 +179,11 @@ class SingleStore(MySQL):
                 occurrence=seq_get(args, 3),
                 parameters=seq_get(args, 4),
             ),
+            "REDUCE": lambda args: exp.Reduce(
+                initial=seq_get(args, 0),
+                this=seq_get(args, 1),
+                merge=seq_get(args, 2),
+            ),
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -339,6 +344,11 @@ class SingleStore(MySQL):
             ),
             exp.FromBase: lambda self, e: self.func(
                 "CONV", e.this, e.expression, exp.Literal.number(10)
+            ),
+            exp.Reduce: unsupported_args("finish")(
+                lambda self, e: self.func(
+                    "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
+                )
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)

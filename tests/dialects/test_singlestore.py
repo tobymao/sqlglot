@@ -419,3 +419,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CONV('f', 16, 10)",
             },
         )
+
+    def test_time_functions(self):
+        self.validate_all(
+            "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12', '2019-03-13 03:00:00')",
+            read={
+                # unit and zone parameters are not supported in SingleStore, so they are ignored
+                "": "SELECT DATE_BIN('1d', '2019-03-14 06:04:12', DAY, 'UTC', '2019-03-13 03:00:00')",
+                "singlestore": "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12', '2019-03-13 03:00:00')",
+            },
+        )

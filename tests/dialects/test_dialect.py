@@ -4083,3 +4083,89 @@ FROM subquery2""",
                 "trino": "TO_BASE32(x)",
             },
         )
+
+    def test_regexp_instr(self):
+        self.validate_all(
+            "REGEXP_INSTR(src, reg)",
+            read={
+                "": "REGEXP_INSTR(src, reg)",
+                "bigquery": "REGEXP_INSTR(src, reg)",
+                "snowflake": "REGEXP_INSTR(src, reg)",
+                "oracle": "REGEXP_INSTR(src, reg)",
+                "spark": "REGEXP_INSTR(src, reg)",
+                "databricks": "REGEXP_INSTR(src, reg)",
+                "tsql": "REGEXP_INSTR(src, reg)",
+                "mysql": "REGEXP_INSTR(src, reg)",
+                "postgres": "REGEXP_INSTR(src, reg)",
+                "redshift": "REGEXP_INSTR(src, reg)",
+            },
+            write={
+                "bigquery": "REGEXP_INSTR(src, reg)",
+                "snowflake": "REGEXP_INSTR(src, reg)",
+                "oracle": "REGEXP_INSTR(src, reg)",
+                "spark": "REGEXP_INSTR(src, reg)",
+                "databricks": "REGEXP_INSTR(src, reg)",
+                "tsql": "REGEXP_INSTR(src, reg)",
+                "mysql": "REGEXP_INSTR(src, reg)",
+                "postgres": "REGEXP_INSTR(src, reg)",
+                "redshift": "REGEXP_INSTR(src, reg)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_INSTR(src, reg, pos, occ, opt)",
+            read={
+                "": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "bigquery": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "snowflake": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "oracle": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "tsql": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "mysql": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "postgres": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "redshift": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+            },
+            write={
+                "bigquery": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "snowflake": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "oracle": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "tsql": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "mysql": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "postgres": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+                "redshift": "REGEXP_INSTR(src, reg, pos, occ, opt)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+            read={
+                "": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "snowflake": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "oracle": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "tsql": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "mysql": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "postgres": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "redshift": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+            },
+            write={
+                "snowflake": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "oracle": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "tsql": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "mysql": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "postgres": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+                "redshift": "REGEXP_INSTR(src, reg, pos, occ, opt, par)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+            read={
+                "": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "snowflake": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "oracle": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "tsql": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "postgres": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+            },
+            write={
+                "snowflake": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "oracle": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "tsql": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+                "postgres": "REGEXP_INSTR(src, reg, pos, occ, opt, par, grp)",
+            },
+        )

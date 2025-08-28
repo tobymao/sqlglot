@@ -87,6 +87,7 @@ DIALECTS = [
     "Redshift",
     "RisingWave",
     "SingleStore",
+    "SingleStoreDB",
     "Snowflake",
     "Spark",
     "Spark2",

@@ -412,3 +412,11 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CONV('f', 16, 10)",
             },
         )
+
+    def test_singlestoredb_alias(self):
+        self.validate_all(
+            "SELECT 1",
+            read={
+                "singlestoredb": "SELECT 1",
+            },
+        )

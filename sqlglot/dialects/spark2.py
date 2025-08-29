@@ -187,6 +187,7 @@ class Spark2(Hive):
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DOUBLE": _build_as_cast("double"),
             "FLOAT": _build_as_cast("float"),
+            "FORMAT_STRING": exp.Format.from_arg_list,
             "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(
                 this=exp.cast(
                     seq_get(args, 0) or exp.Var(this=""),

@@ -4176,9 +4176,11 @@ FROM subquery2""",
             read={
                 "": "FORMAT('str fmt1 fmt2', 1, 'a')",
                 "bigquery": "FORMAT('str fmt1 fmt2', 1, 'a')",
+                "postgres": "FORMAT('str fmt1 fmt2', 1, 'a')",
             },
             write={
                 "bigquery": "FORMAT('str fmt1 fmt2', 1, 'a')",
+                "postgres": "FORMAT('str fmt1 fmt2', 1, 'a')",
                 "spark2": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
                 "spark": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
                 "databricks": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",

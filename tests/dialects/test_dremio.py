@@ -192,7 +192,7 @@ class TestDremio(Validator):
 
     def test_regexp_like(self):
         self.validate_all(
-            "REGEXP_LIKE(x, y)",
+            "REGEXP_MATCHES(x, y)",
             write={
                 "dremio": "REGEXP_LIKE(x, y)",
                 "duckdb": "REGEXP_MATCHES(x, y)",
@@ -201,7 +201,4 @@ class TestDremio(Validator):
                 "spark": "x RLIKE y",
             },
         )
-        self.validate_identity(
-            "REGEXP_MATCHES(x, y)",
-            "REGEXP_LIKE(x, y)",
-        )
+        self.validate_identity("REGEXP_MATCHES(x, y)", "REGEXP_LIKE(x, y)")

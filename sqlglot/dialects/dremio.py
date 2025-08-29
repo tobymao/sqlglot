@@ -151,7 +151,6 @@ class Dremio(Dialect):
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
-            "REGEXP_LIKE": exp.RegexpLike.from_arg_list,
             "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
         }
 
@@ -198,7 +197,6 @@ class Dremio(Dialect):
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
             exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),
-            exp.RegexpLike: rename_func("REGEXP_LIKE"),
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

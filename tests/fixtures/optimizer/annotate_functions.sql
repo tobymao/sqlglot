@@ -911,6 +911,14 @@ STRING;
 OCTET_LENGTH("foo");
 BIGINT;
 
+# dialect: bigquery
+REGEXP_INSTR('ab@cd-ef', '@[^-]*');
+BIGINT;
+
+# dialect: bigquery
+REGEXP_INSTR('a@cd-ef', '@[^-]*', 1, 1, 0);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

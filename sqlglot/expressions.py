@@ -6928,6 +6928,18 @@ class RegexpILike(Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
+class RegexpInstr(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "option": False,
+        "parameters": False,
+        "group": False,
+    }
+
+
 # https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.split.html
 # limit is the number of times a pattern is applied
 class RegexpSplit(Func):

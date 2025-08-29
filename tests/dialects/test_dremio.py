@@ -189,3 +189,19 @@ class TestDremio(Validator):
             "SELECT CURRENT_DATE_UTC()",
             "SELECT CURRENT_DATE_UTC",
         )
+
+    def test_regexp_like(self):
+        self.validate_all(
+            "REGEXP_LIKE(x, y)",
+            write={
+                "dremio": "REGEXP_LIKE(x, y)",
+                "duckdb": "REGEXP_MATCHES(x, y)",
+                "presto": "REGEXP_LIKE(x, y)",
+                "hive": "x RLIKE y",
+                "spark": "x RLIKE y",
+            },
+        )
+        self.validate_identity(
+            "REGEXP_MATCHES(x, y)",
+            "REGEXP_LIKE(x, y)",
+        )

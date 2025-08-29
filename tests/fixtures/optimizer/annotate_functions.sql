@@ -1011,6 +1011,10 @@ BIGINT;
 LEAD(tbl.str_col, 2);
 STRING;
 
+# dialect: bigquery
+FORMAT('%f %E %f %f', 1.1, 2.2, 3.4, 4.4);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

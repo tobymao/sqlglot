@@ -541,6 +541,7 @@ class BigQuery(Dialect):
             e, exp.DataType.Type.BIGDECIMAL
         ),
         exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
+        exp.PercentileDisc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),

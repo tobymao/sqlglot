@@ -947,6 +947,30 @@ STRING;
 FIRST_VALUE(tbl.str_col IGNORE NULLS);
 STRING;
 
+# dialect: bigquery
+PERCENTILE_DISC(tbl.bigint_col, 0.5) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.str_col, 0.5) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.bigint_col, 0.5 RESPECT NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.str_col, 0.5 RESPECT NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.bigint_col, 0.5 IGNORE NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.str_col, 0.5 IGNORE NULLS) OVER (ORDER BY 1);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

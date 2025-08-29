@@ -806,9 +806,13 @@ class BigQuery(Dialect):
             "SAFE_ORDINAL": (1, True),
         }
 
-        def _parse_for_in(self) -> exp.ForIn:
+        def _parse_for_in(self) -> t.Union[exp.ForIn, exp.Command]:
+            index = self._index
             this = self._parse_range()
             self._match_text_seq("DO")
+            if self._match(TokenType.COMMAND):
+                self._retreat(index)
+                return self._parse_as_command(self._prev)
             return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:

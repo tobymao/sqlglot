@@ -923,6 +923,30 @@ BIGINT;
 ROW_NUMBER() OVER (ORDER BY 1);
 BIGINT;
 
+# dialect: bigquery
+FIRST_VALUE(tbl.bigint_col);
+BIGINT;
+
+# dialect: bigquery
+FIRST_VALUE(tbl.str_col);
+STRING;
+
+# dialect: bigquery
+FIRST_VALUE(tbl.bigint_col RESPECT NULLS);
+BIGINT;
+
+# dialect: bigquery
+FIRST_VALUE(tbl.bigint_col IGNORE NULLS);
+BIGINT;
+
+# dialect: bigquery
+FIRST_VALUE(tbl.str_col RESPECT NULLS);
+STRING;
+
+# dialect: bigquery
+FIRST_VALUE(tbl.str_col IGNORE NULLS);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

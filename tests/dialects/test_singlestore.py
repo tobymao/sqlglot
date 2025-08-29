@@ -439,3 +439,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT TIME_BUCKET('1d', '2019-03-14 06:04:12', '2019-03-13 03:00:00')",
             },
         )
+        self.validate_all(
+            "SELECT STR_TO_DATE(20190314, '%Y%m%d')",
+            read={
+                "": "SELECT DI_TO_DATE(20190314)",
+                "singlestore": "SELECT STR_TO_DATE(20190314, '%Y%m%d')",
+            },
+        )

@@ -277,6 +277,8 @@ class SingleStore(MySQL):
             exp.DateBin: unsupported_args("unit", "zone")(
                 lambda self, e: self.func("TIME_BUCKET", e.this, e.expression, e.args.get("origin"))
             ),
+            exp.DiToDate: lambda self,
+            e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})",
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",

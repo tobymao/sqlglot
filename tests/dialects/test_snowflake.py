@@ -2831,6 +2831,41 @@ SINGLE = TRUE""",
         self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
 
+    def test_alter_session(self):
+        expr = self.validate_identity("ALTER SESSION SET quoted_identifiers_ignore_case = FALSE")
+        self.assertEqual(
+            expr.find(exp.AlterSession),
+            exp.AlterSession(
+                expressions=[
+                    exp.SetItem(
+                        this=exp.EQ(
+                            this=exp.Column(
+                                this=exp.Identifier(
+                                    this="quoted_identifiers_ignore_case", quoted=False
+                                )
+                            ),
+                            expression=exp.Boolean(this=False),
+                        ),
+                        kind="SESSION",
+                    )
+                ],
+                unset=False,
+            ),
+        )
+        # TODO: are multiple unsets possible?
+        expr = self.validate_identity("ALTER SESSION UNSET quoted_identifiers_ignore_case")
+        self.assertEqual(
+            expr.find(exp.AlterSession),
+            exp.AlterSession(
+                expressions=[
+                    exp.SetItem(
+                        this=exp.Identifier(this="quoted_identifiers_ignore_case", quoted=False)
+                    )
+                ],
+                unset=True,
+            ),
+        )
+
     def test_from_changes(self):
         self.validate_identity(
             """SELECT C1 FROM t1 CHANGES (INFORMATION => APPEND_ONLY) AT (STREAM => 's1') END (TIMESTAMP => $ts2)"""

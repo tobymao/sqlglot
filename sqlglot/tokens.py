@@ -80,6 +80,7 @@ class TokenType(AutoName):
     AT_GT = auto()
     DOLLAR = auto()
     PARAMETER = auto()
+    SESSION = auto()
     SESSION_PARAMETER = auto()
     DAMP = auto()
     XOR = auto()
@@ -835,6 +836,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SCHEMA": TokenType.SCHEMA,
         "SELECT": TokenType.SELECT,
         "SEMI": TokenType.SEMI,
+        "SESSION": TokenType.SESSION,
         "SET": TokenType.SET,
         "SETTINGS": TokenType.SETTINGS,
         "SHOW": TokenType.SHOW,

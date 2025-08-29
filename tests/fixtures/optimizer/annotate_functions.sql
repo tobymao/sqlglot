@@ -924,27 +924,51 @@ ROW_NUMBER() OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.bigint_col);
+FIRST_VALUE(tbl.bigint_col) OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.str_col);
+FIRST_VALUE(tbl.str_col) OVER (ORDER BY 1);
 STRING;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.bigint_col RESPECT NULLS);
+FIRST_VALUE(tbl.bigint_col RESPECT NULLS) OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.bigint_col IGNORE NULLS);
+FIRST_VALUE(tbl.bigint_col IGNORE NULLS) OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.str_col RESPECT NULLS);
+FIRST_VALUE(tbl.str_col RESPECT NULLS) OVER (ORDER BY 1);
 STRING;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.str_col IGNORE NULLS);
+FIRST_VALUE(tbl.str_col IGNORE NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+NTH_VALUE(tbl.bigint_col, 2) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+NTH_VALUE(tbl.str_col, 2) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+NTH_VALUE(tbl.bigint_col, 2 RESPECT NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+NTH_VALUE(tbl.str_col, 2 RESPECT NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+NTH_VALUE(tbl.bigint_col, 2 IGNORE NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+NTH_VALUE(tbl.str_col, 2 IGNORE NULLS) OVER (ORDER BY 1);
 STRING;
 
 --------------------------------------

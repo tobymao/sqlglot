@@ -919,6 +919,10 @@ BIGINT;
 REGEXP_INSTR('a@cd-ef', '@[^-]*', 1, 1, 0);
 BIGINT;
 
+# dialect: bigquery
+ROW_NUMBER() OVER (ORDER BY 1);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

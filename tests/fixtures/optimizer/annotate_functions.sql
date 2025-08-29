@@ -947,6 +947,22 @@ STRING;
 FIRST_VALUE(tbl.str_col IGNORE NULLS);
 STRING;
 
+# dialect: bigquery
+LEAD(tbl.bigint_col);
+BIGINT;
+
+# dialect: bigquery
+LEAD(tbl.str_col);
+STRING;
+
+# dialect: bigquery
+LEAD(tbl.bigint_col, 2);
+BIGINT;
+
+# dialect: bigquery
+LEAD(tbl.str_col, 2);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

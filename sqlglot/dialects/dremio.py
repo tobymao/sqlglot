@@ -151,6 +151,7 @@ class Dremio(Dialect):
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
+            "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
         }
 
         def _parse_current_date_utc(self) -> exp.Cast:

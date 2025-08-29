@@ -4,6 +4,9 @@ import logging
 import re
 import typing as t
 
+
+from sqlglot.optimizer.annotate_types import TypeAnnotator
+
 from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
@@ -295,6 +298,24 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     return expression
 
 
+def _annotate_perncentile_cont(
+    self: TypeAnnotator, expression: exp.PercentileCont
+) -> exp.PercentileCont:
+    """
+    +------------+-----------+------------+---------+
+    | INPUT      | NUMERIC   | BIGNUMERIC | FLOAT64 |
+    +------------+-----------+------------+---------+
+    | NUMERIC    | NUMERIC   | BIGNUMERIC | FLOAT64 |
+    | BIGNUMERIC | BIGNUMERIC| BIGNUMERIC | FLOAT64 |
+    | FLOAT64    | FLOAT64   | FLOAT64    | FLOAT64 |
+    +------------+-----------+------------+---------+
+    """
+    self._annotate_args(expression)
+
+    self._set_type(expression, self._maybe_coerce(expression.this.type, expression.expression.type))
+    return expression
+
+
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
     self._annotate_args(expression)
 
@@ -453,6 +474,13 @@ class BigQuery(Dialect):
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
 
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions#percentile_cont
+    COERCES_TO = {
+        **TypeAnnotator.COERCES_TO,
+        exp.DataType.Type.BIGDECIMAL: {exp.DataType.Type.DOUBLE},
+    }
+    COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
+
     # BigQuery maps Type.TIMESTAMP to DATETIME, so we need to amend the inferred types
     TYPE_TO_EXPRESSIONS = {
         **Dialect.TYPE_TO_EXPRESSIONS,
@@ -543,6 +571,7 @@ class BigQuery(Dialect):
             e, exp.DataType.Type.BIGDECIMAL
         ),
         exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
+        exp.PercentileCont: lambda self, e: _annotate_perncentile_cont(self, e),
         exp.PercentileDisc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),

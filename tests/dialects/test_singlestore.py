@@ -467,3 +467,11 @@ class TestSingleStore(Validator):
                 "": "SELECT TS_OR_DI_TO_DI('2019-03-14 06:04:12')",
             },
         )
+        self.validate_all(
+            "SELECT '2019-03-14 06:04:12' :> TIME",
+            read={
+                # zone parameter is not supported in SingleStore, so it is ignored
+                "bigquery": "SELECT TIME('2019-03-14 06:04:12', 'GMT')",
+                "singlestore": "SELECT '2019-03-14 06:04:12' :> TIME",
+            },
+        )

@@ -440,6 +440,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT '2019-03-14 06:04:12' :> DATE",
+            read={
+                "": "SELECT TIME_STR_TO_DATE('2019-03-14 06:04:12')",
+                "singlestore": "SELECT '2019-03-14 06:04:12' :> DATE",
+            },
+        )
+        self.validate_all(
             "SELECT CONVERT_TZ(NOW() :> DATETIME, 'GMT', 'UTC')",
             read={
                 "spark2": "SELECT TO_UTC_TIMESTAMP(NOW(), 'GMT')",

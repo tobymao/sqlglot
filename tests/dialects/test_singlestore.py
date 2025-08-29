@@ -467,3 +467,10 @@ class TestSingleStore(Validator):
                 "": "SELECT TS_OR_DI_TO_DI('2019-03-14 06:04:12')",
             },
         )
+        self.validate_all(
+            "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
+            read={
+                "bigquery": "SELECT DATETIME_ADD(NOW(), INTERVAL 1 MONTH)",
+                "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
+            },
+        )

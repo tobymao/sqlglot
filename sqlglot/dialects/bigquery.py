@@ -545,6 +545,7 @@ class BigQuery(Dialect):
         exp.FirstValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Format: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),

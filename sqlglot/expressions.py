@@ -6438,6 +6438,11 @@ class FormatJson(Expression):
     pass
 
 
+class Format(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
 class JSONKeyValue(Expression):
     arg_types = {"this": True, "expression": True}
 

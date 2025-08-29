@@ -145,13 +145,14 @@ class Dremio(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "TO_CHAR": to_char_is_numeric_handler,
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
-            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
-            "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
-            "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
+            "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
+            "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
             "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
+            "REPEATSTR": exp.Repeat.from_arg_list,
+            "TO_CHAR": to_char_is_numeric_handler,
+            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
         }
 
         def _parse_current_date_utc(self) -> exp.Cast:

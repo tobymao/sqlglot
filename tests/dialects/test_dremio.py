@@ -190,6 +190,10 @@ class TestDremio(Validator):
             "SELECT CURRENT_DATE_UTC",
         )
 
+    def test_repeatstr(self):
+        self.validate_identity("SELECT REPEAT(x, 5)")
+        self.validate_identity("SELECT REPEATSTR(x, 5)", "SELECT REPEAT(x, 5)")
+
     def test_regexp_like(self):
         self.validate_all(
             "REGEXP_MATCHES(x, y)",

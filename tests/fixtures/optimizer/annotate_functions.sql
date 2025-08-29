@@ -995,6 +995,22 @@ BIGINT;
 PERCENTILE_DISC(tbl.str_col, 0.5 IGNORE NULLS) OVER (ORDER BY 1);
 STRING;
 
+# dialect: bigquery
+LEAD(tbl.bigint_col);
+BIGINT;
+
+# dialect: bigquery
+LEAD(tbl.str_col);
+STRING;
+
+# dialect: bigquery
+LEAD(tbl.bigint_col, 2);
+BIGINT;
+
+# dialect: bigquery
+LEAD(tbl.str_col, 2);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

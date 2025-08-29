@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     bool_xor_sql,
     count_if_to_sum,
 )
-from sqlglot.dialects.mysql import MySQL
+from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql
 from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -359,6 +359,7 @@ class SingleStore(MySQL):
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
                 )
             ),
+             exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

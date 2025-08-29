@@ -359,7 +359,7 @@ class SingleStore(MySQL):
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
                 )
             ),
-             exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
+            exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 

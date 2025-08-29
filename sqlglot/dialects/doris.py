@@ -50,6 +50,7 @@ class Doris(MySQL):
             **MySQL.Parser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_TRUNC": _build_date_trunc,
+            "FORMAT": exp.Format.from_arg_list,
             "MONTHS_ADD": exp.AddMonths.from_arg_list,
             "REGEXP": exp.RegexpLike.from_arg_list,
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,

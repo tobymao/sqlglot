@@ -6441,7 +6441,6 @@ class FormatJson(Expression):
 class Format(Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
-    _sql_names = ["FORMAT", "FORMAT_STRING"]
 
 
 class JSONKeyValue(Expression):

@@ -440,6 +440,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT STR_TO_DATE(20190314, '%Y%m%d')",
+            read={
+                "": "SELECT DI_TO_DATE(20190314)",
+                "singlestore": "SELECT STR_TO_DATE(20190314, '%Y%m%d')",
+            },
+        )
+        self.validate_all(
             "SELECT (DATE_FORMAT('2019-03-14 06:04:12', '%Y%m%d') :> INT)",
             read={
                 "singlestore": "SELECT (DATE_FORMAT('2019-03-14 06:04:12', '%Y%m%d') :> INT)",

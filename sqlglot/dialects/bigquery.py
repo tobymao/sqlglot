@@ -514,12 +514,14 @@ class BigQuery(Dialect):
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
         exp.DateTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.FirstValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
         exp.Grouping: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.IgnoreNulls: lambda self, e: self._annotate_by_args(e, "this"),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(
@@ -542,7 +544,9 @@ class BigQuery(Dialect):
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.RespectNulls: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Reverse: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.RowNumber: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.SafeConvertBytesToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),

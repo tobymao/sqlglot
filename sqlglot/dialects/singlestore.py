@@ -279,6 +279,10 @@ class SingleStore(MySQL):
             ),
             exp.DiToDate: lambda self,
             e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})",
+            exp.DateToDi: lambda self,
+            e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+            exp.TsOrDiToDi: lambda self,
+            e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",

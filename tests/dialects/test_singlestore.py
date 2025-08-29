@@ -446,3 +446,17 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT STR_TO_DATE(20190314, '%Y%m%d')",
             },
         )
+        self.validate_all(
+            "SELECT (DATE_FORMAT('2019-03-14 06:04:12', '%Y%m%d') :> INT)",
+            read={
+                "singlestore": "SELECT (DATE_FORMAT('2019-03-14 06:04:12', '%Y%m%d') :> INT)",
+                "": "SELECT DATE_TO_DI('2019-03-14 06:04:12')",
+            },
+        )
+        self.validate_all(
+            "SELECT (DATE_FORMAT('2019-03-14 06:04:12', '%Y%m%d') :> INT)",
+            read={
+                "singlestore": "SELECT (DATE_FORMAT('2019-03-14 06:04:12', '%Y%m%d') :> INT)",
+                "": "SELECT TS_OR_DI_TO_DI('2019-03-14 06:04:12')",
+            },
+        )

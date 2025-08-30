@@ -3030,7 +3030,7 @@ SINGLE = TRUE""",
             "SELECT * FROM SEMANTIC_VIEW(foo METRICS a.b, a.c DIMENSIONS a.b, a.c WHERE a.b > '1995-01-01')",
             """SELECT
   *
-FROM SEMANTIC_VIEW(
+FROM SEMANTIC_VIEW(  
   foo
   METRICS a.b, a.c
   DIMENSIONS a.b, a.c

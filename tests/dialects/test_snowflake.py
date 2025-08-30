@@ -2864,7 +2864,7 @@ SINGLE = TRUE""",
                 unset=False,
             ),
         )
-        # TODO: are multiple unsets possible?
+
         expr = self.validate_identity("ALTER SESSION UNSET autocommit, QUERY_TAG")
         self.assertEqual(
             expr.find(exp.AlterSession),
@@ -3030,7 +3030,7 @@ SINGLE = TRUE""",
             "SELECT * FROM SEMANTIC_VIEW(foo METRICS a.b, a.c DIMENSIONS a.b, a.c WHERE a.b > '1995-01-01')",
             """SELECT
   *
-FROM SEMANTIC_VIEW(  
+FROM SEMANTIC_VIEW(
   foo
   METRICS a.b, a.c
   DIMENSIONS a.b, a.c

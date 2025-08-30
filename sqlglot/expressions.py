@@ -4926,6 +4926,10 @@ class Alter(Expression):
         return self.args.get("actions") or []
 
 
+class AlterSession(Expression):
+    arg_types = {"expressions": True, "unset": False}
+
+
 class Analyze(Expression):
     arg_types = {
         "kind": False,

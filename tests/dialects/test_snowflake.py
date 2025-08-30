@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import UnsupportedError, exp, parse_one, ParseError
+from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
@@ -2832,35 +2832,46 @@ SINGLE = TRUE""",
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
 
     def test_alter_session(self):
-        expr = self.validate_identity("ALTER SESSION SET quoted_identifiers_ignore_case = FALSE")
+        expr = self.validate_identity(
+            "ALTER SESSION SET autocommit = FALSE, QUERY_TAG = 'qtag', JSON_INDENT = 1"
+        )
         self.assertEqual(
             expr.find(exp.AlterSession),
             exp.AlterSession(
                 expressions=[
                     exp.SetItem(
                         this=exp.EQ(
-                            this=exp.Column(
-                                this=exp.Identifier(
-                                    this="quoted_identifiers_ignore_case", quoted=False
-                                )
-                            ),
+                            this=exp.Column(this=exp.Identifier(this="autocommit", quoted=False)),
                             expression=exp.Boolean(this=False),
                         ),
                         kind="SESSION",
-                    )
+                    ),
+                    exp.SetItem(
+                        this=exp.EQ(
+                            this=exp.Column(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
+                            expression=exp.Literal(this="qtag", is_string=True),
+                        ),
+                        kind="SESSION",
+                    ),
+                    exp.SetItem(
+                        this=exp.EQ(
+                            this=exp.Column(this=exp.Identifier(this="JSON_INDENT", quoted=False)),
+                            expression=exp.Literal(this="1", is_string=False),
+                        ),
+                        kind="SESSION",
+                    ),
                 ],
                 unset=False,
             ),
         )
         # TODO: are multiple unsets possible?
-        expr = self.validate_identity("ALTER SESSION UNSET quoted_identifiers_ignore_case")
+        expr = self.validate_identity("ALTER SESSION UNSET autocommit, QUERY_TAG")
         self.assertEqual(
             expr.find(exp.AlterSession),
             exp.AlterSession(
                 expressions=[
-                    exp.SetItem(
-                        this=exp.Identifier(this="quoted_identifiers_ignore_case", quoted=False)
-                    )
+                    exp.SetItem(this=exp.Identifier(this="autocommit", quoted=False)),
+                    exp.SetItem(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
                 ],
                 unset=True,
             ),

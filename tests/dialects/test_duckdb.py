@@ -1045,7 +1045,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_identity(
-            "SELECT CUME_DIST(ORDER BY foo) OVER (ORDER BY 1) FROM (SELECT 1 AS foo)"
+            "SELECT CUME_DIST( ORDER BY foo) OVER (ORDER BY 1) FROM (SELECT 1 AS foo)"
         )
 
     def test_array_index(self):

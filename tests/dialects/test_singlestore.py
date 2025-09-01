@@ -475,6 +475,14 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT '2019-03-14 06:04:12' :> TIME",
+            read={
+                # zone parameter is not supported in SingleStore, so it is ignored
+                "bigquery": "SELECT TIME('2019-03-14 06:04:12', 'GMT')",
+                "singlestore": "SELECT '2019-03-14 06:04:12' :> TIME",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             read={
                 "bigquery": "SELECT DATETIME_ADD(NOW(), INTERVAL 1 MONTH)",

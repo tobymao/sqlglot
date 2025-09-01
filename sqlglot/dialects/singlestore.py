@@ -287,6 +287,7 @@ class SingleStore(MySQL):
             e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.TsOrDiToDi: lambda self,
             e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+            exp.Time: unsupported_args("zone")(lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
             exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",

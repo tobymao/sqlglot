@@ -6858,6 +6858,11 @@ class PercentileDisc(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+class PercentRank(AggFunc):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 

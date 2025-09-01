@@ -1055,6 +1055,10 @@ FLOAT64;
 CUME_DIST() OVER (ORDER BY 1);
 DOUBLE;
 
+# dialect: bigquery
+DENSE_RANK() OVER (ORDER BY 1);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -660,6 +660,10 @@ JSON_VALUE(JSON '{"foo": "1" }', '$.foo');
 STRING;
 
 # dialect: bigquery
+JSON_EXTRACT_SCALAR(JSON '["a","b"]');
+STRING;
+
+# dialect: bigquery
 JSON_VALUE_ARRAY(JSON '["a","b"]');
 ARRAY<STRING>;
 

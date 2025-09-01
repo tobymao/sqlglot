@@ -7287,6 +7287,12 @@ class Corr(Binary, AggFunc):
     pass
 
 
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CUME_DIST.html
+class CumeDist(AggFunc):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class Variance(AggFunc):
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 

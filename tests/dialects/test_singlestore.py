@@ -440,6 +440,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT '2019-03-14 06:04:12' :> DATE",
+            read={
+                "": "SELECT TIME_STR_TO_DATE('2019-03-14 06:04:12')",
+                "singlestore": "SELECT '2019-03-14 06:04:12' :> DATE",
+            },
+        )
+        self.validate_all(
             "SELECT CONVERT_TZ(NOW() :> DATETIME, 'GMT', 'UTC')",
             read={
                 "spark2": "SELECT TO_UTC_TIMESTAMP(NOW(), 'GMT')",
@@ -473,5 +480,12 @@ class TestSingleStore(Validator):
                 # zone parameter is not supported in SingleStore, so it is ignored
                 "bigquery": "SELECT TIME('2019-03-14 06:04:12', 'GMT')",
                 "singlestore": "SELECT '2019-03-14 06:04:12' :> TIME",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
+            read={
+                "bigquery": "SELECT DATETIME_ADD(NOW(), INTERVAL 1 MONTH)",
+                "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             },
         )

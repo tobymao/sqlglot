@@ -4,6 +4,9 @@ import logging
 import re
 import typing as t
 
+
+from sqlglot.optimizer.annotate_types import TypeAnnotator
+
 from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
@@ -295,6 +298,24 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     return expression
 
 
+def _annotate_perncentile_cont(
+    self: TypeAnnotator, expression: exp.PercentileCont
+) -> exp.PercentileCont:
+    """
+    +------------+-----------+------------+---------+
+    | INPUT      | NUMERIC   | BIGNUMERIC | FLOAT64 |
+    +------------+-----------+------------+---------+
+    | NUMERIC    | NUMERIC   | BIGNUMERIC | FLOAT64 |
+    | BIGNUMERIC | BIGNUMERIC| BIGNUMERIC | FLOAT64 |
+    | FLOAT64    | FLOAT64   | FLOAT64    | FLOAT64 |
+    +------------+-----------+------------+---------+
+    """
+    self._annotate_args(expression)
+
+    self._set_type(expression, self._maybe_coerce(expression.this.type, expression.expression.type))
+    return expression
+
+
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
     self._annotate_args(expression)
 
@@ -453,6 +474,13 @@ class BigQuery(Dialect):
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
 
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions#percentile_cont
+    COERCES_TO = {
+        **TypeAnnotator.COERCES_TO,
+        exp.DataType.Type.BIGDECIMAL: {exp.DataType.Type.DOUBLE},
+    }
+    COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
+
     # BigQuery maps Type.TIMESTAMP to DATETIME, so we need to amend the inferred types
     TYPE_TO_EXPRESSIONS = {
         **Dialect.TYPE_TO_EXPRESSIONS,
@@ -517,6 +545,7 @@ class BigQuery(Dialect):
         exp.FirstValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Format: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
@@ -532,15 +561,19 @@ class BigQuery(Dialect):
         ),
         exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
+        exp.Lead: lambda self, e: self._annotate_by_args(e, "this"),
         exp.LowerHex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.MD5Digest: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Normalize: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
+        exp.NthValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
         exp.ParseBignumeric: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.BIGDECIMAL
         ),
         exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
+        exp.PercentileCont: lambda self, e: _annotate_perncentile_cont(self, e),
+        exp.PercentileDisc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),
@@ -803,9 +836,13 @@ class BigQuery(Dialect):
             "SAFE_ORDINAL": (1, True),
         }
 
-        def _parse_for_in(self) -> exp.ForIn:
+        def _parse_for_in(self) -> t.Union[exp.ForIn, exp.Command]:
+            index = self._index
             this = self._parse_range()
             self._match_text_seq("DO")
+            if self._match(TokenType.COMMAND):
+                self._retreat(index)
+                return self._parse_as_command(self._prev)
             return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:

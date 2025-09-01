@@ -1957,6 +1957,24 @@ WHERE
             )
             self.assertIn("'END FOR'", cm.output[0])
 
+        with self.assertLogs(parser_logger) as cm:
+            for_in_stmts = parse(
+                'FOR record IN (SELECT word FROM shakespeare) DO BEGIN SET x = "SELECT 1"; EXECUTE IMMEDIATE x; END; END FOR;',
+                read="bigquery",
+            )
+            self.assertEqual(
+                [s.sql(dialect="bigquery") for s in for_in_stmts],
+                [
+                    'FOR record IN (SELECT word FROM shakespeare) DO BEGIN SET x = "SELECT 1"',
+                    "EXECUTE IMMEDIATE x",
+                    "END",
+                    "END FOR",
+                ],
+            )
+            self.assertIn("FOR record", cm.output[0])
+            self.assertIn("EXECUTE IMMEDIATE", cm.output[1])
+            self.assertIn("END FOR", cm.output[2])
+
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"

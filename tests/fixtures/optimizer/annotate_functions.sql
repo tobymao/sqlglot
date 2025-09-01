@@ -924,28 +924,132 @@ ROW_NUMBER() OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.bigint_col);
+FIRST_VALUE(tbl.bigint_col) OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.str_col);
+FIRST_VALUE(tbl.str_col) OVER (ORDER BY 1);
 STRING;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.bigint_col RESPECT NULLS);
+FIRST_VALUE(tbl.bigint_col RESPECT NULLS) OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.bigint_col IGNORE NULLS);
+FIRST_VALUE(tbl.bigint_col IGNORE NULLS) OVER (ORDER BY 1);
 BIGINT;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.str_col RESPECT NULLS);
+FIRST_VALUE(tbl.str_col RESPECT NULLS) OVER (ORDER BY 1);
 STRING;
 
 # dialect: bigquery
-FIRST_VALUE(tbl.str_col IGNORE NULLS);
+FIRST_VALUE(tbl.str_col IGNORE NULLS) OVER (ORDER BY 1);
 STRING;
+
+# dialect: bigquery
+NTH_VALUE(tbl.bigint_col, 2) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+NTH_VALUE(tbl.str_col, 2) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+NTH_VALUE(tbl.bigint_col, 2 RESPECT NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+NTH_VALUE(tbl.str_col, 2 RESPECT NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+NTH_VALUE(tbl.bigint_col, 2 IGNORE NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+NTH_VALUE(tbl.str_col, 2 IGNORE NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.bigint_col, 0.5) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.str_col, 0.5) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.bigint_col, 0.5 RESPECT NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.str_col, 0.5 RESPECT NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.bigint_col, 0.5 IGNORE NULLS) OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: bigquery
+PERCENTILE_DISC(tbl.str_col, 0.5 IGNORE NULLS) OVER (ORDER BY 1);
+STRING;
+
+# dialect: bigquery
+LEAD(tbl.bigint_col);
+BIGINT;
+
+# dialect: bigquery
+LEAD(tbl.str_col);
+STRING;
+
+# dialect: bigquery
+LEAD(tbl.bigint_col, 2);
+BIGINT;
+
+# dialect: bigquery
+LEAD(tbl.str_col, 2);
+STRING;
+
+# dialect: bigquery
+FORMAT('%f %E %f %f', 1.1, 2.2, 3.4, 4.4);
+STRING;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS NUMERIC), CAST(1 AS NUMERIC)) OVER (ORDER BY 1);
+NUMERIC;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS NUMERIC), CAST(1 AS BIGNUMERIC)) OVER (ORDER BY 1);
+BIGNUMERIC;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS NUMERIC), CAST(1 AS FLOAT64)) OVER (ORDER BY 1);
+FLOAT64;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS BIGNUMERIC), CAST(1 AS NUMERIC)) OVER (ORDER BY 1);
+BIGNUMERIC;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS BIGNUMERIC), CAST(1 AS BIGNUMERIC)) OVER (ORDER BY 1);
+BIGNUMERIC;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS BIGNUMERIC), CAST(1 AS FLOAT64)) OVER (ORDER BY 1);
+FLOAT64;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS FLOAT64), CAST(1 AS NUMERIC)) OVER (ORDER BY 1);
+FLOAT64;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS FLOAT64), CAST(1 AS BIGNUMERIC)) OVER (ORDER BY 1);
+FLOAT64;
+
+# dialect: bigquery
+PERCENTILE_CONT(CAST(1 AS FLOAT64), CAST(1 AS FLOAT64)) OVER (ORDER BY 1);
+FLOAT64;
 
 --------------------------------------
 -- Snowflake

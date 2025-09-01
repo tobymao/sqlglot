@@ -568,6 +568,7 @@ class BigQuery(Dialect):
         exp.MD5Digest: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Normalize: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.NthValue: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.Ntile: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
         exp.ParseBignumeric: lambda self, e: self._annotate_with_type(

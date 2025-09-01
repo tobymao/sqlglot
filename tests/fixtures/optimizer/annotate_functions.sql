@@ -1084,11 +1084,27 @@ JSON_QUERY(JSON_OBJECT('fruits', ['apples', 'oranges', 'grapes']), '$.fruits');
 JSON;
 
 # dialect: bigquery
+JSON_EXTRACT('{"fruits": ["apples", "oranges", "grapes"]}', '$.fruits');
+STRING;
+
+# dialect: bigquery
+JSON_EXTRACT(JSON_OBJECT('fruits', ['apples', 'oranges', 'grapes']), '$.fruits');
+JSON;
+
+# dialect: bigquery
 JSON_QUERY_ARRAY('{"fruits": ["apples", "oranges", "grapes"]}', '$.fruits');
 ARRAY<STRING>;
 
 # dialect: bigquery
 JSON_QUERY_ARRAY(JSON_OBJECT('fruits', ['apples', 'oranges', 'grapes']), '$.fruits');
+ARRAY<JSON>;
+
+# dialect: bigquery
+JSON_EXTRACT_ARRAY('{"fruits": ["apples", "oranges", "grapes"]}', '$.fruits');
+ARRAY<STRING>;
+
+# dialect: bigquery
+JSON_EXTRACT_ARRAY(JSON_OBJECT('fruits', ['apples', 'oranges', 'grapes']), '$.fruits');
 ARRAY<JSON>;
 
 --------------------------------------

@@ -6891,6 +6891,11 @@ class RangeN(Func):
     arg_types = {"this": True, "expressions": True, "each": False}
 
 
+class Rank(AggFunc):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class ReadCSV(Func):
     _sql_names = ["READ_CSV"]
     is_var_len_args = True

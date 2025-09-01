@@ -1063,6 +1063,10 @@ BIGINT;
 NTILE(1) OVER (ORDER BY 1);
 BIGINT;
 
+# dialect: bigquery
+RANK() OVER (ORDER BY 1);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

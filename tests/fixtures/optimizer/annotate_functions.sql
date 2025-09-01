@@ -1067,6 +1067,10 @@ BIGINT;
 RANK() OVER (ORDER BY 1);
 BIGINT;
 
+# dialect: bigquery
+PERCENT_RANK() OVER (ORDER BY 1);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

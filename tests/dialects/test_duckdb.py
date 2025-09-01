@@ -1047,6 +1047,9 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT CUME_DIST( ORDER BY foo) OVER (ORDER BY 1) FROM (SELECT 1 AS foo)"
         )
+        self.validate_identity(
+            "SELECT NTILE(1 ORDER BY foo) OVER (ORDER BY 1) FROM (SELECT 1 AS foo)"
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

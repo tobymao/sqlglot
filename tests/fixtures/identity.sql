@@ -903,3 +903,4 @@ SELECT ARG_MAX(DISTINCT selected_col, filtered_col) FROM table
 SELECT ARG_MIN(DISTINCT selected_col, filtered_col) FROM table
 a.b.c.D()
 a.b.c.d.e.f.G()
+SELECT CUME_DIST() OVER (ORDER BY 1) FROM (SELECT 1)

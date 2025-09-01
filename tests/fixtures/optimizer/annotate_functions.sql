@@ -1051,6 +1051,10 @@ FLOAT64;
 PERCENTILE_CONT(CAST(1 AS FLOAT64), CAST(1 AS FLOAT64)) OVER (ORDER BY 1);
 FLOAT64;
 
+# dialect: bigquery
+CUME_DIST() OVER (ORDER BY 1);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

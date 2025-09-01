@@ -1071,6 +1071,10 @@ BIGINT;
 PERCENT_RANK() OVER (ORDER BY 1);
 DOUBLE;
 
+# dialect: bigquery
+JSON_OBJECT('foo', 10, 'bar', TRUE);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

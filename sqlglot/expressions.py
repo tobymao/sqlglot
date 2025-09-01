@@ -6806,6 +6806,10 @@ class Nvl2(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
 
+class Ntile(AggFunc):
+    arg_types = {"this": False}
+
+
 class Normalize(Func):
     arg_types = {"this": True, "form": False, "is_casefold": False}
 

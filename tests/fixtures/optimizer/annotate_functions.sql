@@ -1059,6 +1059,10 @@ DOUBLE;
 DENSE_RANK() OVER (ORDER BY 1);
 BIGINT;
 
+# dialect: bigquery
+NTILE(1) OVER (ORDER BY 1);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

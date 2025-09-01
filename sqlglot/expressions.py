@@ -6203,6 +6203,11 @@ class DecodeCase(Func):
     is_var_len_args = True
 
 
+class DenseRank(AggFunc):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class DiToDate(Func):
     pass
 

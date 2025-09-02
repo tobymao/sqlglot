@@ -1147,6 +1147,18 @@ ARRAY<STRING>;
 JSON_KEYS(PARSE_JSON('{"a": {"b":1}}'), 1, node => 'lax');
 ARRAY<STRING>;
 
+# dialect: bigquery
+JSON_REMOVE(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', '$[1]');
+JSON;
+
+# dialect: bigquery
+JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'));
+JSON;
+
+# dialect: bigquery
+JSON_SET(PARSE_JSON('{"a": 1}'), '$.b', 999, create_if_missing => FALSE);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

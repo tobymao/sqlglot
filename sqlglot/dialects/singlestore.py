@@ -58,6 +58,7 @@ class SingleStore(MySQL):
             **MySQL.Tokenizer.KEYWORDS,
             "BSON": TokenType.JSONB,
             "GEOGRAPHYPOINT": TokenType.GEOGRAPHYPOINT,
+            "TIMESTAMP": TokenType.TIMESTAMP,
             ":>": TokenType.COLON_GT,
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,
@@ -377,6 +378,94 @@ class SingleStore(MySQL):
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
+
+        UNSUPPORTED_TYPES = {
+            exp.DataType.Type.ARRAY,
+            exp.DataType.Type.AGGREGATEFUNCTION,
+            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION,
+            exp.DataType.Type.BIGSERIAL,
+            exp.DataType.Type.BPCHAR,
+            exp.DataType.Type.DATEMULTIRANGE,
+            exp.DataType.Type.DATERANGE,
+            exp.DataType.Type.DYNAMIC,
+            exp.DataType.Type.HLLSKETCH,
+            exp.DataType.Type.HSTORE,
+            exp.DataType.Type.IMAGE,
+            exp.DataType.Type.INET,
+            exp.DataType.Type.INT128,
+            exp.DataType.Type.INT256,
+            exp.DataType.Type.INT4MULTIRANGE,
+            exp.DataType.Type.INT4RANGE,
+            exp.DataType.Type.INT8MULTIRANGE,
+            exp.DataType.Type.INT8RANGE,
+            exp.DataType.Type.INTERVAL,
+            exp.DataType.Type.IPADDRESS,
+            exp.DataType.Type.IPPREFIX,
+            exp.DataType.Type.IPV4,
+            exp.DataType.Type.IPV6,
+            exp.DataType.Type.LIST,
+            exp.DataType.Type.MAP,
+            exp.DataType.Type.LOWCARDINALITY,
+            exp.DataType.Type.MONEY,
+            exp.DataType.Type.MULTILINESTRING,
+            exp.DataType.Type.NAME,
+            exp.DataType.Type.NESTED,
+            exp.DataType.Type.NOTHING,
+            exp.DataType.Type.NULL,
+            exp.DataType.Type.NUMMULTIRANGE,
+            exp.DataType.Type.NUMRANGE,
+            exp.DataType.Type.OBJECT,
+            exp.DataType.Type.RANGE,
+            exp.DataType.Type.ROWVERSION,
+            exp.DataType.Type.SERIAL,
+            exp.DataType.Type.SMALLSERIAL,
+            exp.DataType.Type.SMALLMONEY,
+            exp.DataType.Type.STRUCT,
+            exp.DataType.Type.SUPER,
+            exp.DataType.Type.TIMETZ,
+            exp.DataType.Type.TIMESTAMPNTZ,
+            exp.DataType.Type.TIMESTAMPLTZ,
+            exp.DataType.Type.TIMESTAMPTZ,
+            exp.DataType.Type.TIMESTAMP_NS,
+            exp.DataType.Type.TSMULTIRANGE,
+            exp.DataType.Type.TSRANGE,
+            exp.DataType.Type.TSTZMULTIRANGE,
+            exp.DataType.Type.TSTZRANGE,
+            exp.DataType.Type.UINT128,
+            exp.DataType.Type.UINT256,
+            exp.DataType.Type.UNION,
+            exp.DataType.Type.UNKNOWN,
+            exp.DataType.Type.USERDEFINED,
+            exp.DataType.Type.UUID,
+            exp.DataType.Type.VARIANT,
+            exp.DataType.Type.XML,
+            exp.DataType.Type.TDIGEST,
+        }
+
+        TYPE_MAPPING = {
+            **MySQL.Generator.TYPE_MAPPING,
+            exp.DataType.Type.BIGDECIMAL: "DECIMAL",
+            exp.DataType.Type.BIT: "BOOLEAN",
+            exp.DataType.Type.DATE32: "DATE",
+            exp.DataType.Type.DATETIME64: "DATETIME",
+            exp.DataType.Type.DECIMAL32: "DECIMAL",
+            exp.DataType.Type.DECIMAL64: "DECIMAL",
+            exp.DataType.Type.DECIMAL128: "DECIMAL",
+            exp.DataType.Type.DECIMAL256: "DECIMAL",
+            exp.DataType.Type.ENUM8: "ENUM",
+            exp.DataType.Type.ENUM16: "ENUM",
+            exp.DataType.Type.FIXEDSTRING: "TEXT",
+            exp.DataType.Type.GEOMETRY: "GEOGRAPHY",
+            exp.DataType.Type.POINT: "GEOGRAPHYPOINT",
+            exp.DataType.Type.RING: "GEOGRAPHY",
+            exp.DataType.Type.LINESTRING: "GEOGRAPHY",
+            exp.DataType.Type.POLYGON: "GEOGRAPHY",
+            exp.DataType.Type.MULTIPOLYGON: "GEOGRAPHY",
+            exp.DataType.Type.JSONB: "BSON",
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP(6)",
+        }
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
         RESERVED_KEYWORDS = {
@@ -1477,3 +1566,32 @@ class SingleStore(MySQL):
                 expression.expression,
                 self.func("TO_JSON", expression.this),
             )
+
+        @unsupported_args("kind", "nested", "values")
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
+                # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
+                return "BLOB"
+            if expression.is_type(
+                exp.DataType.Type.DECIMAL32,
+                exp.DataType.Type.DECIMAL64,
+                exp.DataType.Type.DECIMAL128,
+                exp.DataType.Type.DECIMAL256,
+            ):
+                scale = self.expressions(expression, flat=True)
+
+                if expression.is_type(exp.DataType.Type.DECIMAL32):
+                    precision = "9"
+                elif expression.is_type(exp.DataType.Type.DECIMAL64):
+                    precision = "18"
+                elif expression.is_type(exp.DataType.Type.DECIMAL128):
+                    precision = "38"
+                else:
+                    # 65 is a maximum precision supported in SingleStore
+                    precision = "65"
+                if scale is not None:
+                    return f"DECIMAL({precision}, {scale[0]})"
+                else:
+                    return f"DECIMAL({precision})"
+
+            return super().datatype_sql(expression)

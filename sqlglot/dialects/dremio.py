@@ -153,6 +153,7 @@ class Dremio(Dialect):
             "REPEATSTR": exp.Repeat.from_arg_list,
             "TO_CHAR": to_char_is_numeric_handler,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
+            "DATE_PART": exp.Extract.from_arg_list,
         }
 
         def _parse_current_date_utc(self) -> exp.Cast:

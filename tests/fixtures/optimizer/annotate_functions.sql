@@ -1191,6 +1191,10 @@ BIGINT;
 LAX_STRING(PARSE_JSON('"str"'));
 STRING;
 
+# dialect: bigquery
+TO_JSON_STRING(STRUCT(1 AS id, [10,20] AS cords));
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

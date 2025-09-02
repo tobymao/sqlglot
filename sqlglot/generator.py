@@ -4667,7 +4667,10 @@ class Generator(metaclass=_Generator):
     def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CONCAT") -> str:
         exprs = expression.expressions
         if not self.ARRAY_CONCAT_IS_VAR_LEN:
-            rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
+            if len(exprs) == 0:
+                rhs = exp.Array(expressions=[])
+            else:
+                rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
         else:
             rhs = self.expressions(expression)
 

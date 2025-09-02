@@ -4672,7 +4672,7 @@ class Generator(metaclass=_Generator):
             else:
                 rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
         else:
-            rhs = self.expressions(expression)
+            rhs = self.expressions(expression) # type: ignore
 
         return self.func(name, expression.this, rhs or None)
 

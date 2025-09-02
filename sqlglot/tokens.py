@@ -1427,7 +1427,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._advance(len(start))
         text = self._extract_string(end, raw_string=token_type == TokenType.RAW_STRING)
 
-        if base:
+        if base and text:
             try:
                 int(text, base)
             except Exception:

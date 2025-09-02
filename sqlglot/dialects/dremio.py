@@ -78,11 +78,9 @@ def datetype_handler(args: t.List[exp.Expression], dialect: DialectType) -> exp.
     year, month, day = args
 
     if all(isinstance(arg, exp.Literal) and arg.is_int for arg in (year, month, day)):
-        # Static literal: DATE 'YYYY-MM-DD'
         date_str = f"{int(year.this):04d}-{int(month.this):02d}-{int(day.this):02d}"
         return exp.Date(this=exp.Literal.string(date_str))
 
-    # Dynamic: CAST(CONCAT(y, '-', m, '-', d) AS DATE)
     return exp.Cast(
         this=exp.Concat(
             expressions=[

@@ -490,6 +490,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            read={
+                "bigquery": "SELECT DATETIME_TRUNC('2016-08-08 12:05:31', MINUTE)",
+                "singlestore": "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_SUB('2010-04-02', INTERVAL '1' WEEK)",
             read={
                 "bigquery": "SELECT DATETIME_SUB('2010-04-02', INTERVAL '1' WEEK)",

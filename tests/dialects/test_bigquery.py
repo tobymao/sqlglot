@@ -1812,6 +1812,9 @@ WHERE
         self.validate_identity("""JSON_KEYS(PARSE_JSON('{"a": {"b":1}}'))""")
         self.validate_identity("""JSON_KEYS(PARSE_JSON('{"a": {"b":1}}', 1))""")
         self.validate_identity("""JSON_KEYS(PARSE_JSON('{"a": {"b":1}}'), 1, mode => 'lax')""")
+        self.validate_identity(
+            """JSON_SET(PARSE_JSON('{"a": 1}'), '$.b', 999, create_if_missing => FALSE)"""
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

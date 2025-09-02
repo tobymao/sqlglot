@@ -1155,6 +1155,10 @@ JSON;
 JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'));
 JSON;
 
+# dialect: bigquery
+JSON_SET(PARSE_JSON('{"a": 1}'), '$.b', 999, create_if_missing => FALSE);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

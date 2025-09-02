@@ -366,66 +366,67 @@ class SingleStore(MySQL):
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
 
-        UNSUPPORTED_TYPE_MAPPING = {
-            exp.DataType.Type.ARRAY: "TEXT",
-            exp.DataType.Type.AGGREGATEFUNCTION: "TEXT",
-            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "TEXT",
-            exp.DataType.Type.BIGSERIAL: "BIGINT AUTO_INCREMENT KEY",
-            exp.DataType.Type.BPCHAR: "TEXT",
-            exp.DataType.Type.DATEMULTIRANGE: "TEXT",
-            exp.DataType.Type.DATERANGE: "TEXT",
-            exp.DataType.Type.DYNAMIC: "TEXT",
-            exp.DataType.Type.HLLSKETCH: "TEXT",
-            exp.DataType.Type.HSTORE: "TEXT",
-            exp.DataType.Type.IMAGE: "LONGBLOB",
-            exp.DataType.Type.INET: "TEXT",
-            exp.DataType.Type.INT128: "DECIMAL(39,0)",
-            exp.DataType.Type.INT256: "DECIMAL(65,0)",
-            exp.DataType.Type.INT4MULTIRANGE: "TEXT",
-            exp.DataType.Type.INT4RANGE: "TEXT",
-            exp.DataType.Type.INT8MULTIRANGE: "TEXT",
-            exp.DataType.Type.INT8RANGE: "TEXT",
-            exp.DataType.Type.INTERVAL: "TEXT",
-            exp.DataType.Type.IPADDRESS: "TEXT",
-            exp.DataType.Type.IPPREFIX: "TEXT",
-            exp.DataType.Type.IPV4: "TEXT",
-            exp.DataType.Type.IPV6: "TEXT",
-            exp.DataType.Type.LIST: "TEXT",
-            exp.DataType.Type.MAP: "TEXT",
-            exp.DataType.Type.LOWCARDINALITY: "TEXT",
-            exp.DataType.Type.MONEY: "DECIMAL(15,4)",
-            exp.DataType.Type.NAME: "TEXT",
-            exp.DataType.Type.NESTED: "TEXT",
-            exp.DataType.Type.NOTHING: "INT",
-            exp.DataType.Type.NULL: "INT",
-            exp.DataType.Type.NUMMULTIRANGE: "TEXT",
-            exp.DataType.Type.NUMRANGE: "TEXT",
-            exp.DataType.Type.OBJECT: "BLOB",
-            exp.DataType.Type.RANGE: "TEXT",
-            exp.DataType.Type.ROWVERSION: "BIGINT AUTO_INCREMENT KEY",
-            exp.DataType.Type.SERIAL: "BIGINT AUTO_INCREMENT KEY",
-            exp.DataType.Type.SMALLSERIAL: "BIGINT AUTO_INCREMENT KEY",
-            exp.DataType.Type.SMALLMONEY: "DECIMAL(6,4)",
-            exp.DataType.Type.STRUCT: "TEXT",
-            exp.DataType.Type.SUPER: "TEXT",
-            exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP(6)",
-            exp.DataType.Type.TSMULTIRANGE: "TEXT",
-            exp.DataType.Type.TSRANGE: "TEXT",
-            exp.DataType.Type.TSTZMULTIRANGE: "TEXT",
-            exp.DataType.Type.TSTZRANGE: "TEXT",
-            exp.DataType.Type.UINT128: "DECIMAL(39,0)",
-            exp.DataType.Type.UINT256: "DECIMAL(65,0)",
-            exp.DataType.Type.UNION: "TEXT",
-            exp.DataType.Type.UNKNOWN: "TEXT",
-            exp.DataType.Type.USERDEFINED: "TEXT",
-            exp.DataType.Type.UUID: "TEXT",
-            exp.DataType.Type.VARIANT: "TEXT",
-            exp.DataType.Type.XML: "TEXT",
-            exp.DataType.Type.TDIGEST: "BLOB",
+        UNSUPPORTED_TYPES = {
+            exp.DataType.Type.ARRAY,
+            exp.DataType.Type.AGGREGATEFUNCTION,
+            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION,
+            exp.DataType.Type.BIGSERIAL,
+            exp.DataType.Type.BPCHAR,
+            exp.DataType.Type.DATEMULTIRANGE,
+            exp.DataType.Type.DATERANGE,
+            exp.DataType.Type.DYNAMIC,
+            exp.DataType.Type.HLLSKETCH,
+            exp.DataType.Type.HSTORE,
+            exp.DataType.Type.IMAGE,
+            exp.DataType.Type.INET,
+            exp.DataType.Type.INT128,
+            exp.DataType.Type.INT256,
+            exp.DataType.Type.INT4MULTIRANGE,
+            exp.DataType.Type.INT4RANGE,
+            exp.DataType.Type.INT8MULTIRANGE,
+            exp.DataType.Type.INT8RANGE,
+            exp.DataType.Type.INTERVAL,
+            exp.DataType.Type.IPADDRESS,
+            exp.DataType.Type.IPPREFIX,
+            exp.DataType.Type.IPV4,
+            exp.DataType.Type.IPV6,
+            exp.DataType.Type.LIST,
+            exp.DataType.Type.MAP,
+            exp.DataType.Type.LOWCARDINALITY,
+            exp.DataType.Type.MONEY,
+            exp.DataType.Type.MULTILINESTRING,
+            exp.DataType.Type.NAME,
+            exp.DataType.Type.NESTED,
+            exp.DataType.Type.NOTHING,
+            exp.DataType.Type.NULL,
+            exp.DataType.Type.NUMMULTIRANGE,
+            exp.DataType.Type.NUMRANGE,
+            exp.DataType.Type.OBJECT,
+            exp.DataType.Type.RANGE,
+            exp.DataType.Type.ROWVERSION,
+            exp.DataType.Type.SERIAL,
+            exp.DataType.Type.SMALLSERIAL,
+            exp.DataType.Type.SMALLMONEY,
+            exp.DataType.Type.STRUCT,
+            exp.DataType.Type.SUPER,
+            exp.DataType.Type.TIMETZ,
+            exp.DataType.Type.TIMESTAMPNTZ,
+            exp.DataType.Type.TIMESTAMPLTZ,
+            exp.DataType.Type.TIMESTAMPTZ,
+            exp.DataType.Type.TIMESTAMP_NS,
+            exp.DataType.Type.TSMULTIRANGE,
+            exp.DataType.Type.TSRANGE,
+            exp.DataType.Type.TSTZMULTIRANGE,
+            exp.DataType.Type.TSTZRANGE,
+            exp.DataType.Type.UINT128,
+            exp.DataType.Type.UINT256,
+            exp.DataType.Type.UNION,
+            exp.DataType.Type.UNKNOWN,
+            exp.DataType.Type.USERDEFINED,
+            exp.DataType.Type.UUID,
+            exp.DataType.Type.VARIANT,
+            exp.DataType.Type.XML,
+            exp.DataType.Type.TDIGEST,
         }
 
         TYPE_MAPPING = {
@@ -445,7 +446,6 @@ class SingleStore(MySQL):
             exp.DataType.Type.POINT: "GEOGRAPHYPOINT",
             exp.DataType.Type.RING: "GEOGRAPHY",
             exp.DataType.Type.LINESTRING: "GEOGRAPHY",
-            exp.DataType.Type.MULTILINESTRING: "GEOGRAPHY",
             exp.DataType.Type.POLYGON: "GEOGRAPHY",
             exp.DataType.Type.MULTIPOLYGON: "GEOGRAPHY",
             exp.DataType.Type.JSONB: "BSON",
@@ -1556,13 +1556,29 @@ class SingleStore(MySQL):
 
         @unsupported_args("kind", "nested", "values")
         def datatype_sql(self, expression: exp.DataType) -> str:
-            type_value = expression.this
-            if type_value in self.UNSUPPORTED_TYPE_MAPPING:
-                self.unsupported(f"Data type {type_value.value} is not supported in SingleStore")
-                return self.UNSUPPORTED_TYPE_MAPPING[type_value]
-
             if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
                 return "BLOB"
+            if expression.is_type(
+                exp.DataType.Type.DECIMAL32,
+                exp.DataType.Type.DECIMAL64,
+                exp.DataType.Type.DECIMAL128,
+                exp.DataType.Type.DECIMAL256,
+            ):
+                scale = self.expressions(expression, flat=True)
+
+                if expression.is_type(exp.DataType.Type.DECIMAL32):
+                    precision = "9"
+                elif expression.is_type(exp.DataType.Type.DECIMAL64):
+                    precision = "18"
+                elif expression.is_type(exp.DataType.Type.DECIMAL128):
+                    precision = "38"
+                else:
+                    # 65 is a maximum precision supported in SingleStore
+                    precision = "65"
+                if scale is not None:
+                    return f"DECIMAL({precision}, {scale[0]})"
+                else:
+                    return f"DECIMAL({precision})"
 
             return super().datatype_sql(expression)

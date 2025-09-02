@@ -492,10 +492,87 @@ class TestSingleStore(Validator):
 
     def test_types(self):
         self.validate_all(
-            "CREATE TABLE testTypes (a LONGBLOB)",
+            "CREATE TABLE testTypes (a DECIMAL(10, 20))",
             read={
-                "singlestore": "CREATE TABLE testTypes (a LONGBLOB)",
-                "tsql": "CREATE TABLE testTypes (a IMAGE)",
+                "singlestore": "CREATE TABLE testTypes (a DECIMAL(10, 20))",
+                "bigquery": "CREATE TABLE testTypes (a BIGDECIMAL(10, 20))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a BOOLEAN)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a BOOLEAN)",
+                "tsql": "CREATE TABLE testTypes (a BIT)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a DATE)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a DATE)",
+                "clickhouse": "CREATE TABLE testTypes (a DATE32)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a DATETIME)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a DATETIME)",
+                "clickhouse": "CREATE TABLE testTypes (a DATETIME64)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a DECIMAL(9, 3))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a DECIMAL(9, 3))",
+                "clickhouse": "CREATE TABLE testTypes (a DECIMAL32(3))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a DECIMAL(18, 3))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a DECIMAL(18, 3))",
+                "clickhouse": "CREATE TABLE testTypes (a DECIMAL64(3))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a DECIMAL(38, 3))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a DECIMAL(38, 3))",
+                "clickhouse": "CREATE TABLE testTypes (a DECIMAL128(3))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a DECIMAL(65, 3))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a DECIMAL(65, 3))",
+                "clickhouse": "CREATE TABLE testTypes (a DECIMAL256(3))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a ENUM('a'))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a ENUM('a'))",
+                "clickhouse": "CREATE TABLE testTypes (a ENUM8('a'))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a ENUM('a'))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a ENUM('a'))",
+                "clickhouse": "CREATE TABLE testTypes (a ENUM16('a'))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a TEXT(2))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a TEXT(2))",
+                "clickhouse": "CREATE TABLE testTypes (a FIXEDSTRING(2))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a GEOGRAPHY)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a GEOGRAPHY)",
+                "snowflake": "CREATE TABLE testTypes (a GEOMETRY)",
             },
         )
         self.validate_all(
@@ -503,6 +580,56 @@ class TestSingleStore(Validator):
             read={
                 "singlestore": "CREATE TABLE testTypes (a GEOGRAPHYPOINT)",
                 "clickhouse": "CREATE TABLE testTypes (a POINT)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a GEOGRAPHY)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a GEOGRAPHY)",
+                "clickhouse": "CREATE TABLE testTypes (a RING)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a GEOGRAPHY)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a GEOGRAPHY)",
+                "clickhouse": "CREATE TABLE testTypes (a LINESTRING)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a GEOGRAPHY)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a GEOGRAPHY)",
+                "clickhouse": "CREATE TABLE testTypes (a POLYGON)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a GEOGRAPHY)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a GEOGRAPHY)",
+                "clickhouse": "CREATE TABLE testTypes (a MULTIPOLYGON)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a BSON)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a BSON)",
+                "postgres": "CREATE TABLE testTypes (a JSONB)",
+            },
+        )
+        self.validate_identity("CREATE TABLE testTypes (a TIMESTAMP(6))")
+        self.validate_all(
+            "CREATE TABLE testTypes (a TIMESTAMP)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a TIMESTAMP)",
+                "duckdb": "CREATE TABLE testTypes (a TIMESTAMP_S)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a TIMESTAMP(6))",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a TIMESTAMP(6))",
+                "duckdb": "CREATE TABLE testTypes (a TIMESTAMP_MS)",
             },
         )
         self.validate_all(

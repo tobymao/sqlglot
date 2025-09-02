@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     bool_xor_sql,
     count_if_to_sum,
+    timestamptrunc_sql,
     date_add_interval_sql,
     timestampdiff_sql,
 )
@@ -296,8 +297,10 @@ class SingleStore(MySQL):
             e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
             exp.Time: unsupported_args("zone")(lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
             exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
+            exp.DatetimeTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.DatetimeSub: date_add_interval_sql("DATE", "SUB"),
             exp.DatetimeDiff: timestampdiff_sql,
+            exp.DateTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",

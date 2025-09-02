@@ -555,6 +555,7 @@ class BigQuery(Dialect):
         exp.IgnoreNulls: lambda self, e: self._annotate_by_args(e, "this"),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONArrayAppend: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
+        exp.JSONArrayInsert: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR

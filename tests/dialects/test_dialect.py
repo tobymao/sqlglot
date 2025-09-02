@@ -4243,3 +4243,16 @@ FROM subquery2""",
                 "doris": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
             },
         )
+
+    def test_json_strip_nulls(self):
+        self.validate_all(
+            """JSON_STRIP_NULLS(PARSE_JSON('[{"f1":1,"f2":null},2,null,3]'))""",
+            read={
+                "": """JSON_STRIP_NULLS(PARSE_JSON('[{"f1":1,"f2":null},2,null,3]'))""",
+                "bigquery": """JSON_STRIP_NULLS(PARSE_JSON('[{"f1":1,"f2":null},2,null,3]'))""",
+            },
+            write={
+                "bigquery": """JSON_STRIP_NULLS(PARSE_JSON('[{"f1":1,"f2":null},2,null,3]'))""",
+                "postgres": """JSON_STRIP_NULLS(CAST('[{"f1":1,"f2":null},2,null,3]' AS JSON))""",
+            },
+        )

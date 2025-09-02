@@ -1111,6 +1111,14 @@ ARRAY<STRING>;
 JSON_EXTRACT_ARRAY(JSON_OBJECT('fruits', ['apples', 'oranges', 'grapes']), '$.fruits');
 ARRAY<JSON>;
 
+# dialect: bigquery
+JSON_ARRAY_APPEND(PARSE_JSON('["a", "b", "c"]'), '$', 1);
+JSON;
+
+# dialect: bigquery
+JSON_ARRAY_APPEND(PARSE_JSON('["a", "b", "c"]'), '$', [1, 2], append_each_element => FALSE);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

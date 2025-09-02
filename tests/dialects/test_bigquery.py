@@ -1803,6 +1803,9 @@ WHERE
             "OCTET_LENGTH(b'foo')",
             "BYTE_LENGTH(b'foo')",
         )
+        self.validate_identity(
+            """JSON_ARRAY_APPEND(PARSE_JSON('["a", "b", "c"]'), '$', [1, 2], append_each_element => FALSE)"""
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

@@ -489,6 +489,27 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             },
         )
+        self.validate_all(
+            "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            read={
+                "bigquery": "SELECT DATETIME_TRUNC('2016-08-08 12:05:31', MINUTE)",
+                "singlestore": "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_SUB('2010-04-02', INTERVAL '1' WEEK)",
+            read={
+                "bigquery": "SELECT DATETIME_SUB('2010-04-02', INTERVAL '1' WEEK)",
+                "singlestore": "SELECT DATE_SUB('2010-04-02', INTERVAL '1' WEEK)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(QUARTER, '2009-02-13', '2013-09-01')",
+            read={
+                "singlestore": "SELECT TIMESTAMPDIFF(QUARTER, '2009-02-13', '2013-09-01')",
+                "": "SELECT DATETIME_DIFF('2013-09-01', '2009-02-13', QUARTER)",
+            },
+        )
 
     def test_types(self):
         self.validate_all(

@@ -224,7 +224,6 @@ class SingleStore(MySQL):
             exp.JSONPathRoot,
             exp.JSONPathSubscript,
         }
-
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))
@@ -301,6 +300,11 @@ class SingleStore(MySQL):
             exp.DatetimeSub: date_add_interval_sql("DATE", "SUB"),
             exp.DatetimeDiff: timestampdiff_sql,
             exp.DateTrunc: unsupported_args("zone")(timestamptrunc_sql()),
+            exp.DateDiff: unsupported_args("zone")(
+                lambda self, e: timestampdiff_sql(self, e)
+                if e.unit is not None
+                else self.func("DATEDIFF", e.this, e.expression)
+            ),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",
@@ -375,6 +379,7 @@ class SingleStore(MySQL):
                 )
             ),
         }
+
         TRANSFORMS.pop(exp.JSONExtractScalar)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/

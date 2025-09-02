@@ -510,3 +510,18 @@ class TestSingleStore(Validator):
                 "": "SELECT DATETIME_DIFF('2013-09-01', '2009-02-13', QUARTER)",
             },
         )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(QUARTER, '2009-02-13', '2013-09-01')",
+            read={
+                "singlestore": "SELECT TIMESTAMPDIFF(QUARTER, '2009-02-13', '2013-09-01')",
+                "bigquery": "SELECT DATE_DIFF('2013-09-01', '2009-02-13', QUARTER)",
+                "duckdb": "SELECT DATE_DIFF('QUARTER', '2009-02-13', '2013-09-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(DATE('2013-09-01'), DATE('2009-02-13'))",
+            read={
+                "hive": "SELECT DATEDIFF('2013-09-01', '2009-02-13')",
+                "singlestore": "SELECT DATEDIFF(DATE('2013-09-01'), DATE('2009-02-13'))",
+            },
+        )

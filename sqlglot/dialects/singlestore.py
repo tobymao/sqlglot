@@ -379,7 +379,6 @@ class SingleStore(MySQL):
                 )
             ),
         }
-
         TRANSFORMS.pop(exp.JSONExtractScalar)
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/

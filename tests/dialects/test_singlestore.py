@@ -510,3 +510,10 @@ class TestSingleStore(Validator):
                 "": "SELECT DATETIME_DIFF('2013-09-01', '2009-02-13', QUARTER)",
             },
         )
+        self.validate_all(
+            "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            read={
+                "": "SELECT TIMESTAMP_TRUNC('2016-08-08 12:05:31', MINUTE)",
+                "singlestore": "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            },
+        )

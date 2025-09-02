@@ -565,11 +565,13 @@ class BigQuery(Dialect):
         exp.JSONKeysAtDepth: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         ),
+        exp.JSONObject: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
+        exp.JSONRemove: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
+        exp.JSONSet: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
+        exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.JSONValueArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         ),
-        exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.JSONObject: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
         exp.Lead: lambda self, e: self._annotate_by_args(e, "this"),
         exp.LowerHex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),

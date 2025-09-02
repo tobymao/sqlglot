@@ -4214,3 +4214,32 @@ FROM subquery2""",
                 "mysql": """JSON_ARRAY_INSERT('["a", ["b", "c"], "d"]', '$[1]', 1)""",
             },
         )
+
+    def test_json_remove(self):
+        self.validate_all(
+            """JSON_REMOVE(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', '$[1]')""",
+            read={
+                "": """JSON_REMOVE(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', '$[1]')""",
+                "bigquery": """JSON_REMOVE(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', '$[1]')""",
+            },
+            write={
+                "bigquery": """JSON_REMOVE(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', '$[1]')""",
+                "mysql": """JSON_REMOVE('["a", ["b", "c"], "d"]', '$[1]', '$[1]')""",
+                "sqlite": """JSON_REMOVE('["a", ["b", "c"], "d"]', '$[1]', '$[1]')""",
+            },
+        )
+
+    def test_json_set(self):
+        self.validate_all(
+            """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+            read={
+                "": """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+                "bigquery": """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+            },
+            write={
+                "bigquery": """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+                "mysql": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
+                "sqlite": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
+                "doris": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
+            },
+        )

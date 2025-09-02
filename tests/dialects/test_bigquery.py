@@ -2713,6 +2713,15 @@ OPTIONS (
                 },
             )
 
+    def test_array_concat(self):
+        self.validate_all(
+            f"WITH x AS ( SELECT 1 AS id), test_cte AS ( SELECT ARRAY_CONCAT(( SELECT id FROM x WHERE FALSE)) AS result ) SELECT * FROM test_cte;",
+            write={
+                "snowflake": "WITH x AS (SELECT 1 AS id), test_cte AS (SELECT ARRAY_CAT((SELECT id FROM x WHERE FALSE), []) AS result) SELECT * FROM test_cte",
+            },
+        )
+
+
     def test_select_as_struct(self):
         self.validate_all(
             "SELECT ARRAY(SELECT AS STRUCT x1 AS x1, x2 AS x2 FROM t) AS array_col",

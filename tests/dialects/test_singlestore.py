@@ -489,3 +489,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             },
         )
+        self.validate_all(
+            "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            read={
+                "bigquery": "SELECT DATETIME_TRUNC('2016-08-08 12:05:31', MINUTE)",
+                "singlestore": "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            },
+        )

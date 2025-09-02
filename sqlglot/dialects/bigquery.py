@@ -562,6 +562,9 @@ class BigQuery(Dialect):
         ),
         exp.JSONExtract: lambda self, e: self._annotate_by_args(e, "this"),
         exp.JSONExtractArray: lambda self, e: self._annotate_by_args(e, "this", array=True),
+        exp.JSONKeysAtDepth: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
+        ),
         exp.JSONValueArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         ),
@@ -730,6 +733,7 @@ class BigQuery(Dialect):
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
+            "JSON_KEYS": exp.JSONKeysAtDepth.from_arg_list,
             "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_QUERY_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
             "JSON_VALUE": _build_extract_json_with_default_path(exp.JSONExtractScalar),
@@ -1248,6 +1252,7 @@ class BigQuery(Dialect):
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractArray: _json_extract_sql,
             exp.JSONExtractScalar: _json_extract_sql,
+            exp.JSONKeysAtDepth: rename_func("JSON_KEYS"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Levenshtein: _levenshtein_sql,
             exp.Max: max_or_greatest,

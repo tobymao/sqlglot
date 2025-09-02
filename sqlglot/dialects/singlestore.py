@@ -302,6 +302,11 @@ class SingleStore(MySQL):
             exp.DatetimeSub: date_add_interval_sql("DATE", "SUB"),
             exp.DatetimeDiff: timestampdiff_sql,
             exp.DateTrunc: unsupported_args("zone")(timestamptrunc_sql()),
+            exp.DateDiff: unsupported_args("zone")(
+                lambda self, e: timestampdiff_sql(self, e)
+                if e.unit is not None
+                else self.func("DATEDIFF", e.this, e.expression)
+            ),
             exp.TimestampTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",

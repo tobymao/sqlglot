@@ -1822,6 +1822,10 @@ WHERE
         self.validate_identity(
             """JSON_STRIP_NULLS(PARSE_JSON('{"a": {"b": {"c": null}}, "d": [null], "e": [], "f": 1}'), include_arrays => FALSE, remove_empty => TRUE)"""
         )
+        self.validate_identity(
+            """JSON_EXTRACT_STRING_ARRAY(PARSE_JSON('{"fruits": ["apples", "oranges", "grapes"]}'), '$.fruits')""",
+            """JSON_VALUE_ARRAY(PARSE_JSON('{"fruits": ["apples", "oranges", "grapes"]}'), '$.fruits')""",
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

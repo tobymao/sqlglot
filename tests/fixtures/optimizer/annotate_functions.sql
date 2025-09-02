@@ -668,6 +668,10 @@ JSON_VALUE_ARRAY(JSON '["a","b"]');
 ARRAY<STRING>;
 
 # dialect: bigquery
+JSON_EXTRACT_STRING_ARRAY(JSON '["a","b"]');
+ARRAY<STRING>;
+
+# dialect: bigquery
 JSON_TYPE(JSON '1');
 STRING;
 

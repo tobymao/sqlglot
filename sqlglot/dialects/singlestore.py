@@ -224,6 +224,7 @@ class SingleStore(MySQL):
             exp.JSONPathRoot,
             exp.JSONPathSubscript,
         }
+
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))

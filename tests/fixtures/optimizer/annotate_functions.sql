@@ -1119,6 +1119,14 @@ JSON;
 JSON_ARRAY_APPEND(PARSE_JSON('["a", "b", "c"]'), '$', [1, 2], append_each_element => FALSE);
 JSON;
 
+# dialect: bigquery
+JSON_ARRAY_INSERT(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', 1);
+JSON;
+
+# dialect: bigquery
+JSON_ARRAY_INSERT(PARSE_JSON('["a", "b", "c"]'), '$[1]', [1, 2], insert_each_element => FALSE);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

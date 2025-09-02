@@ -6647,6 +6647,12 @@ class JSONArrayContains(Binary, Predicate, Func):
     _sql_names = ["JSON_ARRAY_CONTAINS"]
 
 
+class JSONArrayInsert(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+    _sql_names = ["JSON_ARRAY_INSERT"]
+
+
 class ParseBignumeric(Func):
     pass
 

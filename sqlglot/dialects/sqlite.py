@@ -156,6 +156,7 @@ class SQLite(Dialect):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = False
         JSON_KEY_VALUE_PAIR_SEP = ","
+        PARSE_JSON_NAME: t.Optional[str] = None
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

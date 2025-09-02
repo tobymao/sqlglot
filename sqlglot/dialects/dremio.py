@@ -74,6 +74,18 @@ def build_date_delta_with_cast_interval(
     return _builder
 
 
+def datetype_handler(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
+    year, month, day = args
+
+    year_val = int(year.this)
+    month_val = int(month.this)
+    day_val = int(day.this)
+
+    date_str = f"{year_val:04d}-{month_val:02d}-{day_val:02d}"
+
+    return exp.Date(this=exp.Literal.string(date_str))
+
+
 class Dremio(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     CONCAT_COALESCE = True
@@ -153,6 +165,7 @@ class Dremio(Dialect):
             "REPEATSTR": exp.Repeat.from_arg_list,
             "TO_CHAR": to_char_is_numeric_handler,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "dremio"),
+            "DATETYPE": datetype_handler,
         }
 
         def _parse_current_date_utc(self) -> exp.Cast:

@@ -206,3 +206,6 @@ class TestDremio(Validator):
             },
         )
         self.validate_identity("REGEXP_MATCHES(x, y)", "REGEXP_LIKE(x, y)")
+
+    def test_datetype(self):
+        self.validate_identity("SELECT DATETYPE(2024,2,2)", "SELECT DATE('2024-02-02')")

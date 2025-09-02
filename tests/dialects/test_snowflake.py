@@ -2844,21 +2844,18 @@ SINGLE = TRUE""",
                             this=exp.Column(this=exp.Identifier(this="autocommit", quoted=False)),
                             expression=exp.Boolean(this=False),
                         ),
-                        kind="SESSION",
                     ),
                     exp.SetItem(
                         this=exp.EQ(
                             this=exp.Column(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
                             expression=exp.Literal(this="qtag", is_string=True),
                         ),
-                        kind="SESSION",
                     ),
                     exp.SetItem(
                         this=exp.EQ(
                             this=exp.Column(this=exp.Identifier(this="JSON_INDENT", quoted=False)),
                             expression=exp.Literal(this="1", is_string=False),
                         ),
-                        kind="SESSION",
                     ),
                 ],
                 unset=False,

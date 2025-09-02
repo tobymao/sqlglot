@@ -1806,6 +1806,9 @@ WHERE
         self.validate_identity(
             """JSON_ARRAY_APPEND(PARSE_JSON('["a", "b", "c"]'), '$', [1, 2], append_each_element => FALSE)"""
         )
+        self.validate_identity(
+            """JSON_ARRAY_INSERT(PARSE_JSON('["a", "b", "c"]'), '$[1]', [1, 2], insert_each_element => FALSE)"""
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

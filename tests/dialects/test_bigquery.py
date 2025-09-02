@@ -1815,6 +1815,13 @@ WHERE
         self.validate_identity(
             """JSON_SET(PARSE_JSON('{"a": 1}'), '$.b', 999, create_if_missing => FALSE)"""
         )
+        self.validate_identity("""JSON_STRIP_NULLS(PARSE_JSON('[1, null, 2, null, [null]]'))""")
+        self.validate_identity(
+            """JSON_STRIP_NULLS(PARSE_JSON('[1, null, 2, null]'), include_arrays => FALSE)"""
+        )
+        self.validate_identity(
+            """JSON_STRIP_NULLS(PARSE_JSON('{"a": {"b": {"c": null}}, "d": [null], "e": [], "f": 1}'), include_arrays => FALSE, remove_empty => TRUE)"""
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

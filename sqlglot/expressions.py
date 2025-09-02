@@ -6523,6 +6523,17 @@ class JSONSet(Func):
     _sql_names = ["JSON_SET"]
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_strip_nulls
+class JSONStripNulls(Func):
+    arg_types = {
+        "this": True,
+        "expression": False,
+        "include_arrays": False,
+        "remove_empty": False,
+    }
+    _sql_names = ["JSON_STRIP_NULLS"]
+
+
 # https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html#function_json-value
 class JSONValue(Expression):
     arg_types = {

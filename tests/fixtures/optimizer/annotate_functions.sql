@@ -1159,6 +1159,18 @@ JSON;
 JSON_SET(PARSE_JSON('{"a": 1}'), '$.b', 999, create_if_missing => FALSE);
 JSON;
 
+# dialect: bigquery
+JSON_STRIP_NULLS(PARSE_JSON('[1, null, 2, null, [null]]'));
+JSON;
+
+# dialect: bigquery
+JSON_STRIP_NULLS(PARSE_JSON('[1, null, 2, null]'), include_arrays => FALSE);
+JSON;
+
+# dialect: bigquery
+JSON_STRIP_NULLS(PARSE_JSON('{"a": {"b": {"c": null}}, "d": [null], "e": [], "f": 1}'), include_arrays => FALSE, remove_empty => TRUE);
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

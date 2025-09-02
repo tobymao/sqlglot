@@ -6635,6 +6635,12 @@ class JSONFormat(Func):
     _sql_names = ["JSON_FORMAT"]
 
 
+class JSONArrayAppend(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+    _sql_names = ["JSON_ARRAY_APPEND"]
+
+
 # https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
 class JSONArrayContains(Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "json_type": False}

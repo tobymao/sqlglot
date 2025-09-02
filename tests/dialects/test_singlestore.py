@@ -489,3 +489,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             },
         )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(QUARTER, '2009-02-13', '2013-09-01')",
+            read={
+                "singlestore": "SELECT TIMESTAMPDIFF(QUARTER, '2009-02-13', '2013-09-01')",
+                "": "SELECT DATETIME_DIFF('2013-09-01', '2009-02-13', QUARTER)",
+            },
+        )

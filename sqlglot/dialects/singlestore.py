@@ -55,6 +55,7 @@ class SingleStore(MySQL):
             **MySQL.Tokenizer.KEYWORDS,
             "BSON": TokenType.JSONB,
             "GEOGRAPHYPOINT": TokenType.GEOGRAPHYPOINT,
+            "TIMESTAMP": TokenType.TIMESTAMP,
             ":>": TokenType.COLON_GT,
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,

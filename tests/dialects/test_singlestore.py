@@ -447,10 +447,10 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
-            "SELECT CONVERT_TZ(NOW() :> DATETIME, 'GMT', 'UTC')",
+            "SELECT CONVERT_TZ(NOW() :> TIMESTAMP, 'GMT', 'UTC')",
             read={
                 "spark2": "SELECT TO_UTC_TIMESTAMP(NOW(), 'GMT')",
-                "singlestore": "SELECT CONVERT_TZ(NOW() :> DATETIME, 'GMT', 'UTC')",
+                "singlestore": "SELECT CONVERT_TZ(NOW() :> TIMESTAMP, 'GMT', 'UTC')",
             },
         )
         self.validate_all(

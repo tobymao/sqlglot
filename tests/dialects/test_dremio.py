@@ -212,3 +212,7 @@ class TestDremio(Validator):
             "SELECT DATE_PART('YEAR', date '2021-04-01')",
             "SELECT EXTRACT('YEAR' FROM CAST('2021-04-01' AS DATE))",
         )
+
+    def test_datetype(self):
+        self.validate_identity("DATETYPE(2024,2,2)", "DATE('2024-02-02')")
+        self.validate_identity("DATETYPE(x,y,z)", "CAST(CONCAT(x, '-', y, '-', z) AS DATE)")

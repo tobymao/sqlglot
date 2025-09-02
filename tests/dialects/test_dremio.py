@@ -206,3 +206,9 @@ class TestDremio(Validator):
             },
         )
         self.validate_identity("REGEXP_MATCHES(x, y)", "REGEXP_LIKE(x, y)")
+
+    def test_date_part(self):
+        self.validate_identity(
+            "SELECT DATE_PART('YEAR', date '2021-04-01')",
+            "SELECT EXTRACT('YEAR' FROM CAST('2021-04-01' AS DATE))",
+        )

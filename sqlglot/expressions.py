@@ -6452,6 +6452,11 @@ class JSONKeyValue(Expression):
     arg_types = {"this": True, "expression": True}
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_keys
+class JSONKeysAtDepth(Func):
+    arg_types = {"this": True, "expression": False, "mode": False}
+
+
 class JSONObject(Func):
     arg_types = {
         "expressions": False,

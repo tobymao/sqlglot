@@ -525,6 +525,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATEDIFF(DATE('2013-09-01'), DATE('2009-02-13'))",
             },
         )
+        self.validate_all(
+            "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            read={
+                "": "SELECT TIMESTAMP_TRUNC('2016-08-08 12:05:31', MINUTE)",
+                "singlestore": "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
+            },
+        )
 
     def test_types(self):
         self.validate_all(

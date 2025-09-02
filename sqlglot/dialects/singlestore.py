@@ -307,6 +307,7 @@ class SingleStore(MySQL):
                 if e.unit is not None
                 else self.func("DATEDIFF", e.this, e.expression)
             ),
+            exp.TimestampTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",

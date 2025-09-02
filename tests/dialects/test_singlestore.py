@@ -523,6 +523,8 @@ class TestSingleStore(Validator):
             read={
                 "hive": "SELECT DATEDIFF('2013-09-01', '2009-02-13')",
                 "singlestore": "SELECT DATEDIFF(DATE('2013-09-01'), DATE('2009-02-13'))",
+            },
+        )
 
     def test_types(self):
         self.validate_all(

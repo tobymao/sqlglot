@@ -489,3 +489,10 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             },
         )
+        self.validate_all(
+            "SELECT DATE_SUB('2010-04-02', INTERVAL '1' WEEK)",
+            read={
+                "bigquery": "SELECT DATETIME_SUB('2010-04-02', INTERVAL '1' WEEK)",
+                "singlestore": "SELECT DATE_SUB('2010-04-02', INTERVAL '1' WEEK)",
+            },
+        )

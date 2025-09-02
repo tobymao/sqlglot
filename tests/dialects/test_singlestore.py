@@ -489,3 +489,26 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATE_ADD(NOW(), INTERVAL '1' MONTH)",
             },
         )
+
+    def test_types(self):
+        self.validate_all(
+            "CREATE TABLE testTypes (a LONGBLOB)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a LONGBLOB)",
+                "tsql": "CREATE TABLE testTypes (a IMAGE)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a GEOGRAPHYPOINT)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a GEOGRAPHYPOINT)",
+                "clickhouse": "CREATE TABLE testTypes (a POINT)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE testTypes (a BLOB)",
+            read={
+                "singlestore": "CREATE TABLE testTypes (a BLOB)",
+                "": "CREATE TABLE testTypes (a VARBINARY)",
+            },
+        )

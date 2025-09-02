@@ -2859,3 +2859,9 @@ OPTIONS (
         self.validate_identity("APPROX_QUANTILES(foo, 2)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 RESPECT NULLS)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 IGNORE NULLS)")
+
+    def test_json_lax(self):
+        self.validate_identity("LAX_BOOL(PARSE_JSON('true'))")
+        self.validate_identity("LAX_FLOAT64(PARSE_JSON('9.8'))")
+        self.validate_identity("LAX_INT64(PARSE_JSON('10'))")
+        self.validate_identity("""LAX_STRING(PARSE_JSON('"str"'))""")

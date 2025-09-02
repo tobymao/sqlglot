@@ -6110,6 +6110,22 @@ class LastDay(Func, TimeUnit):
     arg_types = {"this": True, "unit": False}
 
 
+class LaxBool(Func):
+    pass
+
+
+class LaxFloat64(Func):
+    pass
+
+
+class LaxInt64(Func):
+    pass
+
+
+class LaxString(Func):
+    pass
+
+
 class Extract(Func):
     arg_types = {"this": True, "expression": True}
 

@@ -1175,6 +1175,22 @@ JSON;
 JSON_STRIP_NULLS(PARSE_JSON('{"a": {"b": {"c": null}}, "d": [null], "e": [], "f": 1}'), include_arrays => FALSE, remove_empty => TRUE);
 JSON;
 
+# dialect: bigquery
+LAX_BOOL(PARSE_JSON('true'));
+BOOLEAN;
+
+# dialect: bigquery
+LAX_FLOAT64(PARSE_JSON('9.8'));
+DOUBLE;
+
+# dialect: bigquery
+LAX_INT64(PARSE_JSON('10'));
+BIGINT;
+
+# dialect: bigquery
+LAX_STRING(PARSE_JSON('"str"'));
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

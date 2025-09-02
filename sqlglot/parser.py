@@ -7590,9 +7590,7 @@ class Parser(metaclass=_Parser):
 
         if alter_token.token_type == TokenType.SESSION:
             if self._match(TokenType.SET):
-                expressions = self._parse_csv(
-                    lambda: self._parse_set_item_assignment()
-                )
+                expressions = self._parse_csv(lambda: self._parse_set_item_assignment())
                 set_ = self.expression(exp.Set, expressions=expressions, unset=False, tag=False)
                 return exp.AlterSession(expressions=set_.expressions, unset=False)
 

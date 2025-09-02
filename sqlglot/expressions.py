@@ -6517,6 +6517,12 @@ class JSONSchema(Expression):
     arg_types = {"expressions": True}
 
 
+class JSONSet(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+    _sql_names = ["JSON_SET"]
+
+
 # https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html#function_json-value
 class JSONValue(Expression):
     arg_types = {

@@ -175,6 +175,18 @@ def _build_to_hex(args: t.List) -> exp.Hex | exp.MD5:
     return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.LowerHex(this=arg)
 
 
+def _build_json_strip_nulls(args: t.List) -> exp.JSONStripNulls:
+    expression = exp.JSONStripNulls(this=seq_get(args, 0))
+
+    for arg in args[1:]:
+        if isinstance(arg, exp.Kwarg):
+            expression.set(arg.this.name.lower(), arg)
+        else:
+            expression.set("expression", arg)
+
+    return expression
+
+
 def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains) -> str:
     return self.sql(
         exp.Exists(
@@ -739,6 +751,7 @@ class BigQuery(Dialect):
             "JSON_KEYS": exp.JSONKeysAtDepth.from_arg_list,
             "JSON_QUERY": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_QUERY_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
+            "JSON_STRIP_NULLS": _build_json_strip_nulls,
             "JSON_VALUE": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),

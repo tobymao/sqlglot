@@ -304,7 +304,6 @@ class DuckDB(Dialect):
             "CHAR": TokenType.TEXT,
             "DATETIME": TokenType.TIMESTAMPNTZ,
             "DETACH": TokenType.DETACH,
-            "EXCLUDE": TokenType.EXCEPT,
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,

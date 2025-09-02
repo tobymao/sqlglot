@@ -1151,6 +1151,10 @@ ARRAY<STRING>;
 JSON_REMOVE(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', '$[1]');
 JSON;
 
+# dialect: bigquery
+JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'));
+JSON;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

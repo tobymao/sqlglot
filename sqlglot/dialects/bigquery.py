@@ -567,6 +567,7 @@ class BigQuery(Dialect):
         ),
         exp.JSONObject: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONRemove: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
+        exp.JSONSet: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.JSONValueArray: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")

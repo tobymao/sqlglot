@@ -4228,3 +4228,18 @@ FROM subquery2""",
                 "sqlite": """JSON_REMOVE('["a", ["b", "c"], "d"]', '$[1]', '$[1]')""",
             },
         )
+
+    def test_json_set(self):
+        self.validate_all(
+            """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+            read={
+                "": """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+                "bigquery": """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+            },
+            write={
+                "bigquery": """JSON_SET(PARSE_JSON('{"a": 1}'), '$', PARSE_JSON('{"b": 2, "c": 3}'))""",
+                "mysql": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
+                "sqlite": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
+                "doris": """JSON_SET('{"a": 1}', '$', '{"b": 2, "c": 3}')""",
+            },
+        )

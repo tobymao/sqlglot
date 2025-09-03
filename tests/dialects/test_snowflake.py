@@ -1266,7 +1266,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
             },
         )
-        self.validate_identity("VECTOR_COSINE_SIMILARITY(x, y)")
         self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
     def test_null_treatment(self):

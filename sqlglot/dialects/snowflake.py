@@ -643,7 +643,6 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DataType.Type.TIMESTAMP),
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": exp.ToChar.from_arg_list,
-            "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }
@@ -1201,7 +1200,6 @@ class Snowflake(Dialect):
             exp.BitwiseXor: rename_func("BITXOR"),
             exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("BITSHIFTRIGHT"),
-            exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

@@ -198,7 +198,7 @@ class SingleStore(MySQL):
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
 
         COLUMN_OPERATORS = {
-            TokenType.DOT: None,
+            **MySQL.Parser.COLUMN_OPERATORS,
             TokenType.COLON_GT: lambda self, this, to: self.expression(
                 exp.Cast,
                 this=this,
@@ -219,6 +219,11 @@ class SingleStore(MySQL):
                 exp.JSONExtractScalar, json_type="DOUBLE"
             )([this, exp.Literal.string(path.name)]),
         }
+        COLUMN_OPERATORS.pop(TokenType.ARROW)
+        COLUMN_OPERATORS.pop(TokenType.DARROW)
+        COLUMN_OPERATORS.pop(TokenType.HASH_ARROW)
+        COLUMN_OPERATORS.pop(TokenType.DHASH_ARROW)
+        COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
     class Generator(MySQL.Generator):
         SUPPORTED_JSON_PATH_PARTS = {

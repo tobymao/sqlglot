@@ -637,6 +637,8 @@ class BigQuery(Dialect):
         exp.SafeConvertBytesToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),
+        exp.Sec: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Sech: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Soundex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),

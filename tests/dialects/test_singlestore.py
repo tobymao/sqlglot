@@ -712,6 +712,7 @@ class TestSingleStore(Validator):
             "SELECT 'data'",
             read={"presto": "SELECT U&'d\\0061t\\0061'", "singlestore": "SELECT 'data'"},
         )
+
     def test_collate_sql(self):
         self.validate_all(
             "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",

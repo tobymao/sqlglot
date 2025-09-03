@@ -322,7 +322,9 @@ def _expand_alias_refs(
             if table and (not alias_expr or skip_replace):
                 column.set("table", table)
             elif not column.table and alias_expr and not skip_replace:
-                if isinstance(alias_expr, exp.Literal) and (literal_index or resolve_table):
+                if (isinstance(alias_expr, exp.Literal) or alias_expr.is_number) and (
+                    literal_index or resolve_table
+                ):
                     if literal_index:
                         column.replace(exp.Literal.number(i))
                 else:
@@ -442,6 +444,7 @@ def _expand_positional_references(
 
                 if (
                     isinstance(select, exp.CONSTANTS)
+                    or select.is_number
                     or select.find(exp.Explode, exp.Unnest)
                     or ambiguous
                 ):

@@ -342,10 +342,10 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
-            "SELECT POWER(id, 0.3333333333333333) FROM orders",
+            "SELECT POWER(id, 1 / 3) FROM orders",
             read={
                 "": "SELECT CBRT(id) FROM orders",
-                "singlestore": "SELECT POWER(id, 0.3333333333333333) FROM orders",
+                "singlestore": "SELECT POWER(id, 1 / 3) FROM orders",
             },
         )
 

@@ -424,6 +424,7 @@ class TokenType(AutoName):
     WITH = auto()
     UNIQUE = auto()
     UTC_DATE = auto()
+    UTC_TIME = auto()
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()

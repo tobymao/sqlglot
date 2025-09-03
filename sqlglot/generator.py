@@ -217,6 +217,7 @@ class Generator(metaclass=_Generator):
         exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.UtcDate: lambda self, e: self.sql(exp.CurrentDate(this=exp.Literal.string("UTC"))),
+        exp.UtcTime: lambda self, e: self.sql(exp.CurrentTime(this=exp.Literal.string("UTC"))),
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",

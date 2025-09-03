@@ -589,6 +589,7 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CURRENT_TIME",
             },
         )
+        self.validate_identity("SELECT CURRENT_TIME(6)")
         self.validate_all(
             "SELECT UTC_TIME()",
             read={

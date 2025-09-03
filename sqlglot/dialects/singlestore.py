@@ -1658,10 +1658,12 @@ class SingleStore(MySQL):
             return self.func("CURRENT_DATE")
 
         def currenttime_sql(self, expression: exp.CurrentTime) -> str:
-            timezone = expression.this
-            if timezone:
-                if isinstance(timezone, exp.Literal) and timezone.name.lower() == "utc":
+            arg = expression.this
+            if arg:
+                if isinstance(arg, exp.Literal) and arg.name.lower() == "utc":
                     return self.func("UTC_TIME")
+                if isinstance(arg, exp.Literal) and arg.is_number:
+                    return self.func("CURRENT_TIME", arg)
                 self.unsupported("CurrentTime with timezone is not supported in SingleStore")
 
             return self.func("CURRENT_TIME")

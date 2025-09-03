@@ -532,6 +532,20 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATE_TRUNC('MINUTE', '2016-08-08 12:05:31')",
             },
         )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(WEEK, '2009-01-01', '2009-12-31') AS numweeks",
+            read={
+                "redshift": "SELECT datediff(week,'2009-01-01','2009-12-31') AS numweeks",
+                "singlestore": "SELECT TIMESTAMPDIFF(WEEK, '2009-01-01', '2009-12-31') AS numweeks",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF('2009-12-31', '2009-01-01') AS numweeks",
+            read={
+                "": "SELECT TS_OR_DS_DIFF('2009-12-31', '2009-01-01') AS numweeks",
+                "singlestore": "SELECT DATEDIFF('2009-12-31', '2009-01-01') AS numweeks",
+            },
+        )
 
     def test_types(self):
         self.validate_all(

@@ -641,6 +641,7 @@ class Parser(metaclass=_Parser):
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.TRUNCATE,
+        TokenType.UTC_DATE,
         TokenType.WINDOW,
         TokenType.XOR,
         *TYPE_TOKENS,

@@ -571,6 +571,8 @@ class BigQuery(Dialect):
         exp.Concat: _annotate_concat,
         exp.Contains: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Cot: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Coth: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CumeDist: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),

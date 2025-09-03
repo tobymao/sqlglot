@@ -1126,7 +1126,6 @@ class Snowflake(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "FILE://": TokenType.URI_START,
             "BYTEINT": TokenType.INT,
-            "EXCLUDE": TokenType.EXCEPT,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,

@@ -385,6 +385,13 @@ class SingleStore(MySQL):
             exp.FromBase: lambda self, e: self.func(
                 "CONV", e.this, e.expression, exp.Literal.number(10)
             ),
+            exp.RegexpILike: lambda self, e: self.binary(
+                exp.RegexpLike(
+                    this=exp.Lower(this=e.this),
+                    expression=exp.Lower(this=e.expression),
+                ),
+                "RLIKE",
+            ),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")

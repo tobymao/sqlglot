@@ -5451,6 +5451,26 @@ class Acosh(Func):
     pass
 
 
+class Asin(Func):
+    pass
+
+
+class Asinh(Func):
+    pass
+
+
+class Atan(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class Atanh(Func):
+    pass
+
+
+class Atan2(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class AggFunc(Func):
     pass
 

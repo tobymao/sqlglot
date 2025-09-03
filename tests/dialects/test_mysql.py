@@ -302,6 +302,7 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT DISTINCTROW tbl.col FROM tbl", "SELECT DISTINCT tbl.col FROM tbl"
         )
+        self.validate_identity("ATAN(y, x)")
 
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:

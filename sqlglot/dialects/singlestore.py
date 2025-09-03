@@ -354,7 +354,7 @@ class SingleStore(MySQL):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Xor: bool_xor_sql,
             exp.Cbrt: lambda self, e: self.sql(
-                exp.Pow(this=e.this, expression=exp.Literal.number(1 / 3))
+                exp.Pow(this=e.this, expression=exp.Literal.number(0.3333333333333333))
             ),
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.Repeat: lambda self, e: self.func(

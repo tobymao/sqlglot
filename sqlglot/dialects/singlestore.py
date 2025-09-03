@@ -1,3 +1,5 @@
+import re
+
 from sqlglot import TokenType
 import typing as t
 
@@ -226,6 +228,15 @@ class SingleStore(MySQL):
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
     class Generator(MySQL.Generator):
+        SUPPORTS_UESCAPE = False
+
+        @staticmethod
+        def _unicode_substitute(m: re.Match[str]) -> str:
+            # Interpret the number as hex and convert it to the Unicode string
+            return chr(int(m.group(1), 16))
+
+        UNICODE_SUBSTITUTE: t.Optional[t.Callable[[re.Match[str]], str]] = _unicode_substitute
+
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
             exp.JSONPathRoot,

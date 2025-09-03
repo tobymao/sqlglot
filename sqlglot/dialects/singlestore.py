@@ -61,6 +61,7 @@ class SingleStore(MySQL):
             "BSON": TokenType.JSONB,
             "GEOGRAPHYPOINT": TokenType.GEOGRAPHYPOINT,
             "TIMESTAMP": TokenType.TIMESTAMP,
+            "UTC_DATE": TokenType.UTC_DATE,
             ":>": TokenType.COLON_GT,
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,

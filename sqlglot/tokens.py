@@ -858,7 +858,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
-        "UTC_DATE": TokenType.UTC_DATE,
         "UUID": TokenType.UUID,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,

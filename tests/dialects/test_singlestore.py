@@ -682,3 +682,6 @@ class TestSingleStore(Validator):
                 "": "CREATE TABLE testTypes (a VARBINARY)",
             },
         )
+
+    def test_column_with_tablename(self):
+        self.validate_identity("SELECT `t0`.`name` FROM `t0`")

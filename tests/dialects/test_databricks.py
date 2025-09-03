@@ -406,3 +406,6 @@ class TestDatabricks(Validator):
 
         result = transpile(sql, read="dremio", write="databricks")[0]
         assert "CAST(12345 AS STRING)" in result
+
+    def test_regexp_like(self):
+        self.validate_identity("REGEXP_LIKE(x, y)")

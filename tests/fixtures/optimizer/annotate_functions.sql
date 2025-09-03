@@ -1264,7 +1264,7 @@ COT(1);
 DOUBLE;
 
 # dialect: bigquery
-COT(1);
+COTH(1);
 DOUBLE;
 
 --------------------------------------

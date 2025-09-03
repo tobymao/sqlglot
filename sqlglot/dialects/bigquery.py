@@ -576,6 +576,8 @@ class BigQuery(Dialect):
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
         exp.Grouping: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.IsInf: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
+        exp.IsNan: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONArrayAppend: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONArrayInsert: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),

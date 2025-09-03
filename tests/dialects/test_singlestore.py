@@ -341,6 +341,13 @@ class TestSingleStore(Validator):
                 "": "SELECT VARIANCE_POP(yearly_total) FROM player_scores",
             },
         )
+        self.validate_all(
+            "SELECT POWER(id, 1 / 3) FROM orders",
+            read={
+                "": "SELECT CBRT(id) FROM orders",
+                "singlestore": "SELECT POWER(id, 1 / 3) FROM orders",
+            },
+        )
 
     def test_logical(self):
         self.validate_all(

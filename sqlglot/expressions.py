@@ -5479,6 +5479,14 @@ class Coth(Func):
     pass
 
 
+class Csc(Func):
+    pass
+
+
+class Csch(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

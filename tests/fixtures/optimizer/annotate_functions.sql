@@ -1275,6 +1275,14 @@ DOUBLE;
 CSCH(1);
 DOUBLE;
 
+# dialect: bigquery
+SEC(1);
+DOUBLE;
+
+# dialect: bigquery
+SECH(1);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

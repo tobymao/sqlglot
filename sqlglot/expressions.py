@@ -5487,6 +5487,14 @@ class Csch(Func):
     pass
 
 
+class Sec(Func):
+    pass
+
+
+class Sech(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

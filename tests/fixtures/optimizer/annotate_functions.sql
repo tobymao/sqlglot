@@ -1247,6 +1247,18 @@ DOUBLE;
 ASINH(1);
 DOUBLE;
 
+# dialect: bigquery
+ATAN(0.5);
+DOUBLE;
+
+# dialect: bigquery
+ATANH(0.5);
+DOUBLE;
+
+# dialect: bigquery
+ATAN2(0.5, 0.3);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

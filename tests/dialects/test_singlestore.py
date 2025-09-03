@@ -699,3 +699,15 @@ class TestSingleStore(Validator):
 
     def test_column_with_tablename(self):
         self.validate_identity("SELECT `t0`.`name` FROM `t0`")
+
+    def test_collate_sql(self):
+        self.validate_all(
+            "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
+            read={
+                "": "SELECT name COLLATE 'utf8mb4_bin' FROM users",
+            },
+        )
+        self.validate_identity(
+            "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
+            "SELECT name :> LONGTEXT :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
+        )

@@ -1609,3 +1609,8 @@ class SingleStore(MySQL):
                     return f"DECIMAL({precision})"
 
             return super().datatype_sql(expression)
+
+        def collate_sql(self, expression: exp.Collate) -> str:
+            # SingleStore does not support setting a collation for column in the SELECT query,
+            # so we cast column to a LONGTEXT type with specific collation
+            return self.binary(expression, ":> LONGTEXT COLLATE")

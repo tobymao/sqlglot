@@ -419,6 +419,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CONV('f', 16, 10)",
             },
         )
+        self.validate_all(
+            "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            read={
+                "postgres": "SELECT 'ABC' ~* 'a.*'",
+                "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            },
+        )
 
     def test_reduce_functions(self):
         self.validate_all(

@@ -2829,7 +2829,7 @@
 </span><span id="L-1427"><a href="#L-1427"><span class="linenos">1427</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_advance</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">start</span><span class="p">))</span>
 </span><span id="L-1428"><a href="#L-1428"><span class="linenos">1428</span></a>        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_string</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">raw_string</span><span class="o">=</span><span class="n">token_type</span> <span class="o">==</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">RAW_STRING</span><span class="p">)</span>
 </span><span id="L-1429"><a href="#L-1429"><span class="linenos">1429</span></a>
-</span><span id="L-1430"><a href="#L-1430"><span class="linenos">1430</span></a>        <span class="k">if</span> <span class="n">base</span><span class="p">:</span>
+</span><span id="L-1430"><a href="#L-1430"><span class="linenos">1430</span></a>        <span class="k">if</span> <span class="n">base</span> <span class="ow">and</span> <span class="n">text</span><span class="p">:</span>
 </span><span id="L-1431"><a href="#L-1431"><span class="linenos">1431</span></a>            <span class="k">try</span><span class="p">:</span>
 </span><span id="L-1432"><a href="#L-1432"><span class="linenos">1432</span></a>                <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
 </span><span id="L-1433"><a href="#L-1433"><span class="linenos">1433</span></a>            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -9277,7 +9277,7 @@
 </span><span id="Tokenizer-1428"><a href="#Tokenizer-1428"><span class="linenos">1428</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_advance</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">start</span><span class="p">))</span>
 </span><span id="Tokenizer-1429"><a href="#Tokenizer-1429"><span class="linenos">1429</span></a>        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_string</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">raw_string</span><span class="o">=</span><span class="n">token_type</span> <span class="o">==</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">RAW_STRING</span><span class="p">)</span>
 </span><span id="Tokenizer-1430"><a href="#Tokenizer-1430"><span class="linenos">1430</span></a>
-</span><span id="Tokenizer-1431"><a href="#Tokenizer-1431"><span class="linenos">1431</span></a>        <span class="k">if</span> <span class="n">base</span><span class="p">:</span>
+</span><span id="Tokenizer-1431"><a href="#Tokenizer-1431"><span class="linenos">1431</span></a>        <span class="k">if</span> <span class="n">base</span> <span class="ow">and</span> <span class="n">text</span><span class="p">:</span>
 </span><span id="Tokenizer-1432"><a href="#Tokenizer-1432"><span class="linenos">1432</span></a>            <span class="k">try</span><span class="p">:</span>
 </span><span id="Tokenizer-1433"><a href="#Tokenizer-1433"><span class="linenos">1433</span></a>                <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
 </span><span id="Tokenizer-1434"><a href="#Tokenizer-1434"><span class="linenos">1434</span></a>            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -9633,7 +9633,7 @@
                                 <div class="attr variable">
             <span class="name">TOKENS_PRECEDING_HINT</span>        =
 <input id="Tokenizer.TOKENS_PRECEDING_HINT-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Tokenizer.TOKENS_PRECEDING_HINT-view-value"></label><span class="default_value">{&lt;<a href="#TokenType.SELECT">TokenType.SELECT</a>: &#39;SELECT&#39;&gt;, &lt;<a href="#TokenType.DELETE">TokenType.DELETE</a>: &#39;DELETE&#39;&gt;, &lt;<a href="#TokenType.UPDATE">TokenType.UPDATE</a>: &#39;UPDATE&#39;&gt;, &lt;<a href="#TokenType.INSERT">TokenType.INSERT</a>: &#39;INSERT&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Tokenizer.TOKENS_PRECEDING_HINT-view-value"></label><span class="default_value">{&lt;<a href="#TokenType.UPDATE">TokenType.UPDATE</a>: &#39;UPDATE&#39;&gt;, &lt;<a href="#TokenType.DELETE">TokenType.DELETE</a>: &#39;DELETE&#39;&gt;, &lt;<a href="#TokenType.SELECT">TokenType.SELECT</a>: &#39;SELECT&#39;&gt;, &lt;<a href="#TokenType.INSERT">TokenType.INSERT</a>: &#39;INSERT&#39;&gt;}</span>
 
         
     </div>
@@ -9672,7 +9672,7 @@
                                 <div class="attr variable">
             <span class="name">COMMANDS</span>        =
 <input id="Tokenizer.COMMANDS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Tokenizer.COMMANDS-view-value"></label><span class="default_value">{&lt;<a href="#TokenType.COMMAND">TokenType.COMMAND</a>: &#39;COMMAND&#39;&gt;, &lt;<a href="#TokenType.RENAME">TokenType.RENAME</a>: &#39;RENAME&#39;&gt;, &lt;<a href="#TokenType.FETCH">TokenType.FETCH</a>: &#39;FETCH&#39;&gt;, &lt;<a href="#TokenType.SHOW">TokenType.SHOW</a>: &#39;SHOW&#39;&gt;, &lt;<a href="#TokenType.EXECUTE">TokenType.EXECUTE</a>: &#39;EXECUTE&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Tokenizer.COMMANDS-view-value"></label><span class="default_value">{&lt;<a href="#TokenType.RENAME">TokenType.RENAME</a>: &#39;RENAME&#39;&gt;, &lt;<a href="#TokenType.COMMAND">TokenType.COMMAND</a>: &#39;COMMAND&#39;&gt;, &lt;<a href="#TokenType.SHOW">TokenType.SHOW</a>: &#39;SHOW&#39;&gt;, &lt;<a href="#TokenType.FETCH">TokenType.FETCH</a>: &#39;FETCH&#39;&gt;, &lt;<a href="#TokenType.EXECUTE">TokenType.EXECUTE</a>: &#39;EXECUTE&#39;&gt;}</span>
 
         
     </div>

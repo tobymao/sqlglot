@@ -104,9 +104,9 @@ class Databricks(Spark):
                 if e.args.get("is_numeric")
                 else self.function_fallback_sql(e)
             ),
-            exp.RegexpLike: lambda self, e: self.function_fallback_sql(e),
         }
 
+        TRANSFORMS.pop(exp.RegexpLike)
         TRANSFORMS.pop(exp.TryCast)
 
         TYPE_MAPPING = {

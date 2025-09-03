@@ -2721,7 +2721,6 @@ OPTIONS (
             },
         )
 
-
     def test_select_as_struct(self):
         self.validate_all(
             "SELECT ARRAY(SELECT AS STRUCT x1 AS x1, x2 AS x2 FROM t) AS array_col",

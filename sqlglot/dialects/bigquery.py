@@ -804,6 +804,7 @@ class BigQuery(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(this=seq_get(args, 0)),
+            "TO_JSON": lambda args: exp.JSONFormat(this=seq_get(args, 0), to_json=True),
             "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
             "FORMAT_DATETIME": _build_format_time(exp.TsOrDsToDatetime),
             "FORMAT_TIMESTAMP": _build_format_time(exp.TsOrDsToTimestamp),
@@ -1274,7 +1275,9 @@ class BigQuery(Dialect):
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractArray: _json_extract_sql,
             exp.JSONExtractScalar: _json_extract_sql,
-            exp.JSONFormat: rename_func("TO_JSON_STRING"),
+            exp.JSONFormat: lambda self, e: self.func(
+                "TO_JSON" if e.args.get("to_json") else "TO_JSON_STRING", e.this
+            ),
             exp.JSONKeysAtDepth: rename_func("JSON_KEYS"),
             exp.JSONValueArray: rename_func("JSON_VALUE_ARRAY"),
             exp.Levenshtein: _levenshtein_sql,

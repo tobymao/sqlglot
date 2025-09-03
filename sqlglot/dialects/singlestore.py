@@ -15,7 +15,6 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     date_add_interval_sql,
     timestampdiff_sql,
-    no_datetime_sql,
 )
 from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql
 from sqlglot.expressions import DataType
@@ -321,7 +320,6 @@ class SingleStore(MySQL):
             exp.DatetimeTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.DatetimeSub: date_add_interval_sql("DATE", "SUB"),
             exp.DatetimeDiff: timestampdiff_sql,
-            exp.Datetime: no_datetime_sql,
             exp.DateTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.DateDiff: unsupported_args("zone")(
                 lambda self, e: timestampdiff_sql(self, e)

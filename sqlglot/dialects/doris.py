@@ -50,6 +50,7 @@ class Doris(MySQL):
             **MySQL.Parser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_TRUNC": _build_date_trunc,
+            "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "MONTHS_ADD": exp.AddMonths.from_arg_list,
             "REGEXP": exp.RegexpLike.from_arg_list,
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
@@ -210,6 +211,7 @@ class Doris(MySQL):
             exp.CurrentDate: lambda self, _: self.func("CURRENT_DATE"),
             exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
+            exp.EuclideanDistance: rename_func("L2_DISTANCE"),
             exp.GroupConcat: lambda self, e: self.func(
                 "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
             ),

@@ -643,6 +643,7 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DataType.Type.TIMESTAMP),
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": exp.ToChar.from_arg_list,
+            "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }
 
@@ -1213,6 +1214,7 @@ class Snowflake(Dialect):
             exp.Extract: lambda self, e: self.func(
                 "DATE_PART", map_date_part(e.this, self.dialect), e.expression
             ),
+            exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
             exp.FileFormatProperty: lambda self,
             e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
             exp.FromTimeZone: lambda self, e: self.func(

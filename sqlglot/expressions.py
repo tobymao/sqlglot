@@ -5503,6 +5503,14 @@ class Sinh(Func):
     pass
 
 
+class CosineDistance(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class EuclideanDistance(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class AggFunc(Func):
     pass
 

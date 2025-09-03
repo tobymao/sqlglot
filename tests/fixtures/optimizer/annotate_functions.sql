@@ -1292,6 +1292,14 @@ SINH(1);
 DOUBLE;
 
 # dialect: bigquery
+COSINE_DISTANCE([1.0, 2.0], [3.0, 4.0]);
+DOUBLE;
+
+#dialect: bigquery
+EUCLIDEAN_DISTANCE([1.0, 2.0], [3.0, 4.0]);
+DOUBLE;
+
+# dialect: bigquery
 RANGE_BUCKET(20, [0, 10, 20, 30, 40]);
 BIGINT;
 

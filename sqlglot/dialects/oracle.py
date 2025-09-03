@@ -107,6 +107,7 @@ class Oracle(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CONVERT": exp.ConvertToCharset.from_arg_list,
+            "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": build_timetostr_or_tochar,
@@ -305,6 +306,7 @@ class Oracle(Dialect):
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
+            exp.EuclideanDistance: rename_func("L2_DISTANCE"),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
             exp.LogicalOr: rename_func("MAX"),

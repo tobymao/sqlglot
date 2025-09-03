@@ -4668,11 +4668,11 @@ class Generator(metaclass=_Generator):
         exprs = expression.expressions
         if not self.ARRAY_CONCAT_IS_VAR_LEN:
             if len(exprs) == 0:
-                rhs = exp.Array(expressions=[])
+                rhs: t.Union[str, exp.Expression] = exp.Array(expressions=[])
             else:
                 rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
         else:
-            rhs = self.expressions(expression) # type: ignore
+            rhs = self.expressions(expression)  # type: ignore
 
         return self.func(name, expression.this, rhs or None)
 

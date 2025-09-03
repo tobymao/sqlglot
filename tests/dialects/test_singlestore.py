@@ -419,6 +419,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CONV('f', 16, 10)",
             },
         )
+        self.validate_all(
+            "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            read={
+                "postgres": "SELECT 'ABC' ~* 'a.*'",
+                "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            },
+        )
 
     def test_reduce_functions(self):
         self.validate_all(
@@ -704,4 +711,15 @@ class TestSingleStore(Validator):
         self.validate_all(
             "SELECT 'data'",
             read={"presto": "SELECT U&'d\\0061t\\0061'", "singlestore": "SELECT 'data'"},
+        )
+    def test_collate_sql(self):
+        self.validate_all(
+            "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
+            read={
+                "": "SELECT name COLLATE 'utf8mb4_bin' FROM users",
+            },
+        )
+        self.validate_identity(
+            "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
+            "SELECT name :> LONGTEXT :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
         )

@@ -1199,6 +1199,42 @@ STRING;
 TO_JSON(STRUCT(1 AS id, [10, 20] AS cords));
 JSON;
 
+# dialect: bigquery
+ABS(CAST(-1 AS INT64));
+INT64;
+
+# dialect: bigquery
+ABS(CAST(-1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+ABS(CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+ABS(CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+IS_INF(1);
+BOOLEAN;
+
+# dialect: bigquery
+IS_NAN(1);
+BOOLEAN;
+
+# dialect: bigquery
+CBRT(27);
+DOUBLE;
+
+# dialect: bigquery
+RAND();
+DOUBLE;
+
+# dialect: bigquery
+ACOS(0.5);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

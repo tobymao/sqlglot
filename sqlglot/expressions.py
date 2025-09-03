@@ -5460,7 +5460,7 @@ class Asinh(Func):
 
 
 class Atan(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Atanh(Func):

@@ -7020,6 +7020,10 @@ class RangeN(Func):
     arg_types = {"this": True, "expressions": True, "each": False}
 
 
+class RangeBucket(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Rank(AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True

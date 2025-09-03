@@ -1828,6 +1828,7 @@ WHERE
         )
         self.validate_identity("TO_JSON(STRUCT(1 AS id, [10, 20] AS cords))")
         self.validate_identity("TO_JSON(9999999999, stringify_wide_numbers => FALSE)")
+        self.validate_identity("RANGE_BUCKET(20, [0, 10, 20, 30, 40])")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

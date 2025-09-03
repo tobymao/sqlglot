@@ -630,6 +630,7 @@ class BigQuery(Dialect):
         exp.PercentileCont: lambda self, e: _annotate_perncentile_cont(self, e),
         exp.PercentRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Rank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.RangeBucket: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.RowNumber: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),

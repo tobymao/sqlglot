@@ -1283,6 +1283,14 @@ DOUBLE;
 SECH(1);
 DOUBLE;
 
+# dialect: bigquery
+SIN(1);
+DOUBLE;
+
+# dialect: bigquery
+SINH(1);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -572,6 +572,7 @@ class BigQuery(Dialect):
         exp.Contains: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Cot: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.CosineDistance: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Coth: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
@@ -580,6 +581,9 @@ class BigQuery(Dialect):
         exp.CumeDist: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
         exp.DenseRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.EuclideanDistance: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.DOUBLE
+        ),
         exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),

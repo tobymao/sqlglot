@@ -1029,6 +1029,16 @@ TBLPROPERTIES (
                 query = parse_one("STRING(a)", dialect=dialect)
                 self.assertEqual(query.sql(dialect), "CAST(a AS STRING)")
 
+    def test_binary_string(self):
+        for dialect in ("spark2", "spark", "databricks"):
+            with self.subTest(f"Testing HEX strings for {dialect}"):
+                query = parse_one("X'ab'", dialect=dialect)
+                self.assertEqual(query.sql(dialect), "X'ab'")
+
+            with self.subTest(f"Testing empty HEX strings for {dialect}"):
+                query = parse_one("X''", dialect=dialect)
+                self.assertEqual(query.sql(dialect), "X''")
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS NOSCAN")
         self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS FOR ALL COLUMNS")

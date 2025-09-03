@@ -552,6 +552,7 @@ class Snowflake(Dialect):
 
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,
+            TokenType.EXCEPT,
             TokenType.MATCH_CONDITION,
         }
 

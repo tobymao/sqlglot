@@ -575,6 +575,8 @@ class BigQuery(Dialect):
         exp.Coth: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Csc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Csch: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CumeDist: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
         exp.DenseRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),

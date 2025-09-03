@@ -312,6 +312,7 @@ class ClickHouse(Dialect):
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
             "ARRAYSLICE": exp.ArraySlice.from_arg_list,
             "COUNTIF": _build_count_if,
+            "COSINEDISTANCE": exp.CosineDistance.from_arg_list,
             "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None, supports_timezone=True),
@@ -324,6 +325,7 @@ class ClickHouse(Dialect):
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "L2Distance": exp.EuclideanDistance.from_arg_list,
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "PARSEDATETIME": _build_datetime_format(exp.ParseDatetime),
@@ -1094,6 +1096,7 @@ class ClickHouse(Dialect):
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
             exp.CountIf: rename_func("countIf"),
+            exp.CosineDistance: rename_func("cosineDistance"),
             exp.CompressColumnConstraint: lambda self,
             e: f"CODEC({self.expressions(e, key='this', flat=True)})",
             exp.ComputedColumnConstraint: lambda self,
@@ -1123,6 +1126,7 @@ class ClickHouse(Dialect):
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
             exp.EndsWith: rename_func("endsWith"),
+            exp.EuclideanDistance: rename_func("L2Distance"),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self,
                 e,

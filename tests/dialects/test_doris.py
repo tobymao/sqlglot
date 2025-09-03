@@ -86,6 +86,8 @@ class TestDoris(Validator):
         )
         self.validate_identity("""JSON_TYPE('{"foo": "1" }', '$.foo')""")
 
+        self.validate_identity("L2_DISTANCE(x, y)")
+
     def test_identity(self):
         self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

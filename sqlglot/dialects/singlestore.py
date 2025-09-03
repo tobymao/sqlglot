@@ -198,6 +198,7 @@ class SingleStore(MySQL):
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
 
         COLUMN_OPERATORS = {
+            TokenType.DOT: None,
             TokenType.COLON_GT: lambda self, this, to: self.expression(
                 exp.Cast,
                 this=this,

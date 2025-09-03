@@ -1215,6 +1215,14 @@ BIGNUMERIC;
 ABS(CAST(1 AS FLOAT64));
 FLOAT64;
 
+# dialect: bigquery
+IS_INF(1);
+BOOLEAN;
+
+# dialect: bigquery
+IS_NAN(1);
+BOOLEAN;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

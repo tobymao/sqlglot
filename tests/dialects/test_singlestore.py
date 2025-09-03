@@ -714,6 +714,12 @@ class TestSingleStore(Validator):
     def test_column_with_tablename(self):
         self.validate_identity("SELECT `t0`.`name` FROM `t0`")
 
+    def test_unicodestring_sql(self):
+        self.validate_all(
+            "SELECT 'data'",
+            read={"presto": "SELECT U&'d\\0061t\\0061'", "singlestore": "SELECT 'data'"},
+        )
+
     def test_collate_sql(self):
         self.validate_all(
             "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",

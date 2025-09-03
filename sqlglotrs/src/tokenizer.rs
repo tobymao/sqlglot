@@ -468,7 +468,7 @@ impl<'a> TokenizerState<'a> {
             self.extract_string(&end, false, token_type == self.token_types.raw_string, true)?;
 
         if let Some(b) = base {
-            if u128::from_str_radix(&text, b).is_err() {
+            if !text.is_empty() && u128::from_str_radix(&text, b).is_err() {
                 return self.error_result(format!(
                     "Numeric string contains invalid characters from {}:{}",
                     self.line, self.start

@@ -5495,6 +5495,14 @@ class Sech(Func):
     pass
 
 
+class Sin(Func):
+    pass
+
+
+class Sinh(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

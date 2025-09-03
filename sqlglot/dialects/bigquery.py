@@ -642,6 +642,8 @@ class BigQuery(Dialect):
         exp.Soundex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
+        exp.Sin: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
+        exp.Sinh: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.TimestampFromParts: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.DATETIME

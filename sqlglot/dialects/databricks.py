@@ -106,6 +106,7 @@ class Databricks(Spark):
             ),
         }
 
+        TRANSFORMS.pop(exp.RegexpLike)
         TRANSFORMS.pop(exp.TryCast)
 
         TYPE_MAPPING = {

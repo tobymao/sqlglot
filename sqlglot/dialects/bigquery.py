@@ -514,23 +514,37 @@ class BigQuery(Dialect):
         **{
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (
+                exp.Abs,
+                exp.ArgMax,
+                exp.ArgMin,
+                exp.DateTrunc,
+                exp.FirstValue,
+                exp.IgnoreNulls,
+                exp.JSONExtract,
+                exp.Lead,
                 exp.Left,
-                exp.Right,
                 exp.Lower,
-                exp.Upper,
+                exp.NthValue,
                 exp.Pad,
-                exp.Trim,
+                exp.PercentileDisc,
                 exp.RegexpExtract,
                 exp.RegexpReplace,
                 exp.Repeat,
+                exp.Replace,
+                exp.RespectNulls,
+                exp.Reverse,
+                exp.Right,
+                exp.Sign,
                 exp.Substring,
+                exp.TimestampTrunc,
+                exp.Translate,
+                exp.Trim,
+                exp.Upper,
             )
         },
         exp.ApproxTopSum: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ApproxQuantiles: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.ArgMax: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArgMin: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Array: _annotate_array,
         exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
@@ -553,10 +567,8 @@ class BigQuery(Dialect):
         exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.CumeDist: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
-        exp.DateTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.DenseRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.FirstValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Format: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
@@ -564,7 +576,6 @@ class BigQuery(Dialect):
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         ),
         exp.Grouping: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.IgnoreNulls: lambda self, e: self._annotate_by_args(e, "this"),
         exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONArrayAppend: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
         exp.JSONArrayInsert: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
@@ -572,7 +583,6 @@ class BigQuery(Dialect):
         exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),
-        exp.JSONExtract: lambda self, e: self._annotate_by_args(e, "this"),
         exp.JSONExtractArray: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.JSONFormat: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
@@ -589,7 +599,6 @@ class BigQuery(Dialect):
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         ),
         exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
-        exp.Lead: lambda self, e: self._annotate_by_args(e, "this"),
         exp.LowerHex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.LaxBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
         exp.LaxFloat64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
@@ -597,7 +606,6 @@ class BigQuery(Dialect):
         exp.LaxString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.MD5Digest: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.Normalize: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.NthValue: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Ntile: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
@@ -606,14 +614,10 @@ class BigQuery(Dialect):
         ),
         exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
         exp.PercentileCont: lambda self, e: _annotate_perncentile_cont(self, e),
-        exp.PercentileDisc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.PercentRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Rank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.Replace: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.RespectNulls: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Reverse: lambda self, e: self._annotate_by_args(e, "this"),
         exp.RowNumber: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.SafeConvertBytesToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
@@ -621,19 +625,16 @@ class BigQuery(Dialect):
         exp.Soundex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
         exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
-        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.TimestampFromParts: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.DATETIME
         ),
-        exp.TimestampTrunc: lambda self, e: self._annotate_by_args(e, "this"),
         exp.TimeFromParts: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.ToCodePoints: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
         ),
         exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.Translate: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
     }
 

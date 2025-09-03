@@ -1231,6 +1231,10 @@ DOUBLE;
 RAND();
 DOUBLE;
 
+# dialect: bigquery
+ACOS(0.5);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

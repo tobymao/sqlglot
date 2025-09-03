@@ -5459,6 +5459,18 @@ class Asinh(Func):
     pass
 
 
+class Atan(Func):
+    pass
+
+
+class Atanh(Func):
+    pass
+
+
+class Atan2(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class AggFunc(Func):
     pass
 

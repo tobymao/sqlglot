@@ -1,3 +1,5 @@
+import re
+
 from sqlglot import TokenType
 import typing as t
 
@@ -13,6 +15,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     date_add_interval_sql,
     timestampdiff_sql,
+    no_datetime_sql,
 )
 from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql
 from sqlglot.expressions import DataType
@@ -226,6 +229,17 @@ class SingleStore(MySQL):
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
     class Generator(MySQL.Generator):
+        SUPPORTS_UESCAPE = False
+
+        @staticmethod
+        def _unicode_substitute(m: re.Match[str]) -> str:
+            # Interpret the number as hex and convert it to the Unicode string
+            return chr(int(m.group(1), 16))
+
+        UNICODE_SUBSTITUDE: t.ClassVar[t.Optional[t.Callable[[re.Match[str]], str]]] = (
+            _unicode_substitute
+        )
+
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
             exp.JSONPathRoot,
@@ -307,6 +321,7 @@ class SingleStore(MySQL):
             exp.DatetimeTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.DatetimeSub: date_add_interval_sql("DATE", "SUB"),
             exp.DatetimeDiff: timestampdiff_sql,
+            exp.Datetime: no_datetime_sql,
             exp.DateTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.DateDiff: unsupported_args("zone")(
                 lambda self, e: timestampdiff_sql(self, e)

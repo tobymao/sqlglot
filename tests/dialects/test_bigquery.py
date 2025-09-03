@@ -1826,6 +1826,8 @@ WHERE
             """JSON_EXTRACT_STRING_ARRAY(PARSE_JSON('{"fruits": ["apples", "oranges", "grapes"]}'), '$.fruits')""",
             """JSON_VALUE_ARRAY(PARSE_JSON('{"fruits": ["apples", "oranges", "grapes"]}'), '$.fruits')""",
         )
+        self.validate_identity("TO_JSON(STRUCT(1 AS id, [10, 20] AS cords))")
+        self.validate_identity("TO_JSON(9999999999, stringify_wide_numbers => FALSE)")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

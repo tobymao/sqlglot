@@ -542,6 +542,7 @@ class BigQuery(Dialect):
                 exp.Upper,
             )
         },
+        exp.Acos: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.ApproxTopSum: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
         exp.ApproxQuantiles: lambda self, e: self._annotate_by_args(e, "this", array=True),

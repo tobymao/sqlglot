@@ -1223,6 +1223,10 @@ BOOLEAN;
 IS_NAN(1);
 BOOLEAN;
 
+# dialect: bigquery
+CBRT(27);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

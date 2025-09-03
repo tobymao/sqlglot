@@ -622,6 +622,7 @@ class BigQuery(Dialect):
         exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
         exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.RowNumber: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.Rand: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.SafeConvertBytesToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),

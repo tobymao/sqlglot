@@ -5451,6 +5451,14 @@ class Acosh(Func):
     pass
 
 
+class Asin(Func):
+    pass
+
+
+class Asinh(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

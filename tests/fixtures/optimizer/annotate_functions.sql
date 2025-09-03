@@ -1239,6 +1239,14 @@ DOUBLE;
 ACOSH(0.5);
 DOUBLE;
 
+# dialect: bigquery
+ASIN(1);
+DOUBLE;
+
+# dialect: bigquery
+ASINH(1);
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

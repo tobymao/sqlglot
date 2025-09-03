@@ -5471,6 +5471,14 @@ class Atan2(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Cot(Func):
+    pass
+
+
+class Coth(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

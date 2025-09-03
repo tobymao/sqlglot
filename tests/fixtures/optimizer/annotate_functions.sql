@@ -1227,6 +1227,10 @@ BOOLEAN;
 CBRT(27);
 DOUBLE;
 
+# dialect: bigquery
+RAND();
+DOUBLE;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

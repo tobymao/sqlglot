@@ -5443,6 +5443,10 @@ class Typeof(Func):
     pass
 
 
+class Acos(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

@@ -6006,6 +6006,10 @@ class CurrentUser(Func):
     arg_types = {"this": False}
 
 
+class UtcDate(Func):
+    arg_types = {}
+
+
 class DateAdd(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 

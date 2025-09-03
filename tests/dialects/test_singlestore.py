@@ -560,6 +560,21 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT DATEDIFF('2009-12-31', '2009-01-01') AS numweeks",
             },
         )
+        self.validate_all(
+            "SELECT CURRENT_DATE()",
+            read={
+                "": "SELECT CURRENT_DATE()",
+                "singlestore": "SELECT CURRENT_DATE",
+            },
+        )
+        self.validate_all(
+            "SELECT UTC_DATE()",
+            read={
+                "": "SELECT CURRENT_DATE('UTC')",
+                "singlestore": "SELECT UTC_DATE",
+            },
+            write={"": "SELECT CURRENT_DATE('UTC')"},
+        )
 
     def test_types(self):
         self.validate_all(

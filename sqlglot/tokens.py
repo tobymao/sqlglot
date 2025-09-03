@@ -423,6 +423,7 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     UNIQUE = auto()
+    UTC_DATE = auto()
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
@@ -857,6 +858,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
+        "UTC_DATE": TokenType.UTC_DATE,
         "UUID": TokenType.UUID,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,

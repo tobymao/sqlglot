@@ -197,6 +197,11 @@ class SingleStore(MySQL):
             ),
         }
 
+        NO_PAREN_FUNCTIONS = {
+            **MySQL.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.UTC_DATE: exp.UtcDate,
+        }
+
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
 
         COLUMN_OPERATORS = {
@@ -413,6 +418,7 @@ class SingleStore(MySQL):
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
+        TRANSFORMS.pop(exp.CurrentDate)
 
         UNSUPPORTED_TYPES = {
             exp.DataType.Type.ARRAY,
@@ -1635,3 +1641,12 @@ class SingleStore(MySQL):
             # SingleStore does not support setting a collation for column in the SELECT query,
             # so we cast column to a LONGTEXT type with specific collation
             return self.binary(expression, ":> LONGTEXT COLLATE")
+
+        def currentdate_sql(self, expression: exp.CurrentDate) -> str:
+            timezone = expression.this
+            if timezone:
+                if isinstance(timezone, exp.Literal) and timezone.name.lower() == "utc":
+                    return self.func("UTC_DATE")
+                self.unsupported("CurrentDate with timezone is not supported in SingleStore")
+
+            return self.func("CURRENT_DATE")

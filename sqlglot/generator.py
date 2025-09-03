@@ -434,7 +434,7 @@ class Generator(metaclass=_Generator):
     SUPPORTS_UESCAPE = True
 
     # Function used to replace escaped unicode codes in unicode strings
-    UNICODE_SUBSTITUDE: t.ClassVar[t.Optional[t.Callable[[re.Match[str]], str]]] = None
+    UNICODE_SUBSTITUTE: t.Optional[t.Callable[[re.Match[str]], str]] = None
 
     # The keyword to use when generating a star projection with excluded columns
     STAR_EXCEPT = "EXCEPT"
@@ -1387,11 +1387,7 @@ class Generator(metaclass=_Generator):
             escape_sql = ""
 
         if not self.dialect.UNICODE_START or (escape and not self.SUPPORTS_UESCAPE):
-            unicode_sub = type(self).UNICODE_SUBSTITUDE
-            if unicode_sub is not None:
-                this = escape_pattern.sub(unicode_sub, this)
-            else:
-                this = escape_pattern.sub(escape_substitute, this)
+            this = escape_pattern.sub(self.UNICODE_SUBSTITUTE or escape_substitute, this)
 
         return f"{left_quote}{this}{right_quote}{escape_sql}"
 

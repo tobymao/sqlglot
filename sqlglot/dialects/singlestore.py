@@ -235,9 +235,7 @@ class SingleStore(MySQL):
             # Interpret the number as hex and convert it to the Unicode string
             return chr(int(m.group(1), 16))
 
-        UNICODE_SUBSTITUDE: t.ClassVar[t.Optional[t.Callable[[re.Match[str]], str]]] = (
-            _unicode_substitute
-        )
+        UNICODE_SUBSTITUTE: t.Optional[t.Callable[[re.Match[str]], str]] = _unicode_substitute
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

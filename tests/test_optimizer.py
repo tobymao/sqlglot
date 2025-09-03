@@ -621,6 +621,12 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
     def test_expand_alias_refs(self):
+        # check negative integer literal as group by column
+        self.assertEqual(
+            optimizer.optimize("SELECT -99 AS e GROUP BY e").sql(),
+            'SELECT -99 AS "e" GROUP BY 1',
+        )
+
         # check order of lateral expansion with no schema
         self.assertEqual(
             optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e").sql(),

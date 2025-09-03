@@ -264,6 +264,9 @@ class SingleStore(MySQL):
             exp.TryCast: unsupported_args("format", "action", "default")(
                 lambda self, e: f"{self.sql(e, 'this')} !:> {self.sql(e, 'to')}"
             ),
+            exp.CastToStrType: lambda self, e: self.sql(
+                exp.cast(e.this, DataType.build(e.args["to"].name))
+            ),
             exp.StrToUnix: unsupported_args("format")(rename_func("UNIX_TIMESTAMP")),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),

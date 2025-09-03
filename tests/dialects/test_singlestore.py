@@ -81,6 +81,13 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT '{\"a\" : 1}' :> JSON")
         self.validate_identity("SELECT NOW() !:> TIMESTAMP(6)")
         self.validate_identity("SELECT x :> GEOGRAPHYPOINT")
+        self.validate_all(
+            "SELECT age :> TEXT FROM `users`",
+            read={
+                "": "SELECT CAST(age, 'TEXT') FROM users",
+                "singlestore": "SELECT age :> TEXT FROM `users`",
+            },
+        )
 
     def test_unix_functions(self):
         self.validate_identity("SELECT FROM_UNIXTIME(1234567890)")

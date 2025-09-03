@@ -5447,6 +5447,10 @@ class Acos(Func):
     pass
 
 
+class Acosh(Func):
+    pass
+
+
 class AggFunc(Func):
     pass
 

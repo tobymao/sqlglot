@@ -6675,7 +6675,7 @@ class JSONBExtractScalar(Binary, Func):
 
 
 class JSONFormat(Func):
-    arg_types = {"this": False, "options": False, "is_json": False}
+    arg_types = {"this": False, "options": False, "is_json": False, "to_json": False}
     _sql_names = ["JSON_FORMAT"]
 
 

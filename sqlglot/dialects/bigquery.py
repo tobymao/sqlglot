@@ -574,7 +574,9 @@ class BigQuery(Dialect):
         ),
         exp.JSONExtract: lambda self, e: self._annotate_by_args(e, "this"),
         exp.JSONExtractArray: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.JSONFormat: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
+        exp.JSONFormat: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
+        ),
         exp.JSONKeysAtDepth: lambda self, e: self._annotate_with_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         ),
@@ -804,6 +806,9 @@ class BigQuery(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(this=seq_get(args, 0)),
+            "TO_JSON": lambda args: exp.JSONFormat(
+                this=seq_get(args, 0), options=seq_get(args, 1), to_json=True
+            ),
             "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
             "FORMAT_DATETIME": _build_format_time(exp.TsOrDsToDatetime),
             "FORMAT_TIMESTAMP": _build_format_time(exp.TsOrDsToTimestamp),
@@ -1274,7 +1279,11 @@ class BigQuery(Dialect):
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractArray: _json_extract_sql,
             exp.JSONExtractScalar: _json_extract_sql,
-            exp.JSONFormat: rename_func("TO_JSON_STRING"),
+            exp.JSONFormat: lambda self, e: self.func(
+                "TO_JSON" if e.args.get("to_json") else "TO_JSON_STRING",
+                e.this,
+                e.args.get("options"),
+            ),
             exp.JSONKeysAtDepth: rename_func("JSON_KEYS"),
             exp.JSONValueArray: rename_func("JSON_VALUE_ARRAY"),
             exp.Levenshtein: _levenshtein_sql,

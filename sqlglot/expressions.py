@@ -7159,6 +7159,10 @@ class StrPosition(Func):
         "occurrence": False,
     }
 
+# https://docs.snowflake.com/en/sql-reference/functions/charindex
+class CharIndex(Func):
+    arg_types = {"this": True, "expression": True, "start": False}
+
 
 class StrToDate(Func):
     arg_types = {"this": True, "format": False, "safe": False}

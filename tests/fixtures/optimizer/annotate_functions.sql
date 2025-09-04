@@ -1275,6 +1275,22 @@ DOUBLE;
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 
+# dialect: snowflake
+CHARINDEX('world', 'hello world');
+BIGINT;
+
+# dialect: snowflake
+CHARINDEX('world', 'hello world', 1);
+BIGINT;
+
+# dialect: snowflake
+CHARINDEX(tbl.str_col, tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+CHARINDEX(tbl.str_col, tbl.str_col, 1);
+BIGINT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

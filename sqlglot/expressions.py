@@ -7167,7 +7167,7 @@ class Sign(Func):
 
 
 class SortArray(Func):
-    arg_types = {"this": True, "asc": False}
+    arg_types = {"this": True, "asc": False, "nulls_first": False}
 
 
 class Soundex(Func):

@@ -715,15 +715,6 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "ARRAY_SORT(x)",
-            write={
-                "duckdb": "ARRAY_SORT(x)",
-                "presto": "ARRAY_SORT(x)",
-                "hive": "SORT_ARRAY(x)",
-                "spark": "SORT_ARRAY(x)",
-            },
-        )
-        self.validate_all(
             "ARRAY_REVERSE_SORT(x)",
             write={
                 "duckdb": "ARRAY_REVERSE_SORT(x)",

@@ -90,6 +90,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GET_PATH(PARSE_JSON(foo), 'bar')")
         self.validate_identity("SELECT GET_PATH(foo, 'bar')")
         self.validate_identity("SELECT a, exclude, b FROM xxx")
+        self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
         self.validate_identity(
             "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )

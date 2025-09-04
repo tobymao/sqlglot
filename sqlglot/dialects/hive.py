@@ -194,6 +194,18 @@ def _build_to_date(args: t.List) -> exp.TsOrDsToDate:
     return expr
 
 
+def _buil_date_sub(args: t.List) -> exp.TsOrDsAdd:
+    expression = seq_get(args, 1)
+    if isinstance(expression, exp.Binary):
+        expression = exp.paren(expression, copy=False)
+
+    return exp.TsOrDsAdd(
+        this=seq_get(args, 0),
+        expression=exp.Mul(this=expression, expression=exp.Literal.number(-1)),
+        unit=exp.Literal.string("DAY"),
+    )
+
+
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -314,11 +326,7 @@ class Hive(Dialect):
                     seq_get(args, 1),
                 ]
             ),
-            "DATE_SUB": lambda args: exp.TsOrDsAdd(
-                this=seq_get(args, 0),
-                expression=exp.Mul(this=seq_get(args, 1), expression=exp.Literal.number(-1)),
-                unit=exp.Literal.string("DAY"),
-            ),
+            "DATE_SUB": _buil_date_sub,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),

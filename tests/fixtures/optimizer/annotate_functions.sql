@@ -1523,6 +1523,10 @@ DATETIME;
 DATETIME_TRUNC(TIMESTAMP "2008-12-25 15:30:00", DAY);
 TIMESTAMP;
 
+# dialect: bigquery
+GENERATE_UUID();
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

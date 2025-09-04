@@ -194,7 +194,7 @@ def _build_to_date(args: t.List) -> exp.TsOrDsToDate:
     return expr
 
 
-def _buil_date_sub(args: t.List) -> exp.TsOrDsAdd:
+def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
     expression = seq_get(args, 1)
     if isinstance(expression, exp.Binary):
         expression = exp.paren(expression, copy=False)
@@ -326,7 +326,7 @@ class Hive(Dialect):
                     seq_get(args, 1),
                 ]
             ),
-            "DATE_SUB": _buil_date_sub,
+            "DATE_SUB": _build_date_add,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),

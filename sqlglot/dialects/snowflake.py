@@ -574,6 +574,7 @@ class Snowflake(Dialect):
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),
             ),
+            "ARRAY_SORT": exp.SortArray.from_arg_list,
             "BITXOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
             "BIT_XOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
             "BITOR": _build_bitwise(exp.BitwiseOr, "BITOR"),
@@ -1272,6 +1273,7 @@ class Snowflake(Dialect):
                 ]
             ),
             exp.SHA: rename_func("SHA1"),
+            exp.SortArray: rename_func("ARRAY_SORT"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.EndsWith: rename_func("ENDSWITH"),

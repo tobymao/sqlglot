@@ -1393,6 +1393,17 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "SORT_ARRAY(x)",
+            write={
+                "duckdb": "ARRAY_SORT(x)",
+                "hive": "SORT_ARRAY(x)",
+                "presto": "ARRAY_SORT(x)",
+                "snowflake": "ARRAY_SORT(x)",
+                "spark": "SORT_ARRAY(x)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

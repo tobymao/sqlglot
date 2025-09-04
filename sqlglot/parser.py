@@ -7319,10 +7319,13 @@ class Parser(metaclass=_Parser):
         return self._parse_csv(self._parse_expression)
 
     def _parse_select_or_expression(self, alias: bool = False) -> t.Optional[exp.Expression]:
-        return self._parse_select() or self._parse_set_operations(
-            self._parse_alias(self._parse_assignment(), explicit=True)
-            if alias
-            else self._parse_assignment()
+        return (
+            self._parse_set_operations(
+                self._parse_alias(self._parse_assignment(), explicit=True)
+                if alias
+                else self._parse_assignment()
+            )
+            or self._parse_select()
         )
 
     def _parse_ddl_select(self) -> t.Optional[exp.Expression]:

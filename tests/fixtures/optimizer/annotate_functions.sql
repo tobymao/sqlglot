@@ -1536,6 +1536,14 @@ LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 
 # dialect: snowflake
+CHARINDEX('world', 'hello world');
+INT;
+
+# dialect: snowflake
+CHARINDEX('world', 'hello world', 1);
+INT;
+
+# dialect: snowflake
 REVERSE('Hello, world!');
 VARCHAR;
 

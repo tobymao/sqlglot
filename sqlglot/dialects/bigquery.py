@@ -519,6 +519,7 @@ class BigQuery(Dialect):
                 exp.ArgMin,
                 exp.DateTrunc,
                 exp.FirstValue,
+                exp.GroupConcat,
                 exp.IgnoreNulls,
                 exp.JSONExtract,
                 exp.Lead,

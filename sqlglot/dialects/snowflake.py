@@ -528,12 +528,6 @@ class Snowflake(Dialect):
         "ISOWEEK": "WEEKISO",
     }
 
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        exp.CharIndex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-    }
-
-
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
@@ -650,7 +644,6 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
-            "CHARINDEX": exp.CharIndex.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
@@ -1311,7 +1304,6 @@ class Snowflake(Dialect):
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: rename_func("BOOLXOR"),
-            exp.CharIndex: rename_func("CHARINDEX"),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

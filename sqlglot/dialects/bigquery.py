@@ -310,17 +310,16 @@ def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
     return expression
 
 
-def _annotate_perncentile_cont(
-    self: TypeAnnotator, expression: exp.PercentileCont
-) -> exp.PercentileCont:
+def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: E) -> E:
     """
-    +------------+-----------+------------+---------+
-    | INPUT      | NUMERIC   | BIGNUMERIC | FLOAT64 |
-    +------------+-----------+------------+---------+
-    | NUMERIC    | NUMERIC   | BIGNUMERIC | FLOAT64 |
-    | BIGNUMERIC | BIGNUMERIC| BIGNUMERIC | FLOAT64 |
-    | FLOAT64    | FLOAT64   | FLOAT64    | FLOAT64 |
-    +------------+-----------+------------+---------+
+    +------------+------------+------------+-------------+---------+
+    | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    +------------+------------+------------+-------------+---------+
+    | INT64      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    | NUMERIC    | NUMERIC    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
+    | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
+    +------------+------------+------------+-------------+---------+
     """
     self._annotate_args(expression)
 
@@ -492,6 +491,7 @@ class BigQuery(Dialect):
         exp.DataType.Type.BIGDECIMAL: {exp.DataType.Type.DOUBLE},
     }
     COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
+    COERCES_TO[exp.DataType.Type.BIGINT] |= {exp.DataType.Type.BIGDECIMAL}
 
     # BigQuery maps Type.TIMESTAMP to DATETIME, so we need to amend the inferred types
     TYPE_TO_EXPRESSIONS = {
@@ -631,7 +631,7 @@ class BigQuery(Dialect):
             e, exp.DataType.Type.BIGDECIMAL
         ),
         exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
-        exp.PercentileCont: lambda self, e: _annotate_perncentile_cont(self, e),
+        exp.PercentileCont: lambda self, e: _annotate_by_args_with_coerce(self, e),
         exp.PercentRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Rank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
         exp.RangeBucket: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
@@ -642,6 +642,10 @@ class BigQuery(Dialect):
         exp.SafeConvertBytesToString: lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.VARCHAR
         ),
+        exp.SafeAdd: lambda self, e: _annotate_by_args_with_coerce(self, e),
+        exp.SafeMultiply: lambda self, e: _annotate_by_args_with_coerce(self, e),
+        exp.SafeNegate: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.SafeSubtract: lambda self, e: _annotate_by_args_with_coerce(self, e),
         exp.Sec: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Sech: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
         exp.Soundex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),

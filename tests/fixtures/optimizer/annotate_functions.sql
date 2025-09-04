@@ -1515,6 +1515,14 @@ STRING;
 STRING_AGG(tbl.bin_col);
 BINARY;
 
+# dialect: bigquery
+DATETIME_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
+DATETIME;
+
+# dialect: bigquery
+DATETIME_TRUNC(TIMESTAMP "2008-12-25 15:30:00", DAY);
+TIMESTAMP;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

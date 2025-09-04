@@ -897,6 +897,9 @@ class TestHive(Validator):
                 "duckdb": "SELECT ANY_VALUE(sample_col)",
             },
         )
+        self.validate_identity(
+            "DATE_SUB(CURRENT_DATE, 1 + 1)", "DATE_ADD(CURRENT_DATE, (1 + 1) * -1)"
+        )
 
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")

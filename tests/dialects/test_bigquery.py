@@ -2876,3 +2876,42 @@ OPTIONS (
         self.validate_identity("LAX_FLOAT64(PARSE_JSON('9.8'))")
         self.validate_identity("LAX_INT64(PARSE_JSON('10'))")
         self.validate_identity("""LAX_STRING(PARSE_JSON('"str"'))""")
+
+    def test_safe_math_funcs(self):
+        self.validate_identity("SAFE_NEGATE(x)")
+        self.validate_all(
+            "SAFE_ADD(x, y)",
+            read={
+                "bigquery": "SAFE_ADD(x, y)",
+                "spark": "TRY_ADD(x, y)",
+                "databricks": "TRY_ADD(x, y)",
+            },
+            write={
+                "spark": "TRY_ADD(x, y)",
+                "databricks": "TRY_ADD(x, y)",
+            },
+        )
+        self.validate_all(
+            "SAFE_MULTIPLY(x, y)",
+            read={
+                "bigquery": "SAFE_MULTIPLY(x, y)",
+                "spark": "TRY_MULTIPLY(x, y)",
+                "databricks": "TRY_MULTIPLY(x, y)",
+            },
+            write={
+                "spark": "TRY_MULTIPLY(x, y)",
+                "databricks": "TRY_MULTIPLY(x, y)",
+            },
+        )
+        self.validate_all(
+            "SAFE_SUBTRACT(x, y)",
+            read={
+                "bigquery": "SAFE_SUBTRACT(x, y)",
+                "spark": "TRY_SUBTRACT(x, y)",
+                "databricks": "TRY_SUBTRACT(x, y)",
+            },
+            write={
+                "spark": "TRY_SUBTRACT(x, y)",
+                "databricks": "TRY_SUBTRACT(x, y)",
+            },
+        )

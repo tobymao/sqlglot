@@ -4905,7 +4905,7 @@ class Rollback(Expression):
 
 class Alter(Expression):
     arg_types = {
-        "this": True,
+        "this": False,
         "kind": True,
         "actions": True,
         "exists": False,

@@ -3574,13 +3574,15 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
         check = " WITH CHECK" if expression.args.get("check") else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
 
-        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
 
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)
         keyword = "UNSET" if expression.args.get("unset") else "SET"
-        return f"ALTER SESSION {keyword} {items_sql}"
+        return f"{keyword} {items_sql}"
 
     def add_column_sql(self, expression: exp.Expression) -> str:
         sql = self.sql(expression)

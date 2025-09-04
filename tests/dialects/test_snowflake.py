@@ -1268,6 +1268,18 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
+        for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
+            with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):
+                self.validate_all(
+                    f"SELECT * FROM t1 {join} JOIN t2",
+                    read={
+                        "snowflake": f"SELECT * FROM t1 {join} JOIN t2",
+                    },
+                    write={
+                        "duckdb": "SELECT * FROM t1, t2",
+                    },
+                )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

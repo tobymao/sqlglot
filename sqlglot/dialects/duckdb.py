@@ -1003,6 +1003,17 @@ class DuckDB(Dialect):
                 # DuckDB doesn't, but we can just add a dummy ON clause that is always true
                 return super().join_sql(expression.on(exp.true()))
 
+            # Convert INNER/OUTER JOIN without ON clause to CROSS JOIN
+            kind = expression.args.get("kind")
+            if (
+                not expression.args.get("using")
+                and not expression.args.get("on")
+                and not expression.method
+                and (not kind or kind in ("INNER", "OUTER"))
+            ):
+                expression.set("side", None)
+                expression.set("kind", None)
+
             return super().join_sql(expression)
 
         def generateseries_sql(self, expression: exp.GenerateSeries) -> str:

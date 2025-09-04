@@ -496,6 +496,14 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
 
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        **{
+            expr_type: lambda self, e: self._annotate_by_args(e, "this")
+            for expr_type in (exp.Reverse,)
+        },
+    }
+
     TIME_MAPPING = {
         "YYYY": "%Y",
         "yyyy": "%Y",

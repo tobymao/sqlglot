@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import re
 import typing as t
-import itertools
 from collections import defaultdict
 
 from sqlglot import exp
@@ -479,6 +479,7 @@ class Parser(metaclass=_Parser):
         TokenType.INDEX,
         TokenType.TABLE,
         TokenType.VIEW,
+        TokenType.SESSION,
     }
 
     # Tokens that can represent identifiers
@@ -7582,12 +7583,24 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
-    def _parse_alter(self) -> exp.Alter | exp.Command:
+    def _parse_alter(self) -> exp.Alter | exp.AlterSession | exp.Command:
         start = self._prev
 
         alter_token = self._match_set(self.ALTERABLES) and self._prev
         if not alter_token:
             return self._parse_as_command(start)
+
+        if alter_token.token_type == TokenType.SESSION:
+            if self._match(TokenType.SET):
+                expressions = self._parse_csv(lambda: self._parse_set_item_assignment())
+                set_ = self.expression(exp.Set, expressions=expressions, unset=False, tag=False)
+                return exp.AlterSession(expressions=set_.expressions, unset=False)
+
+            if self._match_text_seq("UNSET"):
+                expressions = self._parse_csv(
+                    lambda: self.expression(exp.SetItem, this=self._parse_id_var(any_token=True))
+                )
+                return exp.AlterSession(expressions=expressions, unset=True)
 
         exists = self._parse_exists()
         only = self._match_text_seq("ONLY")

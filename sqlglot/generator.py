@@ -3577,6 +3577,11 @@ class Generator(metaclass=_Generator):
 
         return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
 
+    def altersession_sql(self, expression: exp.AlterSession) -> str:
+        items_sql = self.expressions(expression, flat=True)
+        keyword = "UNSET" if expression.args.get("unset") else "SET"
+        return f"ALTER SESSION {keyword} {items_sql}"
+
     def add_column_sql(self, expression: exp.Expression) -> str:
         sql = self.sql(expression)
         if isinstance(expression, exp.Schema):

@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import UnsupportedError, exp, parse_one, ParseError
+from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
@@ -2832,6 +2832,49 @@ SINGLE = TRUE""",
 
         self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
+
+    def test_alter_session(self):
+        expr = self.validate_identity(
+            "ALTER SESSION SET autocommit = FALSE, QUERY_TAG = 'qtag', JSON_INDENT = 1"
+        )
+        self.assertEqual(
+            expr.find(exp.AlterSession),
+            exp.AlterSession(
+                expressions=[
+                    exp.SetItem(
+                        this=exp.EQ(
+                            this=exp.Column(this=exp.Identifier(this="autocommit", quoted=False)),
+                            expression=exp.Boolean(this=False),
+                        ),
+                    ),
+                    exp.SetItem(
+                        this=exp.EQ(
+                            this=exp.Column(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
+                            expression=exp.Literal(this="qtag", is_string=True),
+                        ),
+                    ),
+                    exp.SetItem(
+                        this=exp.EQ(
+                            this=exp.Column(this=exp.Identifier(this="JSON_INDENT", quoted=False)),
+                            expression=exp.Literal(this="1", is_string=False),
+                        ),
+                    ),
+                ],
+                unset=False,
+            ),
+        )
+
+        expr = self.validate_identity("ALTER SESSION UNSET autocommit, QUERY_TAG")
+        self.assertEqual(
+            expr.find(exp.AlterSession),
+            exp.AlterSession(
+                expressions=[
+                    exp.SetItem(this=exp.Identifier(this="autocommit", quoted=False)),
+                    exp.SetItem(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
+                ],
+                unset=True,
+            ),
+        )
 
     def test_from_changes(self):
         self.validate_identity(

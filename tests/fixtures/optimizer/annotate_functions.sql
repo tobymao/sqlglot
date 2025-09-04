@@ -1535,6 +1535,22 @@ STRING;
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 
+# dialect: snowflake
+REVERSE('Hello, world!');
+VARCHAR;
+
+# dialect: snowflake
+REVERSE(tbl.str_col);
+TEXT;
+
+# dialect: snowflake
+REVERSE(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+REVERSE(NULL);
+NULL;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

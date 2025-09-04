@@ -1,6 +1,145 @@
 Changelog
 =========
 
+## [v27.12.0] - 2025-09-04
+### :boom: BREAKING CHANGES
+- due to [`1c551d5`](https://github.com/tobymao/sqlglot/commit/1c551d5ed3315e314013c1f063deabd9d8613e5d) - parse and annotate type for bq TO_JSON *(PR [#5768](https://github.com/tobymao/sqlglot/pull/5768) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq TO_JSON (#5768)
+
+- due to [`1707f2d`](https://github.com/tobymao/sqlglot/commit/1707f2d7f9d3b58e8c216db638f8e572f9fe6f13) - annotate type for ABS *(PR [#5770](https://github.com/tobymao/sqlglot/pull/5770) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for ABS (#5770)
+
+- due to [`69acc51`](https://github.com/tobymao/sqlglot/commit/69acc5142b2d4f0b30832c350aa49f16d1adabef) - annotate type for bq IS_INF, IS_NAN *(PR [#5771](https://github.com/tobymao/sqlglot/pull/5771) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq IS_INF, IS_NAN (#5771)
+
+- due to [`0da2076`](https://github.com/tobymao/sqlglot/commit/0da207652331920416b29e2cc67bdc3c3f964466) - annotate type for bq CBRT *(PR [#5772](https://github.com/tobymao/sqlglot/pull/5772) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq CBRT (#5772)
+
+- due to [`a4968cb`](https://github.com/tobymao/sqlglot/commit/a4968cb5693670c1a2e9cd2c86404dd90fd76160) - annotate type for bq RAND *(PR [#5774](https://github.com/tobymao/sqlglot/pull/5774) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq RAND (#5774)
+
+- due to [`3e63350`](https://github.com/tobymao/sqlglot/commit/3e63350bd1d58b510cecd1a573d27be3fd2565ce) - parse and annotate type for bq ACOS *(PR [#5776](https://github.com/tobymao/sqlglot/pull/5776) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq ACOS (#5776)
+
+- due to [`2be9d01`](https://github.com/tobymao/sqlglot/commit/2be9d01830c778186dc274c94c6db0dd6c4116d1) - parse and annotate type for bq ACOSH *(PR [#5779](https://github.com/tobymao/sqlglot/pull/5779) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq ACOSH (#5779)
+
+- due to [`b77d3da`](https://github.com/tobymao/sqlglot/commit/b77d3da8f2548858d2b9d8590fcde83e1ec62b8a) - remove `"EXCLUDE" -> TokenType.EXCEPT` in DuckDB, Snowflake *(PR [#5766](https://github.com/tobymao/sqlglot/pull/5766) by [@treysp](https://github.com/treysp))*:
+
+  remove `"EXCLUDE" -> TokenType.EXCEPT` in DuckDB, Snowflake (#5766)
+
+- due to [`7da2f31`](https://github.com/tobymao/sqlglot/commit/7da2f31d6613f16585e98c3fa1f592c617ae40c9) - parse and annotate type for bq ASIN/H *(PR [#5783](https://github.com/tobymao/sqlglot/pull/5783) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq ASIN/H (#5783)
+
+- due to [`341ea83`](https://github.com/tobymao/sqlglot/commit/341ea83a07c707fdbf565b8d9ef4b9b6341ed1d5) - parse and annotate type for bq ATAN/H/2 *(PR [#5784](https://github.com/tobymao/sqlglot/pull/5784) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq ATAN/H/2 (#5784)
+
+- due to [`aa360cb`](https://github.com/tobymao/sqlglot/commit/aa360cb0e204aa056557ff8b15aa2d4f678430e6) - use regexp_like as it exists *(PR [#5781](https://github.com/tobymao/sqlglot/pull/5781) by [@jasonthomassql](https://github.com/jasonthomassql))*:
+
+  use regexp_like as it exists (#5781)
+
+- due to [`c2a1ad4`](https://github.com/tobymao/sqlglot/commit/c2a1ad4050771401a5b26bcadd90060e4527fbff) - parse and annotate type for bq COT/H *(PR [#5786](https://github.com/tobymao/sqlglot/pull/5786) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq COT/H (#5786)
+
+- due to [`316ae91`](https://github.com/tobymao/sqlglot/commit/316ae913d8b1a63f3071ebb1b826328108d74cef) - Added handling of UTC_DATE and exp.CurrentDate *(PR [#5785](https://github.com/tobymao/sqlglot/pull/5785) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*:
+
+  Added handling of UTC_DATE and exp.CurrentDate (#5785)
+
+- due to [`2c6d237`](https://github.com/tobymao/sqlglot/commit/2c6d23742ea9fcc2b9c784315d3d5364e360fea5) - parse and annotate type for bq CSC/H *(PR [#5787](https://github.com/tobymao/sqlglot/pull/5787) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq CSC/H (#5787)
+
+- due to [`8a35076`](https://github.com/tobymao/sqlglot/commit/8a350763c2337f6910a5f0e19af387ba488fcb70) - parse and annotate type for bq SEC/H *(PR [#5788](https://github.com/tobymao/sqlglot/pull/5788) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq SEC/H (#5788)
+
+- due to [`79901cb`](https://github.com/tobymao/sqlglot/commit/79901cb506737ae1932fa44a705858d2597ee587) - parse and annotate type for bq SIN\H *(PR [#5790](https://github.com/tobymao/sqlglot/pull/5790) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq SIN\H (#5790)
+
+- due to [`74fb547`](https://github.com/tobymao/sqlglot/commit/74fb5476def1b389da425885db56bd6592fd7f78) - parse and annotate type for bq RANGE_BUCKET *(PR [#5793](https://github.com/tobymao/sqlglot/pull/5793) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq RANGE_BUCKET (#5793)
+
+- due to [`eca65e8`](https://github.com/tobymao/sqlglot/commit/eca65e8b79f65850b014a4cb7913ba4a5861dbe9) - parse and annotate type for bq COSINE/EUCLIDEAN_DISTANCE *(PR [#5792](https://github.com/tobymao/sqlglot/pull/5792) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq COSINE/EUCLIDEAN_DISTANCE (#5792)
+
+- due to [`a180d3f`](https://github.com/tobymao/sqlglot/commit/a180d3f2f9f3938611027269028c03274aa1889c) - parse and annotate type for bq SAFE math funcs *(PR [#5797](https://github.com/tobymao/sqlglot/pull/5797) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate type for bq SAFE math funcs (#5797)
+
+- due to [`fc7ad7a`](https://github.com/tobymao/sqlglot/commit/fc7ad7a4d953424b56542eacfe1835f5789921c7) - parse ALTER SESSION  *(PR [#5734](https://github.com/tobymao/sqlglot/pull/5734) by [@tekumara](https://github.com/tekumara))*:
+
+  parse ALTER SESSION  (#5734)
+
+- due to [`8ec1a6c`](https://github.com/tobymao/sqlglot/commit/8ec1a6cf5a8edc2d834c713ce0fd8d87237f11ed) - annotate type for bq STRING_AGG *(PR [#5798](https://github.com/tobymao/sqlglot/pull/5798) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq STRING_AGG (#5798)
+
+- due to [`dd97bfa`](https://github.com/tobymao/sqlglot/commit/dd97bfa1dc2f86b727c55b06b3c54b18c02e360d) - annotate type for bq DATETIME_TRUNC *(PR [#5799](https://github.com/tobymao/sqlglot/pull/5799) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq DATETIME_TRUNC (#5799)
+
+- due to [`d3e9dda`](https://github.com/tobymao/sqlglot/commit/d3e9dda183695dd1e4a9832a6671bccc6db561a0) - annotate type for bq GENERATE_UUID *(commit by [@geooo109](https://github.com/geooo109))*:
+
+  annotate type for bq GENERATE_UUID
+
+
+### :sparkles: New Features
+- [`1c551d5`](https://github.com/tobymao/sqlglot/commit/1c551d5ed3315e314013c1f063deabd9d8613e5d) - **optimizer**: parse and annotate type for bq TO_JSON *(PR [#5768](https://github.com/tobymao/sqlglot/pull/5768) by [@geooo109](https://github.com/geooo109))*
+- [`a024d48`](https://github.com/tobymao/sqlglot/commit/a024d48fedd049796329050a1f51822dd1388695) - **singlestore**: Added generation of exp.TsOrDsDiff *(PR [#5769](https://github.com/tobymao/sqlglot/pull/5769) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`1707f2d`](https://github.com/tobymao/sqlglot/commit/1707f2d7f9d3b58e8c216db638f8e572f9fe6f13) - **optimizer**: annotate type for ABS *(PR [#5770](https://github.com/tobymao/sqlglot/pull/5770) by [@geooo109](https://github.com/geooo109))*
+- [`69acc51`](https://github.com/tobymao/sqlglot/commit/69acc5142b2d4f0b30832c350aa49f16d1adabef) - **optimizer**: annotate type for bq IS_INF, IS_NAN *(PR [#5771](https://github.com/tobymao/sqlglot/pull/5771) by [@geooo109](https://github.com/geooo109))*
+- [`0da2076`](https://github.com/tobymao/sqlglot/commit/0da207652331920416b29e2cc67bdc3c3f964466) - **optimizer**: annotate type for bq CBRT *(PR [#5772](https://github.com/tobymao/sqlglot/pull/5772) by [@geooo109](https://github.com/geooo109))*
+- [`a4968cb`](https://github.com/tobymao/sqlglot/commit/a4968cb5693670c1a2e9cd2c86404dd90fd76160) - **optimizer**: annotate type for bq RAND *(PR [#5774](https://github.com/tobymao/sqlglot/pull/5774) by [@geooo109](https://github.com/geooo109))*
+- [`dd7781a`](https://github.com/tobymao/sqlglot/commit/dd7781a15b842a5826714958ed7af9024903cd1e) - **singlestore**: Fixed generation of exp.Collate *(PR [#5775](https://github.com/tobymao/sqlglot/pull/5775) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`fb684cb`](https://github.com/tobymao/sqlglot/commit/fb684cbdb6178ddc441f598cc1a6e914291cd00e) - **singelstore**: Fixed generation of exp.RegexpILike *(PR [#5777](https://github.com/tobymao/sqlglot/pull/5777) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`3e63350`](https://github.com/tobymao/sqlglot/commit/3e63350bd1d58b510cecd1a573d27be3fd2565ce) - **optimizer**: parse and annotate type for bq ACOS *(PR [#5776](https://github.com/tobymao/sqlglot/pull/5776) by [@geooo109](https://github.com/geooo109))*
+- [`8705a78`](https://github.com/tobymao/sqlglot/commit/8705a787df034b4cecb4ba95e9599772c5561ba9) - **singlestore**: Fixed generation of exp.CastToStrType *(PR [#5778](https://github.com/tobymao/sqlglot/pull/5778) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`e3c35ad`](https://github.com/tobymao/sqlglot/commit/e3c35ade797f46549cc803e1acd8816041713a10) - **singlestore**: Fixed generation of exp.UnicodeString *(PR [#5773](https://github.com/tobymao/sqlglot/pull/5773) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`2be9d01`](https://github.com/tobymao/sqlglot/commit/2be9d01830c778186dc274c94c6db0dd6c4116d1) - **optimizer**: parse and annotate type for bq ACOSH *(PR [#5779](https://github.com/tobymao/sqlglot/pull/5779) by [@geooo109](https://github.com/geooo109))*
+- [`7da2f31`](https://github.com/tobymao/sqlglot/commit/7da2f31d6613f16585e98c3fa1f592c617ae40c9) - **optimizer**: parse and annotate type for bq ASIN/H *(PR [#5783](https://github.com/tobymao/sqlglot/pull/5783) by [@geooo109](https://github.com/geooo109))*
+- [`341ea83`](https://github.com/tobymao/sqlglot/commit/341ea83a07c707fdbf565b8d9ef4b9b6341ed1d5) - **optimizer**: parse and annotate type for bq ATAN/H/2 *(PR [#5784](https://github.com/tobymao/sqlglot/pull/5784) by [@geooo109](https://github.com/geooo109))*
+- [`be54a45`](https://github.com/tobymao/sqlglot/commit/be54a458413ce3be6c321e5f4feb3e5df5ee6d08) - **singlestore**: Implemented generation of exp.Cbrt *(PR [#5782](https://github.com/tobymao/sqlglot/pull/5782) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`aa360cb`](https://github.com/tobymao/sqlglot/commit/aa360cb0e204aa056557ff8b15aa2d4f678430e6) - **databricks**: use regexp_like as it exists *(PR [#5781](https://github.com/tobymao/sqlglot/pull/5781) by [@jasonthomassql](https://github.com/jasonthomassql))*
+- [`c2a1ad4`](https://github.com/tobymao/sqlglot/commit/c2a1ad4050771401a5b26bcadd90060e4527fbff) - **optimizer**: parse and annotate type for bq COT/H *(PR [#5786](https://github.com/tobymao/sqlglot/pull/5786) by [@geooo109](https://github.com/geooo109))*
+- [`316ae91`](https://github.com/tobymao/sqlglot/commit/316ae913d8b1a63f3071ebb1b826328108d74cef) - **singlestore**: Added handling of UTC_DATE and exp.CurrentDate *(PR [#5785](https://github.com/tobymao/sqlglot/pull/5785) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`2c6d237`](https://github.com/tobymao/sqlglot/commit/2c6d23742ea9fcc2b9c784315d3d5364e360fea5) - **optimizer**: parse and annotate type for bq CSC/H *(PR [#5787](https://github.com/tobymao/sqlglot/pull/5787) by [@geooo109](https://github.com/geooo109))*
+- [`8a35076`](https://github.com/tobymao/sqlglot/commit/8a350763c2337f6910a5f0e19af387ba488fcb70) - **optimizer**: parse and annotate type for bq SEC/H *(PR [#5788](https://github.com/tobymao/sqlglot/pull/5788) by [@geooo109](https://github.com/geooo109))*
+- [`566bfb2`](https://github.com/tobymao/sqlglot/commit/566bfb2a64a64b74da63b3a89d68caf702ab6522) - **singlestore**: Added support of UTC_TIME and CURRENT_TIME *(PR [#5789](https://github.com/tobymao/sqlglot/pull/5789) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`79901cb`](https://github.com/tobymao/sqlglot/commit/79901cb506737ae1932fa44a705858d2597ee587) - **optimizer**: parse and annotate type for bq SIN\H *(PR [#5790](https://github.com/tobymao/sqlglot/pull/5790) by [@geooo109](https://github.com/geooo109))*
+- [`74fb547`](https://github.com/tobymao/sqlglot/commit/74fb5476def1b389da425885db56bd6592fd7f78) - **optimizer**: parse and annotate type for bq RANGE_BUCKET *(PR [#5793](https://github.com/tobymao/sqlglot/pull/5793) by [@geooo109](https://github.com/geooo109))*
+- [`eca65e8`](https://github.com/tobymao/sqlglot/commit/eca65e8b79f65850b014a4cb7913ba4a5861dbe9) - **optimizer**: parse and annotate type for bq COSINE/EUCLIDEAN_DISTANCE *(PR [#5792](https://github.com/tobymao/sqlglot/pull/5792) by [@geooo109](https://github.com/geooo109))*
+- [`a180d3f`](https://github.com/tobymao/sqlglot/commit/a180d3f2f9f3938611027269028c03274aa1889c) - **optimizer**: parse and annotate type for bq SAFE math funcs *(PR [#5797](https://github.com/tobymao/sqlglot/pull/5797) by [@geooo109](https://github.com/geooo109))*
+- [`fc7ad7a`](https://github.com/tobymao/sqlglot/commit/fc7ad7a4d953424b56542eacfe1835f5789921c7) - **snowflake**: parse ALTER SESSION  *(PR [#5734](https://github.com/tobymao/sqlglot/pull/5734) by [@tekumara](https://github.com/tekumara))*
+- [`8ec1a6c`](https://github.com/tobymao/sqlglot/commit/8ec1a6cf5a8edc2d834c713ce0fd8d87237f11ed) - **optimizer**: annotate type for bq STRING_AGG *(PR [#5798](https://github.com/tobymao/sqlglot/pull/5798) by [@geooo109](https://github.com/geooo109))*
+- [`dd97bfa`](https://github.com/tobymao/sqlglot/commit/dd97bfa1dc2f86b727c55b06b3c54b18c02e360d) - **optimizer**: annotate type for bq DATETIME_TRUNC *(PR [#5799](https://github.com/tobymao/sqlglot/pull/5799) by [@geooo109](https://github.com/geooo109))*
+- [`d3e9dda`](https://github.com/tobymao/sqlglot/commit/d3e9dda183695dd1e4a9832a6671bccc6db561a0) - **optimizer**: annotate type for bq GENERATE_UUID *(commit by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`d8f6a37`](https://github.com/tobymao/sqlglot/commit/d8f6a376ba1fcca48e4a65923dd7a319ce6cfb91) - **optimizer**: allow aliased negative integer literal as group by column *(PR [#5791](https://github.com/tobymao/sqlglot/pull/5791) by [@treysp](https://github.com/treysp))*
+- [`1259576`](https://github.com/tobymao/sqlglot/commit/1259576283f1d45abb70ec40c60e500214a27b6f) - **hive**: DATE_SUB to DATE_ADD use parens if needed *(PR [#5796](https://github.com/tobymao/sqlglot/pull/5796) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5794](https://github.com/tobymao/sqlglot/issues/5794) opened by [@mingelchan](https://github.com/mingelchan)*
+- [`b0516b4`](https://github.com/tobymao/sqlglot/commit/b0516b4bc9cf2bba2cb57e6bb79ff09b5e2244e3) - **optimizer**: Do not qualify columns if a projection coflicts with a source *(PR [#5780](https://github.com/tobymao/sqlglot/pull/5780) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5262](https://github.com/TobikoData/sqlmesh/issues/5262) opened by [@mChlopek](https://github.com/mChlopek)*
+- [`8af0d40`](https://github.com/tobymao/sqlglot/commit/8af0d40055450f71b7e36e576f4a9a1104bc02b2) - **parser**: address edge case where `values` is used as an identifier *(PR [#5801](https://github.com/tobymao/sqlglot/pull/5801) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`b77d3da`](https://github.com/tobymao/sqlglot/commit/b77d3da8f2548858d2b9d8590fcde83e1ec62b8a) - remove `"EXCLUDE" -> TokenType.EXCEPT` in DuckDB, Snowflake *(PR [#5766](https://github.com/tobymao/sqlglot/pull/5766) by [@treysp](https://github.com/treysp))*
+- [`005564a`](https://github.com/tobymao/sqlglot/commit/005564ab28cb14be469f09e89b01275d6e25874e) - **snowflake**: refactor logic related to ALTER SESSION *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.11.0] - 2025-09-03
 ### :boom: BREAKING CHANGES
 - due to [`baffd2c`](https://github.com/tobymao/sqlglot/commit/baffd2c0be9657683781f3f8831c47e32dbf68bb) - parse and annotate type for bq REGEXP_INSTR *(PR [#5710](https://github.com/tobymao/sqlglot/pull/5710) by [@geooo109](https://github.com/geooo109))*:
@@ -9137,3 +9276,4 @@ Changelog
 [v27.9.0]: https://github.com/tobymao/sqlglot/compare/v27.8.0...v27.9.0
 [v27.10.0]: https://github.com/tobymao/sqlglot/compare/v27.9.0...v27.10.0
 [v27.11.0]: https://github.com/tobymao/sqlglot/compare/v27.10.0...v27.11.0
+[v27.12.0]: https://github.com/tobymao/sqlglot/compare/v27.11.0...v27.12.0

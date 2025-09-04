@@ -644,6 +644,9 @@ class TestClickhouse(Validator):
 
         self.validate_identity("farmFingerprint64(x1, x2, x3)")
 
+        self.validate_identity("cosineDistance(x, y)")
+        self.validate_identity("L2Distance(x, y)")
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

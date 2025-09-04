@@ -496,6 +496,14 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
 
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        **{
+            expr_type: lambda self, e: self._annotate_by_args(e, "this")
+            for expr_type in (exp.Reverse,)
+        },
+    }
+
     TIME_MAPPING = {
         "YYYY": "%Y",
         "yyyy": "%Y",
@@ -574,6 +582,7 @@ class Snowflake(Dialect):
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),
             ),
+            "ARRAY_SORT": exp.SortArray.from_arg_list,
             "BITXOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
             "BIT_XOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
             "BITOR": _build_bitwise(exp.BitwiseOr, "BITOR"),
@@ -643,6 +652,7 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DataType.Type.TIMESTAMP),
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": exp.ToChar.from_arg_list,
+            "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }
 
@@ -659,6 +669,7 @@ class Snowflake(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
+            "SESSION": lambda self: self._parse_alter_session(),
             "UNSET": lambda self: self.expression(
                 exp.Set,
                 tag=self._match_text_seq("TAG"),
@@ -1124,8 +1135,8 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "FILE://": TokenType.URI_START,
             "BYTEINT": TokenType.INT,
+            "FILE://": TokenType.URI_START,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
@@ -1137,15 +1148,16 @@ class Snowflake(Dialect):
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "SEMANTIC VIEW": TokenType.SEMANTIC_VIEW,
+            "SESSION": TokenType.SESSION,
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
+            "STAGE": TokenType.STAGE,
             "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,
+            "STREAMLIT": TokenType.STREAMLIT,
             "TAG": TokenType.TAG,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
             "WAREHOUSE": TokenType.WAREHOUSE,
-            "STAGE": TokenType.STAGE,
-            "STREAMLIT": TokenType.STREAMLIT,
         }
         KEYWORDS.pop("/*+")
 
@@ -1213,6 +1225,7 @@ class Snowflake(Dialect):
             exp.Extract: lambda self, e: self.func(
                 "DATE_PART", map_date_part(e.this, self.dialect), e.expression
             ),
+            exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
             exp.FileFormatProperty: lambda self,
             e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
             exp.FromTimeZone: lambda self, e: self.func(
@@ -1268,6 +1281,7 @@ class Snowflake(Dialect):
                 ]
             ),
             exp.SHA: rename_func("SHA1"),
+            exp.SortArray: rename_func("ARRAY_SORT"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.EndsWith: rename_func("ENDSWITH"),

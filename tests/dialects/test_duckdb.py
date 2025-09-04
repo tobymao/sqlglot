@@ -715,15 +715,6 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "ARRAY_SORT(x)",
-            write={
-                "duckdb": "ARRAY_SORT(x)",
-                "presto": "ARRAY_SORT(x)",
-                "hive": "SORT_ARRAY(x)",
-                "spark": "SORT_ARRAY(x)",
-            },
-        )
-        self.validate_all(
             "ARRAY_REVERSE_SORT(x)",
             write={
                 "duckdb": "ARRAY_REVERSE_SORT(x)",
@@ -1056,6 +1047,8 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT PERCENT_RANK( ORDER BY foo) OVER (ORDER BY 1) FROM (SELECT 1 AS foo)"
         )
+        self.validate_identity("LIST_COSINE_DISTANCE(x, y)")
+        self.validate_identity("LIST_DISTANCE(x, y)")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

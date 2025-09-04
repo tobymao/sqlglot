@@ -80,6 +80,7 @@ class TokenType(AutoName):
     AT_GT = auto()
     DOLLAR = auto()
     PARAMETER = auto()
+    SESSION = auto()
     SESSION_PARAMETER = auto()
     DAMP = auto()
     XOR = auto()
@@ -423,6 +424,8 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     UNIQUE = auto()
+    UTC_DATE = auto()
+    UTC_TIME = auto()
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
@@ -835,6 +838,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SCHEMA": TokenType.SCHEMA,
         "SELECT": TokenType.SELECT,
         "SEMI": TokenType.SEMI,
+        "SESSION": TokenType.SESSION,
         "SET": TokenType.SET,
         "SETTINGS": TokenType.SETTINGS,
         "SHOW": TokenType.SHOW,

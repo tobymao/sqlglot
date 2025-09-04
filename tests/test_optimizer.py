@@ -621,6 +621,12 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
     def test_expand_alias_refs(self):
+        # check negative integer literal as group by column
+        self.assertEqual(
+            optimizer.optimize("SELECT -99 AS e GROUP BY e").sql(),
+            'SELECT -99 AS "e" GROUP BY 1',
+        )
+
         # check order of lateral expansion with no schema
         self.assertEqual(
             optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e").sql(),
@@ -1627,16 +1633,30 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             with self.subTest(f"Annotating '{query}' in BigQuery"):
                 self.assertTrue(_annotate(query).selects[0].is_type("ARRAY<VARCHAR>"))
 
-        def test_semi_anti_join(self):
-            # - Do not remove semi/anti join
-            # - Do not remove CTEs/subqueries that participate in anti/semi joins, even though they do not count as selected sources
-            for join_kind in ("LEFT ANTI", "ANTI", "SEMI"):
-                query = f"""
-                WITH x AS (SELECT 1 AS b UNION ALL SELECT 2 AS b) SELECT x.b FROM x {join_kind} JOIN (SELECT 1 AS b) AS sub ON x.b = sub.b
-                """
-                self.assertEqual(
-                    optimizer.optimize(query).sql(),
-                    f"""
-                    WITH "x" AS (SELECT 1 AS "b" UNION ALL SELECT 2 AS "b"), "sub" AS (SELECT 1 AS "b") SELECT "x"."b" AS "b" FROM "x" AS "x" {join_kind} JOIN "sub" AS "sub" ON "sub"."b" = "x"."b"
-                    """,
-                )
+    def test_semi_anti_join(self):
+        # - Do not remove semi/anti join
+        # - Do not remove CTEs/subqueries that participate in anti/semi joins, even though they do not count as selected sources
+        for join_kind in ("LEFT ANTI", "ANTI", "SEMI"):
+            query = f"WITH x AS (SELECT 1 AS b UNION ALL SELECT 2 AS b) SELECT x.b FROM x {join_kind} JOIN (SELECT 1 AS b) AS sub ON x.b = sub.b"
+
+            self.assertEqual(
+                optimizer.optimize(query).sql(),
+                f'WITH "x" AS (SELECT 1 AS "b" UNION ALL SELECT 2 AS "b"), "sub" AS (SELECT 1 AS "b") SELECT "x"."b" AS "b" FROM "x" AS "x" {join_kind} JOIN "sub" AS "sub" ON "sub"."b" = "x"."b"',
+            )
+
+    def test_qualify_group_by_conflict_bigquery(self):
+        dialect = "bigquery"
+        schema = {"custom_fields": {"id": "int", "col": "struct<fld string>"}}
+
+        query = "SELECT id, ARRAY_AGG(col) AS custom_fields FROM custom_fields AS custom_fields GROUP BY id HAVING id >= 1"
+        qual = optimizer.qualify.qualify(
+            parse_one(query, dialect=dialect),
+            schema=schema,
+            dialect=dialect,
+        )
+
+        sql = qual.sql(dialect=dialect)
+        self.assertEqual(
+            sql,
+            "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
+        )

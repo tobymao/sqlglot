@@ -216,6 +216,8 @@ class Generator(metaclass=_Generator):
         exp.UsingData: lambda self, e: f"USING DATA {self.sql(e, 'this')}",
         exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
+        exp.UtcDate: lambda self, e: self.sql(exp.CurrentDate(this=exp.Literal.string("UTC"))),
+        exp.UtcTime: lambda self, e: self.sql(exp.CurrentTime(this=exp.Literal.string("UTC"))),
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
@@ -3572,8 +3574,15 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
         check = " WITH CHECK" if expression.args.get("check") else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
 
-        return f"ALTER {kind}{exists}{only} {self.sql(expression, 'this')}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
+
+    def altersession_sql(self, expression: exp.AlterSession) -> str:
+        items_sql = self.expressions(expression, flat=True)
+        keyword = "UNSET" if expression.args.get("unset") else "SET"
+        return f"{keyword} {items_sql}"
 
     def add_column_sql(self, expression: exp.Expression) -> str:
         sql = self.sql(expression)

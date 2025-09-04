@@ -666,6 +666,7 @@ class BigQuery(Dialect):
         ),
         exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
         exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
+        exp.Uuid: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
     }
 
     def normalize_identifier(self, expression: E) -> E:

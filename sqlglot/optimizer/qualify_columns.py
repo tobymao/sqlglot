@@ -279,6 +279,7 @@ def _expand_alias_refs(
 
     alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}
     projections = {s.alias_or_name for s in expression.selects}
+    is_bigquery = dialect == "bigquery"
 
     def replace_columns(
         node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
@@ -314,12 +315,12 @@ def _expand_alias_refs(
                 # SELECT x.a, max(x.b) as x FROM x GROUP BY 1 HAVING x > 1;
                 # If "HAVING x" is expanded to "HAVING max(x.b)", BQ would blindly replace the "x" reference with the projection MAX(x.b)
                 # i.e HAVING MAX(MAX(x.b).b), resulting in the error: "Aggregations of aggregations are not allowed"
-                if is_having and dialect == "bigquery":
+                if is_having and is_bigquery:
                     skip_replace = skip_replace or any(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            elif dialect == "bigquery" and (is_group_by or is_having):
+            elif is_bigquery and (is_group_by or is_having):
                 column_table = table.name if table else column.table
                 if column_table in projections:
                     # BigQuery's GROUP BY and HAVING clauses get confused if the column name

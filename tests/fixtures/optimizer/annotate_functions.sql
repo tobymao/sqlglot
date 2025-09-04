@@ -1507,6 +1507,14 @@ NUMERIC;
 SAFE_NEGATE(CAST(1 AS BIGNUMERIC));
 BIGNUMERIC;
 
+# dialect: bigquery
+STRING_AGG(tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.bin_col);
+BINARY;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

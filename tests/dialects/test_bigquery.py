@@ -2876,3 +2876,9 @@ OPTIONS (
         self.validate_identity("LAX_FLOAT64(PARSE_JSON('9.8'))")
         self.validate_identity("LAX_INT64(PARSE_JSON('10'))")
         self.validate_identity("""LAX_STRING(PARSE_JSON('"str"'))""")
+
+    def test_utc_time(self):
+        self.validate_identity("SELECT UTC_TIME()")
+        self.validate_identity("SELECT UTC_TIME(6)")
+        self.validate_identity("SELECT UTC_TIMESTAMP()")
+        self.validate_identity("SELECT UTC_TIMESTAMP(6)")

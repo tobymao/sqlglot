@@ -1560,10 +1560,6 @@ REVERSE(NULL);
 NULL;
 
 # dialect: snowflake
-CONCAT('Hello');
-VARCHAR;
-
-# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 
@@ -1572,12 +1568,24 @@ CONCAT(tbl.str_col, tbl.str_col, tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+CONCAT(tbl.str_col, NULL);
+NULL;
+
+# dialect: snowflake
 CONCAT_WS(':', 'one');
 VARCHAR;
 
 # dialect: snowflake
 CONCAT_WS(',', 'one', 'two', 'three');
 VARCHAR;
+
+# dialect: snowflake
+CONCAT_WS(tbl.bin_col, tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+CONCAT_WS(tbl.bin_col, NULL);
+NULL;
 
 --------------------------------------
 -- T-SQL

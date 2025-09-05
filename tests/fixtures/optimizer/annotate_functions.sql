@@ -1555,6 +1555,30 @@ TEXT;
 REVERSE(tbl.bin_col);
 BINARY;
 
+# dialect: snowflake
+TRIM('hello world');
+VARCHAR;
+
+# dialect: snowflake
+TRIM('hello world', 'hello');
+VARCHAR;
+
+# dialect: snowflake
+TRIM(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+TRIM(tbl.bin_col, tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+TRIM(tbl.str_col);
+TEXT;
+
+# dialect: snowflake
+TRIM(tbl.str_col, tbl.str_col);
+TEXT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

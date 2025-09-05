@@ -1555,6 +1555,18 @@ TEXT;
 REVERSE(tbl.bin_col);
 BINARY;
 
+# dialect: snowflake
+UPPER('Hello, world!');
+VARCHAR;
+
+# dialect: snowflake
+UPPER(tbl.str_col);
+TEXT;
+
+# dialect: snowflake
+UPPER(tbl.bin_col);
+BINARY;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

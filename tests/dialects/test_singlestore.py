@@ -598,6 +598,22 @@ class TestSingleStore(Validator):
             },
             write={"": "SELECT CURRENT_TIME('UTC')"},
         )
+        self.validate_all(
+            "SELECT CURRENT_TIMESTAMP()",
+            read={
+                "": "SELECT CURRENT_TIMESTAMP()",
+                "singlestore": "SELECT CURRENT_TIMESTAMP",
+            },
+        )
+        self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
+        self.validate_all(
+            "SELECT UTC_TIMESTAMP()",
+            read={
+                "": "SELECT CURRENT_TIMESTAMP('UTC')",
+                "singlestore": "SELECT UTC_TIMESTAMP",
+            },
+            write={"": "SELECT CURRENT_TIMESTAMP('UTC')"},
+        )
 
     def test_types(self):
         self.validate_all(

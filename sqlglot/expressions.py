@@ -6074,6 +6074,10 @@ class UtcTime(Func):
     arg_types = {}
 
 
+class UtcTimestamp(Func):
+    arg_types = {}
+
+
 class DateAdd(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 

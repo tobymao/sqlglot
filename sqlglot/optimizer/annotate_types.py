@@ -60,9 +60,7 @@ def annotate_types(
     return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 
 
-def _coerce_date_literal(
-    l: exp.Expression, unit: t.Optional[exp.Expression]
-) -> exp.DataType.Type:
+def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
     date_text = l.name
     is_iso_date_ = is_iso_date(date_text)
 
@@ -76,9 +74,7 @@ def _coerce_date_literal(
     return exp.DataType.Type.UNKNOWN
 
 
-def _coerce_date(
-    l: exp.Expression, unit: t.Optional[exp.Expression]
-) -> exp.DataType.Type:
+def _coerce_date(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
     if not is_date_unit(unit):
         return exp.DataType.Type.DATETIME
     return l.type.this if l.type else exp.DataType.Type.UNKNOWN
@@ -93,10 +89,7 @@ def swap_args(func: BinaryCoercionFunc) -> BinaryCoercionFunc:
 
 
 def swap_all(coercions: BinaryCoercions) -> BinaryCoercions:
-    return {
-        **coercions,
-        **{(b, a): swap_args(func) for (a, b), func in coercions.items()},
-    }
+    return {**coercions, **{(b, a): swap_args(func) for (a, b), func in coercions.items()}}
 
 
 class _TypeAnnotator(type):
@@ -129,11 +122,7 @@ class _TypeAnnotator(type):
             exp.DataType.Type.DATE,
         )
 
-        for type_precedence in (
-            text_precedence,
-            numeric_precedence,
-            timelike_precedence,
-        ):
+        for type_precedence in (text_precedence, numeric_precedence, timelike_precedence):
             coerces_to = set()
             for data_type in type_precedence:
                 klass.COERCES_TO[data_type] = coerces_to.copy()
@@ -172,8 +161,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             {
                 # text + numeric will yield the numeric type to match most dialects' semantics
                 (text, numeric): lambda l, r: t.cast(
-                    exp.DataType.Type,
-                    l.type if l.type in exp.DataType.NUMERIC_TYPES else r.type,
+                    exp.DataType.Type, l.type if l.type in exp.DataType.NUMERIC_TYPES else r.type
                 )
                 for text in exp.DataType.TEXT_TYPES
                 for numeric in exp.DataType.NUMERIC_TYPES
@@ -181,8 +169,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         ),
         **swap_all(
             {
-                (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL): lambda l,
-                r: _coerce_date(l, r.args.get("unit")),
+                (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL): lambda l, r: _coerce_date(
+                    l, r.args.get("unit")
+                ),
             }
         ),
     }
@@ -191,17 +180,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self,
         schema: Schema,
         annotators: t.Optional[AnnotatorsType] = None,
-        coerces_to: t.Optional[
-            t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]
-        ] = None,
+        coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
     ) -> None:
         self.schema = schema
         self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
         self.coerces_to = (
-            coerces_to
-            or Dialect.get_or_raise(schema.dialect).COERCES_TO
-            or self.COERCES_TO
+            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
         )
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
@@ -211,14 +196,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
         # would reprocess the entire subtree to coerce the types of its operands' projections
-        self._setop_column_types: t.Dict[
-            int, t.Dict[str, exp.DataType | exp.DataType.Type]
-        ] = {}
+        self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType | exp.DataType.Type]] = {}
 
     def _set_type(
-        self,
-        expression: exp.Expression,
-        target_type: t.Optional[exp.DataType | exp.DataType.Type],
+        self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
     ) -> None:
         expression.type = target_type or exp.DataType.Type.UNKNOWN  # type: ignore
         self._visited.add(id(expression))
@@ -226,9 +207,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def annotate(self, expression: E) -> E:
         for scope in traverse_scope(expression):
             self.annotate_scope(scope)
-        return self._maybe_annotate(
-            expression
-        )  # This takes care of non-traversable expressions
+        return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
 
     def annotate_scope(self, scope: Scope) -> None:
         selects = {}
@@ -255,19 +234,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     alias: column.type
                     for alias, column in zip(expression.alias_column_names, values)
                 }
-            elif isinstance(expression, exp.SetOperation) and len(
-                expression.left.selects
-            ) == len(expression.right.selects):
-                selects[name] = col_types = self._setop_column_types.setdefault(
-                    id(expression), {}
-                )
+            elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
+                expression.right.selects
+            ):
+                selects[name] = col_types = self._setop_column_types.setdefault(id(expression), {})
 
                 if not col_types:
                     # Process a chain / sub-tree of set operations
                     for set_op in expression.walk(
-                        prune=lambda n: not isinstance(
-                            n, (exp.SetOperation, exp.Subquery)
-                        )
+                        prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
                     ):
                         if not isinstance(set_op, exp.SetOperation):
                             continue
@@ -287,19 +262,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         else:
                             setop_cols = {
                                 ls.alias_or_name: self._maybe_coerce(
-                                    t.cast(exp.DataType, ls.type),
-                                    t.cast(exp.DataType, rs.type),
+                                    t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
                                 )
-                                for ls, rs in zip(
-                                    set_op.left.selects, set_op.right.selects
-                                )
+                                for ls, rs in zip(set_op.left.selects, set_op.right.selects)
                             }
 
                         # Coerce intermediate results with the previously registered types, if they exist
                         for col_name, col_type in setop_cols.items():
                             col_types[col_name] = self._maybe_coerce(
-                                col_type,
-                                col_types.get(col_name, exp.DataType.Type.NULL),
+                                col_type, col_types.get(col_name, exp.DataType.Type.NULL)
                             )
 
             else:
@@ -343,8 +314,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     isinstance(source, Scope)
                     and isinstance(source.expression, exp.Query)
                     and (
-                        source.expression.meta.get("query_type")
-                        or exp.DataType.build("UNKNOWN")
+                        source.expression.meta.get("query_type") or exp.DataType.build("UNKNOWN")
                     ).is_type(exp.DataType.Type.STRUCT)
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
@@ -352,9 +322,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Then (possibly) annotate the remaining expressions in the scope
         self._maybe_annotate(scope.expression)
 
-        if self.schema.dialect == "bigquery" and isinstance(
-            scope.expression, exp.Query
-        ):
+        if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
                 this=exp.DataType.Type.STRUCT,
                 expressions=[
@@ -424,11 +392,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
-        return (
-            type2_value
-            if type2_value in self.coerces_to.get(type1_value, {})
-            else type1_value
-        )
+        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
     def _annotate_binary(self, expression: B) -> B:
         self._annotate_args(expression)
@@ -439,9 +403,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if isinstance(expression, (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
         elif (left_type, right_type) in self.binary_coercions:
-            self._set_type(
-                expression, self.binary_coercions[(left_type, right_type)](left, right)
-            )
+            self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
@@ -498,9 +460,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 break
 
             if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
-                last_datatype = self._maybe_coerce(
-                    last_datatype or expr_type, expr_type
-                )
+                last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
 
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 
@@ -514,9 +474,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(
                 expression,
                 exp.DataType(
-                    this=exp.DataType.Type.ARRAY,
-                    expressions=[expression.type],
-                    nested=True,
+                    this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
                 ),
             )
 
@@ -571,8 +529,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
             if expression.type and expression.type.this not in exp.DataType.REAL_TYPES:
                 self._set_type(
-                    expression,
-                    self._maybe_coerce(expression.type, exp.DataType.Type.DOUBLE),
+                    expression, self._maybe_coerce(expression.type, exp.DataType.Type.DOUBLE)
                 )
 
         return expression
@@ -616,9 +573,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         # Case: key = value or key := value
         if expression.expression:
-            return exp.ColumnDef(
-                this=expression.this.copy(), kind=expression.expression.type
-            )
+            return exp.ColumnDef(this=expression.this.copy(), kind=expression.expression.type)
 
         return expression.type
 
@@ -628,9 +583,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             expression,
             exp.DataType(
                 this=exp.DataType.Type.STRUCT,
-                expressions=[
-                    self._annotate_struct_value(expr) for expr in expression.expressions
-                ],
+                expressions=[self._annotate_struct_value(expr) for expr in expression.expressions],
                 nested=True,
             ),
         )
@@ -651,14 +604,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         map_type = exp.DataType(this=exp.DataType.Type.MAP)
         if isinstance(keys, exp.Array) and isinstance(values, exp.Array):
             key_type = seq_get(keys.type.expressions, 0) or exp.DataType.Type.UNKNOWN
-            value_type = (
-                seq_get(values.type.expressions, 0) or exp.DataType.Type.UNKNOWN
-            )
+            value_type = seq_get(values.type.expressions, 0) or exp.DataType.Type.UNKNOWN
 
-            if (
-                key_type != exp.DataType.Type.UNKNOWN
-                and value_type != exp.DataType.Type.UNKNOWN
-            ):
+            if key_type != exp.DataType.Type.UNKNOWN and value_type != exp.DataType.Type.UNKNOWN:
                 map_type.set("expressions", [key_type, value_type])
                 map_type.set("nested", True)
 
@@ -697,9 +645,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         array_arg = expression.this
         if array_arg.type.is_type(exp.DataType.Type.ARRAY):
-            element_type = (
-                seq_get(array_arg.type.expressions, 0) or exp.DataType.Type.UNKNOWN
-            )
+            element_type = seq_get(array_arg.type.expressions, 0) or exp.DataType.Type.UNKNOWN
             self._set_type(expression, element_type)
         else:
             self._set_type(expression, exp.DataType.Type.UNKNOWN)
@@ -709,12 +655,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_concat(self, expression: exp.Concat) -> exp.Concat:
         """Annotate CONCAT to return NULL if any input is NULL, otherwise VARCHAR."""
         self._annotate_args(expression)
-
+        
         # Check if any argument is NULL - if so, return NULL
         if any(isinstance(arg, exp.Null) for arg in expression.expressions):
             self._set_type(expression, exp.DataType.Type.NULL)
             return expression
-
+        
         # CONCAT always returns VARCHAR for non-NULL inputs
         self._set_type(expression, exp.DataType.Type.VARCHAR)
         return expression
@@ -722,28 +668,24 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_concat_ws(self, expression: exp.ConcatWs) -> exp.ConcatWs:
         """Annotate CONCAT_WS to return NULL if any input is NULL, BINARY if all arguments are binary, otherwise VARCHAR."""
         self._annotate_args(expression)
-
+        
         # Check if any argument is NULL - if so, return NULL
         if any(isinstance(arg, exp.Null) for arg in expression.expressions):
             self._set_type(expression, exp.DataType.Type.NULL)
             return expression
-
+        
         # Check if all arguments (excluding separator) are binary
         # The first argument is the separator, the rest are the values to concatenate
         if len(expression.expressions) >= 2:
             separator = expression.expressions[0]
             values = expression.expressions[1:]
-
+            
             # Check if separator and all values are binary
             all_binary = (
-                separator.type
-                and separator.type.this == exp.DataType.Type.BINARY
-                and all(
-                    value.type and value.type.this == exp.DataType.Type.BINARY
-                    for value in values
-                )
+                separator.type and separator.type.this == exp.DataType.Type.BINARY and
+                all(value.type and value.type.this == exp.DataType.Type.BINARY for value in values)
             )
-
+            
             if all_binary:
                 self._set_type(expression, exp.DataType.Type.BINARY)
             else:
@@ -751,5 +693,5 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             # Fallback to VARCHAR for edge cases
             self._set_type(expression, exp.DataType.Type.VARCHAR)
-
+        
         return expression

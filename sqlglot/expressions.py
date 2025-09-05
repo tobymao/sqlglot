@@ -4905,7 +4905,7 @@ class Rollback(Expression):
 
 class Alter(Expression):
     arg_types = {
-        "this": True,
+        "this": False,
         "kind": True,
         "actions": True,
         "exists": False,
@@ -4924,6 +4924,10 @@ class Alter(Expression):
     @property
     def actions(self) -> t.List[Expression]:
         return self.args.get("actions") or []
+
+
+class AlterSession(Expression):
+    arg_types = {"expressions": True, "unset": False}
 
 
 class Analyze(Expression):
@@ -7129,7 +7133,23 @@ class RowNumber(Func):
     arg_types = {"this": False}
 
 
+class SafeAdd(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class SafeDivide(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class SafeMultiply(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class SafeNegate(Func):
+    pass
+
+
+class SafeSubtract(Func):
     arg_types = {"this": True, "expression": True}
 
 
@@ -7151,7 +7171,7 @@ class Sign(Func):
 
 
 class SortArray(Func):
-    arg_types = {"this": True, "asc": False}
+    arg_types = {"this": True, "asc": False, "nulls_first": False}
 
 
 class Soundex(Func):

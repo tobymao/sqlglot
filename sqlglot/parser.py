@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import re
 import typing as t
-import itertools
 from collections import defaultdict
 
 from sqlglot import exp
@@ -479,6 +479,7 @@ class Parser(metaclass=_Parser):
         TokenType.INDEX,
         TokenType.TABLE,
         TokenType.VIEW,
+        TokenType.SESSION,
     }
 
     # Tokens that can represent identifiers
@@ -7318,10 +7319,13 @@ class Parser(metaclass=_Parser):
         return self._parse_csv(self._parse_expression)
 
     def _parse_select_or_expression(self, alias: bool = False) -> t.Optional[exp.Expression]:
-        return self._parse_select() or self._parse_set_operations(
-            self._parse_alias(self._parse_assignment(), explicit=True)
-            if alias
-            else self._parse_assignment()
+        return (
+            self._parse_set_operations(
+                self._parse_alias(self._parse_assignment(), explicit=True)
+                if alias
+                else self._parse_assignment()
+            )
+            or self._parse_select()
         )
 
     def _parse_ddl_select(self) -> t.Optional[exp.Expression]:
@@ -7582,6 +7586,18 @@ class Parser(metaclass=_Parser):
 
         return alter_set
 
+    def _parse_alter_session(self) -> exp.AlterSession:
+        """Parse ALTER SESSION SET/UNSET statements."""
+        if self._match(TokenType.SET):
+            expressions = self._parse_csv(lambda: self._parse_set_item_assignment())
+            return self.expression(exp.AlterSession, expressions=expressions, unset=False)
+
+        self._match_text_seq("UNSET")
+        expressions = self._parse_csv(
+            lambda: self.expression(exp.SetItem, this=self._parse_id_var(any_token=True))
+        )
+        return self.expression(exp.AlterSession, expressions=expressions, unset=True)
+
     def _parse_alter(self) -> exp.Alter | exp.Command:
         start = self._prev
 
@@ -7591,12 +7607,18 @@ class Parser(metaclass=_Parser):
 
         exists = self._parse_exists()
         only = self._match_text_seq("ONLY")
-        this = self._parse_table(schema=True)
-        check = self._match_text_seq("WITH", "CHECK")
-        cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
-        if self._next:
-            self._advance()
+        if alter_token.token_type == TokenType.SESSION:
+            this = None
+            check = None
+            cluster = None
+        else:
+            this = self._parse_table(schema=True)
+            check = self._match_text_seq("WITH", "CHECK")
+            cluster = self._parse_on_property() if self._match(TokenType.ON) else None
+
+            if self._next:
+                self._advance()
 
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:

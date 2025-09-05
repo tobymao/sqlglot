@@ -1303,6 +1303,230 @@ DOUBLE;
 RANGE_BUCKET(20, [0, 10, 20, 30, 40]);
 BIGINT;
 
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS INT64), CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS INT64), CAST(1 AS INT64));
+INT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS INT64), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS INT64), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS NUMERIC), CAST(1 AS INT64));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS NUMERIC), CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS NUMERIC), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS NUMERIC), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS BIGNUMERIC), CAST(1 AS INT64));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS BIGNUMERIC), CAST(1 AS NUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS BIGNUMERIC), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS BIGNUMERIC), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS FLOAT64), CAST(1 AS INT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS FLOAT64), CAST(1 AS NUMERIC));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS FLOAT64), CAST(1 AS BIGNUMERIC));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_ADD(CAST(1 AS FLOAT64), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS INT64), CAST(1 AS INT64));
+INT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS INT64), CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS INT64), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS INT64), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS NUMERIC), CAST(1 AS INT64));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS NUMERIC), CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS NUMERIC), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS NUMERIC), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS BIGNUMERIC), CAST(1 AS INT64));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS BIGNUMERIC), CAST(1 AS NUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS BIGNUMERIC), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS BIGNUMERIC), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS FLOAT64), CAST(1 AS INT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS FLOAT64), CAST(1 AS NUMERIC));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS FLOAT64), CAST(1 AS BIGNUMERIC));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_MULTIPLY(CAST(1 AS FLOAT64), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS INT64), CAST(1 AS INT64));
+INT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS INT64), CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS INT64), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS INT64), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS NUMERIC), CAST(1 AS INT64));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS NUMERIC), CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS NUMERIC), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS NUMERIC), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS BIGNUMERIC), CAST(1 AS INT64));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS BIGNUMERIC), CAST(1 AS NUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS BIGNUMERIC), CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS BIGNUMERIC), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS FLOAT64), CAST(1 AS INT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS FLOAT64), CAST(1 AS NUMERIC));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS FLOAT64), CAST(1 AS BIGNUMERIC));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_SUBTRACT(CAST(1 AS FLOAT64), CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_NEGATE(CAST(1 AS FLOAT64));
+FLOAT64;
+
+# dialect: bigquery
+SAFE_NEGATE(CAST(1 AS NUMERIC));
+NUMERIC;
+
+# dialect: bigquery
+SAFE_NEGATE(CAST(1 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.bin_col);
+BINARY;
+
+# dialect: bigquery
+DATETIME_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
+DATETIME;
+
+# dialect: bigquery
+DATETIME_TRUNC(TIMESTAMP "2008-12-25 15:30:00", DAY);
+TIMESTAMP;
+
+# dialect: bigquery
+GENERATE_UUID();
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------
@@ -1310,6 +1534,30 @@ BIGINT;
 # dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
+
+# dialect: snowflake
+CHARINDEX('world', 'hello world');
+INT;
+
+# dialect: snowflake
+CHARINDEX('world', 'hello world', 1);
+INT;
+
+# dialect: snowflake
+REVERSE('Hello, world!');
+VARCHAR;
+
+# dialect: snowflake
+REVERSE(tbl.str_col);
+TEXT;
+
+# dialect: snowflake
+REVERSE(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+REVERSE(NULL);
+NULL;
 
 --------------------------------------
 -- T-SQL

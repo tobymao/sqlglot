@@ -279,6 +279,7 @@ def _expand_alias_refs(
 
     alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}
     projections = {s.alias_or_name for s in expression.selects}
+    is_bigquery = dialect == "bigquery"
 
     def replace_columns(
         node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
@@ -312,12 +313,23 @@ def _expand_alias_refs(
 
                 # BigQuery's having clause gets confused if an alias matches a source.
                 # SELECT x.a, max(x.b) as x FROM x GROUP BY 1 HAVING x > 1;
-                # If HAVING x is expanded to max(x.b), bigquery treats x as the new projection x instead of the table
-                if is_having and dialect == "bigquery":
+                # If "HAVING x" is expanded to "HAVING max(x.b)", BQ would blindly replace the "x" reference with the projection MAX(x.b)
+                # i.e HAVING MAX(MAX(x.b).b), resulting in the error: "Aggregations of aggregations are not allowed"
+                if is_having and is_bigquery:
                     skip_replace = skip_replace or any(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
+            elif is_bigquery and (is_group_by or is_having):
+                column_table = table.name if table else column.table
+                if column_table in projections:
+                    # BigQuery's GROUP BY and HAVING clauses get confused if the column name
+                    # matches a source name and a projection. For instance:
+                    # SELECT id, ARRAY_AGG(col) AS custom_fields FROM custom_fields GROUP BY id HAVING id >= 1
+                    # We should not qualify "id" with "custom_fields" in either clause, since the aggregation shadows the actual table
+                    # and we'd get the error: "Column custom_fields contains an aggregation function, which is not allowed in GROUP BY clause"
+                    column.replace(exp.to_identifier(column.name))
+                    return
 
             if table and (not alias_expr or skip_replace):
                 column.set("table", table)

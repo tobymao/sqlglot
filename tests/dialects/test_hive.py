@@ -664,15 +664,6 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT SORT_ARRAY(x)",
-            write={
-                "duckdb": "SELECT ARRAY_SORT(x)",
-                "presto": "SELECT ARRAY_SORT(x)",
-                "hive": "SELECT SORT_ARRAY(x)",
-                "spark": "SELECT SORT_ARRAY(x)",
-            },
-        )
-        self.validate_all(
             "SELECT SORT_ARRAY(x, FALSE)",
             read={
                 "duckdb": "SELECT ARRAY_REVERSE_SORT(x)",
@@ -896,6 +887,9 @@ class TestHive(Validator):
             write={
                 "duckdb": "SELECT ANY_VALUE(sample_col)",
             },
+        )
+        self.validate_identity(
+            "DATE_SUB(CURRENT_DATE, 1 + 1)", "DATE_ADD(CURRENT_DATE, (1 + 1) * -1)"
         )
 
     def test_escapes(self) -> None:

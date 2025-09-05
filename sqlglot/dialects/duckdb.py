@@ -1011,8 +1011,8 @@ class DuckDB(Dialect):
                 and not expression.method
                 and (not kind or kind in ("INNER", "OUTER"))
             ):
-                expression.set("side", None)
-                expression.set("kind", None)
+                expression.args.pop("side", None)
+                expression.args.pop("kind", None)
 
             return super().join_sql(expression)
 

@@ -500,7 +500,10 @@ class Snowflake(Dialect):
         **Dialect.ANNOTATORS,
         **{
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
-            for expr_type in (exp.Reverse,)
+            for expr_type in (
+                exp.Reverse,
+                exp.Upper,
+            )
         },
     }
 

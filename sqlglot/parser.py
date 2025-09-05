@@ -5303,22 +5303,30 @@ class Parser(metaclass=_Parser):
                 any_token=False, tokens=(TokenType.VAR,)
             )
             if isinstance(identifier, exp.Identifier):
-                tokens = self.dialect.tokenize(identifier.sql(dialect=self.dialect))
+                tokens = self.dialect.tokenize(identifier.name)
 
                 if len(tokens) != 1:
                     self.raise_error("Unexpected identifier", self._prev)
 
                 if tokens[0].token_type in self.TYPE_TOKENS:
-                    self._prev = tokens[0]
-                elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
-                    this = self._parse_user_defined_type(identifier)
+                    type_token = tokens[0].token_type
                 else:
-                    self._retreat(self._index - 1)
-                    return None
+                    # retain quotes
+                    tokens = self.dialect.tokenize(identifier.sql(dialect=self.dialect))
+
+                    if len(tokens) != 1:
+                        self.raise_error("Unexpected identifier", self._prev)
+
+                    if self.dialect.SUPPORTS_USER_DEFINED_TYPES:
+                        type_token = None
+                        this = self._parse_user_defined_type(identifier)
+                    else:
+                        self._retreat(self._index - 1)
+                        return None
             else:
                 return None
-
-        type_token = self._prev.token_type
+        else:
+            type_token = self._prev.token_type
 
         if type_token == TokenType.PSEUDO_TYPE:
             return self.expression(exp.PseudoType, this=self._prev.text.upper())

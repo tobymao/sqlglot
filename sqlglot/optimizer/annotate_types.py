@@ -652,46 +652,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    def _annotate_concat(self, expression: exp.Concat) -> exp.Concat:
-        """Annotate CONCAT to return NULL if any input is NULL, otherwise VARCHAR."""
-        self._annotate_args(expression)
-        
-        # Check if any argument is NULL - if so, return NULL
-        if any(isinstance(arg, exp.Null) for arg in expression.expressions):
-            self._set_type(expression, exp.DataType.Type.NULL)
-            return expression
-        
-        # CONCAT always returns VARCHAR for non-NULL inputs
-        self._set_type(expression, exp.DataType.Type.VARCHAR)
-        return expression
-
     def _annotate_concat_ws(self, expression: exp.ConcatWs) -> exp.ConcatWs:
-        """Annotate CONCAT_WS to return NULL if any input is NULL, BINARY if all arguments are binary, otherwise VARCHAR."""
-        self._annotate_args(expression)
-        
-        # Check if any argument is NULL - if so, return NULL
-        if any(isinstance(arg, exp.Null) for arg in expression.expressions):
-            self._set_type(expression, exp.DataType.Type.NULL)
-            return expression
-        
-        # Check if all arguments (excluding separator) are binary
-        # The first argument is the separator, the rest are the values to concatenate
-        if len(expression.expressions) >= 2:
-            separator = expression.expressions[0]
-            values = expression.expressions[1:]
-            
-            # Check if separator and all values are binary
-            all_binary = (
-                separator.type and separator.type.this == exp.DataType.Type.BINARY and
-                all(value.type and value.type.this == exp.DataType.Type.BINARY for value in values)
-            )
-            
-            if all_binary:
-                self._set_type(expression, exp.DataType.Type.BINARY)
-            else:
-                self._set_type(expression, exp.DataType.Type.VARCHAR)
-        else:
-            # Fallback to VARCHAR for edge cases
+        self._annotate_by_args(expression, "expressions")
+        if expression.type and expression.type.this == exp.DataType.Type.TEXT:
             self._set_type(expression, exp.DataType.Type.VARCHAR)
-        
         return expression

@@ -63,6 +63,7 @@ class SingleStore(MySQL):
             "TIMESTAMP": TokenType.TIMESTAMP,
             "UTC_DATE": TokenType.UTC_DATE,
             "UTC_TIME": TokenType.UTC_TIME,
+            "UTC_TIMESTAMP": TokenType.UTC_TIMESTAMP,
             ":>": TokenType.COLON_GT,
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,
@@ -203,6 +204,7 @@ class SingleStore(MySQL):
             **MySQL.Parser.NO_PAREN_FUNCTIONS,
             TokenType.UTC_DATE: exp.UtcDate,
             TokenType.UTC_TIME: exp.UtcTime,
+            TokenType.UTC_TIMESTAMP: exp.UtcTimestamp,
         }
 
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
@@ -1667,3 +1669,14 @@ class SingleStore(MySQL):
                 self.unsupported("CurrentTime with timezone is not supported in SingleStore")
 
             return self.func("CURRENT_TIME")
+
+        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            arg = expression.this
+            if arg:
+                if isinstance(arg, exp.Literal) and arg.name.lower() == "utc":
+                    return self.func("UTC_TIMESTAMP")
+                if isinstance(arg, exp.Literal) and arg.is_number:
+                    return self.func("CURRENT_TIMESTAMP", arg)
+                self.unsupported("CurrentTimestamp with timezone is not supported in SingleStore")
+
+            return self.func("CURRENT_TIMESTAMP")

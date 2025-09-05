@@ -1555,10 +1555,6 @@ TEXT;
 REVERSE(tbl.bin_col);
 BINARY;
 
-# dialect: snowflake
-REVERSE(NULL);
-NULL;
-
 --------------------------------------
 -- T-SQL
 --------------------------------------

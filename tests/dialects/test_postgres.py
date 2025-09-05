@@ -1,4 +1,4 @@
-from sqlglot import ParseError, UnsupportedError, exp, transpile
+from sqlglot import ParseError, UnsupportedError, exp, transpile, parse_one
 from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
@@ -804,6 +804,12 @@ FROM json_data, field_ids""",
             },
         )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
+
+        self.validate_identity('1::"int"', "CAST(1 AS INT)")
+        assert parse_one('1::"int"', read="postgres").to.is_type(exp.DataType.Type.INT)
+
+        self.validate_identity('1::"udt"', 'CAST(1 AS "udt")')
+        assert parse_one('1::"udt"', read="postgres").to.this == exp.DataType.Type.USERDEFINED
 
         self.validate_identity(
             "COPY tbl (col1, col2) FROM 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"

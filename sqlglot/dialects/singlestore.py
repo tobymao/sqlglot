@@ -204,7 +204,6 @@ class SingleStore(MySQL):
             "JSON_BUILD_OBJECT": lambda self: self._parse_json_object(),
         }
 
-
         NO_PAREN_FUNCTIONS = {
             **MySQL.Parser.NO_PAREN_FUNCTIONS,
             TokenType.UTC_DATE: exp.UtcDate,

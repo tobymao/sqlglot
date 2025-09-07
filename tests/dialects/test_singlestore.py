@@ -1,4 +1,4 @@
-from sqlglot import parse_one
+from sqlglot import parse_one, exp
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
@@ -226,6 +226,14 @@ class TestSingleStore(Validator):
                 "": 'SELECT JSON_FORMAT(\'["G","alpha","20",10]\')',
             },
         )
+        self.validate_all(
+            "SELECT JSON_BUILD_ARRAY(id, name) FROM t",
+            read={
+                "singlestore": "SELECT JSON_BUILD_ARRAY(id, name) FROM t",
+                "oracle": "SELECT JSON_ARRAY(id, name) FROM t",
+            },
+        )
+        self.validate_identity("JSON_BUILD_ARRAY(id, name)").assert_is(exp.JSONArray)
 
     def test_date_parts_functions(self):
         self.validate_identity(

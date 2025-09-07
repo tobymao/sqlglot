@@ -162,6 +162,7 @@ class SingleStore(MySQL):
                 json_type="JSON",
             ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
+            "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -354,6 +355,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
+            exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
+                rename_func("JSON_BUILD_ARRAY")
+            ),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),

@@ -2878,10 +2878,10 @@ OPTIONS (
         self.validate_identity("""LAX_STRING(PARSE_JSON('"str"'))""")
 
     def test_utc_time(self):
-        self.validate_identity("SELECT UTC_TIME()")
-        self.validate_identity("SELECT UTC_TIME(6)")
-        self.validate_identity("SELECT UTC_TIMESTAMP()")
-        self.validate_identity("SELECT UTC_TIMESTAMP(6)")
+        self.validate_identity("UTC_TIME()").assert_is(exp.UtcTime)
+        self.validate_identity("UTC_TIME(6)").assert_is(exp.UtcTime)
+        self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
+        self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
 
     def test_safe_math_funcs(self):
         self.validate_identity("SAFE_NEGATE(x)")

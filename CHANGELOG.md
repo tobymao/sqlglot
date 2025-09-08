@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v27.13.1] - 2025-09-08
+### :bug: Bug Fixes
+- [`f3d55c0`](https://github.com/tobymao/sqlglot/commit/f3d55c05c8411c9871f8ca4d23f726f976c9236b) - remove always token *(PR [#5832](https://github.com/tobymao/sqlglot/pull/5832) by [@tobymao](https://github.com/tobymao))*
+- [`1724775`](https://github.com/tobymao/sqlglot/commit/1724775429f66c2768864c8f96ace861eaa435fd) - suppert types() with no args *(PR [#5833](https://github.com/tobymao/sqlglot/pull/5833) by [@tobymao](https://github.com/tobymao))*
+- [`31c82c6`](https://github.com/tobymao/sqlglot/commit/31c82c6d6cd402e59cb59a94daafd22410eae0f6) - support `case.*` *(PR [#5835](https://github.com/tobymao/sqlglot/pull/5835) by [@georgesittas](https://github.com/georgesittas))*
+- [`c00f73b`](https://github.com/tobymao/sqlglot/commit/c00f73bac2530a62c25093c60bf02d0a4231bb0b) - window spec no and only exclude *(PR [#5834](https://github.com/tobymao/sqlglot/pull/5834) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v27.13.0] - 2025-09-08
 ### :boom: BREAKING CHANGES
 - due to [`3726b33`](https://github.com/tobymao/sqlglot/commit/3726b33bb6b4ab286617f510e96e1fbd27c429f3) - support nulls_first arg for array_sort *(PR [#5802](https://github.com/tobymao/sqlglot/pull/5802) by [@treysp](https://github.com/treysp))*:
@@ -9330,3 +9338,4 @@ Changelog
 [v27.11.0]: https://github.com/tobymao/sqlglot/compare/v27.10.0...v27.11.0
 [v27.12.0]: https://github.com/tobymao/sqlglot/compare/v27.11.0...v27.12.0
 [v27.13.0]: https://github.com/tobymao/sqlglot/compare/v27.12.0...v27.13.0
+[v27.13.1]: https://github.com/tobymao/sqlglot/compare/v27.13.0...v27.13.1

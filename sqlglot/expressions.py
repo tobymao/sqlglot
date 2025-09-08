@@ -5520,19 +5520,19 @@ class AggFunc(Func):
 
 
 class BitwiseAndAgg(AggFunc):
-    _sql_names = ["BIT_AND"]
+    pass
 
 
 class BitwiseOrAgg(AggFunc):
-    _sql_names = ["BIT_OR"]
+    pass
 
 
 class BitwiseXorAgg(AggFunc):
-    _sql_names = ["BIT_XOR"]
+    pass
 
 
 class BitwiseCountAgg(AggFunc):
-    _sql_names = ["BIT_COUNT"]
+    pass
 
 
 class ByteLength(Func):

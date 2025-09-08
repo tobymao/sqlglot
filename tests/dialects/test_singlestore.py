@@ -440,6 +440,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
             },
         )
+        self.validate_all(
+            "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+            read={
+                "singlestore": "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+                "": "SELECT STUFF('abcdef', 2, 3, 'xyz')",
+            },
+        )
 
     def test_reduce_functions(self):
         self.validate_all(

@@ -227,6 +227,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+            read={
+                "singlestore": "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+                "": "SELECT JSONB_EXISTS('{\"x\":true}', 'x')",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
             read={
                 "singlestore": "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",

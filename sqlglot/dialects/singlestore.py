@@ -242,23 +242,9 @@ class SingleStore(MySQL):
         COLUMN_OPERATORS.pop(TokenType.DHASH_ARROW)
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
-        def _parse_match_against(self) -> exp.MatchAgainst:
-            if self._match_text_seq("TABLE"):
-                expressions = []
-                table = self._parse_table()
-                if table:
-                    expressions = [table]
-            else:
-                expressions = self._parse_csv(self._parse_column)
-
-            self._match_text_seq(")", "AGAINST", "(")
-
-            this = self._parse_string()
-
-            return self.expression(exp.MatchAgainst, this=this, expressions=expressions)
-
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
+        MATCH_AGAINST_TABLE_PREFIX = "TABLE "
 
         @staticmethod
         def _unicode_substitute(m: re.Match[str]) -> str:
@@ -454,6 +440,9 @@ class SingleStore(MySQL):
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
                 )
+            ),
+            exp.MatchAgainst: unsupported_args("modifier")(
+                lambda self, e: super().matchagainst_sql(e)
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
@@ -1700,19 +1689,6 @@ class SingleStore(MySQL):
                 self.unsupported("CurrentTime with timezone is not supported in SingleStore")
 
             return self.func("CURRENT_TIME")
-
-        @unsupported_args("modifier")
-        def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
-            expressions_sqls = []
-            for expr in expression.expressions:
-                if isinstance(expr, exp.Table):
-                    expressions_sqls.append(f"TABLE {self.sql(expr)}")
-                else:
-                    expressions_sqls.append(self.sql(expr))
-
-            return (
-                f"{self.func('MATCH', *expressions_sqls)} AGAINST ({self.sql(expression, 'this')})"
-            )
 
         def standardhash_sql(self, expression: exp.StandardHash) -> str:
             hash_function = expression.expression

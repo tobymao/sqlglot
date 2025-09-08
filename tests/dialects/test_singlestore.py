@@ -815,11 +815,11 @@ class TestSingleStore(Validator):
 
     def test_match_against(self):
         self.validate_identity(
-            "SELECT MATCH(name) AGAINST ('search term') FROM products"
+            "SELECT MATCH(name) AGAINST('search term') FROM products"
         ).expressions[0].assert_is(exp.MatchAgainst)
         self.validate_identity(
-            "SELECT MATCH(name, name) AGAINST ('book') FROM products"
+            "SELECT MATCH(name, name) AGAINST('book') FROM products"
         ).expressions[0].assert_is(exp.MatchAgainst)
         self.validate_identity(
-            "SELECT MATCH(TABLE products2) AGAINST ('search term') FROM products2"
+            "SELECT MATCH(TABLE products2) AGAINST('search term') FROM products2"
         ).expressions[0].assert_is(exp.MatchAgainst)

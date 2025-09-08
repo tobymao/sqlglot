@@ -354,7 +354,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
-            exp.JSONBExists: lambda self, e: self.func("BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")),
+            exp.JSONBExists: lambda self, e: self.func(
+                "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
+            ),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),

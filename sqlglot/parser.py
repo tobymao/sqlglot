@@ -6863,7 +6863,15 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_match_against(self) -> exp.MatchAgainst:
-        expressions = self._parse_csv(self._parse_column)
+        if self._match_text_seq("TABLE"):
+            # parse SingleStore MATCH(TABLE ...) syntax
+            # https://docs.singlestore.com/cloud/reference/sql-reference/full-text-search-functions/match/
+            expressions = []
+            table = self._parse_table()
+            if table:
+                expressions = [table]
+        else:
+            expressions = self._parse_csv(self._parse_column)
 
         self._match_text_seq(")", "AGAINST", "(")
 

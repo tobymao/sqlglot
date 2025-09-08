@@ -164,6 +164,7 @@ class SingleStore(MySQL):
                 json_type="JSON",
             ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
+            "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
             "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
@@ -249,6 +250,7 @@ class SingleStore(MySQL):
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True
+        MATCH_AGAINST_TABLE_PREFIX = "TABLE "
 
         @staticmethod
         def _unicode_substitute(m: re.Match[str]) -> str:
@@ -374,6 +376,9 @@ class SingleStore(MySQL):
             exp.JSONArrayAgg: unsupported_args("null_handling", "return_type", "strict")(
                 lambda self, e: self.func("JSON_AGG", e.this, suffix=f"{self.sql(e, 'order')})")
             ),
+            exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
+                rename_func("JSON_BUILD_ARRAY")
+            ),
             exp.JSONBExists: lambda self, e: self.func(
                 "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
             ),
@@ -456,6 +461,9 @@ class SingleStore(MySQL):
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
                 )
+            ),
+            exp.MatchAgainst: unsupported_args("modifier")(
+                lambda self, e: super().matchagainst_sql(e)
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)

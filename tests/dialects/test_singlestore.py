@@ -236,6 +236,14 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT JSON_AGG(name) FROM t")
         self.validate_identity("SELECT JSON_AGG(t.*) FROM t")
         self.validate_all(
+            "SELECT JSON_BUILD_ARRAY(id, name) FROM t",
+            read={
+                "singlestore": "SELECT JSON_BUILD_ARRAY(id, name) FROM t",
+                "oracle": "SELECT JSON_ARRAY(id, name) FROM t",
+            },
+        )
+        self.validate_identity("JSON_BUILD_ARRAY(id, name)").assert_is(exp.JSONArray)
+        self.validate_all(
             "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
             read={
                 "singlestore": "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
@@ -835,3 +843,14 @@ class TestSingleStore(Validator):
             "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
             "SELECT name :> LONGTEXT :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
         )
+
+    def test_match_against(self):
+        self.validate_identity(
+            "SELECT MATCH(name) AGAINST('search term') FROM products"
+        ).expressions[0].assert_is(exp.MatchAgainst)
+        self.validate_identity(
+            "SELECT MATCH(name, name) AGAINST('book') FROM products"
+        ).expressions[0].assert_is(exp.MatchAgainst)
+        self.validate_identity(
+            "SELECT MATCH(TABLE products2) AGAINST('search term') FROM products2"
+        ).expressions[0].assert_is(exp.MatchAgainst)

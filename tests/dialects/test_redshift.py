@@ -1,4 +1,4 @@
-from sqlglot import exp, parse_one, transpile
+from sqlglot import exp, ParseError, parse_one, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -698,3 +698,9 @@ FROM (
         self.validate_identity("ANALYZE VERBOSE TBL")
         self.validate_identity("ANALYZE TBL PREDICATE COLUMNS")
         self.validate_identity("ANALYZE TBL ALL COLUMNS")
+
+    def test_cast(self):
+        self.validate_identity('1::"int"', "CAST(1 AS INTEGER)").to.is_type(exp.DataType.Type.INT)
+
+        with self.assertRaises(ParseError):
+            parse_one('1::"udt"', read="redshift")

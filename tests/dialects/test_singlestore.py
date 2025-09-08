@@ -448,6 +448,27 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
             },
         )
+        self.validate_all(
+            "SELECT SHA(email) FROM t",
+            read={
+                "singlestore": "SELECT SHA(email) FROM t",
+                "": "SELECT STANDARD_HASH(email) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT SHA(email) FROM t",
+            read={
+                "singlestore": "SELECT SHA(email) FROM t",
+                "": "SELECT STANDARD_HASH(email, 'sha') FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT MD5(email) FROM t",
+            read={
+                "singlestore": "SELECT MD5(email) FROM t",
+                "": "SELECT STANDARD_HASH(email, 'MD5') FROM t",
+            },
+        )
 
     def test_reduce_functions(self):
         self.validate_all(

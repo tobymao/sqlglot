@@ -1682,3 +1682,21 @@ class SingleStore(MySQL):
                 self.unsupported("CurrentTime with timezone is not supported in SingleStore")
 
             return self.func("CURRENT_TIME")
+
+        def standardhash_sql(self, expression: exp.StandardHash) -> str:
+            hash_function = expression.expression
+            if hash_function is None:
+                return self.func("SHA", expression.this)
+            if isinstance(hash_function, exp.Literal):
+                if hash_function.name.lower() == "sha":
+                    return self.func("SHA", expression.this)
+                if hash_function.name.lower() == "md5":
+                    return self.func("MD5", expression.this)
+
+                self.unsupported(
+                    f"{hash_function.this} hash method is not supported in SingleStore"
+                )
+                return self.func("SHA", expression.this)
+
+            self.unsupported("STANDARD_HASH function is not supported in SingleStore")
+            return self.func("SHA", expression.this)

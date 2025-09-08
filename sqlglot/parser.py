@@ -569,6 +569,7 @@ class Parser(metaclass=_Parser):
         TokenType.USE,
         TokenType.VOLATILE,
         TokenType.WINDOW,
+        *ALTERABLES,
         *CREATABLES,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,

@@ -2624,14 +2624,14 @@ SELECT
             },
         )
         self.validate_all(
-            "BEGIN",
+            "BEGIN READ WRITE, ISOLATION LEVEL SERIALIZABLE",
             read={
                 "presto": "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE",
                 "trino": "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE",
             },
         )
         self.validate_all(
-            "BEGIN",
+            "BEGIN ISOLATION LEVEL REPEATABLE READ",
             read={
                 "presto": "START TRANSACTION ISOLATION LEVEL REPEATABLE READ",
                 "trino": "START TRANSACTION ISOLATION LEVEL REPEATABLE READ",

@@ -1,4 +1,4 @@
-from sqlglot import parse_one
+from sqlglot import parse_one, exp
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
@@ -233,6 +233,14 @@ class TestSingleStore(Validator):
                 "oracle": "SELECT JSON_EXISTS('{\"a\":1}', '$.a')",
             },
         )
+        self.validate_all(
+            "SELECT JSON_BUILD_OBJECT('name', name) FROM t",
+            read={
+                "singlestore": "SELECT JSON_BUILD_OBJECT('name', name) FROM t",
+                "": "SELECT JSON_OBJECT('name', name) FROM t",
+            },
+        )
+        self.validate_identity("JSON_BUILD_OBJECT('name', name)").assert_is(exp.JSONObject)
 
     def test_date_parts_functions(self):
         self.validate_identity(
@@ -447,6 +455,27 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
             },
         )
+        self.validate_all(
+            "SELECT SHA(email) FROM t",
+            read={
+                "singlestore": "SELECT SHA(email) FROM t",
+                "": "SELECT STANDARD_HASH(email) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT SHA(email) FROM t",
+            read={
+                "singlestore": "SELECT SHA(email) FROM t",
+                "": "SELECT STANDARD_HASH(email, 'sha') FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT MD5(email) FROM t",
+            read={
+                "singlestore": "SELECT MD5(email) FROM t",
+                "": "SELECT STANDARD_HASH(email, 'MD5') FROM t",
+            },
+        )
 
     def test_reduce_functions(self):
         self.validate_all(
@@ -604,6 +633,13 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT UTC_TIME",
             },
             write={"": "SELECT CURRENT_TIME('UTC')"},
+        )
+        self.validate_all(
+            "SELECT CURRENT_TIMESTAMP(6) :> DATETIME(6)",
+            read={
+                "bigquery": "SELECT CURRENT_DATETIME()",
+                "singlestore": "SELECT CURRENT_TIMESTAMP(6) :> DATETIME(6)",
+            },
         )
 
     def test_types(self):

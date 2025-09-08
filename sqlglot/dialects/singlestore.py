@@ -164,6 +164,7 @@ class SingleStore(MySQL):
                 json_type="JSON",
             ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
+            "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
             "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
@@ -367,6 +368,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
+            exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
+                rename_func("JSON_BUILD_ARRAY")
+            ),
             exp.JSONBExists: lambda self, e: self.func(
                 "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
             ),

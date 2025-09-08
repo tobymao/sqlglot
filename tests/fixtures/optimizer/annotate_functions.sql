@@ -1575,6 +1575,22 @@ VARCHAR;
 CONCAT_WS(tbl.bin_col, tbl.bin_col);
 BINARY;
 
+# dialect: snowflake
+CONTAINS('hello world', 'world');
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(tbl.str_col, 'test');
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(tbl.bin_col, tbl.bin_col);
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(tbl.bin_col, NULL);
+BOOLEAN;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

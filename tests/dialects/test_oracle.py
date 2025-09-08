@@ -771,3 +771,9 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
 
         with self.assertRaises(ParseError):
             parse_one("PRIOR as foo", read="oracle")
+
+    def test_utc_time(self):
+        self.validate_identity("UTC_TIME()").assert_is(exp.UtcTime)
+        self.validate_identity("UTC_TIME(6)").assert_is(exp.UtcTime)
+        self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
+        self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)

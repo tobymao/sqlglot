@@ -666,12 +666,30 @@ class TestSingleStore(Validator):
             write={"": "SELECT CURRENT_TIME('UTC')"},
         )
         self.validate_all(
+            "SELECT CURRENT_TIMESTAMP()",
+            read={
+                "": "SELECT CURRENT_TIMESTAMP()",
+                "singlestore": "SELECT CURRENT_TIMESTAMP",
+            },
+        )
+        self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
+        self.validate_all(
+            "SELECT UTC_TIMESTAMP()",
+            read={
+                "": "SELECT CURRENT_TIMESTAMP('UTC')",
+                "singlestore": "SELECT UTC_TIMESTAMP",
+            },
+            write={"": "SELECT CURRENT_TIMESTAMP('UTC')"},
+        )
+        self.validate_all(
             "SELECT CURRENT_TIMESTAMP(6) :> DATETIME(6)",
             read={
                 "bigquery": "SELECT CURRENT_DATETIME()",
                 "singlestore": "SELECT CURRENT_TIMESTAMP(6) :> DATETIME(6)",
             },
         )
+        self.validate_identity("SELECT UTC_TIMESTAMP(6)")
+        self.validate_identity("SELECT UTC_TIME(6)")
 
     def test_types(self):
         self.validate_all(

@@ -1,6 +1,58 @@
 Changelog
 =========
 
+## [v27.13.0] - 2025-09-08
+### :boom: BREAKING CHANGES
+- due to [`3726b33`](https://github.com/tobymao/sqlglot/commit/3726b33bb6b4ab286617f510e96e1fbd27c429f3) - support nulls_first arg for array_sort *(PR [#5802](https://github.com/tobymao/sqlglot/pull/5802) by [@treysp](https://github.com/treysp))*:
+
+  support nulls_first arg for array_sort (#5802)
+
+- due to [`cf1d1e3`](https://github.com/tobymao/sqlglot/commit/cf1d1e3e0ef9e6cd1b1c6128c63ddf06c30f1339) - annotate type for snowflake's REVERSE function *(PR [#5803](https://github.com/tobymao/sqlglot/pull/5803) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for snowflake's REVERSE function (#5803)
+
+- due to [`ad0b407`](https://github.com/tobymao/sqlglot/commit/ad0b407098e1611d4fc0e1f0916511337b9aefdb) - Mark 'BEGIN' as TokenType.BEGIN for transactions *(PR [#5826](https://github.com/tobymao/sqlglot/pull/5826) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Mark 'BEGIN' as TokenType.BEGIN for transactions (#5826)
+
+- due to [`0198282`](https://github.com/tobymao/sqlglot/commit/0198282a82bbf3e81476e164718d63fd1210acdc) - : Update tests for concat string function *(PR [#5809](https://github.com/tobymao/sqlglot/pull/5809) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  : Update tests for concat string function (#5809)
+
+- due to [`db2c430`](https://github.com/tobymao/sqlglot/commit/db2c4303237a1244070c359245c398a724df6de2) - annoate the "contains" function *(PR [#5829](https://github.com/tobymao/sqlglot/pull/5829) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  annoate the "contains" function (#5829)
+
+
+### :sparkles: New Features
+- [`cf1d1e3`](https://github.com/tobymao/sqlglot/commit/cf1d1e3e0ef9e6cd1b1c6128c63ddf06c30f1339) - **optimizer**: annotate type for snowflake's REVERSE function *(PR [#5803](https://github.com/tobymao/sqlglot/pull/5803) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`1d07c52`](https://github.com/tobymao/sqlglot/commit/1d07c52badb2e392e6895cbb275d2224789366c9) - **SingleStore**: Implemented generation of CURRENT_DATETIME *(PR [#5816](https://github.com/tobymao/sqlglot/pull/5816) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`cad4fd0`](https://github.com/tobymao/sqlglot/commit/cad4fd0c5b0ec90e693fa6883af0ab287b921019) - **singlestore**: Added handling of exp.JSONObject *(PR [#5817](https://github.com/tobymao/sqlglot/pull/5817) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`e3cb076`](https://github.com/tobymao/sqlglot/commit/e3cb0766bd5c3ccb31ea52cfc76201f548798dc1) - **singlestore**: Implemented generation of exp.StandardHash *(PR [#5823](https://github.com/tobymao/sqlglot/pull/5823) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`0198282`](https://github.com/tobymao/sqlglot/commit/0198282a82bbf3e81476e164718d63fd1210acdc) - **optimizer**: : Update tests for concat string function *(PR [#5809](https://github.com/tobymao/sqlglot/pull/5809) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`4e8a436`](https://github.com/tobymao/sqlglot/commit/4e8a436c16f487a72bd1ac2432bcb1c46599d901) - **singlestore**: Added generation of exp.JSONExists *(PR [#5820](https://github.com/tobymao/sqlglot/pull/5820) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`82bea49`](https://github.com/tobymao/sqlglot/commit/82bea49978ae459492b5127a2a52049826e2fd06) - **singlestore**: Refactored parsing of JSON_BUILD_OBJECT *(PR [#5828](https://github.com/tobymao/sqlglot/pull/5828) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`f7d38c3`](https://github.com/tobymao/sqlglot/commit/f7d38c3a10c505346f04e39a2712d60b4c96370f) - **singlestore**: Implemented generation of exp.Stuff *(PR [#5825](https://github.com/tobymao/sqlglot/pull/5825) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`030a5b5`](https://github.com/tobymao/sqlglot/commit/030a5b5ea03ecee869b07cfd27f4ea044732822e) - **singlestore**: Added generation of exp.JSONBExists *(PR [#5821](https://github.com/tobymao/sqlglot/pull/5821) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`e58fef1`](https://github.com/tobymao/sqlglot/commit/e58fef1d6dc654a3b36461bcbea21c99cdc96477) - **singlestore**: Implemented parsing and generation of exp.MatchAgainst *(PR [#5822](https://github.com/tobymao/sqlglot/pull/5822) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`e94f530`](https://github.com/tobymao/sqlglot/commit/e94f530af0e0cdad995b4c8dc5ed86953490d37f) - **singlestore**: Added handling of exp.JSONArray *(PR [#5818](https://github.com/tobymao/sqlglot/pull/5818) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`1c42ef4`](https://github.com/tobymao/sqlglot/commit/1c42ef4374aeab8a1ee9848892d7f8c4511c7f04) - **singlestore**: Fixed parsing/generation of exp.JSONArrayAgg *(PR [#5819](https://github.com/tobymao/sqlglot/pull/5819) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`67219f0`](https://github.com/tobymao/sqlglot/commit/67219f0606231514f430e146e2fdb99e796f718b) - **singlestore**: Added support of UTC_TIMESTAMP and CURRENT_TIMESTAMP *(PR [#5808](https://github.com/tobymao/sqlglot/pull/5808) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`db2c430`](https://github.com/tobymao/sqlglot/commit/db2c4303237a1244070c359245c398a724df6de2) - **optimizer**: annoate the "contains" function *(PR [#5829](https://github.com/tobymao/sqlglot/pull/5829) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`3726b33`](https://github.com/tobymao/sqlglot/commit/3726b33bb6b4ab286617f510e96e1fbd27c429f3) - **snowflake**: support nulls_first arg for array_sort *(PR [#5802](https://github.com/tobymao/sqlglot/pull/5802) by [@treysp](https://github.com/treysp))*
+- [`3408de0`](https://github.com/tobymao/sqlglot/commit/3408de09e50d2510c1a6f511dc2dec357059044f) - parsing quoted built-in data types *(PR [#5810](https://github.com/tobymao/sqlglot/pull/5810) by [@treysp](https://github.com/treysp))*
+- [`ad0b407`](https://github.com/tobymao/sqlglot/commit/ad0b407098e1611d4fc0e1f0916511337b9aefdb) - **postgres**: Mark 'BEGIN' as TokenType.BEGIN for transactions *(PR [#5826](https://github.com/tobymao/sqlglot/pull/5826) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#5815](https://github.com/tobymao/sqlglot/issues/5815) opened by [@karakanb](https://github.com/karakanb)*
+- [`e1a1b5b`](https://github.com/tobymao/sqlglot/commit/e1a1b5befefb0ca30ac1310cecb82a44f6089034) - **snowflake**: transpile BigQuery's `&` to `BITAND` *(PR [#5827](https://github.com/tobymao/sqlglot/pull/5827) by [@YuvalOmerRep](https://github.com/YuvalOmerRep))*
+- [`32d0278`](https://github.com/tobymao/sqlglot/commit/32d027827eaa7aa0cd9faf2ac1f84739f914050f) - parse and generation of BITWISE AGG funcs across dialects *(PR [#5831](https://github.com/tobymao/sqlglot/pull/5831) by [@geooo109](https://github.com/geooo109))*
+- [`5f39a83`](https://github.com/tobymao/sqlglot/commit/5f39a83f1ff957aca57eb4745f83c296436acaac) - **bigquery**: properly generate `LIMIT` for `STRING_AGG` *(PR [#5830](https://github.com/tobymao/sqlglot/pull/5830) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`164fec1`](https://github.com/tobymao/sqlglot/commit/164fec1b36e3c7df41e2e5a5ad6b226fc5f76305) - **optimizer**: test type annotation for snowflake CHARINDEX function *(PR [#5805](https://github.com/tobymao/sqlglot/pull/5805) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+
 ## [v27.12.0] - 2025-09-04
 ### :boom: BREAKING CHANGES
 - due to [`1c551d5`](https://github.com/tobymao/sqlglot/commit/1c551d5ed3315e314013c1f063deabd9d8613e5d) - parse and annotate type for bq TO_JSON *(PR [#5768](https://github.com/tobymao/sqlglot/pull/5768) by [@geooo109](https://github.com/geooo109))*:
@@ -9277,3 +9329,4 @@ Changelog
 [v27.10.0]: https://github.com/tobymao/sqlglot/compare/v27.9.0...v27.10.0
 [v27.11.0]: https://github.com/tobymao/sqlglot/compare/v27.10.0...v27.11.0
 [v27.12.0]: https://github.com/tobymao/sqlglot/compare/v27.11.0...v27.12.0
+[v27.13.0]: https://github.com/tobymao/sqlglot/compare/v27.12.0...v27.13.0

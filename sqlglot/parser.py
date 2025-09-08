@@ -7344,7 +7344,7 @@ class Parser(metaclass=_Parser):
         modes = []
         while True:
             mode = []
-            while self._match(TokenType.VAR):
+            while self._match(TokenType.VAR) or self._match(TokenType.NOT):
                 mode.append(self._prev.text)
 
             if mode:

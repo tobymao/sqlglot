@@ -1577,3 +1577,26 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         for sql in advanced_revoke_cmds:
             with self.subTest(f"Testing PostgreSQL's advanced REVOKE statement: {sql}"):
                 self.validate_identity(sql, check_command_warning=True)
+
+    def test_begin_transaction(self):
+        self.validate_all(
+            "BEGIN",
+            write={
+                "postgres": "BEGIN",
+                "presto": "START TRANSACTION",
+                "trino": "START TRANSACTION",
+            },
+        )
+
+        for keyword in ("TRANSACTION", "WORK"):
+            for level in (
+                "ISOLATION LEVEL SERIALIZABLE",
+                "ISOLATION LEVEL READ COMMITTED",
+                "NOT DEFFERABLE",
+                "READ WRITE",
+                "DEFERRABLE",
+            ):
+                with self.subTest(f"Testing Postgres's BEGIN {keyword} {level}"):
+                    self.validate_identity(
+                        f"BEGIN {keyword} {level}, {level}", f"BEGIN {level}, {level}"
+                    ).assert_is(exp.Transaction)

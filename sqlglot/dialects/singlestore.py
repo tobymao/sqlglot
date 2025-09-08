@@ -244,6 +244,7 @@ class SingleStore(MySQL):
 
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
+        MATCH_AGAINST_TABLE_PREFIX = "TABLE "
 
         @staticmethod
         def _unicode_substitute(m: re.Match[str]) -> str:
@@ -448,6 +449,9 @@ class SingleStore(MySQL):
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
                 )
+            ),
+            exp.MatchAgainst: unsupported_args("modifier")(
+                lambda self, e: super().matchagainst_sql(e)
             ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)

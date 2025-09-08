@@ -5397,7 +5397,7 @@ class Parser(metaclass=_Parser):
                 if type_token == TokenType.VECTOR and len(expressions) == 2:
                     expressions[0] = exp.DataType.build(expressions[0].name, dialect=self.dialect)
 
-            if not expressions or not self._match(TokenType.R_PAREN):
+            if not self._match(TokenType.R_PAREN):
                 self._retreat(index)
                 return None
 

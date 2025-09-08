@@ -11,6 +11,8 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("x::nvarchar()", "CAST(x AS VARCHAR)")
+
         ast = self.parse_one("DATEADD(DAY, n, d)")
         ast.set("unit", exp.Literal.string("MONTH"))
         self.assertEqual(ast.sql("snowflake"), "DATEADD(MONTH, n, d)")
@@ -3030,7 +3032,7 @@ SINGLE = TRUE""",
             "SELECT * FROM SEMANTIC_VIEW(foo METRICS a.b, a.c DIMENSIONS a.b, a.c WHERE a.b > '1995-01-01')",
             """SELECT
   *
-FROM SEMANTIC_VIEW(  
+FROM SEMANTIC_VIEW(
   foo
   METRICS a.b, a.c
   DIMENSIONS a.b, a.c

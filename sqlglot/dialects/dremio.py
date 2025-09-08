@@ -167,6 +167,8 @@ class Dremio(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "DATE_ADD": build_date_delta_with_cast_interval(exp.DateAdd),
             "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "dremio"),
             "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
@@ -216,6 +218,8 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.BitwiseAndAgg: rename_func("BIT_AND"),
+            exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.ToChar: rename_func("TO_CHAR"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.DateAdd: _date_delta_sql("DATE_ADD"),

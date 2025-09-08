@@ -366,6 +366,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
+            exp.JSONBExists: lambda self, e: self.func(
+                "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
+            ),
             exp.JSONExists: unsupported_args("passing", "on_condition")(
                 lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
             ),

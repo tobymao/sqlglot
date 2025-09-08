@@ -22,11 +22,13 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
 
-def cast_to_time6(expression: t.Optional[exp.Expression]) -> exp.Cast:
+def cast_to_time6(
+    expression: t.Optional[exp.Expression], time_type: DataType.Type = exp.DataType.Type.TIME
+) -> exp.Cast:
     return exp.Cast(
         this=expression,
         to=exp.DataType.build(
-            exp.DataType.Type.TIME,
+            time_type,
             expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
         ),
     )
@@ -200,6 +202,11 @@ class SingleStore(MySQL):
             ),
         }
 
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **MySQL.Parser.FUNCTION_PARSERS,
+            "JSON_BUILD_OBJECT": lambda self: self._parse_json_object(),
+        }
+
         NO_PAREN_FUNCTIONS = {
             **MySQL.Parser.NO_PAREN_FUNCTIONS,
             TokenType.UTC_DATE: exp.UtcDate,
@@ -340,6 +347,11 @@ class SingleStore(MySQL):
             if e.unit is not None
             else self.func("DATEDIFF", e.this, e.expression),
             exp.TimestampTrunc: unsupported_args("zone")(timestamptrunc_sql()),
+            exp.CurrentDatetime: lambda self, e: self.sql(
+                cast_to_time6(
+                    exp.CurrentTimestamp(this=exp.Literal.number(6)), exp.DataType.Type.DATETIME
+                )
+            ),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",
@@ -358,6 +370,9 @@ class SingleStore(MySQL):
             exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
                 rename_func("JSON_BUILD_ARRAY")
             ),
+            exp.JSONObject: unsupported_args(
+                "null_handling", "unique_keys", "return_type", "encoding"
+            )(rename_func("JSON_BUILD_OBJECT")),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),
@@ -1671,3 +1686,21 @@ class SingleStore(MySQL):
                 self.unsupported("CurrentTime with timezone is not supported in SingleStore")
 
             return self.func("CURRENT_TIME")
+
+        def standardhash_sql(self, expression: exp.StandardHash) -> str:
+            hash_function = expression.expression
+            if hash_function is None:
+                return self.func("SHA", expression.this)
+            if isinstance(hash_function, exp.Literal):
+                if hash_function.name.lower() == "sha":
+                    return self.func("SHA", expression.this)
+                if hash_function.name.lower() == "md5":
+                    return self.func("MD5", expression.this)
+
+                self.unsupported(
+                    f"{hash_function.this} hash method is not supported in SingleStore"
+                )
+                return self.func("SHA", expression.this)
+
+            self.unsupported("STANDARD_HASH function is not supported in SingleStore")
+            return self.func("SHA", expression.this)

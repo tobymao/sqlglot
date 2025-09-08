@@ -2915,3 +2915,12 @@ OPTIONS (
                 "databricks": "TRY_SUBTRACT(x, y)",
             },
         )
+
+    def test_bitwise_and(self):
+        self.validate_all(
+            "SELECT 1 & 1",
+            write={
+                "bigquery": "SELECT 1 & 1",
+                "snowflake": "SELECT BITAND(1, 1)",
+            },
+        )

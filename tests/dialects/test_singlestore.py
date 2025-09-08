@@ -234,6 +234,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
+            read={
+                "singlestore": "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
+                "oracle": "SELECT JSON_EXISTS('{\"a\":1}', '$.a')",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_BUILD_OBJECT('name', name) FROM t",
             read={
                 "singlestore": "SELECT JSON_BUILD_OBJECT('name', name) FROM t",
@@ -453,6 +460,13 @@ class TestSingleStore(Validator):
             read={
                 "postgres": "SELECT 'ABC' ~* 'a.*'",
                 "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            },
+        )
+        self.validate_all(
+            "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+            read={
+                "singlestore": "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+                "": "SELECT STUFF('abcdef', 2, 3, 'xyz')",
             },
         )
         self.validate_all(

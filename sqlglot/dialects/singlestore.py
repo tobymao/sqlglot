@@ -164,6 +164,7 @@ class SingleStore(MySQL):
                 json_type="JSON",
             ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
+            "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -203,7 +204,6 @@ class SingleStore(MySQL):
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **MySQL.Parser.FUNCTION_PARSERS,
-            "JSON_BUILD_OBJECT": lambda self: self._parse_json_object(),
         }
 
         NO_PAREN_FUNCTIONS = {
@@ -369,6 +369,9 @@ class SingleStore(MySQL):
             exp.JSONBExists: lambda self, e: self.func(
                 "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
             ),
+            exp.JSONExists: unsupported_args("passing", "on_condition")(
+                lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
+            ),
             exp.JSONObject: unsupported_args(
                 "null_handling", "unique_keys", "return_type", "encoding"
             )(rename_func("JSON_BUILD_OBJECT")),
@@ -434,6 +437,12 @@ class SingleStore(MySQL):
                     expression=exp.Lower(this=e.expression),
                 ),
                 "RLIKE",
+            ),
+            exp.Stuff: lambda self, e: self.func(
+                "CONCAT",
+                self.func("SUBSTRING", e.this, exp.Literal.number(1), e.args.get("start") - 1),
+                e.expression,
+                self.func("SUBSTRING", e.this, e.args.get("start") + e.args.get("length")),
             ),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(

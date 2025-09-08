@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.13.2] - 2025-09-08
+### :bug: Bug Fixes
+- [`5e7979f`](https://github.com/tobymao/sqlglot/commit/5e7979f3cf5f7996e198ddd81069d49a4a3b9391) - select session *(PR [#5836](https://github.com/tobymao/sqlglot/pull/5836) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v27.13.1] - 2025-09-08
 ### :bug: Bug Fixes
 - [`f3d55c0`](https://github.com/tobymao/sqlglot/commit/f3d55c05c8411c9871f8ca4d23f726f976c9236b) - remove always token *(PR [#5832](https://github.com/tobymao/sqlglot/pull/5832) by [@tobymao](https://github.com/tobymao))*
@@ -9339,3 +9344,4 @@ Changelog
 [v27.12.0]: https://github.com/tobymao/sqlglot/compare/v27.11.0...v27.12.0
 [v27.13.0]: https://github.com/tobymao/sqlglot/compare/v27.12.0...v27.13.0
 [v27.13.1]: https://github.com/tobymao/sqlglot/compare/v27.13.0...v27.13.1
+[v27.13.2]: https://github.com/tobymao/sqlglot/compare/v27.13.1...v27.13.2

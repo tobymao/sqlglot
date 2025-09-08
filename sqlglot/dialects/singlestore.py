@@ -373,6 +373,7 @@ class SingleStore(MySQL):
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
             exp.JSONArrayAgg: unsupported_args("null_handling", "return_type", "strict")(
                 lambda self, e: self.func("JSON_AGG", e.this, suffix=f"{self.sql(e, 'order')})")
+            ),
             exp.JSONExists: unsupported_args("passing", "on_condition")(
                 lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
             ),

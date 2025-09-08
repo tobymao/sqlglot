@@ -7,7 +7,7 @@ import typing as t
 from collections import defaultdict
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
+from sqlglot.errors import ErrorLevel, ParseError, TokenError, concat_messages, merge_errors
 from sqlglot.helper import apply_index_offset, ensure_list, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -5298,27 +5298,29 @@ class Parser(metaclass=_Parser):
         this: t.Optional[exp.Expression] = None
         prefix = self._match_text_seq("SYSUDTLIB", ".")
 
-        if not self._match_set(self.TYPE_TOKENS):
+        if self._match_set(self.TYPE_TOKENS):
+            type_token = self._prev.token_type
+        else:
+            type_token = None
             identifier = allow_identifiers and self._parse_id_var(
                 any_token=False, tokens=(TokenType.VAR,)
             )
             if isinstance(identifier, exp.Identifier):
-                tokens = self.dialect.tokenize(identifier.sql(dialect=self.dialect))
+                try:
+                    tokens = self.dialect.tokenize(identifier.name)
+                except TokenError:
+                    tokens = None
 
-                if len(tokens) != 1:
-                    self.raise_error("Unexpected identifier", self._prev)
-
-                if tokens[0].token_type in self.TYPE_TOKENS:
-                    self._prev = tokens[0]
-                elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
-                    this = self._parse_user_defined_type(identifier)
+                if tokens and len(tokens) == 1 and tokens[0].token_type in self.TYPE_TOKENS:
+                    type_token = tokens[0].token_type
                 else:
-                    self._retreat(self._index - 1)
-                    return None
+                    if self.dialect.SUPPORTS_USER_DEFINED_TYPES:
+                        this = self._parse_user_defined_type(identifier)
+                    else:
+                        self._retreat(self._index - 1)
+                        return None
             else:
                 return None
-
-        type_token = self._prev.token_type
 
         if type_token == TokenType.PSEUDO_TYPE:
             return self.expression(exp.PseudoType, this=self._prev.text.upper())

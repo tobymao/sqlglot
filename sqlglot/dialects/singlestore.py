@@ -164,6 +164,7 @@ class SingleStore(MySQL):
                 json_type="JSON",
             ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
+            "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -203,7 +204,6 @@ class SingleStore(MySQL):
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **MySQL.Parser.FUNCTION_PARSERS,
-            "JSON_BUILD_OBJECT": lambda self: self._parse_json_object(),
         }
 
         NO_PAREN_FUNCTIONS = {

@@ -7080,17 +7080,12 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.BETWEEN)
             start = self._parse_window_spec()
 
-            if self._match_text_seq("EXCLUDE"):
-                exclude = self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
-                end = {}
-            else:
-                self._match(TokenType.AND)
-                end = self._parse_window_spec()
-                exclude = (
-                    self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
-                    if self._match_text_seq("EXCLUDE")
-                    else None
-                )
+            end = self._parse_window_spec() if self._match(TokenType.AND) else {}
+            exclude = (
+                self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
+                if self._match_text_seq("EXCLUDE")
+                else None
+            )
 
             spec = self.expression(
                 exp.WindowSpec,

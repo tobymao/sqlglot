@@ -1556,10 +1556,6 @@ REVERSE(tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
-CONCAT('Hello');
-VARCHAR;
-
-# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

@@ -1556,6 +1556,10 @@ REVERSE(tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+CONCAT('Hello');
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 
@@ -1574,6 +1578,34 @@ VARCHAR;
 # dialect: snowflake
 CONCAT_WS(tbl.bin_col, tbl.bin_col);
 BINARY;
+
+# dialect: snowflake
+CONTAINS('hello world', 'world');
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(tbl.str_col, 'test');
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(tbl.bin_col, tbl.bin_col);
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(tbl.bin_col, NULL);
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(COLLATE('hello world', 'und:ci'), 'WORLD');
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(COLLATE(tbl.str_col, 'und:ci'), 'test');
+BOOLEAN;
+
+# dialect: snowflake
+CONTAINS(COLLATE('test', 'und:ci'), NULL);
+BOOLEAN;
 
 --------------------------------------
 -- T-SQL

@@ -502,6 +502,7 @@ class Snowflake(Dialect):
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (exp.Reverse,)
         },
+        exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
     }
 
     TIME_MAPPING = {
@@ -1209,6 +1210,7 @@ class Snowflake(Dialect):
             ),
             exp.BitwiseOr: rename_func("BITOR"),
             exp.BitwiseXor: rename_func("BITXOR"),
+            exp.BitwiseAnd: rename_func("BITAND"),
             exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("BITSHIFTRIGHT"),
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),

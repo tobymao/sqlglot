@@ -7079,21 +7079,26 @@ class Parser(metaclass=_Parser):
         if kind:
             self._match(TokenType.BETWEEN)
             start = self._parse_window_spec()
-            self._match(TokenType.AND)
-            end = self._parse_window_spec()
-            exclude = (
-                self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
-                if self._match_text_seq("EXCLUDE")
-                else None
-            )
+
+            if self._match_text_seq("EXCLUDE"):
+                exclude = self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
+                end = {}
+            else:
+                self._match(TokenType.AND)
+                end = self._parse_window_spec()
+                exclude = (
+                    self._parse_var_from_options(self.WINDOW_EXCLUDE_OPTIONS)
+                    if self._match_text_seq("EXCLUDE")
+                    else None
+                )
 
             spec = self.expression(
                 exp.WindowSpec,
                 kind=kind,
                 start=start["value"],
                 start_side=start["side"],
-                end=end["value"],
-                end_side=end["side"],
+                end=end.get("value"),
+                end_side=end.get("side"),
                 exclude=exclude,
             )
         else:
@@ -7131,7 +7136,7 @@ class Parser(metaclass=_Parser):
             "value": (
                 (self._match_text_seq("UNBOUNDED") and "UNBOUNDED")
                 or (self._match_text_seq("CURRENT", "ROW") and "CURRENT ROW")
-                or self._parse_bitwise()
+                or self._parse_type()
             ),
             "side": self._match_texts(self.WINDOW_SIDES) and self._prev.text,
         }

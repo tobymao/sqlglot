@@ -374,6 +374,9 @@ class SingleStore(MySQL):
             exp.JSONArrayAgg: unsupported_args("null_handling", "return_type", "strict")(
                 lambda self, e: self.func("JSON_AGG", e.this, suffix=f"{self.sql(e, 'order')})")
             ),
+            exp.JSONBExists: lambda self, e: self.func(
+                "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
+            ),
             exp.JSONExists: unsupported_args("passing", "on_condition")(
                 lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
             ),

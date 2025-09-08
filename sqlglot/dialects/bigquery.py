@@ -1386,8 +1386,6 @@ class BigQuery(Dialect):
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixDate: rename_func("UNIX_DATE"),
             exp.UnixToTime: _unix_to_time_sql,
-            exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
-            exp.UtcTime: rename_func("UTC_TIME"),
             exp.Uuid: lambda *_: "GENERATE_UUID()",
             exp.Values: _derived_table_values_to_unnest,
             exp.VariancePop: rename_func("VAR_POP"),

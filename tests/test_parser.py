@@ -209,7 +209,7 @@ class TestParser(unittest.TestCase):
         self.assertIsNone(expression.this)
         self.assertEqual(expression.args["modes"][0], "READ WRITE")
         self.assertEqual(expression.args["modes"][1], "ISOLATION LEVEL SERIALIZABLE")
-        self.assertEqual(expression.sql(), "BEGIN")
+        self.assertEqual(expression.sql(), "BEGIN READ WRITE, ISOLATION LEVEL SERIALIZABLE")
 
         expression = parse_one("BEGIN", read="bigquery")
         self.assertNotIsInstance(expression, exp.Transaction)

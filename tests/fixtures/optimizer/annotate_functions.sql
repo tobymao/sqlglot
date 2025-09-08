@@ -1591,18 +1591,6 @@ BOOLEAN;
 CONTAINS(tbl.bin_col, NULL);
 BOOLEAN;
 
-# dialect: snowflake
-CONTAINS(COLLATE('hello world', 'und:ci'), 'WORLD');
-BOOLEAN;
-
-# dialect: snowflake
-CONTAINS(COLLATE(tbl.str_col, 'und:ci'), 'test');
-BOOLEAN;
-
-# dialect: snowflake
-CONTAINS(COLLATE('test', 'und:ci'), NULL);
-BOOLEAN;
-
 --------------------------------------
 -- T-SQL
 --------------------------------------

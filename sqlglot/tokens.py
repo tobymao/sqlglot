@@ -234,7 +234,6 @@ class TokenType(AutoName):
     # keywords
     ALIAS = auto()
     ALTER = auto()
-    ALWAYS = auto()
     ALL = auto()
     ANTI = auto()
     ANY = auto()
@@ -713,7 +712,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "~~*": TokenType.ILIKE,
         "~*": TokenType.IRLIKE,
         "ALL": TokenType.ALL,
-        "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,

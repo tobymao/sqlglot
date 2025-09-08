@@ -235,6 +235,13 @@ class TestSingleStore(Validator):
         )
         self.validate_identity("JSON_BUILD_ARRAY(id, name)").assert_is(exp.JSONArray)
         self.validate_all(
+            "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+            read={
+                "singlestore": "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+                "": "SELECT JSONB_EXISTS('{\"x\":true}', 'x')",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
             read={
                 "singlestore": "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
@@ -461,6 +468,13 @@ class TestSingleStore(Validator):
             read={
                 "postgres": "SELECT 'ABC' ~* 'a.*'",
                 "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
+            },
+        )
+        self.validate_all(
+            "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+            read={
+                "singlestore": "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+                "": "SELECT STUFF('abcdef', 2, 3, 'xyz')",
             },
         )
         self.validate_all(

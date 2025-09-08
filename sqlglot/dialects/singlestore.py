@@ -370,6 +370,9 @@ class SingleStore(MySQL):
             exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
                 rename_func("JSON_BUILD_ARRAY")
             ),
+            exp.JSONBExists: lambda self, e: self.func(
+                "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
+            ),
             exp.JSONExists: unsupported_args("passing", "on_condition")(
                 lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
             ),
@@ -438,6 +441,12 @@ class SingleStore(MySQL):
                     expression=exp.Lower(this=e.expression),
                 ),
                 "RLIKE",
+            ),
+            exp.Stuff: lambda self, e: self.func(
+                "CONCAT",
+                self.func("SUBSTRING", e.this, exp.Literal.number(1), e.args.get("start") - 1),
+                e.expression,
+                self.func("SUBSTRING", e.this, e.args.get("start") + e.args.get("length")),
             ),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(

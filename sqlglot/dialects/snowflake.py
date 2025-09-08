@@ -1161,7 +1161,6 @@ class Snowflake(Dialect):
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "SEMANTIC VIEW": TokenType.SEMANTIC_VIEW,
-            "SESSION": TokenType.SESSION,
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
             "STAGE": TokenType.STAGE,

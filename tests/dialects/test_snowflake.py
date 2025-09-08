@@ -11,6 +11,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT session")
         self.validate_identity("x::nvarchar()", "CAST(x AS VARCHAR)")
 
         ast = self.parse_one("DATEADD(DAY, n, d)")

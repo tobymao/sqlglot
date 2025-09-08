@@ -1334,3 +1334,29 @@ MATCH_RECOGNIZE (
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")
         self.validate_identity("ANALYZE tbl WITH (prop1=val1, prop2=val2)")
+
+    def test_bit_aggs(self):
+        self.validate_all(
+            "BITWISE_AND_AGG(x)",
+            read={
+                "presto": "BITWISE_AND_AGG(x)",
+                "trino": "BITWISE_AND_AGG(x)",
+                "oracle": "BITWISE_AND_AGG(x)",
+            },
+        )
+        self.validate_all(
+            "BITWISE_OR_AGG(x)",
+            read={
+                "presto": "BITWISE_OR_AGG(x)",
+                "trino": "BITWISE_OR_AGG(x)",
+                "oracle": "BITWISE_OR_AGG(x)",
+            },
+        )
+        self.validate_all(
+            "BITWISE_XOR_AGG(x)",
+            read={
+                "presto": "BITWISE_XOR_AGG(x)",
+                "trino": "BITWISE_XOR_AGG(x)",
+                "oracle": "BITWISE_XOR_AGG(x)",
+            },
+        )

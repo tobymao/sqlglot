@@ -768,6 +768,10 @@ class BigQuery(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCountAgg.from_arg_list,
             "BOOL": exp.JSONBool.from_arg_list,
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
@@ -1273,6 +1277,10 @@ class BigQuery(Dialect):
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArrayRemove: filter_array_using_unnest,
+            exp.BitwiseAndAgg: rename_func("BIT_AND"),
+            exp.BitwiseOrAgg: rename_func("BIT_OR"),
+            exp.BitwiseXorAgg: rename_func("BIT_XOR"),
+            exp.BitwiseCountAgg: rename_func("BIT_COUNT"),
             exp.ByteLength: rename_func("BYTE_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: (

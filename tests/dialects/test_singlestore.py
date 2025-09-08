@@ -227,6 +227,14 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT JSON_BUILD_ARRAY(id, name) FROM t",
+            read={
+                "singlestore": "SELECT JSON_BUILD_ARRAY(id, name) FROM t",
+                "oracle": "SELECT JSON_ARRAY(id, name) FROM t",
+            },
+        )
+        self.validate_identity("JSON_BUILD_ARRAY(id, name)").assert_is(exp.JSONArray)
+        self.validate_all(
             "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
             read={
                 "singlestore": "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",

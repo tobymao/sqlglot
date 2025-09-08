@@ -1,4 +1,4 @@
-from sqlglot import parse_one
+from sqlglot import parse_one, exp
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
@@ -769,3 +769,14 @@ class TestSingleStore(Validator):
             "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
             "SELECT name :> LONGTEXT :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
         )
+
+    def test_match_against(self):
+        self.validate_identity(
+            "SELECT MATCH(name) AGAINST ('search term') FROM products"
+        ).expressions[0].assert_is(exp.MatchAgainst)
+        self.validate_identity(
+            "SELECT MATCH(name, name) AGAINST ('book') FROM products"
+        ).expressions[0].assert_is(exp.MatchAgainst)
+        self.validate_identity(
+            "SELECT MATCH(TABLE products2) AGAINST ('search term') FROM products2"
+        ).expressions[0].assert_is(exp.MatchAgainst)

@@ -995,22 +995,16 @@ class DuckDB(Dialect):
 
         def join_sql(self, expression: exp.Join) -> str:
             if (
-                expression.side == "LEFT"
-                and not expression.args.get("on")
-                and isinstance(expression.this, exp.Unnest)
-            ):
-                # Some dialects support `LEFT JOIN UNNEST(...)` without an explicit ON clause
-                # DuckDB doesn't, but we can just add a dummy ON clause that is always true
-                return super().join_sql(expression.on(exp.true()))
-
-            # Convert INNER/OUTER JOIN without ON clause to CROSS JOIN
-            kind = expression.args.get("kind")
-            if (
                 not expression.args.get("using")
                 and not expression.args.get("on")
                 and not expression.method
-                and (not kind or kind in ("INNER", "OUTER"))
+                and (expression.kind in ("", "INNER", "OUTER"))
             ):
+                # Some dialects support `LEFT/INNER JOIN UNNEST(...)` without an explicit ON clause
+                # DuckDB doesn't, but we can just add a dummy ON clause that is always true
+                if isinstance(expression.this, exp.Unnest):
+                    return super().join_sql(expression.on(exp.true()))
+
                 expression.args.pop("side", None)
                 expression.args.pop("kind", None)
 

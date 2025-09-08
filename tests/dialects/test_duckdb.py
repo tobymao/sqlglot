@@ -12,8 +12,12 @@ class TestDuckDB(Validator):
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
-        query = "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT t.col['b'] FROM _data, UNNEST(_data.col) AS t(col) WHERE t.col['a'] = 1"
-        expr = annotate_types(self.validate_identity(query))
+        expr = annotate_types(
+            self.validate_identity(
+                "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT t.col['b'] FROM _data, UNNEST(_data.col) AS t(col) WHERE t.col['a'] = 1",
+                "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT t.col['b'] FROM _data JOIN UNNEST(_data.col) AS t(col) ON TRUE WHERE t.col['a'] = 1",
+            )
+        )
         self.assertEqual(
             expr.sql(dialect="bigquery"),
             "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT col.b FROM _data, UNNEST(_data.col) AS col WHERE col.a = 1",
@@ -341,9 +345,20 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
         ).assert_is(exp.Summarize)
-        self.validate_identity(
-            "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
-        )
+
+        for join_type in ("LEFT", "LEFT OUTER", "INNER"):
+            with self.subTest(f"Testing transpilation of join {join_type} with UNNEST"):
+                self.validate_all(
+                    f"SELECT * FROM x {join_type} JOIN UNNEST(y) ON TRUE",
+                    read={
+                        "bigquery": f"SELECT * FROM x {join_type} JOIN UNNEST(y)",
+                    },
+                    write={
+                        "bigquery": f"SELECT * FROM x {join_type} JOIN UNNEST(y) ON TRUE",
+                        "duckdb": f"SELECT * FROM x {join_type} JOIN UNNEST(y) ON TRUE",
+                    },
+                )
+
         self.validate_identity(
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
         )

@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    add_join_on_true,
     any_value_to_max_sql,
     arrow_json_extract_sql,
     concat_to_dpipe_sql,
@@ -142,6 +143,12 @@ class SQLite(Dialect):
                 if is_attach
                 else self.expression(exp.Detach, this=this)
             )
+
+        def _parse_join(
+            self, skip_join_token: bool = False, parse_bracket: bool = False
+        ) -> t.Optional[exp.Join]:
+            join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=parse_bracket)
+            return add_join_on_true(join)
 
     class Generator(generator.Generator):
         JOIN_HINTS = False

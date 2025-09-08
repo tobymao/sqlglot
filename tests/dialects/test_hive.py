@@ -917,3 +917,25 @@ class TestHive(Validator):
                 "hive": "CAST(a AS BOOLEAN)",
             },
         )
+
+    def test_joins_without_on(self):
+        for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
+            with self.subTest(f"Testing transpilation of {join} without ON"):
+                self.validate_all(
+                    f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                    read={
+                        "hive": f"SELECT * FROM t1 {join} JOIN t2",
+                        "spark2": f"SELECT * FROM t1 {join} JOIN t2",
+                        "spark": f"SELECT * FROM t1 {join} JOIN t2",
+                        "databricks": f"SELECT * FROM t1 {join} JOIN t2",
+                        "sqlite": f"SELECT * FROM t1 {join} JOIN t2",
+                    },
+                    write={
+                        "hive": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                        "spark2": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                        "spark": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                        "databricks": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                        "sqlite": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                        "duckdb": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
+                    },
+                )

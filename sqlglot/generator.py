@@ -3452,7 +3452,9 @@ class Generator(metaclass=_Generator):
         return f"TTL{self.seg(self.expressions(expression))}{where}{group}{aggregates}"
 
     def transaction_sql(self, expression: exp.Transaction) -> str:
-        return "BEGIN"
+        modes = self.expressions(expression, key="modes")
+        modes = f" {modes}" if modes else ""
+        return f"BEGIN{modes}"
 
     def commit_sql(self, expression: exp.Commit) -> str:
         chain = expression.args.get("chain")

@@ -202,6 +202,11 @@ class SingleStore(MySQL):
             ),
         }
 
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **MySQL.Parser.FUNCTION_PARSERS,
+            "JSON_BUILD_OBJECT": lambda self: self._parse_json_object(),
+        }
+
         NO_PAREN_FUNCTIONS = {
             **MySQL.Parser.NO_PAREN_FUNCTIONS,
             TokenType.UTC_DATE: exp.UtcDate,
@@ -363,6 +368,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
+            exp.JSONObject: unsupported_args(
+                "null_handling", "unique_keys", "return_type", "encoding"
+            )(rename_func("JSON_BUILD_OBJECT")),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),
@@ -1687,3 +1695,21 @@ class SingleStore(MySQL):
                 self.unsupported("CurrentTimestamp with timezone is not supported in SingleStore")
 
             return self.func("CURRENT_TIMESTAMP")
+
+        def standardhash_sql(self, expression: exp.StandardHash) -> str:
+            hash_function = expression.expression
+            if hash_function is None:
+                return self.func("SHA", expression.this)
+            if isinstance(hash_function, exp.Literal):
+                if hash_function.name.lower() == "sha":
+                    return self.func("SHA", expression.this)
+                if hash_function.name.lower() == "md5":
+                    return self.func("MD5", expression.this)
+
+                self.unsupported(
+                    f"{hash_function.this} hash method is not supported in SingleStore"
+                )
+                return self.func("SHA", expression.this)
+
+            self.unsupported("STANDARD_HASH function is not supported in SingleStore")
+            return self.func("SHA", expression.this)

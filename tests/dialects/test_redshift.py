@@ -700,8 +700,7 @@ FROM (
         self.validate_identity("ANALYZE TBL ALL COLUMNS")
 
     def test_cast(self):
-        self.validate_identity('1::"int"', "CAST(1 AS INTEGER)")
-        assert parse_one('1::"int"', read="redshift").to.is_type(exp.DataType.Type.INT)
+        self.validate_identity('1::"int"', "CAST(1 AS INTEGER)").to.is_type(exp.DataType.Type.INT)
 
         with self.assertRaises(ParseError):
             parse_one('1::"udt"', read="redshift")

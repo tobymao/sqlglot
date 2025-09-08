@@ -226,6 +226,13 @@ class TestSingleStore(Validator):
                 "": 'SELECT JSON_FORMAT(\'["G","alpha","20",10]\')',
             },
         )
+        self.validate_all(
+            "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+            read={
+                "singlestore": "SELECT BSON_MATCH_ANY_EXISTS('{\"x\":true}', 'x')",
+                "": "SELECT JSONB_EXISTS('{\"x\":true}', 'x')",
+            },
+        )
 
     def test_date_parts_functions(self):
         self.validate_identity(

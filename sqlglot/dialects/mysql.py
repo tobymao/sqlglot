@@ -779,6 +779,8 @@ class MySQL(Dialect):
             exp.Week: _remove_ts_or_ds_to_date(),
             exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
             exp.Year: _remove_ts_or_ds_to_date(),
+            exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
+            exp.UtcTime: rename_func("UTC_TIME"),
         }
 
         UNSIGNED_TYPE_MAPPING = {

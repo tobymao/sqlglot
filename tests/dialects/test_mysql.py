@@ -1467,3 +1467,9 @@ COMMENT='客户账户表'"""
         self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS AUTO UPDATE")
         self.validate_identity("ANALYZE tbl UPDATE HISTOGRAM ON col1 WITH 5 BUCKETS MANUAL UPDATE")
         self.validate_identity("ANALYZE tbl DROP HISTOGRAM ON col1")
+
+    def test_utc_time(self):
+        self.validate_identity("UTC_TIME()").assert_is(exp.UtcTime)
+        self.validate_identity("UTC_TIME(6)").assert_is(exp.UtcTime)
+        self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
+        self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)

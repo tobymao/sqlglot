@@ -2554,20 +2554,19 @@ OPTIONS (
         )
 
     def test_string_agg(self):
-        self.validate_identity(
-            "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
-            "SELECT a, STRING_AGG(b, ',') FROM table GROUP BY a",
-        )
-
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
         self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
         self.validate_identity("STRING_AGG(foo, b'|' ORDER BY bar)")
-
         self.validate_identity("STRING_AGG(a)", "STRING_AGG(a, ',')")
+        self.validate_identity("STRING_AGG(DISTINCT v, sep LIMIT 3)")
         self.validate_identity(
             "STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)",
             "STRING_AGG(DISTINCT a, ',' ORDER BY b DESC, c DESC LIMIT 10)",
+        )
+        self.validate_identity(
+            "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
+            "SELECT a, STRING_AGG(b, ',') FROM table GROUP BY a",
         )
 
     def test_annotate_timestamps(self):

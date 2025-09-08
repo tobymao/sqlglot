@@ -199,6 +199,14 @@ class SingleStore(MySQL):
             ),
         }
 
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **MySQL.Parser.FUNCTION_PARSERS,
+            "JSON_AGG": lambda self: exp.JSONArrayAgg(
+                this=self._parse_term(),
+                order=self._parse_order(),
+            ),
+        }
+
         NO_PAREN_FUNCTIONS = {
             **MySQL.Parser.NO_PAREN_FUNCTIONS,
             TokenType.UTC_DATE: exp.UtcDate,
@@ -237,6 +245,7 @@ class SingleStore(MySQL):
 
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
+        NULL_ORDERING_SUPPORTED = True
 
         @staticmethod
         def _unicode_substitute(m: re.Match[str]) -> str:
@@ -354,6 +363,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
+            exp.JSONArrayAgg: unsupported_args("null_handling", "return_type", "strict")(
+                lambda self, e: self.func("JSON_AGG", e.this, suffix=f"{self.sql(e, 'order')})")
+            ),
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfMonth: rename_func("DAY"),
             exp.Hll: rename_func("APPROX_COUNT_DISTINCT"),

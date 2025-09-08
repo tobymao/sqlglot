@@ -691,7 +691,7 @@ class MySQL(Dialect):
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         LOCKING_READS_SUPPORTED = True
-        NULL_ORDERING_SUPPORTED = None
+        NULL_ORDERING_SUPPORTED: t.Optional[bool] = None
         JOIN_HINTS = False
         TABLE_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False

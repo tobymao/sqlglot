@@ -226,6 +226,15 @@ class TestSingleStore(Validator):
                 "": 'SELECT JSON_FORMAT(\'["G","alpha","20",10]\')',
             },
         )
+        self.validate_all(
+            "SELECT JSON_AGG(name ORDER BY id ASC NULLS LAST, name DESC NULLS FIRST) FROM t",
+            read={
+                "singlestore": "SELECT JSON_AGG(name ORDER BY id ASC NULLS LAST, name DESC NULLS FIRST) FROM t",
+                "oracle": "SELECT JSON_ARRAYAGG(name ORDER BY id ASC, name DESC) FROM t",
+            },
+        )
+        self.validate_identity("SELECT JSON_AGG(name) FROM t")
+        self.validate_identity("SELECT JSON_AGG(t.*) FROM t")
 
     def test_date_parts_functions(self):
         self.validate_identity(

@@ -165,6 +165,7 @@ class SingleStore(MySQL):
             ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
             "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
+            "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),
             "DATE": exp.Date.from_arg_list,
             "DAYNAME": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0),
@@ -204,7 +205,6 @@ class SingleStore(MySQL):
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **MySQL.Parser.FUNCTION_PARSERS,
-            "JSON_BUILD_OBJECT": lambda self: self._parse_json_object(),
         }
 
         NO_PAREN_FUNCTIONS = {
@@ -369,6 +369,9 @@ class SingleStore(MySQL):
             exp.JSONFormat: unsupported_args("options", "is_json")(rename_func("JSON_PRETTY")),
             exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
                 rename_func("JSON_BUILD_ARRAY")
+            ),
+            exp.JSONExists: unsupported_args("passing", "on_condition")(
+                lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
             ),
             exp.JSONObject: unsupported_args(
                 "null_handling", "unique_keys", "return_type", "encoding"

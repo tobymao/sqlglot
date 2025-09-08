@@ -6464,6 +6464,11 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_case(self) -> t.Optional[exp.Expression]:
+        if self._match(TokenType.DOT, advance=False):
+            # Avoid raising on valid expressions like case.*, supported by, e.g., spark & snowflake
+            self._retreat(self._index - 1)
+            return None
+
         ifs = []
         default = None
 

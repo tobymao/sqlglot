@@ -227,6 +227,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
+            read={
+                "singlestore": "SELECT JSON_MATCH_ANY_EXISTS('{\"a\":1}', 'a')",
+                "oracle": "SELECT JSON_EXISTS('{\"a\":1}', '$.a')",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_BUILD_OBJECT('name', name) FROM t",
             read={
                 "singlestore": "SELECT JSON_BUILD_OBJECT('name', name) FROM t",

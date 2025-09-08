@@ -651,9 +651,3 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.UNKNOWN)
 
         return expression
-
-    def _annotate_concat_ws(self, expression: exp.ConcatWs) -> exp.ConcatWs:
-        self._annotate_by_args(expression, "expressions")
-        if expression.type and expression.type.this == exp.DataType.Type.TEXT:
-            self._set_type(expression, exp.DataType.Type.VARCHAR)
-        return expression

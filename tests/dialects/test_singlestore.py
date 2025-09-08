@@ -621,6 +621,8 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT CURRENT_TIMESTAMP(6) :> DATETIME(6)",
             },
         )
+        self.validate_identity("SELECT UTC_TIMESTAMP(6)")
+        self.validate_identity("SELECT UTC_TIME(6)")
 
     def test_types(self):
         self.validate_all(

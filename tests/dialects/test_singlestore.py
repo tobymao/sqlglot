@@ -456,6 +456,13 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
+            "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+            read={
+                "singlestore": "SELECT CONCAT(SUBSTRING('abcdef', 1, 2 - 1), 'xyz', SUBSTRING('abcdef', 2 + 3))",
+                "": "SELECT STUFF('abcdef', 2, 3, 'xyz')",
+            },
+        )
+        self.validate_all(
             "SELECT SHA(email) FROM t",
             read={
                 "singlestore": "SELECT SHA(email) FROM t",

@@ -2005,6 +2005,12 @@ def groupconcat_sql(
     on_overflow_sql = self.sql(expression, "on_overflow")
     on_overflow_sql = f" ON OVERFLOW {on_overflow_sql}" if (on_overflow and on_overflow_sql) else ""
 
+    if isinstance(this, exp.Limit) and this.this:
+        limit = this
+        this = limit.this.pop()
+    else:
+        limit = None
+
     order = this.find(exp.Order)
 
     if order and order.this:
@@ -2013,11 +2019,16 @@ def groupconcat_sql(
     args = self.format_args(this, f"{separator}{on_overflow_sql}")
     listagg: exp.Expression = exp.Anonymous(this=func_name, expressions=[args])
 
+    modifiers = self.sql(limit)
+
     if order:
         if within_group:
             listagg = exp.WithinGroup(this=listagg, expression=order)
         else:
-            listagg.set("expressions", [f"{args}{self.sql(expression=expression.this)}"])
+            modifiers = f"{self.sql(order)}{modifiers}"
+
+    if modifiers:
+        listagg.set("expressions", [f"{args}{modifiers}"])
 
     return self.sql(listagg)
 

@@ -22,11 +22,13 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
 
-def cast_to_time6(expression: t.Optional[exp.Expression]) -> exp.Cast:
+def cast_to_time6(
+    expression: t.Optional[exp.Expression], time_type: DataType.Type = exp.DataType.Type.TIME
+) -> exp.Cast:
     return exp.Cast(
         this=expression,
         to=exp.DataType.build(
-            exp.DataType.Type.TIME,
+            time_type,
             expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
         ),
     )
@@ -339,6 +341,11 @@ class SingleStore(MySQL):
             if e.unit is not None
             else self.func("DATEDIFF", e.this, e.expression),
             exp.TimestampTrunc: unsupported_args("zone")(timestamptrunc_sql()),
+            exp.CurrentDatetime: lambda self, e: self.sql(
+                cast_to_time6(
+                    exp.CurrentTimestamp(this=exp.Literal.number(6)), exp.DataType.Type.DATETIME
+                )
+            ),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
                 "expressions",

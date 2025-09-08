@@ -435,6 +435,12 @@ class SingleStore(MySQL):
                 ),
                 "RLIKE",
             ),
+            exp.Stuff: lambda self, e: self.func(
+                "CONCAT",
+                self.func("SUBSTRING", e.this, exp.Literal.number(1), e.args.get("start") - 1),
+                e.expression,
+                self.func("SUBSTRING", e.this, e.args.get("start") + e.args.get("length")),
+            ),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")

@@ -440,6 +440,20 @@ class TestSingleStore(Validator):
                 "singlestore": "SELECT LOWER('ABC') RLIKE LOWER('a.*')",
             },
         )
+        self.validate_all(
+            "SELECT LOCATE('a', name) FROM t",
+            read={
+                "": "SELECT STRPOS(name, 'a') FROM t",
+                "singlestore": "SELECT LOCATE('a', name) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT LOCATE('a', name, 1) FROM t",
+            read={
+                "": "SELECT STRPOS(name, 'a', 1) FROM t",
+                "singlestore": "SELECT LOCATE('a', name, 1) FROM t",
+            },
+        )
 
     def test_reduce_functions(self):
         self.validate_all(

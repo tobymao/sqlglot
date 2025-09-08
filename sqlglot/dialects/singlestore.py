@@ -417,6 +417,11 @@ class SingleStore(MySQL):
                 ),
                 "RLIKE",
             ),
+            exp.StrPosition: unsupported_args("occurrence")(
+                lambda self, e: self.func(
+                    "LOCATE", e.args.get("substr"), e.this, e.args.get("position")
+                )
+            ),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")

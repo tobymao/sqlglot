@@ -26,7 +26,15 @@ false;
 bool;
 
 null;
+UNKNOWN;
+
+# dialect: spark
 null;
+NULL;
+
+# dialect: databricks
+null;
+NULL;
 
 null and false;
 bool;

@@ -1595,6 +1595,22 @@ BOOLEAN;
 REVERSE(NULL);
 VARCHAR;
 
+# dialect: snowflake
+ENDSWITH('hello world', 'world');
+BOOLEAN;
+
+# dialect: snowflake
+ENDSWITH(tbl.str_col, 'test');
+BOOLEAN;
+
+# dialect: snowflake
+ENDSWITH(tbl.bin_col, tbl.bin_col);
+BOOLEAN;
+
+# dialect: snowflake
+ENDSWITH(tbl.bin_col, NULL);
+BOOLEAN;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

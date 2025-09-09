@@ -717,17 +717,19 @@ class TestSnowflake(Validator):
                 "teradata": "TO_CHAR(x, y)",
             },
         )
-        self.validate_identity(
-            "TO_CHAR(foo::DATE, 'yyyy')",
-            "TO_CHAR(CAST(foo AS DATE), 'yyyy')",
-        )
-        self.validate_all(
-            "TO_CHAR(foo::TIMESTAMP, 'YYYY-MM')",
-            write={
-                "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
-                "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
-            },
-        )
+        for to_func in ("TO_CHAR", "TO_VARCHAR"):
+            with self.subTest(f"Testing transpilation of {to_func}"):
+                self.validate_identity(
+                    f"{to_func}(foo::DATE, 'yyyy')",
+                    "TO_CHAR(CAST(foo AS DATE), 'yyyy')",
+                )
+                self.validate_all(
+                    f"{to_func}(foo::TIMESTAMP, 'YYYY-MM')",
+                    write={
+                        "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
+                        "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
+                    },
+                )
         self.validate_all(
             "SQUARE(x)",
             write={

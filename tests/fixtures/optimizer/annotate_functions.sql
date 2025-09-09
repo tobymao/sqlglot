@@ -1627,6 +1627,54 @@ BOOLEAN;
 STARTSWITH(tbl.bin_col, NULL);
 BOOLEAN;
 
+# dialect: snowflake
+SUBSTR('hello world', 1, 5);
+VARCHAR;
+
+# dialect: snowflake
+SUBSTR(tbl.str_col, 1, 3);
+STRING;
+
+# dialect: snowflake
+SUBSTR(tbl.bin_col, 1, 3);
+BINARY;
+
+# dialect: snowflake
+SUBSTR(tbl.str_col, NULL);
+STRING;
+
+# dialect: snowflake
+LEFT('hello world', 5);
+VARCHAR;
+
+# dialect: snowflake
+LEFT(tbl.str_col, 3);
+STRING;
+
+# dialect: snowflake
+LEFT(tbl.bin_col, 3);
+BINARY;
+
+# dialect: snowflake
+LEFT(tbl.bin_col, NULL);
+BINARY;
+
+# dialect: snowflake
+RIGHT('hello world', 5);
+VARCHAR;
+
+# dialect: snowflake
+RIGHT(tbl.str_col, 3);
+STRING;
+
+# dialect: snowflake
+RIGHT(tbl.bin_col, 3);
+BINARY;
+
+# dialect: snowflake
+RIGHT(tbl.str_col, NULL);
+STRING;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

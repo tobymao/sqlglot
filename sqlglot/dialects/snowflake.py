@@ -491,7 +491,6 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
 
     return expression
 
-
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -510,6 +509,14 @@ class Snowflake(Dialect):
         **Dialect.ANNOTATORS,
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
+        **{
+            expr_type: lambda self, e: self._annotate_by_args(e, "this")
+            for expr_type in (
+                exp.Left,
+                exp.Right,
+                exp.Substring,
+            )
+        },
     }
 
     TIME_MAPPING = {

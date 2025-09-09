@@ -309,6 +309,7 @@ class Hive(Dialect):
         STRICT_CAST = False
         VALUES_FOLLOWED_BY_PAREN = False
         JOINS_HAVE_EQUAL_PRECEDENCE = True
+        ADD_JOIN_ON_TRUE = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

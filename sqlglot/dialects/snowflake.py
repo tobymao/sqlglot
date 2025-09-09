@@ -1297,6 +1297,7 @@ class Snowflake(Dialect):
                 ]
             ),
             exp.SHA: rename_func("SHA1"),
+            exp.LowerHex: rename_func("TO_CHAR"),
             exp.SortArray: rename_func("ARRAY_SORT"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

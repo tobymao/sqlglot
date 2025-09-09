@@ -64,8 +64,12 @@ class TestPipeSyntax(Validator):
             "SELECT * FROM (WITH __tmp2 AS (SELECT x1 FROM ((WITH __tmp1 AS (SELECT x1 FROM (SELECT 1 AS x1)) SELECT * FROM __tmp1))) SELECT * FROM __tmp2)",
         )
         self.validate_identity(
-            "SELECT * FROM t1 LEFT JOIN (FROM t2 |> SELECT id) ON t1.id = t2.id",
-            "SELECT * FROM t1 LEFT JOIN (WITH __tmp1 AS (SELECT id FROM t2) SELECT * FROM t2) ON t1.id = t2.id",
+            "SELECT * FROM (FROM t2 |> SELECT id)",
+            "SELECT * FROM (WITH __tmp1 AS (SELECT id FROM t2) SELECT * FROM __tmp1)",
+        )
+        self.validate_identity(
+            "SELECT * FROM t1 LEFT JOIN (FROM t2 |> SELECT id) ON TRUE",
+            "SELECT * FROM t1 LEFT JOIN (WITH __tmp1 AS (SELECT id FROM t2) SELECT * FROM __tmp1) ON TRUE",
         )
 
     def test_order_by(self):

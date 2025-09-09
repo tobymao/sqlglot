@@ -3207,7 +3207,8 @@ class Parser(metaclass=_Parser):
             # Support parentheses for duckdb FROM-first syntax
             select = self._parse_select(from_=from_)
             if select:
-                select.set("from", from_)
+                if not select.args.get("from"):
+                    select.set("from", from_)
                 this = select
             else:
                 this = exp.select("*").from_(t.cast(exp.From, from_))

@@ -4579,8 +4579,8 @@ class Generator(metaclass=_Generator):
 
         credentials = self.sql(expression, "credentials")
         credentials = self.seg(credentials) if credentials else ""
-        kind = self.seg("FROM" if expression.args.get("kind") else "TO")
         files = self.expressions(expression, key="files", flat=True)
+        kind = self.seg("FROM" if expression.args.get("kind") else "TO") if files else ""
 
         sep = ", " if self.dialect.COPY_PARAMS_ARE_CSV else " "
         params = self.expressions(
@@ -4596,7 +4596,7 @@ class Generator(metaclass=_Generator):
         if params:
             if self.COPY_PARAMS_ARE_WRAPPED:
                 params = f" WITH ({params})"
-            elif not self.pretty:
+            elif not self.pretty and (files or credentials):
                 params = f" {params}"
 
         return f"COPY{this}{kind} {files}{credentials}{params}"

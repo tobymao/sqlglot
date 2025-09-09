@@ -2197,7 +2197,7 @@ class Copy(DML):
     arg_types = {
         "this": True,
         "kind": True,
-        "files": True,
+        "files": False,
         "credentials": False,
         "format": False,
         "params": False,

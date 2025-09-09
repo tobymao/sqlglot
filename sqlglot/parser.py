@@ -4421,6 +4421,8 @@ class Parser(metaclass=_Parser):
     def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
         func = self._parse_function()
         if not func:
+            if self._prev and self._prev.token_type == TokenType.COMMA:
+                return None
             self.raise_error("Expecting an aggregation function in PIVOT")
 
         return self._parse_alias(func)

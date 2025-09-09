@@ -363,6 +363,10 @@ class TestDuckDB(Validator):
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
         )
         self.validate_identity(
+            "SELECT * FROM t PIVOT(FIRST(t) AS t, FOR quarter IN ('Q1', 'Q2'))",
+            "SELECT * FROM t PIVOT(FIRST(t) AS t FOR quarter IN ('Q1', 'Q2'))",
+        )
+        self.validate_identity(
             "SELECT 20_000 AS literal",
             "SELECT 20000 AS literal",
         )

@@ -3205,7 +3205,7 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.FROM):
             from_ = self._parse_from(skip_from_token=True, consume_pipe=True)
             # Support parentheses for duckdb FROM-first syntax
-            select = self._parse_select()
+            select = self._parse_select(from_=from_)
             if select:
                 select.set("from", from_)
                 this = select
@@ -3235,6 +3235,7 @@ class Parser(metaclass=_Parser):
         parse_subquery_alias: bool = True,
         parse_set_operation: bool = True,
         consume_pipe: bool = True,
+        from_: t.Optional[exp.From] = None,
     ) -> t.Optional[exp.Expression]:
         query = self._parse_select_query(
             nested=nested,
@@ -3243,13 +3244,12 @@ class Parser(metaclass=_Parser):
             parse_set_operation=parse_set_operation,
         )
 
-        if (
-            consume_pipe
-            and self._match(TokenType.PIPE_GT, advance=False)
-            and isinstance(query, exp.Query)
-        ):
-            query = self._parse_pipe_syntax_query(query)
-            query = query.subquery(copy=False) if query and table else query
+        if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
+            if not query and from_:
+                query = exp.select("*").from_(from_)
+            if isinstance(query, exp.Query):
+                query = self._parse_pipe_syntax_query(query)
+                query = query.subquery(copy=False) if query and table else query
 
         return query
 

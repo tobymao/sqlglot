@@ -2985,3 +2985,12 @@ OPTIONS (
                 "mysql": "BIT_COUNT(x)",
             },
         )
+
+    def test_to_hex(self):
+        self.validate_all(
+            "SELECT TO_HEX(SHA1('abc'))",
+            write={
+                "bigquery": "SELECT TO_HEX(SHA1('abc'))",
+                "snowflake": "SELECT TO_VARCHAR(SHA1('abc'))",
+            },
+        )

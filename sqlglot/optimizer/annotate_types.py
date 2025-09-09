@@ -193,6 +193,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
         self._visited: t.Set[int] = set()
 
+        # Caches NULL-annotated expressions to set them to UNKNOWN after type inference is completed
+        self._null_expressions: t.Dict[int, exp.Expression] = {}
+
+        # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
+        self._supports_null_type = schema.dialect in ("databricks", "spark")
+
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
         # would reprocess the entire subtree to coerce the types of its operands' projections
@@ -201,13 +207,33 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _set_type(
         self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
     ) -> None:
+        prev_type = expression.type
+        expression_id = id(expression)
+
         expression.type = target_type or exp.DataType.Type.UNKNOWN  # type: ignore
-        self._visited.add(id(expression))
+        self._visited.add(expression_id)
+
+        if (
+            not self._supports_null_type
+            and t.cast(exp.DataType, expression.type).this == exp.DataType.Type.NULL
+        ):
+            self._null_expressions[expression_id] = expression
+        elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DataType.Type.NULL:
+            self._null_expressions.pop(expression_id, None)
 
     def annotate(self, expression: E) -> E:
         for scope in traverse_scope(expression):
             self.annotate_scope(scope)
-        return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
+
+        # This takes care of non-traversable expressions
+        expression = self._maybe_annotate(expression)
+
+        # Replace NULL type with UNKNOWN, since the former is not an actual type;
+        # it is mostly used to aid type coercion, e.g. in query set operations.
+        for expr in self._null_expressions.values():
+            expr.type = exp.DataType.Type.UNKNOWN
+
+        return expression
 
     def annotate_scope(self, scope: Scope) -> None:
         selects = {}

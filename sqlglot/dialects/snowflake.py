@@ -32,6 +32,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, is_float, is_int, seq_get
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.tokens import TokenType
 
@@ -482,6 +483,15 @@ def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Reverse:
+    expression = self._annotate_by_args(expression, "this")
+    if expression.is_type(exp.DataType.Type.NULL):
+        # Snowflake treats REVERSE(NULL) as a VARCHAR
+        self._set_type(expression, exp.DataType.Type.VARCHAR)
+
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -498,11 +508,8 @@ class Snowflake(Dialect):
 
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
-        **{
-            expr_type: lambda self, e: self._annotate_by_args(e, "this")
-            for expr_type in (exp.Reverse,)
-        },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Reverse: _annotate_reverse,
     }
 
     TIME_MAPPING = {

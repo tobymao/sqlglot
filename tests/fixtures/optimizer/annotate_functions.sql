@@ -1611,6 +1611,22 @@ BOOLEAN;
 ENDSWITH(tbl.bin_col, NULL);
 BOOLEAN;
 
+# dialect: snowflake
+STARTSWITH('hello world', 'hello');
+BOOLEAN;
+
+# dialect: snowflake
+STARTSWITH(tbl.str_col, 'test');
+BOOLEAN;
+
+# dialect: snowflake
+STARTSWITH(tbl.bin_col, tbl.bin_col);
+BOOLEAN;
+
+# dialect: snowflake
+STARTSWITH(tbl.bin_col, NULL);
+BOOLEAN;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

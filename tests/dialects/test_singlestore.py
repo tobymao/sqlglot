@@ -872,3 +872,11 @@ class TestSingleStore(Validator):
         self.validate_identity(
             "SELECT MATCH(TABLE products2) AGAINST('search term') FROM products2"
         ).expressions[0].assert_is(exp.MatchAgainst)
+
+    def test_truncate(self):
+        self.validate_all(
+            "TRUNCATE t1; TRUNCATE t2",
+            read={
+                "": "TRUNCATE TABLE t1, t2",
+            },
+        )

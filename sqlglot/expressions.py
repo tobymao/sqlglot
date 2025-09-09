@@ -134,6 +134,11 @@ class Expression(metaclass=_Expression):
 
         return hash((self.__class__, self.hashable_args))
 
+    def __reduce__(self) -> t.Tuple[t.Callable, t.Tuple[t.Dict[str, t.Any]]]:
+        from sqlglot.serde import dump, load
+
+        return (load, (dump(self),))
+
     @property
     def this(self) -> t.Any:
         """

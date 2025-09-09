@@ -110,6 +110,7 @@ class SQLite(Dialect):
         STRING_ALIASES = True
         ALTER_RENAME_REQUIRES_COLUMN = False
         JOINS_HAVE_EQUAL_PRECEDENCE = True
+        ADD_JOIN_ON_TRUE = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

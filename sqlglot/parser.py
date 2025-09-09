@@ -8370,6 +8370,13 @@ class Parser(metaclass=_Parser):
         kind = self._match(TokenType.FROM) or not self._match_text_seq("TO")
 
         files = self._parse_csv(self._parse_file_location)
+        if self._match(TokenType.EQ, advance=False):
+            # Backtrack one token since we've consumed the lhs of a parameter assignment here.
+            # This can happen for Snowflake dialect. Instead, we'd like to parse the parameter
+            # list via `_parse_wrapped(..)` below.
+            self._advance(-1)
+            files = []
+
         credentials = self._parse_credentials()
 
         self._match_text_seq("WITH")

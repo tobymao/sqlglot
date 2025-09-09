@@ -1742,12 +1742,7 @@ class SingleStore(MySQL):
             self.unsupported("STANDARD_HASH function is not supported in SingleStore")
             return self.func("SHA", expression.this)
 
-        @unsupported_args("is_database")
-        @unsupported_args("exists")
-        @unsupported_args("cluster")
-        @unsupported_args("identity")
-        @unsupported_args("option")
-        @unsupported_args("partition")
+        @unsupported_args("is_database", "exists", "cluster", "identity", "option", "partition")
         def truncatetable_sql(self, expression: exp.TruncateTable) -> str:
             statements = []
             for expression in expression.expressions:

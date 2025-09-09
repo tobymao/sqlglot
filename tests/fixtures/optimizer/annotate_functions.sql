@@ -1591,6 +1591,10 @@ BOOLEAN;
 CONTAINS(tbl.bin_col, NULL);
 BOOLEAN;
 
+# dialect: snowflake
+REVERSE(NULL);
+VARCHAR;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

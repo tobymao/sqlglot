@@ -10,7 +10,6 @@ from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
     NormalizationStrategy,
-    add_join_on_true,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
     datestrtodate_sql,
@@ -310,6 +309,7 @@ class Hive(Dialect):
         STRICT_CAST = False
         VALUES_FOLLOWED_BY_PAREN = False
         JOINS_HAVE_EQUAL_PRECEDENCE = True
+        ADD_JOIN_ON_TRUE = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -377,12 +377,6 @@ class Hive(Dialect):
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
-
-        def _parse_join(
-            self, skip_join_token: bool = False, parse_bracket: bool = False
-        ) -> t.Optional[exp.Join]:
-            join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=parse_bracket)
-            return add_join_on_true(join)
 
         def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
             if not self._match(TokenType.L_PAREN, advance=False):

@@ -1910,19 +1910,6 @@ def build_default_decimal_type(
     return _builder
 
 
-def add_join_on_true(join: t.Optional[exp.Join]) -> t.Optional[exp.Join]:
-    if (
-        join
-        and not join.args.get("on")
-        and not join.args.get("using")
-        and not join.method
-        and join.kind in ("", "INNER", "OUTER")
-    ):
-        join.set("on", exp.true())
-
-    return join
-
-
 def build_timestamp_from_parts(args: t.List) -> exp.Func:
     if len(args) == 2:
         # Other dialects don't have the TIMESTAMP_FROM_PARTS(date, time) concept,

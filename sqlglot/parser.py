@@ -1553,6 +1553,10 @@ class Parser(metaclass=_Parser):
     # is true for Snowflake but not for BigQuery which can also process strings
     JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = False
 
+    # Dialects like Databricks support JOINS without join criteria
+    # Adding an ON TRUE, makes transpilation semantically correct for other dialects
+    ADD_JOIN_ON_TRUE = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3874,6 +3878,16 @@ class Parser(metaclass=_Parser):
 
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         comments = (join_comments or []) + comments
+
+        if (
+            self.ADD_JOIN_ON_TRUE
+            and not kwargs.get("on")
+            and not kwargs.get("using")
+            and not kwargs.get("method")
+            and kwargs.get("kind") in (None, "INNER", "OUTER")
+        ):
+            kwargs["on"] = exp.true()
+
         return self.expression(exp.Join, comments=comments, **kwargs)
 
     def _parse_opclass(self) -> t.Optional[exp.Expression]:

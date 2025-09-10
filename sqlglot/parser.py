@@ -5413,7 +5413,7 @@ class Parser(metaclass=_Parser):
 
                 # https://docs.snowflake.com/en/sql-reference/data-types-vector
                 if type_token == TokenType.VECTOR and len(expressions) == 2:
-                    self._parse_vector_expressions(expressions)
+                    expressions = self._parse_vector_expressions(expressions)
 
             if not self._match(TokenType.R_PAREN):
                 self._retreat(index)
@@ -5549,8 +5549,10 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_vector_expressions(self, expressions):
-        expressions[0] = exp.DataType.build(expressions[0].name, dialect=self.dialect)
+    def _parse_vector_expressions(
+        self, expressions: t.List[exp.Expression]
+    ) -> t.List[exp.Expression]:
+        return [exp.DataType.build(expressions[0].name, dialect=self.dialect), expressions[1]]
 
     def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
         index = self._index

@@ -290,8 +290,10 @@ class SingleStore(MySQL):
             "USERS FOR GROUP": _show_parser("USERS FOR GROUP", target=True),
         }
 
-        def _parse_vector_expressions(self, expressions):
-            type_name = expressions[1].name
+        def _parse_vector_expressions(
+            self, expressions: t.List[exp.Expression]
+        ) -> t.List[exp.Expression]:
+            type_name = expressions[1].name.upper()
             if type_name == "I8":
                 type_name = "TINYINT"
             elif type_name == "I16":
@@ -305,8 +307,7 @@ class SingleStore(MySQL):
             elif type_name == "F64":
                 type_name = "DOUBLE"
 
-            expressions[1] = expressions[0]
-            expressions[0] = exp.DataType.build(type_name, dialect=self.dialect)
+            return [exp.DataType.build(type_name, dialect=self.dialect), expressions[0]]
 
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False

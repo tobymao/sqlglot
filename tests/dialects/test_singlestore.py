@@ -890,7 +890,7 @@ class TestSingleStore(Validator):
             },
             write={
                 "snowflake": "CREATE TABLE t (a VECTOR(INT, 10))",
-            }
+            },
         )
         self.validate_all(
             "CREATE TABLE t (a VECTOR(10))",
@@ -900,5 +900,5 @@ class TestSingleStore(Validator):
             },
             write={
                 "snowflake": "CREATE TABLE t (a VECTOR(10))",
-            }
+            },
         )

@@ -1651,6 +1651,12 @@ class Show(Expression):
         "position": False,
         "types": False,
         "privileges": False,
+        "for_table": False,
+        "for_group": False,
+        "for_user": False,
+        "for_role": False,
+        "into_outfile": False,
+        "json": False,
     }
 
 

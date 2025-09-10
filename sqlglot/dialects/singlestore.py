@@ -16,7 +16,7 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     timestampdiff_sql,
 )
-from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql
+from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql, _show_parser
 from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -249,6 +249,47 @@ class SingleStore(MySQL):
         COLUMN_OPERATORS.pop(TokenType.DHASH_ARROW)
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
+        SHOW_PARSERS = {
+            **MySQL.Parser.SHOW_PARSERS,
+            "AGGREGATES": _show_parser("AGGREGATES"),
+            "CDC EXTRACTOR POOL": _show_parser("CDC EXTRACTOR POOL"),
+            "CREATE AGGREGATE": _show_parser("CREATE AGGREGATE", target=True),
+            "CREATE PIPELINE": _show_parser("CREATE PIPELINE", target=True),
+            "CREATE PROJECTION": _show_parser("CREATE PROJECTION", target=True),
+            "DATABASE STATUS": _show_parser("DATABASE STATUS"),
+            "DISTRIBUTED_PLANCACHE STATUS": _show_parser("DISTRIBUTED_PLANCACHE STATUS"),
+            "FULLTEXT SERVICE METRICS LOCAL": _show_parser("FULLTEXT SERVICE METRICS LOCAL"),
+            "FULLTEXT SERVICE METRICS FOR NODE": _show_parser(
+                "FULLTEXT SERVICE METRICS FOR NODE", target=True
+            ),
+            "FULLTEXT SERVICE STATUS": _show_parser("FULLTEXT SERVICE STATUS"),
+            "FUNCTIONS": _show_parser("FUNCTIONS"),
+            "GROUPS": _show_parser("GROUPS"),
+            "GROUPS FOR ROLE": _show_parser("GROUPS FOR ROLE", target=True),
+            "GROUPS FOR USER": _show_parser("GROUPS FOR USER", target=True),
+            "INDEXES": _show_parser("INDEX", target="FROM"),
+            "KEYS": _show_parser("INDEX", target="FROM"),
+            "LINKS": _show_parser("LINKS", target="ON"),
+            "LOAD ERRORS": _show_parser("LOAD ERRORS"),
+            "LOAD WARNINGS": _show_parser("LOAD WARNINGS"),
+            "PARTITIONS": _show_parser("PARTITIONS", target="ON"),
+            "PIPELINES": _show_parser("PIPELINES"),
+            "PLAN": _show_parser("PLAN", target=True),
+            "PLANCACHE": _show_parser("PLANCACHE"),
+            "PROCEDURES": _show_parser("PROCEDURES"),
+            "PROJECTIONS": _show_parser("PROJECTIONS", target="ON TABLE"),
+            "REPLICATION STATUS": _show_parser("REPLICATION STATUS"),
+            "REPRODUCTION": _show_parser("REPRODUCTION"),
+            "RESOURCE POOLS": _show_parser("RESOURCE POOLS"),
+            "ROLES": _show_parser("ROLES"),
+            "ROLES FOR USER": _show_parser("ROLES FOR USER", target=True),
+            "ROLES FOR GROUP": _show_parser("ROLES FOR GROUP", target=True),
+            "STATUS EXTENDED": _show_parser("STATUS EXTENDED"),
+            "USERS": _show_parser("USERS"),
+            "USERS FOR ROLE": _show_parser("USERS FOR ROLE", target=True),
+            "USERS FOR GROUP": _show_parser("USERS FOR GROUP", target=True),
+        }
+
         def _parse_vector_expressions(self, expressions):
             type_name = expressions[1].name
             if type_name == "I8":
@@ -267,6 +308,7 @@ class SingleStore(MySQL):
             expressions[1] = expressions[0]
             expressions[0] = exp.DataType.build(type_name, dialect=self.dialect)
 
+            
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True
@@ -485,6 +527,22 @@ class SingleStore(MySQL):
             exp.MatchAgainst: unsupported_args("modifier")(
                 lambda self, e: super().matchagainst_sql(e)
             ),
+            exp.Show: unsupported_args(
+                "history",
+                "terse",
+                "offset",
+                "starts_with",
+                "limit",
+                "from",
+                "scope",
+                "scope_kind",
+                "mutex",
+                "query",
+                "channel",
+                "log",
+                "types",
+                "privileges",
+            )(lambda self, e: super().show_sql(e)),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)

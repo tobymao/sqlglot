@@ -508,8 +508,6 @@ class Snowflake(Dialect):
 
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
-        exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
-        exp.Reverse: _annotate_reverse,
         **{
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (
@@ -518,6 +516,9 @@ class Snowflake(Dialect):
                 exp.Substring,
             )
         },
+        exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Length: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INT),
+        exp.Reverse: _annotate_reverse,
     }
 
     TIME_MAPPING = {

@@ -5552,7 +5552,7 @@ class Parser(metaclass=_Parser):
     def _parse_vector_expressions(
         self, expressions: t.List[exp.Expression]
     ) -> t.List[exp.Expression]:
-        return [exp.DataType.build(expressions[0].name, dialect=self.dialect), expressions[1]]
+        return [exp.DataType.build(expressions[0].name, dialect=self.dialect), *expressions[1:]]
 
     def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
         index = self._index

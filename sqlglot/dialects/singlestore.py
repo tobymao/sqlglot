@@ -55,6 +55,17 @@ class SingleStore(MySQL):
         "FF6": "%f",  # only 6 digits are supported in python formats
     }
 
+    VECTOR_TYPE_ALIASES = {
+        "I8": "TINYINT",
+        "I16": "SMALLINT",
+        "I32": "INT",
+        "I64": "BIGINT",
+        "F32": "FLOAT",
+        "F64": "DOUBLE",
+    }
+
+    INVERSE_VECTOR_TYPE_ALIASES = {v: k for k, v in VECTOR_TYPE_ALIASES.items()}
+
     class Tokenizer(MySQL.Tokenizer):
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
 
@@ -294,18 +305,8 @@ class SingleStore(MySQL):
             self, expressions: t.List[exp.Expression]
         ) -> t.List[exp.Expression]:
             type_name = expressions[1].name.upper()
-            if type_name == "I8":
-                type_name = "TINYINT"
-            elif type_name == "I16":
-                type_name = "SMALLINT"
-            elif type_name == "I32":
-                type_name = "INT"
-            elif type_name == "I64":
-                type_name = "BIGINT"
-            elif type_name == "F32":
-                type_name = "FLOAT"
-            elif type_name == "F64":
-                type_name = "DOUBLE"
+            if type_name in self.dialect.VECTOR_TYPE_ALIASES:
+                type_name = self.dialect.VECTOR_TYPE_ALIASES[type_name]
 
             return [exp.DataType.build(type_name, dialect=self.dialect), expressions[0]]
 
@@ -1765,18 +1766,9 @@ class SingleStore(MySQL):
                 expressions = expression.expressions
                 if len(expressions) == 2:
                     type_name = self.sql(expressions[0])
-                    if type_name == "TINYINT":
-                        type_name = "I8"
-                    elif type_name == "SMALLINT":
-                        type_name = "I16"
-                    elif type_name == "INT":
-                        type_name = "I32"
-                    elif type_name == "BIGINT":
-                        type_name = "I64"
-                    elif type_name == "FLOAT":
-                        type_name = "F32"
-                    elif type_name == "DOUBLE":
-                        type_name = "F64"
+                    if type_name in self.dialect.INVERSE_VECTOR_TYPE_ALIASES:
+                        type_name = self.dialect.INVERSE_VECTOR_TYPE_ALIASES[type_name]
+
                     return f"VECTOR({self.sql(expressions[1])}, {type_name})"
 
             return super().datatype_sql(expression)

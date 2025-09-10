@@ -1555,6 +1555,10 @@ class Parser(metaclass=_Parser):
     # is true for Snowflake but not for BigQuery which can also process strings
     JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = False
 
+    # Dialects like Databricks support JOINS without join criteria
+    # Adding an ON TRUE, makes transpilation semantically correct for other dialects
+    ADD_JOIN_ON_TRUE = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3205,9 +3209,10 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.FROM):
             from_ = self._parse_from(skip_from_token=True, consume_pipe=True)
             # Support parentheses for duckdb FROM-first syntax
-            select = self._parse_select()
+            select = self._parse_select(from_=from_)
             if select:
-                select.set("from", from_)
+                if not select.args.get("from"):
+                    select.set("from", from_)
                 this = select
             else:
                 this = exp.select("*").from_(t.cast(exp.From, from_))
@@ -3235,6 +3240,7 @@ class Parser(metaclass=_Parser):
         parse_subquery_alias: bool = True,
         parse_set_operation: bool = True,
         consume_pipe: bool = True,
+        from_: t.Optional[exp.From] = None,
     ) -> t.Optional[exp.Expression]:
         query = self._parse_select_query(
             nested=nested,
@@ -3243,13 +3249,12 @@ class Parser(metaclass=_Parser):
             parse_set_operation=parse_set_operation,
         )
 
-        if (
-            consume_pipe
-            and self._match(TokenType.PIPE_GT, advance=False)
-            and isinstance(query, exp.Query)
-        ):
-            query = self._parse_pipe_syntax_query(query)
-            query = query.subquery(copy=False) if query and table else query
+        if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
+            if not query and from_:
+                query = exp.select("*").from_(from_)
+            if isinstance(query, exp.Query):
+                query = self._parse_pipe_syntax_query(query)
+                query = query.subquery(copy=False) if query and table else query
 
         return query
 
@@ -3876,6 +3881,16 @@ class Parser(metaclass=_Parser):
 
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         comments = (join_comments or []) + comments
+
+        if (
+            self.ADD_JOIN_ON_TRUE
+            and not kwargs.get("on")
+            and not kwargs.get("using")
+            and not kwargs.get("method")
+            and kwargs.get("kind") in (None, "INNER", "OUTER")
+        ):
+            kwargs["on"] = exp.true()
+
         return self.expression(exp.Join, comments=comments, **kwargs)
 
     def _parse_opclass(self) -> t.Optional[exp.Expression]:
@@ -4407,6 +4422,8 @@ class Parser(metaclass=_Parser):
     def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
         func = self._parse_function()
         if not func:
+            if self._prev and self._prev.token_type == TokenType.COMMA:
+                return None
             self.raise_error("Expecting an aggregation function in PIVOT")
 
         return self._parse_alias(func)
@@ -8370,6 +8387,13 @@ class Parser(metaclass=_Parser):
         kind = self._match(TokenType.FROM) or not self._match_text_seq("TO")
 
         files = self._parse_csv(self._parse_file_location)
+        if self._match(TokenType.EQ, advance=False):
+            # Backtrack one token since we've consumed the lhs of a parameter assignment here.
+            # This can happen for Snowflake dialect. Instead, we'd like to parse the parameter
+            # list via `_parse_wrapped(..)` below.
+            self._advance(-1)
+            files = []
+
         credentials = self._parse_credentials()
 
         self._match_text_seq("WITH")

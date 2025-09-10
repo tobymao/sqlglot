@@ -889,7 +889,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         ):
             title = meta.get("title") or f"{i}, {sql}"
             dialect = meta.get("dialect")
-            result = parse_and_optimize(annotate_types, sql, dialect)
+            result = parse_and_optimize(annotate_types, sql, dialect, dialect=dialect)
 
             with self.subTest(title):
                 self.assertEqual(result.type.sql(), exp.DataType.build(expected).sql())

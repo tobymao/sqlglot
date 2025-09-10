@@ -717,17 +717,19 @@ class TestSnowflake(Validator):
                 "teradata": "TO_CHAR(x, y)",
             },
         )
-        self.validate_identity(
-            "TO_CHAR(foo::DATE, 'yyyy')",
-            "TO_CHAR(CAST(foo AS DATE), 'yyyy')",
-        )
-        self.validate_all(
-            "TO_CHAR(foo::TIMESTAMP, 'YYYY-MM')",
-            write={
-                "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
-                "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
-            },
-        )
+        for to_func in ("TO_CHAR", "TO_VARCHAR"):
+            with self.subTest(f"Testing transpilation of {to_func}"):
+                self.validate_identity(
+                    f"{to_func}(foo::DATE, 'yyyy')",
+                    "TO_CHAR(CAST(foo AS DATE), 'yyyy')",
+                )
+                self.validate_all(
+                    f"{to_func}(foo::TIMESTAMP, 'YYYY-MM')",
+                    write={
+                        "snowflake": "TO_CHAR(CAST(foo AS TIMESTAMP), 'yyyy-mm')",
+                        "duckdb": "STRFTIME(CAST(foo AS TIMESTAMP), '%Y-%m')",
+                    },
+                )
         self.validate_all(
             "SQUARE(x)",
             write={
@@ -1271,6 +1273,18 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
+
+        for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
+            with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):
+                self.validate_all(
+                    f"SELECT * FROM t1 {join} JOIN t2",
+                    read={
+                        "snowflake": f"SELECT * FROM t1 {join} JOIN t2",
+                    },
+                    write={
+                        "duckdb": "SELECT * FROM t1, t2",
+                    },
+                )
 
     def test_null_treatment(self):
         self.validate_all(
@@ -2676,6 +2690,7 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         self.validate_identity(
             """COPY INTO @my_stage/result/data FROM (SELECT * FROM orderstiny) FILE_FORMAT = (TYPE='csv')"""
         )
+        self.validate_identity("COPY INTO mytable FILE_FORMAT = (TYPE='csv')")
         self.validate_identity(
             """COPY INTO MY_DATABASE.MY_SCHEMA.MY_TABLE FROM @MY_DATABASE.MY_SCHEMA.MY_STAGE/my_path FILE_FORMAT = (FORMAT_NAME=MY_DATABASE.MY_SCHEMA.MY_FILE_FORMAT)"""
         )

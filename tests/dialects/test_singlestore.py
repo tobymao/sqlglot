@@ -914,3 +914,11 @@ class TestSingleStore(Validator):
         self.validate_identity("SHOW USERS")
         self.validate_identity("SHOW USERS FOR GROUP 'group_name'")
         self.validate_identity("SHOW USERS FOR ROLE 'role_name'")
+
+    def test_truncate(self):
+        self.validate_all(
+            "TRUNCATE t1; TRUNCATE t2",
+            read={
+                "": "TRUNCATE TABLE t1, t2",
+            },
+        )

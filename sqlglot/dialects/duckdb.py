@@ -365,6 +365,9 @@ class DuckDB(Dialect):
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
             "DATEDIFF": _build_date_diff,
             "DATE_DIFF": _build_date_diff,
             "DATE_TRUNC": date_trunc_to_time,
@@ -649,7 +652,10 @@ class DuckDB(Dialect):
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
+            exp.BitwiseAndAgg: rename_func("BIT_AND"),
+            exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXor: rename_func("XOR"),
+            exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
@@ -995,13 +1001,18 @@ class DuckDB(Dialect):
 
         def join_sql(self, expression: exp.Join) -> str:
             if (
-                expression.side == "LEFT"
+                not expression.args.get("using")
                 and not expression.args.get("on")
-                and isinstance(expression.this, exp.Unnest)
+                and not expression.method
+                and (expression.kind in ("", "INNER", "OUTER"))
             ):
-                # Some dialects support `LEFT JOIN UNNEST(...)` without an explicit ON clause
+                # Some dialects support `LEFT/INNER JOIN UNNEST(...)` without an explicit ON clause
                 # DuckDB doesn't, but we can just add a dummy ON clause that is always true
-                return super().join_sql(expression.on(exp.true()))
+                if isinstance(expression.this, exp.Unnest):
+                    return super().join_sql(expression.on(exp.true()))
+
+                expression.args.pop("side", None)
+                expression.args.pop("kind", None)
 
             return super().join_sql(expression)
 

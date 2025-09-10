@@ -3013,5 +3013,5 @@ OPTIONS (
             write={
                 "bigquery": "SELECT MD5('abc')",
                 "snowflake": "SELECT MD5_BINARY('abc')",
-            }
+            },
         )

@@ -1684,6 +1684,14 @@ LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+LEN(tbl.str_col);
+INT;
+
+# dialect: snowflake
+LEN(tbl.bin_col);
+INT;
+
+# dialect: snowflake
 LOWER(tbl.str_col);
 VARCHAR;
 

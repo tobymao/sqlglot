@@ -308,7 +308,6 @@ class SingleStore(MySQL):
             expressions[1] = expressions[0]
             expressions[0] = exp.DataType.build(type_name, dialect=self.dialect)
 
-            
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True

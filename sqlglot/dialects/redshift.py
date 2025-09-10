@@ -162,6 +162,7 @@ class Redshift(Postgres):
         ALTER_SET_TYPE = "TYPE"
         SUPPORTS_DECODE_CASE = True
         SUPPORTS_BETWEEN_FLAGS = False
+        LIMIT_FETCH = "LIMIT"
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "

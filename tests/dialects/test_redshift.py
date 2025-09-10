@@ -704,3 +704,12 @@ FROM (
 
         with self.assertRaises(ParseError):
             parse_one('1::"udt"', read="redshift")
+
+    def test_fetch_to_limit(self):
+        self.validate_all(
+            "SELECT * FROM t FETCH FIRST 1 ROWS ONLY",
+            write={
+                "redshift": "SELECT * FROM t LIMIT 1",
+                "postgres": "SELECT * FROM t FETCH FIRST 1 ROWS ONLY",
+            },
+        )

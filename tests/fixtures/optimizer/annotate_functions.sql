@@ -1675,6 +1675,18 @@ BINARY;
 RIGHT(tbl.str_col, NULL);
 STRING;
 
+# dialect: snowflake
+LENGTH(tbl.str_col);
+INT;
+
+# dialect: snowflake
+LENGTH(tbl.bin_col);
+INT;
+
+# dialect: snowflake
+LOWER(tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

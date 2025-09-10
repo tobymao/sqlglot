@@ -1695,6 +1695,30 @@ INT;
 LOWER(tbl.str_col);
 VARCHAR;
 
+# dialect: snowflake
+LTRIM('  hello world  ');
+VARCHAR;
+
+# dialect: snowflake
+LTRIM(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+LTRIM(NULL);
+VARCHAR;
+
+# dialect: snowflake
+RTRIM('  hello world  ');
+VARCHAR;
+
+# dialect: snowflake
+RTRIM(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+RTRIM(NULL);
+VARCHAR;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

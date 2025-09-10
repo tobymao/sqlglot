@@ -2929,46 +2929,58 @@ OPTIONS (
             "BIT_AND(x)",
             read={
                 "bigquery": "BIT_AND(x)",
-                "spark": "BIT_AND(x)",
                 "databricks": "BIT_AND(x)",
-                "mysql": "BIT_AND(x)",
                 "dremio": "BIT_AND(x)",
+                "duckdb": "BIT_AND(x)",
+                "mysql": "BIT_AND(x)",
+                "postgres": "BIT_AND(x)",
+                "spark": "BIT_AND(x)",
             },
             write={
-                "spark": "BIT_AND(x)",
                 "databricks": "BIT_AND(x)",
-                "mysql": "BIT_AND(x)",
                 "dremio": "BIT_AND(x)",
+                "duckdb": "BIT_AND(x)",
+                "mysql": "BIT_AND(x)",
+                "postgres": "BIT_AND(x)",
+                "spark": "BIT_AND(x)",
             },
         )
         self.validate_all(
             "BIT_OR(x)",
             read={
                 "bigquery": "BIT_OR(x)",
-                "spark": "BIT_OR(x)",
                 "databricks": "BIT_OR(x)",
-                "mysql": "BIT_OR(x)",
                 "dremio": "BIT_OR(x)",
+                "duckdb": "BIT_OR(x)",
+                "mysql": "BIT_OR(x)",
+                "postgres": "BIT_OR(x)",
+                "spark": "BIT_OR(x)",
             },
             write={
-                "spark": "BIT_OR(x)",
                 "databricks": "BIT_OR(x)",
-                "mysql": "BIT_OR(x)",
                 "dremio": "BIT_OR(x)",
+                "duckdb": "BIT_OR(x)",
+                "mysql": "BIT_OR(x)",
+                "postgres": "BIT_OR(x)",
+                "spark": "BIT_OR(x)",
             },
         )
         self.validate_all(
             "BIT_XOR(x)",
             read={
                 "bigquery": "BIT_XOR(x)",
-                "spark": "BIT_XOR(x)",
                 "databricks": "BIT_XOR(x)",
+                "duckdb": "BIT_XOR(x)",
                 "mysql": "BIT_XOR(x)",
+                "postgres": "BIT_XOR(x)",
+                "spark": "BIT_XOR(x)",
             },
             write={
-                "spark": "BIT_XOR(x)",
                 "databricks": "BIT_XOR(x)",
+                "duckdb": "BIT_XOR(x)",
                 "mysql": "BIT_XOR(x)",
+                "postgres": "BIT_XOR(x)",
+                "spark": "BIT_XOR(x)",
             },
         )
         self.validate_all(

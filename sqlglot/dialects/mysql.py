@@ -579,9 +579,11 @@ class MySQL(Dialect):
             full: t.Optional[bool] = None,
             global_: t.Optional[bool] = None,
         ) -> exp.Show:
+            json = self._match_text_seq("JSON")
+
             if target:
                 if isinstance(target, str):
-                    self._match_text_seq(target)
+                    self._match_text_seq(*target.split(" "))
                 target_id = self._parse_id_var()
             else:
                 target_id = None
@@ -618,6 +620,12 @@ class MySQL(Dialect):
             mutex = True if self._match_text_seq("MUTEX") else None
             mutex = False if self._match_text_seq("STATUS") else mutex
 
+            for_table = self._parse_id_var() if self._match_text_seq("FOR", "TABLE") else None
+            for_group = self._parse_string() if self._match_text_seq("FOR", "GROUP") else None
+            for_user = self._parse_string() if self._match_text_seq("FOR", "USER") else None
+            for_role = self._parse_string() if self._match_text_seq("FOR", "ROLE") else None
+            into_outfile = self._parse_string() if self._match_text_seq("INTO", "OUTFILE") else None
+
             return self.expression(
                 exp.Show,
                 this=this,
@@ -634,6 +642,12 @@ class MySQL(Dialect):
                 offset=offset,
                 limit=limit,
                 mutex=mutex,
+                for_table=for_table,
+                for_group=for_group,
+                for_user=for_user,
+                for_role=for_role,
+                into_outfile=into_outfile,
+                json=json,
                 **{"global": global_},  # type: ignore
             )
 
@@ -1200,6 +1214,10 @@ class MySQL(Dialect):
                 target = f" FROM{target}"
             elif expression.name == "GRANTS":
                 target = f" FOR{target}"
+            elif expression.name in ("LINKS", "PARTITIONS"):
+                target = f" ON{target}" if target else ""
+            elif expression.name == "PROJECTIONS":
+                target = f" ON TABLE{target}" if target else ""
 
             db = self._prefixed_sql("FROM", expression, "db")
 
@@ -1227,7 +1245,14 @@ class MySQL(Dialect):
             else:
                 mutex_or_status = ""
 
-            return f"SHOW{full}{global_}{this}{target}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}"
+            for_table = self._prefixed_sql("FOR TABLE", expression, "for_table")
+            for_group = self._prefixed_sql("FOR GROUP", expression, "for_group")
+            for_user = self._prefixed_sql("FOR USER", expression, "for_user")
+            for_role = self._prefixed_sql("FOR ROLE", expression, "for_role")
+            into_outfile = self._prefixed_sql("INTO OUTFILE", expression, "into_outfile")
+            json = " JSON" if expression.args.get("json") else ""
+
+            return f"SHOW{full}{global_}{this}{json}{target}{for_table}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}{for_group}{for_user}{for_role}{into_outfile}"
 
         def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
             dtype = self.sql(expression, "dtype")

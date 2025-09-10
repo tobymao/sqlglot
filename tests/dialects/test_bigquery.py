@@ -3006,3 +3006,12 @@ OPTIONS (
                 "snowflake": "SELECT TO_CHAR(SHA1('abc'))",
             },
         )
+
+    def test_md5(self):
+        self.validate_all(
+            "SELECT MD5('abc')",
+            write={
+                "bigquery": "SELECT MD5('abc')",
+                "snowflake": "SELECT MD5('abc')",
+            }
+        )

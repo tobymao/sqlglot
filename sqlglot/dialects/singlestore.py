@@ -249,6 +249,25 @@ class SingleStore(MySQL):
         COLUMN_OPERATORS.pop(TokenType.DHASH_ARROW)
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
+        def _parse_vector_expressions(self, expressions):
+            type_name = expressions[1].name
+            if type_name == "I8":
+                type_name = "TINYINT"
+            elif type_name == "I16":
+                type_name = "SMALLINT"
+            elif type_name == "I32":
+                type_name = "INT"
+            elif type_name == "I64":
+                type_name = "BIGINT"
+            elif type_name == "F32":
+                type_name = "FLOAT"
+            elif type_name == "F64":
+                type_name = "DOUBLE"
+
+            expressions[1] = expressions[0]
+            expressions[0] = exp.DataType.build(type_name, dialect=self.dialect)
+
+
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True
@@ -1685,6 +1704,23 @@ class SingleStore(MySQL):
                     return f"DECIMAL({precision}, {scale[0]})"
                 else:
                     return f"DECIMAL({precision})"
+            if expression.is_type(exp.DataType.Type.VECTOR):
+                expressions = expression.expressions
+                if len(expressions) == 2:
+                    type_name = self.sql(expressions[0])
+                    if type_name == "TINYINT":
+                        type_name = "I8"
+                    elif type_name == "SMALLINT":
+                        type_name = "I16"
+                    elif type_name == "INT":
+                        type_name = "I32"
+                    elif type_name == "BIGINT":
+                        type_name = "I64"
+                    elif type_name == "FLOAT":
+                        type_name = "F32"
+                    elif type_name == "DOUBLE":
+                        type_name = "F64"
+                    return f"VECTOR({self.sql(expressions[1])}, {type_name})"
 
             return super().datatype_sql(expression)
 

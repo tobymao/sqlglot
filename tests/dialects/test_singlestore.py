@@ -880,3 +880,25 @@ class TestSingleStore(Validator):
                 "": "TRUNCATE TABLE t1, t2",
             },
         )
+
+    def test_vector(self):
+        self.validate_all(
+            "CREATE TABLE t (a VECTOR(10, I32))",
+            read={
+                "snowflake": "CREATE TABLE t (a VECTOR(INT, 10))",
+                "singlestore": "CREATE TABLE t (a VECTOR(10, I32))",
+            },
+            write={
+                "snowflake": "CREATE TABLE t (a VECTOR(INT, 10))",
+            }
+        )
+        self.validate_all(
+            "CREATE TABLE t (a VECTOR(10))",
+            read={
+                "snowflake": "CREATE TABLE t (a VECTOR(10))",
+                "singlestore": "CREATE TABLE t (a VECTOR(10))",
+            },
+            write={
+                "snowflake": "CREATE TABLE t (a VECTOR(10))",
+            }
+        )

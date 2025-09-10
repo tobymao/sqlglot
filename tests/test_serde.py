@@ -9,7 +9,7 @@ from tests.helpers import load_sql_fixtures
 class CustomExpression(exp.Expression): ...
 
 
-class TestSerDe(unittest.TestCase):
+class TestSerde(unittest.TestCase):
     def dump_load(self, expression):
         return exp.Expression.load(json.loads(json.dumps(expression.dump())))
 

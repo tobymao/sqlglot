@@ -386,6 +386,9 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
             "DATE_TRUNC": build_timestamp_trunc,
             "DIV": lambda args: exp.cast(
                 binary_from_function(exp.IntDiv)(args), exp.DataType.Type.DECIMAL
@@ -584,7 +587,10 @@ class Postgres(Dialect):
             exp.AnyValue: _versioned_anyvalue_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
+            exp.BitwiseAndAgg: rename_func("BIT_AND"),
+            exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
+            exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",

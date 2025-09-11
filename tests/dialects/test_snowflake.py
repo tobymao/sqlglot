@@ -3105,3 +3105,6 @@ FROM SEMANTIC_VIEW(
             for name in bit_func:
                 with self.subTest(f"Testing Snowflakes {name}"):
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
+
+    def test_to_json(self):
+        self.validate_identity("TO_JSON(OBJECT_CONSTRUCT('name', 'Alice'))")

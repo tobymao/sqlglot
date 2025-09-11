@@ -1763,6 +1763,9 @@ VARCHAR;
 SPACE(tbl.int_col);
 VARCHAR;
 
+# dialect: snowflake
+SPACE(NULL);
+VARCHAR;
 --------------------------------------
 -- T-SQL
 --------------------------------------

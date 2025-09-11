@@ -922,3 +922,6 @@ class TestSingleStore(Validator):
                 "": "TRUNCATE TABLE t1, t2",
             },
         )
+
+    def test_alter(self):
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN name TEXT COLLATE 'binary'")

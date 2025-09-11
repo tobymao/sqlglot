@@ -1813,3 +1813,11 @@ class SingleStore(MySQL):
                 statements.append(f"TRUNCATE {self.sql(expression)}")
 
             return "; ".join(statements)
+
+        @unsupported_args("drop", "comment", "allow_null", "visible", "using")
+        def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+            alter = super().altercolumn_sql(expression)
+
+            collate = self.sql(expression, "collate")
+            collate = f" COLLATE {collate}" if collate else ""
+            return f"{alter}{collate}"

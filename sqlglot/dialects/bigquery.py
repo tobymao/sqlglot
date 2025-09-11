@@ -864,6 +864,7 @@ class BigQuery(Dialect):
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
             "GENERATE_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding),
             "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
+            "FORECAST": lambda self: self._parse_ml(exp.MLForecast),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -1154,11 +1155,18 @@ class BigQuery(Dialect):
             self._match(TokenType.COMMA)
             self._match_text_seq("TABLE")
 
+            # Certain functions like ML.FORECAST require a STRUCT argument but not a TABLE/SELECT one
+            expression = (
+                self._parse_table() if not self._match(TokenType.STRUCT, advance=False) else None
+            )
+
+            self._match(TokenType.COMMA)
+
             return self.expression(
                 expr_type,
                 this=this,
-                expression=self._parse_table(),
-                params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
+                expression=expression,
+                params_struct=self._parse_bitwise(),
             )
 
         def _parse_translate(self) -> exp.Translate | exp.MLTranslate:

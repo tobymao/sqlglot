@@ -524,6 +524,13 @@ class SingleStore(MySQL):
                 "types",
                 "privileges",
             )(lambda self, e: super().show_sql(e)),
+            exp.Describe: unsupported_args(
+                "style",
+                "kind",
+                "expressions",
+                "partition",
+                "format",
+            )(lambda self, e: super().describe_sql(e)),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)

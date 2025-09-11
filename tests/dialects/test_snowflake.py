@@ -1196,6 +1196,8 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity("TO_JSON(OBJECT_CONSTRUCT('name', 'Alice'))")
+
         with self.assertRaises(ParseError):
             parse_one(
                 "SELECT id, PRIOR name AS parent_name, name FROM tree CONNECT BY NOCYCLE PRIOR id = parent_id",

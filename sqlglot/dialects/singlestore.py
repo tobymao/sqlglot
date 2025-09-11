@@ -294,6 +294,7 @@ class SingleStore(MySQL):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True
         MATCH_AGAINST_TABLE_PREFIX = "TABLE "
+        SUPPORTS_ALTER_COLUMN_COLLATE = True
 
         @staticmethod
         def _unicode_substitute(m: re.Match[str]) -> str:
@@ -524,6 +525,9 @@ class SingleStore(MySQL):
                 "types",
                 "privileges",
             )(lambda self, e: super().show_sql(e)),
+            exp.AlterColumn: unsupported_args("drop", "comment", "allow_null", "visible", "using")(
+                lambda self, e: super().altercolumn_sql(e)
+            ),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)

@@ -726,6 +726,7 @@ class MySQL(Dialect):
         WRAP_DERIVED_VALUES = False
         VARCHAR_REQUIRES_SIZE = True
         SUPPORTS_MEDIAN = False
+        SUPPORTS_ALTER_COLUMN_COLLATE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1260,7 +1261,14 @@ class MySQL(Dialect):
                 return super().altercolumn_sql(expression)
 
             this = self.sql(expression, "this")
-            return f"MODIFY COLUMN {this} {dtype}"
+
+            if self.SUPPORTS_ALTER_COLUMN_COLLATE:
+                collate = self.sql(expression, "collate")
+                collate = f" COLLATE {collate}" if collate else ""
+            else:
+                collate = ""
+
+            return f"MODIFY COLUMN {this} {dtype}{collate}"
 
         def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
             sql = self.sql(expression, arg)

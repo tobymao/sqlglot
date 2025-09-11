@@ -923,6 +923,28 @@ class TestSingleStore(Validator):
             },
         )
 
+    def test_vector(self):
+        self.validate_all(
+            "CREATE TABLE t (a VECTOR(10, I32))",
+            read={
+                "snowflake": "CREATE TABLE t (a VECTOR(INT, 10))",
+                "singlestore": "CREATE TABLE t (a VECTOR(10, I32))",
+            },
+            write={
+                "snowflake": "CREATE TABLE t (a VECTOR(INT, 10))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (a VECTOR(10))",
+            read={
+                "snowflake": "CREATE TABLE t (a VECTOR(10))",
+                "singlestore": "CREATE TABLE t (a VECTOR(10))",
+            },
+            write={
+                "snowflake": "CREATE TABLE t (a VECTOR(10))",
+            },
+        )
+
     def test_alter(self):
         self.validate_identity("ALTER TABLE t CHANGE middle_initial middle_name")
         self.validate_identity("ALTER TABLE t MODIFY COLUMN name TEXT COLLATE 'binary'")

@@ -1619,16 +1619,6 @@ class BigQuery(Dialect):
         def trycast_sql(self, expression: exp.TryCast) -> str:
             return self.cast_sql(expression, safe_prefix="SAFE_")
 
-        def mltranslate_sql(self, expression: exp.MLTranslate) -> str:
-            model = self.sql(expression, "this")
-            model = f"MODEL {model}"
-            table = self.sql(expression, "expression")
-            table = (
-                f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
-            )
-            parameters = self.sql(expression, "params_struct")
-            return self.func("TRANSLATE", model, table, parameters or None)
-
         def bracket_sql(self, expression: exp.Bracket) -> str:
             this = expression.this
             expressions = expression.expressions

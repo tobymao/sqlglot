@@ -115,7 +115,9 @@ class Generator(metaclass=_Generator):
         exp.AllowedValuesProperty: lambda self,
         e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
         exp.AnalyzeColumns: lambda self, e: self.sql(e, "this"),
-        exp.AnalyzeWith: lambda self, e: self.expressions(e, prefix="WITH ", sep=" "),
+        exp.AnalyzeWith: lambda self, e: self.expressions(
+            e, prefmltranslate_sqlix="WITH ", sep=" "
+        ),
         exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
         exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
@@ -4229,6 +4231,14 @@ class Generator(metaclass=_Generator):
         table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
         parameters = self.sql(expression, "params_struct")
         return self.func("GENERATE_EMBEDDING", model, table, parameters or None)
+
+    def mltranslate_sql(self, expression: exp.MLTranslate) -> str:
+        model = self.sql(expression, "this")
+        model = f"MODEL {model}"
+        table = self.sql(expression, "expression")
+        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
+        parameters = self.sql(expression, "params_struct")
+        return self.func("TRANSLATE", model, table, parameters)
 
     def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
         this_sql = self.sql(expression, "this")

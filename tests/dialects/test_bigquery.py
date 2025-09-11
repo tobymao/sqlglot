@@ -1829,6 +1829,7 @@ WHERE
         self.validate_identity("TO_JSON(STRUCT(1 AS id, [10, 20] AS cords))")
         self.validate_identity("TO_JSON(9999999999, stringify_wide_numbers => FALSE)")
         self.validate_identity("RANGE_BUCKET(20, [0, 10, 20, 30, 40])")
+        self.validate_identity("SELECT TRANSLATE(MODEL, 'in', 't') FROM (SELECT 'input' AS MODEL)")
 
     def test_errors(self):
         with self.assertRaises(ParseError):
@@ -2142,6 +2143,13 @@ OPTIONS (
         self.validate_identity(
             "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table)"
         )
+        self.validate_identity(
+            "SELECT * FROM ML.TRANSLATE(MODEL `mydataset.mytranslatemodel`, TABLE `mydataset.mybqtable`, STRUCT('translate_text' AS translate_mode, 'zh-CN' AS target_language_code))"
+        )
+        self.validate_identity(
+            "SELECT * FROM ML.TRANSLATE(MODEL `mydataset.mymodel`, (SELECT comment AS text_content FROM mydataset.mytable), STRUCT('translate_text' AS translate_mode, 'en' AS target_language_code))"
+        ).find(exp.MLTranslate).assert_is(exp.MLTranslate)
+        self.validate_identity("TRANSLATE(x, y, z)").assert_is(exp.Translate)
 
     def test_merge(self):
         self.validate_all(
@@ -3004,5 +3012,23 @@ OPTIONS (
             write={
                 "bigquery": "SELECT TO_HEX(SHA1('abc'))",
                 "snowflake": "SELECT TO_CHAR(SHA1('abc'))",
+            },
+        )
+
+    def test_md5(self):
+        self.validate_all(
+            "SELECT MD5('abc')",
+            write={
+                "bigquery": "SELECT MD5('abc')",
+                "snowflake": "SELECT MD5_BINARY('abc')",
+            },
+        )
+
+    def test_to_json_string(self):
+        self.validate_all(
+            """SELECT TO_JSON_STRING(STRUCT('Alice' AS name)) AS json_data""",
+            write={
+                "bigquery": """SELECT TO_JSON_STRING(STRUCT('Alice' AS name)) AS json_data""",
+                "snowflake": """SELECT TO_JSON(OBJECT_CONSTRUCT('name', 'Alice')) AS json_data""",
             },
         )

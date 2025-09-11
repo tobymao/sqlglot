@@ -4230,6 +4230,14 @@ class Generator(metaclass=_Generator):
         parameters = self.sql(expression, "params_struct")
         return self.func("GENERATE_EMBEDDING", model, table, parameters or None)
 
+    def mltranslate_sql(self, expression: exp.MLTranslate) -> str:
+        model = self.sql(expression, "this")
+        model = f"MODEL {model}"
+        table = self.sql(expression, "expression")
+        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
+        parameters = self.sql(expression, "params_struct")
+        return self.func("TRANSLATE", model, table, parameters)
+
     def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
         this_sql = self.sql(expression, "this")
         if isinstance(expression.this, exp.Table):

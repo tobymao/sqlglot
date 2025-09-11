@@ -944,3 +944,7 @@ class TestSingleStore(Validator):
                 "snowflake": "CREATE TABLE t (a VECTOR(10))",
             },
         )
+
+      def test_alter(self):
+        self.validate_identity("ALTER TABLE t CHANGE middle_initial middle_name")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN name TEXT COLLATE 'binary'")

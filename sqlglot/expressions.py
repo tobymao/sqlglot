@@ -6974,6 +6974,11 @@ class Predict(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-translate#mltranslate_function
+class MLTranslate(Func):
+    arg_types = {"this": True, "expression": True, "params_struct": True}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-feature-time
 class FeaturesAtTime(Func):
     arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}

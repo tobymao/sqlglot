@@ -1532,28 +1532,12 @@ STRING;
 --------------------------------------
 
 # dialect: snowflake
-LEAST(x::DECIMAL(18, 2));
-DECIMAL(18, 2);
-
-# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 
 # dialect: snowflake
 CHARINDEX('world', 'hello world', 1);
 INT;
-
-# dialect: snowflake
-REVERSE('Hello, world!');
-VARCHAR;
-
-# dialect: snowflake
-REVERSE(tbl.str_col);
-TEXT;
-
-# dialect: snowflake
-REVERSE(tbl.bin_col);
-BINARY;
 
 # dialect: snowflake
 CONCAT('Hello', 'World!');
@@ -1592,10 +1576,6 @@ CONTAINS(tbl.bin_col, NULL);
 BOOLEAN;
 
 # dialect: snowflake
-REVERSE(NULL);
-VARCHAR;
-
-# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 
@@ -1610,6 +1590,78 @@ BOOLEAN;
 # dialect: snowflake
 ENDSWITH(tbl.bin_col, NULL);
 BOOLEAN;
+
+# dialect: snowflake
+LEAST(x::DECIMAL(18, 2));
+DECIMAL(18, 2);
+
+# dialect: snowflake
+LEFT('hello world', 5);
+VARCHAR;
+
+# dialect: snowflake
+LEFT(tbl.str_col, 3);
+STRING;
+
+# dialect: snowflake
+LEFT(tbl.bin_col, 3);
+BINARY;
+
+# dialect: snowflake
+LEFT(tbl.bin_col, NULL);
+BINARY;
+
+# dialect: snowflake
+LEN(tbl.str_col);
+INT;
+
+# dialect: snowflake
+LEN(tbl.bin_col);
+INT;
+
+# dialect: snowflake
+LENGTH(tbl.str_col);
+INT;
+
+# dialect: snowflake
+LENGTH(tbl.bin_col);
+INT;
+
+# dialect: snowflake
+LOWER(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+REVERSE('Hello, world!');
+VARCHAR;
+
+# dialect: snowflake
+REVERSE(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+REVERSE(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+REVERSE(NULL);
+VARCHAR;
+
+# dialect: snowflake
+RIGHT('hello world', 5);
+VARCHAR;
+
+# dialect: snowflake
+RIGHT(tbl.str_col, 3);
+STRING;
+
+# dialect: snowflake
+RIGHT(tbl.bin_col, 3);
+BINARY;
+
+# dialect: snowflake
+RIGHT(tbl.str_col, NULL);
+STRING;
 
 # dialect: snowflake
 STARTSWITH('hello world', 'hello');
@@ -1644,36 +1696,48 @@ SUBSTR(tbl.str_col, NULL);
 STRING;
 
 # dialect: snowflake
-LEFT('hello world', 5);
+TRIM('hello world');
 VARCHAR;
 
 # dialect: snowflake
-LEFT(tbl.str_col, 3);
-STRING;
-
-# dialect: snowflake
-LEFT(tbl.bin_col, 3);
-BINARY;
-
-# dialect: snowflake
-LEFT(tbl.bin_col, NULL);
-BINARY;
-
-# dialect: snowflake
-RIGHT('hello world', 5);
+TRIM('hello world', 'hello');
 VARCHAR;
 
 # dialect: snowflake
-RIGHT(tbl.str_col, 3);
-STRING;
+TRIM(tbl.str_col);
+VARCHAR;
 
 # dialect: snowflake
-RIGHT(tbl.bin_col, 3);
-BINARY;
+TRIM(tbl.str_col, tbl.str_col);
+VARCHAR;
 
 # dialect: snowflake
-RIGHT(tbl.str_col, NULL);
-STRING;
+TRIM(NULL);
+VARCHAR;
+
+# dialect: snowflake
+LTRIM('  hello world  ');
+VARCHAR;
+
+# dialect: snowflake
+LTRIM(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+LTRIM(NULL);
+VARCHAR;
+
+# dialect: snowflake
+RTRIM('  hello world  ');
+VARCHAR;
+
+# dialect: snowflake
+RTRIM(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+RTRIM(NULL);
+VARCHAR;
 
 --------------------------------------
 -- T-SQL

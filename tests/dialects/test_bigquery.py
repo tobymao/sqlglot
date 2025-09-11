@@ -2151,6 +2151,17 @@ OPTIONS (
         ).find(exp.MLTranslate).assert_is(exp.MLTranslate)
         self.validate_identity("TRANSLATE(x, y, z)").assert_is(exp.Translate)
 
+        ast = self.validate_identity(
+            "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, STRUCT(2 AS horizon))"
+        )
+        assert ast.find(exp.MLForecast)
+        self.validate_identity(
+            "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, TABLE `mydataset.mybqtable`, STRUCT(2 AS horizon, 4 AS confidence_level))"
+        )
+        self.validate_identity(
+            "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, (SELECT * FROM mydataset.query_table), STRUCT())"
+        )
+
     def test_merge(self):
         self.validate_all(
             """

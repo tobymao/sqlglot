@@ -55,6 +55,17 @@ class SingleStore(MySQL):
         "FF6": "%f",  # only 6 digits are supported in python formats
     }
 
+    VECTOR_TYPE_ALIASES = {
+        "I8": "TINYINT",
+        "I16": "SMALLINT",
+        "I32": "INT",
+        "I64": "BIGINT",
+        "F32": "FLOAT",
+        "F64": "DOUBLE",
+    }
+
+    INVERSE_VECTOR_TYPE_ALIASES = {v: k for k, v in VECTOR_TYPE_ALIASES.items()}
+
     class Tokenizer(MySQL.Tokenizer):
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
 
@@ -296,6 +307,15 @@ class SingleStore(MySQL):
                 exp.RenameColumn, this=self._parse_column(), to=self._parse_column()
             ),
         }
+
+        def _parse_vector_expressions(
+            self, expressions: t.List[exp.Expression]
+        ) -> t.List[exp.Expression]:
+            type_name = expressions[1].name.upper()
+            if type_name in self.dialect.VECTOR_TYPE_ALIASES:
+                type_name = self.dialect.VECTOR_TYPE_ALIASES[type_name]
+
+            return [exp.DataType.build(type_name, dialect=self.dialect), expressions[0]]
 
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
@@ -1756,6 +1776,14 @@ class SingleStore(MySQL):
                     return f"DECIMAL({precision}, {scale[0]})"
                 else:
                     return f"DECIMAL({precision})"
+            if expression.is_type(exp.DataType.Type.VECTOR):
+                expressions = expression.expressions
+                if len(expressions) == 2:
+                    type_name = self.sql(expressions[0])
+                    if type_name in self.dialect.INVERSE_VECTOR_TYPE_ALIASES:
+                        type_name = self.dialect.INVERSE_VECTOR_TYPE_ALIASES[type_name]
+
+                    return f"VECTOR({self.sql(expressions[1])}, {type_name})"
 
             return super().datatype_sql(expression)
 

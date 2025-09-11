@@ -531,6 +531,13 @@ class SingleStore(MySQL):
                 "types",
                 "privileges",
             )(lambda self, e: super().show_sql(e)),
+            exp.Describe: unsupported_args(
+                "style",
+                "kind",
+                "expressions",
+                "partition",
+                "format",
+            )(lambda self, e: super().describe_sql(e)),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)
@@ -1819,3 +1826,11 @@ class SingleStore(MySQL):
             old_column = self.sql(expression, "this")
             new_column = self.sql(expression, "to")
             return f"CHANGE {old_column} {new_column}"
+
+        @unsupported_args("drop", "comment", "allow_null", "visible", "using")
+        def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+            alter = super().altercolumn_sql(expression)
+
+            collate = self.sql(expression, "collate")
+            collate = f" COLLATE {collate}" if collate else ""
+            return f"{alter}{collate}"

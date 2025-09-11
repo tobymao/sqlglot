@@ -859,9 +859,10 @@ class BigQuery(Dialect):
                 exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
             ),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
-            "PREDICT": lambda self: self._parse_predict(),
+            "PREDICT": lambda self: self._parse_ml(exp.Predict),
+            "TRANSLATE": lambda self: self._parse_translate(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
-            "GENERATE_EMBEDDING": lambda self: self._parse_generate_embedding(),
+            "GENERATE_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding),
             "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
         }
         FUNCTION_PARSERS.pop("TRIM")
@@ -1146,7 +1147,7 @@ class BigQuery(Dialect):
 
             return expr
 
-        def _parse_predict(self) -> exp.Predict:
+        def _parse_ml(self, expr_type: t.Type[E]) -> E:
             self._match_text_seq("MODEL")
             this = self._parse_table()
 
@@ -1154,25 +1155,19 @@ class BigQuery(Dialect):
             self._match_text_seq("TABLE")
 
             return self.expression(
-                exp.Predict,
+                expr_type,
                 this=this,
                 expression=self._parse_table(),
                 params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
             )
 
-        def _parse_generate_embedding(self) -> exp.GenerateEmbedding:
-            self._match_text_seq("MODEL")
-            this = self._parse_table()
+        def _parse_translate(self) -> exp.Translate | exp.MLTranslate:
+            # Check if this is ML.TRANSLATE by looking at previous tokens
+            token = seq_get(self._tokens, self._index - 4)
+            if token and token.text.upper() == "ML":
+                return self._parse_ml(exp.MLTranslate)
 
-            self._match(TokenType.COMMA)
-            self._match_text_seq("TABLE")
-
-            return self.expression(
-                exp.GenerateEmbedding,
-                this=this,
-                expression=self._parse_table(),
-                params_struct=self._match(TokenType.COMMA) and self._parse_bitwise(),
-            )
+            return exp.Translate.from_arg_list(self._parse_function_args())
 
         def _parse_features_at_time(self) -> exp.FeaturesAtTime:
             self._match(TokenType.TABLE)

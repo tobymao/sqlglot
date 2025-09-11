@@ -527,17 +527,17 @@ class Snowflake(Dialect):
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
         **{
+            expr_type: annotate_with_type_lambda(data_type)
+            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
+            for expr_type in expressions
+        },
+        **{
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (
                 exp.Left,
                 exp.Right,
                 exp.Substring,
             )
-        },
-        **{
-            expr_type: annotate_with_type_lambda(data_type)
-            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
-            for expr_type in expressions
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,

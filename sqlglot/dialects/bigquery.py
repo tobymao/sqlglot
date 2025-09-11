@@ -1167,7 +1167,7 @@ class BigQuery(Dialect):
             if token and token.text.upper() == "ML":
                 return self._parse_ml(exp.MLTranslate)
 
-            return exp.Translate.from_arg_list(self._parse_csv(self._parse_bitwise))
+            return exp.Translate.from_arg_list(self._parse_function_args())
 
         def _parse_features_at_time(self) -> exp.FeaturesAtTime:
             self._match(TokenType.TABLE)

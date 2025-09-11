@@ -5822,6 +5822,9 @@ class Parser(metaclass=_Parser):
 
         return func
 
+    def _parse_function_args(self, alias: bool = False) -> t.List[exp.Expression]:
+        return self._parse_csv(lambda: self._parse_lambda(alias=alias))
+
     def _parse_function_call(
         self,
         functions: t.Optional[t.Dict[str, t.Callable]] = None,
@@ -5886,7 +5889,7 @@ class Parser(metaclass=_Parser):
             known_function = function and not anonymous
 
             alias = not known_function or upper in self.FUNCTIONS_WITH_ALIASED_ARGS
-            args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
+            args = self._parse_function_args(alias)
 
             post_func_comments = self._curr and self._curr.comments
             if known_function and post_func_comments:

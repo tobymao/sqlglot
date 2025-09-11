@@ -940,6 +940,11 @@ SELECT COALESCE(COUNT(DISTINCT x.a)) AS a FROM x AS x;
 SELECT a AS b, b AS a FROM c;
 SELECT C.A AS B, C.B AS A FROM C C;
 
+# title: enable aliases expansion for the base case of recursive CTE
+# execute: false
+WITH RECURSIVE rec AS ( SELECT id, parent_id AS parent, 1 AS level FROM ( SELECT 1 AS id, 0 AS parent_id ) AS t WHERE parent = 0 UNION ALL SELECT rec.id + 10 AS id, rec.id AS parent, rec.level + 1 AS level FROM rec WHERE level < 3 ) SELECT * FROM rec;
+WITH RECURSIVE rec AS (SELECT t.id AS id, t.parent_id AS parent, 1 AS level FROM (SELECT 1 AS id, 0 AS parent_id) AS t WHERE t.parent_id = 0 UNION ALL SELECT rec.id + 10 AS id, rec.id AS parent, rec.level + 1 AS level FROM rec AS rec WHERE rec.level < 3) SELECT rec.id AS id, rec.parent AS parent, rec.level AS level FROM rec AS rec;
+
 --------------------------------------
 -- Wrapped tables / join constructs
 --------------------------------------

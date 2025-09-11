@@ -292,17 +292,10 @@ class SingleStore(MySQL):
 
         ALTER_PARSERS = {
             **MySQL.Parser.ALTER_PARSERS,
-            "CHANGE": lambda self: self._parse_alter_table_rename_column(),
+            "CHANGE": lambda self: self.expression(
+                exp.RenameColumn, this=self._parse_column(), to=self._parse_column()
+            ),
         }
-
-        def _parse_alter_table_rename_column(self) -> t.Optional[t.Union[exp.RenameColumn]]:
-            old_column = self._parse_column()
-            new_column = self._parse_column()
-
-            if old_column is None or new_column is None:
-                return None
-
-            return self.expression(exp.RenameColumn, this=old_column, to=new_column)
 
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False

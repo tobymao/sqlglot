@@ -26,7 +26,7 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS TIMESTAMPNTZ)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS TINYINT)", "CAST(x AS SMALLINT)")
         self.validate_identity("CAST(x AS UTINYINT)", "CAST(x AS SMALLINT)")
-        self.validate_identity("CAST(x AS UUID)", "CAST(x AS VARBINARY(MAX))")
+        self.validate_identity("CAST(x AS UUID)", "CAST(x AS UNIQUEIDENTIFIER)")
         self.validate_identity("CAST(x AS VARIANT)", "CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR)")
 

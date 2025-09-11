@@ -125,7 +125,7 @@ class Fabric(TSQL):
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME2",
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "SMALLINT",
-            exp.DataType.Type.UUID: "VARBINARY(MAX)",
+            exp.DataType.Type.UUID: "UNIQUEIDENTIFIER",
             exp.DataType.Type.XML: "VARCHAR",
         }
 

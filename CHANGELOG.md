@@ -1,6 +1,90 @@
 Changelog
 =========
 
+## [v27.14.0] - 2025-09-11
+### :boom: BREAKING CHANGES
+- due to [`9c8a600`](https://github.com/tobymao/sqlglot/commit/9c8a6001f41816035f391d046eb9692d6f13cefc) - correct parsing of TO_VARCHAR *(PR [#5840](https://github.com/tobymao/sqlglot/pull/5840) by [@geooo109](https://github.com/geooo109))*:
+
+  correct parsing of TO_VARCHAR (#5840)
+
+- due to [`1e9aef1`](https://github.com/tobymao/sqlglot/commit/1e9aef1bb20f4dc5e9c03d59cb3165c235c11ce1) - convert NULL annotations to UNKNOWN *(PR [#5842](https://github.com/tobymao/sqlglot/pull/5842) by [@georgesittas](https://github.com/georgesittas))*:
+
+  convert NULL annotations to UNKNOWN (#5842)
+
+- due to [`44c9e70`](https://github.com/tobymao/sqlglot/commit/44c9e70bd8c9421035eb0e87e4286061ec5d2fa8) - add tests for snowflake STARTSWITH function *(PR [#5847](https://github.com/tobymao/sqlglot/pull/5847) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  add tests for snowflake STARTSWITH function (#5847)
+
+- due to [`0779c2d`](https://github.com/tobymao/sqlglot/commit/0779c2d4e8ce0228592de6882763940783fa5e87) - support BIT_X aggregates again for duckdb, postgres *(PR [#5851](https://github.com/tobymao/sqlglot/pull/5851) by [@georgesittas](https://github.com/georgesittas))*:
+
+  support BIT_X aggregates again for duckdb, postgres (#5851)
+
+- due to [`c50d6e3`](https://github.com/tobymao/sqlglot/commit/c50d6e3c7b96f00d27c34a02c8e0dced21e6c373) - annotate type for snowflake LEFT, RIGHT and SUBSTRING functions *(PR [#5849](https://github.com/tobymao/sqlglot/pull/5849) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  annotate type for snowflake LEFT, RIGHT and SUBSTRING functions (#5849)
+
+- due to [`e441e16`](https://github.com/tobymao/sqlglot/commit/e441e16991626c2da2d38bc9c3a2b408e3f773bd) - make dump/pickling non-recursive to avoid hitting stack limits *(PR [#5850](https://github.com/tobymao/sqlglot/pull/5850) by [@tobymao](https://github.com/tobymao))*:
+
+  make dump/pickling non-recursive to avoid hitting stack limits (#5850)
+
+- due to [`b128339`](https://github.com/tobymao/sqlglot/commit/b12833977e2a395712481cf11e293fdbd70fd4ce) - annotate and add tests for snowflake LENGTH and LOWER functions *(PR [#5856](https://github.com/tobymao/sqlglot/pull/5856) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  annotate and add tests for snowflake LENGTH and LOWER functions (#5856)
+
+- due to [`134957a`](https://github.com/tobymao/sqlglot/commit/134957af11c55a4ab16f58d0725d6bb8ab23eb28) - annotate types for Snowflake TRIM function *(PR [#5811](https://github.com/tobymao/sqlglot/pull/5811) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake TRIM function (#5811)
+
+- due to [`d3cd6bf`](https://github.com/tobymao/sqlglot/commit/d3cd6bf6e5fbaa490868ee3cd2cc99dd5e40a396) - Annotate and add tests for snowflake REPLACE and SPACE functions *(PR [#5871](https://github.com/tobymao/sqlglot/pull/5871) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate and add tests for snowflake REPLACE and SPACE functions (#5871)
+
+
+### :sparkles: New Features
+- [`a398fb4`](https://github.com/tobymao/sqlglot/commit/a398fb4df28c868f4cfc34530044b9d7b78e2e90) - **singlestore**: Splitted truncation of multiple tables into several queries *(PR [#5839](https://github.com/tobymao/sqlglot/pull/5839) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`cd27c96`](https://github.com/tobymao/sqlglot/commit/cd27c96fe85aba5f54116f38649edd8db064a5e6) - **snowflake**: transpile `TO_HEX` from bigquery *(PR [#5838](https://github.com/tobymao/sqlglot/pull/5838) by [@YuvalOmerRep](https://github.com/YuvalOmerRep))*
+- [`d2e4ab7`](https://github.com/tobymao/sqlglot/commit/d2e4ab7df41ae3601e9b66e1338db3d851729339) - **snowflake**: add tests for endswith function *(PR [#5846](https://github.com/tobymao/sqlglot/pull/5846) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`c50d6e3`](https://github.com/tobymao/sqlglot/commit/c50d6e3c7b96f00d27c34a02c8e0dced21e6c373) - **optimizer**: annotate type for snowflake LEFT, RIGHT and SUBSTRING functions *(PR [#5849](https://github.com/tobymao/sqlglot/pull/5849) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`ca6c8f7`](https://github.com/tobymao/sqlglot/commit/ca6c8f753ba8458544439e20671f0981c98d168d) - **singlestore**: Improved parsting/generation of exp.Show *(PR [#5853](https://github.com/tobymao/sqlglot/pull/5853) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`722eceb`](https://github.com/tobymao/sqlglot/commit/722ecebfa43aa5948031edd1828b6482a241d9ef) - **snowflake**: MD5Digest transpiling to MD5_BINARY *(PR [#5855](https://github.com/tobymao/sqlglot/pull/5855) by [@YuvalOmerRep](https://github.com/YuvalOmerRep))*
+- [`b128339`](https://github.com/tobymao/sqlglot/commit/b12833977e2a395712481cf11e293fdbd70fd4ce) - **optimizer**: annotate and add tests for snowflake LENGTH and LOWER functions *(PR [#5856](https://github.com/tobymao/sqlglot/pull/5856) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`134957a`](https://github.com/tobymao/sqlglot/commit/134957af11c55a4ab16f58d0725d6bb8ab23eb28) - **optimizer**: annotate types for Snowflake TRIM function *(PR [#5811](https://github.com/tobymao/sqlglot/pull/5811) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`0475dae`](https://github.com/tobymao/sqlglot/commit/0475dae21231b85407bf778fd9f1abaecdeb68de) - **singlestore**: Marked several exp.Describe args as unsupported *(PR [#5861](https://github.com/tobymao/sqlglot/pull/5861) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`7a07b41`](https://github.com/tobymao/sqlglot/commit/7a07b41b2357149adc6afb50bb98e37e6a3175f1) - **optimizer**: Add tests for snowflake LTRIM and RTRIM functions *(PR [#5857](https://github.com/tobymao/sqlglot/pull/5857) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`fb90666`](https://github.com/tobymao/sqlglot/commit/fb90666ff3e710d70815a68defde3dc85aeef7b3) - **singlestore**: Added collate handling to exp.AlterColumn *(PR [#5864](https://github.com/tobymao/sqlglot/pull/5864) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`2f27692`](https://github.com/tobymao/sqlglot/commit/2f276929d6b6f788eb5b3ee0b1a8a8c108833474) - **snowflake**: JSONFormat transpiling to TO_JSON  *(PR [#5860](https://github.com/tobymao/sqlglot/pull/5860) by [@YuvalOmerRep](https://github.com/YuvalOmerRep))*
+- [`487c811`](https://github.com/tobymao/sqlglot/commit/487c8119cbfaf2783f5f17ec90c8e69e4432a4fa) - **singlestore**: Fixed parsing/generation of exp.RenameColumn *(PR [#5865](https://github.com/tobymao/sqlglot/pull/5865) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`76cf4d8`](https://github.com/tobymao/sqlglot/commit/76cf4d892a6d011a2e0020fb1ea82518d4f49e71) - **bigquery**: add support for ML.TRANSLATE func *(PR [#5859](https://github.com/tobymao/sqlglot/pull/5859) by [@geooo109](https://github.com/geooo109))*
+- [`a899eb1`](https://github.com/tobymao/sqlglot/commit/a899eb188d5e354d3ed56d1e7c32861eecf3e906) - **singlestore**: Fixed parsing and generation of VECTOR type *(PR [#5854](https://github.com/tobymao/sqlglot/pull/5854) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`0acf076`](https://github.com/tobymao/sqlglot/commit/0acf0769773061fca3ec03125a5d43a4aa9c8e4b) - **postgres**: Support `?|` JSONB operator *(PR [#5866](https://github.com/tobymao/sqlglot/pull/5866) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`bd4b278`](https://github.com/tobymao/sqlglot/commit/bd4b2780c32ee52d25b6539d7b4479b6a7f80d18) - **optimizer**: annotate types for Snowflake UPPER function *(PR [#5812](https://github.com/tobymao/sqlglot/pull/5812) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`edab189`](https://github.com/tobymao/sqlglot/commit/edab1890e2c790b737be4995a31667448eff148e) - **postgres**: Support ?& JSONB operator *(PR [#5867](https://github.com/tobymao/sqlglot/pull/5867) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`960ec06`](https://github.com/tobymao/sqlglot/commit/960ec069eb275b7b8cc6705dbbb1143159f06237) - **postgres**: Support #- JSONB operator *(PR [#5868](https://github.com/tobymao/sqlglot/pull/5868) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`d3cd6bf`](https://github.com/tobymao/sqlglot/commit/d3cd6bf6e5fbaa490868ee3cd2cc99dd5e40a396) - **optimizer**: Annotate and add tests for snowflake REPLACE and SPACE functions *(PR [#5871](https://github.com/tobymao/sqlglot/pull/5871) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`ba22531`](https://github.com/tobymao/sqlglot/commit/ba2253113ea5a7c76c8df7ec9b6faf37da698fa4) - **bigquery**: Add support for ML.FORECAST(...) *(PR [#5873](https://github.com/tobymao/sqlglot/pull/5873) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :bug: Bug Fixes
+- [`9c8a600`](https://github.com/tobymao/sqlglot/commit/9c8a6001f41816035f391d046eb9692d6f13cefc) - **snowflake**: correct parsing of TO_VARCHAR *(PR [#5840](https://github.com/tobymao/sqlglot/pull/5840) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5837](https://github.com/tobymao/sqlglot/issues/5837) opened by [@ultrabear](https://github.com/ultrabear)*
+- [`f3d07fd`](https://github.com/tobymao/sqlglot/commit/f3d07fd8a106b034f64bb100291671c0fe39a106) - **snowflake**: Enable parsing of COPY INTO without files list *(PR [#5841](https://github.com/tobymao/sqlglot/pull/5841) by [@whummer](https://github.com/whummer))*
+- [`0ffb1fa`](https://github.com/tobymao/sqlglot/commit/0ffb1faac3b32aad845306eed0e000ff0d055554) - **duckdb**: transpile joins without ON/USING to CROSS JOIN *(PR [#5804](https://github.com/tobymao/sqlglot/pull/5804) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5795](https://github.com/tobymao/sqlglot/issues/5795) opened by [@kyle-cheung](https://github.com/kyle-cheung)*
+- [`1e9aef1`](https://github.com/tobymao/sqlglot/commit/1e9aef1bb20f4dc5e9c03d59cb3165c235c11ce1) - **optimizer**: convert NULL annotations to UNKNOWN *(PR [#5842](https://github.com/tobymao/sqlglot/pull/5842) by [@georgesittas](https://github.com/georgesittas))*
+- [`bbcf0d4`](https://github.com/tobymao/sqlglot/commit/bbcf0d4404ea014f08319c44313719b4377adcdb) - **duckdb**: support trailing commas before `FOR` in pivot, fixes [#5843](https://github.com/tobymao/sqlglot/pull/5843) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`ad8a408`](https://github.com/tobymao/sqlglot/commit/ad8a408a4e3e26e32472fc55c67b44687992ae47) - **parser**: more robust nested pipe syntax *(PR [#5845](https://github.com/tobymao/sqlglot/pull/5845) by [@geooo109](https://github.com/geooo109))*
+- [`44c9e70`](https://github.com/tobymao/sqlglot/commit/44c9e70bd8c9421035eb0e87e4286061ec5d2fa8) - **optimizer**: add tests for snowflake STARTSWITH function *(PR [#5847](https://github.com/tobymao/sqlglot/pull/5847) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`0779c2d`](https://github.com/tobymao/sqlglot/commit/0779c2d4e8ce0228592de6882763940783fa5e87) - support BIT_X aggregates again for duckdb, postgres *(PR [#5851](https://github.com/tobymao/sqlglot/pull/5851) by [@georgesittas](https://github.com/georgesittas))*
+- [`d131aab`](https://github.com/tobymao/sqlglot/commit/d131aab6815bf77d444a763d9bb4028d8f0e742d) - **redshift**: convert FETCH clauses to LIMIT for Redshift dialect *(PR [#5848](https://github.com/tobymao/sqlglot/pull/5848) by [@tomasmontielp](https://github.com/tomasmontielp))*
+- [`b22c4ec`](https://github.com/tobymao/sqlglot/commit/b22c4ecf4c032d89ca737f01d614102aa9c2b1ed) - **fabric**: UUID to UNIQUEIDENTIFIER *(PR [#5863](https://github.com/tobymao/sqlglot/pull/5863) by [@fresioAS](https://github.com/fresioAS))*
+- [`03d4f49`](https://github.com/tobymao/sqlglot/commit/03d4f49d92cd034d37074359b8c2cf96c5c3f5cf) - **clickhouse**: arrays are 1-indexed *(PR [#5862](https://github.com/tobymao/sqlglot/pull/5862) by [@joeyutong](https://github.com/joeyutong))*
+
+### :recycle: Refactors
+- [`e441e16`](https://github.com/tobymao/sqlglot/commit/e441e16991626c2da2d38bc9c3a2b408e3f773bd) - make dump/pickling non-recursive to avoid hitting stack limits *(PR [#5850](https://github.com/tobymao/sqlglot/pull/5850) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`b244f30`](https://github.com/tobymao/sqlglot/commit/b244f30524846bd08d03a73410ae9b4674254ecd) - move `exp.Contains` to `BOOLEAN` entry in `TYPE_TO_EXPRESSIONS` *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.13.2] - 2025-09-08
 ### :bug: Bug Fixes
 - [`5e7979f`](https://github.com/tobymao/sqlglot/commit/5e7979f3cf5f7996e198ddd81069d49a4a3b9391) - select session *(PR [#5836](https://github.com/tobymao/sqlglot/pull/5836) by [@tobymao](https://github.com/tobymao))*
@@ -9345,3 +9429,4 @@ Changelog
 [v27.13.0]: https://github.com/tobymao/sqlglot/compare/v27.12.0...v27.13.0
 [v27.13.1]: https://github.com/tobymao/sqlglot/compare/v27.13.0...v27.13.1
 [v27.13.2]: https://github.com/tobymao/sqlglot/compare/v27.13.1...v27.13.2
+[v27.14.0]: https://github.com/tobymao/sqlglot/compare/v27.13.2...v27.14.0

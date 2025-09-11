@@ -1727,8 +1727,15 @@ class Snowflake(Dialect):
 
                 this = annotate_types(this, dialect=self.dialect)
 
-            if not isinstance(this, exp.Dot) and this.is_type(exp.DataType.Type.STRUCT):
-                # Generate colon notation for the top level STRUCT
-                return f"{self.sql(this)}:{self.sql(expression, 'expression')}"
+            if not isinstance(this, exp.Dot):
+                this_sql = self.sql(this)
+                if this.is_type(exp.DataType.Type.STRUCT):
+                    # Generate colon notation for the top level STRUCT
+                    return f"{this_sql}:{self.sql(expression, 'expression')}"
+
+                if "." in this_sql:
+                    # Fix notation of imports of fields or UDFs when stated explicitly
+                    this_sql = this_sql.replace(".", "\".\"")
+                    return f"{this_sql}.{self.sql(expression, 'expression')}"
 
             return super().dot_sql(expression)

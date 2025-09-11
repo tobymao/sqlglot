@@ -3032,3 +3032,13 @@ OPTIONS (
                 "snowflake": """SELECT TO_JSON(OBJECT_CONSTRUCT('name', 'Alice')) AS json_data""",
             },
         )
+
+    def test_import_notation(self):
+        self.validate_all(
+            """SELECT `project.dataset`.udf(col) FROM `project.dataset`.table""",
+            write={
+                "bigquery": """SELECT `project.dataset`.udf(col) FROM `project.dataset.table`""",
+                "snowflake": """SELECT \"project\".\"dataset\".udf(col) FROM \"project\".\"dataset\".\"table\"""",
+            },
+        )
+

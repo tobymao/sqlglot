@@ -775,6 +775,8 @@ class Dialect(metaclass=_Dialect):
             exp.GroupConcat,
             exp.Initcap,
             exp.Lower,
+            exp.Replace,
+            exp.Space,
             exp.Substring,
             exp.String,
             exp.TimeToStr,

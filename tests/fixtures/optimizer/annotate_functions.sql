@@ -1747,6 +1747,25 @@ VARCHAR;
 UPPER(tbl.str_col);
 VARCHAR;
 
+# dialect: snowflake
+REPLACE(tbl.str_col, 'old', 'new');
+VARCHAR;
+
+# dialect: snowflake
+REPLACE('hello', 'old', NULL);
+VARCHAR;
+
+# dialect: snowflake
+SPACE(5);
+VARCHAR;
+
+# dialect: snowflake
+SPACE(tbl.int_col);
+VARCHAR;
+
+# dialect: snowflake
+SPACE(NULL);
+VARCHAR;
 --------------------------------------
 -- T-SQL
 --------------------------------------

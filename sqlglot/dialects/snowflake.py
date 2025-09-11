@@ -518,7 +518,9 @@ class Snowflake(Dialect):
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Length: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INT),
+        exp.Replace: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Reverse: _annotate_reverse,
+        exp.Space: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
     }
 
     TIME_MAPPING = {

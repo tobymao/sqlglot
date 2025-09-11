@@ -939,7 +939,7 @@ FROM json_data, field_ids""",
         self.validate_identity("SELECT * FROM foo WHERE id = %(id_param)s")
         self.validate_identity("SELECT * FROM foo WHERE id = ?")
 
-        self.validate_identity("a ?| b")
+        self.validate_identity("a ?| b").assert_is(exp.JSONBContainsAnyTopKeys)
         self.validate_identity(
             """SELECT '{"a":1, "b":2, "c":3}'::jsonb ?| array['b', 'c']""",
             """SELECT CAST('{"a":1, "b":2, "c":3}' AS JSONB) ?| ARRAY['b', 'c']""",

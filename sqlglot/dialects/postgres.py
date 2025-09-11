@@ -325,6 +325,7 @@ class Postgres(Dialect):
             "@@": TokenType.DAT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
+            "?&": TokenType.QMARK_AMP,
             "?|": TokenType.QMARK_PIPE,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,

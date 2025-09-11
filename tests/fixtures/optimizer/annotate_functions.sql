@@ -1739,6 +1739,14 @@ VARCHAR;
 RTRIM(NULL);
 VARCHAR;
 
+# dialect: snowflake
+UPPER('Hello, world!');
+VARCHAR;
+
+# dialect: snowflake
+UPPER(tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

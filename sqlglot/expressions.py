@@ -6710,6 +6710,11 @@ class JSONBContainsAnyTopKeys(Binary, Func):
     pass
 
 
+# https://www.postgresql.org/docs/9.5/functions-json.html
+class JSONBContainsAllTopKeys(Binary, Func):
+    pass
+
+
 class JSONBExists(Func):
     arg_types = {"this": True, "path": True}
     _sql_names = ["JSONB_EXISTS"]

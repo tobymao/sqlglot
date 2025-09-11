@@ -942,6 +942,7 @@ class Parser(metaclass=_Parser):
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
         TokenType.FOR: lambda self, this: self._parse_comprehension(this),
+        TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
         TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
     }
 

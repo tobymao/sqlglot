@@ -945,6 +945,6 @@ class TestSingleStore(Validator):
             },
         )
 
-      def test_alter(self):
+    def test_alter(self):
         self.validate_identity("ALTER TABLE t CHANGE middle_initial middle_name")
         self.validate_identity("ALTER TABLE t MODIFY COLUMN name TEXT COLLATE 'binary'")

@@ -3015,3 +3015,12 @@ OPTIONS (
                 "snowflake": "SELECT MD5_BINARY('abc')",
             },
         )
+
+    def test_to_json_string(self):
+        self.validate_all(
+            """SELECT TO_JSON_STRING(STRUCT('Alice' AS name)) AS json_data""",
+            write={
+                "bigquery": """SELECT TO_JSON_STRING(STRUCT('Alice' AS name)) AS json_data""",
+                "snowflake": """SELECT TO_JSON(OBJECT_CONSTRUCT('name', 'Alice')) AS json_data""",
+            },
+        )

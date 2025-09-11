@@ -1288,6 +1288,7 @@ class Snowflake(Dialect):
             exp.ParseJSON: lambda self, e: self.func(
                 "TRY_PARSE_JSON" if e.args.get("safe") else "PARSE_JSON", e.this
             ),
+            exp.JSONFormat: rename_func("TO_JSON"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]

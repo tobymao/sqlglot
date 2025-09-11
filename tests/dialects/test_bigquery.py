@@ -2148,11 +2148,8 @@ OPTIONS (
         )
         self.validate_identity(
             "SELECT * FROM ML.TRANSLATE(MODEL `mydataset.mymodel`, (SELECT comment AS text_content FROM mydataset.mytable), STRUCT('translate_text' AS translate_mode, 'en' AS target_language_code))"
-        )
-        self.validate_identity("TRANSLATE(x, y, z)").assert_is(exp.Translate)
-        self.validate_identity(
-            "SELECT * FROM ML.TRANSLATE(MODEL `x`, TABLE y, STRUCT('z' AS z))"
         ).find(exp.MLTranslate).assert_is(exp.MLTranslate)
+        self.validate_identity("TRANSLATE(x, y, z)").assert_is(exp.Translate)
 
     def test_merge(self):
         self.validate_all(

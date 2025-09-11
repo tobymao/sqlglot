@@ -6705,6 +6705,11 @@ class JSONBContains(Binary, Func):
     _sql_names = ["JSONB_CONTAINS"]
 
 
+# https://www.postgresql.org/docs/9.5/functions-json.html
+class JSONBContainsAnyTopKeys(Binary, Func):
+    _sql_names = ["JSONB_CONTAINS_ANY_TOP_KEYS"]
+
+
 class JSONBExists(Func):
     arg_types = {"this": True, "path": True}
     _sql_names = ["JSONB_EXISTS"]

@@ -117,6 +117,7 @@ class Generator(metaclass=_Generator):
         exp.AnalyzeColumns: lambda self, e: self.sql(e, "this"),
         exp.AnalyzeWith: lambda self, e: self.expressions(e, prefix="WITH ", sep=" "),
         exp.ArrayContainsAll: lambda self, e: self.binary(e, "@>"),
+        exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
         exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",

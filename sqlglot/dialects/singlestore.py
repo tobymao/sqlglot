@@ -290,6 +290,20 @@ class SingleStore(MySQL):
             "USERS FOR GROUP": _show_parser("USERS FOR GROUP", target=True),
         }
 
+        ALTER_PARSERS = {
+            **MySQL.Parser.ALTER_PARSERS,
+            "CHANGE": lambda self: self._parse_alter_table_rename_column(),
+        }
+
+        def _parse_alter_table_rename_column(self) -> t.Optional[t.Union[exp.RenameColumn]]:
+            old_column = self._parse_column()
+            new_column = self._parse_column()
+
+            if old_column is None or new_column is None:
+                return None
+
+            return self.expression(exp.RenameColumn, this=old_column, to=new_column)
+
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True
@@ -1806,3 +1820,9 @@ class SingleStore(MySQL):
                 statements.append(f"TRUNCATE {self.sql(expression)}")
 
             return "; ".join(statements)
+
+        @unsupported_args("exists")
+        def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
+            old_column = self.sql(expression, "this")
+            new_column = self.sql(expression, "to")
+            return f"CHANGE {old_column} {new_column}"

@@ -4217,29 +4217,31 @@ class Generator(metaclass=_Generator):
     def opclass_sql(self, expression: exp.Opclass) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
-    def predict_sql(self, expression: exp.Predict) -> str:
+    def _ml_sql(self, expression: exp.Func, name: str) -> str:
         model = self.sql(expression, "this")
         model = f"MODEL {model}"
-        table = self.sql(expression, "expression")
-        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
-        parameters = self.sql(expression, "params_struct")
-        return self.func("PREDICT", model, table, parameters or None)
+        expr = expression.expression
+        if expr:
+            expr_sql = self.sql(expression, "expression")
+            expr_sql = f"TABLE {expr_sql}" if not isinstance(expr, exp.Subquery) else expr_sql
+        else:
+            expr_sql = None
+
+        parameters = self.sql(expression, "params_struct") or None
+
+        return self.func(name, model, expr_sql, parameters)
+
+    def predict_sql(self, expression: exp.Predict) -> str:
+        return self._ml_sql(expression, "PREDICT")
 
     def generateembedding_sql(self, expression: exp.GenerateEmbedding) -> str:
-        model = self.sql(expression, "this")
-        model = f"MODEL {model}"
-        table = self.sql(expression, "expression")
-        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
-        parameters = self.sql(expression, "params_struct")
-        return self.func("GENERATE_EMBEDDING", model, table, parameters or None)
+        return self._ml_sql(expression, "GENERATE_EMBEDDING")
 
     def mltranslate_sql(self, expression: exp.MLTranslate) -> str:
-        model = self.sql(expression, "this")
-        model = f"MODEL {model}"
-        table = self.sql(expression, "expression")
-        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
-        parameters = self.sql(expression, "params_struct")
-        return self.func("TRANSLATE", model, table, parameters)
+        return self._ml_sql(expression, "TRANSLATE")
+
+    def mlforecast_sql(self, expression: exp.MLForecast) -> str:
+        return self._ml_sql(expression, "FORECAST")
 
     def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
         this_sql = self.sql(expression, "this")

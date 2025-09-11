@@ -7004,6 +7004,10 @@ class GenerateEmbedding(Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 
+class MLForecast(Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search
 class VectorSearch(Func):
     arg_types = {

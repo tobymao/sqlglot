@@ -85,6 +85,7 @@ class TokenType(AutoName):
     DAMP = auto()
     XOR = auto()
     DSTAR = auto()
+    QMARK_PIPE = auto()
 
     URI_START = auto()
 

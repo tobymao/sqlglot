@@ -939,6 +939,12 @@ FROM json_data, field_ids""",
         self.validate_identity("SELECT * FROM foo WHERE id = %(id_param)s")
         self.validate_identity("SELECT * FROM foo WHERE id = ?")
 
+        self.validate_identity("a ?| b").assert_is(exp.JSONBContainsAnyTopKeys)
+        self.validate_identity(
+            """SELECT '{"a":1, "b":2, "c":3}'::jsonb ?| array['b', 'c']""",
+            """SELECT CAST('{"a":1, "b":2, "c":3}' AS JSONB) ?| ARRAY['b', 'c']""",
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

@@ -944,6 +944,7 @@ class Parser(metaclass=_Parser):
         TokenType.FOR: lambda self, this: self._parse_comprehension(this),
         TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
         TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
+        TokenType.HASH_DASH: binary_range_parser(exp.JSONBDeleteAtPath),
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {

@@ -951,6 +951,12 @@ FROM json_data, field_ids""",
             """SELECT CAST('["a", "b"]' AS JSONB) ?& ARRAY['a', 'b']""",
         )
 
+        self.validate_identity("a #- b").assert_is(exp.JSONBDeleteAtPath)
+        self.validate_identity(
+            """SELECT '["a", {"b":1}]'::jsonb #- '{1,b}'""",
+            """SELECT CAST('["a", {"b":1}]' AS JSONB) #- '{1,b}'""",
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

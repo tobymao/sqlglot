@@ -6720,6 +6720,11 @@ class JSONBExists(Func):
     _sql_names = ["JSONB_EXISTS"]
 
 
+# https://www.postgresql.org/docs/9.5/functions-json.html
+class JSONBDeleteAtPath(Binary, Func):
+    pass
+
+
 class JSONExtract(Binary, Func):
     arg_types = {
         "this": True,

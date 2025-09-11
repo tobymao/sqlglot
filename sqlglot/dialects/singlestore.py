@@ -528,6 +528,13 @@ class SingleStore(MySQL):
             exp.AlterColumn: unsupported_args("drop", "comment", "allow_null", "visible", "using")(
                 lambda self, e: super().altercolumn_sql(e)
             ),
+            exp.Describe: unsupported_args(
+                "style",
+                "kind",
+                "expressions",
+                "partition",
+                "format",
+            )(lambda self, e: super().describe_sql(e)),
         }
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)

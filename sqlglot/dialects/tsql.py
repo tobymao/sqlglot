@@ -650,6 +650,16 @@ class TSQL(Dialect):
             "NEXT": lambda self: self._parse_next_value_for(),
         }
 
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "JSON_ARRAYAGG": lambda self: self.expression(
+                exp.JSONArrayAgg,
+                this=self._parse_bitwise(),
+                order=self._parse_order(),
+                null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
+            ),
+        }
+
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,

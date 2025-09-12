@@ -613,7 +613,7 @@ class Postgres(Dialect):
             ),
             exp.IntDiv: rename_func("DIV"),
             exp.JSONArrayAgg: lambda self, e: self.func(
-                "JSON_AGG", self.sql(e, "this"), suffix=f"{self.sql(e, "order")})"
+                "JSON_AGG", self.sql(e, "this"), suffix=f"""{self.sql(e, 'order')})"""
             ),
             exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
             exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),

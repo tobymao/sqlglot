@@ -208,3 +208,53 @@ x"""
             repr(Tokenizer().tokenize("foo")),
             "[<Token token_type: TokenType.VAR, text: foo, line: 1, col: 3, start: 0, end: 2, comments: []>]",
         )
+
+    def test_duckdb_install_tokens(self):
+        from sqlglot.dialects import DuckDB
+
+        tokenizer = DuckDB.Tokenizer()
+
+        # Test INSTALL token
+        tokens = tokenizer.tokenize("INSTALL httpfs")
+        self.assertEqual(tokens[0].token_type, TokenType.INSTALL)
+        self.assertEqual(tokens[0].text, "INSTALL")
+        self.assertEqual(tokens[1].token_type, TokenType.VAR)
+        self.assertEqual(tokens[1].text, "httpfs")
+
+        # Test FORCE token
+        tokens = tokenizer.tokenize("FORCE INSTALL httpfs")
+        self.assertEqual(tokens[0].token_type, TokenType.FORCE)
+        self.assertEqual(tokens[0].text, "FORCE")
+        self.assertEqual(tokens[1].token_type, TokenType.INSTALL)
+        self.assertEqual(tokens[1].text, "INSTALL")
+        self.assertEqual(tokens[2].token_type, TokenType.VAR)
+        self.assertEqual(tokens[2].text, "httpfs")
+
+        # Test INSTALL with FROM
+        tokens = tokenizer.tokenize("INSTALL spatial FROM community")
+        self.assertEqual(tokens[0].token_type, TokenType.INSTALL)
+        self.assertEqual(tokens[0].text, "INSTALL")
+        self.assertEqual(tokens[1].token_type, TokenType.VAR)
+        self.assertEqual(tokens[1].text, "spatial")
+        self.assertEqual(tokens[2].token_type, TokenType.FROM)
+        self.assertEqual(tokens[2].text, "FROM")
+        self.assertEqual(tokens[3].token_type, TokenType.VAR)
+        self.assertEqual(tokens[3].text, "community")
+
+        # Test INSTALL with string literal
+        tokens = tokenizer.tokenize("INSTALL 'path/to/ext.duckdb_extension'")
+        self.assertEqual(tokens[0].token_type, TokenType.INSTALL)
+        self.assertEqual(tokens[0].text, "INSTALL")
+        self.assertEqual(tokens[1].token_type, TokenType.STRING)
+        self.assertEqual(tokens[1].text, "path/to/ext.duckdb_extension")
+
+        # Test case insensitivity
+        tokens = tokenizer.tokenize("install httpfs")
+        self.assertEqual(tokens[0].token_type, TokenType.INSTALL)
+        self.assertEqual(tokens[0].text, "install")
+
+        tokens = tokenizer.tokenize("force install httpfs")
+        self.assertEqual(tokens[0].token_type, TokenType.FORCE)
+        self.assertEqual(tokens[0].text, "force")
+        self.assertEqual(tokens[1].token_type, TokenType.INSTALL)
+        self.assertEqual(tokens[1].text, "install")

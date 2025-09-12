@@ -1262,3 +1262,38 @@ FROM foo""",
 
         self.assertIsInstance(result, exp.TsOrDsToTime)
         self.assertEqual(result.sql(), "CAST('12:00:00' AS TIME)")
+
+    def test_install_expression(self):
+        # Test Install expression construction
+        install = exp.Install(this=exp.Identifier(this="httpfs"))
+        self.assertEqual(install.args["this"].name, "httpfs")
+        self.assertIsNone(install.args.get("from_"))
+        self.assertFalse(install.args.get("force", False))
+
+        # Test Install with FROM clause
+        install_with_from = exp.Install(
+            this=exp.Identifier(this="spatial"), from_=exp.Identifier(this="community")
+        )
+        self.assertEqual(install_with_from.args["this"].name, "spatial")
+        self.assertEqual(install_with_from.args["from_"].name, "community")
+        self.assertFalse(install_with_from.args.get("force", False))
+
+        # Test FORCE Install
+        force_install = exp.Install(this=exp.Identifier(this="httpfs"), force=True)
+        self.assertEqual(force_install.args["this"].name, "httpfs")
+        self.assertIsNone(force_install.args.get("from_"))
+        self.assertTrue(force_install.args.get("force", False))
+
+        # Test Install with string literal
+        install_path = exp.Install(this=exp.Literal.string("path/to/ext.duckdb_extension"))
+        self.assertEqual(install_path.args["this"].this, "path/to/ext.duckdb_extension")
+        self.assertTrue(install_path.args["this"].is_string)
+
+        # Test Install expression key
+        install = exp.Install(this=exp.Identifier(this="httpfs"))
+        self.assertEqual(install.key, "install")
+
+        # Test Install arg_types validation
+        self.assertEqual(exp.Install.arg_types["this"], True)  # Required
+        self.assertEqual(exp.Install.arg_types["from_"], False)  # Optional
+        self.assertEqual(exp.Install.arg_types["force"], False)  # Optional

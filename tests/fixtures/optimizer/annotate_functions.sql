@@ -1632,6 +1632,54 @@ LOWER(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+REGEXP_LIKE('foo', 'bar');
+BOOLEAN;
+
+# dialect: snowflake
+REGEXP_LIKE(NULL, 'bar');
+BOOLEAN;
+
+# dialect: snowflake
+REGEXP_LIKE('foo', 'bar', 'baz');
+BOOLEAN;
+
+# dialect: snowflake
+REGEXP_LIKE('foo', NULL, 'baz');
+BOOLEAN;
+
+# dialect: snowflake
+REGEXP_REPLACE('hello world', 'world', 'universe');
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_REPLACE('hello world', 'world', NULL);
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_REPLACE('hello world', 'world', 'universe', 1, 1, 'i');
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_SUBSTR('hello world', 'world');
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_SUBSTR(NULL, 'world');
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_SUBSTR('hello world', NULL);
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_SUBSTR('hello world', 'world', 1);
+VARCHAR;
+
+# dialect: snowflake
+REGEXP_SUBSTR('hello world', 'world', 1, 1, 'e', NULL);
+VARCHAR;
+
+# dialect: snowflake
 REVERSE('Hello, world!');
 VARCHAR;
 
@@ -1662,6 +1710,18 @@ BINARY;
 # dialect: snowflake
 RIGHT(tbl.str_col, NULL);
 STRING;
+
+# dialect: snowflake
+RLIKE('foo', 'bar');
+BOOLEAN;
+
+# dialect: snowflake
+RLIKE(NULL, 'bar');
+BOOLEAN;
+
+# dialect: snowflake
+RLIKE('foo', 'bar', NULL);
+BOOLEAN;
 
 # dialect: snowflake
 STARTSWITH('hello world', 'hello');

@@ -424,7 +424,8 @@ class Postgres(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
-            "JSON_AGG": lambda self: exp.JSONArrayAgg(
+            "JSON_AGG": lambda self: self.expression(
+                exp.JSONArrayAgg,
                 this=self._parse_bitwise(),
                 order=self._parse_order(),
             ),

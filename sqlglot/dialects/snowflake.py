@@ -515,6 +515,8 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
+            exp.RegexpExtract,
+            exp.RegexpReplace,
             exp.Repeat,
             exp.Replace,
             exp.Space,

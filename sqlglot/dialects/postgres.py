@@ -424,6 +424,10 @@ class Postgres(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
+            "JSON_AGG": lambda self: exp.JSONArrayAgg(
+                this=self._parse_bitwise(),
+                order=self._parse_order(),
+            ),
             "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
         }
 
@@ -608,6 +612,9 @@ class Postgres(Dialect):
                 self, e, func_name="STRING_AGG", within_group=False
             ),
             exp.IntDiv: rename_func("DIV"),
+            exp.JSONArrayAgg: lambda self, e: self.func(
+                "JSON_AGG", self.sql(e, "this"), suffix=f"{self.sql(e, "order")})"
+            ),
             exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
             exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),

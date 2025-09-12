@@ -652,10 +652,11 @@ class TSQL(Dialect):
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
-            "JSON_ARRAYAGG": lambda self: self._parse_json_array(
+            "JSON_ARRAYAGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
                 this=self._parse_bitwise(),
                 order=self._parse_order(),
+                null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
             ),
         }
 
@@ -944,13 +945,6 @@ class TSQL(Dialect):
                     collation.set("this", exp.Var(this=identifier.name))
 
             return expression
-
-        def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
-            return self.expression(
-                expr_type,
-                null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
-                **kwargs,
-            )
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

@@ -350,7 +350,8 @@ def _expand_alias_refs(
         if isinstance(projection, exp.Alias):
             alias_to_expression[projection.alias] = (projection.this, i + 1)
 
-    parent_scope, on_right_sub_tree = scope, False
+    parent_scope = scope
+    on_right_sub_tree = False
     while parent_scope and not parent_scope.is_cte:
         if parent_scope.is_union:
             on_right_sub_tree = parent_scope.parent.expression.right is parent_scope.expression

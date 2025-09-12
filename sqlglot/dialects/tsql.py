@@ -650,6 +650,15 @@ class TSQL(Dialect):
             "NEXT": lambda self: self._parse_next_value_for(),
         }
 
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "JSON_ARRAYAGG": lambda self: self._parse_json_array(
+                exp.JSONArrayAgg,
+                this=self._parse_bitwise(),
+                order=self._parse_order(),
+            ),
+        }
+
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
@@ -935,6 +944,13 @@ class TSQL(Dialect):
                     collation.set("this", exp.Var(this=identifier.name))
 
             return expression
+
+        def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
+            return self.expression(
+                expr_type,
+                null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
+                **kwargs,
+            )
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

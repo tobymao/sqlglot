@@ -1866,5 +1866,5 @@ class SingleStore(MySQL):
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             this = self.sql(expression, "this")
             not_null = " NOT NULL" if expression.args.get("not_null") else ""
-            type = self.sql(expression, "data_type") if expression.args.get("data_type") else "AUTO"
+            type = self.sql(expression, "data_type") or "AUTO"
             return f"AS {this} PERSISTED {type}{not_null}"

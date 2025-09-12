@@ -6079,6 +6079,9 @@ class Parser(metaclass=_Parser):
             constraint_kind = exp.ComputedColumnConstraint(
                 this=self._parse_assignment(),
                 persisted=persisted or self._match_text_seq("PERSISTED"),
+                data_type=exp.Var(this="AUTO")
+                if self._match_text_seq("AUTO")
+                else self._parse_types(),
                 not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
             constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))

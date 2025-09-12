@@ -1800,6 +1800,87 @@ class TestDuckDB(Validator):
         self.validate_identity("RESET LOCAL threads", check_command_warning=True)
         self.validate_identity("RESET SESSION default_collation", check_command_warning=True)
 
+    def test_install(self):
+        # Test basic INSTALL command
+        self.validate_identity("INSTALL httpfs")
+        self.validate_identity("INSTALL spatial")
+
+        # Test INSTALL with string literals (file paths)
+        self.validate_identity("INSTALL 'path/to/extension.duckdb_extension'")
+        self.validate_identity("INSTALL '/absolute/path/to/extension.duckdb_extension'")
+
+        # Test INSTALL with FROM clause
+        self.validate_identity("INSTALL httpfs FROM community")
+        self.validate_identity("INSTALL spatial FROM community")
+        self.validate_identity("INSTALL h3 FROM community")
+        self.validate_identity("INSTALL spatial FROM core_nightly")
+
+        # Test INSTALL with FROM clause using string literals (URLs)
+        self.validate_identity("INSTALL spatial FROM 'http://nightly-extensions.duckdb.org'")
+        self.validate_identity("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+
+        # Test FORCE INSTALL command
+        self.validate_identity("FORCE INSTALL httpfs")
+        self.validate_identity("FORCE INSTALL spatial")
+
+        # Test FORCE INSTALL with FROM clause
+        self.validate_identity("FORCE INSTALL httpfs FROM community")
+        self.validate_identity("FORCE INSTALL spatial FROM community")
+        self.validate_identity("FORCE INSTALL spatial FROM 'http://nightly-extensions.duckdb.org'")
+
+        # Test parsing and generation of Install expression
+        install_expr = parse_one("INSTALL httpfs", dialect="duckdb")
+        self.assertIsInstance(install_expr, exp.Install)
+        self.assertEqual(install_expr.args["this"].name, "httpfs")
+        self.assertIsNone(install_expr.args.get("from_"))
+        self.assertFalse(install_expr.args.get("force", False))
+
+        # Test parsing with FROM clause
+        install_with_from = parse_one("INSTALL spatial FROM community", dialect="duckdb")
+        self.assertIsInstance(install_with_from, exp.Install)
+        self.assertEqual(install_with_from.args["this"].name, "spatial")
+        self.assertEqual(install_with_from.args["from_"].name, "community")
+        self.assertFalse(install_with_from.args.get("force", False))
+
+        # Test parsing FORCE INSTALL
+        force_install = parse_one("FORCE INSTALL httpfs", dialect="duckdb")
+        self.assertIsInstance(force_install, exp.Install)
+        self.assertEqual(force_install.args["this"].name, "httpfs")
+        self.assertIsNone(force_install.args.get("from_"))
+        self.assertTrue(force_install.args.get("force", False))
+
+        # Test FORCE INSTALL with FROM
+        force_install_from = parse_one("FORCE INSTALL spatial FROM community", dialect="duckdb")
+        self.assertIsInstance(force_install_from, exp.Install)
+        self.assertEqual(force_install_from.args["this"].name, "spatial")
+        self.assertEqual(force_install_from.args["from_"].name, "community")
+        self.assertTrue(force_install_from.args.get("force", False))
+
+        # Test string path parsing
+        install_path = parse_one("INSTALL 'path/to/ext.duckdb_extension'", dialect="duckdb")
+        self.assertIsInstance(install_path, exp.Install)
+        self.assertEqual(install_path.args["this"].this, "path/to/ext.duckdb_extension")
+
+        # Test cross-dialect compatibility (should not parse as Install in other dialects)
+        # In other dialects, INSTALL should not be recognized as a special command
+        try:
+            non_duckdb_result = parse_one("INSTALL httpfs", dialect="postgres")
+            # Should parse as something else, not Install
+            self.assertNotIsInstance(non_duckdb_result, exp.Install)
+        except Exception:
+            # Or fail to parse entirely, which is also acceptable
+            pass
+
+        # Test error cases
+        with self.assertRaises(ParseError):
+            parse_one("INSTALL", dialect="duckdb")  # Missing extension name
+
+        with self.assertRaises(ParseError):
+            parse_one("FORCE", dialect="duckdb")  # FORCE without INSTALL
+
+        with self.assertRaises(ParseError):
+            parse_one("INSTALL httpfs FROM", dialect="duckdb")  # FROM without repository
+
     def test_map_struct(self):
         self.validate_identity("MAP {1: 'a', 2: 'b'}")
         self.validate_identity("MAP {'1': 'a', '2': 'b'}")

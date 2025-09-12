@@ -304,6 +304,9 @@ class DuckDB(Dialect):
             "CHAR": TokenType.TEXT,
             "DATETIME": TokenType.TIMESTAMPNTZ,
             "DETACH": TokenType.DETACH,
+            "EXCLUDE": TokenType.EXCEPT,
+            "FORCE": TokenType.FORCE,
+            "INSTALL": TokenType.INSTALL,
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,
@@ -468,6 +471,8 @@ class DuckDB(Dialect):
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.ATTACH: lambda self: self._parse_attach_detach(),
             TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+            TokenType.FORCE: lambda self: self._parse_force(),
+            TokenType.INSTALL: lambda self: self._parse_install(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
@@ -604,6 +609,26 @@ class DuckDB(Dialect):
 
         def _parse_show_duckdb(self, this: str) -> exp.Show:
             return self.expression(exp.Show, this=this)
+
+        def _parse_force(self) -> exp.Install:
+            # FORCE can only be followed by INSTALL in DuckDB
+            if not self._match(TokenType.INSTALL):
+                self.raise_error("Expected INSTALL after FORCE")
+
+            return self._parse_install(force=True)
+
+        def _parse_install(self, force: bool = False) -> exp.Install:
+            # Parse extension name (can be a string path or identifier)
+            this = self._parse_string() or self._parse_id_var()
+
+            # Parse optional FROM clause
+            from_ = None
+            if self._match(TokenType.FROM):
+                from_ = self._parse_string() or self._parse_id_var()
+                if not from_:
+                    self.raise_error("Expected repository name after FROM")
+
+            return self.expression(exp.Install, this=this, from_=from_, force=force)
 
         def _parse_primary(self) -> t.Optional[exp.Expression]:
             if self._match_pair(TokenType.HASH, TokenType.NUMBER):
@@ -927,6 +952,13 @@ class DuckDB(Dialect):
 
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"
+
+        def install_sql(self, expression: exp.Install) -> str:
+            force = "FORCE " if expression.args.get("force") else ""
+            this = self.sql(expression, "this")
+            from_ = expression.args.get("from_")
+            from_clause = f" FROM {self.sql(from_)}" if from_ else ""
+            return f"{force}INSTALL {this}{from_clause}"
 
         def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
             return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))

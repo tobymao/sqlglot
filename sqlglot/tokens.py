@@ -313,6 +313,7 @@ class TokenType(AutoName):
     INDEX = auto()
     INNER = auto()
     INSERT = auto()
+    INSTALL = auto()
     INTERSECT = auto()
     INTERVAL = auto()
     INTO = auto()

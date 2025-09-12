@@ -957,8 +957,8 @@ FROM json_data, field_ids""",
             """SELECT CAST('["a", {"b":1}]' AS JSONB) #- '{1,b}'""",
         )
 
-        self.validate_all(
-            "SELECT JSON_AGG(c1 ORDER BY c1)FROM (VALUES ('c'), ('b'), ('a')) AS t(c1)"
+        self.validate_identity(
+            "SELECT JSON_AGG(c1 ORDER BY c1) FROM (VALUES ('c'), ('b'), ('a')) AS t(c1)"
         )
 
     def test_ddl(self):

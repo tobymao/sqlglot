@@ -957,4 +957,6 @@ class TestSingleStore(Validator):
                 "singlestore": "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) AUTO NOT NULL)",
             },
         )
-        self.validate_identity("CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) PERSISTED BIGINT NOT NULL)")
+        self.validate_identity(
+            "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) PERSISTED BIGINT NOT NULL)"
+        )

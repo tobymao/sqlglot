@@ -6,6 +6,7 @@ from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    annotate_with_type_lambda,
     build_timetostr_or_tochar,
     binary_from_function,
     build_default_decimal_type,
@@ -506,8 +507,30 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
 
+    TYPE_TO_EXPRESSIONS = {
+        **Dialect.TYPE_TO_EXPRESSIONS,
+        exp.DataType.Type.INT: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.INT],
+            exp.Length,
+        },
+        exp.DataType.Type.VARCHAR: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
+            exp.Repeat,
+            exp.Replace,
+            exp.Space,
+        },
+        exp.DataType.Type.ARRAY: {
+            exp.Split,
+        },
+    }
+
     ANNOTATORS = {
         **Dialect.ANNOTATORS,
+        **{
+            expr_type: annotate_with_type_lambda(data_type)
+            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
+            for expr_type in expressions
+        },
         **{
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (
@@ -517,10 +540,7 @@ class Snowflake(Dialect):
             )
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
-        exp.Length: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INT),
-        exp.Replace: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
         exp.Reverse: _annotate_reverse,
-        exp.Space: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
     }
 
     TIME_MAPPING = {

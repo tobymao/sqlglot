@@ -1851,6 +1851,18 @@ ARRAY;
 SPLIT(NULL, ',');
 ARRAY;
 
+# dialect: snowflake
+UUID_STRING();
+VARCHAR;
+
+# dialect: snowflake
+UUID_STRING('foo', 'bar');
+VARCHAR;
+
+# dialect: snowflake
+UUID_STRING(null, null);
+VARCHAR;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

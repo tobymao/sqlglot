@@ -520,6 +520,7 @@ class Snowflake(Dialect):
             exp.Repeat,
             exp.Replace,
             exp.Space,
+            exp.Uuid,
         },
         exp.DataType.Type.ARRAY: {
             exp.Split,

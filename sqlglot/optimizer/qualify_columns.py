@@ -351,11 +351,15 @@ def _expand_alias_refs(
             alias_to_expression[projection.alias] = (projection.this, i + 1)
 
     parent_scope = scope
-    while parent_scope.is_union:
+    on_right_sub_tree = False
+    while parent_scope and not parent_scope.is_cte:
+        if parent_scope.is_union:
+            on_right_sub_tree = parent_scope.parent.expression.right is parent_scope.expression
         parent_scope = parent_scope.parent
 
     # We shouldn't expand aliases if they match the recursive CTE's columns
-    if parent_scope.is_cte:
+    # and we are in the recursive part (right sub tree) of the CTE
+    if parent_scope and on_right_sub_tree:
         cte = parent_scope.expression.parent
         if cte.find_ancestor(exp.With).recursive:
             for recursive_cte_column in cte.args["alias"].columns or cte.this.selects:

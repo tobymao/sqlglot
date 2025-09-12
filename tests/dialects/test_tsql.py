@@ -522,6 +522,19 @@ class TestTSQL(Validator):
             "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')",
         )
 
+        for order_by in ("", " ORDER BY c"):
+            for json_clause in ("", " NULL ON NULL", " ABSENT ON NULL"):
+                with self.subTest(f"Testing JSON_ARRAYAGG with options: {order_by}, {json_clause}"):
+                    self.validate_identity(f"JSON_ARRAYAGG(c{order_by}{json_clause})")
+
+        self.validate_all(
+            "JSON_ARRAYAGG(c1 ORDER BY c1)",
+            write={
+                "tsql": "JSON_ARRAYAGG(c1 ORDER BY c1)",
+                "postgres": "JSON_AGG(c1 ORDER BY c1 NULLS FIRST)",
+            },
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

@@ -1906,6 +1906,31 @@ VARCHAR;
 # dialect: snowflake
 SPACE(NULL);
 VARCHAR;
+
+# dialect: snowflake
+REPEAT('hello', 3);
+VARCHAR;
+
+# dialect: snowflake
+REPEAT(tbl.str_col, 2);
+VARCHAR;
+
+# dialect: snowflake
+REPEAT('hello', NULL);
+VARCHAR;
+
+# dialect: snowflake
+SPLIT('hello world', ' ');
+ARRAY;
+
+# dialect: snowflake
+SPLIT(tbl.str_col, ',');
+ARRAY;
+
+# dialect: snowflake
+SPLIT(NULL, ',');
+ARRAY;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

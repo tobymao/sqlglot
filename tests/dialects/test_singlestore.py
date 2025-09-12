@@ -948,3 +948,15 @@ class TestSingleStore(Validator):
     def test_alter(self):
         self.validate_identity("ALTER TABLE t CHANGE middle_initial middle_name")
         self.validate_identity("ALTER TABLE t MODIFY COLUMN name TEXT COLLATE 'binary'")
+
+    def test_constraints(self):
+        self.validate_all(
+            "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) PERSISTED AUTO NOT NULL)",
+            read={
+                "": "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) PERSISTED NOT NULL)",
+                "singlestore": "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) AUTO NOT NULL)",
+            },
+        )
+        self.validate_identity(
+            "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) PERSISTED BIGINT NOT NULL)"
+        )

@@ -1862,3 +1862,9 @@ class SingleStore(MySQL):
             collate = self.sql(expression, "collate")
             collate = f" COLLATE {collate}" if collate else ""
             return f"{alter}{collate}"
+
+        def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+            this = self.sql(expression, "this")
+            not_null = " NOT NULL" if expression.args.get("not_null") else ""
+            type = self.sql(expression, "data_type") or "AUTO"
+            return f"AS {this} PERSISTED {type}{not_null}"

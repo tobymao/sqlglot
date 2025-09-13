@@ -1632,6 +1632,18 @@ LOWER(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+LTRIM('  hello world  ');
+VARCHAR;
+
+# dialect: snowflake
+LTRIM(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+LTRIM(NULL);
+VARCHAR;
+
+# dialect: snowflake
 REGEXP_LIKE('foo', 'bar');
 BOOLEAN;
 
@@ -1680,6 +1692,26 @@ REGEXP_SUBSTR('hello world', 'world', 1, 1, 'e', NULL);
 VARCHAR;
 
 # dialect: snowflake
+REPEAT('hello', 3);
+VARCHAR;
+
+# dialect: snowflake
+REPEAT(tbl.str_col, 2);
+VARCHAR;
+
+# dialect: snowflake
+REPEAT('hello', NULL);
+VARCHAR;
+
+# dialect: snowflake
+REPLACE(tbl.str_col, 'old', 'new');
+VARCHAR;
+
+# dialect: snowflake
+REPLACE('hello', 'old', NULL);
+VARCHAR;
+
+# dialect: snowflake
 REVERSE('Hello, world!');
 VARCHAR;
 
@@ -1722,6 +1754,114 @@ BOOLEAN;
 # dialect: snowflake
 RLIKE('foo', 'bar', NULL);
 BOOLEAN;
+
+# dialect: snowflake
+RTRIM('  hello world  ');
+VARCHAR;
+
+# dialect: snowflake
+RTRIM(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+RTRIM(NULL);
+VARCHAR;
+
+# dialect: snowflake
+SHA1('foo');
+VARCHAR;
+
+# dialect: snowflake
+SHA1(null);
+VARCHAR;
+
+# dialect: snowflake
+SHA1_BINARY('foo');
+BINARY;
+
+# dialect: snowflake
+SHA1_BINARY(null);
+BINARY;
+
+# dialect: snowflake
+SHA1_HEX('foo');
+VARCHAR;
+
+# dialect: snowflake
+SHA1_HEX(null);
+VARCHAR;
+
+# dialect: snowflake
+SHA2('foo');
+VARCHAR;
+
+# dialect: snowflake
+SHA2(null);
+VARCHAR;
+
+# dialect: snowflake
+SHA2('foo', 256);
+VARCHAR;
+
+# dialect: snowflake
+SHA2('foo', null);
+VARCHAR;
+
+# dialect: snowflake
+SHA2_BINARY('foo');
+BINARY;
+
+# dialect: snowflake
+SHA2_BINARY(null);
+BINARY;
+
+# dialect: snowflake
+SHA2_BINARY('foo', 256);
+BINARY;
+
+# dialect: snowflake
+SHA2_BINARY('foo', null);
+BINARY;
+
+# dialect: snowflake
+SHA2_HEX('foo');
+VARCHAR;
+
+# dialect: snowflake
+SHA2_HEX(null);
+VARCHAR;
+
+# dialect: snowflake
+SHA2_HEX('foo', 256);
+VARCHAR;
+
+# dialect: snowflake
+SHA2_HEX('foo', null);
+VARCHAR;
+
+# dialect: snowflake
+SPACE(5);
+VARCHAR;
+
+# dialect: snowflake
+SPACE(tbl.int_col);
+VARCHAR;
+
+# dialect: snowflake
+SPACE(NULL);
+VARCHAR;
+
+# dialect: snowflake
+SPLIT('hello world', ' ');
+ARRAY;
+
+# dialect: snowflake
+SPLIT(tbl.str_col, ',');
+ARRAY;
+
+# dialect: snowflake
+SPLIT(NULL, ',');
+ARRAY;
 
 # dialect: snowflake
 STARTSWITH('hello world', 'hello');
@@ -1776,80 +1916,12 @@ TRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
-LTRIM('  hello world  ');
-VARCHAR;
-
-# dialect: snowflake
-LTRIM(tbl.str_col);
-VARCHAR;
-
-# dialect: snowflake
-LTRIM(NULL);
-VARCHAR;
-
-# dialect: snowflake
-RTRIM('  hello world  ');
-VARCHAR;
-
-# dialect: snowflake
-RTRIM(tbl.str_col);
-VARCHAR;
-
-# dialect: snowflake
-RTRIM(NULL);
-VARCHAR;
-
-# dialect: snowflake
 UPPER('Hello, world!');
 VARCHAR;
 
 # dialect: snowflake
 UPPER(tbl.str_col);
 VARCHAR;
-
-# dialect: snowflake
-REPLACE(tbl.str_col, 'old', 'new');
-VARCHAR;
-
-# dialect: snowflake
-REPLACE('hello', 'old', NULL);
-VARCHAR;
-
-# dialect: snowflake
-SPACE(5);
-VARCHAR;
-
-# dialect: snowflake
-SPACE(tbl.int_col);
-VARCHAR;
-
-# dialect: snowflake
-SPACE(NULL);
-VARCHAR;
-
-# dialect: snowflake
-REPEAT('hello', 3);
-VARCHAR;
-
-# dialect: snowflake
-REPEAT(tbl.str_col, 2);
-VARCHAR;
-
-# dialect: snowflake
-REPEAT('hello', NULL);
-VARCHAR;
-
-# dialect: snowflake
-SPLIT('hello world', ' ');
-ARRAY;
-
-# dialect: snowflake
-SPLIT(tbl.str_col, ',');
-ARRAY;
-
-# dialect: snowflake
-SPLIT(NULL, ',');
-ARRAY;
 
 # dialect: snowflake
 UUID_STRING();

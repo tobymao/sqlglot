@@ -912,6 +912,7 @@ class Parser(metaclass=_Parser):
         **NUMERIC_PARSERS,
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
+        TokenType.UNKNOWN: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
         TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),

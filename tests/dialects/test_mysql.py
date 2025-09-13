@@ -304,6 +304,12 @@ class TestMySQL(Validator):
         )
         self.validate_identity("ATAN(y, x)")
 
+        self.validate_identity("SELECT 'foo' SOUNDS LIKE 'bar'", "SELECT SOUNDEX('foo') LIKE SOUNDEX('bar')")
+        self.validate_identity("SELECT 'foo' NOT SOUNDS LIKE 'bar'", "SELECT NOT SOUNDEX('foo') LIKE SOUNDEX('bar')")
+        self.validate_identity("SELECT 1 IS UNKNOWN", "SELECT 1 IS NULL")
+        self.validate_identity("SELECT 1 IS NOT UNKNOWN", "SELECT NOT 1 IS NULL")
+        self.validate_identity("SELECT SUBSTR(1 FROM 2 TO 3", "SELECT SUBSTRING(1 FROM 2 TO 3")
+
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:
             with self.subTest(f"MySQL cast into {char_type}"):

@@ -145,6 +145,10 @@ def _remove_ts_or_ds_to_date(
     return func
 
 
+class SoundsLike(exp.Binary, exp.Predicate):
+    pass
+
+
 class MySQL(Dialect):
     PROMOTE_TO_INFERRED_DATETIME_TYPE = True
 
@@ -214,6 +218,7 @@ class MySQL(Dialect):
             "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
+            "SOUNDS LIKE":TokenType.SIMILAR_TO,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "UNLOCK TABLES": TokenType.COMMAND,
             "UNSIGNED": TokenType.UBIGINT,
@@ -292,6 +297,7 @@ class MySQL(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
+            TokenType.SIMILAR_TO: parser.binary_range_parser(SoundsLike),
             TokenType.MEMBER_OF: lambda self, this: self.expression(
                 exp.JSONArrayContains,
                 this=this,
@@ -359,6 +365,7 @@ class MySQL(Dialect):
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
             ),
             "JSON_VALUE": lambda self: self._parse_json_value(),
+            "SUBSTR": lambda self: self._parse_substring(),
         }
 
         STATEMENT_PARSERS = {
@@ -1310,3 +1317,6 @@ class MySQL(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return self.func("SCHEMA")
+
+        def soundslike_sql(self, expression: exp.SimilarTo) -> str:
+            return f"SOUNDEX({expression.left}) LIKE SOUNDEX({expression.right})"

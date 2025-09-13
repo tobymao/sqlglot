@@ -134,7 +134,7 @@ class Expression(metaclass=_Expression):
 
         return hash((self.__class__, self.hashable_args))
 
-    def __reduce__(self) -> t.Tuple[t.Callable, t.Tuple[t.Dict[str, t.Any]]]:
+    def __reduce__(self) -> t.Tuple[t.Callable, t.Tuple[t.List[t.Dict[str, t.Any]]]]:
         from sqlglot.serde import dump, load
 
         return (load, (dump(self),))
@@ -264,7 +264,7 @@ class Expression(metaclass=_Expression):
         return self.type is not None and self.type.is_type(*dtypes)
 
     def is_leaf(self) -> bool:
-        return not any(isinstance(v, (Expression, list)) for v in self.args.values())
+        return not any(isinstance(v, (Expression, list)) and v for v in self.args.values())
 
     @property
     def meta(self) -> t.Dict[str, t.Any]:

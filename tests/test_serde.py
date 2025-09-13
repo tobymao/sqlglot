@@ -1,4 +1,5 @@
 import json
+import pickle
 import unittest
 
 from sqlglot import exp, parse_one
@@ -18,7 +19,7 @@ class TestSerde(unittest.TestCase):
             with self.subTest(sql):
                 before = parse_one(sql)
                 after = self.dump_load(before)
-                self.assertEqual(before, after)
+                self.assertEqual(repr(before), repr(after))
 
     def test_custom_expression(self):
         before = CustomExpression()
@@ -36,3 +37,11 @@ class TestSerde(unittest.TestCase):
         before.meta["x"] = 1
         after = self.dump_load(before)
         self.assertEqual(before.meta, after.meta)
+
+    def test_recursion(self):
+        sql = "SELECT 1"
+        sql += " UNION ALL SELECT 1" * 5000
+        expr = parse_one(sql)
+        before = expr.sql()
+        self.assertEqual(before, self.dump_load(expr).sql())
+        self.assertEqual(before, pickle.loads(pickle.dumps(expr)).sql())

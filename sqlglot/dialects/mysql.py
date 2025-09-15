@@ -191,10 +191,8 @@ class MySQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "CHARSET": TokenType.CHARACTER_SET,
-            # The DESCRIBE and EXPLAIN statements are synonyms.
-            # https://dev.mysql.com/doc/refman/8.4/en/explain.html
             "BLOB": TokenType.BLOB,
+            "CHARSET": TokenType.CHARACTER_SET,
             "DISTINCTROW": TokenType.DISTINCT,
             "EXPLAIN": TokenType.DESCRIBE,
             "FORCE": TokenType.FORCE,
@@ -204,17 +202,18 @@ class MySQL(Dialect):
             "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
-            "TINYBLOB": TokenType.TINYBLOB,
-            "TINYTEXT": TokenType.TINYTEXT,
-            "MEDIUMTEXT": TokenType.MEDIUMTEXT,
             "MEDIUMINT": TokenType.MEDIUMINT,
+            "MEDIUMTEXT": TokenType.MEDIUMTEXT,
             "MEMBER OF": TokenType.MEMBER_OF,
+            "MOD": TokenType.MOD,
             "SEPARATOR": TokenType.SEPARATOR,
             "SERIAL": TokenType.SERIAL,
-            "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
+            "START": TokenType.BEGIN,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
+            "TINYBLOB": TokenType.TINYBLOB,
+            "TINYTEXT": TokenType.TINYTEXT,
             "UNLOCK TABLES": TokenType.COMMAND,
             "UNSIGNED": TokenType.UBIGINT,
             "UNSIGNED INTEGER": TokenType.UBIGINT,
@@ -271,6 +270,7 @@ class MySQL(Dialect):
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
             TokenType.DATABASE,
+            TokenType.MOD,
             TokenType.SCHEMA,
             TokenType.VALUES,
         }

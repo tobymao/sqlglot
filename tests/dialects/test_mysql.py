@@ -1473,3 +1473,8 @@ COMMENT='客户账户表'"""
         self.validate_identity("UTC_TIME(6)").assert_is(exp.UtcTime)
         self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
         self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
+
+    def test_mod(self):
+        self.validate_identity("x % y").assert_is(exp.Mod)
+        self.validate_identity("x MOD y", "x % y").assert_is(exp.Mod)
+        self.validate_identity("MOD(x, y)", "x % y").assert_is(exp.Mod)

@@ -210,6 +210,7 @@ class MySQL(Dialect):
             "SERIAL": TokenType.SERIAL,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
+            "SOUNDS LIKE": TokenType.SOUNDS_LIKE,
             "START": TokenType.BEGIN,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "TINYBLOB": TokenType.TINYBLOB,
@@ -292,6 +293,11 @@ class MySQL(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
+            TokenType.SOUNDS_LIKE: lambda self, this: self.expression(
+                exp.EQ,
+                this=self.expression(exp.Soundex, this=this),
+                expression=self.expression(exp.Soundex, this=self._parse_term()),
+            ),
             TokenType.MEMBER_OF: lambda self, this: self.expression(
                 exp.JSONArrayContains,
                 this=this,
@@ -359,6 +365,7 @@ class MySQL(Dialect):
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
             ),
             "JSON_VALUE": lambda self: self._parse_json_value(),
+            "SUBSTR": lambda self: self._parse_substring(),
         }
 
         STATEMENT_PARSERS = {

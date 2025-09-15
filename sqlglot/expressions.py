@@ -7001,7 +7001,7 @@ class FeaturesAtTime(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding
 class GenerateEmbedding(Func):
-    arg_types = {"this": True, "expression": True, "params_struct": False}
+    arg_types = {"this": True, "expression": True, "params_struct": False, "is_text": False}
 
 
 class MLForecast(Func):

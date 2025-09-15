@@ -527,6 +527,7 @@ class SingleStore(MySQL):
                 e.expression,
                 self.func("SUBSTRING", e.this, e.args.get("start") + e.args.get("length")),
             ),
+            exp.National: lambda self, e: self.national_sql(e, prefix=""),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")

@@ -7309,7 +7309,7 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_expression)
 
-        expression = self._parse_expression()
+        expression = self._parse_alias(self._parse_assignment(), explicit=True)
         return [expression] if expression else None
 
     def _parse_csv(

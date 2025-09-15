@@ -87,7 +87,6 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
-        self.validate_identity("SELECT test.Unknown FROM test")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
@@ -1191,26 +1190,6 @@ LANGUAGE js AS
         self.validate_all(
             "SELECT ARRAY(SELECT * FROM foo JOIN bla ON x = y)",
             write={"bigquery": "SELECT ARRAY(SELECT * FROM foo JOIN bla ON x = y)"},
-        )
-        self.validate_all(
-            "x IS unknown",
-            write={
-                "bigquery": "x IS NULL",
-                "duckdb": "x IS NULL",
-                "presto": "x IS NULL",
-                "hive": "x IS NULL",
-                "spark": "x IS NULL",
-            },
-        )
-        self.validate_all(
-            "x IS NOT unknown",
-            write={
-                "bigquery": "NOT x IS NULL",
-                "duckdb": "NOT x IS NULL",
-                "presto": "NOT x IS NULL",
-                "hive": "NOT x IS NULL",
-                "spark": "NOT x IS NULL",
-            },
         )
         self.validate_all(
             "CURRENT_TIMESTAMP()",

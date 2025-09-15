@@ -863,6 +863,9 @@ class BigQuery(Dialect):
             "TRANSLATE": lambda self: self._parse_translate(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
             "GENERATE_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding),
+            "GENERATE_TEXT_EMBEDDING": lambda self: self._parse_ml(
+                exp.GenerateEmbedding, is_text=True
+            ),
             "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
             "FORECAST": lambda self: self._parse_ml(exp.MLForecast),
         }
@@ -1148,7 +1151,7 @@ class BigQuery(Dialect):
 
             return expr
 
-        def _parse_ml(self, expr_type: t.Type[E]) -> E:
+        def _parse_ml(self, expr_type: t.Type[E], **kwargs) -> E:
             self._match_text_seq("MODEL")
             this = self._parse_table()
 
@@ -1167,6 +1170,7 @@ class BigQuery(Dialect):
                 this=this,
                 expression=expression,
                 params_struct=self._parse_bitwise(),
+                **kwargs,
             )
 
         def _parse_translate(self) -> exp.Translate | exp.MLTranslate:

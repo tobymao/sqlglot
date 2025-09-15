@@ -4235,7 +4235,8 @@ class Generator(metaclass=_Generator):
         return self._ml_sql(expression, "PREDICT")
 
     def generateembedding_sql(self, expression: exp.GenerateEmbedding) -> str:
-        return self._ml_sql(expression, "GENERATE_EMBEDDING")
+        name = "GENERATE_TEXT_EMBEDDING" if expression.args.get("is_text") else "GENERATE_EMBEDDING"
+        return self._ml_sql(expression, name)
 
     def mltranslate_sql(self, expression: exp.MLTranslate) -> str:
         return self._ml_sql(expression, "TRANSLATE")

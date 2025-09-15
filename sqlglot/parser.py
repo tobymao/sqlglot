@@ -1427,8 +1427,6 @@ class Parser(metaclass=_Parser):
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
-    NULL_TOKENS = {TokenType.NULL}
-
     UNNEST_OFFSET_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - SET_OPERATIONS
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
@@ -7277,7 +7275,7 @@ class Parser(metaclass=_Parser):
         return self._parse_primary() or self._parse_var(any_token=True)
 
     def _parse_null(self) -> t.Optional[exp.Expression]:
-        if self._match_set(self.NULL_TOKENS):
+        if self._match_set((TokenType.NULL, TokenType.UNKNOWN)):
             return self.PRIMARY_PARSERS[TokenType.NULL](self, self._prev)
         return self._parse_placeholder()
 

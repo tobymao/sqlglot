@@ -931,3 +931,5 @@ SELECT COSINE_DISTANCE(v1, v2)
 SELECT EUCLIDEAN_DISTANCE(v1, v2)
 FOO(values.c)
 case.*
+SELECT unknown
+SELECT test.Unknown FROM test

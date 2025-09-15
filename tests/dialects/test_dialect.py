@@ -4201,3 +4201,33 @@ FROM subquery2""",
                 "postgres": """JSON_STRIP_NULLS(CAST('[{"f1":1,"f2":null},2,null,3]' AS JSON))""",
             },
         )
+
+    def test_is_unknown(self):
+        # In many dialects `<...> IS UNKNOWN` is equivalent to `<...> IS NULL`
+        self.validate_all(
+            "x IS NULL",
+            read={
+                "": "x IS UNKNOWN",
+                "bigquery": "x IS UNKNOWN",
+                "mysql": "x IS UNKNOWN",
+                "postgres": "x IS UNKNOWN",
+                "redshift": "x IS UNKNOWN",
+                "duckdb": "x IS UNKNOWN",
+                "spark": "x IS UNKNOWN",
+                "databricks": "x IS UNKNOWN",
+            },
+        )
+
+        self.validate_all(
+            "NOT x IS NULL",
+            read={
+                "": "x IS NOT UNKNOWN",
+                "bigquery": "x IS NOT UNKNOWN",
+                "mysql": "x IS NOT UNKNOWN",
+                "postgres": "x IS NOT UNKNOWN",
+                "redshift": "x IS NOT UNKNOWN",
+                "duckdb": "x IS NOT UNKNOWN",
+                "spark": "x IS NOT UNKNOWN",
+                "databricks": "x IS NOT UNKNOWN",
+            },
+        )

@@ -1427,7 +1427,7 @@ class Parser(metaclass=_Parser):
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
-    NULL_TOKENS = {TokenType.NULL}
+    NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
 
     UNNEST_OFFSET_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - SET_OPERATIONS
 

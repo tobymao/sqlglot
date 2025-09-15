@@ -894,8 +894,6 @@ class BigQuery(Dialect):
         RANGE_PARSERS = parser.Parser.RANGE_PARSERS.copy()
         RANGE_PARSERS.pop(TokenType.OVERLAPS)
 
-        NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
-
         DASHED_TABLE_PART_FOLLOW_TOKENS = {TokenType.DOT, TokenType.L_PAREN, TokenType.R_PAREN}
 
         STATEMENT_PARSERS = {

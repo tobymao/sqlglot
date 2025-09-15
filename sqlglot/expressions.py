@@ -5766,6 +5766,11 @@ class ArrayUniqueAgg(AggFunc):
     pass
 
 
+class AIAgg(AggFunc):
+    arg_types = {"this": True, "expression": True}
+    _sql_names = ["AI_AGG"]
+
+
 class ArrayAll(Func):
     arg_types = {"this": True, "expression": True}
 

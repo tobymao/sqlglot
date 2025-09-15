@@ -1532,6 +1532,14 @@ STRING;
 --------------------------------------
 
 # dialect: snowflake
+AI_AGG('foo', 'bar');
+VARCHAR;
+
+# dialect: snowflake
+AI_AGG(null, 'bar');
+VARCHAR;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

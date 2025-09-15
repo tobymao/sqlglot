@@ -1868,3 +1868,6 @@ class SingleStore(MySQL):
             not_null = " NOT NULL" if expression.args.get("not_null") else ""
             type = self.sql(expression, "data_type") or "AUTO"
             return f"AS {this} PERSISTED {type}{not_null}"
+
+        def national_sql(self, expression: exp.National, prefix: str = "") -> str:
+            return super().national_sql(expression, prefix)

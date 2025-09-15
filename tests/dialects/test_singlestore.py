@@ -24,6 +24,11 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT e'text'")
         self.validate_identity("SELECT E'text'", "SELECT e'text'")
 
+    def test_national_strings(self):
+        self.validate_all(
+            "SELECT 'text'", read={"": "SELECT N'text'", "singlestore": "SELECT 'text'"}
+        )
+
     def test_restricted_keywords(self):
         self.validate_identity("SELECT * FROM abs", "SELECT * FROM `abs`")
         self.validate_identity("SELECT * FROM ABS", "SELECT * FROM `ABS`")

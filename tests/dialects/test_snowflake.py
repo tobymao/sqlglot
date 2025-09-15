@@ -3119,6 +3119,7 @@ FROM SEMANTIC_VIEW(
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
 
     def test_md5_functions(self):
+        self.validate_identity("MD5(col)", "MD5_HEX(col)")
         self.validate_identity("MD5_HEX(col)")
         self.validate_identity("MD5_BINARY(col)")
         self.validate_identity("MD5_NUMBER_LOWER64(col)")

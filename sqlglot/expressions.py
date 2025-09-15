@@ -6956,14 +6956,14 @@ class MD5Digest(Func):
     _sql_names = ["MD5_DIGEST"]
 
 
-# Represents the variant of the MD5 function that returns the lower 64 bits as a number
+# https://docs.snowflake.com/en/sql-reference/functions/md5_number_lower64
 class MD5NumberLower64(Func):
-    _sql_names = ["MD5_NUMBER_LOWER64"]
+    pass
 
 
-# Represents the variant of the MD5 function that returns the upper 64 bits as a number
+# https://docs.snowflake.com/en/sql-reference/functions/md5_number_upper64
 class MD5NumberUpper64(Func):
-    _sql_names = ["MD5_NUMBER_UPPER64"]
+    pass
 
 
 class Median(AggFunc):

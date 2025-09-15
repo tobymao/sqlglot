@@ -3117,3 +3117,16 @@ FROM SEMANTIC_VIEW(
             for name in bit_func:
                 with self.subTest(f"Testing Snowflakes {name}"):
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
+
+    def test_md5_functions(self):
+        self.validate_identity("MD5_HEX(col)")
+        self.validate_identity("MD5_BINARY(col)")
+        self.validate_identity("MD5_NUMBER_LOWER64(col)")
+        self.validate_identity("MD5_NUMBER_UPPER64(col)")
+
+        self.validate_identity(
+            "SELECT MD5_HEX('test'), MD5_BINARY('test'), MD5_NUMBER_LOWER64('test'), MD5_NUMBER_UPPER64('test')"
+        )
+        self.validate_identity(
+            "SELECT MD5_HEX(col) AS hex_hash, MD5_BINARY(col) AS binary_hash FROM table"
+        )

@@ -7201,6 +7201,16 @@ class SHA2(Func):
     arg_types = {"this": True, "length": False}
 
 
+# Represents the variant of the SHA1 function that returns a binary value
+class SHA1Digest(Func):
+    pass
+
+
+# Represents the variant of the SHA2 function that returns a binary value
+class SHA2Digest(Func):
+    arg_types = {"this": True, "length": False}
+
+
 class Sign(Func):
     _sql_names = ["SIGN", "SIGNUM"]
 

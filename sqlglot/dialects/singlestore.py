@@ -527,6 +527,7 @@ class SingleStore(MySQL):
                 e.expression,
                 self.func("SUBSTRING", e.this, e.args.get("start") + e.args.get("length")),
             ),
+            exp.National: lambda self, e: self.national_sql(e, prefix=""),
             exp.Reduce: unsupported_args("finish")(
                 lambda self, e: self.func(
                     "REDUCE", e.args.get("initial"), e.this, e.args.get("merge")
@@ -1868,6 +1869,3 @@ class SingleStore(MySQL):
             not_null = " NOT NULL" if expression.args.get("not_null") else ""
             type = self.sql(expression, "data_type") or "AUTO"
             return f"AS {this} PERSISTED {type}{not_null}"
-
-        def national_sql(self, expression: exp.National, prefix: str = "") -> str:
-            return super().national_sql(expression, prefix)

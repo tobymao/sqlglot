@@ -2115,15 +2115,6 @@ OPTIONS (
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL my_dataset.vision_model, (SELECT uri, ML.CONVERT_COLOR_SPACE(ML.RESIZE_IMAGE(ML.DECODE_IMAGE(data), 224, 280, TRUE), 'YIQ') AS input FROM my_dataset.object_table WHERE content_type = 'image/jpeg'))"
         )
-
-        ast = self.validate_identity(
-            "SELECT * FROM ML.GENERATE_EMBEDDING(MODEL mydataset.mymodel, (SELECT label, column1, column2 FROM mydataset.mytable))"
-        )
-        assert ast.find(exp.GenerateEmbedding)
-        self.validate_identity(
-            "SELECT * FROM ML.GENERATE_EMBEDDING(MODEL mydataset.mymodel, TABLE mydataset.mytable, STRUCT(TRUE AS flatten_json_output))"
-        )
-
         ast = self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
         assert ast.find(exp.FeaturesAtTime)
         self.validate_identity(
@@ -2161,6 +2152,17 @@ OPTIONS (
         self.validate_identity(
             "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, (SELECT * FROM mydataset.query_table), STRUCT())"
         )
+
+        for name in ("GENERATE_EMBEDDING", "GENERATE_TEXT_EMBEDDING"):
+            with self.subTest(f"Testing BigQuery's ML function {name}"):
+                ast = self.validate_identity(
+                    f"SELECT * FROM ML.{name}(MODEL mydataset.mymodel, (SELECT label, column1, column2 FROM mydataset.mytable))"
+                )
+                self.validate_identity(
+                    f"SELECT * FROM ML.{name}(MODEL mydataset.mymodel, TABLE mydataset.mytable, STRUCT(TRUE AS flatten_json_output))"
+                )
+
+                assert ast.find(exp.GenerateEmbedding)
 
     def test_merge(self):
         self.validate_all(

@@ -6956,6 +6956,16 @@ class MD5Digest(Func):
     _sql_names = ["MD5_DIGEST"]
 
 
+# Represents the variant of the MD5 function that returns the lower 64 bits as a number
+class MD5NumberLower64(Func):
+    _sql_names = ["MD5_NUMBER_LOWER64"]
+
+
+# Represents the variant of the MD5 function that returns the upper 64 bits as a number
+class MD5NumberUpper64(Func):
+    _sql_names = ["MD5_NUMBER_UPPER64"]
+
+
 class Median(AggFunc):
     pass
 

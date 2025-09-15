@@ -493,28 +493,6 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
-def _annotate_anonymous_md5_functions(
-    self: TypeAnnotator, expression: exp.Anonymous
-) -> exp.Anonymous:
-    self._annotate_args(expression)
-
-    func_name = expression.this.upper()
-    md5_function_types = {
-        "MD5_HEX": exp.DataType.Type.VARCHAR,
-        "MD5_BINARY": exp.DataType.Type.BINARY,
-        "MD5_NUMBER_LOWER64": exp.DataType.Type.BIGINT,
-        "MD5_NUMBER_UPPER64": exp.DataType.Type.BIGINT,
-    }
-
-    if func_name in md5_function_types:
-        self._set_type(expression, md5_function_types[func_name])
-    else:
-        # For other anonymous functions, use the base dialect's default behavior
-        self._set_type(expression, exp.DataType.Type.UNKNOWN)
-
-    return expression
-
-
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -583,7 +561,6 @@ class Snowflake(Dialect):
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
-        exp.Anonymous: _annotate_anonymous_md5_functions,
     }
 
     TIME_MAPPING = {
@@ -703,6 +680,10 @@ class Snowflake(Dialect):
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
+            "MD5_HEX": exp.MD5.from_arg_list,
+            "MD5_BINARY": exp.MD5Digest.from_arg_list,
+            "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,
+            "MD5_NUMBER_UPPER64": exp.MD5NumberUpper64.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),
@@ -1386,6 +1367,8 @@ class Snowflake(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.MD5Digest: rename_func("MD5_BINARY"),
             exp.MD5: rename_func("MD5_HEX"),
+            exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
+            exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
             exp.LowerHex: rename_func("TO_CHAR"),
             exp.SortArray: rename_func("ARRAY_SORT"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),

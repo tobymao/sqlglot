@@ -1963,6 +1963,30 @@ BIGINT;
 MD5_NUMBER_UPPER64(tbl.str_col);
 BIGINT;
 
+# dialect: snowflake
+'Hello' NOT ILIKE 'h%';
+BOOLEAN;
+
+# dialect: snowflake
+'Hello' ILIKE 'h_llo';
+BOOLEAN;
+
+# dialect: snowflake
+tbl.str_col NOT ILIKE '%x%';
+BOOLEAN;
+
+# dialect: snowflake
+'Hello' NOT LIKE 'H%';
+BOOLEAN;
+
+# dialect: snowflake
+'Hello' LIKE 'H_llo';
+BOOLEAN;
+
+# dialect: snowflake
+tbl.str_col NOT LIKE '%e%';
+BOOLEAN;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

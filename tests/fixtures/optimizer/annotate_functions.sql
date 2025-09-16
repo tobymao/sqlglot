@@ -1540,6 +1540,14 @@ AI_AGG(null, 'bar');
 VARCHAR;
 
 # dialect: snowflake
+AI_SUMMARIZE_AGG('foo');
+VARCHAR;
+
+# dialect: snowflake
+AI_SUMMARIZE_AGG(null);
+VARCHAR;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

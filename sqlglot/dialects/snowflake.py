@@ -378,7 +378,7 @@ def _qualify_unnested_columns(expression: exp.Expression) -> exp.Expression:
 
         taken_source_names = set(scope.sources)
         column_source: t.Dict[str, exp.Identifier] = {}
-        unnest_to_identifier: t.Dict[exp.Unnest, exp.Identifier] = {}  # Map UNNEST nodes to their identifiers
+        unnest_to_identifier: t.Dict[exp.Unnest, exp.Identifier] = {}
 
         unnest_identifier: t.Optional[exp.Identifier] = None
         orig_expression = expression.copy()
@@ -447,7 +447,10 @@ def _qualify_unnested_columns(expression: exp.Expression) -> exp.Expression:
             ):
                 unnest_ancestor = column.find_ancestor(exp.Unnest)
                 ancestor_identifier = unnest_to_identifier.get(unnest_ancestor)
-                if ancestor_identifier and ancestor_identifier.name.lower() == unnest_identifier.name.lower():
+                if (
+                    ancestor_identifier
+                    and ancestor_identifier.name.lower() == unnest_identifier.name.lower()
+                ):
                     continue
 
                 table = unnest_identifier

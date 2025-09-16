@@ -1297,6 +1297,13 @@ class TestSnowflake(Validator):
             "SELECT * EXCLUDE (foo) RENAME (bar AS baz) FROM tbl",
         )
 
+        self.validate_all(
+            "WITH foo AS (SELECT [1] AS arr_1) SELECT (SELECT unnested_arr FROM TABLE(FLATTEN(INPUT => arr_1)) AS _t0(seq, key, path, index, unnested_arr, this)) AS f FROM foo",
+            read={
+                "bigquery": "WITH foo AS (SELECT [1] AS arr_1) SELECT (SELECT unnested_arr FROM UNNEST(arr_1) AS unnested_arr) AS f FROM foo",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

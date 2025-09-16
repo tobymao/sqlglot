@@ -1364,7 +1364,6 @@ class Snowflake(Dialect):
             ),
             exp.SHA: rename_func("SHA1"),
             exp.MD5Digest: rename_func("MD5_BINARY"),
-            exp.MD5: rename_func("MD5_HEX"),
             exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
             exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
             exp.LowerHex: rename_func("TO_CHAR"),

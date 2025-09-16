@@ -1152,7 +1152,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BIT_SHIFTRIGHT(a, 1)", "SELECT BITSHIFTRIGHT(a, 1)")
-        self.validate_identity("OCTET_LENGTH('A')")
+        self.validate_all(
+            "OCTET_LENGTH('A')",
+            read={
+                "bigquery": "BYTE_LENGTH('A')",
+                "snowflake": "OCTET_LENGTH('A')",
+            },
+        )
 
         self.validate_identity("CREATE TABLE t (id INT PRIMARY KEY AUTOINCREMENT)")
 

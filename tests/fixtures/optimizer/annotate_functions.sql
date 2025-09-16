@@ -1943,6 +1943,26 @@ VARCHAR;
 UUID_STRING(null, null);
 VARCHAR;
 
+# dialect: snowflake
+MD5(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+MD5_HEX(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+MD5_BINARY(tbl.str_col);
+BINARY;
+
+# dialect: snowflake
+MD5_NUMBER_LOWER64(tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+MD5_NUMBER_UPPER64(tbl.str_col);
+BIGINT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

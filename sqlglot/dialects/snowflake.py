@@ -515,6 +515,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
+            exp.MD5,
             exp.AIAgg,
             exp.RegexpExtract,
             exp.RegexpReplace,
@@ -527,8 +528,14 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.BINARY: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BINARY],
+            exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,
+        },
+        exp.DataType.Type.BIGINT: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BIGINT],
+            exp.MD5NumberLower64,
+            exp.MD5NumberUpper64,
         },
         exp.DataType.Type.ARRAY: {
             exp.Split,
@@ -671,6 +678,10 @@ class Snowflake(Dialect):
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
+            "MD5_HEX": exp.MD5.from_arg_list,
+            "MD5_BINARY": exp.MD5Digest.from_arg_list,
+            "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,
+            "MD5_NUMBER_UPPER64": exp.MD5NumberUpper64.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),
@@ -1353,6 +1364,8 @@ class Snowflake(Dialect):
             ),
             exp.SHA: rename_func("SHA1"),
             exp.MD5Digest: rename_func("MD5_BINARY"),
+            exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
+            exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
             exp.LowerHex: rename_func("TO_CHAR"),
             exp.SortArray: rename_func("ARRAY_SORT"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),

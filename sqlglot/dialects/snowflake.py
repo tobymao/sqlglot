@@ -689,6 +689,7 @@ class Snowflake(Dialect):
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
+            "OCTET_LENGTH": exp.ByteLength.from_arg_list,
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),

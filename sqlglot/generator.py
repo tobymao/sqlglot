@@ -5198,6 +5198,10 @@ class Generator(metaclass=_Generator):
         self.unsupported("Unsupported SHOW statement")
         return ""
 
+    def install_sql(self, expression: exp.Install) -> str:
+        self.unsupported("Unsupported INSTALL statement")
+        return ""
+
     def get_put_sql(self, expression: exp.Put | exp.Get) -> str:
         # Snowflake GET/PUT statements:
         #   PUT <file> <internalStage> <properties>

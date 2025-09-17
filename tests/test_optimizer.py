@@ -1660,3 +1660,16 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             sql,
             "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
         )
+
+    def test_struct_annotation_bigquery(self):
+        sql = """
+        WITH t1 AS (SELECT 'foo' AS c),
+             t2 AS (SELECT ARRAY_AGG(STRUCT(c)) AS arr FROM t1)
+        SELECT arr[0].c FROM t2
+        """
+
+        query = parse_one(sql, dialect="bigquery")
+        qualified = optimizer.qualify.qualify(query, dialect="bigquery")
+        annotated = optimizer.annotate_types.annotate_types(qualified, dialect="bigquery")
+
+        assert annotated.selects[0].type == exp.DataType.build("VARCHAR")

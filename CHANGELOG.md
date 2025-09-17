@@ -1,6 +1,71 @@
 Changelog
 =========
 
+## [v27.15.0] - 2025-09-17
+### :boom: BREAKING CHANGES
+- due to [`96ae7a3`](https://github.com/tobymao/sqlglot/commit/96ae7a3bcbf9de1932150baa0bd704d4ce05c9f7) - Annotate and add tests for snowflake REPEAT and SPLIT functions *(PR [#5875](https://github.com/tobymao/sqlglot/pull/5875) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate and add tests for snowflake REPEAT and SPLIT functions (#5875)
+
+- due to [`f2d3bf7`](https://github.com/tobymao/sqlglot/commit/f2d3bf74e804e5a5e2ac6ca94210ba04df07e7f3) - annotate types for Snowflake UUID_STRING function *(PR [#5881](https://github.com/tobymao/sqlglot/pull/5881) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake UUID_STRING function (#5881)
+
+- due to [`ec80ff3`](https://github.com/tobymao/sqlglot/commit/ec80ff34957c3e3f80c44175383b06cf72988a68) - make dump a list instead of a nested dict to avoid all recursion errors *(PR [#5885](https://github.com/tobymao/sqlglot/pull/5885) by [@tobymao](https://github.com/tobymao))*:
+
+  make dump a list instead of a nested dict to avoid all recursion errors (#5885)
+
+- due to [`2fdaccd`](https://github.com/tobymao/sqlglot/commit/2fdaccd1a9045bda3d529025a4706c397b8a836f) - annotate types for Snowflake SHA1, SHA2 functions *(PR [#5884](https://github.com/tobymao/sqlglot/pull/5884) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake SHA1, SHA2 functions (#5884)
+
+- due to [`faba309`](https://github.com/tobymao/sqlglot/commit/faba30905390e5efaf0ba9a05aab9ac2724b1b85) - annotate types for Snowflake AI_AGG function *(PR [#5894](https://github.com/tobymao/sqlglot/pull/5894) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake AI_AGG function (#5894)
+
+- due to [`304bec5`](https://github.com/tobymao/sqlglot/commit/304bec5f7342501ad28ea4cd0a4b9aa092f2192f) - Annotate snowflake MD5 functions *(PR [#5883](https://github.com/tobymao/sqlglot/pull/5883) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate snowflake MD5 functions (#5883)
+
+- due to [`c0180ec`](https://github.com/tobymao/sqlglot/commit/c0180ec163a43836fed754efcb6f26ad37cdae50) - annotate types for Snowflake AI_SUMMARIZE_AGG function *(PR [#5902](https://github.com/tobymao/sqlglot/pull/5902) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake AI_SUMMARIZE_AGG function (#5902)
+
+- due to [`f5409df`](https://github.com/tobymao/sqlglot/commit/f5409df64ed6069880669878db687e4b98c3e280) - use column name in struct type annotation *(PR [#5903](https://github.com/tobymao/sqlglot/pull/5903) by [@georgesittas](https://github.com/georgesittas))*:
+
+  use column name in struct type annotation (#5903)
+
+
+### :sparkles: New Features
+- [`cd818ba`](https://github.com/tobymao/sqlglot/commit/cd818bad51e93ec349b97675e4c1f5bd7c4c1522) - **singlestore**: Fixed generation/parsing of computed collumns *(PR [#5878](https://github.com/tobymao/sqlglot/pull/5878) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`5d1f241`](https://github.com/tobymao/sqlglot/commit/5d1f241209197419111e9eda37fb6f2a5ec2bc4b) - **tsql**: support JSON_ARRAYAGG *(PR [#5879](https://github.com/tobymao/sqlglot/pull/5879) by [@geooo109](https://github.com/geooo109))*
+- [`96ae7a3`](https://github.com/tobymao/sqlglot/commit/96ae7a3bcbf9de1932150baa0bd704d4ce05c9f7) - **optimizer**: Annotate and add tests for snowflake REPEAT and SPLIT functions *(PR [#5875](https://github.com/tobymao/sqlglot/pull/5875) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`0fe6a25`](https://github.com/tobymao/sqlglot/commit/0fe6a25e366dcbc5a4a0878b285d147a6aa00412) - **postgres**: support JSON_AGG *(PR [#5880](https://github.com/tobymao/sqlglot/pull/5880) by [@geooo109](https://github.com/geooo109))*
+- [`854eeeb`](https://github.com/tobymao/sqlglot/commit/854eeeb5b25954cc26b91135d58eb8370271f1de) - **optimizer**: annotate types for Snowflake REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR functions *(PR [#5876](https://github.com/tobymao/sqlglot/pull/5876) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`f2d3bf7`](https://github.com/tobymao/sqlglot/commit/f2d3bf74e804e5a5e2ac6ca94210ba04df07e7f3) - **optimizer**: annotate types for Snowflake UUID_STRING function *(PR [#5881](https://github.com/tobymao/sqlglot/pull/5881) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`5b9463a`](https://github.com/tobymao/sqlglot/commit/5b9463ad11a49c821585985c35394ebb30e827dd) - **mysql**: add support for binary `MOD` operator fixes [#5887](https://github.com/tobymao/sqlglot/pull/5887) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`d24eabc`](https://github.com/tobymao/sqlglot/commit/d24eabcbe30dc0f7c2dbae346e429efef58b5680) - **bigquery**: Add support for ML.GENERATE_TEXT_EMBEDDING(...) *(PR [#5891](https://github.com/tobymao/sqlglot/pull/5891) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`950a3fa`](https://github.com/tobymao/sqlglot/commit/950a3fa6d6307f7713f40117655da2f9710ebfa9) - **mysql**: SOUNDS LIKE, SUBSTR *(PR [#5886](https://github.com/tobymao/sqlglot/pull/5886) by [@vuvova](https://github.com/vuvova))*
+- [`688afc5`](https://github.com/tobymao/sqlglot/commit/688afc55ab08588636eba92893c603ca68e43e6e) - **singlestore**: Fixed generation of exp.National *(PR [#5890](https://github.com/tobymao/sqlglot/pull/5890) by [@AdalbertMemSQL](https://github.com/AdalbertMemSQL))*
+- [`c77147e`](https://github.com/tobymao/sqlglot/commit/c77147ebaafa6942f80af75dd6c2d7a62a7e6fe2) - **parser**: Extend support for `IS UNKOWN` across all dialects *(PR [#5888](https://github.com/tobymao/sqlglot/pull/5888) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`ec80ff3`](https://github.com/tobymao/sqlglot/commit/ec80ff34957c3e3f80c44175383b06cf72988a68) - make dump a list instead of a nested dict to avoid all recursion errors *(PR [#5885](https://github.com/tobymao/sqlglot/pull/5885) by [@tobymao](https://github.com/tobymao))*
+- [`2fdaccd`](https://github.com/tobymao/sqlglot/commit/2fdaccd1a9045bda3d529025a4706c397b8a836f) - **optimizer**: annotate types for Snowflake SHA1, SHA2 functions *(PR [#5884](https://github.com/tobymao/sqlglot/pull/5884) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`faba309`](https://github.com/tobymao/sqlglot/commit/faba30905390e5efaf0ba9a05aab9ac2724b1b85) - **optimizer**: annotate types for Snowflake AI_AGG function *(PR [#5894](https://github.com/tobymao/sqlglot/pull/5894) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`dd27844`](https://github.com/tobymao/sqlglot/commit/dd2784435c7bdd2ceaaaaa359fcd112ad1f8190c) - **snowflake**: transpile `BYTE_LENGTH` *(PR [#5899](https://github.com/tobymao/sqlglot/pull/5899) by [@ozadari](https://github.com/ozadari))*
+- [`304bec5`](https://github.com/tobymao/sqlglot/commit/304bec5f7342501ad28ea4cd0a4b9aa092f2192f) - **optimizer**: Annotate snowflake MD5 functions *(PR [#5883](https://github.com/tobymao/sqlglot/pull/5883) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`ec3006d`](https://github.com/tobymao/sqlglot/commit/ec3006d815951fdc1a80d6722ce6f1176417d595) - **optimizer**: Add tests for snowflake NOT ILIKE and NOT LIKE *(PR [#5901](https://github.com/tobymao/sqlglot/pull/5901) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`c0180ec`](https://github.com/tobymao/sqlglot/commit/c0180ec163a43836fed754efcb6f26ad37cdae50) - **optimizer**: annotate types for Snowflake AI_SUMMARIZE_AGG function *(PR [#5902](https://github.com/tobymao/sqlglot/pull/5902) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+
+### :bug: Bug Fixes
+- [`1d9e357`](https://github.com/tobymao/sqlglot/commit/1d9e357fb7549635ca25c6c42299880d7864e074) - **optimizer**: expand columns on the LHS of recursive CTEs *(PR [#5872](https://github.com/tobymao/sqlglot/pull/5872) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5814](https://github.com/tobymao/sqlglot/issues/5814) opened by [@suresh-summation](https://github.com/suresh-summation)*
+- [`7fcc52a`](https://github.com/tobymao/sqlglot/commit/7fcc52a22241c480c22b3e6f843e7a210c75a0ec) - **parser**: Require an explicit alias in EXCLUDE/RENAME/REPLACE star ops *(PR [#5892](https://github.com/tobymao/sqlglot/pull/5892) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`5fdcc65`](https://github.com/tobymao/sqlglot/commit/5fdcc651277ba4e86e11d0c5952a56e40299a998) - **snowflake**: parse OCTET_LENGTH *(PR [#5900](https://github.com/tobymao/sqlglot/pull/5900) by [@geooo109](https://github.com/geooo109))*
+- [`f5409df`](https://github.com/tobymao/sqlglot/commit/f5409df64ed6069880669878db687e4b98c3e280) - **optimizer**: use column name in struct type annotation *(PR [#5903](https://github.com/tobymao/sqlglot/pull/5903) by [@georgesittas](https://github.com/georgesittas))*
+- [`74886d8`](https://github.com/tobymao/sqlglot/commit/74886d82f70c9317af51c77b322e67a6aa260a5e) - **snowflake**: transpile BQ UNNEST with alias *(PR [#5897](https://github.com/tobymao/sqlglot/pull/5897) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5895](https://github.com/tobymao/sqlglot/issues/5895) opened by [@YuvalOmerRep](https://github.com/YuvalOmerRep)*
+
+
 ## [v27.14.0] - 2025-09-11
 ### :boom: BREAKING CHANGES
 - due to [`9c8a600`](https://github.com/tobymao/sqlglot/commit/9c8a6001f41816035f391d046eb9692d6f13cefc) - correct parsing of TO_VARCHAR *(PR [#5840](https://github.com/tobymao/sqlglot/pull/5840) by [@geooo109](https://github.com/geooo109))*:
@@ -7263,3 +7328,4 @@ Changelog
 [v27.13.1]: https://github.com/tobymao/sqlglot/compare/v27.13.0...v27.13.1
 [v27.13.2]: https://github.com/tobymao/sqlglot/compare/v27.13.1...v27.13.2
 [v27.14.0]: https://github.com/tobymao/sqlglot/compare/v27.13.2...v27.14.0
+[v27.15.0]: https://github.com/tobymao/sqlglot/compare/v27.14.0...v27.15.0

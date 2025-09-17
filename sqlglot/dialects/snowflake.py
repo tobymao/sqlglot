@@ -746,6 +746,7 @@ class Snowflake(Dialect):
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }
+        FUNCTIONS.pop("PREDICT")
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
@@ -849,6 +850,13 @@ class Snowflake(Dialect):
                     expressions,
                 ),
                 expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
+            ),
+        }
+
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.EXCLAMATION: lambda self, this, attr: self.expression(
+                exp.ModelAttribute, this=this, expression=attr
             ),
         }
 
@@ -963,7 +971,7 @@ class Snowflake(Dialect):
                 # Keys are strings in Snowflake's objects, see also:
                 # - https://docs.snowflake.com/en/sql-reference/data-types-semistructured
                 # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
-                return self._parse_slice(self._parse_string())
+                return self._parse_slice(self._parse_string()) or self._parse_assignment()
 
             return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
 
@@ -1254,6 +1262,7 @@ class Snowflake(Dialect):
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.PARAMETER,
+            "!": TokenType.EXCLAMATION,
         }
 
         VAR_SINGLE_TOKENS = {"$"}
@@ -1624,6 +1633,12 @@ class Snowflake(Dialect):
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
 
         def struct_sql(self, expression: exp.Struct) -> str:
+            if len(expression.expressions) == 1:
+                arg = expression.expressions[0]
+                if arg.is_star or (isinstance(arg, exp.ILike) and arg.left.is_star):
+                    # Wildcard syntax: https://docs.snowflake.com/en/sql-reference/data-types-semistructured#object
+                    return f"{{{self.sql(expression.expressions[0])}}}"
+
             keys = []
             values = []
 
@@ -1797,3 +1812,6 @@ class Snowflake(Dialect):
                 return f"{self.sql(this)}:{self.sql(expression, 'expression')}"
 
             return super().dot_sql(expression)
+
+        def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
+            return f"{self.sql(expression, 'this')}!{self.sql(expression, 'expression')}"

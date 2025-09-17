@@ -159,6 +159,10 @@ class TestPostgres(Validator):
             "ORDER BY 2, 3"
         )
         self.validate_identity(
+            "SELECT SUBSTRING('Thomas' FOR 3 FROM 2)",
+            "SELECT SUBSTRING('Thomas' FROM 2 FOR 3)",
+        )
+        self.validate_identity(
             "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
             "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
         )

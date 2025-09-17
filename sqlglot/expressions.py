@@ -5772,7 +5772,6 @@ class AIAgg(AggFunc):
 
 
 class AISummarizeAgg(AggFunc):
-    arg_types = {"this": True}
     _sql_names = ["AI_SUMMARIZE_AGG"]
 
 

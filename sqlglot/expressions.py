@@ -7032,6 +7032,12 @@ class MLForecast(Func):
     arg_types = {"this": True, "expression": False, "params_struct": False}
 
 
+# Represents Snowflake's <model>!<attribute> syntax. For example: SELECT model!PREDICT(INPUT_DATA => {*})
+# See: https://docs.snowflake.com/en/guides-overview-ml-functions
+class ModelAttribute(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search
 class VectorSearch(Func):
     arg_types = {

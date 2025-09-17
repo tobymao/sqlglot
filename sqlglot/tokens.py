@@ -88,6 +88,7 @@ class TokenType(AutoName):
     QMARK_AMP = auto()
     QMARK_PIPE = auto()
     HASH_DASH = auto()
+    EXCLAMATION = auto()
 
     URI_START = auto()
 

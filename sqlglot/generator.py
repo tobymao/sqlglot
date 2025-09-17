@@ -5306,3 +5306,7 @@ class Generator(metaclass=_Generator):
         starts = f" STARTS {starts}" if starts else ""
 
         return f"REFRESH {method} ON {kind}{every}{starts}"
+
+    def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
+        self.unsupported("The model!attribute syntax is not supported")
+        return ""

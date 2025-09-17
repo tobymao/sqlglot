@@ -1303,6 +1303,7 @@ class Snowflake(Dialect):
             exp.BitwiseAndAgg: rename_func("BITANDAGG"),
             exp.BitwiseOrAgg: rename_func("BITORAGG"),
             exp.BitwiseXorAgg: rename_func("BITXORAGG"),
+            exp.BitwiseNot: rename_func("BITNOT"),
             exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("BITSHIFTRIGHT"),
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),

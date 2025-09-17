@@ -2924,6 +2924,15 @@ OPTIONS (
             },
         )
 
+    def test_bitwise_not(self):
+        self.validate_all(
+            "SELECT ~1",
+            write={
+                "bigquery": "SELECT ~1",
+                "snowflake": "SELECT BITNOT(1)",
+            },
+        )
+
     def test_bit_aggs(self):
         self.validate_all(
             "BIT_AND(x)",

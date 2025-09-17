@@ -1527,6 +1527,10 @@ TIMESTAMP;
 GENERATE_UUID();
 STRING;
 
+# dialect: bigquery
+STRUCT(tbl.str_col);
+STRUCT<str_col STRING>;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

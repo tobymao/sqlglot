@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v27.15.2] - 2025-09-17
+### :sparkles: New Features
+- [`d5cf114`](https://github.com/tobymao/sqlglot/commit/d5cf1149932850a91cb5f1ebecda2652616729ef) - **duckdb**: support INSTALL *(PR [#5904](https://github.com/tobymao/sqlglot/pull/5904) by [@geooo109](https://github.com/geooo109))*
+- [`73e05bb`](https://github.com/tobymao/sqlglot/commit/73e05bb15bb86e4a07cc09bf02028a6cf7fa1e6f) - **snowflake**: properly generate `BITNOT` *(PR [#5906](https://github.com/tobymao/sqlglot/pull/5906) by [@YuvalOmerRep](https://github.com/YuvalOmerRep))*
+- [`16f317c`](https://github.com/tobymao/sqlglot/commit/16f317c04f7c0a398c38b461e05f4d4c30baf98b) - **snowflake**: add support for `<model>!<attribute>` syntax *(PR [#5907](https://github.com/tobymao/sqlglot/pull/5907) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`095b2ac`](https://github.com/tobymao/sqlglot/commit/095b2ac3af230eff86d9bc1b0fd3a0a2095f151c) - clean up duckdb INSTALL tests *(commit by [@geooo109](https://github.com/geooo109))*
+
+
 ## [v27.15.1] - 2025-09-17
 ### :sparkles: New Features
 - [`1ee026d`](https://github.com/tobymao/sqlglot/commit/1ee026d22d4f6c3613c1809a6738cdea846c48a9) - **postgres**: support `SUBSTRING(value FOR length FROM start)` variant *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -9502,3 +9512,4 @@ Changelog
 [v27.14.0]: https://github.com/tobymao/sqlglot/compare/v27.13.2...v27.14.0
 [v27.15.0]: https://github.com/tobymao/sqlglot/compare/v27.14.0...v27.15.0
 [v27.15.1]: https://github.com/tobymao/sqlglot/compare/v27.15.0...v27.15.1
+[v27.15.2]: https://github.com/tobymao/sqlglot/compare/v27.15.1...v27.15.2

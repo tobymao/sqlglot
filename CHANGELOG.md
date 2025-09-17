@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.15.1] - 2025-09-17
+### :sparkles: New Features
+- [`1ee026d`](https://github.com/tobymao/sqlglot/commit/1ee026d22d4f6c3613c1809a6738cdea846c48a9) - **postgres**: support `SUBSTRING(value FOR length FROM start)` variant *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.15.0] - 2025-09-17
 ### :boom: BREAKING CHANGES
 - due to [`96ae7a3`](https://github.com/tobymao/sqlglot/commit/96ae7a3bcbf9de1932150baa0bd704d4ce05c9f7) - Annotate and add tests for snowflake REPEAT and SPLIT functions *(PR [#5875](https://github.com/tobymao/sqlglot/pull/5875) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -9496,3 +9501,4 @@ Changelog
 [v27.13.2]: https://github.com/tobymao/sqlglot/compare/v27.13.1...v27.13.2
 [v27.14.0]: https://github.com/tobymao/sqlglot/compare/v27.13.2...v27.14.0
 [v27.15.0]: https://github.com/tobymao/sqlglot/compare/v27.14.0...v27.15.0
+[v27.15.1]: https://github.com/tobymao/sqlglot/compare/v27.15.0...v27.15.1

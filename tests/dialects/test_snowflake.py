@@ -3125,9 +3125,9 @@ FROM SEMANTIC_VIEW(
         )
 
     def test_bit_aggs(self):
-        bit_and_funcs = ["BITANDAGG", "BITAND_AGG", "BIT_AND_AGG", "BIT_ANDAGG"]
-        bit_or_funcs = ["BITORAGG", "BITOR_AGG", "BIT_OR_AGG", "BIT_ORAGG"]
-        bit_xor_funcs = ["BITXORAGG", "BITXOR_AGG", "BIT_XOR_AGG", "BIT_XORAGG"]
+        bit_and_funcs = ["BITAND_AGG", "BITANDAGG", "BIT_AND_AGG", "BIT_ANDAGG"]
+        bit_or_funcs = ["BITOR_AGG", "BITORAGG", "BIT_OR_AGG", "BIT_ORAGG"]
+        bit_xor_funcs = ["BITXOR_AGG", "BITXORAGG", "BIT_XOR_AGG", "BIT_XORAGG"]
         for bit_func in (bit_and_funcs, bit_or_funcs, bit_xor_funcs):
             for name in bit_func:
                 with self.subTest(f"Testing Snowflakes {name}"):

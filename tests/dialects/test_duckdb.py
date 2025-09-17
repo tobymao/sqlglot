@@ -1815,7 +1815,10 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE")
 
     def test_install(self):
-        self.validate_identity("INSTALL httpfs").assert_is(exp.Install).name == "httpfs"
+        ast = self.validate_identity("INSTALL httpfs")
+        ast.assert_is(exp.Install).name == "httpfs"
+        assert isinstance(ast.this, exp.Identifier)
+
         self.validate_identity("INSTALL spatial").assert_is(exp.Install).name == "spatial"
         self.validate_identity("INSTALL httpfs FROM community")
         self.validate_identity("INSTALL spatial FROM community")

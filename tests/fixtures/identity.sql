@@ -933,3 +933,4 @@ FOO(values.c)
 case.*
 SELECT unknown
 SELECT test.Unknown FROM test
+SELECT lock

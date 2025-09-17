@@ -6975,16 +6975,27 @@ class Parser(metaclass=_Parser):
 
     def _parse_substring(self) -> exp.Substring:
         # Postgres supports the form: substring(string [from int] [for int])
+        # (despite being undocumented, the reverse order also works)
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 
         args = t.cast(t.List[t.Optional[exp.Expression]], self._parse_csv(self._parse_bitwise))
 
-        if self._match(TokenType.FROM):
-            args.append(self._parse_bitwise())
-        if self._match(TokenType.FOR):
-            if len(args) == 1:
-                args.append(exp.Literal.number(1))
-            args.append(self._parse_bitwise())
+        start, length = None, None
+
+        while self._curr:
+            if self._match(TokenType.FROM):
+                start = self._parse_bitwise()
+            elif self._match(TokenType.FOR):
+                if not start:
+                    start = exp.Literal.number(1)
+                length = self._parse_bitwise()
+            else:
+                break
+
+        if start:
+            args.append(start)
+        if length:
+            args.append(length)
 
         return self.validate_expression(exp.Substring.from_arg_list(args), args)
 

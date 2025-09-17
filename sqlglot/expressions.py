@@ -1584,6 +1584,11 @@ class Detach(Expression):
     arg_types = {"this": True, "exists": False}
 
 
+# https://duckdb.org/docs/sql/statements/load_and_install.html
+class Install(Expression):
+    arg_types = {"this": True, "from": False, "force": False}
+
+
 # https://duckdb.org/docs/guides/meta/summarize.html
 class Summarize(Expression):
     arg_types = {"this": True, "table": False}

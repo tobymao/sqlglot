@@ -1813,3 +1813,21 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99")
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 NO CYCLE")
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE")
+
+    def test_install(self):
+        ast = self.validate_identity("INSTALL httpfs")
+        ast.assert_is(exp.Install).name == "httpfs"
+        assert isinstance(ast.this, exp.Identifier)
+
+        self.validate_identity("INSTALL spatial").assert_is(exp.Install).name == "spatial"
+        self.validate_identity("INSTALL httpfs FROM community")
+        self.validate_identity("INSTALL spatial FROM community")
+        self.validate_identity("INSTALL spatial FROM 'http://nightly-extensions.duckdb.org'")
+        self.validate_identity("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+        self.validate_identity("FORCE INSTALL httpfs").assert_is(exp.Install).name == "httpfs"
+        self.validate_identity("FORCE INSTALL spatial").assert_is(exp.Install).name == "spatial"
+        self.validate_identity("FORCE INSTALL httpfs FROM community")
+        self.validate_identity("FORCE INSTALL spatial FROM community")
+        self.validate_identity("FORCE INSTALL spatial FROM 'http://nightly-extensions.duckdb.org'")
+        self.validate_identity("FORCE INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+        self.validate_identity("FORCE CHECKPOINT db", check_command_warning=True)

@@ -445,10 +445,11 @@ def _qualify_unnested_columns(expression: exp.Expression) -> exp.Expression:
                 and len(scope.sources) == 1
                 and column.name.lower() != unnest_identifier.name.lower()
             ):
-                unnest_ancestor = column.find_ancestor(exp.Unnest)
+                unnest_ancestor = column.find_ancestor(exp.Unnest, exp.Select)
                 ancestor_identifier = unnest_to_identifier.get(unnest_ancestor)
                 if (
-                    ancestor_identifier
+                    isinstance(unnest_ancestor, exp.Unnest)
+                    and ancestor_identifier
                     and ancestor_identifier.name.lower() == unnest_identifier.name.lower()
                 ):
                     continue

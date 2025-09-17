@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.15.3] - 2025-09-17
+### :bug: Bug Fixes
+- [`bd3e965`](https://github.com/tobymao/sqlglot/commit/bd3e9655aa72ffef8a9e0221205fa2c3915ef58b) - allow `lock` to be used as an identifier *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.15.2] - 2025-09-17
 ### :sparkles: New Features
 - [`d5cf114`](https://github.com/tobymao/sqlglot/commit/d5cf1149932850a91cb5f1ebecda2652616729ef) - **duckdb**: support INSTALL *(PR [#5904](https://github.com/tobymao/sqlglot/pull/5904) by [@geooo109](https://github.com/geooo109))*
@@ -7346,3 +7351,4 @@ Changelog
 [v27.15.0]: https://github.com/tobymao/sqlglot/compare/v27.14.0...v27.15.0
 [v27.15.1]: https://github.com/tobymao/sqlglot/compare/v27.15.0...v27.15.1
 [v27.15.2]: https://github.com/tobymao/sqlglot/compare/v27.15.1...v27.15.2
+[v27.15.3]: https://github.com/tobymao/sqlglot/compare/v27.15.2...v27.15.3

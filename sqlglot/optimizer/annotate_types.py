@@ -593,13 +593,17 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_struct_value(
         self, expression: exp.Expression
     ) -> t.Optional[exp.DataType] | exp.ColumnDef:
-        alias = expression.args.get("alias")
-        if alias:
+        # Case: STRUCT(key AS value)
+        if alias := expression.args.get("alias"):
             return exp.ColumnDef(this=alias.copy(), kind=expression.type)
 
-        # Case: key = value or key := value
+        # Case: STRUCT(key = value) or STRUCT(key := value)
         if expression.expression:
             return exp.ColumnDef(this=expression.this.copy(), kind=expression.expression.type)
+
+        # Case: STRUCT(c)
+        if isinstance(expression, exp.Column):
+            return exp.ColumnDef(this=expression.this.copy(), kind=expression.type)
 
         return expression.type
 

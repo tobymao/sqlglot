@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.16.1] - 2025-09-18
+### :bug: Bug Fixes
+- [`0e256b3`](https://github.com/tobymao/sqlglot/commit/0e256b3f864bc2d026817bd08e89ee89f44ad256) - edge case with parsing `interval` as identifier *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.16.0] - 2025-09-18
 ### :boom: BREAKING CHANGES
 - due to [`5a973e9`](https://github.com/tobymao/sqlglot/commit/5a973e9a88fa7f522a9bf91dc60fb0f6effef53d) - annotate types for Snowflake AI_CLASSIFY function *(PR [#5909](https://github.com/tobymao/sqlglot/pull/5909) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
@@ -7375,3 +7380,4 @@ Changelog
 [v27.15.2]: https://github.com/tobymao/sqlglot/compare/v27.15.1...v27.15.2
 [v27.15.3]: https://github.com/tobymao/sqlglot/compare/v27.15.2...v27.15.3
 [v27.16.0]: https://github.com/tobymao/sqlglot/compare/v27.15.3...v27.16.0
+[v27.16.1]: https://github.com/tobymao/sqlglot/compare/v27.16.0...v27.16.1

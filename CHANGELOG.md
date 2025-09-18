@@ -1,6 +1,28 @@
 Changelog
 =========
 
+## [v27.16.0] - 2025-09-18
+### :boom: BREAKING CHANGES
+- due to [`5a973e9`](https://github.com/tobymao/sqlglot/commit/5a973e9a88fa7f522a9bf91dc60fb0f6effef53d) - annotate types for Snowflake AI_CLASSIFY function *(PR [#5909](https://github.com/tobymao/sqlglot/pull/5909) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake AI_CLASSIFY function (#5909)
+
+- due to [`2d0d908`](https://github.com/tobymao/sqlglot/commit/2d0d908b5bbc32ff3bc92eb1ae9fc6e5ac3409bc) - produce TableAlias instead of Alias for USING in merge builder *(PR [#5911](https://github.com/tobymao/sqlglot/pull/5911) by [@georgesittas](https://github.com/georgesittas))*:
+
+  produce TableAlias instead of Alias for USING in merge builder (#5911)
+
+
+### :sparkles: New Features
+- [`5a973e9`](https://github.com/tobymao/sqlglot/commit/5a973e9a88fa7f522a9bf91dc60fb0f6effef53d) - **optimizer**: annotate types for Snowflake AI_CLASSIFY function *(PR [#5909](https://github.com/tobymao/sqlglot/pull/5909) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+
+### :bug: Bug Fixes
+- [`2d0d908`](https://github.com/tobymao/sqlglot/commit/2d0d908b5bbc32ff3bc92eb1ae9fc6e5ac3409bc) - produce TableAlias instead of Alias for USING in merge builder *(PR [#5911](https://github.com/tobymao/sqlglot/pull/5911) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5910](https://github.com/tobymao/sqlglot/issues/5910) opened by [@deepyaman](https://github.com/deepyaman)*
+
+### :wrench: Chores
+- [`e8974e7`](https://github.com/tobymao/sqlglot/commit/e8974e70d9956ce7a5cb119ba465660f5f172a17) - **optimizer**: Add tests for snowflake likeall, likeany and ilikeany functions *(PR [#5908](https://github.com/tobymao/sqlglot/pull/5908) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+
 ## [v27.15.3] - 2025-09-17
 ### :bug: Bug Fixes
 - [`bd3e965`](https://github.com/tobymao/sqlglot/commit/bd3e9655aa72ffef8a9e0221205fa2c3915ef58b) - allow `lock` to be used as an identifier *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -7352,3 +7374,4 @@ Changelog
 [v27.15.1]: https://github.com/tobymao/sqlglot/compare/v27.15.0...v27.15.1
 [v27.15.2]: https://github.com/tobymao/sqlglot/compare/v27.15.1...v27.15.2
 [v27.15.3]: https://github.com/tobymao/sqlglot/compare/v27.15.2...v27.15.3
+[v27.16.0]: https://github.com/tobymao/sqlglot/compare/v27.15.3...v27.16.0

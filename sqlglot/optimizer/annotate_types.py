@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import logging
 import typing as t
 
 from sqlglot import exp
@@ -25,6 +26,8 @@ if t.TYPE_CHECKING:
     ]
 
     from sqlglot.dialects.dialect import DialectType, AnnotatorsType
+
+logger = logging.getLogger("sqlglot")
 
 
 def annotate_types(
@@ -424,6 +427,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._annotate_args(expression)
 
         left, right = expression.left, expression.right
+        if not left or not right:
+            expression_sql = expression.sql(self.schema.dialect)
+            logger.warning(f"Failed to annotate badly formed binary expression: {expression_sql}")
+            self._set_type(expression, None)
+            return expression
+
         left_type, right_type = left.type.this, right.type.this  # type: ignore
 
         if isinstance(expression, (exp.Connector, exp.Predicate)):

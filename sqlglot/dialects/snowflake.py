@@ -749,7 +749,7 @@ class Snowflake(Dialect):
             "LIKE": lambda args: exp.Escape(
                 this=exp.Like(this=args[0], expression=args[1]), expression=seq_get(args, 2)
             )
-            if seq_get(args, 2)            
+            if seq_get(args, 2)
             else exp.Like(this=args[0], expression=args[1]),
             "ILIKE": lambda args: exp.Escape(
                 this=exp.ILike(this=args[0], expression=args[1]), expression=seq_get(args, 2)

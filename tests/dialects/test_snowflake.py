@@ -1322,9 +1322,7 @@ class TestSnowflake(Validator):
         )
 
         self.validate_identity("SELECT LIKE(col, 'pattern')", "SELECT col LIKE 'pattern'")
-
         self.validate_identity("SELECT ILIKE(col, 'pattern')", "SELECT col ILIKE 'pattern'")
-
         self.validate_identity(
             "SELECT LIKE(col, 'pattern', '\\\\')", "SELECT col LIKE 'pattern' ESCAPE '\\\\'"
         )

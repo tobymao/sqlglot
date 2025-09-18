@@ -162,6 +162,10 @@ class TestPostgres(Validator):
             "ORDER BY 2, 3"
         )
         self.validate_identity(
+            "x::JSON -> 'duration' ->> -1",
+            "JSON_EXTRACT_PATH_TEXT(CAST(x AS JSON) -> 'duration', -1)",
+        ).assert_is(exp.JSONExtractScalar).this.assert_is(exp.JSONExtract)
+        self.validate_identity(
             "SELECT SUBSTRING('Thomas' FOR 3 FROM 2)",
             "SELECT SUBSTRING('Thomas' FROM 2 FOR 3)",
         )

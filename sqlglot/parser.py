@@ -5100,7 +5100,7 @@ class Parser(metaclass=_Parser):
             isinstance(this, exp.Column)
             and not this.table
             and not this.this.quoted
-            and this.name.upper() == "IS"
+            and this.name.upper() in ("IS", "ROWS")
         ):
             self._retreat(index)
             return None

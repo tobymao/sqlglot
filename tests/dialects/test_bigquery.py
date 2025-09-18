@@ -192,6 +192,10 @@ class TestBigQuery(Validator):
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
+            '''SELECT b"\\x0a$'x'00"''',
+            """SELECT b'\\x0a$\\'x\\'00'""",
+        )
+        self.validate_identity(
             "--c\nARRAY_AGG(v IGNORE NULLS)",
             "ARRAY_AGG(v IGNORE NULLS) /* c */",
         )

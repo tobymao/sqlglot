@@ -1560,6 +1560,10 @@ AI_CLASSIFY('text', ['travel', 'cooking'], {'output_mode': 'multi'});
 VARCHAR;
 
 # dialect: snowflake
+BASE64_DECODE_BINARY('SGVsbG8=');
+BINARY;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

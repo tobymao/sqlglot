@@ -1552,6 +1552,14 @@ AI_SUMMARIZE_AGG(null);
 VARCHAR;
 
 # dialect: snowflake
+AI_CLASSIFY('text', ['travel', 'cooking']);
+VARCHAR;
+
+# dialect: snowflake
+AI_CLASSIFY('text', ['travel', 'cooking'], {'output_mode': 'multi'});
+VARCHAR;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

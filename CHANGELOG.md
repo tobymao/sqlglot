@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.16.3] - 2025-09-18
+### :bug: Bug Fixes
+- [`d127051`](https://github.com/tobymao/sqlglot/commit/d1270517c3e124ca59caf29e4506eb3848f7452e) - precedence issue with column operator parsing *(PR [#5914](https://github.com/tobymao/sqlglot/pull/5914) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.16.2] - 2025-09-18
 ### :wrench: Chores
 - [`837890c`](https://github.com/tobymao/sqlglot/commit/837890c7e8bcc3695541bbe32fd8088eee70fea3) - handle badly formed binary expressions gracefully in type inference *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -9554,3 +9559,4 @@ Changelog
 [v27.16.0]: https://github.com/tobymao/sqlglot/compare/v27.15.3...v27.16.0
 [v27.16.1]: https://github.com/tobymao/sqlglot/compare/v27.16.0...v27.16.1
 [v27.16.2]: https://github.com/tobymao/sqlglot/compare/v27.16.1...v27.16.2
+[v27.16.3]: https://github.com/tobymao/sqlglot/compare/v27.16.2...v27.16.3

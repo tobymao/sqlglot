@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.16.2] - 2025-09-18
+### :wrench: Chores
+- [`837890c`](https://github.com/tobymao/sqlglot/commit/837890c7e8bcc3695541bbe32fd8088eee70fea3) - handle badly formed binary expressions gracefully in type inference *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.16.1] - 2025-09-18
 ### :bug: Bug Fixes
 - [`0e256b3`](https://github.com/tobymao/sqlglot/commit/0e256b3f864bc2d026817bd08e89ee89f44ad256) - edge case with parsing `interval` as identifier *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -9548,3 +9553,4 @@ Changelog
 [v27.15.3]: https://github.com/tobymao/sqlglot/compare/v27.15.2...v27.15.3
 [v27.16.0]: https://github.com/tobymao/sqlglot/compare/v27.15.3...v27.16.0
 [v27.16.1]: https://github.com/tobymao/sqlglot/compare/v27.16.0...v27.16.1
+[v27.16.2]: https://github.com/tobymao/sqlglot/compare/v27.16.1...v27.16.2

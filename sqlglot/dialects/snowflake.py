@@ -746,6 +746,12 @@ class Snowflake(Dialect):
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
+            "LIKE": lambda args: exp.Like(this=args[0], expression=args[1])
+            if len(args) == 2
+            else None,
+            "ILIKE": lambda args: exp.ILike(this=args[0], expression=args[1])
+            if len(args) == 2
+            else None,
         }
         FUNCTIONS.pop("PREDICT")
 

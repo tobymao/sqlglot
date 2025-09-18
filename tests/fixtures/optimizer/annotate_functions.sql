@@ -1999,6 +1999,18 @@ BOOLEAN;
 tbl.str_col NOT LIKE '%e%';
 BOOLEAN;
 
+# dialect: snowflake
+tbl.str_col LIKE ALL ('H%', '%o');
+BOOLEAN;
+
+# dialect: snowflake
+tbl.str_col LIKE ANY ('H%', '%o');
+BOOLEAN;
+
+# dialect: snowflake
+tbl.str_col ILIKE ANY ('h%', '%x');
+BOOLEAN;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

@@ -8317,6 +8317,9 @@ def merge(
     if returning:
         merge = merge.returning(returning, dialect=dialect, copy=False, **opts)
 
+    if isinstance(using_clause := merge.args.get("using"), Alias):
+        using_clause.replace(alias_(using_clause.this, using_clause.args["alias"], table=True))
+
     return merge
 
 

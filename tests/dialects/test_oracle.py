@@ -777,3 +777,17 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity("UTC_TIME(6)").assert_is(exp.UtcTime)
         self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
         self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
+
+    def test_merge_builder_alias(self):
+        merge_stmt = exp.merge(
+            "WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1",
+            "WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1)",
+            into="my_table",
+            using="(SELECT * FROM something) source_table",
+            on="my_table.id = source_table.id",
+            dialect="oracle",
+        )
+        self.assertEqual(
+            merge_stmt.sql("oracle"),
+            "MERGE INTO my_table USING (SELECT * FROM something) source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1)",
+        )

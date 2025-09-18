@@ -85,6 +85,9 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
         self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
         self.validate_identity(
+            "SELECT SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total"
+        )
+        self.validate_identity(
             "SELECT * FROM test_data, LATERAL JSONB_ARRAY_ELEMENTS(data) WITH ORDINALITY AS elem(value, ordinality)"
         )
         self.validate_identity(

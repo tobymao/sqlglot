@@ -1321,15 +1321,9 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity(
-            "SELECT LIKE(col, 'pattern')",
-            "SELECT col LIKE 'pattern'"
-        )
-        
-        self.validate_identity(
-            "SELECT ILIKE(col, 'pattern')",
-            "SELECT col ILIKE 'pattern'"
-        )
+        self.validate_identity("SELECT LIKE(col, 'pattern')", "SELECT col LIKE 'pattern'")
+
+        self.validate_identity("SELECT ILIKE(col, 'pattern')", "SELECT col ILIKE 'pattern'")
 
     def test_null_treatment(self):
         self.validate_all(

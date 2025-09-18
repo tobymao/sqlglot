@@ -459,12 +459,16 @@ class Postgres(Dialect):
 
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
-            TokenType.ARROW: lambda self, this, path: build_json_extract_path(
-                exp.JSONExtract, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
-            )([this, path]),
-            TokenType.DARROW: lambda self, this, path: build_json_extract_path(
-                exp.JSONExtractScalar, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
-            )([this, path]),
+            TokenType.ARROW: lambda self, this, path: self.validate_expression(
+                build_json_extract_path(
+                    exp.JSONExtract, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
+                )([this, path])
+            ),
+            TokenType.DARROW: lambda self, this, path: self.validate_expression(
+                build_json_extract_path(
+                    exp.JSONExtractScalar, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
+                )([this, path])
+            ),
         }
 
         def _parse_query_parameter(self) -> t.Optional[exp.Expression]:

@@ -5691,7 +5691,7 @@ class Parser(metaclass=_Parser):
                 if not field:
                     self.raise_error("Expected type")
             elif op and self._curr:
-                field = self._parse_column_reference() or self._parse_bracket()
+                field = self._parse_column_reference() or self._parse_bitwise()
                 if isinstance(field, exp.Column) and self._match(TokenType.DOT, advance=False):
                     field = self._parse_column_ops(field)
             else:

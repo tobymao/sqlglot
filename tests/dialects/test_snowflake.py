@@ -30,6 +30,9 @@ class TestSnowflake(Validator):
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
         self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
+        self.validate_identity(
+            "SELECT BASE64_DECODE_BINARY('SGVsbG8=', 'ABCDEFGHwxyz0123456789+/')"
+        )
 
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")

@@ -6415,7 +6415,7 @@ class ToBase64(Func):
 
 
 class Base64DecodeBinary(Func):
-    pass
+    arg_types = {"this": True, "alphabet": False}
 
 
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp

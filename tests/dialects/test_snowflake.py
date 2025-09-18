@@ -29,6 +29,8 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
+        self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
+
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")
         self.validate_identity("SELECT {* ILIKE 'col1%'} FROM my_table")

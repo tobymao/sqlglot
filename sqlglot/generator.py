@@ -727,6 +727,7 @@ class Generator(metaclass=_Generator):
         "dialect",
         "unsupported_messages",
         "_escaped_quote_end",
+        "_escaped_byte_quote_end",
         "_escaped_identifier_end",
         "_next_name",
         "_identifier_start",
@@ -772,6 +773,11 @@ class Generator(metaclass=_Generator):
         self.unsupported_messages: t.List[str] = []
         self._escaped_quote_end: str = (
             self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.QUOTE_END
+        )
+        self._escaped_byte_quote_end: str = (
+            self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.BYTE_END
+            if self.dialect.BYTE_END
+            else ""
         )
         self._escaped_identifier_end = self.dialect.IDENTIFIER_END * 2
 
@@ -1376,7 +1382,13 @@ class Generator(metaclass=_Generator):
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")
         if self.dialect.BYTE_START:
-            return f"{self.dialect.BYTE_START}{this}{self.dialect.BYTE_END}"
+            escaped_byte_string = self.escape_str(
+                this,
+                escape_backslash=False,
+                delimiter=self.dialect.BYTE_END,
+                escaped_delimiter=self._escaped_byte_quote_end,
+            )
+            return f"{self.dialect.BYTE_START}{escaped_byte_string}{self.dialect.BYTE_END}"
         return this
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
@@ -2475,16 +2487,23 @@ class Generator(metaclass=_Generator):
             text = f"{self.dialect.QUOTE_START}{self.escape_str(text)}{self.dialect.QUOTE_END}"
         return text
 
-    def escape_str(self, text: str, escape_backslash: bool = True) -> str:
+    def escape_str(
+        self,
+        text: str,
+        escape_backslash: bool = True,
+        delimiter: t.Optional[str] = None,
+        escaped_delimiter: t.Optional[str] = None,
+    ) -> str:
         if self.dialect.ESCAPED_SEQUENCES:
             to_escaped = self.dialect.ESCAPED_SEQUENCES
             text = "".join(
                 to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
             )
 
-        return self._replace_line_breaks(text).replace(
-            self.dialect.QUOTE_END, self._escaped_quote_end
-        )
+        delimiter = delimiter or self.dialect.QUOTE_END
+        escaped_delimiter = escaped_delimiter or self._escaped_quote_end
+
+        return self._replace_line_breaks(text).replace(delimiter, escaped_delimiter)
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:
         local = " LOCAL" if expression.args.get("local") else ""

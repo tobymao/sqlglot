@@ -1346,7 +1346,6 @@ class TestSnowflake(Validator):
             "SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
         )
 
-        # Test BASE64_ENCODE function
         self.validate_identity("SELECT BASE64_ENCODE('Hello World')")
         self.validate_identity("SELECT BASE64_ENCODE('Hello World', 76)")
         self.validate_identity(

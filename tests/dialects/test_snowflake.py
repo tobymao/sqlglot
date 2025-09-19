@@ -1326,6 +1326,21 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity("SELECT LIKE(col, 'pattern')", "SELECT col LIKE 'pattern'")
+        self.validate_identity("SELECT ILIKE(col, 'pattern')", "SELECT col ILIKE 'pattern'")
+        self.validate_identity(
+            "SELECT LIKE(col, 'pattern', '\\\\')", "SELECT col LIKE 'pattern' ESCAPE '\\\\'"
+        )
+        self.validate_identity(
+            "SELECT ILIKE(col, 'pattern', '\\\\')", "SELECT col ILIKE 'pattern' ESCAPE '\\\\'"
+        )
+        self.validate_identity(
+            "SELECT LIKE(col, 'pattern', '!')", "SELECT col LIKE 'pattern' ESCAPE '!'"
+        )
+        self.validate_identity(
+            "SELECT ILIKE(col, 'pattern', '!')", "SELECT col ILIKE 'pattern' ESCAPE '!'"
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

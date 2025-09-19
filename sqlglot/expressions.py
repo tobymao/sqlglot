@@ -6469,6 +6469,10 @@ class Hex(Func):
     pass
 
 
+class HexDecodeString(Func):
+    pass
+
+
 class LowerHex(Hex):
     pass
 

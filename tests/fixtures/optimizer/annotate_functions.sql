@@ -1544,6 +1544,34 @@ AI_AGG(null, 'bar');
 VARCHAR;
 
 # dialect: snowflake
+AI_COMPLETE('claude-4-sonnet', PROMPT('test'));
+VARCHAR;
+
+# dialect: snowflake
+AI_COMPLETE('claude-4-sonnet', PROMPT('test'), {'temperature': 0.7});
+VARCHAR;
+
+# dialect: snowflake
+AI_COMPLETE('claude-4-sonnet', 'simple string prompt');
+VARIANT;
+
+# dialect: snowflake
+AI_COMPLETE('openai-gpt-4.1', 'analyze this image', {'@images': 'data.png'});
+VARIANT;
+
+# dialect: snowflake
+AI_COMPLETE('claude-3-5-sonnet', 'simple string', {'temperature': 0.5, 'max_tokens': 1000});
+VARIANT;
+
+# dialect: snowflake
+AI_COMPLETE('llama2-70b-chat', 'What are LLMs?', {'temperature': 0.7}, {'type': 'json'}, true);
+VARIANT;
+
+# dialect: snowflake
+AI_COMPLETE('mistral-large', 'Extract data', {'temperature': 0}, {'type': 'json', 'schema': {'type': 'object'}}, false);
+VARIANT;
+
+# dialect: snowflake
 AI_SUMMARIZE_AGG('foo');
 VARCHAR;
 

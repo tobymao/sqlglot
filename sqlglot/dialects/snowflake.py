@@ -504,6 +504,19 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
+def _annotate_ai_complete(self: TypeAnnotator, expression: exp.AIComplete) -> exp.AIComplete:
+    # AI_COMPLETE returns different types based on its usage:
+    # - PROMPT object variant: returns VARCHAR
+    # - Single string/file variants: returns VARIANT
+    prompt_arg = expression.args.get("expression")
+    if prompt_arg and isinstance(prompt_arg, exp.Anonymous) and prompt_arg.this == "PROMPT":
+        self._set_type(expression, exp.DataType.Type.VARCHAR)
+    else:
+        self._set_type(expression, exp.DataType.Type.VARIANT)
+
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -571,6 +584,7 @@ class Snowflake(Dialect):
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
+        exp.AIComplete: _annotate_ai_complete,
     }
 
     TIME_MAPPING = {

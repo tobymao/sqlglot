@@ -13,6 +13,14 @@ class TestSnowflake(Validator):
     def test_snowflake(self):
         self.validate_identity("SELECT session")
         self.validate_identity("x::nvarchar()", "CAST(x AS VARCHAR)")
+        self.validate_identity("SELECT AI_COMPLETE('claude-4-sonnet', PROMPT('test'))")
+        self.validate_identity("SELECT AI_COMPLETE('claude-4-sonnet', 'simple string prompt')")
+        self.validate_identity(
+            "SELECT AI_COMPLETE('claude-4-sonnet', 'analyze image', TO_FILE('@images', 'data.png'))"
+        )
+        self.validate_identity(
+            "SELECT AI_COMPLETE('llama2-70b-chat', 'What are LLMs?', OBJECT_CONSTRUCT('temperature', 0.7), OBJECT_CONSTRUCT('type', 'json'), TRUE)"
+        )
 
         ast = self.parse_one("DATEADD(DAY, n, d)")
         ast.set("unit", exp.Literal.string("MONTH"))

@@ -5771,6 +5771,17 @@ class ArrayUniqueAgg(AggFunc):
     pass
 
 
+class AIComplete(Func):
+    _sql_names = ["AI_COMPLETE"]
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "model_parameters": False,
+        "response_format": False,
+        "show_details": False,
+    }
+
+
 class AIAgg(AggFunc):
     arg_types = {"this": True, "expression": True}
     _sql_names = ["AI_AGG"]

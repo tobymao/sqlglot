@@ -6418,6 +6418,14 @@ class Base64DecodeBinary(Func):
     arg_types = {"this": True, "alphabet": False}
 
 
+class Base64DecodeString(Func):
+    arg_types = {"this": True, "alphabet": False}
+
+
+class Base64Encode(Func):
+    arg_types = {"this": True, "max_line_length": False, "alphabet": False}
+
+
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp
 class FromISO8601Timestamp(Func):
     _sql_names = ["FROM_ISO8601_TIMESTAMP"]

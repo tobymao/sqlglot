@@ -2023,6 +2023,14 @@ BOOLEAN;
 tbl.str_col ILIKE ANY ('h%', '%x');
 BOOLEAN;
 
+# dialect: snowflake
+LIKE(tbl.str_col, 'pattern');
+BOOLEAN;
+
+# dialect: snowflake
+ILIKE(tbl.str_col, 'pattern');
+BOOLEAN;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

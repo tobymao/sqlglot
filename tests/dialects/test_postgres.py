@@ -1643,12 +1643,19 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                     ).assert_is(exp.Transaction)
 
     def test_interval_span(self):
-        for time_str in ["1 01:", "1 01:", "1 01:00", "1 01:00"]:
+        for time_str in ["1 01:", "1 01:00", "1.5 01:", "-0.25 01:"]:
             self.validate_identity(f"INTERVAL '{time_str}'", f"INTERVAL '{time_str}' DAY TO MINUTE")
             # explicit SECOND overrides inference to MINUTE
             self.validate_identity(f"INTERVAL '{time_str}' DAY TO SECOND")
 
-        for time_str in ["1 01:01:", "1 01:01:", "1 01:01:01", "1 01:01:01.01"]:
+        for time_str in [
+            "1 01:01:",
+            "1 01:01:",
+            "1 01:01:01",
+            "1 01:01:01.01",
+            "1.5 01:01:",
+            "-0.25 01:01:",
+        ]:
             self.validate_identity(f"INTERVAL '{time_str}'", f"INTERVAL '{time_str}' DAY TO SECOND")
             # explicit MINUTE overrides inference to SECOND
             self.validate_identity(f"INTERVAL '{time_str}' DAY TO MINUTE")

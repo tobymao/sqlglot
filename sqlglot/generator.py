@@ -3284,7 +3284,7 @@ class Generator(metaclass=_Generator):
         if self.SINGLE_STRING_INTERVAL:
             this = expression.this.name if expression.this else ""
             if this:
-                if unit and isinstance(unit_expression, exp.IntervalSpan):
+                if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
                     return f"INTERVAL '{this}'{unit}"
                 return f"INTERVAL '{this}{unit}'"
             return f"INTERVAL{unit}"

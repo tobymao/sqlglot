@@ -8582,8 +8582,10 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
 INTERVAL_STRING_RE = re.compile(r"\s*(-?[0-9]+(?:\.[0-9]+)?)\s*([a-zA-Z]+)\s*")
 
 # Matches day-time interval strings that contain a number of days, a space,
-# and a time component in the format hh:[mm:[ss[.ff]]]
-INTERVAL_DAY_TIME_RE = re.compile(r"^\s*(-?[0-9]+)\s+(\d{1,2}:\d{0,2}(?::\d{0,2}(?:\.\d+)?)?)\s*$")
+# and a time in hh:[mm:[ss[.ff]]] format
+INTERVAL_DAY_TIME_RE = re.compile(
+    r"\s*(-?[0-9]+(?:\.\d+)?)\s+(\d{1,2}:\d{0,2}(?::\d{0,2}(?:\.\d+)?)?)\s*"
+)
 
 
 def to_interval(interval: str | Literal) -> Interval:

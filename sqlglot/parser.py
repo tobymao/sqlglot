@@ -5109,8 +5109,9 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
-        # detect day-time interval span with omitted units:
-        #   INTERVAL '<days> <time with colon>' [maybe explicit span `unit TO unit`]
+        # handle day-time format interval span with omitted units:
+        #   INTERVAL '<number days> hh:[:mm[:ss[.ff]]]' <maybe `unit TO unit`>
+        day_time_literal = None
         infer_interval_span_units = False
         if (
             this
@@ -5118,8 +5119,8 @@ class Parser(metaclass=_Parser):
             and self.INTERVAL_SPANS
             and self.SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT
         ):
-            day_time_format_literal = exp.INTERVAL_DAY_TIME_RE.match(this.name)
-            if day_time_format_literal:
+            day_time_literal = exp.INTERVAL_DAY_TIME_RE.match(this.name)
+            if day_time_literal:
                 index = self._index
 
                 # Var "TO" Var
@@ -5128,8 +5129,9 @@ class Parser(metaclass=_Parser):
                 if first_unit and self._match_text_seq("TO"):
                     second_unit = self._parse_var(any_token=True, upper=True)
 
-                self._retreat(index)
                 infer_interval_span_units = not (first_unit and second_unit)
+
+                self._retreat(index)
 
         unit = (
             None
@@ -5158,21 +5160,17 @@ class Parser(metaclass=_Parser):
                 this = exp.Literal.string(parts[0][0])
                 unit = self.expression(exp.Var, this=parts[0][1].upper())
 
-            # infer DAY TO MINUTE/SECOND omitted span units
-            if (
-                self.INTERVAL_SPANS
-                and self.SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT
-                and day_time_format_literal
-            ):
-                time_part = day_time_format_literal.group(2)
-
-                if infer_interval_span_units:
+            if infer_interval_span_units and day_time_literal:
+                time_part = day_time_literal.group(2)
+                if time_part:
+                    # two colons for 'hh:mm:[ss[.ff]]', period for 'mm:ss.ff'
                     seconds_present = time_part.count(":") >= 2 or "." in time_part
                     unit = self.expression(
                         exp.IntervalSpan,
                         this=exp.var("DAY"),
                         expression=exp.var("SECOND" if seconds_present else "MINUTE"),
                     )
+
         if (
             self.INTERVAL_SPANS
             and self._match_text_seq("TO")

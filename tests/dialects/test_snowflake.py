@@ -1189,11 +1189,12 @@ class TestSnowflake(Validator):
         self.validate_all(
             "DAYOFWEEKISO(foo)",
             read={
+                "snowflake": "DAYOFWEEKISO(foo)",
                 "presto": "DAY_OF_WEEK(foo)",
                 "trino": "DAY_OF_WEEK(foo)",
             },
             write={
-                "snowflake": "DAYOFWEEKISO(foo)",
+                "duckdb": "ISODOW(foo)",
             },
         )
 
@@ -1202,9 +1203,6 @@ class TestSnowflake(Validator):
             read={
                 "presto": "DOW(foo)",
                 "trino": "DOW(foo)",
-            },
-            write={
-                "snowflake": "DAYOFWEEKISO(foo)",
             },
         )
 

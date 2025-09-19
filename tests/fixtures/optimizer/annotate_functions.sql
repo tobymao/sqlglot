@@ -1584,6 +1584,14 @@ CHARINDEX('world', 'hello world', 1);
 INT;
 
 # dialect: snowflake
+CHAR(65);
+VARCHAR;
+
+# dialect: snowflake
+CHR(8364);
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

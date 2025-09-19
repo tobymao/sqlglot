@@ -1561,6 +1561,10 @@ class Parser(metaclass=_Parser):
     # Adding an ON TRUE, makes transpilation semantically correct for other dialects
     ADD_JOIN_ON_TRUE = False
 
+    # Whether INTERVAL spans with literal format '\d+ hh:[mm:[ss[.ff]]]'
+    # can omit the span unit `DAY TO MINUTE` or `DAY TO SECOND`
+    SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -5105,9 +5109,38 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
-        unit = self._parse_function() or (
-            not self._match(TokenType.ALIAS, advance=False)
-            and self._parse_var(any_token=True, upper=True)
+        # detect day-time interval span with omitted units:
+        #   INTERVAL '<days> <time with colon>' [maybe explicit span `unit TO unit`]
+        infer_interval_span_units = False
+        if (
+            this
+            and this.is_string
+            and self.INTERVAL_SPANS
+            and self.SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT
+        ):
+            day_time_format_literal = exp.INTERVAL_DAY_TIME_RE.match(this.name)
+            if day_time_format_literal:
+                index = self._index
+
+                # Var "TO" Var
+                first_unit = self._parse_var(any_token=True, upper=True)
+                second_unit = None
+                if first_unit and self._match_text_seq("TO"):
+                    second_unit = self._parse_var(any_token=True, upper=True)
+
+                self._retreat(index)
+                infer_interval_span_units = not (first_unit and second_unit)
+
+        unit = (
+            None
+            if infer_interval_span_units
+            else (
+                self._parse_function()
+                or (
+                    not self._match(TokenType.ALIAS, advance=False)
+                    and self._parse_var(any_token=True, upper=True)
+                )
+            )
         )
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
@@ -5124,7 +5157,27 @@ class Parser(metaclass=_Parser):
             if len(parts) == 1:
                 this = exp.Literal.string(parts[0][0])
                 unit = self.expression(exp.Var, this=parts[0][1].upper())
-        if self.INTERVAL_SPANS and self._match_text_seq("TO"):
+
+            # infer DAY TO MINUTE/SECOND omitted span units
+            if (
+                self.INTERVAL_SPANS
+                and self.SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT
+                and day_time_format_literal
+            ):
+                time_part = day_time_format_literal.group(2)
+
+                if infer_interval_span_units:
+                    seconds_present = time_part.count(":") >= 2 or "." in time_part
+                    unit = self.expression(
+                        exp.IntervalSpan,
+                        this=exp.var("DAY"),
+                        expression=exp.var("SECOND" if seconds_present else "MINUTE"),
+                    )
+        if (
+            self.INTERVAL_SPANS
+            and self._match_text_seq("TO")
+            and not isinstance(unit, exp.IntervalSpan)
+        ):
             unit = self.expression(
                 exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)
             )

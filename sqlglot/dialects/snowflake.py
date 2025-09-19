@@ -324,6 +324,15 @@ def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     return _builder
 
 
+def _build_like(expr_type: t.Type[E]) -> t.Callable[[t.List], E | exp.Escape]:
+    def _builder(args: t.List) -> E | exp.Escape:
+        like_expr = expr_type(this=args[0], expression=args[1])
+        escape = seq_get(args, 2)
+        return exp.Escape(this=like_expr, expression=escape) if escape else like_expr
+
+    return _builder
+
+
 def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:
     # Other dialects don't support all of the following parameters, so we need to
     # generate default values as necessary to ensure the transpilation is correct
@@ -746,16 +755,8 @@ class Snowflake(Dialect):
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
-            "LIKE": lambda args: exp.Escape(
-                this=exp.Like(this=args[0], expression=args[1]), expression=seq_get(args, 2)
-            )
-            if seq_get(args, 2)
-            else exp.Like(this=args[0], expression=args[1]),
-            "ILIKE": lambda args: exp.Escape(
-                this=exp.ILike(this=args[0], expression=args[1]), expression=seq_get(args, 2)
-            )
-            if seq_get(args, 2)
-            else exp.ILike(this=args[0], expression=args[1]),
+            "LIKE": _build_like(exp.Like),
+            "ILIKE": _build_like(exp.ILike),
         }
         FUNCTIONS.pop("PREDICT")
 

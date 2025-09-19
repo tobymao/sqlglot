@@ -647,6 +647,7 @@ class TestClickhouse(Validator):
 
         self.validate_identity("cosineDistance(x, y)")
         self.validate_identity("L2Distance(x, y)")
+        self.validate_identity("tuple(1 = 1, 'foo' = 'foo')")
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")

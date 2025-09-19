@@ -531,6 +531,7 @@ class Snowflake(Dialect):
         **Dialect.TYPE_TO_EXPRESSIONS,
         exp.DataType.Type.INT: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.INT],
+            exp.Ascii,
             exp.Length,
         },
         exp.DataType.Type.VARCHAR: {

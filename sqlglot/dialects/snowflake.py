@@ -688,6 +688,7 @@ class Snowflake(Dialect):
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),
             "DATEDIFF": _build_datediff,
+            "DAYOFWEEKISO": exp.DayOfWeekIso.from_arg_list,
             "DIV0": _build_if_from_div0,
             "EDITDISTANCE": lambda args: exp.Levenshtein(
                 this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)

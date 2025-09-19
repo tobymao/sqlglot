@@ -1564,6 +1564,18 @@ BASE64_DECODE_BINARY('SGVsbG8=');
 BINARY;
 
 # dialect: snowflake
+BIT_LENGTH('abc');
+INT;
+
+# dialect: snowflake
+BIT_LENGTH(tbl.str_col);
+INT;
+
+# dialect: snowflake
+BIT_LENGTH(tbl.bin_col);
+INT;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

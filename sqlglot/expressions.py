@@ -6875,6 +6875,10 @@ class Length(Func):
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
+class BitLength(Func):
+    pass
+
+
 class Levenshtein(Func):
     arg_types = {
         "this": True,

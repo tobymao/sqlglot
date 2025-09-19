@@ -5490,6 +5490,11 @@ class Parser(metaclass=_Parser):
 
                 type_token = unsigned_type_token or type_token
 
+            # NULLABLE without parentheses can be a column (Presto/Trino)
+            if type_token == TokenType.NULLABLE and not expressions:
+                self._retreat(index)
+                return None
+
             this = exp.DataType(
                 this=exp.DataType.Type[type_token.value],
                 expressions=expressions,

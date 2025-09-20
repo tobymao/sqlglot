@@ -3275,14 +3275,19 @@ class Generator(metaclass=_Generator):
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
-        unit = self.sql(expression, "unit")
+        unit_expression = expression.args.get("unit")
+        unit = self.sql(unit_expression) if unit_expression else ""
         if not self.INTERVAL_ALLOWS_PLURAL_FORM:
             unit = self.TIME_PART_SINGULARS.get(unit, unit)
         unit = f" {unit}" if unit else ""
 
         if self.SINGLE_STRING_INTERVAL:
             this = expression.this.name if expression.this else ""
-            return f"INTERVAL '{this}{unit}'" if this else f"INTERVAL{unit}"
+            if this:
+                if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
+                    return f"INTERVAL '{this}'{unit}"
+                return f"INTERVAL '{this}{unit}'"
+            return f"INTERVAL{unit}"
 
         this = self.sql(expression, "this")
         if this:

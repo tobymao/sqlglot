@@ -1576,6 +1576,14 @@ BASE64_DECODE_BINARY('SGVsbG8=');
 BINARY;
 
 # dialect: snowflake
+HEX_DECODE_BINARY('48656C6C6F');
+BINARY;
+
+# dialect: snowflake
+HEX_DECODE_STRING('48656C6C6F');
+VARCHAR;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

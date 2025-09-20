@@ -1576,6 +1576,18 @@ BASE64_DECODE_BINARY('SGVsbG8=');
 BINARY;
 
 # dialect: snowflake
+BIT_LENGTH('abc');
+INT;
+
+# dialect: snowflake
+BIT_LENGTH(tbl.str_col);
+INT;
+
+# dialect: snowflake
+BIT_LENGTH(tbl.bin_col);
+INT;
+
+# dialect: snowflake
 HEX_DECODE_BINARY('48656C6C6F');
 BINARY;
 

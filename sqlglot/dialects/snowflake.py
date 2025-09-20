@@ -531,6 +531,7 @@ class Snowflake(Dialect):
         **Dialect.TYPE_TO_EXPRESSIONS,
         exp.DataType.Type.INT: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.INT],
+            exp.Ascii,
             exp.Length,
             exp.BitLength,
         },
@@ -540,6 +541,9 @@ class Snowflake(Dialect):
             exp.AIAgg,
             exp.AIClassify,
             exp.AISummarizeAgg,
+            exp.Chr,
+            exp.Collate,
+            exp.HexDecodeString,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,
@@ -555,6 +559,7 @@ class Snowflake(Dialect):
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,
+            exp.Unhex,
         },
         exp.DataType.Type.BIGINT: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BIGINT],

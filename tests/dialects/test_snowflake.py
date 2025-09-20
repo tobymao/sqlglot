@@ -36,6 +36,8 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
+        self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
+        self.validate_identity("SELECT CHR(8364)")
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")
         self.validate_identity("SELECT {* ILIKE 'col1%'} FROM my_table")

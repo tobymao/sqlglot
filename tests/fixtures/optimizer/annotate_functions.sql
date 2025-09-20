@@ -1584,6 +1584,10 @@ CHARINDEX('world', 'hello world', 1);
 INT;
 
 # dialect: snowflake
+COLLATE('hello', 'utf8');
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

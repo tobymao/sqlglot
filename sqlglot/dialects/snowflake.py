@@ -541,6 +541,7 @@ class Snowflake(Dialect):
             exp.AIClassify,
             exp.AISummarizeAgg,
             exp.Chr,
+            exp.Collate,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,

@@ -1592,6 +1592,10 @@ CHR(8364);
 VARCHAR;
 
 # dialect: snowflake
+COLLATE('hello', 'utf8');
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

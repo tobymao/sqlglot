@@ -1560,6 +1560,18 @@ AI_CLASSIFY('text', ['travel', 'cooking'], {'output_mode': 'multi'});
 VARCHAR;
 
 # dialect: snowflake
+ASCII('A');
+INT;
+
+# dialect: snowflake
+ASCII('');
+INT;
+
+# dialect: snowflake
+ASCII(NULL);
+INT;
+
+# dialect: snowflake
 BASE64_DECODE_BINARY('SGVsbG8=');
 BINARY;
 
@@ -1578,6 +1590,18 @@ INT;
 # dialect: snowflake
 CHARINDEX('world', 'hello world', 1);
 INT;
+
+# dialect: snowflake
+CHAR(65);
+VARCHAR;
+
+# dialect: snowflake
+CHR(8364);
+VARCHAR;
+
+# dialect: snowflake
+COLLATE('hello', 'utf8');
+VARCHAR;
 
 # dialect: snowflake
 CONCAT('Hello', 'World!');

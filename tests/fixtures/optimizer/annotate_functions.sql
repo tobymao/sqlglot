@@ -1576,6 +1576,14 @@ BASE64_DECODE_BINARY('SGVsbG8=');
 BINARY;
 
 # dialect: snowflake
+BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=');
+VARCHAR;
+
+# dialect: snowflake
+BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+VARCHAR;
+
+# dialect: snowflake
 BIT_LENGTH('abc');
 INT;
 
@@ -1593,6 +1601,14 @@ BINARY;
 
 # dialect: snowflake
 HEX_DECODE_STRING('48656C6C6F');
+VARCHAR;
+
+# dialect: snowflake
+BASE64_ENCODE('Hello World', 76);
+VARCHAR;
+
+# dialect: snowflake
+BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
 VARCHAR;
 
 # dialect: snowflake

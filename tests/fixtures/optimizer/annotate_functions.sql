@@ -1584,6 +1584,14 @@ BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkl
 VARCHAR;
 
 # dialect: snowflake
+BASE64_ENCODE('Hello World', 76);
+VARCHAR;
+
+# dialect: snowflake
+BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+VARCHAR;
+
+# dialect: snowflake
 BIT_LENGTH('abc');
 INT;
 
@@ -1594,22 +1602,6 @@ INT;
 # dialect: snowflake
 BIT_LENGTH(tbl.bin_col);
 INT;
-
-# dialect: snowflake
-HEX_DECODE_BINARY('48656C6C6F');
-BINARY;
-
-# dialect: snowflake
-HEX_DECODE_STRING('48656C6C6F');
-VARCHAR;
-
-# dialect: snowflake
-BASE64_ENCODE('Hello World', 76);
-VARCHAR;
-
-# dialect: snowflake
-BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
-VARCHAR;
 
 # dialect: snowflake
 CHARINDEX('world', 'hello world');
@@ -1682,6 +1674,26 @@ BOOLEAN;
 # dialect: snowflake
 ENDSWITH(tbl.bin_col, NULL);
 BOOLEAN;
+
+# dialect: snowflake
+HEX_DECODE_BINARY('48656C6C6F');
+BINARY;
+
+# dialect: snowflake
+HEX_DECODE_STRING('48656C6C6F');
+VARCHAR;
+
+# dialect: snowflake
+HEX_ENCODE('Hello World');
+VARCHAR;
+
+# dialect: snowflake
+HEX_ENCODE('Hello World', 'upper');
+VARCHAR;
+
+# dialect: snowflake
+HEX_ENCODE('Hello World', 'lower');
+VARCHAR;
 
 # dialect: snowflake
 LEAST(x::DECIMAL(18, 2));

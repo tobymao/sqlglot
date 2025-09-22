@@ -1660,6 +1660,18 @@ CONTAINS(tbl.bin_col, NULL);
 BOOLEAN;
 
 # dialect: snowflake
+EDITDISTANCE('hello', 'world');
+INT;
+
+# dialect: snowflake
+EDITDISTANCE(tbl.str_col, 'test');
+INT;
+
+# dialect: snowflake
+EDITDISTANCE('hello', 'world', 3);
+INT;
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 

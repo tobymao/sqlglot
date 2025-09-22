@@ -934,3 +934,4 @@ case.*
 SELECT unknown
 SELECT test.Unknown FROM test
 SELECT lock
+SELECT a FROM test GROUP BY GROUPING SETS ((x + y, z))

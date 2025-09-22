@@ -4613,7 +4613,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_grouping_set(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):
-            grouping_set = self._parse_csv(self._parse_column)
+            grouping_set = self._parse_csv(self._parse_bitwise)
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=grouping_set)
 

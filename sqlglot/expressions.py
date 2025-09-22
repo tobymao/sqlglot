@@ -8581,10 +8581,17 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
 
 INTERVAL_STRING_RE = re.compile(r"\s*(-?[0-9]+(?:\.[0-9]+)?)\s*([a-zA-Z]+)\s*")
 
-# Matches day-time interval strings that contain a number of days, a space,
-# and a time in hh:[mm:[ss[.ff]]] format
+# Matches day-time interval strings that contain
+# - A number of days (possibly negative or with decimals)
+# - At least one space
+# - Portions of a time-like signature, potentially negative
+#   - Standard format                   [-]h+:m+:s+[.f+]
+#   - Just minutes/seconds/frac seconds [-]m+:s+.f+
+#   - Just hours, minutes, maybe colon  [-]h+:m+[:]
+#   - Just hours, maybe colon           [-]h+[:]
+#   - Just colon                        :
 INTERVAL_DAY_TIME_RE = re.compile(
-    r"\s*(-?[0-9]+(?:\.\d+)?)\s+(\d{1,2}:\d{0,2}(?::\d{0,2}(?:\.\d+)?)?)\s*"
+    r"\s*-?\s*\d+(?:\.\d+)?\s+(?:-?(?:\d+:)?\d+:\d+(?:\.\d+)?|-?(?:\d+:){1,2}|:)\s*"
 )
 
 

@@ -1296,3 +1296,9 @@ class DuckDB(Dialect):
                 return self.sql(exp.Cast(this=func, to=this.type))
 
             return self.sql(func)
+
+        def format_sql(self, expression: exp.Format) -> str:
+            if expression.name.lower() == "%s" and len(expression.expressions) == 1:
+                return self.func("FORMAT", "'{}'", expression.expressions[0])
+
+            return self.function_fallback_sql(expression)

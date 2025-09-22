@@ -35,6 +35,14 @@ class TestTrino(Validator):
                 "trino": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMP WITH TIME ZONE)",
             },
         )
+        self.validate_all(
+            "SELECT FORMAT('%s', 123)",
+            write={
+                "duckdb": "SELECT FORMAT('{}', 123)",
+                "snowflake": "SELECT TO_CHAR(123)",
+                "trino": "SELECT FORMAT('%s', 123)",
+            },
+        )
 
     def test_listagg(self):
         self.validate_identity(

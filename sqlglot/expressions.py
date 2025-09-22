@@ -6481,6 +6481,10 @@ class HexDecodeString(Func):
     pass
 
 
+class HexEncode(Func):
+    arg_types = {"this": True, "case": False}
+
+
 class LowerHex(Hex):
     pass
 

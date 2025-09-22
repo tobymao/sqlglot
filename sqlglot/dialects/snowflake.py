@@ -546,6 +546,7 @@ class Snowflake(Dialect):
             exp.Chr,
             exp.Collate,
             exp.HexDecodeString,
+            exp.HexEncode,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,

@@ -5110,32 +5110,29 @@ class Parser(metaclass=_Parser):
             return None
 
         # handle day-time format interval span with omitted units:
-        #   INTERVAL '<number days> hh:[:mm[:ss[.ff]]]' <maybe `unit TO unit`>
-        day_time_literal = None
-        infer_interval_span_units = False
+        #   INTERVAL '<number days> hh[:][mm[:ss[.ff]]]' <maybe `unit TO unit`>
+        interval_span_units_omitted = None
         if (
             this
             and this.is_string
-            and self.INTERVAL_SPANS
             and self.SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT
+            and exp.INTERVAL_DAY_TIME_RE.match(this.name)
         ):
-            day_time_literal = exp.INTERVAL_DAY_TIME_RE.match(this.name)
-            if day_time_literal:
-                index = self._index
+            index = self._index
 
-                # Var "TO" Var
-                first_unit = self._parse_var(any_token=True, upper=True)
-                second_unit = None
-                if first_unit and self._match_text_seq("TO"):
-                    second_unit = self._parse_var(any_token=True, upper=True)
+            # Var "TO" Var
+            first_unit = self._parse_var(any_token=True, upper=True)
+            second_unit = None
+            if first_unit and self._match_text_seq("TO"):
+                second_unit = self._parse_var(any_token=True, upper=True)
 
-                infer_interval_span_units = not (first_unit and second_unit)
+            interval_span_units_omitted = not (first_unit and second_unit)
 
-                self._retreat(index)
+            self._retreat(index)
 
         unit = (
             None
-            if infer_interval_span_units
+            if interval_span_units_omitted
             else (
                 self._parse_function()
                 or (
@@ -5160,22 +5157,7 @@ class Parser(metaclass=_Parser):
                 this = exp.Literal.string(parts[0][0])
                 unit = self.expression(exp.Var, this=parts[0][1].upper())
 
-            if infer_interval_span_units and day_time_literal:
-                time_part = day_time_literal.group(2)
-                if time_part:
-                    # two colons for 'hh:mm:[ss[.ff]]', period for 'mm:ss.ff'
-                    seconds_present = time_part.count(":") >= 2 or "." in time_part
-                    unit = self.expression(
-                        exp.IntervalSpan,
-                        this=exp.var("DAY"),
-                        expression=exp.var("SECOND" if seconds_present else "MINUTE"),
-                    )
-
-        if (
-            self.INTERVAL_SPANS
-            and self._match_text_seq("TO")
-            and not isinstance(unit, exp.IntervalSpan)
-        ):
+        if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(
                 exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)
             )

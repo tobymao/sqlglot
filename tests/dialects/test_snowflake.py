@@ -29,11 +29,6 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
-        self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
-        self.validate_identity(
-            "SELECT BASE64_DECODE_BINARY('SGVsbG8=', 'ABCDEFGHwxyz0123456789+/')"
-        )
-
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
         self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
@@ -1341,6 +1336,22 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "SELECT ILIKE(col, 'pattern', '!')", "SELECT col ILIKE 'pattern' ESCAPE '!'"
+        )
+
+        self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
+        self.validate_identity(
+            "SELECT BASE64_DECODE_BINARY('SGVsbG8=', 'ABCDEFGHwxyz0123456789+/')"
+        )
+
+        self.validate_identity("SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=')")
+        self.validate_identity(
+            "SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
+        )
+
+        self.validate_identity("SELECT BASE64_ENCODE('Hello World')")
+        self.validate_identity("SELECT BASE64_ENCODE('Hello World', 76)")
+        self.validate_identity(
+            "SELECT BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
         )
 
     def test_null_treatment(self):

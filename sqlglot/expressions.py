@@ -1838,6 +1838,7 @@ class AlterColumn(Expression):
         "comment": False,
         "allow_null": False,
         "visible": False,
+        "rename_to": False,
     }
 
 
@@ -4956,6 +4957,7 @@ class Alter(Expression):
         "cluster": False,
         "not_valid": False,
         "check": False,
+        "cascade": False,
     }
 
     @property

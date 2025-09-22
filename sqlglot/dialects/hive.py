@@ -211,6 +211,7 @@ class Hive(Dialect):
     SAFE_DIVISION = True
     ARRAY_AGG_INCLUDES_NULLS = None
     REGEXP_EXTRACT_DEFAULT_GROUP = 1
+    ALTER_TABLE_SUPPORTS_CASCADE = True
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -310,6 +311,7 @@ class Hive(Dialect):
         VALUES_FOLLOWED_BY_PAREN = False
         JOINS_HAVE_EQUAL_PRECEDENCE = True
         ADD_JOIN_ON_TRUE = True
+        ALTER_TABLE_PARTITIONS = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -376,6 +378,17 @@ class Hive(Dialect):
             "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
+        }
+
+        ALTER_PARSERS = {
+            "ADD": lambda self: self._parse_alter_table_add(),
+            "AS": lambda self: self._parse_select(),
+            "CHANGE": lambda self: self._parse_alter_table_change(),
+            "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
+            "DROP": lambda self: self._parse_alter_table_drop(),
+            "PARTITION": lambda self: self._parse_alter_table_partition(),
+            "RENAME": lambda self: self._parse_alter_table_rename(),
+            "SET": lambda self: self._parse_alter_table_set(),
         }
 
         def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
@@ -451,6 +464,29 @@ class Hive(Dialect):
 
             return this
 
+        def _parse_alter_table_change(self) -> t.List[exp.Expression]:
+            self._match(TokenType.COLUMN)
+            column_old = self._parse_column()
+            column_new = self._parse_column()
+            dtype = self._parse_types(schema=True)
+
+            comment = None
+            if self._match(TokenType.COMMENT):
+                comment = self._parse_string()
+
+            if not column_old or not column_new or not dtype:
+                return []
+
+            return [
+                self.expression(
+                    exp.AlterColumn,
+                    this=column_old,
+                    rename_to=column_new,
+                    dtype=dtype,
+                    comment=comment,
+                )
+            ]
+
         def _parse_partition_and_order(
             self,
         ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
@@ -500,6 +536,7 @@ class Hive(Dialect):
         PAD_FILL_PATTERN_IS_REQUIRED = True
         SUPPORTS_MEDIAN = False
         ARRAY_SIZE_NAME = "SIZE"
+        ALTER_SET_TYPE = ""
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -756,6 +793,28 @@ class Hive(Dialect):
                     else sep
                 ),
             )
+
+        def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+            this = self.sql(expression, "this")
+
+            new_name = self.sql(expression, "rename_to")
+
+            dtype = self.sql(expression, "dtype")
+            if dtype:
+                text = f"CHANGE COLUMN {this} {new_name} {dtype}"
+
+                comment = self.sql(expression, "comment")
+                if comment:
+                    text = text + f" COMMENT {comment}"
+
+            default = self.sql(expression, "default")
+            visible = expression.args.get("visible")
+            allow_null = expression.args.get("allow_null")
+            drop = expression.args.get("drop")
+
+            if any([default, drop, visible, allow_null, drop]):
+                self.unsupported("Unsupported CHANGE COLUMN syntax")
+            return text
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)

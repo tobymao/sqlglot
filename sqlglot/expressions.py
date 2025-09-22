@@ -6022,6 +6022,10 @@ class Collate(Binary, Func):
     pass
 
 
+class Collation(Func):
+    pass
+
+
 class Ceil(Func):
     arg_types = {"this": True, "decimals": False, "to": False}
     _sql_names = ["CEIL", "CEILING"]

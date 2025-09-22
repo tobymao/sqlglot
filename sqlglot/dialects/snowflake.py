@@ -547,6 +547,7 @@ class Snowflake(Dialect):
             exp.AISummarizeAgg,
             exp.Chr,
             exp.Collate,
+            exp.Collation,
             exp.HexDecodeString,
             exp.HexEncode,
             exp.Initcap,

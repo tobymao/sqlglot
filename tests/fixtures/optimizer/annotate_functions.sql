@@ -1652,6 +1652,10 @@ LPAD(tbl.bin_col, 10, 0x20);
 BINARY;
 
 # dialect: snowflake
+COLLATION('hello');
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

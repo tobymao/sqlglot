@@ -426,7 +426,7 @@ class Postgres(Dialect):
             "DATE_PART": lambda self: self._parse_date_part(),
             "JSON_AGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
-                this=self._parse_bitwise(),
+                this=self._parse_lambda(),
                 order=self._parse_order(),
             ),
             "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),

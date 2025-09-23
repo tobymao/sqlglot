@@ -213,6 +213,12 @@ class Hive(Dialect):
     REGEXP_EXTRACT_DEFAULT_GROUP = 1
     ALTER_TABLE_SUPPORTS_CASCADE = True
     CHANGE_COLUMN_STYLE = "HIVE"
+    """
+    Spark and its derivatives support both the Hive style CHANGE COLUMN syntax and more traditional ALTER/RENAME COLUMN syntax. Spark also
+    accepts ALTER COLUMN syntax when using the CHANGE COLUMN keyword but not vice versa. The Parser needs to be able to handle both styles
+    for Spark dialects and the Generator will use ALTER COLUMN syntax when possible. This also means that there are circumstances where it's
+    not possible to transpile commands from Spark to Hive due to missing information (e.g. missing data types).
+    """
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

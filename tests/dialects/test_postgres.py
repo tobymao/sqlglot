@@ -1641,3 +1641,25 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                     self.validate_identity(
                         f"BEGIN {keyword} {level}, {level}", f"BEGIN {level}, {level}"
                     ).assert_is(exp.Transaction)
+
+    def test_interval_span(self):
+        for time_str in ["1 01:", "1 01:00", "1.5 01:", "-0.25 01:"]:
+            with self.subTest(f"Postgres INTERVAL span, omitted DAY TO MINUTE unit: {time_str}"):
+                self.validate_identity(f"INTERVAL '{time_str}'")
+
+        for time_str in [
+            "1 01:01:",
+            "1 01:01:",
+            "1 01:01:01",
+            "1 01:01:01.01",
+            "1.5 01:01:",
+            "-0.25 01:01:",
+        ]:
+            with self.subTest(f"Postgres INTERVAL span, omitted DAY TO SECOND unit: {time_str}"):
+                self.validate_identity(f"INTERVAL '{time_str}'")
+
+        # Ensure AND is not consumed as a unit following an omitted-span interval
+        with self.subTest("Postgres INTERVAL span, omitted unit with following AND"):
+            day_time_str = "a > INTERVAL '1 00:00' AND TRUE"
+            self.validate_identity(day_time_str, "a > INTERVAL '1 00:00' AND TRUE")
+            self.assertIsInstance(self.parse_one(day_time_str), exp.And)

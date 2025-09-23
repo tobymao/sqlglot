@@ -574,6 +574,7 @@ x + interval '1' month
 | RisingWave | Community |
 | SingleStore | Community |
 | Snowflake | Official |
+| Solr | Community |
 | Spark | Official |
 | SQLite | Official |
 | StarRocks | Official |

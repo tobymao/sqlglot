@@ -935,3 +935,4 @@ SELECT unknown
 SELECT test.Unknown FROM test
 SELECT lock
 SELECT a FROM test GROUP BY GROUPING SETS ((x + y, z))
+SELECT (LEAD(foo1, 1, 0)) OVER (PARTITION BY foo2 ORDER BY foo3) FROM t

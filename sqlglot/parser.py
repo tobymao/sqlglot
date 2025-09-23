@@ -1444,6 +1444,8 @@ class Parser(metaclass=_Parser):
 
     ON_CONDITION_TOKENS = {"ERROR", "NULL", "TRUE", "FALSE", "EMPTY"}
 
+    FORBIDDEN_INTERAL_UNITS = {"IS", "ROWS", "END"}
+
     PRIVILEGE_FOLLOW_TOKENS = {TokenType.ON, TokenType.COMMA, TokenType.L_PAREN}
 
     # The style options for the DESCRIBE statement
@@ -5100,7 +5102,7 @@ class Parser(metaclass=_Parser):
             isinstance(this, exp.Column)
             and not this.table
             and not this.this.quoted
-            and this.name.upper() in ("IS", "ROWS")
+            and this.name.upper() in self.FORBIDDEN_INTERAL_UNITS
         ):
             self._retreat(index)
             return None

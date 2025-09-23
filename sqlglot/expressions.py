@@ -6483,6 +6483,7 @@ class HexDecodeString(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/hex_encode
 class HexEncode(Func):
     arg_types = {"this": True, "case": False}
 
@@ -6491,6 +6492,11 @@ class HexEncode(Func):
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/compress
 class Compress(Func):
     arg_types = {"this": True, "method": False}
+
+
+# Snowflake: https://docs.snowflake.com/en/sql-reference/functions/decompress_binary
+class DecompressBinary(Func):
+    arg_types = {"this": True, "method": True}
 
 
 class LowerHex(Hex):

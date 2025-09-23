@@ -5765,6 +5765,10 @@ class Parser(metaclass=_Parser):
             this.add_comments(comments)
 
         self._match_r_paren(expression=this)
+
+        if isinstance(this, exp.Paren) and isinstance(this.this, exp.AggFunc):
+            return self._parse_window(this)
+
         return this
 
     def _parse_primary(self) -> t.Optional[exp.Expression]:

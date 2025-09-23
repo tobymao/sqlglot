@@ -550,7 +550,6 @@ class Snowflake(Dialect):
             exp.HexDecodeString,
             exp.HexEncode,
             exp.Initcap,
-            exp.Pad,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,
@@ -591,6 +590,7 @@ class Snowflake(Dialect):
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (
                 exp.Left,
+                exp.Pad,
                 exp.Right,
                 exp.Substring,
             )

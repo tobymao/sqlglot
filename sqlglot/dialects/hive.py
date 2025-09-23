@@ -212,6 +212,7 @@ class Hive(Dialect):
     ARRAY_AGG_INCLUDES_NULLS = None
     REGEXP_EXTRACT_DEFAULT_GROUP = 1
     ALTER_TABLE_SUPPORTS_CASCADE = True
+    CHANGE_COLUMN_STYLE = "HIVE"
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -466,7 +467,15 @@ class Hive(Dialect):
 
         def _parse_alter_table_change(self) -> t.List[exp.Expression]:
             self._match(TokenType.COLUMN)
-            column_old = self._parse_column()
+            this = self._parse_column()
+
+            if self.dialect.CHANGE_COLUMN_STYLE == "SPARK" and self._match_text_seq("TYPE"):
+                return [self.expression(
+                    exp.AlterColumn,
+                    this=this,
+                    dtype=self._parse_types(schema=True),
+                )]
+
             column_new = self._parse_column()
             dtype = self._parse_types(schema=True)
 
@@ -474,13 +483,13 @@ class Hive(Dialect):
             if self._match(TokenType.COMMENT):
                 comment = self._parse_string()
 
-            if not column_old or not column_new or not dtype:
-                return []
+            if not this or not column_new or not dtype:
+                self.raise_error("Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'")
 
             return [
                 self.expression(
                     exp.AlterColumn,
-                    this=column_old,
+                    this=this,
                     rename_to=column_new,
                     dtype=dtype,
                     comment=comment,
@@ -795,18 +804,11 @@ class Hive(Dialect):
             )
 
         def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+
             this = self.sql(expression, "this")
-
-            new_name = self.sql(expression, "rename_to")
-
+            new_name = self.sql(expression, "rename_to") or this
             dtype = self.sql(expression, "dtype")
-            if dtype:
-                text = f"CHANGE COLUMN {this} {new_name} {dtype}"
-
-                comment = self.sql(expression, "comment")
-                if comment:
-                    text = text + f" COMMENT {comment}"
-
+            comment = f" COMMENT {self.sql(expression, 'comment')}" if self.sql(expression, "comment") else ""
             default = self.sql(expression, "default")
             visible = expression.args.get("visible")
             allow_null = expression.args.get("allow_null")
@@ -814,7 +816,17 @@ class Hive(Dialect):
 
             if any([default, drop, visible, allow_null, drop]):
                 self.unsupported("Unsupported CHANGE COLUMN syntax")
-            return text
+            if self.dialect.CHANGE_COLUMN_STYLE == "SPARK":
+                if new_name == this:
+                    if comment:
+                        return f"ALTER COLUMN {this}{comment}"
+                    return super().altercolumn_sql(expression)
+                return f"RENAME COLUMN {this} TO {new_name}"
+
+            if not dtype:
+                self.unsupported("CHANGE COLUMN without a type is not supported")
+
+            return f"CHANGE COLUMN {this} {new_name} {dtype}{comment}"
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)
@@ -829,6 +841,14 @@ class Hive(Dialect):
             tags = f" TAGS {tags}" if tags else ""
 
             return f"SET{serde}{exprs}{location}{file_format}{tags}"
+
+        def alter_sql(self, expression: exp.Alter) -> str:
+            if self.dialect.CHANGE_COLUMN_STYLE == "HIVE":
+                actions = expression.args["actions"]
+                for action in actions:
+                    if isinstance(action, exp.RenameColumn):
+                        self.unsupported("Cannot rename columns without data type defined in Hive")
+            return super().alter_sql(expression)
 
         def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
             prefix = "WITH " if expression.args.get("with") else ""

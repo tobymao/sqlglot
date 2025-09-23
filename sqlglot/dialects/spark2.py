@@ -151,6 +151,8 @@ def _annotate_by_similar_args(
 
 
 class Spark2(Hive):
+    CHANGE_COLUMN_STYLE = "SPARK"
+
     ANNOTATORS = {
         **Hive.ANNOTATORS,
         exp.Substring: lambda self, e: self._annotate_by_args(e, "this"),
@@ -234,6 +236,11 @@ class Spark2(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
+        ALTER_PARSERS = {
+            **Hive.Parser.ALTER_PARSERS,
+            "ALTER": lambda self: self._parse_alter_table_alter(),
+        }
+
         def _parse_drop_column(self) -> t.Optional[exp.Drop | exp.Command]:
             return self._match_text_seq("DROP", "COLUMNS") and self.expression(
                 exp.Drop, this=self._parse_schema(), kind="COLUMNS"
@@ -248,6 +255,7 @@ class Spark2(Hive):
         QUERY_HINTS = True
         NVL2_SUPPORTED = True
         CAN_IMPLEMENT_ARRAY_ANY = True
+        ALTER_SET_TYPE = "TYPE"
 
         PROPERTIES_LOCATION = {
             **Hive.Generator.PROPERTIES_LOCATION,

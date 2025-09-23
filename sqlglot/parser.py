@@ -1561,6 +1561,10 @@ class Parser(metaclass=_Parser):
     # Adding an ON TRUE, makes transpilation semantically correct for other dialects
     ADD_JOIN_ON_TRUE = False
 
+    # Whether INTERVAL spans with literal format '\d+ hh:[mm:[ss[.ff]]]'
+    # can omit the span unit `DAY TO MINUTE` or `DAY TO SECOND`
+    SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -5105,9 +5109,37 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
-        unit = self._parse_function() or (
-            not self._match(TokenType.ALIAS, advance=False)
-            and self._parse_var(any_token=True, upper=True)
+        # handle day-time format interval span with omitted units:
+        #   INTERVAL '<number days> hh[:][mm[:ss[.ff]]]' <maybe `unit TO unit`>
+        interval_span_units_omitted = None
+        if (
+            this
+            and this.is_string
+            and self.SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT
+            and exp.INTERVAL_DAY_TIME_RE.match(this.name)
+        ):
+            index = self._index
+
+            # Var "TO" Var
+            first_unit = self._parse_var(any_token=True, upper=True)
+            second_unit = None
+            if first_unit and self._match_text_seq("TO"):
+                second_unit = self._parse_var(any_token=True, upper=True)
+
+            interval_span_units_omitted = not (first_unit and second_unit)
+
+            self._retreat(index)
+
+        unit = (
+            None
+            if interval_span_units_omitted
+            else (
+                self._parse_function()
+                or (
+                    not self._match(TokenType.ALIAS, advance=False)
+                    and self._parse_var(any_token=True, upper=True)
+                )
+            )
         )
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
@@ -5124,6 +5156,7 @@ class Parser(metaclass=_Parser):
             if len(parts) == 1:
                 this = exp.Literal.string(parts[0][0])
                 unit = self.expression(exp.Var, this=parts[0][1].upper())
+
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(
                 exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)

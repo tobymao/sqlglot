@@ -1632,7 +1632,7 @@ COMPRESS('Hello World', 'zlib(1)');
 BINARY;
 
 # dialect: snowflake
-DECOMPRESS_BINARY('compressed_data');
+DECOMPRESS_BINARY('compressed_data', 'SNAPPY');
 BINARY;
 
 # dialect: snowflake

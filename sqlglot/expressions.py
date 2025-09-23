@@ -6499,6 +6499,11 @@ class DecompressBinary(Func):
     arg_types = {"this": True, "method": True}
 
 
+# Snowflake: https://docs.snowflake.com/en/sql-reference/functions/decompress_string
+class DecompressString(Func):
+    arg_types = {"this": True, "method": True}
+
+
 class LowerHex(Hex):
     pass
 

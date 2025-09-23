@@ -1636,6 +1636,10 @@ DECOMPRESS_BINARY('compressed_data', 'SNAPPY');
 BINARY;
 
 # dialect: snowflake
+DECOMPRESS_STRING('compressed_data', 'ZSTD');
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

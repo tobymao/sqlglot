@@ -6489,9 +6489,8 @@ class HexEncode(Func):
 
 # T-SQL: https://learn.microsoft.com/en-us/sql/t-sql/functions/compress-transact-sql?view=sql-server-ver17
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/compress
-# Databricks: https://docs.databricks.com/aws/en/sql/language-manual/functions/zstd_compress
 class Compress(Func):
-    arg_types = {"this": True, "method": False, "level": False, "streaming_mode": False}
+    arg_types = {"this": True, "method": False}
 
 
 class LowerHex(Hex):

@@ -20,6 +20,7 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT * FROM a..b")
 
         self.validate_identity("SELECT SYSDATETIMEOFFSET()")
+        self.validate_identity("SELECT COMPRESS('Hello World')")
         self.validate_identity("GO").assert_is(exp.Command)
         self.validate_identity("SELECT go").selects[0].assert_is(exp.Column)
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")

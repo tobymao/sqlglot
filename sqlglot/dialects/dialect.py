@@ -292,6 +292,7 @@ class _Dialect(type):
             }
 
         klass.VALID_INTERVAL_UNITS = {
+            *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),
             *klass.DATE_PART_MAPPING.values(),
         }

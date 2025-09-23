@@ -561,6 +561,7 @@ class Snowflake(Dialect):
         exp.DataType.Type.BINARY: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BINARY],
             exp.Base64DecodeBinary,
+            exp.Compress,
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,

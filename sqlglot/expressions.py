@@ -6414,6 +6414,7 @@ class ToBase64(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary
 class Base64DecodeBinary(Func):
     arg_types = {"this": True, "alphabet": False}
 
@@ -6477,12 +6478,19 @@ class Hex(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/hex_decode_string
 class HexDecodeString(Func):
     pass
 
 
 class HexEncode(Func):
     arg_types = {"this": True, "case": False}
+
+
+# T-SQL: https://learn.microsoft.com/en-us/sql/t-sql/functions/compress-transact-sql?view=sql-server-ver17
+# Snowflake: https://docs.snowflake.com/en/sql-reference/functions/compress
+class Compress(Func):
+    arg_types = {"this": True, "method": False}
 
 
 class LowerHex(Hex):

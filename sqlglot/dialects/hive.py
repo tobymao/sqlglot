@@ -465,16 +465,16 @@ class Hive(Dialect):
 
             return this
 
-        def _parse_alter_table_change(self) -> t.List[exp.Expression]:
+        def _parse_alter_table_change(self) -> t.Optional[exp.Expression]:
             self._match(TokenType.COLUMN)
             this = self._parse_column()
 
             if self.dialect.CHANGE_COLUMN_STYLE == "SPARK" and self._match_text_seq("TYPE"):
-                return [self.expression(
+                return self.expression(
                     exp.AlterColumn,
                     this=this,
                     dtype=self._parse_types(schema=True),
-                )]
+                )
 
             column_new = self._parse_column()
             dtype = self._parse_types(schema=True)
@@ -483,18 +483,19 @@ class Hive(Dialect):
             if self._match(TokenType.COMMENT):
                 comment = self._parse_string()
 
+            cascade = self._match_text_seq("CASCADE")
+
             if not this or not column_new or not dtype:
                 self.raise_error("Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'")
 
-            return [
-                self.expression(
-                    exp.AlterColumn,
-                    this=this,
-                    rename_to=column_new,
-                    dtype=dtype,
-                    comment=comment,
-                )
-            ]
+            return self.expression(
+                exp.AlterColumn,
+                this=this,
+                rename_to=column_new,
+                dtype=dtype,
+                comment=comment,
+                cascade=cascade
+            )
 
         def _parse_partition_and_order(
             self,
@@ -809,6 +810,7 @@ class Hive(Dialect):
             new_name = self.sql(expression, "rename_to") or this
             dtype = self.sql(expression, "dtype")
             comment = f" COMMENT {self.sql(expression, 'comment')}" if self.sql(expression, "comment") else ""
+            cascade = " CASCADE" if expression.args.get("cascade") else ""
             default = self.sql(expression, "default")
             visible = expression.args.get("visible")
             allow_null = expression.args.get("allow_null")
@@ -826,7 +828,7 @@ class Hive(Dialect):
             if not dtype:
                 self.unsupported("CHANGE COLUMN without a type is not supported")
 
-            return f"CHANGE COLUMN {this} {new_name} {dtype}{comment}"
+            return f"CHANGE COLUMN {this} {new_name} {dtype}{comment}{cascade}"
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)

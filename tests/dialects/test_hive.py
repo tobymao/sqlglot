@@ -203,6 +203,13 @@ class TestHive(Validator):
                 "spark": "ALTER TABLE x RENAME COLUMN a TO b",
             }
         )
+        self.validate_all(
+            "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10) CASCADE",
+            write={
+                "hive": "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10) CASCADE",
+                "spark": "ALTER TABLE x ALTER COLUMN a TYPE VARCHAR(10)",
+            },
+        )
 
         self.validate_identity("ALTER TABLE X ADD COLUMNS (y INT, z STRING)")
         self.validate_identity("ALTER TABLE X ADD COLUMNS (y INT, z STRING) CASCADE")

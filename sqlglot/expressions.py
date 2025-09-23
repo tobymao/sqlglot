@@ -1839,6 +1839,7 @@ class AlterColumn(Expression):
         "allow_null": False,
         "visible": False,
         "rename_to": False,
+        "cascade": False,
     }
 
 

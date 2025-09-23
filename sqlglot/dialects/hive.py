@@ -483,8 +483,6 @@ class Hive(Dialect):
             if self._match(TokenType.COMMENT):
                 comment = self._parse_string()
 
-            cascade = self._match_text_seq("CASCADE")
-
             if not this or not column_new or not dtype:
                 self.raise_error("Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'")
 
@@ -494,7 +492,6 @@ class Hive(Dialect):
                 rename_to=column_new,
                 dtype=dtype,
                 comment=comment,
-                cascade=cascade
             )
 
         def _parse_partition_and_order(
@@ -810,7 +807,6 @@ class Hive(Dialect):
             new_name = self.sql(expression, "rename_to") or this
             dtype = self.sql(expression, "dtype")
             comment = f" COMMENT {self.sql(expression, 'comment')}" if self.sql(expression, "comment") else ""
-            cascade = " CASCADE" if expression.args.get("cascade") else ""
             default = self.sql(expression, "default")
             visible = expression.args.get("visible")
             allow_null = expression.args.get("allow_null")
@@ -828,7 +824,7 @@ class Hive(Dialect):
             if not dtype:
                 self.unsupported("CHANGE COLUMN without a type is not supported")
 
-            return f"CHANGE COLUMN {this} {new_name} {dtype}{comment}{cascade}"
+            return f"CHANGE COLUMN {this} {new_name} {dtype}{comment}"
 
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)

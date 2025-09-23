@@ -151,6 +151,7 @@ def _annotate_by_similar_args(
 
 
 class Spark2(Hive):
+    ALTER_TABLE_SUPPORTS_CASCADE = False
     CHANGE_COLUMN_STYLE = "SPARK"
 
     ANNOTATORS = {

@@ -1,6 +1,89 @@
 Changelog
 =========
 
+## [v27.17.0] - 2025-09-23
+### :boom: BREAKING CHANGES
+- due to [`f4ad258`](https://github.com/tobymao/sqlglot/commit/f4ad25882951de4e4442dfd5189a56d5a1c5e630) - Annotate types for Snowflake BASE64_DECODE_BINARY function *(PR [#5917](https://github.com/tobymao/sqlglot/pull/5917) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate types for Snowflake BASE64_DECODE_BINARY function (#5917)
+
+- due to [`6d0e3f8`](https://github.com/tobymao/sqlglot/commit/6d0e3f8dcae7ed1a7659ece69b1f94cec5e7300e) - Add parser support to ilike like function versions. *(PR [#5915](https://github.com/tobymao/sqlglot/pull/5915) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add parser support to ilike like function versions. (#5915)
+
+- due to [`22c7ed7`](https://github.com/tobymao/sqlglot/commit/22c7ed7734b41ca544bb67bcc1ca4151f6d5f05f) - parse tuple *(PR [#5920](https://github.com/tobymao/sqlglot/pull/5920) by [@geooo109](https://github.com/geooo109))*:
+
+  parse tuple (#5920)
+
+- due to [`fc5624e`](https://github.com/tobymao/sqlglot/commit/fc5624eca43d2855ac350c92d85b184a6893d5ca) - annotate types for Snowflake ASCII function *(PR [#5926](https://github.com/tobymao/sqlglot/pull/5926) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake ASCII function (#5926)
+
+- due to [`4e81690`](https://github.com/tobymao/sqlglot/commit/4e8169045edcaa28ae43abeb07370df63846fbfd) - annotate type for Snowflake COLLATE function *(PR [#5931](https://github.com/tobymao/sqlglot/pull/5931) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake COLLATE function (#5931)
+
+- due to [`f07d35d`](https://github.com/tobymao/sqlglot/commit/f07d35d29104c6203efaab738118d1903614b83c) - annotate type for Snowflake CHR function *(PR [#5929](https://github.com/tobymao/sqlglot/pull/5929) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake CHR function (#5929)
+
+- due to [`f8c0ee4`](https://github.com/tobymao/sqlglot/commit/f8c0ee4d3c1a4d4a92b897d1cc85f9904c8e566b) - Add function and annotate snowflake hex decode string and binary functions *(PR [#5928](https://github.com/tobymao/sqlglot/pull/5928) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add function and annotate snowflake hex decode string and binary functions (#5928)
+
+- due to [`66f9501`](https://github.com/tobymao/sqlglot/commit/66f9501d76d087798bad93e578273ab2a45e2575) - annotate types for Snowflake BIT_LENGTH function *(PR [#5927](https://github.com/tobymao/sqlglot/pull/5927) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake BIT_LENGTH function (#5927)
+
+- due to [`7878437`](https://github.com/tobymao/sqlglot/commit/78784370712df65a2e1e79a1c2b441131ed7222a) - annotate snowflake's `BASE64_DECODE_STRING`, `BASE64_ENCODE` *(PR [#5922](https://github.com/tobymao/sqlglot/pull/5922) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  annotate snowflake's `BASE64_DECODE_STRING`, `BASE64_ENCODE` (#5922)
+
+- due to [`9bcad04`](https://github.com/tobymao/sqlglot/commit/9bcad040bd51dd03821c68eea1a73534fc7a81b7) - Annotate type for HEX ENCODE function. *(PR [#5936](https://github.com/tobymao/sqlglot/pull/5936) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for HEX ENCODE function. (#5936)
+
+- due to [`590928f`](https://github.com/tobymao/sqlglot/commit/590928f4637306e8cf3f1302d5dd5d5dbc76e7e0) - annotate type for Snowflake INITCAP function *(PR [#5941](https://github.com/tobymao/sqlglot/pull/5941) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake INITCAP function (#5941)
+
+- due to [`ac04de1`](https://github.com/tobymao/sqlglot/commit/ac04de1944c7a976406581b489b3cf9b11dafb77) - annotate type for Snowflake EDITDISTANCE function *(PR [#5940](https://github.com/tobymao/sqlglot/pull/5940) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake EDITDISTANCE function (#5940)
+
+- due to [`9e28af8`](https://github.com/tobymao/sqlglot/commit/9e28af8a52ced951ecf7f4e85a6305e20a13de1f) - Annotate type for snowflake COMPRESS function *(PR [#5938](https://github.com/tobymao/sqlglot/pull/5938) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake COMPRESS function (#5938)
+
+
+### :sparkles: New Features
+- [`f4ad258`](https://github.com/tobymao/sqlglot/commit/f4ad25882951de4e4442dfd5189a56d5a1c5e630) - **optimizer**: Annotate types for Snowflake BASE64_DECODE_BINARY function *(PR [#5917](https://github.com/tobymao/sqlglot/pull/5917) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`6d0e3f8`](https://github.com/tobymao/sqlglot/commit/6d0e3f8dcae7ed1a7659ece69b1f94cec5e7300e) - **optimizer**: Add parser support to ilike like function versions. *(PR [#5915](https://github.com/tobymao/sqlglot/pull/5915) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`fc5624e`](https://github.com/tobymao/sqlglot/commit/fc5624eca43d2855ac350c92d85b184a6893d5ca) - **optimizer**: annotate types for Snowflake ASCII function *(PR [#5926](https://github.com/tobymao/sqlglot/pull/5926) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`4e81690`](https://github.com/tobymao/sqlglot/commit/4e8169045edcaa28ae43abeb07370df63846fbfd) - **optimizer**: annotate type for Snowflake COLLATE function *(PR [#5931](https://github.com/tobymao/sqlglot/pull/5931) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`f07d35d`](https://github.com/tobymao/sqlglot/commit/f07d35d29104c6203efaab738118d1903614b83c) - **optimizer**: annotate type for Snowflake CHR function *(PR [#5929](https://github.com/tobymao/sqlglot/pull/5929) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`f8c0ee4`](https://github.com/tobymao/sqlglot/commit/f8c0ee4d3c1a4d4a92b897d1cc85f9904c8e566b) - **optimizer**: Add function and annotate snowflake hex decode string and binary functions *(PR [#5928](https://github.com/tobymao/sqlglot/pull/5928) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`66f9501`](https://github.com/tobymao/sqlglot/commit/66f9501d76d087798bad93e578273ab2a45e2575) - **optimizer**: annotate types for Snowflake BIT_LENGTH function *(PR [#5927](https://github.com/tobymao/sqlglot/pull/5927) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`f4c810e`](https://github.com/tobymao/sqlglot/commit/f4c810e043d9379e94efb185e368e27ad9c15715) - transpile Trino `FORMAT` to DuckDB and Snowflake, closes [#5933](https://github.com/tobymao/sqlglot/pull/5933) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`7878437`](https://github.com/tobymao/sqlglot/commit/78784370712df65a2e1e79a1c2b441131ed7222a) - **optimizer**: annotate snowflake's `BASE64_DECODE_STRING`, `BASE64_ENCODE` *(PR [#5922](https://github.com/tobymao/sqlglot/pull/5922) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`9bcad04`](https://github.com/tobymao/sqlglot/commit/9bcad040bd51dd03821c68eea1a73534fc7a81b7) - **optimizer**: Annotate type for HEX ENCODE function. *(PR [#5936](https://github.com/tobymao/sqlglot/pull/5936) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`590928f`](https://github.com/tobymao/sqlglot/commit/590928f4637306e8cf3f1302d5dd5d5dbc76e7e0) - **optimizer**: annotate type for Snowflake INITCAP function *(PR [#5941](https://github.com/tobymao/sqlglot/pull/5941) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`ac04de1`](https://github.com/tobymao/sqlglot/commit/ac04de1944c7a976406581b489b3cf9b11dafb77) - **optimizer**: annotate type for Snowflake EDITDISTANCE function *(PR [#5940](https://github.com/tobymao/sqlglot/pull/5940) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`a385990`](https://github.com/tobymao/sqlglot/commit/a38599080932a8b54a169df8b7a69650cb47b6bc) - **parser**: support wrapped aggregate functions *(PR [#5943](https://github.com/tobymao/sqlglot/pull/5943) by [@geooo109](https://github.com/geooo109))*
+- [`9e28af8`](https://github.com/tobymao/sqlglot/commit/9e28af8a52ced951ecf7f4e85a6305e20a13de1f) - **optimizer**: Annotate type for snowflake COMPRESS function *(PR [#5938](https://github.com/tobymao/sqlglot/pull/5938) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`6807a32`](https://github.com/tobymao/sqlglot/commit/6807a32cccf984dc13a30b815750b2c41374b845) - escape byte string delimiters *(PR [#5916](https://github.com/tobymao/sqlglot/pull/5916) by [@georgesittas](https://github.com/georgesittas))*
+- [`22c7ed7`](https://github.com/tobymao/sqlglot/commit/22c7ed7734b41ca544bb67bcc1ca4151f6d5f05f) - **clickhouse**: parse tuple *(PR [#5920](https://github.com/tobymao/sqlglot/pull/5920) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5913](https://github.com/tobymao/sqlglot/issues/5913) opened by [@tiagoskaneta](https://github.com/tiagoskaneta)*
+- [`223160b`](https://github.com/tobymao/sqlglot/commit/223160bd7914d51e9ec1abb8d0f1053e13a65c98) - **parser**: NULLABLE as an identifier *(PR [#5921](https://github.com/tobymao/sqlglot/pull/5921) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5919](https://github.com/tobymao/sqlglot/issues/5919) opened by [@baruchoxman](https://github.com/baruchoxman)*
+- [`42cfc79`](https://github.com/tobymao/sqlglot/commit/42cfc79ce120dee83084e2bb6b8bbd19f45bf06f) - **snowflake**: parse DAYOFWEEKISO *(PR [#5925](https://github.com/tobymao/sqlglot/pull/5925) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5924](https://github.com/tobymao/sqlglot/issues/5924) opened by [@baruchoxman](https://github.com/baruchoxman)*
+- [`0be2cb4`](https://github.com/tobymao/sqlglot/commit/0be2cb448ee1a5ac020ac47e9944875c30e42632) - **postgres**: support `DISTINCT` qualifier in `JSON_AGG` fixes [#5935](https://github.com/tobymao/sqlglot/pull/5935) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`e34b2e1`](https://github.com/tobymao/sqlglot/commit/e34b2e14d1f87d095955765173a5e17fc9985220) - allow grouping set parser to consume more syntax fixes [#5937](https://github.com/tobymao/sqlglot/pull/5937) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.16.3] - 2025-09-18
 ### :bug: Bug Fixes
 - [`d127051`](https://github.com/tobymao/sqlglot/commit/d1270517c3e124ca59caf29e4506eb3848f7452e) - precedence issue with column operator parsing *(PR [#5914](https://github.com/tobymao/sqlglot/pull/5914) by [@georgesittas](https://github.com/georgesittas))*
@@ -7393,3 +7476,4 @@ Changelog
 [v27.16.1]: https://github.com/tobymao/sqlglot/compare/v27.16.0...v27.16.1
 [v27.16.2]: https://github.com/tobymao/sqlglot/compare/v27.16.1...v27.16.2
 [v27.16.3]: https://github.com/tobymao/sqlglot/compare/v27.16.2...v27.16.3
+[v27.17.0]: https://github.com/tobymao/sqlglot/compare/v27.16.3...v27.17.0

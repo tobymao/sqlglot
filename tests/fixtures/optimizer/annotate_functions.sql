@@ -1624,6 +1624,14 @@ COLLATE('hello', 'utf8');
 VARCHAR;
 
 # dialect: snowflake
+COMPRESS('Hello World', 'SNAPPY');
+BINARY;
+
+# dialect: snowflake
+COMPRESS('Hello World', 'zlib(1)');
+BINARY;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

@@ -1696,6 +1696,18 @@ HEX_ENCODE('Hello World', 'lower');
 VARCHAR;
 
 # dialect: snowflake
+INITCAP('hello world');
+VARCHAR;
+
+# dialect: snowflake
+INITCAP('hello world', ' ');
+VARCHAR;
+
+# dialect: snowflake
+INITCAP(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 

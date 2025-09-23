@@ -1640,6 +1640,10 @@ DECOMPRESS_STRING('compressed_data', 'ZSTD');
 VARCHAR;
 
 # dialect: snowflake
+LPAD('Hello', 10, '*');
+VARCHAR;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

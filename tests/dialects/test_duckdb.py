@@ -1068,6 +1068,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("LIST_COSINE_DISTANCE(x, y)")
         self.validate_identity("LIST_DISTANCE(x, y)")
+        self.validate_identity("WITH UNNEST AS (SELECT 1 AS UNNEST) SELECT UNNEST FROM UNNEST")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

@@ -1486,3 +1486,20 @@ COMMENT='客户账户表'"""
         self.validate_identity("x % y").assert_is(exp.Mod)
         self.validate_identity("x MOD y", "x % y").assert_is(exp.Mod)
         self.validate_identity("MOD(x, y)", "x % y").assert_is(exp.Mod)
+
+    def test_valid_interval_units(self):
+        for unit in (
+            "SECOND_MICROSECOND",
+            "MINUTE_MICROSECOND",
+            "MINUTE_SECOND",
+            "HOUR_MICROSECOND",
+            "HOUR_SECOND",
+            "HOUR_MINUTE",
+            "DAY_MICROSECOND",
+            "DAY_SECOND",
+            "DAY_MINUTE",
+            "DAY_HOUR",
+            "YEAR_MONTH",
+        ):
+            with self.subTest(f"Testing INTERVAL unit: {unit}"):
+                self.validate_identity(f"DATE_ADD(base_date, INTERVAL day_interval {unit})")

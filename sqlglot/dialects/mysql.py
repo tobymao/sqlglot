@@ -180,6 +180,7 @@ class MySQL(Dialect):
     }
 
     VALID_INTERVAL_UNITS = {
+        *Dialect.VALID_INTERVAL_UNITS,
         "SECOND_MICROSECOND",
         "MINUTE_MICROSECOND",
         "MINUTE_SECOND",

@@ -5104,7 +5104,8 @@ class Parser(metaclass=_Parser):
             isinstance(this, exp.Column)
             and not this.table
             and not this.this.quoted
-            and this.name.upper() in ("IS", "ROWS")
+            and self._curr
+            and self._curr.text.upper() not in self.dialect.VALID_INTERVAL_UNITS
         ):
             self._retreat(index)
             return None

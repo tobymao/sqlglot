@@ -1487,7 +1487,7 @@ COMMENT='客户账户表'"""
         self.validate_identity("x MOD y", "x % y").assert_is(exp.Mod)
         self.validate_identity("MOD(x, y)", "x % y").assert_is(exp.Mod)
 
-    def test_valid_interval_untis(self):
+    def test_valid_interval_units(self):
         for unit in (
             "MINUTE_MICROSECOND",
             "MINUTE_SECOND",

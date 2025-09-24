@@ -5531,6 +5531,10 @@ class EuclideanDistance(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class JarowinklerSimilarity(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class AggFunc(Func):
     pass
 

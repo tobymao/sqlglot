@@ -535,6 +535,7 @@ class Snowflake(Dialect):
             exp.Length,
             exp.BitLength,
             exp.Levenshtein,
+            exp.JarowinklerSimilarity,
         },
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
@@ -593,6 +594,7 @@ class Snowflake(Dialect):
                 exp.Left,
                 exp.Pad,
                 exp.Right,
+                exp.Stuff,
                 exp.Substring,
             )
         },

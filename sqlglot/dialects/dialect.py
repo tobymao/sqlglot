@@ -292,6 +292,12 @@ class _Dialect(type):
                 TokenType.SEMI,
             }
 
+        klass.VALID_INTERVAL_UNITS = {
+            *klass.VALID_INTERVAL_UNITS,
+            *klass.DATE_PART_MAPPING.keys(),
+            *klass.DATE_PART_MAPPING.values(),
+        }
+
         return klass
 
 
@@ -551,6 +557,8 @@ class Dialect(metaclass=_Dialect):
     QUOTE_END = "'"
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
+
+    VALID_INTERVAL_UNITS: t.Set[str] = set()
 
     # Delimiters for bit, hex, byte and unicode literals
     BIT_START: t.Optional[str] = None

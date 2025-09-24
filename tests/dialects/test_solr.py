@@ -9,4 +9,4 @@ class TestSolr(Validator):
         self.validate_identity("SELECT `default`.column FROM t")
         self.failureException('SELECT "column" FROM t')
         self.validate_identity("SELECT column FROM t WHERE column = 'val'")
-        self.validate_identity("a || b").assert_is(exp.Or)
+        self.validate_identity("a || b", "a OR b").assert_is(exp.Or)

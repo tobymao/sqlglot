@@ -4243,7 +4243,7 @@ class Parser(metaclass=_Parser):
         if not self._match_pair(TokenType.UNNEST, TokenType.L_PAREN, advance=False):
             return None
 
-        self._match(TokenType.UNNEST)
+        self._advance()
 
         expressions = self._parse_wrapped_csv(self._parse_equality)
         offset = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)

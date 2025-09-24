@@ -1752,6 +1752,14 @@ JAROWINKLER_SIMILARITY('hello', 'world');
 INT;
 
 # dialect: snowflake
+INSERT('abc', 1, 2, 'Z');
+VARCHAR;
+
+# dialect: snowflake
+INSERT(tbl.bin_col, 1, 2, tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 

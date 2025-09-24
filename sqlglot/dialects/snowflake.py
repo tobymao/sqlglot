@@ -593,6 +593,7 @@ class Snowflake(Dialect):
                 exp.Left,
                 exp.Pad,
                 exp.Right,
+                exp.Stuff,
                 exp.Substring,
             )
         },

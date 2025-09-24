@@ -88,6 +88,7 @@ DIALECTS = [
     "RisingWave",
     "SingleStore",
     "Snowflake",
+    "Solr",
     "Spark",
     "Spark2",
     "SQLite",

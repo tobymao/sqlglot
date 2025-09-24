@@ -546,12 +546,6 @@ class DuckDB(Dialect):
 
             return table
 
-        def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
-            if not self._match_pair(TokenType.UNNEST, TokenType.L_PAREN, advance=False):
-                return None
-
-            return super()._parse_unnest(with_alias=with_alias)
-
         def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
             # https://duckdb.org/docs/sql/samples.html
             sample = super()._parse_table_sample(as_modifier=as_modifier)

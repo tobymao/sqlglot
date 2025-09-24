@@ -1588,7 +1588,7 @@ class Gen:
         kvs = []
         arg_types = list(node.arg_types)[arg_index:] if arg_index else node.arg_types
 
-        for k in arg_types or arg_types:
+        for k in arg_types:
             v = node.args.get(k)
 
             if v is not None:

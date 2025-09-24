@@ -1489,6 +1489,7 @@ COMMENT='客户账户表'"""
 
     def test_valid_interval_units(self):
         for unit in (
+            "SECOND_MICROSECOND",
             "MINUTE_MICROSECOND",
             "MINUTE_SECOND",
             "HOUR_MICROSECOND",

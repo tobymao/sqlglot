@@ -4240,8 +4240,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
-        if not self._match(TokenType.UNNEST):
+        if not self._match_pair(TokenType.UNNEST, TokenType.L_PAREN, advance=False):
             return None
+
+        self._advance()
 
         expressions = self._parse_wrapped_csv(self._parse_equality)
         offset = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)

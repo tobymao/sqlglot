@@ -1748,6 +1748,10 @@ INITCAP(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+JAROWINKLER_SIMILARITY('hello', 'world');
+INT;
+
+# dialect: snowflake
 INSERT('abc', 1, 2, 'Z');
 VARCHAR;
 

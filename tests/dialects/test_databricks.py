@@ -37,6 +37,17 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
         self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity("SELECT PARSE_JSON('{}')")
+
+        self.validate_identity("PARSE_URL('https://example.com/path')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'HOST')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'PATH')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'QUERY')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'QUERY', 'param')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'PROTOCOL')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'AUTHORITY')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'USERINFO')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'REF')")
+        self.validate_identity("PARSE_URL('https://example.com/path', 'FILE')")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )

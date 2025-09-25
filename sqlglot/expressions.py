@@ -6891,7 +6891,7 @@ class ParseJSON(Func):
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/parse_url
 # Databricks: https://docs.databricks.com/aws/en/sql/language-manual/functions/parse_url
 class ParseUrl(Func):
-    arg_types = {"this": True, "partToExtract": False, "key": False, "permissive": False}
+    arg_types = {"this": True, "part_to_extract": False, "key": False, "permissive": False}
 
 
 class ParseTime(Func):

@@ -1,6 +1,48 @@
 Changelog
 =========
 
+## [v27.18.0] - 2025-09-25
+### :boom: BREAKING CHANGES
+- due to [`7f13eaf`](https://github.com/tobymao/sqlglot/commit/7f13eaf7769a3381a56c9209af590835be2f95cd) - Annotate type for snowflake DECOMPRESS_BINARY function *(PR [#5945](https://github.com/tobymao/sqlglot/pull/5945) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake DECOMPRESS_BINARY function (#5945)
+
+- due to [`be12b29`](https://github.com/tobymao/sqlglot/commit/be12b29b5a7bd6d6e09dbd8c17086bd77c19abc0) - Annotate type for snowflake DECOMPRESS_STRING function *(PR [#5947](https://github.com/tobymao/sqlglot/pull/5947) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake DECOMPRESS_STRING function (#5947)
+
+- due to [`1573fef`](https://github.com/tobymao/sqlglot/commit/1573fefac27b5b1215e3d458f8ccf1b9dadbb772) - annotate types for Snowflake JAROWINKLER_SIMILARITY function *(PR [#5950](https://github.com/tobymao/sqlglot/pull/5950) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake JAROWINKLER_SIMILARITY function (#5950)
+
+- due to [`883c6ab`](https://github.com/tobymao/sqlglot/commit/883c6abe589865f478d95604e8d670e57afd04af) - annotate type for Snowflake COLLATION function *(PR [#5939](https://github.com/tobymao/sqlglot/pull/5939) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake COLLATION function (#5939)
+
+
+### :sparkles: New Features
+- [`7f13eaf`](https://github.com/tobymao/sqlglot/commit/7f13eaf7769a3381a56c9209af590835be2f95cd) - **optimizer**: Annotate type for snowflake DECOMPRESS_BINARY function *(PR [#5945](https://github.com/tobymao/sqlglot/pull/5945) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`be12b29`](https://github.com/tobymao/sqlglot/commit/be12b29b5a7bd6d6e09dbd8c17086bd77c19abc0) - **optimizer**: Annotate type for snowflake DECOMPRESS_STRING function *(PR [#5947](https://github.com/tobymao/sqlglot/pull/5947) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`a55fce5`](https://github.com/tobymao/sqlglot/commit/a55fce5310a50af132c5d06bb299fe3f025442c4) - **optimizer**: Annotate type for snowflake LPAD function *(PR [#5948](https://github.com/tobymao/sqlglot/pull/5948) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`05e07aa`](https://github.com/tobymao/sqlglot/commit/05e07aa740d7977a6b42ec15ae4fa9c2168a15f5) - **optimizer**: annotate type for Snowflake INSERT function *(PR [#5942](https://github.com/tobymao/sqlglot/pull/5942) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`6268e10`](https://github.com/tobymao/sqlglot/commit/6268e107a947badaa00508544f5389412806ecd0) - **solr**: initial dialect implementation *(PR [#5946](https://github.com/tobymao/sqlglot/pull/5946) by [@aadel](https://github.com/aadel))*
+- [`1573fef`](https://github.com/tobymao/sqlglot/commit/1573fefac27b5b1215e3d458f8ccf1b9dadbb772) - **optimizer**: annotate types for Snowflake JAROWINKLER_SIMILARITY function *(PR [#5950](https://github.com/tobymao/sqlglot/pull/5950) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`883c6ab`](https://github.com/tobymao/sqlglot/commit/883c6abe589865f478d95604e8d670e57afd04af) - **optimizer**: annotate type for Snowflake COLLATION function *(PR [#5939](https://github.com/tobymao/sqlglot/pull/5939) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`627c18d`](https://github.com/tobymao/sqlglot/commit/627c18d7da6bf644bc14c0f17963dea0be20604a) - **mysql**: add valid INTERVAL units *(PR [#5951](https://github.com/tobymao/sqlglot/pull/5951) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`3846d4d`](https://github.com/tobymao/sqlglot/commit/3846d4dcdf8cbf8e90b2661083a567ab0547ad3c) - **solr**: properly support OR alternative operator *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`df428d5`](https://github.com/tobymao/sqlglot/commit/df428d516113a47ae50d04cd50a250830589c072) - **parser**: interval identifier followed by END *(PR [#5944](https://github.com/tobymao/sqlglot/pull/5944) by [@geooo109](https://github.com/geooo109))*
+- [`e178d16`](https://github.com/tobymao/sqlglot/commit/e178d1674a71e6f35a6acfa8f4a317f0fe2e4516) - **duckdb**: UNNEST as table *(PR [#5953](https://github.com/tobymao/sqlglot/pull/5953) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#5952](https://github.com/tobymao/sqlglot/issues/5952) opened by [@denis-komarov](https://github.com/denis-komarov)*
+- [`24feb8e`](https://github.com/tobymao/sqlglot/commit/24feb8ee0bc43f3f14fd768c9a0d986355becea2) - **parser**: parse `UPDATE` clauses in any order *(PR [#5958](https://github.com/tobymao/sqlglot/pull/5958) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#5956](https://github.com/tobymao/sqlglot/issues/5956) opened by [@sfc-gh-clathrope](https://github.com/sfc-gh-clathrope)*
+- [`980f99a`](https://github.com/tobymao/sqlglot/commit/980f99a4cc0613012a189ee5636af37ec736040c) - **snowflake**: properly generate inferred `STRUCT` data types *(PR [#5954](https://github.com/tobymao/sqlglot/pull/5954) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`c18aaf8`](https://github.com/tobymao/sqlglot/commit/c18aaf80fd7375e89dfc8863da619d84f3257353) - cleanup *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v27.17.0] - 2025-09-23
 ### :boom: BREAKING CHANGES
 - due to [`f4ad258`](https://github.com/tobymao/sqlglot/commit/f4ad25882951de4e4442dfd5189a56d5a1c5e630) - Annotate types for Snowflake BASE64_DECODE_BINARY function *(PR [#5917](https://github.com/tobymao/sqlglot/pull/5917) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -7477,3 +7519,4 @@ Changelog
 [v27.16.2]: https://github.com/tobymao/sqlglot/compare/v27.16.1...v27.16.2
 [v27.16.3]: https://github.com/tobymao/sqlglot/compare/v27.16.2...v27.16.3
 [v27.17.0]: https://github.com/tobymao/sqlglot/compare/v27.16.3...v27.17.0
+[v27.18.0]: https://github.com/tobymao/sqlglot/compare/v27.17.0...v27.18.0

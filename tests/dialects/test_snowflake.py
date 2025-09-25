@@ -42,6 +42,20 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT LPAD('Hello', 10, '*')")
         self.validate_identity("SELECT LPAD(tbl.bin_col, 10)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
+        self.validate_all(
+            "POSITION('sub', 'string')",
+            write={"snowflake": "CHARINDEX('sub', 'string')"},
+        )
+        self.validate_all(
+            "POSITION('sub' IN 'string')",
+            write={"snowflake": "CHARINDEX('sub', 'string')"},
+        )
+        self.validate_all(
+            "POSITION('sub', 'string', 3)",
+            write={"snowflake": "CHARINDEX('sub', 'string', 3)"},
+        )
+        self.validate_identity("CHARINDEX('sub', 'string')")
+        self.validate_identity("CHARINDEX('sub', 'string', 3)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
         self.validate_identity("SELECT {*} FROM my_table")

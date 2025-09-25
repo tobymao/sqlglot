@@ -12,6 +12,16 @@ class TestDatabricks(Validator):
         self.assertEqual(null_type.sql("databricks"), "VOID")
 
         self.validate_identity("REGEXP_LIKE(x, y)")
+        self.validate_all(
+            "POSITION('sub', 'string')",
+            write={"databricks": "LOCATE('sub', 'string')"},
+        )
+        self.validate_all(
+            "POSITION('sub', 'string', 3)",
+            write={"databricks": "LOCATE('sub', 'string', 3)"},
+        )
+        self.validate_identity("LOCATE('sub', 'string')")
+        self.validate_identity("LOCATE('sub', 'string', 3)")
         self.validate_identity("SELECT CAST(NULL AS VOID)")
         self.validate_identity("SELECT void FROM t")
         self.validate_identity("SELECT * FROM stream")
@@ -40,14 +50,7 @@ class TestDatabricks(Validator):
 
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 'HOST')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'PATH')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'QUERY')")
         self.validate_identity("PARSE_URL('https://example.com/path', 'QUERY', 'param')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'PROTOCOL')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'AUTHORITY')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'USERINFO')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'REF')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'FILE')")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )

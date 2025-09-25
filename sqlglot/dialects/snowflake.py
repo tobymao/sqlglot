@@ -580,6 +580,9 @@ class Snowflake(Dialect):
         exp.DataType.Type.ARRAY: {
             exp.Split,
         },
+        exp.DataType.Type.OBJECT: {
+            exp.ParseUrl,
+        },
     }
 
     ANNOTATORS = {
@@ -733,6 +736,9 @@ class Snowflake(Dialect):
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
             "OCTET_LENGTH": exp.ByteLength.from_arg_list,
+            "PARSE_URL": lambda args: exp.ParseUrl(
+                this=seq_get(args, 0), permissive=seq_get(args, 1)
+            ),
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),

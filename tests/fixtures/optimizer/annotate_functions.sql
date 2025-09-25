@@ -1800,6 +1800,14 @@ LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+OCTET_LENGTH(tbl.str_col);
+INT;
+
+# dialect: snowflake
+OCTET_LENGTH(tbl.bin_col);
+INT;
+
+# dialect: snowflake
 LOWER(tbl.str_col);
 VARCHAR;
 

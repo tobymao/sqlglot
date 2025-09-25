@@ -1673,3 +1673,13 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         annotated = optimizer.annotate_types.annotate_types(qualified, dialect="bigquery")
 
         assert annotated.selects[0].type == exp.DataType.build("VARCHAR")
+
+    def test_annotate_object_construct(self):
+        sql = "SELECT OBJECT_CONSTRUCT('foo', 'bar', 'a b', 'c d') AS c"
+
+        query = parse_one(sql, dialect="snowflake")
+        annotated = optimizer.annotate_types.annotate_types(query, dialect="snowflake")
+
+        self.assertEqual(
+            annotated.selects[0].type.sql("snowflake"), 'OBJECT("foo" VARCHAR, "a b" VARCHAR)'
+        )

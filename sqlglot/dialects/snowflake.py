@@ -1509,13 +1509,23 @@ class Snowflake(Dialect):
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             expressions = expression.expressions
-            if (
-                expressions
-                and expression.is_type(*exp.DataType.STRUCT_TYPES)
-                and any(isinstance(field_type, exp.DataType) for field_type in expressions)
-            ):
-                # The correct syntax is OBJECT [ (<key> <value_type [NOT NULL] [, ...]) ]
-                return "OBJECT"
+            if expressions and expression.is_type(*exp.DataType.STRUCT_TYPES):
+                for field_type in expressions:
+                    # The correct syntax is OBJECT [ (<key> <value_type [NOT NULL] [, ...]) ]
+                    if isinstance(field_type, exp.DataType):
+                        return "OBJECT"
+                    if (
+                        isinstance(field_type, exp.ColumnDef)
+                        and field_type.this
+                        and field_type.this.is_string
+                    ):
+                        # Doing OBJECT('foo' VARCHAR) is invalid snowflake Syntax. Moreover, besides
+                        # converting 'foo' into an identifier, we also need to quote it because these
+                        # keys are case-sensitive. For example:
+                        #
+                        # WITH t AS (SELECT OBJECT_CONSTRUCT('x', 'y') AS c) SELECT c:x FROM t -- correct
+                        # WITH t AS (SELECT OBJECT_CONSTRUCT('x', 'y') AS c) SELECT c:X FROM t -- incorrect, returns NULL
+                        field_type.this.replace(exp.to_identifier(field_type.name, quoted=True))
 
             return super().datatype_sql(expression)
 

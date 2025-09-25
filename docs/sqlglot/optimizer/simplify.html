@@ -1961,7 +1961,7 @@
 </span><span id="L-1588"><a href="#L-1588"><span class="linenos">1588</span></a>        <span class="n">kvs</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="L-1589"><a href="#L-1589"><span class="linenos">1589</span></a>        <span class="n">arg_types</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">arg_types</span><span class="p">)[</span><span class="n">arg_index</span><span class="p">:]</span> <span class="k">if</span> <span class="n">arg_index</span> <span class="k">else</span> <span class="n">node</span><span class="o">.</span><span class="n">arg_types</span>
 </span><span id="L-1590"><a href="#L-1590"><span class="linenos">1590</span></a>
-</span><span id="L-1591"><a href="#L-1591"><span class="linenos">1591</span></a>        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg_types</span> <span class="ow">or</span> <span class="n">arg_types</span><span class="p">:</span>
+</span><span id="L-1591"><a href="#L-1591"><span class="linenos">1591</span></a>        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg_types</span><span class="p">:</span>
 </span><span id="L-1592"><a href="#L-1592"><span class="linenos">1592</span></a>            <span class="n">v</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 </span><span id="L-1593"><a href="#L-1593"><span class="linenos">1593</span></a>
 </span><span id="L-1594"><a href="#L-1594"><span class="linenos">1594</span></a>            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -3225,7 +3225,7 @@ prefix are statically known.</p>
                     <div class="attr variable">
             <span class="name">DATETRUNC_COMPARISONS</span>        =
 <input id="DATETRUNC_COMPARISONS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="DATETRUNC_COMPARISONS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#In">sqlglot.expressions.In</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LTE">sqlglot.expressions.LTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LT">sqlglot.expressions.LT</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#EQ">sqlglot.expressions.EQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GTE">sqlglot.expressions.GTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#NEQ">sqlglot.expressions.NEQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GT">sqlglot.expressions.GT</a>&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="DATETRUNC_COMPARISONS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#NEQ">sqlglot.expressions.NEQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GT">sqlglot.expressions.GT</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#In">sqlglot.expressions.In</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LTE">sqlglot.expressions.LTE</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LT">sqlglot.expressions.LT</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#EQ">sqlglot.expressions.EQ</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#GTE">sqlglot.expressions.GTE</a>&#39;&gt;}</span>
 
         
     </div>
@@ -3309,7 +3309,7 @@ prefix are statically known.</p>
                 <section id="JOINS">
                     <div class="attr variable">
             <span class="name">JOINS</span>        =
-<span class="default_value">{(&#39;RIGHT&#39;, &#39;&#39;), (&#39;&#39;, &#39;INNER&#39;), (&#39;RIGHT&#39;, &#39;OUTER&#39;), (&#39;&#39;, &#39;&#39;)}</span>
+<span class="default_value">{(&#39;&#39;, &#39;INNER&#39;), (&#39;RIGHT&#39;, &#39;&#39;), (&#39;RIGHT&#39;, &#39;OUTER&#39;), (&#39;&#39;, &#39;&#39;)}</span>
 
         
     </div>
@@ -4089,7 +4089,7 @@ generator is expensive so we have a bare minimum sql generator here.</p>
 </span><span id="Gen-1589"><a href="#Gen-1589"><span class="linenos">1589</span></a>        <span class="n">kvs</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="Gen-1590"><a href="#Gen-1590"><span class="linenos">1590</span></a>        <span class="n">arg_types</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">arg_types</span><span class="p">)[</span><span class="n">arg_index</span><span class="p">:]</span> <span class="k">if</span> <span class="n">arg_index</span> <span class="k">else</span> <span class="n">node</span><span class="o">.</span><span class="n">arg_types</span>
 </span><span id="Gen-1591"><a href="#Gen-1591"><span class="linenos">1591</span></a>
-</span><span id="Gen-1592"><a href="#Gen-1592"><span class="linenos">1592</span></a>        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg_types</span> <span class="ow">or</span> <span class="n">arg_types</span><span class="p">:</span>
+</span><span id="Gen-1592"><a href="#Gen-1592"><span class="linenos">1592</span></a>        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg_types</span><span class="p">:</span>
 </span><span id="Gen-1593"><a href="#Gen-1593"><span class="linenos">1593</span></a>            <span class="n">v</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 </span><span id="Gen-1594"><a href="#Gen-1594"><span class="linenos">1594</span></a>
 </span><span id="Gen-1595"><a href="#Gen-1595"><span class="linenos">1595</span></a>            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

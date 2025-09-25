@@ -3123,21 +3123,26 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_update(self) -> exp.Update:
-        this = self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS)
-        expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
-        returning = self._parse_returning()
-        return self.expression(
-            exp.Update,
-            **{  # type: ignore
-                "this": this,
-                "expressions": expressions,
-                "from": self._parse_from(joins=True),
-                "where": self._parse_where(),
-                "returning": returning or self._parse_returning(),
-                "order": self._parse_order(),
-                "limit": self._parse_limit(),
-            },
-        )
+        kwargs: t.Dict[str, t.Any] = {
+            "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+        }
+        while self._curr:
+            if self._match(TokenType.SET):
+                kwargs["expressions"] = self._parse_csv(self._parse_equality)
+            elif self._match(TokenType.RETURNING, advance=False):
+                kwargs["returning"] = self._parse_returning()
+            elif self._match(TokenType.FROM, advance=False):
+                kwargs["from"] = self._parse_from(joins=True)
+            elif self._match(TokenType.WHERE, advance=False):
+                kwargs["where"] = self._parse_where()
+            elif self._match(TokenType.ORDER_BY, advance=False):
+                kwargs["order"] = self._parse_order()
+            elif self._match(TokenType.LIMIT, advance=False):
+                kwargs["limit"] = self._parse_limit()
+            else:
+                break
+
+        return self.expression(exp.Update, **kwargs)
 
     def _parse_use(self) -> exp.Use:
         return self.expression(

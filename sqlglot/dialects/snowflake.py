@@ -580,6 +580,9 @@ class Snowflake(Dialect):
         exp.DataType.Type.ARRAY: {
             exp.Split,
         },
+        exp.DataType.Type.OBJECT: {
+            exp.ParseUrl,
+        },
     }
 
     ANNOTATORS = {

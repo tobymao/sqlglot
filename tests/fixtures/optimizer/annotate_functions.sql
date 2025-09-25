@@ -1808,6 +1808,14 @@ OCTET_LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+PARSE_URL('https://example.com/path');
+OBJECT;
+
+# dialect: snowflake
+PARSE_URL(tbl.str_col, 0);
+OBJECT;
+
+# dialect: snowflake
 LOWER(tbl.str_col);
 VARCHAR;
 

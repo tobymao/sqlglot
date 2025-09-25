@@ -42,6 +42,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT LPAD('Hello', 10, '*')")
         self.validate_identity("SELECT LPAD(tbl.bin_col, 10)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
+        self.validate_identity("SELECT PARSE_URL('https://example.com/path', 1)")
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")
         self.validate_identity("SELECT {* ILIKE 'col1%'} FROM my_table")
@@ -1184,6 +1185,12 @@ class TestSnowflake(Validator):
             read={
                 "bigquery": "BYTE_LENGTH('A')",
                 "snowflake": "OCTET_LENGTH('A')",
+            },
+        )
+        self.validate_all(
+            "PARSE_URL('https://example.com/path')",
+            read={
+                "snowflake": "PARSE_URL('https://example.com/path')",
             },
         )
 

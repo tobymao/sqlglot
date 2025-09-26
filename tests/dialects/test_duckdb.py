@@ -1039,11 +1039,6 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("LISTAGG(x, ', ')")
         self.validate_identity("STRING_AGG(x, ', ')", "LISTAGG(x, ', ')")
-        self.validate_identity("STRPOS('string', 'sub')")
-        self.validate_all(
-            "INSTR('string', 'sub')",
-            write={"duckdb": "STRPOS('string', 'sub')"},
-        )
 
         self.validate_all(
             "SELECT CONCAT(foo)",

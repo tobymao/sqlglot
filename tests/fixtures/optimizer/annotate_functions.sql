@@ -1820,6 +1820,10 @@ POSITION('abc' IN 'abcdef');
 INT;
 
 # dialect: snowflake
+POSITION('abc', 'abcdef');
+INT;
+
+# dialect: snowflake
 POSITION('abc', 'abcdef', 1);
 INT;
 

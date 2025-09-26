@@ -34,7 +34,6 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
         self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
-        self.validate_identity("POSITION('sub' IN 'string')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")

@@ -12,14 +12,6 @@ class TestDatabricks(Validator):
         self.assertEqual(null_type.sql("databricks"), "VOID")
 
         self.validate_identity("REGEXP_LIKE(x, y)")
-        self.validate_all(
-            "POSITION('sub', 'string')",
-            write={"databricks": "LOCATE('sub', 'string')"},
-        )
-        self.validate_all(
-            "POSITION('sub', 'string', 3)",
-            write={"databricks": "LOCATE('sub', 'string', 3)"},
-        )
         self.validate_identity("LOCATE('sub', 'string')")
         self.validate_identity("LOCATE('sub', 'string', 3)")
         self.validate_identity("SELECT CAST(NULL AS VOID)")

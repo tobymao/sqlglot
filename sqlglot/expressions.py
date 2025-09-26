@@ -7241,6 +7241,15 @@ class RegexpSplit(Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
+class RegexpCount(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "parameters": False,
+    }
+
+
 class Repeat(Func):
     arg_types = {"this": True, "times": True}
 

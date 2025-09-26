@@ -583,6 +583,9 @@ class Snowflake(Dialect):
         exp.DataType.Type.OBJECT: {
             exp.ParseUrl,
         },
+        exp.DataType.Type.DECIMAL: {
+            exp.RegexpCount,
+        },
     }
 
     ANNOTATORS = {
@@ -604,6 +607,9 @@ class Snowflake(Dialect):
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
+        exp.RegexpCount: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("NUMBER", dialect="snowflake")
+        ),
     }
 
     TIME_MAPPING = {

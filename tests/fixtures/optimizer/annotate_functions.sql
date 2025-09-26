@@ -1840,6 +1840,14 @@ BOOLEAN;
 BOOLEAN;
 
 # dialect: snowflake
+REGEXP('foo', 'bar', 'i');
+BOOLEAN;
+
+# dialect: snowflake
+'text123' REGEXP '^[a-z]+[0-9]+$';
+BOOLEAN;
+
+# dialect: snowflake
 REGEXP_LIKE('foo', 'bar');
 BOOLEAN;
 

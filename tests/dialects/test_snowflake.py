@@ -103,14 +103,6 @@ class TestSnowflake(Validator):
         self.validate_identity("$x")  # parameter
         self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
-        self.validate_all(
-            "SELECT a REGEXP b",
-            write={"snowflake": "SELECT REGEXP_LIKE(a, b)"},
-        )
-        self.validate_all(
-            "SELECT a NOT REGEXP b",
-            write={"snowflake": "SELECT NOT REGEXP_LIKE(a, b)"},
-        )
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
@@ -1027,6 +1019,24 @@ class TestSnowflake(Validator):
                 "hive": "SELECT a RLIKE b",
                 "snowflake": "SELECT REGEXP_LIKE(a, b)",
                 "spark": "SELECT a RLIKE b",
+            },
+        )
+        self.validate_all(
+            "'foo' REGEXP 'bar'",
+            write={
+                "snowflake": "REGEXP_LIKE('foo', 'bar')",
+                "postgres": "'foo' ~ 'bar'",
+                "mysql": "REGEXP_LIKE('foo', 'bar')",
+                "bigquery": "REGEXP_CONTAINS('foo', 'bar')",
+            },
+        )
+        self.validate_all(
+            "'foo' NOT REGEXP 'bar'",
+            write={
+                "snowflake": "NOT REGEXP_LIKE('foo', 'bar')",
+                "postgres": "NOT 'foo' ~ 'bar'",
+                "mysql": "NOT REGEXP_LIKE('foo', 'bar')",
+                "bigquery": "NOT REGEXP_CONTAINS('foo', 'bar')",
             },
         )
         self.validate_all(

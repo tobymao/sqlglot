@@ -6426,9 +6426,11 @@ class ToBase64(Func):
 class Base64DecodeBinary(Func):
     arg_types = {"this": True, "alphabet": False}
 
+
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_string
 class Base64DecodeString(Func):
     arg_types = {"this": True, "alphabet": False}
+
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_encode
 class Base64Encode(Func):

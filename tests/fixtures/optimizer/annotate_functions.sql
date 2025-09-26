@@ -2144,6 +2144,10 @@ TRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
+TRY_BASE64_DECODE_BINARY('SGVsbG8=');
+BINARY;
+
+# dialect: snowflake
 TRY_BASE64_DECODE_BINARY('SGVsbG8=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
 BINARY;
 

@@ -6439,7 +6439,7 @@ class Base64Encode(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_base64_decode_binary
 class TryBase64DecodeBinary(Func):
-    arg_types = {"this": True, "alphabet": True}
+    arg_types = {"this": True, "alphabet": False}
 
 
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp

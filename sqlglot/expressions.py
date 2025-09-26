@@ -6924,6 +6924,10 @@ class Length(Func):
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
+class RtrimmedLength(Func):
+    arg_types = {"this": True}
+
+
 class BitLength(Func):
     pass
 

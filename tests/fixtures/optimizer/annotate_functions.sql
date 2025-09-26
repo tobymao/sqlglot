@@ -1956,6 +1956,10 @@ RTRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
+RTRIMMED_LENGTH(' ABCD ');
+INT;
+
+# dialect: snowflake
 SHA1('foo');
 VARCHAR;
 

@@ -6449,7 +6449,7 @@ class TryBase64DecodeString(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_hex_decode_binary
 class TryHexDecodeBinary(Func):
-    arg_types = {"this": True}
+    pass
 
 
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp

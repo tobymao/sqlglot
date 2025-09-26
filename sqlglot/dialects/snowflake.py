@@ -582,6 +582,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.OBJECT: {
             exp.ParseUrl,
+            exp.ParseIp,
         },
     }
 

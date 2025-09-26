@@ -2160,6 +2160,10 @@ TRY_BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
 VARCHAR;
 
 # dialect: snowflake
+TRY_HEX_DECODE_BINARY('48656C6C6F');
+BINARY;
+
+# dialect: snowflake
 UPPER('Hello, world!');
 VARCHAR;
 

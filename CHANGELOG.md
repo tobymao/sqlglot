@@ -1,6 +1,46 @@
 Changelog
 =========
 
+## [v27.19.0] - 2025-09-26
+### :boom: BREAKING CHANGES
+- due to [`68473ac`](https://github.com/tobymao/sqlglot/commit/68473ac3ec8dc76512dc76819892a1b0324c7ddc) - Annotate type for snowflake PARSE_URL function *(PR [#5962](https://github.com/tobymao/sqlglot/pull/5962) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake PARSE_URL function (#5962)
+
+- due to [`b015a9d`](https://github.com/tobymao/sqlglot/commit/b015a9d944d0a87069a7750ad74953c399d7da34) - annotate type for Snowflake REGEXP_INSTR function *(commit by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake REGEXP_INSTR function
+
+- due to [`1f29ba7`](https://github.com/tobymao/sqlglot/commit/1f29ba710f4213beb1a2f993244d7d824f3536ce) - annotate type for Snowflake PARSE_IP function *(PR [#5961](https://github.com/tobymao/sqlglot/pull/5961) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake PARSE_IP function (#5961)
+
+- due to [`bf45d5d`](https://github.com/tobymao/sqlglot/commit/bf45d5d3cb0c0f380824019eb32ec29049268a61) - annotate types for Snowflake RTRIMMED_LENGTH function *(PR [#5968](https://github.com/tobymao/sqlglot/pull/5968) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate types for Snowflake RTRIMMED_LENGTH function (#5968)
+
+- due to [`13caa69`](https://github.com/tobymao/sqlglot/commit/13caa6991f003ad7abb590073451e591b6fd888c) - Annotate type for snowflake POSITION function *(PR [#5964](https://github.com/tobymao/sqlglot/pull/5964) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake POSITION function (#5964)
+
+
+### :sparkles: New Features
+- [`88e4e4c`](https://github.com/tobymao/sqlglot/commit/88e4e4c55f3a113127eb3c82c0be46c29bcf15ab) - **optimizer**: Annotate type for OCTET_LENGTH function *(PR [#5960](https://github.com/tobymao/sqlglot/pull/5960) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`68473ac`](https://github.com/tobymao/sqlglot/commit/68473ac3ec8dc76512dc76819892a1b0324c7ddc) - **optimizer**: Annotate type for snowflake PARSE_URL function *(PR [#5962](https://github.com/tobymao/sqlglot/pull/5962) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`b015a9d`](https://github.com/tobymao/sqlglot/commit/b015a9d944d0a87069a7750ad74953c399d7da34) - **optimizer**: annotate type for Snowflake REGEXP_INSTR function *(commit by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`1f29ba7`](https://github.com/tobymao/sqlglot/commit/1f29ba710f4213beb1a2f993244d7d824f3536ce) - **optimizer**: annotate type for Snowflake PARSE_IP function *(PR [#5961](https://github.com/tobymao/sqlglot/pull/5961) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`bf45d5d`](https://github.com/tobymao/sqlglot/commit/bf45d5d3cb0c0f380824019eb32ec29049268a61) - **optimizer**: annotate types for Snowflake RTRIMMED_LENGTH function *(PR [#5968](https://github.com/tobymao/sqlglot/pull/5968) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`13caa69`](https://github.com/tobymao/sqlglot/commit/13caa6991f003ad7abb590073451e591b6fd888c) - **optimizer**: Annotate type for snowflake POSITION function *(PR [#5964](https://github.com/tobymao/sqlglot/pull/5964) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`1471306`](https://github.com/tobymao/sqlglot/commit/1471306ed317830c294e3654075f55424d14bf5a) - support parse into grant principal and privilege *(PR [#5971](https://github.com/tobymao/sqlglot/pull/5971) by [@eakmanrq](https://github.com/eakmanrq))*
+
+### :bug: Bug Fixes
+- [`5432976`](https://github.com/tobymao/sqlglot/commit/543297680755344185e0f306843bc4909f4f75ed) - **bigquery**: allow GRANT as an id var *(PR [#5965](https://github.com/tobymao/sqlglot/pull/5965) by [@treysp](https://github.com/treysp))*
+
+### :wrench: Chores
+- [`1514bc6`](https://github.com/tobymao/sqlglot/commit/1514bc640ec129a96aedd9e89bfd5d61e832d6b1) - **optimizer**: add type inference tests for Snowflake RPAD function *(PR [#5967](https://github.com/tobymao/sqlglot/pull/5967) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`050b89d`](https://github.com/tobymao/sqlglot/commit/050b89deb9be842f2ddd07c78ea201ec4eae4779) - **optimizer**: Annotate type for snowflake regexp function *(PR [#5970](https://github.com/tobymao/sqlglot/pull/5970) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+
 ## [v27.18.0] - 2025-09-25
 ### :boom: BREAKING CHANGES
 - due to [`7f13eaf`](https://github.com/tobymao/sqlglot/commit/7f13eaf7769a3381a56c9209af590835be2f95cd) - Annotate type for snowflake DECOMPRESS_BINARY function *(PR [#5945](https://github.com/tobymao/sqlglot/pull/5945) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -9687,3 +9727,4 @@ Changelog
 [v27.16.3]: https://github.com/tobymao/sqlglot/compare/v27.16.2...v27.16.3
 [v27.17.0]: https://github.com/tobymao/sqlglot/compare/v27.16.3...v27.17.0
 [v27.18.0]: https://github.com/tobymao/sqlglot/compare/v27.17.0...v27.18.0
+[v27.19.0]: https://github.com/tobymao/sqlglot/compare/v27.18.0...v27.19.0

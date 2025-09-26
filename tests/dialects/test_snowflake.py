@@ -1027,6 +1027,24 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "'foo' REGEXP 'bar'",
+            write={
+                "snowflake": "REGEXP_LIKE('foo', 'bar')",
+                "postgres": "'foo' ~ 'bar'",
+                "mysql": "REGEXP_LIKE('foo', 'bar')",
+                "bigquery": "REGEXP_CONTAINS('foo', 'bar')",
+            },
+        )
+        self.validate_all(
+            "'foo' NOT REGEXP 'bar'",
+            write={
+                "snowflake": "NOT REGEXP_LIKE('foo', 'bar')",
+                "postgres": "NOT 'foo' ~ 'bar'",
+                "mysql": "NOT REGEXP_LIKE('foo', 'bar')",
+                "bigquery": "NOT REGEXP_CONTAINS('foo', 'bar')",
+            },
+        )
+        self.validate_all(
             "SELECT a FROM test pivot",
             write={
                 "snowflake": "SELECT a FROM test AS pivot",

@@ -6442,6 +6442,11 @@ class TryBase64DecodeBinary(Func):
     arg_types = {"this": True, "alphabet": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/try_base64_decode_string
+class TryBase64DecodeString(Func):
+    arg_types = {"this": True, "alphabet": False}
+
+
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp
 class FromISO8601Timestamp(Func):
     _sql_names = ["FROM_ISO8601_TIMESTAMP"]

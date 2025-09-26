@@ -6925,7 +6925,7 @@ class Length(Func):
 
 
 class RtrimmedLength(Func):
-    arg_types = {"this": True}
+    pass
 
 
 class BitLength(Func):

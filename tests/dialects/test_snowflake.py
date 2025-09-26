@@ -1404,6 +1404,8 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT TRY_HEX_DECODE_BINARY('48656C6C6F')")
 
+        self.validate_identity("SELECT TRY_HEX_DECODE_STRING('48656C6C6F')")
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

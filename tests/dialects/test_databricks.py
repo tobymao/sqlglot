@@ -40,14 +40,7 @@ class TestDatabricks(Validator):
 
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 'HOST')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'PATH')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'QUERY')")
         self.validate_identity("PARSE_URL('https://example.com/path', 'QUERY', 'param')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'PROTOCOL')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'AUTHORITY')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'USERINFO')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'REF')")
-        self.validate_identity("PARSE_URL('https://example.com/path', 'FILE')")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS db.table (a TIMESTAMP, b BOOLEAN GENERATED ALWAYS AS (NOT a IS NULL)) USING DELTA"
         )

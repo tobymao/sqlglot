@@ -50,12 +50,14 @@ pip3 install "sqlglot[rs]"
 Or with a local checkout:
 
 ```
+# Optionally prefix with UV=1 to use uv for the installation
 make install
 ```
 
 Requirements for development (optional):
 
 ```
+# Optionally prefix with UV=1 to use uv for the installation
 make install-dev
 ```
 

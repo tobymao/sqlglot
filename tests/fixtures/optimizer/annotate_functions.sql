@@ -1856,6 +1856,18 @@ LTRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
+'foo' REGEXP 'bar';
+BOOLEAN;
+
+# dialect: snowflake
+'foo' NOT REGEXP 'bar';
+BOOLEAN;
+
+# dialect: snowflake
+'text123' REGEXP '^[a-z]+[0-9]+$';
+BOOLEAN;
+
+# dialect: snowflake
 REGEXP_LIKE('foo', 'bar');
 BOOLEAN;
 

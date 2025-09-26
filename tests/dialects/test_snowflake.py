@@ -31,6 +31,7 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
+        self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
         self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
         self.validate_identity("SELECT HEX_ENCODE('Hello World')")
         self.validate_identity("SELECT HEX_ENCODE('Hello World', 1)")

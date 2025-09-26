@@ -1813,6 +1813,7 @@ WHERE
         self.validate_identity("TO_JSON(9999999999, stringify_wide_numbers => FALSE)")
         self.validate_identity("RANGE_BUCKET(20, [0, 10, 20, 30, 40])")
         self.validate_identity("SELECT TRANSLATE(MODEL, 'in', 't') FROM (SELECT 'input' AS MODEL)")
+        self.validate_identity("SELECT GRANT FROM (SELECT 'input' AS GRANT)")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

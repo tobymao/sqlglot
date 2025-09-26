@@ -333,7 +333,9 @@ def _build_like(expr_type: t.Type[E]) -> t.Callable[[t.List], E | exp.Escape]:
     return _builder
 
 
-def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:
+def _regexpextract_sql(
+    self, expression: exp.RegexpExtract | exp.RegexpExtractAll | exp.RegexpSubstrAll
+) -> str:
     # Other dialects don't support all of the following parameters, so we need to
     # generate default values as necessary to ensure the transpilation is correct
     group = expression.args.get("group")
@@ -347,8 +349,15 @@ def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAl
     occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))
     position = expression.args.get("position") or (occurrence and exp.Literal.number(1))
 
+    if isinstance(expression, exp.RegexpExtract):
+        func_name = "REGEXP_SUBSTR"
+    elif isinstance(expression, exp.RegexpSubstrAll):
+        func_name = "REGEXP_SUBSTR_ALL"
+    else:  # exp.RegexpExtractAll
+        func_name = "REGEXP_EXTRACT_ALL"
+
     return self.func(
-        "REGEXP_SUBSTR" if isinstance(expression, exp.RegexpExtract) else "REGEXP_EXTRACT_ALL",
+        func_name,
         expression.this,
         expression.expression,
         position,
@@ -585,6 +594,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.ARRAY: {
             exp.Split,
+            exp.RegexpSubstrAll,
         },
         exp.DataType.Type.OBJECT: {
             exp.ParseUrl,
@@ -755,7 +765,7 @@ class Snowflake(Dialect):
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
-            "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
+            "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpSubstrAll),
             "REPLACE": build_replace_with_optional_replacement,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SHA1_BINARY": exp.SHA1Digest.from_arg_list,
@@ -1424,6 +1434,7 @@ class Snowflake(Dialect):
             exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
             exp.RegexpExtract: _regexpextract_sql,
             exp.RegexpExtractAll: _regexpextract_sql,
+            exp.RegexpSubstrAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(

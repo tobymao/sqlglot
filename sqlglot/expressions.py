@@ -7256,6 +7256,17 @@ class RegexpExtractAll(Func):
     }
 
 
+class RegexpSubstrAll(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+        "group": False,
+    }
+
+
 class RegexpReplace(Func):
     arg_types = {
         "this": True,

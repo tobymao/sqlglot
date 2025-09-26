@@ -1884,6 +1884,18 @@ REGEXP_LIKE('foo', NULL, 'baz');
 BOOLEAN;
 
 # dialect: snowflake
+REGEXP_COUNT('hello world', 'l');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+REGEXP_COUNT('hello world', 'l', 1);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+REGEXP_COUNT('hello world', 'l', 1, 'i');
+DECIMAL(38, 0);
+
+# dialect: snowflake
 REGEXP_REPLACE('hello world', 'world', 'universe');
 VARCHAR;
 

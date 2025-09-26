@@ -576,7 +576,6 @@ class Snowflake(Dialect):
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BIGINT],
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
-            exp.RegexpInstr,
         },
         exp.DataType.Type.ARRAY: {
             exp.Split,

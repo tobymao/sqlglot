@@ -6452,6 +6452,11 @@ class TryHexDecodeBinary(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/try_hex_decode_string
+class TryHexDecodeString(Func):
+    pass
+
+
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp
 class FromISO8601Timestamp(Func):
     _sql_names = ["FROM_ISO8601_TIMESTAMP"]

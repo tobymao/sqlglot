@@ -2164,6 +2164,10 @@ TRY_HEX_DECODE_BINARY('48656C6C6F');
 BINARY;
 
 # dialect: snowflake
+TRY_HEX_DECODE_STRING('48656C6C6F');
+VARCHAR;
+
+# dialect: snowflake
 UPPER('Hello, world!');
 VARCHAR;
 

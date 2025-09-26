@@ -6894,6 +6894,10 @@ class ParseUrl(Func):
     arg_types = {"this": True, "part_to_extract": False, "key": False, "permissive": False}
 
 
+class ParseIp(Func):
+    arg_types = {"this": True, "type": True, "permissive": False}
+
+
 class ParseTime(Func):
     arg_types = {"this": True, "format": True}
 

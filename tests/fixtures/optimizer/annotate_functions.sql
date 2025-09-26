@@ -2187,6 +2187,10 @@ BOOLEAN;
 ILIKE(tbl.str_col, 'pattern');
 BOOLEAN;
 
+# dialect: snowflake
+PARSE_IP('192.168.1.1', 'INET');
+OBJECT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

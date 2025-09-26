@@ -1029,3 +1029,24 @@ class TestParser(unittest.TestCase):
             parse_one(sql, error_level=ErrorLevel.IGNORE).sql(),
             "SELECT * FROM a WHERE c = 'false'",
         )
+
+    def test_parse_into_grant_principal(self):
+        self.assertIsInstance(parse_one("ROLE blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
+        self.assertIsInstance(parse_one("GROUP blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
+        self.assertIsInstance(parse_one("blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
+        self.assertIsInstance(
+            parse_one("ROLE `blah`", into=exp.GrantPrincipal, dialect="databricks"),
+            exp.GrantPrincipal,
+        )
+        self.assertEqual(
+            parse_one("ROLE `blah`", into=exp.GrantPrincipal, dialect="databricks").sql(
+                dialect="databricks"
+            ),
+            "ROLE `blah`",
+        )
+
+    def test_parse_into_grant_privilege(self):
+        self.assertIsInstance(parse_one("SELECT", into=exp.GrantPrivilege), exp.GrantPrivilege)
+        self.assertIsInstance(
+            parse_one("ALL PRIVILEGES", into=exp.GrantPrivilege), exp.GrantPrivilege
+        )

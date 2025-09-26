@@ -809,6 +809,8 @@ class Parser(metaclass=_Parser):
         exp.DataType: lambda self: self._parse_types(allow_identifiers=False, schema=True),
         exp.Expression: lambda self: self._parse_expression(),
         exp.From: lambda self: self._parse_from(joins=True),
+        exp.GrantPrincipal: lambda self: self._parse_grant_principal(),
+        exp.GrantPrivilege: lambda self: self._parse_grant_privilege(),
         exp.Group: lambda self: self._parse_group(),
         exp.Having: lambda self: self._parse_having(),
         exp.Hint: lambda self: self._parse_hint_body(),

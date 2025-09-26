@@ -6928,6 +6928,10 @@ class Length(Func):
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
+class RtrimmedLength(Func):
+    pass
+
+
 class BitLength(Func):
     pass
 

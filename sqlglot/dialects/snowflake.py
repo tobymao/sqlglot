@@ -534,6 +534,7 @@ class Snowflake(Dialect):
             exp.Ascii,
             exp.ByteLength,
             exp.Length,
+            exp.RtrimmedLength,
             exp.BitLength,
             exp.Levenshtein,
             exp.JarowinklerSimilarity,

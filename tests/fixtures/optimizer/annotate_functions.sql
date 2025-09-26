@@ -1848,6 +1848,30 @@ REGEXP_LIKE('foo', NULL, 'baz');
 BOOLEAN;
 
 # dialect: snowflake
+REGEXP_INSTR('Hello World', 'World');
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('Hello World', 'World', 1);
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('Hello World', 'World', 1, 1);
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('Hello World', 'World', 1, 1, 0);
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('Hello World', 'World', 1, 1, 0, 'i');
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('Hello World', 'World', 1, 1, 0, 'i', 1);
+BIGINT;
+
+# dialect: snowflake
 REGEXP_REPLACE('hello world', 'world', 'universe');
 VARCHAR;
 

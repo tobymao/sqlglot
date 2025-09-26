@@ -1828,6 +1828,18 @@ PARSE_URL(tbl.str_col, 0);
 OBJECT;
 
 # dialect: snowflake
+POSITION('abc' IN 'abcdef');
+INT;
+
+# dialect: snowflake
+POSITION('abc', 'abcdef');
+INT;
+
+# dialect: snowflake
+POSITION('abc', 'abcdef', 1);
+INT;
+
+# dialect: snowflake
 LOWER(tbl.str_col);
 VARCHAR;
 

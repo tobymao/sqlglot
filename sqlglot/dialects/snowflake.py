@@ -543,6 +543,7 @@ class Snowflake(Dialect):
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
             exp.Base64DecodeString,
+            exp.TryBase64DecodeString,
             exp.Base64Encode,
             exp.DecompressString,
             exp.MD5,

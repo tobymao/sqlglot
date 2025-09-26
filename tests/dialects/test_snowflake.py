@@ -2425,6 +2425,11 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")
 
+        self.validate_identity("SELECT REGEXP_INSTR('hello world', 'world')")
+        self.validate_identity("SELECT REGEXP_INSTR('hello world', 'world', 1, 1, 0)")
+        self.validate_identity("SELECT REGEXP_INSTR('hello world', 'world', 1, 1, 0, 'i')")
+        self.validate_identity("SELECT REGEXP_INSTR('hello world', 'world', 1, 1, 0, 'i', 1)")
+
     @mock.patch("sqlglot.generator.logger")
     def test_regexp_replace(self, logger):
         self.validate_all(

@@ -1896,6 +1896,22 @@ REGEXP_COUNT('hello world', 'l', 1, 'i');
 DECIMAL(38, 0);
 
 # dialect: snowflake
+REGEXP_INSTR('hello world', 'world');
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('hello world', 'world', 1, 1, 0);
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('hello world', 'world', 1, 1, 0, 'i');
+BIGINT;
+
+# dialect: snowflake
+REGEXP_INSTR('hello world', 'world', 1, 1, 0, 'i', 1);
+BIGINT;
+
+# dialect: snowflake
 REGEXP_REPLACE('hello world', 'world', 'universe');
 VARCHAR;
 

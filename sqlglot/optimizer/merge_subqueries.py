@@ -283,10 +283,10 @@ def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
 
     joins = inner_scope.expression.args.get("joins") or []
 
-    lsh_is_left_join = isinstance(from_or_join, exp.Join) and from_or_join.side == "LEFT"
+    outer_is_left_join = isinstance(from_or_join, exp.Join) and from_or_join.side == "LEFT"
 
     for join in joins:
-        if lsh_is_left_join and not join.method and join.kind in ("", "INNER"):
+        if outer_is_left_join and not join.method and join.kind in ("", "INNER"):
             join.args.pop("kind", None)
             join.set("side", "LEFT")
 

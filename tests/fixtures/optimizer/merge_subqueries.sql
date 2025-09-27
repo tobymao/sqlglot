@@ -538,7 +538,7 @@ LEFT JOIN (
   ON t0.id = t3.id;
 WITH t0 AS (SELECT 5 AS id), t1 AS (SELECT 1 AS id, 'US' AS cid), t2 AS (SELECT 1 AS id, 'US' AS cid) SELECT t0.id AS id, t2.cid AS cid FROM t0 AS t0 LEFT JOIN t1 AS t1 ON t0.id = t1.id LEFT JOIN t2 AS t2 ON t1.cid = t2.cid;
 
-# title: preserve INNER JOIN when it exists in a subquery used as the right-hand side of a RIGHT JOIN
+# title: preserve INNER JOIN when it exists in a subquery used as the RHS of a RIGHT JOIN
 WITH 
 t0 AS (
   SELECT 5 as id

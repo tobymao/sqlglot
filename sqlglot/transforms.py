@@ -926,9 +926,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             if not left_join_table:
                 continue
 
-            assert not (len(left_join_table) > 1), (
-                "Cannot combine JOIN predicates from different tables"
-            )
+            assert not (
+                len(left_join_table) > 1
+            ), "Cannot combine JOIN predicates from different tables"
 
             for col in join_cols:
                 col.set("join_mark", False)

@@ -269,6 +269,7 @@ class TokenType(AutoName):
     CURRENT_SCHEMA = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
+    LOCALTIME = auto()
     CURRENT_USER = auto()
     DECLARE = auto()
     DEFAULT = auto()
@@ -799,6 +800,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIMIT": TokenType.LIMIT,
         "LOAD": TokenType.LOAD,
         "LOCK": TokenType.LOCK,
+        "LOCALTIME": TokenType.LOCALTIME,
         "MERGE": TokenType.MERGE,
         "NAMESPACE": TokenType.NAMESPACE,
         "NATURAL": TokenType.NATURAL,

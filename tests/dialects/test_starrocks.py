@@ -1,3 +1,4 @@
+from sqlglot import exp
 from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -12,6 +13,8 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ARRAY_AGG(a) FROM x")
         self.validate_identity("SELECT ST_POINT(10, 20)")
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
+        self.validate_identity("ARRAY_FLATTEN(arr)").assert_is(exp.Flatten)
+        self.assertEqual(self.validate_identity("arr[1]").expressions[0], exp.Literal.number(0))
 
     def test_ddl(self):
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

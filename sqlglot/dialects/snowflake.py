@@ -563,6 +563,7 @@ class Snowflake(Dialect):
             exp.Replace,
             exp.SHA,
             exp.SHA2,
+            exp.Soundex,
             exp.Space,
             exp.Uuid,
         },

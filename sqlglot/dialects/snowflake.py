@@ -608,6 +608,13 @@ class Snowflake(Dialect):
             exp.ParseUrl,
             exp.ParseIp,
         },
+        exp.DataType.Type.DECIMAL: {
+            exp.RegexpCount,
+        },
+        exp.DataType.Type.BOOLEAN: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
+            exp.Search,
+        },
     }
 
     ANNOTATORS = {

@@ -2438,6 +2438,18 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_EXTRACT_ALL(subject, pattern)",
         )
 
+        self.validate_identity("SELECT SEARCH(line, 'king')")
+        self.validate_identity("SELECT SEARCH((play, line), 'dream')")
+        self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
+        self.validate_identity("SELECT SEARCH(line, 'king', SEARCH_MODE => 'OR')")
+        self.validate_identity("SELECT SEARCH(line, 'king', SEARCH_MODE => 'AND')")
+        self.validate_identity(
+            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'OR')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH((play, line), 'dream', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
+        )
+
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l')")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")

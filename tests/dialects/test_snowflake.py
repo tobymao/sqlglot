@@ -2442,9 +2442,12 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_identity("SELECT SEARCH((play, line), 'dream')")
         self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
         self.validate_identity("SELECT SEARCH(line, 'king', SEARCH_MODE => 'OR')")
-        self.validate_identity("SELECT SEARCH(line, 'king', SEARCH_MODE => 'AND')")
+        self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")
         self.validate_identity(
             "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'OR')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
         )
         self.validate_identity(
             "SELECT SEARCH((play, line), 'dream', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"

@@ -154,6 +154,44 @@ def _build_if_from_zeroifnull(args: t.List) -> exp.If:
     return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
 
 
+def _build_search(args: t.List) -> exp.Search:
+    arg2 = seq_get(args, 2)
+    arg3 = seq_get(args, 3)
+
+    # Determine if arg2 is analyzer or search_mode based on parameter name
+    analyzer_val = None
+    search_mode_val = None
+
+    if len(args) > 2 and arg2:
+        if not hasattr(arg2, "this"):
+            # Not a named parameter, assume it's analyzer (positional)
+            analyzer_val = arg2
+        elif (
+            hasattr(arg2, "this")
+            and arg2.this
+            and hasattr(arg2.this, "name")
+            and arg2.this.name.lower() == "analyzer"
+        ):
+            analyzer_val = arg2
+        elif (
+            hasattr(arg2, "this")
+            and arg2.this
+            and hasattr(arg2.this, "name")
+            and arg2.this.name.lower() == "search_mode"
+        ):
+            search_mode_val = arg2
+
+    if len(args) > 3 and arg3:
+        search_mode_val = arg3
+
+    return exp.Search(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        analyzer=analyzer_val,
+        search_mode=search_mode_val,
+    )
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _build_if_from_nullifzero(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
@@ -826,6 +864,7 @@ class Snowflake(Dialect):
             "ZEROIFNULL": _build_if_from_zeroifnull,
             "LIKE": _build_like(exp.Like),
             "ILIKE": _build_like(exp.ILike),
+            "SEARCH": _build_search,
         }
         FUNCTIONS.pop("PREDICT")
 

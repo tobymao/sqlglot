@@ -95,6 +95,7 @@ DIALECTS = [
     "StarRocks",
     "Tableau",
     "Teradata",
+    "Timeplus",
     "Trino",
     "TSQL",
 ]

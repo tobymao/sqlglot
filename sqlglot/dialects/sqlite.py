@@ -342,3 +342,12 @@ class SQLite(Dialect):
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
             return self.sql(expression.this)
+
+        def windowspec_sql(self, expression: exp.WindowSpec) -> str:
+            if (
+                expression.text("kind").upper() == "RANGE"
+                and expression.text("start").upper() == "CURRENT ROW"
+            ):
+                return "RANGE CURRENT ROW"
+
+            return super().windowspec_sql(expression)

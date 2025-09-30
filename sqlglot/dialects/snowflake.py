@@ -564,6 +564,7 @@ class Snowflake(Dialect):
             exp.SHA,
             exp.SHA2,
             exp.Soundex,
+            exp.SoundexP123,
             exp.Space,
             exp.SplitPart,
             exp.Uuid,

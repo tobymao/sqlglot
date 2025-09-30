@@ -7380,6 +7380,11 @@ class Soundex(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/soundex_p123
+class SoundexP123(Func):
+    pass
+
+
 class Split(Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 

@@ -47,6 +47,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SOUNDEX(column_name)")
         self.validate_identity("SELECT SOUNDEX_P123(column_name)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
+        self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")
         self.validate_identity("SELECT SPLIT_PART('11.22.33', '.', 1)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")

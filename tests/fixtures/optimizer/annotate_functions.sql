@@ -2108,6 +2108,10 @@ SPLIT(NULL, ',');
 ARRAY;
 
 # dialect: snowflake
+SPLIT_PART('11.22.33', '.', 1);
+VARCHAR;
+
+# dialect: snowflake
 STARTSWITH('hello world', 'hello');
 BOOLEAN;
 

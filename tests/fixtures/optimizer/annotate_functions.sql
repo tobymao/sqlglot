@@ -2148,6 +2148,10 @@ SUBSTR(tbl.str_col, NULL);
 STRING;
 
 # dialect: snowflake
+TRANSLATE('hello world', 'elo', 'XYZ');
+VARCHAR;
+
+# dialect: snowflake
 TRIM('hello world');
 VARCHAR;
 

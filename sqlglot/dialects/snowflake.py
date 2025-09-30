@@ -567,6 +567,7 @@ class Snowflake(Dialect):
             exp.SoundexP123,
             exp.Space,
             exp.SplitPart,
+            exp.Translate,
             exp.Uuid,
         },
         exp.DataType.Type.BINARY: {

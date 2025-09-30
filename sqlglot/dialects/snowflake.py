@@ -585,6 +585,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.ARRAY: {
             exp.Split,
+            exp.RegexpExtractAll,
         },
         exp.DataType.Type.OBJECT: {
             exp.ParseUrl,

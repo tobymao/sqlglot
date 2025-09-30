@@ -1896,6 +1896,26 @@ REGEXP_COUNT('hello world', 'l', 1, 'i');
 DECIMAL(38, 0);
 
 # dialect: snowflake
+REGEXP_EXTRACT_ALL('hello world', 'world');
+ARRAY;
+
+# dialect: snowflake
+REGEXP_EXTRACT_ALL('hello world', 'world', 1);
+ARRAY;
+
+# dialect: snowflake
+REGEXP_EXTRACT_ALL('hello world', 'world', 1, 1);
+ARRAY;
+
+# dialect: snowflake
+REGEXP_EXTRACT_ALL('hello world', 'world', 1, 1, 'i');
+ARRAY;
+
+# dialect: snowflake
+REGEXP_EXTRACT_ALL('hello world', 'world', 1, 1, 'i', 0);
+ARRAY;
+
+# dialect: snowflake
 REGEXP_REPLACE('hello world', 'world', 'universe');
 VARCHAR;
 
@@ -1926,6 +1946,26 @@ VARCHAR;
 # dialect: snowflake
 REGEXP_SUBSTR('hello world', 'world', 1, 1, 'e', NULL);
 VARCHAR;
+
+# dialect: snowflake
+REGEXP_SUBSTR_ALL('hello world', 'world');
+ARRAY;
+
+# dialect: snowflake
+REGEXP_SUBSTR_ALL('hello world', 'world', 1);
+ARRAY;
+
+# dialect: snowflake
+REGEXP_SUBSTR_ALL('hello world', 'world', 1, 1);
+ARRAY;
+
+# dialect: snowflake
+REGEXP_SUBSTR_ALL('hello world', 'world', 1, 1, 'i');
+ARRAY;
+
+# dialect: snowflake
+REGEXP_SUBSTR_ALL('hello world', 'world', 1, 1, 'i', 0);
+ARRAY;
 
 # dialect: snowflake
 REPEAT('hello', 3);

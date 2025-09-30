@@ -25,6 +25,20 @@ class RisingWave(Postgres):
             "KEY": lambda self: self._parse_encode_property(key=True),
         }
 
+        CONSTRAINT_PARSERS = {
+            **Postgres.Parser.CONSTRAINT_PARSERS,
+            "WATERMARK": lambda self: self.expression(
+                exp.WatermarkColumnConstraint,
+                this=self._match(TokenType.FOR) and self._parse_column(),
+                expression=self._match(TokenType.ALIAS) and self._parse_disjunction(),
+            ),
+        }
+
+        SCHEMA_UNNAMED_CONSTRAINTS = {
+            *Postgres.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
+            "WATERMARK",
+        }
+
         def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
             # There is no hint in risingwave.
             # Do nothing here to avoid WITH keywords conflict in CREATE SINK statement.

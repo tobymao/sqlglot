@@ -5898,6 +5898,11 @@ class StringToArray(Func):
     _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/strtok
+class Strtok(Func):
+    arg_types = {"this": True, "expression": False, "part": False}
+
+
 class ArrayOverlaps(Binary, Func):
     pass
 

@@ -282,7 +282,14 @@ def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
     new_joins = []
 
     joins = inner_scope.expression.args.get("joins") or []
+
+    outer_is_left_join = isinstance(from_or_join, exp.Join) and from_or_join.side == "LEFT"
+
     for join in joins:
+        if outer_is_left_join and not join.method and join.kind in ("", "INNER"):
+            join.args.pop("kind", None)
+            join.set("side", "LEFT")
+
         new_joins.append(join)
         outer_scope.add_source(join.alias_or_name, inner_scope.sources[join.alias_or_name])
 

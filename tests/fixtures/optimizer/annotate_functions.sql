@@ -2084,6 +2084,10 @@ SOUNDEX(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+SOUNDEX_P123('test');
+VARCHAR;
+
+# dialect: snowflake
 SPACE(5);
 VARCHAR;
 

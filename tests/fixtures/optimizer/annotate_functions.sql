@@ -2080,6 +2080,10 @@ SHA2_HEX('foo', null);
 VARCHAR;
 
 # dialect: snowflake
+SOUNDEX(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
 SPACE(5);
 VARCHAR;
 

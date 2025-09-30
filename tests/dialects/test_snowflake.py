@@ -44,6 +44,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT LPAD(tbl.bin_col, 10)")
         self.validate_identity("SELECT RPAD('Hello', 10, '*')")
         self.validate_identity("SELECT RPAD(tbl.bin_col, 10)")
+        self.validate_identity("SELECT SOUNDEX(column_name)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")

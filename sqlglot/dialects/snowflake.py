@@ -804,6 +804,7 @@ class Snowflake(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
+            "DIRECTORY": lambda self: self._parse_directory(),
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
             "LISTAGG": lambda self: self._parse_string_agg(),
             "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
@@ -912,6 +913,14 @@ class Snowflake(Dialect):
                 exp.ModelAttribute, this=this, expression=attr
             ),
         }
+
+        def _parse_directory(self) -> exp.DirectoryStage:
+            table = self._parse_table_parts()
+
+            if isinstance(table, exp.Table):
+                table = table.this
+
+            return self.expression(exp.DirectoryStage, this=table)
 
         def _parse_use(self) -> exp.Use:
             if self._match_text_seq("SECONDARY", "ROLES"):

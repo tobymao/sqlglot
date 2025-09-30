@@ -2265,8 +2265,12 @@ class Prior(Expression):
 
 
 class Directory(Expression):
-    # https://spark.apache.org/docs/3.0.0-preview/sql-ref-syntax-dml-insert-overwrite-directory-hive.html
     arg_types = {"this": True, "local": False, "row_format": False}
+
+
+# https://docs.snowflake.com/en/user-guide/data-load-dirtables-query
+class DirectoryStage(Expression):
+    pass
 
 
 class ForeignKey(Expression):

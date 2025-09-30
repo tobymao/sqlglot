@@ -5334,3 +5334,6 @@ class Generator(metaclass=_Generator):
     def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
         self.unsupported("The model!attribute syntax is not supported")
         return ""
+
+    def directorystage_sql(self, expression: exp.DirectoryStage) -> str:
+        return self.func("DIRECTORY", expression.this)

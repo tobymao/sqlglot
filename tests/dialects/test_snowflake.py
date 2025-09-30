@@ -122,6 +122,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GET_PATH(foo, 'bar')")
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
+        self.validate_identity("SELECT FILE_URL FROM DIRECTORY(@mystage) WHERE SIZE > 100000").args[
+            "from"
+        ].this.this.assert_is(exp.DirectoryStage).this.assert_is(exp.Var)
         self.validate_identity(
             "SELECT AI_CLASSIFY('text', ['travel', 'cooking'], OBJECT_CONSTRUCT('output_mode', 'multi'))"
         )

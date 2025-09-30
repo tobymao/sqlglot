@@ -564,6 +564,7 @@ class Snowflake(Dialect):
             exp.SHA,
             exp.SHA2,
             exp.Space,
+            exp.SplitPart,
             exp.Uuid,
         },
         exp.DataType.Type.BINARY: {

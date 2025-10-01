@@ -2208,6 +2208,10 @@ TRANSLATE('hello world', 'elo', 'XYZ');
 VARCHAR;
 
 # dialect: snowflake
+UNICODE('€');
+INT;
+
+# dialect: snowflake
 TRIM('hello world');
 VARCHAR;
 

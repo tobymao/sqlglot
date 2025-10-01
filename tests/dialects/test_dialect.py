@@ -2475,6 +2475,25 @@ class TestDialect(Validator):
 
     def test_alias(self):
         self.validate_all(
+            "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+            write={
+                "": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+                "hive": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+                "oracle": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+                "presto": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+            write={
+                "": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+                "hive": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+                "oracle": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+                "presto": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+            },
+        )
+
+        self.validate_all(
             'SELECT 1 AS "foo"',
             read={
                 "mysql": "SELECT 1 'foo'",
@@ -2496,18 +2515,6 @@ class TestDialect(Validator):
                 with self.assertRaises(ParseError):
                     parse_one("SELECT 1 'foo'", dialect=dialect)
 
-        self.validate_all(
-            "SELECT a AS b FROM x GROUP BY b",
-            write={
-                "drill": "SELECT a AS b FROM x GROUP BY b",
-                "duckdb": "SELECT a AS b FROM x GROUP BY b",
-                "presto": "SELECT a AS b FROM x GROUP BY 1",
-                "hive": "SELECT a AS b FROM x GROUP BY 1",
-                "oracle": "SELECT a AS b FROM x GROUP BY 1",
-                "spark": "SELECT a AS b FROM x GROUP BY b",
-                "spark2": "SELECT a AS b FROM x GROUP BY 1",
-            },
-        )
         self.validate_all(
             "SELECT y x FROM my_table t",
             write={

@@ -1916,6 +1916,22 @@ REGEXP_EXTRACT_ALL('hello world', 'world', 1, 1, 'i', 0);
 ARRAY;
 
 # dialect: snowflake
+REGEXP_INSTR('hello world', 'world');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+REGEXP_INSTR('hello world', 'world', 1, 1, 0);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+REGEXP_INSTR('hello world', 'world', 1, 1, 0, 'i');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+REGEXP_INSTR('hello world', 'world', 1, 1, 0, 'i', 1);
+DECIMAL(38, 0);
+
+# dialect: snowflake
 REGEXP_REPLACE('hello world', 'world', 'universe');
 VARCHAR;
 
@@ -2120,6 +2136,14 @@ SHA2_HEX('foo', null);
 VARCHAR;
 
 # dialect: snowflake
+SOUNDEX(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+SOUNDEX_P123('test');
+VARCHAR;
+
+# dialect: snowflake
 SPACE(5);
 VARCHAR;
 
@@ -2142,6 +2166,10 @@ ARRAY;
 # dialect: snowflake
 SPLIT(NULL, ',');
 ARRAY;
+
+# dialect: snowflake
+SPLIT_PART('11.22.33', '.', 1);
+VARCHAR;
 
 # dialect: snowflake
 STARTSWITH('hello world', 'hello');
@@ -2174,6 +2202,10 @@ BINARY;
 # dialect: snowflake
 SUBSTR(tbl.str_col, NULL);
 STRING;
+
+# dialect: snowflake
+TRANSLATE('hello world', 'elo', 'XYZ');
+VARCHAR;
 
 # dialect: snowflake
 TRIM('hello world');

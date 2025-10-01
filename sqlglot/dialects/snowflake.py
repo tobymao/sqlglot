@@ -563,7 +563,11 @@ class Snowflake(Dialect):
             exp.Replace,
             exp.SHA,
             exp.SHA2,
+            exp.Soundex,
+            exp.SoundexP123,
             exp.Space,
+            exp.SplitPart,
+            exp.Translate,
             exp.Uuid,
         },
         exp.DataType.Type.BINARY: {
@@ -591,9 +595,6 @@ class Snowflake(Dialect):
             exp.ParseUrl,
             exp.ParseIp,
         },
-        exp.DataType.Type.DECIMAL: {
-            exp.RegexpCount,
-        },
     }
 
     ANNOTATORS = {
@@ -613,11 +614,17 @@ class Snowflake(Dialect):
                 exp.Substring,
             )
         },
+        **{
+            expr_type: lambda self, e: self._annotate_with_type(
+                e, exp.DataType.build("NUMBER", dialect="snowflake")
+            )
+            for expr_type in (
+                exp.RegexpCount,
+                exp.RegexpInstr,
+            )
+        },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
-        exp.RegexpCount: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("NUMBER", dialect="snowflake")
-        ),
     }
 
     TIME_MAPPING = {
@@ -804,6 +811,7 @@ class Snowflake(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
+            "DIRECTORY": lambda self: self._parse_directory(),
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
             "LISTAGG": lambda self: self._parse_string_agg(),
             "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
@@ -912,6 +920,14 @@ class Snowflake(Dialect):
                 exp.ModelAttribute, this=this, expression=attr
             ),
         }
+
+        def _parse_directory(self) -> exp.DirectoryStage:
+            table = self._parse_table_parts()
+
+            if isinstance(table, exp.Table):
+                table = table.this
+
+            return self.expression(exp.DirectoryStage, this=table)
 
         def _parse_use(self) -> exp.Use:
             if self._match_text_seq("SECONDARY", "ROLES"):

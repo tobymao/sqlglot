@@ -77,7 +77,7 @@ def coerce_type(node: exp.Expression, promote_to_inferred_datetime_type: bool) -
         _coerce_date(node.left, node.right, promote_to_inferred_datetime_type)
     elif isinstance(node, exp.Between):
         _coerce_date(node.this, node.args["low"], promote_to_inferred_datetime_type)
-    elif isinstance(node, exp.Extract) and not node.expression.type.is_type(
+    elif isinstance(node, exp.Extract) and not node.expression.is_type(
         *exp.DataType.TEMPORAL_TYPES
     ):
         _replace_cast(node.expression, exp.DataType.Type.DATETIME)

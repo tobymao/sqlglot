@@ -198,24 +198,34 @@ WITH "wscs" AS (
     ON "date_dim"."d_date_sk" = "wscs"."sold_date_sk"
   GROUP BY
     "date_dim"."d_week_seq"
+), "z" AS (
+  SELECT
+    "wswscs"."d_week_seq" AS "d_week_seq2",
+    "wswscs"."sun_sales" AS "sun_sales2",
+    "wswscs"."mon_sales" AS "mon_sales2",
+    "wswscs"."tue_sales" AS "tue_sales2",
+    "wswscs"."wed_sales" AS "wed_sales2",
+    "wswscs"."thu_sales" AS "thu_sales2",
+    "wswscs"."fri_sales" AS "fri_sales2",
+    "wswscs"."sat_sales" AS "sat_sales2"
+  FROM "wswscs" AS "wswscs"
+  JOIN "date_dim" AS "date_dim"
+    ON "date_dim"."d_week_seq" = "wswscs"."d_week_seq" AND "date_dim"."d_year" = 1999
 )
 SELECT
   "wswscs"."d_week_seq" AS "d_week_seq1",
-  ROUND("wswscs"."sun_sales" / "wswscs_2"."sun_sales", 2) AS "_col_1",
-  ROUND("wswscs"."mon_sales" / "wswscs_2"."mon_sales", 2) AS "_col_2",
-  ROUND("wswscs"."tue_sales" / "wswscs_2"."tue_sales", 2) AS "_col_3",
-  ROUND("wswscs"."wed_sales" / "wswscs_2"."wed_sales", 2) AS "_col_4",
-  ROUND("wswscs"."thu_sales" / "wswscs_2"."thu_sales", 2) AS "_col_5",
-  ROUND("wswscs"."fri_sales" / "wswscs_2"."fri_sales", 2) AS "_col_6",
-  ROUND("wswscs"."sat_sales" / "wswscs_2"."sat_sales", 2) AS "_col_7"
+  ROUND("wswscs"."sun_sales" / "z"."sun_sales2", 2) AS "_col_1",
+  ROUND("wswscs"."mon_sales" / "z"."mon_sales2", 2) AS "_col_2",
+  ROUND("wswscs"."tue_sales" / "z"."tue_sales2", 2) AS "_col_3",
+  ROUND("wswscs"."wed_sales" / "z"."wed_sales2", 2) AS "_col_4",
+  ROUND("wswscs"."thu_sales" / "z"."thu_sales2", 2) AS "_col_5",
+  ROUND("wswscs"."fri_sales" / "z"."fri_sales2", 2) AS "_col_6",
+  ROUND("wswscs"."sat_sales" / "z"."sat_sales2", 2) AS "_col_7"
 FROM "wswscs" AS "wswscs"
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_week_seq" = "wswscs"."d_week_seq" AND "date_dim"."d_year" = 1998
-JOIN "wswscs" AS "wswscs_2"
-  ON "wswscs"."d_week_seq" = "wswscs_2"."d_week_seq" - 53
-JOIN "date_dim" AS "date_dim_2"
-  ON "date_dim_2"."d_week_seq" = "wswscs_2"."d_week_seq"
-  AND "date_dim_2"."d_year" = 1999
+JOIN "z" AS "z"
+  ON "wswscs"."d_week_seq" = "z"."d_week_seq2" - 53
 ORDER BY
   "d_week_seq1";
 

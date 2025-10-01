@@ -472,17 +472,22 @@ FROM (
       alias_1.id = alias_2.id
     )
 ) AS main_query;
+WITH "alias_2" AS (
+  SELECT
+    "company_table_2"."id" AS "id"
+  FROM "company_table" AS "company_table_2"
+  LEFT JOIN "unlocked" AS "unlocked"
+    ON "company_table_2"."id" = "unlocked"."company_id"
+  WHERE
+    CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE
+    AND NOT "company_table_2"."id" IS NULL
+)
 SELECT
   "company_table"."id" AS "id",
   "company_table"."score" AS "score"
 FROM "company_table" AS "company_table"
-JOIN "company_table" AS "company_table_2"
-  ON "company_table"."id" = "company_table_2"."id"
-LEFT JOIN "unlocked" AS "unlocked"
-  ON "company_table_2"."id" = "unlocked"."company_id"
-WHERE
-  CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE
-  AND NOT "company_table_2"."id" IS NULL;
+JOIN "alias_2" AS "alias_2"
+  ON "alias_2"."id" = "company_table"."id";
 
 # title: db.table alias clash
 # execute: false

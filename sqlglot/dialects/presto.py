@@ -475,7 +475,6 @@ class Presto(Dialect):
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,
-            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,

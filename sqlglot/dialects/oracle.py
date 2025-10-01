@@ -307,7 +307,6 @@ class Oracle(Dialect):
             ),
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
             exp.EuclideanDistance: rename_func("L2_DISTANCE"),
-            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.ILike: no_ilike_sql,
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),

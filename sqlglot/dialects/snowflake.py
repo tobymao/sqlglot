@@ -1920,5 +1920,4 @@ class Snowflake(Dialect):
             if not expression.args.get("part_index"):
                 expression.set("part_index", exp.Literal.number(1))
 
-            # Results in rename_func("SPLIT_PART") behavior
-            return self.func("SPLIT_PART", *flatten(expression.args.values()))
+            return rename_func("SPLIT_PART")

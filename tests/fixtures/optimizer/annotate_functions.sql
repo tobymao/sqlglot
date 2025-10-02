@@ -2188,6 +2188,10 @@ STARTSWITH(tbl.bin_col, NULL);
 BOOLEAN;
 
 # dialect: snowflake
+STRTOK_TO_ARRAY('a,b,c', ',');
+ARRAY;
+
+# dialect: snowflake
 SUBSTR('hello world', 1, 5);
 VARCHAR;
 

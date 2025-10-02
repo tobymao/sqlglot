@@ -1380,8 +1380,7 @@ class Snowflake(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.SplitPart: lambda self, e: self.func(
-                e.meta.get("name", "SPLIT_PART"),
-                *flatten(e.args.values())
+                e.meta.get("name", "SPLIT_PART"), *flatten(e.args.values())
             ),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
@@ -1910,8 +1909,6 @@ class Snowflake(Dialect):
 
         def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
             return f"{self.sql(expression, 'this')}!{self.sql(expression, 'expression')}"
-
-
 
         def format_sql(self, expression: exp.Format) -> str:
             if expression.name.lower() == "%s" and len(expression.expressions) == 1:

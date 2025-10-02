@@ -162,26 +162,19 @@ def _build_search(args: t.List) -> exp.Search:
     analyzer_val = None
     search_mode_val = None
 
-    if len(args) > 2 and arg2:
-        if not hasattr(arg2, "this"):
-            # Not a named parameter, assume it's analyzer (positional)
+    if arg2:
+        if isinstance(arg2, exp.Kwarg):
+            # Named parameter - check the name directly
+            if arg2.this.name.lower() == "analyzer":
+                analyzer_val = arg2
+            elif arg2.this.name.lower() == "search_mode":
+                search_mode_val = arg2
+        else:
+            # Positional parameter, assume it's analyzer
             analyzer_val = arg2
-        elif (
-            hasattr(arg2, "this")
-            and arg2.this
-            and hasattr(arg2.this, "name")
-            and arg2.this.name.lower() == "analyzer"
-        ):
-            analyzer_val = arg2
-        elif (
-            hasattr(arg2, "this")
-            and arg2.this
-            and hasattr(arg2.this, "name")
-            and arg2.this.name.lower() == "search_mode"
-        ):
-            search_mode_val = arg2
 
-    if len(args) > 3 and arg3:
+    if arg3:
+        # Fourth argument is always search_mode
         search_mode_val = arg3
 
     return exp.Search(

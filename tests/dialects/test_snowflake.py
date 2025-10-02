@@ -2453,6 +2453,47 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "SELECT SEARCH((play, line), 'dream', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
         )
 
+        # Test AST validation for SEARCH function arguments
+        # Note: _build_search always sets analyzer and search_mode args (even if None)
+
+        # Test 1: All arguments set (analyzer + search_mode)
+        search_ast = self.validate_identity(
+            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
+        )
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertIsNotNone(search_ast.args.get("analyzer"))
+        self.assertIsNotNone(search_ast.args.get("search_mode"))
+
+        # Test 2: Only analyzer argument (search_mode will be None but present)
+        search_ast = self.validate_identity(
+            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')"
+        )
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertIsNotNone(search_ast.args.get("analyzer"))
+        self.assertIsNone(search_ast.args.get("search_mode"))
+
+        # Test 3: Only search_mode argument (analyzer will be None but present)
+        search_ast = self.validate_identity(
+            "SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')"
+        )
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertIsNone(search_ast.args.get("analyzer"))
+        self.assertIsNotNone(search_ast.args.get("search_mode"))
+
+        # Test 4: Different argument order - search_mode first, then analyzer
+        search_ast = self.validate_identity(
+            "SELECT SEARCH(line, 'king', SEARCH_MODE => 'OR', ANALYZER => 'UNICODE_ANALYZER')"
+        )
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertIsNotNone(search_ast.args.get("analyzer"))
+        self.assertIsNotNone(search_ast.args.get("search_mode"))
+
+        # Test 5: Basic function with only required arguments (optional args will be None but present)
+        search_ast = self.validate_identity("SELECT SEARCH(line, 'king')")
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertIsNone(search_ast.args.get("analyzer"))
+        self.assertIsNone(search_ast.args.get("search_mode"))
+
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l')")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")

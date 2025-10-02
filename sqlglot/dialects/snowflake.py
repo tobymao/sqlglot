@@ -1917,6 +1917,9 @@ class Snowflake(Dialect):
 
         def splitpart_sql(self, expression: exp.SplitPart) -> str:
             # Set part_index to 1 if missing
+            if not expression.args.get("delimiter"):
+                expression.set("delimiter", exp.Literal.string(" "))
+
             if not expression.args.get("part_index"):
                 expression.set("part_index", exp.Literal.number(1))
 

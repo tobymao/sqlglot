@@ -42,13 +42,15 @@ if t.TYPE_CHECKING:
 
 
 def _build_strtok(args: t.List) -> exp.SplitPart:
-    split_part = exp.SplitPart(
-        this=seq_get(args, 0),
-        delimiter=seq_get(args, 1),
-        part_index=seq_get(args, 2) or exp.Literal.number(1),
-    )
-    split_part.meta["name"] = "STRTOK"
-    return split_part
+    # Add default delimiter (space) if missing - per Snowflake docs
+    if len(args) == 1:
+        args.append(exp.Literal.string(" "))
+
+    # Add default part_index (1) if missing
+    if len(args) == 2:
+        args.append(exp.Literal.number(1))
+
+    return exp.SplitPart.from_arg_list(args)
 
 
 def _build_datetime(
@@ -782,7 +784,7 @@ class Snowflake(Dialect):
             "SHA2_BINARY": exp.SHA2Digest.from_arg_list,
             "SHA2_HEX": exp.SHA2.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
-            "STRTOK": lambda args: _build_strtok(args),
+            "STRTOK": _build_strtok,
             "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
             "TIMEDIFF": _build_datediff,
@@ -1379,9 +1381,7 @@ class Snowflake(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
-            exp.SplitPart: lambda self, e: self.func(
-                e.meta.get("name", "SPLIT_PART"), *flatten(e.args.values())
-            ),
+            exp.SplitPart: lambda self, e: self.splitpart_sql(e),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
@@ -1915,3 +1915,11 @@ class Snowflake(Dialect):
                 return self.func("TO_CHAR", expression.expressions[0])
 
             return self.function_fallback_sql(expression)
+
+        def splitpart_sql(self, expression: exp.SplitPart) -> str:
+            # Set part_index to 1 if missing
+            if not expression.args.get("part_index"):
+                expression.set("part_index", exp.Literal.number(1))
+
+            # Results in rename_func("SPLIT_PART") behavior
+            return self.func("SPLIT_PART", *flatten(expression.args.values()))

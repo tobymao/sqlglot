@@ -7393,7 +7393,6 @@ class Split(Func):
 # https://docs.snowflake.com/en/sql-reference/functions/split_part
 # https://docs.snowflake.com/en/sql-reference/functions/strtok
 class SplitPart(Func):
-    _sql_names = ["SPLIT_PART", "STRTOK"]
     arg_types = {"this": True, "delimiter": False, "part_index": False}
 
 

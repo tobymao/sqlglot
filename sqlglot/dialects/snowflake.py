@@ -41,7 +41,16 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E, B
 
 
-# from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
+def _build_strtok(args: t.List) -> exp.SplitPart:
+    split_part = exp.SplitPart(
+        this=seq_get(args, 0),
+        delimiter=seq_get(args, 1),
+        part_index=seq_get(args, 2) or exp.Literal.number(1),
+    )
+    split_part.meta["name"] = "STRTOK"
+    return split_part
+
+
 def _build_datetime(
     name: str, kind: exp.DataType.Type, safe: bool = False
 ) -> t.Callable[[t.List], exp.Func]:
@@ -569,7 +578,6 @@ class Snowflake(Dialect):
             exp.Space,
             exp.SplitPart,
             exp.Translate,
-            exp.Strtok,
             exp.Uuid,
         },
         exp.DataType.Type.BINARY: {
@@ -774,6 +782,7 @@ class Snowflake(Dialect):
             "SHA2_BINARY": exp.SHA2Digest.from_arg_list,
             "SHA2_HEX": exp.SHA2.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "STRTOK": lambda args: _build_strtok(args),
             "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
             "TIMEDIFF": _build_datediff,
@@ -1370,6 +1379,10 @@ class Snowflake(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
+            exp.SplitPart: lambda self, e: self.func(
+                e.meta.get("name", "SPLIT_PART"),
+                *flatten(e.args.values())
+            ),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
@@ -1897,6 +1910,8 @@ class Snowflake(Dialect):
 
         def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
             return f"{self.sql(expression, 'this')}!{self.sql(expression, 'expression')}"
+
+
 
         def format_sql(self, expression: exp.Format) -> str:
             if expression.name.lower() == "%s" and len(expression.expressions) == 1:

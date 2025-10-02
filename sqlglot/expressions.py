@@ -5898,11 +5898,6 @@ class StringToArray(Func):
     _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
 
 
-# https://docs.snowflake.com/en/sql-reference/functions/strtok
-class Strtok(Func):
-    arg_types = {"this": True, "expression": False, "part": False}
-
-
 class ArrayOverlaps(Binary, Func):
     pass
 
@@ -7395,8 +7390,11 @@ class Split(Func):
 
 
 # https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.split_part.html
+# https://docs.snowflake.com/en/sql-reference/functions/split_part
+# https://docs.snowflake.com/en/sql-reference/functions/strtok
 class SplitPart(Func):
-    arg_types = {"this": True, "delimiter": True, "part_index": True}
+    _sql_names = ["SPLIT_PART", "STRTOK"]
+    arg_types = {"this": True, "delimiter": False, "part_index": False}
 
 
 # Start may be omitted in the case of postgres

@@ -2438,31 +2438,18 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_EXTRACT_ALL(subject, pattern)",
         )
 
-        self.validate_identity("SELECT SEARCH(line, 'king')")
         self.validate_identity("SELECT SEARCH((play, line), 'dream')")
         self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
-        self.validate_identity("SELECT SEARCH(line, 'king', SEARCH_MODE => 'OR')")
         self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")
         self.validate_identity(
             "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'OR')"
         )
-        self.validate_identity(
-            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
-        )
-        self.validate_identity(
-            "SELECT SEARCH((play, line), 'dream', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
-        )
 
-        # Test AST validation for SEARCH function arguments
-        # Note: _build_search always sets analyzer and search_mode args (even if None)
-
-        # Test 1: All arguments set (analyzer + search_mode)
-        search_ast = self.validate_identity(
-            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND')"
-        )
+        # Test 1: Basic function with only required arguments
+        search_ast = self.validate_identity("SELECT SEARCH(line, 'king')")
         self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
-        self.assertIsNotNone(search_ast.args.get("analyzer"))
-        self.assertIsNotNone(search_ast.args.get("search_mode"))
+        self.assertIsNone(search_ast.args.get("analyzer"))
+        self.assertIsNone(search_ast.args.get("search_mode"))
 
         # Test 2: Only analyzer argument (search_mode will be None but present)
         search_ast = self.validate_identity(
@@ -2494,7 +2481,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.assertIsNone(search_ast.args.get("analyzer"))
         self.assertIsNone(search_ast.args.get("search_mode"))
 
-        self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l')")
+        self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l ')")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")
 

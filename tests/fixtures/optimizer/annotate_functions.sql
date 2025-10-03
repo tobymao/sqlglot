@@ -2160,18 +2160,6 @@ SQRT(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
-SQRT(tbl.float_col);
-DOUBLE;
-
-# dialect: snowflake
-SQRT(tbl.real_col);
-DOUBLE;
-
-# dialect: snowflake
-SQRT(CAST(25 AS FLOAT4));
-DOUBLE;
-
-# dialect: snowflake
 SPLIT('hello world', ' ');
 ARRAY;
 

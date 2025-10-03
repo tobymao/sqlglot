@@ -1716,6 +1716,14 @@ EDITDISTANCE('hello', 'world', 3);
 INT;
 
 # dialect: snowflake
+EXP(1);
+FLOAT;
+
+# dialect: snowflake
+EXP(5.5);
+FLOAT;
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 

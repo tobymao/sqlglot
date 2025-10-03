@@ -608,6 +608,9 @@ class Snowflake(Dialect):
             exp.ParseUrl,
             exp.ParseIp,
         },
+        exp.DataType.Type.FLOAT: {
+            exp.Exp,
+        },
     }
 
     ANNOTATORS = {

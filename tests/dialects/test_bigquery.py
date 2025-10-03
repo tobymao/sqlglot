@@ -2108,6 +2108,7 @@ OPTIONS (
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL mydataset.mymodel, (SELECT custom_label, column1, column2 FROM mydataset.mytable), STRUCT(0.55 AS threshold))"
         )
+        self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL `my_project`.my_dataset.my_model, (SELECT * FROM input_data))"
         )

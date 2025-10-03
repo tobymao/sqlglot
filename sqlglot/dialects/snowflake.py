@@ -158,24 +158,20 @@ def _build_search(args: t.List) -> exp.Search:
     arg2 = seq_get(args, 2)
     arg3 = seq_get(args, 3)
 
-    # Determine if arg2 is analyzer or search_mode based on parameter name
     analyzer_val = None
     search_mode_val = None
 
-    if arg2:
-        if isinstance(arg2, exp.Kwarg):
-            # Named parameter - check the name directly
-            if arg2.this.name.lower() == "analyzer":
-                analyzer_val = arg2
-            elif arg2.this.name.lower() == "search_mode":
-                search_mode_val = arg2
-        else:
-            # Positional parameter, assume it's analyzer
+    if arg2 and isinstance(arg2, exp.Kwarg):
+        if arg2.this.name.lower() == "analyzer":
             analyzer_val = arg2
+        elif arg2.this.name.lower() == "search_mode":
+            search_mode_val = arg2
 
-    if arg3:
-        # Fourth argument is always search_mode
-        search_mode_val = arg3
+    if arg3 and isinstance(arg3, exp.Kwarg):
+        if arg3.this.name.lower() == "analyzer":
+            analyzer_val = arg3
+        elif arg3.this.name.lower() == "search_mode":
+            search_mode_val = arg3
 
     return exp.Search(
         this=seq_get(args, 0),

@@ -7731,7 +7731,7 @@ class Parser(metaclass=_Parser):
             actions = ensure_list(parser(self))
             not_valid = self._match_text_seq("NOT", "VALID")
             options = self._parse_csv(self._parse_property)
-            cascade = (self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE"))
+            cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
             if not self._curr and actions:
                 return self.expression(

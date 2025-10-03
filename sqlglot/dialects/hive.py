@@ -490,7 +490,9 @@ class Hive(Dialect):
                 comment = self._parse_string()
 
             if not this or not column_new or not dtype:
-                self.raise_error("Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'")
+                self.raise_error(
+                    "Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'"
+                )
 
             return self.expression(
                 exp.AlterColumn,
@@ -808,11 +810,14 @@ class Hive(Dialect):
             )
 
         def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
-
             this = self.sql(expression, "this")
             new_name = self.sql(expression, "rename_to") or this
             dtype = self.sql(expression, "dtype")
-            comment = f" COMMENT {self.sql(expression, 'comment')}" if self.sql(expression, "comment") else ""
+            comment = (
+                f" COMMENT {self.sql(expression, 'comment')}"
+                if self.sql(expression, "comment")
+                else ""
+            )
             default = self.sql(expression, "default")
             visible = expression.args.get("visible")
             allow_null = expression.args.get("allow_null")

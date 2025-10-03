@@ -152,7 +152,7 @@ TBLPROPERTIES (
             write={
                 "spark": "ALTER TABLE db.example RENAME COLUMN col_a TO col_b",
                 "hive": UnsupportedError,
-            }
+            },
         )
         self.validate_all(
             "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",

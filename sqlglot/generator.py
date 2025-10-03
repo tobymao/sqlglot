@@ -3621,7 +3621,11 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
         check = " WITH CHECK" if expression.args.get("check") else ""
-        cascade = " CASCADE" if expression.args.get("cascade") and self.dialect.ALTER_TABLE_SUPPORTS_CASCADE else ""
+        cascade = (
+            " CASCADE"
+            if expression.args.get("cascade") and self.dialect.ALTER_TABLE_SUPPORTS_CASCADE
+            else ""
+        )
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
